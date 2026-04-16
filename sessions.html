@@ -4,7 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Free Fitness Sessions — Dubai, Al Ain & Muscat | At The Park</title>
-<meta name="description" content="Browse 19 free outdoor fitness sessions every week across Dubai, Al Ain and Muscat. Running, yoga, kickboxing, crosstraining and more. Always free.">
+<meta name="description" content="Browse free outdoor fitness sessions every week. Running, yoga, kickboxing, crosstraining and more across Dubai, Al Ain and Muscat. Always free.">
+<meta property="og:title" content="Free Sessions — At The Park Fitness Community">
+<meta property="og:description" content="19 activities. 21 coaches. 7 days a week. Always free. Find your tribe.">
+<meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -82,17 +85,14 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 @media(max-width:600px){.footer-top{grid-template-columns:1fr;gap:28px}}
 
 
-/* FILTER BAR */
 .filter-bar{background:var(--dark3);border-bottom:1px solid rgba(255,255,255,.06);padding:0 40px;position:sticky;top:var(--nav-h);z-index:50}
 .filter-inner{max-width:var(--max);margin:0 auto;display:flex;align-items:center;overflow-x:auto;scrollbar-width:none}
 .filter-inner::-webkit-scrollbar{display:none}
 .filter-tab{flex-shrink:0;padding:18px 20px;font-size:13px;font-weight:600;color:var(--muted);border:none;background:transparent;cursor:pointer;position:relative;letter-spacing:.03em;transition:color .2s;white-space:nowrap}
-.filter-tab::after{content:'';position:absolute;bottom:0;left:0;right:0;height:2px;background:var(--green);transform:scaleX(0);transition:transform .25s}
+.filter-tab::after{content:'';position:absolute;bottom:-1px;left:0;right:0;height:2px;background:var(--green);transform:scaleX(0);transition:transform .25s}
 .filter-tab.active,.filter-tab:hover{color:var(--white)}
 .filter-tab.active::after{transform:scaleX(1)}
 .filter-sep{width:1px;height:20px;background:rgba(255,255,255,.08);flex-shrink:0;margin:0 8px}
-
-/* SESSION GRID */
 .sessions-main{padding:48px 40px 100px;max-width:var(--max);margin:0 auto}
 .sessions-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;gap:16px;flex-wrap:wrap}
 .sessions-count{font-size:13px;color:var(--muted)}
@@ -101,13 +101,13 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 .day-btn{font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;letter-spacing:.03em}
 .day-btn.active,.day-btn:hover{border-color:var(--green);color:var(--green);background:rgba(122,194,49,.08)}
 .sessions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
-
-/* SESSION CARD */
+.empty-state{grid-column:1/-1;text-align:center;padding:80px 20px;color:var(--muted)}
+.empty-state h3{font-family:var(--ff-display);font-size:28px;font-weight:900;text-transform:uppercase;color:var(--white);margin-bottom:8px}
 .session-card{background:var(--dark2);border-radius:var(--radius-lg);padding:24px;border:1px solid rgba(255,255,255,.06);cursor:pointer;transition:border-color .25s,transform .2s;position:relative;overflow:hidden}
 .session-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--green);opacity:0;transition:opacity .25s}
 .session-card:hover{border-color:rgba(122,194,49,.3);transform:translateY(-3px)}
 .session-card:hover::before{opacity:1}
-.sc-tribe{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green);margin-bottom:10px}
+.sc-tribe{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
 .sc-tribe.better{color:#a8e055}
 .sc-tribe.faster{color:#7AC231}
 .sc-tribe.stronger{color:#f59e0b}
@@ -116,35 +116,50 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 .sc-time::before{content:'';display:block;width:6px;height:6px;border-radius:50%;background:var(--green)}
 .sc-coach{font-size:13px;color:var(--muted);margin-bottom:8px}
 .sc-loc{font-size:12px;color:var(--light);display:flex;align-items:center;gap:5px}
-.sc-loc::before{content:'◈';color:var(--green);font-size:10px}
+.sc-loc::before{content:"◈";color:var(--green);font-size:10px}
 .sc-free{position:absolute;top:16px;right:16px;font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 10px;border-radius:20px;background:rgba(122,194,49,.12);color:var(--green);border:1px solid rgba(122,194,49,.2)}
 
-/* BOOKING MODAL */
-.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(6px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s}
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(8px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s}
 .modal-overlay.open{opacity:1;pointer-events:all}
-.modal{background:var(--dark2);border-radius:var(--radius-lg);padding:40px;width:100%;max-width:480px;border:1px solid rgba(255,255,255,.1);position:relative;transform:translateY(20px);transition:transform .25s}
+.modal{background:var(--dark2);border-radius:var(--radius-lg);padding:40px;width:100%;max-width:500px;border:1px solid rgba(255,255,255,.1);position:relative;transform:translateY(24px);transition:transform .3s;max-height:90vh;overflow-y:auto}
 .modal-overlay.open .modal{transform:translateY(0)}
-.modal-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--muted);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:border-color .2s,color .2s}
+.modal-close{position:absolute;top:16px;right:16px;width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--muted);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;transition:all .2s;line-height:1}
 .modal-close:hover{border-color:var(--white);color:var(--white)}
 .modal-tribe{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green);margin-bottom:8px}
 .modal-name{font-family:var(--ff-display);font-size:40px;font-weight:900;text-transform:uppercase;color:var(--white);margin-bottom:6px;line-height:1}
-.modal-meta{font-size:14px;color:var(--muted);margin-bottom:28px;line-height:1.7}
-.modal-meta span{display:block}
+.modal-meta{font-size:13px;color:var(--muted);margin-bottom:28px;line-height:2;border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:20px}
 .modal-meta strong{color:var(--light)}
 .form-group{margin-bottom:16px}
-.form-group label{display:block;font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
-.form-group input{width:100%;background:var(--dark3);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);padding:12px 14px;color:var(--white);font-size:14px;font-family:var(--ff-body);transition:border-color .2s}
+.form-group label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.form-group input{width:100%;background:var(--dark3);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:13px 16px;color:var(--white);font-size:14px;font-family:var(--ff-body);transition:border-color .2s}
 .form-group input:focus{outline:none;border-color:var(--green)}
 .form-group input::placeholder{color:#444}
-.modal-submit{width:100%;font-size:15px;font-weight:700;background:var(--green);color:var(--white);padding:15px;border-radius:var(--radius);border:none;cursor:pointer;letter-spacing:.03em;margin-top:8px;transition:background .2s,transform .15s}
+.form-group input.error{border-color:#ef4444}
+.modal-submit{width:100%;font-size:15px;font-weight:700;background:var(--green);color:var(--white);padding:16px;border-radius:var(--radius);border:none;cursor:pointer;letter-spacing:.04em;margin-top:8px;transition:background .2s,transform .15s}
 .modal-submit:hover{background:var(--green-dark);transform:translateY(-1px)}
-.modal-confirm{text-align:center;padding:20px 0}
-.modal-confirm-icon{font-size:48px;margin-bottom:12px}
-.modal-confirm h3{font-family:var(--ff-display);font-size:28px;font-weight:900;text-transform:uppercase;color:var(--green);margin-bottom:8px}
-.modal-confirm p{font-size:14px;color:var(--light);line-height:1.65}
+.modal-submit:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* ── BOOKING CONFIRMED (LOOP) ── */
+.confirm-panel{display:none;text-align:center;padding:8px 0}
+.confirm-check{width:64px;height:64px;border-radius:50%;background:rgba(122,194,49,.15);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:28px}
+.confirm-title{font-family:var(--ff-display);font-size:36px;font-weight:900;text-transform:uppercase;color:var(--green);margin-bottom:6px}
+.confirm-sub{font-size:14px;color:var(--light);line-height:1.7;margin-bottom:28px}
+.confirm-session-name{color:var(--white);font-weight:600}
+.loop-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:20px}
+.loop-btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:14px 12px;border-radius:var(--radius);font-size:13px;font-weight:700;letter-spacing:.03em;border:none;cursor:pointer;transition:all .2s;text-decoration:none}
+.loop-btn-cal{background:rgba(122,194,49,.1);color:var(--green);border:1px solid rgba(122,194,49,.25)}
+.loop-btn-cal:hover{background:rgba(122,194,49,.2)}
+.loop-btn-wa{background:rgba(37,211,102,.1);color:#25d366;border:1px solid rgba(37,211,102,.25)}
+.loop-btn-wa:hover{background:rgba(37,211,102,.2)}
+.loop-btn-next{background:rgba(255,255,255,.05);color:var(--white);border:1px solid rgba(255,255,255,.1)}
+.loop-btn-next:hover{border-color:rgba(255,255,255,.3)}
+.loop-btn-app{background:rgba(122,194,49,.9);color:var(--white);border:none}
+.loop-btn-app:hover{background:var(--green)}
+.loop-divider{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:4px 0 12px;text-align:center}
 
 @media(max-width:900px){.sessions-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:600px){.sessions-grid{grid-template-columns:1fr}.sessions-main{padding:32px 20px 80px}}
+@media(max-width:600px){.sessions-grid{grid-template-columns:1fr}.sessions-main{padding:32px 20px 80px}.loop-actions{grid-template-columns:1fr}}
 
 </style>
 </head>
@@ -171,13 +186,12 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 </nav>
 
 <main>
-  <!-- PAGE HERO -->
   <section class="page-hero">
     <div class="page-hero-inner">
       <div>
         <p class="page-hero-label">Book a session</p>
         <h1>Find your<br><span class="acc">free session</span></h1>
-        <p class="page-hero-sub">19 activities across Dubai, Al Ain and Muscat. Every session is free — always has been, always will be.</p>
+        <p class="page-hero-sub">12 sessions this week across Dubai, Al Ain and Muscat. Every session is free — always has been, always will be.</p>
       </div>
       <div class="page-hero-stats">
         <div class="ph-stat"><div class="ph-stat-num">19</div><div class="ph-stat-label">Activities</div></div>
@@ -187,36 +201,34 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
     </div>
   </section>
 
-  <!-- TRIBE FILTER -->
   <div class="filter-bar">
     <div class="filter-inner">
-      <button class="filter-tab active" onclick="filterTribe('all', this)">All Sessions</button>
+      <button class="filter-tab active" onclick="filterTribe('all',this)">All Sessions</button>
       <div class="filter-sep"></div>
-      <button class="filter-tab" onclick="filterTribe('better', this)">🧘 Better Tribe</button>
-      <button class="filter-tab" onclick="filterTribe('faster', this)">🏃 Faster Tribe</button>
-      <button class="filter-tab" onclick="filterTribe('stronger', this)">💪 Stronger Tribe</button>
+      <button class="filter-tab" onclick="filterTribe('better',this)">🧘 Better Tribe</button>
+      <button class="filter-tab" onclick="filterTribe('faster',this)">🏃 Faster Tribe</button>
+      <button class="filter-tab" onclick="filterTribe('stronger',this)">💪 Stronger Tribe</button>
     </div>
   </div>
 
-  <!-- SESSIONS -->
   <div class="sessions-main">
     <div class="sessions-toolbar">
       <p class="sessions-count"><strong id="sessionCount">12</strong> sessions this week</p>
       <div class="day-filters">
-        <button class="day-btn active" onclick="filterDay('all', this)">All days</button>
-        <button class="day-btn" onclick="filterDay('Monday', this)">Mon</button>
-        <button class="day-btn" onclick="filterDay('Tuesday', this)">Tue</button>
-        <button class="day-btn" onclick="filterDay('Wednesday', this)">Wed</button>
-        <button class="day-btn" onclick="filterDay('Thursday', this)">Thu</button>
-        <button class="day-btn" onclick="filterDay('Friday', this)">Fri</button>
-        <button class="day-btn" onclick="filterDay('Saturday', this)">Sat</button>
-        <button class="day-btn" onclick="filterDay('Sunday', this)">Sun</button>
+        <button class="day-btn active" onclick="filterDay('all',this)">All days</button>
+        <button class="day-btn" onclick="filterDay('Monday',this)">Mon</button>
+        <button class="day-btn" onclick="filterDay('Tuesday',this)">Tue</button>
+        <button class="day-btn" onclick="filterDay('Wednesday',this)">Wed</button>
+        <button class="day-btn" onclick="filterDay('Thursday',this)">Thu</button>
+        <button class="day-btn" onclick="filterDay('Friday',this)">Fri</button>
+        <button class="day-btn" onclick="filterDay('Saturday',this)">Sat</button>
+        <button class="day-btn" onclick="filterDay('Sunday',this)">Sun</button>
       </div>
     </div>
     <div class="sessions-grid" id="sessionsGrid">
       
     <article class="session-card reveal" data-tribe="faster" data-day="Monday"
-      onclick="openModal('Community Run','faster','Monday · 7:00 PM','Coach Hugo','Dubai Marina Walk','All paces welcome. We run together, no one left behind.')">
+      onclick="openModal('Community Run','faster','Monday · 7:00 PM','Hugo','Dubai Marina Walk','All paces welcome. We run together — nobody gets left behind. 5K loop, post-run hangout included.','Monday','7:00 PM')">
       <span class="sc-free">Free</span>
       <p class="sc-tribe faster">FASTER TRIBE</p>
       <h3 class="sc-name">Community Run</h3>
@@ -225,7 +237,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       <p class="sc-loc">Dubai Marina Walk</p>
     </article>
     <article class="session-card reveal" data-tribe="stronger" data-day="Tuesday"
-      onclick="openModal('Cardio Calisthenics','stronger','Tuesday · 7:00 PM','Coach Valentina','DIC Amphitheatre','Bodyweight strength and conditioning. All levels.')">
+      onclick="openModal('Cardio Calisthenics','stronger','Tuesday · 7:00 PM','Valentina','DIC Amphitheatre','Bodyweight strength meets conditioning. Zero equipment, maximum sweat. All levels absolutely welcome.','Tuesday','7:00 PM')">
       <span class="sc-free">Free</span>
       <p class="sc-tribe stronger">STRONGER TRIBE</p>
       <h3 class="sc-name">Cardio Calisthenics</h3>
@@ -234,7 +246,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       <p class="sc-loc">DIC Amphitheatre</p>
     </article>
     <article class="session-card reveal" data-tribe="better" data-day="Wednesday"
-      onclick="openModal('Traditional Yoga','better','Wednesday · 7:00 PM','Coach Manju','DIC Amphitheatre','Classic hatha yoga. Breathe, stretch, restore.')">
+      onclick="openModal('Traditional Yoga','better','Wednesday · 7:00 PM','Manju','DIC Amphitheatre','Classic hatha yoga under the open sky. Breathe in, let go, restore. Bring your mat.','Wednesday','7:00 PM')">
       <span class="sc-free">Free</span>
       <p class="sc-tribe better">BETTER TRIBE</p>
       <h3 class="sc-name">Traditional Yoga</h3>
@@ -243,16 +255,16 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       <p class="sc-loc">DIC Amphitheatre</p>
     </article>
     <article class="session-card reveal" data-tribe="faster" data-day="Wednesday"
-      onclick="openModal('Open Water Swim','faster','Wednesday · 6:30 AM','Coach Coach ATP','JBR Beach','Ocean swimming for all levels. Guided session.')">
+      onclick="openModal('Open Water Swim','faster','Wednesday · 6:30 AM','ATP Coach','JBR Beach','Ocean swimming in one of the world\'s most beautiful settings. Guided. Safe. Exhilarating.','Wednesday','6:30 AM')">
       <span class="sc-free">Free</span>
       <p class="sc-tribe faster">FASTER TRIBE</p>
       <h3 class="sc-name">Open Water Swim</h3>
       <p class="sc-time">Wednesday · 6:30 AM</p>
-      <p class="sc-coach">With Coach Coach ATP</p>
+      <p class="sc-coach">With Coach ATP Coach</p>
       <p class="sc-loc">JBR Beach</p>
     </article>
     <article class="session-card reveal" data-tribe="stronger" data-day="Friday"
-      onclick="openModal('Kickboxing','stronger','Friday · 7:00 PM','Coach Shodhan','Skydive Dubai','High-energy kickboxing class. Burn and build.')">
+      onclick="openModal('Kickboxing','stronger','Friday · 7:00 PM','Shodhan','Skydive Dubai','High-energy kickboxing session with the best view in Dubai. Burn hard, finish strong.','Friday','7:00 PM')">
       <span class="sc-free">Free</span>
       <p class="sc-tribe stronger">STRONGER TRIBE</p>
       <h3 class="sc-name">Kickboxing</h3>
@@ -261,7 +273,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       <p class="sc-loc">Skydive Dubai</p>
     </article>
     <article class="session-card reveal" data-tribe="better" data-day="Saturday"
-      onclick="openModal('Sound Healing','better','Saturday · 8:00 AM','Coach Manju','DIC Amphitheatre','Guided meditation and sound bath. Reset your week.')">
+      onclick="openModal('Sound Healing','better','Saturday · 8:00 AM','Manju','DIC Amphitheatre','Close the week with a guided meditation and sound bath. You didn\'t know you needed this until you try it.','Saturday','8:00 AM')">
       <span class="sc-free">Free</span>
       <p class="sc-tribe better">BETTER TRIBE</p>
       <h3 class="sc-name">Sound Healing</h3>
@@ -270,16 +282,16 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       <p class="sc-loc">DIC Amphitheatre</p>
     </article>
     <article class="session-card reveal" data-tribe="stronger" data-day="Saturday"
-      onclick="openModal('Military Bootcamp','stronger','Saturday · 7:00 AM','Coach Coach ATP','Al Formal Park, Abu Dhabi','Military-style functional training. Push your limits.')">
+      onclick="openModal('Military Bootcamp','stronger','Saturday · 7:00 AM','ATP Coach','Al Formal Park, Abu Dhabi','Military-style functional training. This one tests you. Show up and surprise yourself.','Saturday','7:00 AM')">
       <span class="sc-free">Free</span>
       <p class="sc-tribe stronger">STRONGER TRIBE</p>
       <h3 class="sc-name">Military Bootcamp</h3>
       <p class="sc-time">Saturday · 7:00 AM</p>
-      <p class="sc-coach">With Coach Coach ATP</p>
+      <p class="sc-coach">With Coach ATP Coach</p>
       <p class="sc-loc">Al Formal Park, Abu Dhabi</p>
     </article>
     <article class="session-card reveal" data-tribe="faster" data-day="Thursday"
-      onclick="openModal('Group Cycling','faster','Thursday · 6:30 AM','Coach Hugo','Dubai Marina','Road cycling group ride. All speeds welcome.')">
+      onclick="openModal('Group Cycling','faster','Thursday · 6:30 AM','Hugo','Dubai Marina','Road cycling group ride through Dubai at sunrise. All speeds welcome — just keep up 😄','Thursday','6:30 AM')">
       <span class="sc-free">Free</span>
       <p class="sc-tribe faster">FASTER TRIBE</p>
       <h3 class="sc-name">Group Cycling</h3>
@@ -288,7 +300,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       <p class="sc-loc">Dubai Marina</p>
     </article>
     <article class="session-card reveal" data-tribe="better" data-day="Sunday"
-      onclick="openModal('Pilates & Yoga','better','Sunday · 8:00 AM','Coach Valentina','DIC Amphitheatre','Core strength meets flexibility. Perfect combo.')">
+      onclick="openModal('Pilates & Yoga','better','Sunday · 8:00 AM','Valentina','DIC Amphitheatre','Core strength meets flexibility. The perfect way to start the week feeling like a new person.','Sunday','8:00 AM')">
       <span class="sc-free">Free</span>
       <p class="sc-tribe better">BETTER TRIBE</p>
       <h3 class="sc-name">Pilates & Yoga</h3>
@@ -297,7 +309,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       <p class="sc-loc">DIC Amphitheatre</p>
     </article>
     <article class="session-card reveal" data-tribe="stronger" data-day="Monday"
-      onclick="openModal('CrossTraining','stronger','Monday · 7:00 AM','Coach Shodhan','Skydive Dubai','Mixed training modalities. Strength, cardio, agility.')">
+      onclick="openModal('CrossTraining','stronger','Monday · 7:00 AM','Shodhan','Skydive Dubai','Mixed training modalities — strength, cardio, agility. Every session different, always hard.','Monday','7:00 AM')">
       <span class="sc-free">Free</span>
       <p class="sc-tribe stronger">STRONGER TRIBE</p>
       <h3 class="sc-name">CrossTraining</h3>
@@ -306,50 +318,89 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       <p class="sc-loc">Skydive Dubai</p>
     </article>
     <article class="session-card reveal" data-tribe="stronger" data-day="Thursday"
-      onclick="openModal('Dance Fitness','stronger','Thursday · 7:00 PM','Coach Coach ATP','DIC Amphitheatre','High-energy dance cardio. Just move and have fun.')">
+      onclick="openModal('Dance Fitness','stronger','Thursday · 7:00 PM','ATP Coach','DIC Amphitheatre','High-energy dance cardio. No coordination required. Just move, laugh and burn.','Thursday','7:00 PM')">
       <span class="sc-free">Free</span>
       <p class="sc-tribe stronger">STRONGER TRIBE</p>
       <h3 class="sc-name">Dance Fitness</h3>
       <p class="sc-time">Thursday · 7:00 PM</p>
-      <p class="sc-coach">With Coach Coach ATP</p>
+      <p class="sc-coach">With Coach ATP Coach</p>
       <p class="sc-loc">DIC Amphitheatre</p>
     </article>
     <article class="session-card reveal" data-tribe="faster" data-day="Friday"
-      onclick="openModal('Community Run','faster','Friday · 6:30 AM','Coach Hugo','Dubai Marina Walk','Morning run session. Start the day right.')">
+      onclick="openModal('Morning Run','faster','Friday · 6:30 AM','Hugo','Dubai Marina Walk','Start Friday right. 5K easy run, sunrise, good people. The best kind of alarm clock.','Friday','6:30 AM')">
       <span class="sc-free">Free</span>
       <p class="sc-tribe faster">FASTER TRIBE</p>
-      <h3 class="sc-name">Community Run</h3>
+      <h3 class="sc-name">Morning Run</h3>
       <p class="sc-time">Friday · 6:30 AM</p>
       <p class="sc-coach">With Coach Hugo</p>
       <p class="sc-loc">Dubai Marina Walk</p>
     </article>
+      <div class="empty-state" id="emptyState" style="display:none">
+        <h3>No sessions found</h3>
+        <p style="margin-bottom:20px">Try a different day or tribe filter.</p>
+        <button class="btn-primary" onclick="resetFilters()">Show all sessions</button>
+      </div>
     </div>
   </div>
 </main>
 
 <!-- BOOKING MODAL -->
-<div class="modal-overlay" id="modalOverlay" onclick="closeModalOutside(event)">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal()">×</button>
+<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalName">
+  <div class="modal" id="modalBox">
+    <button class="modal-close" onclick="closeModal()" aria-label="Close">×</button>
+
+    <!-- STEP 1: BOOKING FORM -->
     <div id="modalForm">
       <p class="modal-tribe" id="modalTribe"></p>
       <h2 class="modal-name" id="modalName"></h2>
-      <div class="modal-meta">
-        <span><strong>When:</strong> <span id="modalTime"></span></span>
-        <span><strong>Coach:</strong> <span id="modalCoach"></span></span>
-        <span><strong>Where:</strong> <span id="modalLoc"></span></span>
-        <span id="modalDesc" style="margin-top:8px;color:var(--muted)"></span>
+      <div class="modal-meta" id="modalMeta"></div>
+      <div class="form-group">
+        <label for="bookName">Your name</label>
+        <input type="text" id="bookName" placeholder="Fredy Martins" autocomplete="name">
       </div>
-      <div class="form-group"><label>Your name</label><input type="text" id="bookName" placeholder="Fredy Martins"></div>
-      <div class="form-group"><label>Email</label><input type="email" id="bookEmail" placeholder="fredy@atthepark.world"></div>
-      <div class="form-group"><label>Phone (optional)</label><input type="tel" id="bookPhone" placeholder="+971 50 000 0000"></div>
-      <button class="modal-submit" onclick="submitBooking()">Book my free spot →</button>
+      <div class="form-group">
+        <label for="bookEmail">Email address</label>
+        <input type="email" id="bookEmail" placeholder="you@email.com" autocomplete="email">
+      </div>
+      <div class="form-group">
+        <label for="bookPhone">WhatsApp number (optional)</label>
+        <input type="tel" id="bookPhone" placeholder="+971 50 000 0000" autocomplete="tel">
+      </div>
+      <button class="modal-submit" id="modalSubmit" onclick="submitBooking()">Book my free spot →</button>
     </div>
-    <div id="modalConfirm" class="modal-confirm" style="display:none">
-      <div class="modal-confirm-icon">🎉</div>
-      <h3>You're in!</h3>
-      <p>See you at <strong id="confirmSession"></strong>.<br>We'll send confirmation to your email.<br><br>Never train alone.</p>
+
+    <!-- STEP 2: CONFIRMATION + LOOP -->
+    <div class="confirm-panel" id="confirmPanel">
+      <div class="confirm-check">✓</div>
+      <h2 class="confirm-title">You're in!</h2>
+      <p class="confirm-sub">
+        See you at <span class="confirm-session-name" id="confirmName"></span>.<br>
+        Confirmation sent to your email. See you there! 🙌
+      </p>
+
+      <div class="loop-actions">
+        <a class="loop-btn loop-btn-cal" id="calBtn" href="#" target="_blank" rel="noopener">
+          📅 Add to Calendar
+        </a>
+        <a class="loop-btn loop-btn-wa" id="waBtn" href="#" target="_blank" rel="noopener">
+          💬 Invite a Friend
+        </a>
+      </div>
+
+      <div class="loop-divider">Keep going</div>
+
+      <div class="loop-actions">
+        <button class="loop-btn loop-btn-next" onclick="closeModalAndScroll()">
+          🗓 See Next Sessions
+        </button>
+        <a class="loop-btn loop-btn-app"
+          href="https://apps.apple.com/ae/app/attheparkworld/id6469771815"
+          target="_blank" rel="noopener">
+          📲 Download the App
+        </a>
+      </div>
     </div>
+
   </div>
 </div>
 
@@ -387,8 +438,13 @@ var obs = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.is
 document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
 </script>
 <script>
-var currentTribe = 'all';
-var currentDay = 'all';
+// Active nav
+document.querySelectorAll('.nav-links a').forEach(function(a){
+  if(a.getAttribute('href') === 'sessions.html') a.classList.add('active');
+});
+
+var currentTribe = 'all', currentDay = 'all';
+var activeSession = {};
 
 function filterTribe(tribe, btn) {
   currentTribe = tribe;
@@ -402,48 +458,129 @@ function filterDay(day, btn) {
   btn.classList.add('active');
   applyFilters();
 }
+function resetFilters() {
+  currentTribe = 'all'; currentDay = 'all';
+  document.querySelectorAll('.filter-tab')[0].click();
+  document.querySelectorAll('.day-btn')[0].click();
+}
 function applyFilters() {
   var cards = document.querySelectorAll('.session-card');
   var count = 0;
   cards.forEach(function(c) {
-    var tribeOk = currentTribe === 'all' || c.dataset.tribe === currentTribe;
-    var dayOk = currentDay === 'all' || c.dataset.day === currentDay;
-    var show = tribeOk && dayOk;
-    c.style.display = show ? '' : 'none';
-    if(show) count++;
+    var ok = (currentTribe === 'all' || c.dataset.tribe === currentTribe)
+           && (currentDay   === 'all' || c.dataset.day   === currentDay);
+    c.style.display = ok ? '' : 'none';
+    if(ok) count++;
   });
   document.getElementById('sessionCount').textContent = count;
+  document.getElementById('emptyState').style.display = count === 0 ? 'flex' : 'none';
 }
 
-function openModal(name, tribe, time, coach, loc, desc) {
+// URL param auto-filter on load
+(function(){
+  var params = new URLSearchParams(window.location.search);
+  var tribe = params.get('tribe');
+  if(tribe) {
+    var btn = document.querySelector('.filter-tab[onclick*="\'' + tribe + '\'"]');
+    if(btn) btn.click();
+  }
+})();
+
+function openModal(name, tribe, dayTime, coach, loc, desc, day, time) {
+  activeSession = { name:name, tribe:tribe, dayTime:dayTime, coach:coach, loc:loc, desc:desc, day:day, time:time };
   document.getElementById('modalTribe').textContent = tribe.toUpperCase() + ' TRIBE';
   document.getElementById('modalName').textContent = name;
-  document.getElementById('modalTime').textContent = time;
-  document.getElementById('modalCoach').textContent = coach;
-  document.getElementById('modalLoc').textContent = loc;
-  document.getElementById('modalDesc').textContent = desc;
-  document.getElementById('modalForm').style.display = '';
-  document.getElementById('modalConfirm').style.display = 'none';
+  document.getElementById('modalMeta').innerHTML =
+    '<span><strong>When:</strong> ' + dayTime + '</span> ' +
+    '<span><strong>Coach:</strong> ' + coach + '</span> ' +
+    '<span><strong>Where:</strong> ' + loc + '</span> ' +
+    '<span style="margin-top:6px;display:block;font-style:italic;color:var(--muted)">' + desc + '</span>';
+  document.getElementById('modalForm').style.display = 'block';
+  document.getElementById('confirmPanel').style.display = 'none';
+  document.getElementById('bookName').value = '';
+  document.getElementById('bookEmail').value = '';
+  document.getElementById('bookPhone').value = '';
+  document.getElementById('bookName').classList.remove('error');
+  document.getElementById('bookEmail').classList.remove('error');
   document.getElementById('modalOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
+  setTimeout(function(){ document.getElementById('bookName').focus(); }, 300);
 }
+
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('open');
   document.body.style.overflow = '';
 }
-function closeModalOutside(e) {
-  if(e.target === document.getElementById('modalOverlay')) closeModal();
+function closeModalAndScroll() {
+  closeModal();
+  document.getElementById('sessionsGrid').scrollIntoView({behavior:'smooth', block:'start'});
 }
+
+function validateEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+
 function submitBooking() {
-  var name = document.getElementById('bookName').value.trim();
+  var name  = document.getElementById('bookName').value.trim();
   var email = document.getElementById('bookEmail').value.trim();
-  if(!name || !email) { alert('Please enter your name and email.'); return; }
-  var session = document.getElementById('modalName').textContent;
-  document.getElementById('confirmSession').textContent = session;
-  document.getElementById('modalForm').style.display = 'none';
-  document.getElementById('modalConfirm').style.display = 'block';
+  var ok = true;
+  if(!name)             { document.getElementById('bookName').classList.add('error');  ok = false; }
+  if(!validateEmail(email)) { document.getElementById('bookEmail').classList.add('error'); ok = false; }
+  if(!ok) return;
+
+  var btn = document.getElementById('modalSubmit');
+  btn.disabled = true;
+  btn.textContent = 'Booking...';
+
+  setTimeout(function() {
+    showConfirmation(name, email);
+  }, 800);
 }
-document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeModal(); });
+
+function showConfirmation(name, email) {
+  var s = activeSession;
+  document.getElementById('confirmName').textContent = s.name + ' · ' + s.dayTime;
+
+  // ── ADD TO CALENDAR (Google Calendar) ──
+  var startDate = getNextDateForDay(s.day, s.time);
+  var gcalUrl = 'https://calendar.google.com/calendar/render?action=TEMPLATE'
+    + '&text=' + encodeURIComponent('ATP: ' + s.name)
+    + '&dates=' + startDate.start + '/' + startDate.end
+    + '&details=' + encodeURIComponent('Free session with At The Park.\nCoach: ' + s.coach + '\nLocation: ' + s.loc + '\natthepark.world')
+    + '&location=' + encodeURIComponent(s.loc)
+    + '&sf=true&output=xml';
+  document.getElementById('calBtn').href = gcalUrl;
+
+  // ── WHATSAPP INVITE ──
+  var waMsg = '👋 Hey! I just booked a free ' + s.name + ' session at At The Park — ' + s.dayTime + ' at ' + s.loc + '.\n\nJoin me! It\'s completely free 🙌\nBook here: https://atthepark.world/sessions.html';
+  document.getElementById('waBtn').href = 'https://wa.me/?text=' + encodeURIComponent(waMsg);
+
+  document.getElementById('modalForm').style.display = 'none';
+  document.getElementById('confirmPanel').style.display = 'block';
+}
+
+function getNextDateForDay(dayName, timeStr) {
+  var days = {Sunday:0,Monday:1,Tuesday:2,Wednesday:3,Thursday:4,Friday:5,Saturday:6};
+  var target = days[dayName] || 0;
+  var now = new Date();
+  var diff = (target - now.getDay() + 7) % 7 || 7;
+  var d = new Date(now.getTime() + diff * 86400000);
+  var parts = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  var h = parts ? parseInt(parts[1]) : 7;
+  var m = parts ? parseInt(parts[2]) : 0;
+  var pm = parts && parts[3].toUpperCase() === 'PM';
+  if(pm && h !== 12) h += 12;
+  if(!pm && h === 12) h = 0;
+  d.setHours(h, m, 0, 0);
+  var fmt = function(dt) {
+    return dt.toISOString().replace(/[-:]/g,'').split('.')[0] + 'Z';
+  };
+  var end = new Date(d.getTime() + 3600000);
+  return { start: fmt(d), end: fmt(end) };
+}
+
+document.getElementById('modalOverlay').addEventListener('click', function(e){
+  if(e.target === this) closeModal();
+});
+document.addEventListener('keydown', function(e){ if(e.key === 'Escape') closeModal(); });
 </script>
 </body>
 </html>

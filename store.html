@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ATP Store — Wear It. Share It. Let's Move Together | At The Park</title>
 <meta name="description" content="Shop the At The Park collection. Tanks, tees, shorts, mats and accessories. Free delivery on orders over AED 150.">
+<meta property="og:title" content="ATP Store | At The Park Fitness Community">
+<meta property="og:description" content="Gear made for the community. Every purchase supports free sessions.">
+<meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -82,56 +85,96 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 @media(max-width:600px){.footer-top{grid-template-columns:1fr;gap:28px}}
 
 
-/* STORE LAYOUT */
+/* ── SHOPIFY SETUP BANNER ── */
+.shopify-setup-banner{background:rgba(122,194,49,.08);border:1px solid rgba(122,194,49,.2);border-radius:var(--radius);padding:14px 20px;margin-bottom:24px;display:flex;align-items:center;gap:12px;font-size:13px;color:var(--light);display:none}
+.shopify-setup-banner.show{display:flex}
+.shopify-setup-banner strong{color:var(--white)}
+
+/* ── STORE LAYOUT ── */
 .store-main{padding:48px 40px 100px;max-width:var(--max);margin:0 auto}
-.store-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:32px;gap:16px;flex-wrap:wrap}
+.store-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;gap:16px;flex-wrap:wrap}
 .store-cats{display:flex;gap:6px;flex-wrap:wrap}
 .cat-btn{font-size:12px;font-weight:600;padding:7px 16px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;letter-spacing:.03em}
 .cat-btn.active,.cat-btn:hover{border-color:var(--green);color:var(--green);background:rgba(122,194,49,.08)}
-.store-shipping{background:rgba(122,194,49,.07);border:1px solid rgba(122,194,49,.2);border-radius:var(--radius);padding:12px 20px;display:flex;align-items:center;gap:10px;margin-bottom:28px}
-.store-shipping p{font-size:13px;color:var(--light)}
-.store-shipping p strong{color:var(--white)}
 
-/* PRODUCT GRID */
+/* ── PRODUCT GRID ── */
 .product-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
-.product-card{background:var(--dark2);border-radius:var(--radius-lg);overflow:hidden;border:1px solid rgba(255,255,255,.06);transition:transform .2s,border-color .2s;cursor:pointer}
+.product-card{background:var(--dark2);border-radius:var(--radius-lg);overflow:hidden;border:1px solid rgba(255,255,255,.06);transition:transform .2s,border-color .2s}
 .product-card:hover{transform:translateY(-4px);border-color:rgba(122,194,49,.25)}
 .product-img{aspect-ratio:3/4;background:var(--dark3);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden}
-.product-img-placeholder{font-size:11px;color:#333;text-transform:uppercase;letter-spacing:.06em;text-align:center;line-height:1.8}
-.product-badge{position:absolute;top:12px;left:12px;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--green);color:var(--white);letter-spacing:.04em}
-.product-wishlist{position:absolute;top:12px;right:12px;width:30px;height:30px;border-radius:50%;background:rgba(10,10,10,.7);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;transition:background .2s}
-.product-wishlist:hover{background:rgba(122,194,49,.2)}
+.product-img img{width:100%;height:100%;object-fit:cover;display:block}
+.product-img-placeholder{font-size:11px;color:#333;text-transform:uppercase;letter-spacing:.06em;text-align:center;line-height:2;padding:20px}
+.product-badge{position:absolute;top:12px;left:12px;font-size:10px;font-weight:700;padding:3px 10px;border-radius:20px;background:var(--green);color:var(--white);letter-spacing:.04em;z-index:1}
 .product-body{padding:16px}
 .product-name{font-size:15px;font-weight:600;color:var(--white);margin-bottom:3px}
-.product-sub{font-size:12px;color:var(--muted);margin-bottom:10px}
-.product-footer{display:flex;align-items:center;justify-content:space-between}
+.product-sub{font-size:12px;color:var(--muted);margin-bottom:12px}
+.product-footer{display:flex;align-items:center;justify-content:space-between;gap:8px}
 .product-price{font-family:var(--ff-display);font-size:22px;font-weight:800;color:var(--green)}
-.product-add{font-size:12px;font-weight:700;background:var(--green);color:var(--white);border:none;padding:7px 14px;border-radius:var(--radius);cursor:pointer;transition:background .2s;letter-spacing:.03em}
+.product-add{font-size:12px;font-weight:700;background:var(--green);color:var(--white);border:none;padding:8px 16px;border-radius:var(--radius);cursor:pointer;transition:background .2s;white-space:nowrap}
 .product-add:hover{background:var(--green-dark)}
+.product-add:disabled{opacity:.5;cursor:not-allowed}
 
-/* POINTS BANNER */
+/* ── SKELETON LOADING ── */
+.skeleton{background:linear-gradient(90deg,var(--dark3) 25%,var(--dark2) 50%,var(--dark3) 75%);background-size:200% 100%;animation:shimmer 1.5s infinite;border-radius:var(--radius)}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skeleton-card{background:var(--dark2);border-radius:var(--radius-lg);overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+.skeleton-img{aspect-ratio:3/4}
+.skeleton-body{padding:16px;display:flex;flex-direction:column;gap:8px}
+.skeleton-line{height:12px;border-radius:4px}
+
+/* ── POINTS BANNER ── */
 .points-banner{background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-lg);padding:24px 28px;margin-bottom:28px;display:grid;grid-template-columns:1fr auto;align-items:center;gap:24px}
 .pb-title{font-family:var(--ff-display);font-size:22px;font-weight:800;text-transform:uppercase;color:var(--white);margin-bottom:4px}
 .pb-title span{color:var(--green)}
 .pb-desc{font-size:13px;color:var(--muted);line-height:1.6}
 
-/* CART TOAST */
-.cart-toast{position:fixed;bottom:32px;right:32px;background:var(--green);color:var(--white);padding:14px 22px;border-radius:var(--radius-lg);font-size:14px;font-weight:600;z-index:300;transform:translateY(80px);opacity:0;transition:transform .3s,opacity .3s;box-shadow:0 8px 32px rgba(0,0,0,.4)}
-.cart-toast.show{transform:translateY(0);opacity:1}
+/* ── CART DRAWER ── */
+.cart-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:300;opacity:0;pointer-events:none;transition:opacity .3s}
+.cart-overlay.open{opacity:1;pointer-events:all}
+.cart-drawer{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:95vw;background:var(--dark2);border-left:1px solid rgba(255,255,255,.08);z-index:301;transform:translateX(100%);transition:transform .35s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
+.cart-drawer.open{transform:translateX(0)}
+.cart-header{padding:24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.cart-header h3{font-family:var(--ff-display);font-size:24px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+.cart-close{width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--muted);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.cart-close:hover{border-color:var(--white);color:var(--white)}
+.cart-items{flex:1;overflow-y:auto;padding:20px}
+.cart-empty{text-align:center;padding:60px 20px;color:var(--muted)}
+.cart-empty p{margin-bottom:20px;font-size:14px}
+.cart-item{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.06);align-items:center}
+.cart-item-img{width:64px;height:64px;background:var(--dark3);border-radius:var(--radius);flex-shrink:0;overflow:hidden}
+.cart-item-img img{width:100%;height:100%;object-fit:cover}
+.cart-item-name{font-size:14px;font-weight:600;color:var(--white);margin-bottom:2px}
+.cart-item-variant{font-size:12px;color:var(--muted)}
+.cart-item-price{font-family:var(--ff-display);font-size:18px;font-weight:800;color:var(--green);margin-top:4px}
+.cart-item-remove{margin-left:auto;background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;transition:color .2s;flex-shrink:0}
+.cart-item-remove:hover{color:#ef4444}
+.cart-footer{padding:20px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
+.cart-total{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.cart-total-label{font-size:14px;color:var(--muted)}
+.cart-total-price{font-family:var(--ff-display);font-size:28px;font-weight:900;color:var(--white)}
+.cart-checkout-btn{width:100%;padding:16px;background:var(--green);color:var(--white);font-size:15px;font-weight:700;border:none;border-radius:var(--radius);cursor:pointer;letter-spacing:.04em;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.cart-checkout-btn:hover{background:var(--green-dark)}
+.cart-checkout-btn:disabled{opacity:.5;cursor:not-allowed}
+.cart-shopify-note{font-size:11px;color:var(--muted);text-align:center;margin-top:10px}
 
-/* CART ICON */
-.cart-btn{position:relative;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--white);border:1px solid rgba(255,255,255,.2);padding:9px 16px;border-radius:var(--radius);background:transparent;cursor:pointer;transition:border-color .2s}
-.cart-btn:hover{border-color:var(--green)}
-.cart-count{background:var(--green);color:var(--white);font-size:10px;font-weight:800;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-left:2px}
+/* ── CART ICON IN NAV ── */
+.cart-nav-btn{position:relative;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--white);border:1px solid rgba(255,255,255,.2);padding:9px 16px;border-radius:var(--radius);background:transparent;cursor:pointer;transition:border-color .2s}
+.cart-nav-btn:hover{border-color:var(--green)}
+.cart-badge{background:var(--green);color:var(--white);font-size:10px;font-weight:800;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:absolute;top:-6px;right:-6px}
+
+/* ── ERROR STATE ── */
+.store-error{text-align:center;padding:80px 20px;color:var(--muted)}
+.store-error h3{font-family:var(--ff-display);font-size:28px;font-weight:900;text-transform:uppercase;color:var(--white);margin-bottom:8px}
 
 @media(max-width:1100px){.product-grid{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:768px){.product-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:480px){.product-grid{grid-template-columns:repeat(2,1fr);gap:8px}.store-main{padding:24px 16px 80px}}
+@media(max-width:480px){.product-grid{grid-template-columns:repeat(2,1fr);gap:8px}.store-main{padding:24px 16px 80px}.points-banner{grid-template-columns:1fr}}
 
 </style>
 </head>
 <body>
 
+<!-- NAV with cart button injected -->
 <nav id="nav">
   <div class="nav-inner">
     <a href="index.html" class="nav-logo" aria-label="At The Park">
@@ -140,13 +183,16 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
     <ul class="nav-links">
       <li><a href="sessions.html">Sessions</a></li>
       <li><a href="community.html">Community</a></li>
-      <li><a href="store.html">Store</a></li>
+      <li><a href="store.html" class="active">Store</a></li>
       <li><a href="index.html#partners">Partners</a></li>
       <li><a href="index.html#story">About</a></li>
     </ul>
     <div class="nav-actions">
-      <button class="btn-ghost">Log in</button>
-      <button class="btn-primary">Join free →</button>
+      <button class="cart-nav-btn" onclick="openCart()" aria-label="Open cart">
+        🛒 Cart
+        <span class="cart-badge" id="cartBadge" style="display:none">0</span>
+      </button>
+      <button class="btn-primary" onclick="window.location.href='sessions.html'">Find a session →</button>
     </div>
     <div class="hamburger"><span></span><span></span><span></span></div>
   </div>
@@ -158,177 +204,94 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       <div>
         <p class="page-hero-label">ATP Store</p>
         <h1>Wear it.<br><span class="acc">Share it.</span></h1>
-        <p class="page-hero-sub">Gear made for the community, by the community. Every purchase supports the mission — keeping sessions free forever.</p>
+        <p class="page-hero-sub">Gear made for the community. Every purchase helps keep the sessions free for everyone, forever.</p>
       </div>
       <div class="page-hero-stats">
-        <div class="ph-stat"><div class="ph-stat-num">8</div><div class="ph-stat-label">Products</div></div>
+        <div class="ph-stat"><div class="ph-stat-num" id="productCountStat">—</div><div class="ph-stat-label">Products</div></div>
         <div class="ph-stat"><div class="ph-stat-num">AED 150</div><div class="ph-stat-label">Free shipping</div></div>
       </div>
     </div>
   </section>
 
   <div class="store-main">
+
     <div class="points-banner reveal">
       <div>
         <div class="pb-title">Earn points. <span>Save more.</span></div>
-        <p class="pb-desc">Every session you attend earns ATP points. Redeem them for discounts on your next order. 280 points = 10% off.</p>
+        <p class="pb-desc">Every session you attend earns ATP points. Redeem them for discounts. 280 points = 10% off your order.</p>
       </div>
-      <button class="btn-primary">Download app →</button>
+      <a href="https://apps.apple.com/ae/app/attheparkworld/id6469771815" target="_blank" rel="noopener" class="btn-primary" style="white-space:nowrap">Download app →</a>
     </div>
 
-    <div class="store-shipping reveal">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#7AC231" stroke-width="1.8" stroke-linecap="round"><path d="M1 8h10m0 0l-3-3m3 3l-3 3M11 4h2a2 2 0 012 2v4a2 2 0 01-2 2h-2"/></svg>
-      <p><strong>Free delivery on orders over AED 150.</strong> Delivered across UAE in 2–4 business days. Free returns within 14 days.</p>
+    <!-- SETUP BANNER (shown when Shopify token not configured) -->
+    <div class="shopify-setup-banner" id="setupBanner">
+      🔧 <span><strong>Shopify not yet connected.</strong> Add your Storefront API token to activate live products. <a href="#shopify-setup" style="color:var(--green)">See instructions below ↓</a></span>
     </div>
 
     <div class="store-toolbar">
-      <div class="store-cats">
+      <div class="store-cats" id="catFilters">
         <button class="cat-btn active" onclick="filterCat('all',this)">All</button>
-        <button class="cat-btn" onclick="filterCat('tops',this)">Tops</button>
-        <button class="cat-btn" onclick="filterCat('bottoms',this)">Bottoms</button>
-        <button class="cat-btn" onclick="filterCat('gear',this)">Gear</button>
-        <button class="cat-btn" onclick="filterCat('accessories',this)">Accessories</button>
       </div>
-      <button class="cart-btn" onclick="openCart()">
-        🛒 Cart <span class="cart-count" id="cartCount">0</span>
-      </button>
     </div>
 
+    <!-- PRODUCT GRID (populated by Shopify or fallback) -->
     <div class="product-grid" id="productGrid">
-      
-    <article class="product-card" data-cat="tops"
-      onclick="addToCart('FlowFit Tank', 'AED 79')">
-      <div class="product-img">
-        <span class="product-badge">Bestseller</span>
-        <button class="product-wishlist" onclick="event.stopPropagation()">♡</button>
-        <p class="product-img-placeholder">👕<br>FlowFit Tank</p>
-      </div>
-      <div class="product-body">
-        <div class="product-name">FlowFit Tank</div>
-        <div class="product-sub">Men · Athletic fit</div>
-        <div class="product-footer">
-          <div class="product-price">AED 79</div>
-          <button class="product-add" onclick="event.stopPropagation();addToCart('FlowFit Tank','AED 79')">Add +</button>
-        </div>
-      </div>
-    </article>
-    <article class="product-card" data-cat="gear"
-      onclick="addToCart('ATP Workout Mat', 'AED 150')">
-      <div class="product-img">
-        <span class="product-badge">New</span>
-        <button class="product-wishlist" onclick="event.stopPropagation()">♡</button>
-        <p class="product-img-placeholder">🧘<br>ATP Workout Mat</p>
-      </div>
-      <div class="product-body">
-        <div class="product-name">ATP Workout Mat</div>
-        <div class="product-sub">Non-slip · 6mm</div>
-        <div class="product-footer">
-          <div class="product-price">AED 150</div>
-          <button class="product-add" onclick="event.stopPropagation();addToCart('ATP Workout Mat','AED 150')">Add +</button>
-        </div>
-      </div>
-    </article>
-    <article class="product-card" data-cat="tops"
-      onclick="addToCart('AdaptMotion Tee', 'AED 99')">
-      <div class="product-img">
-        
-        <button class="product-wishlist" onclick="event.stopPropagation()">♡</button>
-        <p class="product-img-placeholder">👚<br>AdaptMotion Tee</p>
-      </div>
-      <div class="product-body">
-        <div class="product-name">AdaptMotion Tee</div>
-        <div class="product-sub">Women · Athletic fit</div>
-        <div class="product-footer">
-          <div class="product-price">AED 99</div>
-          <button class="product-add" onclick="event.stopPropagation();addToCart('AdaptMotion Tee','AED 99')">Add +</button>
-        </div>
-      </div>
-    </article>
-    <article class="product-card" data-cat="tops"
-      onclick="addToCart('UrbanEase PIN Tee', 'AED 109')">
-      <div class="product-img">
-        
-        <button class="product-wishlist" onclick="event.stopPropagation()">♡</button>
-        <p class="product-img-placeholder">👕<br>UrbanEase PIN Tee</p>
-      </div>
-      <div class="product-body">
-        <div class="product-name">UrbanEase PIN Tee</div>
-        <div class="product-sub">Men · Regular fit</div>
-        <div class="product-footer">
-          <div class="product-price">AED 109</div>
-          <button class="product-add" onclick="event.stopPropagation();addToCart('UrbanEase PIN Tee','AED 109')">Add +</button>
-        </div>
-      </div>
-    </article>
-    <article class="product-card" data-cat="accessories"
-      onclick="addToCart('ATP Performance Cap', 'AED 65')">
-      <div class="product-img">
-        
-        <button class="product-wishlist" onclick="event.stopPropagation()">♡</button>
-        <p class="product-img-placeholder">🧢<br>ATP Performance Cap</p>
-      </div>
-      <div class="product-body">
-        <div class="product-name">ATP Performance Cap</div>
-        <div class="product-sub">Unisex · One size</div>
-        <div class="product-footer">
-          <div class="product-price">AED 65</div>
-          <button class="product-add" onclick="event.stopPropagation();addToCart('ATP Performance Cap','AED 65')">Add +</button>
-        </div>
-      </div>
-    </article>
-    <article class="product-card" data-cat="bottoms"
-      onclick="addToCart('TrailBlaze Shorts', 'AED 119')">
-      <div class="product-img">
-        <span class="product-badge">New</span>
-        <button class="product-wishlist" onclick="event.stopPropagation()">♡</button>
-        <p class="product-img-placeholder">🩳<br>TrailBlaze Shorts</p>
-      </div>
-      <div class="product-body">
-        <div class="product-name">TrailBlaze Shorts</div>
-        <div class="product-sub">Men · 7 inch</div>
-        <div class="product-footer">
-          <div class="product-price">AED 119</div>
-          <button class="product-add" onclick="event.stopPropagation();addToCart('TrailBlaze Shorts','AED 119')">Add +</button>
-        </div>
-      </div>
-    </article>
-    <article class="product-card" data-cat="gear"
-      onclick="addToCart('ATP Water Bottle', 'AED 55')">
-      <div class="product-img">
-        
-        <button class="product-wishlist" onclick="event.stopPropagation()">♡</button>
-        <p class="product-img-placeholder">🍶<br>ATP Water Bottle</p>
-      </div>
-      <div class="product-body">
-        <div class="product-name">ATP Water Bottle</div>
-        <div class="product-sub">750ml · BPA free</div>
-        <div class="product-footer">
-          <div class="product-price">AED 55</div>
-          <button class="product-add" onclick="event.stopPropagation();addToCart('ATP Water Bottle','AED 55')">Add +</button>
-        </div>
-      </div>
-    </article>
-    <article class="product-card" data-cat="tops"
-      onclick="addToCart('Community Hoodie', 'AED 189')">
-      <div class="product-img">
-        <span class="product-badge">Limited</span>
-        <button class="product-wishlist" onclick="event.stopPropagation()">♡</button>
-        <p class="product-img-placeholder">🧥<br>Community Hoodie</p>
-      </div>
-      <div class="product-body">
-        <div class="product-name">Community Hoodie</div>
-        <div class="product-sub">Unisex · Oversized</div>
-        <div class="product-footer">
-          <div class="product-price">AED 189</div>
-          <button class="product-add" onclick="event.stopPropagation();addToCart('Community Hoodie','AED 189')">Add +</button>
-        </div>
-      </div>
-    </article>
+      <!-- skeleton loaders -->
+      $<div class="skeleton-card"><div class="skeleton skeleton-img"></div><div class="skeleton-body"><div class="skeleton skeleton-line" style="width:70%"></div><div class="skeleton skeleton-line" style="width:45%"></div><div class="skeleton skeleton-line" style="width:55%;height:18px"></div></div></div><div class="skeleton-card"><div class="skeleton skeleton-img"></div><div class="skeleton-body"><div class="skeleton skeleton-line" style="width:70%"></div><div class="skeleton skeleton-line" style="width:45%"></div><div class="skeleton skeleton-line" style="width:55%;height:18px"></div></div></div><div class="skeleton-card"><div class="skeleton skeleton-img"></div><div class="skeleton-body"><div class="skeleton skeleton-line" style="width:70%"></div><div class="skeleton skeleton-line" style="width:45%"></div><div class="skeleton skeleton-line" style="width:55%;height:18px"></div></div></div><div class="skeleton-card"><div class="skeleton skeleton-img"></div><div class="skeleton-body"><div class="skeleton skeleton-line" style="width:70%"></div><div class="skeleton skeleton-line" style="width:45%"></div><div class="skeleton skeleton-line" style="width:55%;height:18px"></div></div></div><div class="skeleton-card"><div class="skeleton skeleton-img"></div><div class="skeleton-body"><div class="skeleton skeleton-line" style="width:70%"></div><div class="skeleton skeleton-line" style="width:45%"></div><div class="skeleton skeleton-line" style="width:55%;height:18px"></div></div></div><div class="skeleton-card"><div class="skeleton skeleton-img"></div><div class="skeleton-body"><div class="skeleton skeleton-line" style="width:70%"></div><div class="skeleton skeleton-line" style="width:45%"></div><div class="skeleton skeleton-line" style="width:55%;height:18px"></div></div></div><div class="skeleton-card"><div class="skeleton skeleton-img"></div><div class="skeleton-body"><div class="skeleton skeleton-line" style="width:70%"></div><div class="skeleton skeleton-line" style="width:45%"></div><div class="skeleton skeleton-line" style="width:55%;height:18px"></div></div></div><div class="skeleton-card"><div class="skeleton skeleton-img"></div><div class="skeleton-body"><div class="skeleton skeleton-line" style="width:70%"></div><div class="skeleton skeleton-line" style="width:45%"></div><div class="skeleton skeleton-line" style="width:55%;height:18px"></div></div></div>
     </div>
+
+    <!-- SHOPIFY SETUP INSTRUCTIONS -->
+    <div id="shopify-setup" style="margin-top:80px;padding:40px;background:var(--dark2);border-radius:var(--radius-lg);border:1px solid rgba(255,255,255,.08)">
+      <h2 style="font-family:var(--ff-display);font-size:32px;font-weight:900;text-transform:uppercase;margin-bottom:8px">
+        🔗 Connect <span style="color:var(--green)">Shopify</span>
+      </h2>
+      <p style="color:var(--muted);font-size:14px;line-height:1.8;margin-bottom:24px">
+        Your ATP store loads products live from Shopify. To activate it, you need a <strong style="color:var(--white)">Storefront API access token</strong> from your Shopify admin. Here's how:
+      </p>
+      <ol style="color:var(--light);font-size:14px;line-height:2.2;padding-left:20px;margin-bottom:28px">
+        <li>Go to your Shopify admin: <a href="https://admin.shopify.com/store/atp-store-7903" target="_blank" style="color:var(--green)">admin.shopify.com/store/atp-store-7903</a></li>
+        <li>Click <strong style="color:var(--white)">Settings → Apps and sales channels → Develop apps</strong></li>
+        <li>Click <strong style="color:var(--white)">Create an app</strong> → name it "ATP Website"</li>
+        <li>Click <strong style="color:var(--white)">Configure Storefront API scopes</strong></li>
+        <li>Enable: <code style="color:var(--green);background:var(--dark3);padding:2px 6px;border-radius:4px">unauthenticated_read_product_listings</code> and <code style="color:var(--green);background:var(--dark3);padding:2px 6px;border-radius:4px">unauthenticated_write_checkouts</code></li>
+        <li>Click <strong style="color:var(--white)">Save → Install app → Reveal token</strong></li>
+        <li>Copy the token and paste it into this file: find <code style="color:var(--green);background:var(--dark3);padding:2px 6px;border-radius:4px">SHOPIFY_STOREFRONT_TOKEN</code> below and replace <code style="color:var(--green);background:var(--dark3);padding:2px 6px;border-radius:4px">YOUR_TOKEN_HERE</code></li>
+      </ol>
+      <div style="background:var(--dark3);border-radius:var(--radius);padding:16px;font-family:monospace;font-size:12px;color:var(--muted);line-height:2">
+        <span style="color:#888">// In this file, find and replace:</span><br>
+        <span style="color:#ef4444">var SHOPIFY_STOREFRONT_TOKEN = 'YOUR_TOKEN_HERE';</span><br>
+        <span style="color:#888">// with your real token:</span><br>
+        <span style="color:var(--green)">var SHOPIFY_STOREFRONT_TOKEN = 'shpat_xxxxxxxxxxxx';</span>
+      </div>
+    </div>
+
   </div>
 </main>
 
-<div class="cart-toast" id="cartToast"></div>
+<!-- CART DRAWER -->
+<div class="cart-overlay" id="cartOverlay" onclick="closeCart()"></div>
+<div class="cart-drawer" id="cartDrawer" role="dialog" aria-label="Shopping cart">
+  <div class="cart-header">
+    <h3>Your Cart</h3>
+    <button class="cart-close" onclick="closeCart()" aria-label="Close cart">×</button>
+  </div>
+  <div class="cart-items" id="cartItems">
+    <div class="cart-empty">
+      <p>Your cart is empty.<br>Add some gear!</p>
+      <button class="btn-primary" onclick="closeCart()">Keep browsing</button>
+    </div>
+  </div>
+  <div class="cart-footer" id="cartFooter" style="display:none">
+    <div class="cart-total">
+      <span class="cart-total-label">Total</span>
+      <span class="cart-total-price" id="cartTotal">AED 0</span>
+    </div>
+    <button class="cart-checkout-btn" id="checkoutBtn" onclick="proceedToCheckout()">
+      🔒 Checkout via Shopify
+    </button>
+    <p class="cart-shopify-note">Secure checkout powered by Shopify · Stripe · Apple Pay</p>
+  </div>
+</div>
 
 <footer role="contentinfo">
   <div class="footer-inner">
@@ -364,30 +327,275 @@ var obs = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.is
 document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
 </script>
 <script>
-var cartItems = [];
+// ═══════════════════════════════════════════════════════════════
+// SHOPIFY STOREFRONT API INTEGRATION
+// ───────────────────────────────────────────────────────────────
+// STEP 1: Paste your Storefront API token below
+var SHOPIFY_STOREFRONT_TOKEN = 'YOUR_TOKEN_HERE';
+// STEP 2: Confirm your store domain (no https://, no trailing slash)
+var SHOPIFY_DOMAIN = 'atp-store-7903.myshopify.com';
+// ═══════════════════════════════════════════════════════════════
 
+var cartLineItems = [];   // { variantId, title, price, quantity, image }
+var cartCheckoutUrl = '';
+
+// ── Shopify GraphQL helper ──
+async function shopifyFetch(query, variables) {
+  var url = 'https://' + SHOPIFY_DOMAIN + '/api/2024-01/graphql.json';
+  var res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type':  'application/json',
+      'X-Shopify-Storefront-Access-Token': SHOPIFY_STOREFRONT_TOKEN,
+    },
+    body: JSON.stringify({ query: query, variables: variables || {} })
+  });
+  if(!res.ok) throw new Error('Shopify API error ' + res.status);
+  var json = await res.json();
+  if(json.errors) throw new Error(json.errors[0].message);
+  return json.data;
+}
+
+// ── Load products ──
+var GET_PRODUCTS = `
+  query GetProducts($first: Int!) {
+    products(first: $first) {
+      edges {
+        node {
+          id title description
+          priceRange { minVariantPrice { amount currencyCode } }
+          tags
+          images(first:1){ edges{ node{ url altText } } }
+          variants(first:5){
+            edges{
+              node{ id title availableForSale price{ amount } }
+            }
+          }
+        }
+      }
+    }
+  }`;
+
+async function loadProducts() {
+  if(SHOPIFY_STOREFRONT_TOKEN === 'YOUR_TOKEN_HERE') {
+    document.getElementById('setupBanner').classList.add('show');
+    renderFallbackProducts();
+    return;
+  }
+  try {
+    var data = await shopifyFetch(GET_PRODUCTS, { first: 20 });
+    var products = data.products.edges.map(function(e){ return e.node; });
+    renderProducts(products);
+  } catch(err) {
+    console.error('Shopify load error:', err);
+    document.getElementById('setupBanner').classList.add('show');
+    renderFallbackProducts();
+  }
+}
+
+function renderProducts(products) {
+  document.getElementById('productCountStat').textContent = products.length;
+  var grid = document.getElementById('productGrid');
+  grid.innerHTML = '';
+
+  // Build category buttons from tags
+  var cats = new Set();
+  products.forEach(function(p){ p.tags.forEach(function(t){ cats.add(t); }); });
+
+  // Render cards
+  products.forEach(function(p) {
+    var img = p.images.edges[0] ? p.images.edges[0].node.url : '';
+    var price = parseFloat(p.priceRange.minVariantPrice.amount);
+    var currency = p.priceRange.minVariantPrice.currencyCode;
+    var firstVariant = p.variants.edges[0] ? p.variants.edges[0].node : null;
+    var cats_str = p.tags.join(' ');
+
+    var card = document.createElement('article');
+    card.className = 'product-card reveal';
+    card.dataset.cats = cats_str;
+    card.innerHTML = `
+      <div class="product-img">
+        ${img ? '<img src="'+img+'" alt="'+p.title+'" loading="lazy">' : '<div class="product-img-placeholder">'+p.title+'</div>'}
+      </div>
+      <div class="product-body">
+        <div class="product-name">${p.title}</div>
+        <div class="product-sub">${p.description ? p.description.substring(0,60) + '…' : ''}</div>
+        <div class="product-footer">
+          <div class="product-price">${currency} ${price.toFixed(0)}</div>
+          <button class="product-add" onclick="addToCart(this,
+            '${firstVariant ? firstVariant.id : ''}',
+            '${p.title.replace(/'/g,"\\'"  )}',
+            '${currency} ${price.toFixed(0)}',
+            ${price},
+            '${img}'
+          )">${firstVariant && firstVariant.availableForSale ? 'Add +' : 'Sold out'}</button>
+        </div>
+      </div>`;
+
+    if(!firstVariant || !firstVariant.availableForSale) {
+      card.querySelector('.product-add').disabled = true;
+    }
+    grid.appendChild(card);
+  });
+
+  // Re-run reveal observer
+  document.querySelectorAll('.reveal').forEach(function(el){ revealObs.observe(el); });
+}
+
+// ── Fallback products (shown before Shopify is connected) ──
+function renderFallbackProducts() {
+  var fallback = [
+    {title:'FlowFit Tank',sub:'Men · Athletic fit',price:'AED 79',emoji:'👕',cat:'tops'},
+    {title:'ATP Workout Mat',sub:'Non-slip · 6mm',price:'AED 150',emoji:'🧘',cat:'gear',badge:'New'},
+    {title:'AdaptMotion Tee',sub:'Women · Athletic fit',price:'AED 99',emoji:'👚',cat:'tops'},
+    {title:'UrbanEase PIN Tee',sub:'Men · Regular fit',price:'AED 109',emoji:'👕',cat:'tops'},
+    {title:'ATP Performance Cap',sub:'Unisex · One size',price:'AED 65',emoji:'🧢',cat:'accessories'},
+    {title:'TrailBlaze Shorts',sub:'Men · 7 inch',price:'AED 119',emoji:'🩳',cat:'bottoms',badge:'New'},
+    {title:'ATP Water Bottle',sub:'750ml · BPA free',price:'AED 55',emoji:'🍶',cat:'gear'},
+    {title:'Community Hoodie',sub:'Unisex · Oversized',price:'AED 189',emoji:'🧥',cat:'tops',badge:'Limited'},
+  ];
+  document.getElementById('productCountStat').textContent = fallback.length;
+  var grid = document.getElementById('productGrid');
+  grid.innerHTML = '';
+  fallback.forEach(function(p){
+    var badge = p.badge ? '<span class="product-badge">'+p.badge+'</span>' : '';
+    var card = document.createElement('article');
+    card.className = 'product-card reveal';
+    card.dataset.cats = p.cat;
+    card.innerHTML = `
+      <div class="product-img">
+        ${badge}
+        <div class="product-img-placeholder">${p.emoji}<br>${p.title}<br><span style="color:var(--green);font-size:10px">Connect Shopify to show real photos</span></div>
+      </div>
+      <div class="product-body">
+        <div class="product-name">${p.title}</div>
+        <div class="product-sub">${p.sub}</div>
+        <div class="product-footer">
+          <div class="product-price">${p.price}</div>
+          <button class="product-add" onclick="alert('Connect Shopify to enable checkout')">Add +</button>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+  });
+  document.querySelectorAll('.reveal').forEach(function(el){ revealObs.observe(el); });
+}
+
+// ── Filter by category ──
 function filterCat(cat, btn) {
   document.querySelectorAll('.cat-btn').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
   document.querySelectorAll('.product-card').forEach(function(c){
-    c.style.display = (cat === 'all' || c.dataset.cat === cat) ? '' : 'none';
+    c.style.display = (cat === 'all' || c.dataset.cats.includes(cat)) ? '' : 'none';
   });
 }
 
-function addToCart(name, price) {
-  cartItems.push({name:name, price:price});
-  document.getElementById('cartCount').textContent = cartItems.length;
-  var toast = document.getElementById('cartToast');
-  toast.textContent = '✓ ' + name + ' added to cart';
-  toast.classList.add('show');
-  setTimeout(function(){ toast.classList.remove('show'); }, 2500);
+// ── Cart ──
+function addToCart(btn, variantId, title, priceStr, priceNum, imgUrl) {
+  var existing = cartLineItems.find(function(i){ return i.variantId === variantId; });
+  if(existing) { existing.quantity++; }
+  else { cartLineItems.push({ variantId:variantId, title:title, price:priceStr, priceNum:priceNum, imgUrl:imgUrl, quantity:1 }); }
+  updateCartUI();
+
+  // Visual feedback
+  var orig = btn.textContent;
+  btn.textContent = '✓ Added';
+  btn.style.background = '#2d6010';
+  setTimeout(function(){ btn.textContent = orig; btn.style.background = ''; }, 1200);
+  openCart();
+}
+
+function removeFromCart(idx) {
+  cartLineItems.splice(idx, 1);
+  updateCartUI();
+}
+
+function updateCartUI() {
+  var total = cartLineItems.reduce(function(s,i){ return s + i.priceNum * i.quantity; }, 0);
+  var count = cartLineItems.reduce(function(s,i){ return s + i.quantity; }, 0);
+
+  // Badge
+  var badge = document.getElementById('cartBadge');
+  badge.textContent = count;
+  badge.style.display = count > 0 ? 'flex' : 'none';
+
+  // Cart items
+  var el = document.getElementById('cartItems');
+  var footer = document.getElementById('cartFooter');
+  if(cartLineItems.length === 0) {
+    el.innerHTML = '<div class="cart-empty"><p>Your cart is empty.<br>Add some gear!</p><button class="btn-primary" onclick="closeCart()">Keep browsing</button></div>';
+    footer.style.display = 'none';
+  } else {
+    el.innerHTML = cartLineItems.map(function(item, idx){
+      return `<div class="cart-item">
+        <div class="cart-item-img">${item.imgUrl ? '<img src="'+item.imgUrl+'" alt="'+item.title+'">' : ''}</div>
+        <div>
+          <div class="cart-item-name">${item.title}</div>
+          <div class="cart-item-variant">Qty: ${item.quantity}</div>
+          <div class="cart-item-price">${item.price}</div>
+        </div>
+        <button class="cart-item-remove" onclick="removeFromCart(${idx})" aria-label="Remove">×</button>
+      </div>`;
+    }).join('');
+    document.getElementById('cartTotal').textContent = 'AED ' + total.toFixed(0);
+    footer.style.display = 'block';
+  }
 }
 
 function openCart() {
-  if(cartItems.length === 0) { alert('Your cart is empty. Add some gear!'); return; }
-  var list = cartItems.map(function(i){ return i.name + ' — ' + i.price; }).join('\n');
-  alert('Your cart:\n\n' + list + '\n\nCheckout coming soon — powered by Stripe.');
+  document.getElementById('cartOverlay').classList.add('open');
+  document.getElementById('cartDrawer').classList.add('open');
+  document.body.style.overflow = 'hidden';
 }
+function closeCart() {
+  document.getElementById('cartOverlay').classList.remove('open');
+  document.getElementById('cartDrawer').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ── Checkout ──
+var CREATE_CHECKOUT = `
+  mutation CreateCheckout($input: CheckoutCreateInput!) {
+    checkoutCreate(input: $input) {
+      checkout { id webUrl }
+      checkoutUserErrors { message }
+    }
+  }`;
+
+async function proceedToCheckout() {
+  if(SHOPIFY_STOREFRONT_TOKEN === 'YOUR_TOKEN_HERE') {
+    alert('Please connect your Shopify Storefront API token first. See the setup instructions on this page.');
+    return;
+  }
+  var btn = document.getElementById('checkoutBtn');
+  btn.disabled = true;
+  btn.textContent = 'Creating checkout...';
+  try {
+    var lineItems = cartLineItems.map(function(i){
+      return { variantId: i.variantId, quantity: i.quantity };
+    });
+    var data = await shopifyFetch(CREATE_CHECKOUT, { input: { lineItems: lineItems } });
+    var checkout = data.checkoutCreate.checkout;
+    if(checkout && checkout.webUrl) {
+      window.location.href = checkout.webUrl;
+    } else {
+      throw new Error(data.checkoutCreate.checkoutUserErrors[0].message);
+    }
+  } catch(err) {
+    alert('Checkout error: ' + err.message);
+    btn.disabled = false;
+    btn.innerHTML = '🔒 Checkout via Shopify';
+  }
+}
+
+// Reveal observer reference (used in renderProducts)
+var revealObs = new IntersectionObserver(function(es){
+  es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add('visible'); revealObs.unobserve(e.target); } });
+}, {threshold:0.1});
+
+document.addEventListener('keydown', function(e){ if(e.key==='Escape') closeCart(); });
+
+// Boot
+loadProducts();
 </script>
 </body>
 </html>
