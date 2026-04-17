@@ -279,6 +279,78 @@ footer{background:var(--dark2);padding:64px 40px 32px;border-top:1px solid rgba(
 @media(max-width:900px){.nav-links{display:none}.hamburger{display:flex}.page-hero-inner{grid-template-columns:1fr}.page-hero-stats{display:none}.pdp-modal{grid-template-columns:1fr;max-width:400px}.pdp-img{display:none}}
 @media(max-width:768px){.product-grid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:600px){.product-grid{grid-template-columns:repeat(2,1fr);gap:10px}.store-wrap{padding:24px 16px 80px}.points-bar{flex-direction:column}.footer-top{grid-template-columns:1fr;gap:28px}}
+
+/* ── STORE HERO ──────────────────────────────────────────────*/
+.store-hero{padding:calc(var(--nav-h) + 0px) 0 0;background:#0a0a0a;overflow:hidden;position:relative}
+.store-hero::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(122,194,49,.3),transparent)}
+.store-hero-inner{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;min-height:88vh;padding:0 0 0 60px}
+.store-hero-text{display:flex;flex-direction:column;justify-content:center;padding:60px 60px 60px 0;position:relative;z-index:2}
+.store-hero-eyebrow{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#7AC231;margin-bottom:24px;display:flex;align-items:center;gap:10px}
+.store-hero-eyebrow::before{content:'';display:block;width:24px;height:1px;background:#7AC231}
+.store-hero-h1{font-family:var(--ff-display);font-size:clamp(72px,8vw,120px);font-weight:900;line-height:.88;text-transform:uppercase;letter-spacing:-.02em;color:#fff;margin-bottom:28px}
+.store-hero-h1 em{font-style:normal;color:#7AC231}
+.store-hero-sub{font-size:16px;color:#666;line-height:1.7;font-weight:300;max-width:380px;margin-bottom:36px}
+.store-hero-badges{display:flex;flex-wrap:wrap;gap:8px}
+.hero-badge{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:7px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.1);color:#888;background:rgba(255,255,255,.03)}
+
+/* hero image side */
+.store-hero-img-wrap{position:relative;overflow:hidden}
+.store-hero-img-main{position:absolute;inset:0;background-size:cover;background-position:center top;transition:opacity .6s}
+.store-hero-img-accent{position:absolute;bottom:40px;right:-20px;width:220px;height:280px;background-size:cover;background-position:center;border-radius:12px;border:2px solid rgba(122,194,49,.25);opacity:0;transition:opacity .8s .4s}
+.store-hero-img-accent.loaded{opacity:1}
+.store-hero-img-main.loaded{opacity:1}
+.store-hero-img-main{opacity:0}
+
+/* vertical ticker on hero */
+.store-hero-ticker-vert{position:absolute;left:-18px;top:0;bottom:0;width:36px;display:flex;flex-direction:column;justify-content:flex-start;overflow:hidden;pointer-events:none;writing-mode:vertical-rl;text-orientation:mixed}
+.store-hero-ticker-vert span{font-family:var(--ff-display);font-size:11px;font-weight:900;letter-spacing:.2em;color:rgba(255,255,255,.04);text-transform:uppercase;white-space:nowrap;padding:8px 0;animation:tickV 18s linear infinite}
+@keyframes tickV{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
+
+/* ── MARQUEE ──────────────────────────────────────────────── */
+.store-marquee-wrap{background:#7AC231;overflow:hidden;padding:12px 0;border-top:none}
+.store-marquee{display:flex;gap:0;white-space:nowrap;animation:marquee 28s linear infinite}
+.store-marquee span{font-family:var(--ff-display);font-size:13px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#fff;padding:0 20px}
+.store-marquee .dot{color:rgba(255,255,255,.5);padding:0 4px}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* ── SHOP LAYOUT ─────────────────────────────────────────── */
+.shop-layout{display:grid;grid-template-columns:240px 1fr;max-width:1400px;margin:0 auto;padding:48px 60px 100px;gap:48px;align-items:start}
+
+/* Sidebar */
+.shop-sidebar{position:sticky;top:calc(var(--nav-h) + 24px);display:flex;flex-direction:column;gap:0}
+.sidebar-section{padding:0 0 28px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:24px}
+.sidebar-section:last-of-type{border-bottom:none}
+.sidebar-title{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#555;margin-bottom:14px}
+.sidebar-filters{display:flex;flex-direction:column;gap:4px}
+.sf-btn{font-size:13px;font-weight:500;color:#666;background:transparent;border:none;padding:7px 12px;border-radius:8px;cursor:pointer;transition:all .18s;text-align:left;display:flex;align-items:center;gap:8px}
+.sf-btn::before{content:'';display:block;width:6px;height:6px;border-radius:50%;background:transparent;border:1px solid rgba(255,255,255,.2);flex-shrink:0;transition:all .18s}
+.sf-btn:hover{color:#ccc;background:rgba(255,255,255,.04)}
+.sf-btn.active{color:#fff;background:rgba(122,194,49,.08)}
+.sf-btn.active::before{background:#7AC231;border-color:#7AC231}
+.sidebar-divider{height:1px;background:rgba(255,255,255,.06);margin:4px 0 24px}
+.sidebar-promo{background:rgba(122,194,49,.06);border:1px solid rgba(122,194,49,.15);border-radius:12px;padding:18px}
+.sidebar-promo-label{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#7AC231;margin-bottom:8px}
+.sidebar-promo p{font-size:12px;color:#777;line-height:1.6;margin-bottom:14px}
+.sidebar-app-btn{display:block;font-size:12px;font-weight:700;color:#7AC231;text-decoration:none;transition:color .2s}
+.sidebar-app-btn:hover{color:#a8e055}
+
+/* Shop main */
+.shop-main{min-width:0}
+.shop-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,.06)}
+.shop-count{font-size:13px;color:#555;font-weight:500}
+.shop-count span{color:#fff;font-weight:700}
+.shop-sort select{font-size:12px;font-weight:600;color:#999;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);padding:7px 12px;border-radius:8px;cursor:pointer;outline:none;font-family:var(--ff-body);transition:border-color .2s}
+.shop-sort select:hover{border-color:rgba(255,255,255,.2)}
+.shop-sort select option{background:#1a1a1a}
+
+/* Override grid for new layout */
+.product-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+
+/* ── RESPONSIVE ───────────────────────────────────────────── */
+@media(max-width:1200px){.shop-layout{padding:40px 40px 80px}.store-hero-inner{padding:0 0 0 40px}.store-hero-h1{font-size:clamp(56px,7vw,96px)}}
+@media(max-width:1024px){.shop-layout{grid-template-columns:200px 1fr;gap:32px}.product-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.store-hero-inner{grid-template-columns:1fr;padding:60px 24px}.store-hero-img-wrap{display:none}.shop-layout{grid-template-columns:1fr}.shop-sidebar{display:none}.nav-links{display:none}.hamburger{display:flex}}
+@media(max-width:640px){.shop-layout{padding:24px 16px 80px}.product-grid{grid-template-columns:repeat(2,1fr);gap:10px}.store-hero-h1{font-size:clamp(52px,12vw,80px)}}
 </style>
 </head>
 <body>
@@ -309,42 +381,96 @@ footer{background:var(--dark2);padding:64px 40px 32px;border-top:1px solid rgba(
 </nav>
 
 <main>
-  <section class="page-hero">
-    <div class="page-hero-inner">
-      <div>
-        <p class="page-hero-label">ATP Store</p>
-        <h1>Wear it. Share it.<br><span class="acc">Let's Move Together.</span></h1>
-        <p class="page-hero-sub">Gear made for the community. Every purchase helps keep the sessions free for everyone, forever.</p>
-      </div>
-      <div class="page-hero-stats">
-        <div class="ph-stat"><div class="ph-stat-num" id="prodCountEl">—</div><div class="ph-stat-label">Products</div></div>
-        <div class="ph-stat"><div class="ph-stat-num">AED 150</div><div class="ph-stat-label">Free delivery</div></div>
+  <!-- ── STORE HERO ──────────────────────────────────────────── -->
+<section class="store-hero">
+  <div class="store-hero-inner">
+    <div class="store-hero-text">
+      <span class="store-hero-eyebrow">ATP Collection 2026</span>
+      <h1 class="store-hero-h1">Wear it.<br><em>Share it.</em><br>Let's move<br>together.</h1>
+      <p class="store-hero-sub">Gear made for the community. Every purchase keeps the sessions free — forever.</p>
+      <div class="store-hero-badges">
+        <span class="hero-badge">Free delivery AED 150+</span>
+        <span class="hero-badge">10 products</span>
+        <span class="hero-badge">Dubai · Al Ain · Muscat</span>
       </div>
     </div>
-  </section>
+    <div class="store-hero-img-wrap">
+      <div class="store-hero-img-main" id="heroImgMain"></div>
+      <div class="store-hero-img-accent" id="heroImgAccent"></div>
+      <div class="store-hero-ticker-vert">
+        <span>THE PARK</span><span>THE PARK</span><span>THE PARK</span>
+        <span>THE PARK</span><span>THE PARK</span><span>THE PARK</span>
+      </div>
+    </div>
+  </div>
+</section>
 
-  <div class="store-wrap">
+<!-- ── MARQUEE STRIP ────────────────────────────────────────── -->
+<div class="store-marquee-wrap">
+  <div class="store-marquee">
+    <span>FREE SESSIONS DAILY</span><span class="dot">·</span>
+    <span>7,000+ MEMBERS</span><span class="dot">·</span>
+    <span>DUBAI · AL AIN · MUSCAT</span><span class="dot">·</span>
+    <span>WEAR THE COMMUNITY</span><span class="dot">·</span>
+    <span>FREE DELIVERY AED 150+</span><span class="dot">·</span>
+    <span>FREE SESSIONS DAILY</span><span class="dot">·</span>
+    <span>7,000+ MEMBERS</span><span class="dot">·</span>
+    <span>DUBAI · AL AIN · MUSCAT</span><span class="dot">·</span>
+    <span>WEAR THE COMMUNITY</span><span class="dot">·</span>
+    <span>FREE DELIVERY AED 150+</span><span class="dot">·</span>
+  </div>
+</div>
+
+<!-- ── SHOP LAYOUT: sidebar + grid ──────────────────────────── -->
+<div class="shop-layout">
+
+  <!-- Sidebar filters -->
+  <aside class="shop-sidebar">
+    <div class="sidebar-section">
+      <h3 class="sidebar-title">Category</h3>
+      <div class="sidebar-filters" id="catPills">
+        <button class="sf-btn active" data-cat="all">All Products</button>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h3 class="sidebar-title">Availability</h3>
+      <div class="sidebar-filters">
+        <button class="sf-btn active" data-avail="all">All</button>
+        <button class="sf-btn" data-avail="instock">In Stock</button>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-promo">
+      <div class="sidebar-promo-label">ATP Points</div>
+      <p>Every session earns points. <strong style="color:#7AC231">280 pts = 10% off</strong> your next order.</p>
+      <a href="https://apps.apple.com/ae/app/attheparkworld/id6469771815" target="_blank" rel="noopener" class="sidebar-app-btn">Get the app →</a>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <div class="shop-main">
     <div id="statusBar" class="status-bar"></div>
 
-    <div class="points-bar reveal">
-      <div>
-        <div class="points-title">Earn points. <span>Save more.</span></div>
-        <p class="points-sub">Every session earns ATP points. 280 points = 10% off your next order.</p>
-      </div>
-      <a href="https://apps.apple.com/ae/app/attheparkworld/id6469771815" target="_blank" rel="noopener"
-         class="btn-primary" style="white-space:nowrap;flex-shrink:0">Download app →</a>
-    </div>
-
-    <div class="toolbar">
-      <div class="cat-pills" id="catPills">
-        <button class="cat-pill active" data-cat="all">All</button>
+    <!-- Toolbar -->
+    <div class="shop-toolbar">
+      <p class="shop-count"><span id="prodCountEl">—</span> products</p>
+      <div class="shop-sort">
+        <select id="sortSelect" onchange="sortProducts(this.value)">
+          <option value="default">Sort: Featured</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+          <option value="name-asc">Name: A–Z</option>
+        </select>
       </div>
     </div>
 
+    <!-- Product grid -->
     <div class="product-grid" id="productGrid">
 <div class="skel-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line" style="width:70%"></div><div class="skeleton skel-line" style="width:45%"></div><div class="skeleton skel-line" style="width:55%;height:16px"></div></div></div><div class="skel-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line" style="width:70%"></div><div class="skeleton skel-line" style="width:45%"></div><div class="skeleton skel-line" style="width:55%;height:16px"></div></div></div><div class="skel-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line" style="width:70%"></div><div class="skeleton skel-line" style="width:45%"></div><div class="skeleton skel-line" style="width:55%;height:16px"></div></div></div><div class="skel-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line" style="width:70%"></div><div class="skeleton skel-line" style="width:45%"></div><div class="skeleton skel-line" style="width:55%;height:16px"></div></div></div><div class="skel-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line" style="width:70%"></div><div class="skeleton skel-line" style="width:45%"></div><div class="skeleton skel-line" style="width:55%;height:16px"></div></div></div><div class="skel-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line" style="width:70%"></div><div class="skeleton skel-line" style="width:45%"></div><div class="skeleton skel-line" style="width:55%;height:16px"></div></div></div><div class="skel-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line" style="width:70%"></div><div class="skeleton skel-line" style="width:45%"></div><div class="skeleton skel-line" style="width:55%;height:16px"></div></div></div><div class="skel-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line" style="width:70%"></div><div class="skeleton skel-line" style="width:45%"></div><div class="skeleton skel-line" style="width:55%;height:16px"></div></div></div>
     </div>
   </div>
+
+</div>
 </main>
 
 <!-- Cart Drawer -->
@@ -568,6 +694,77 @@ async function shopifyQuery(query) {
 
 // ── LOAD PRODUCTS ────────────────────────────────────────────
 var allProducts = [];
+
+// ── HERO IMAGES (populate from first 2 loaded products) ──────
+function populateHero(products) {
+  if (!products.length) return;
+  var main   = document.getElementById("heroImgMain");
+  var accent = document.getElementById("heroImgAccent");
+  var p0 = products[0];
+  var p1 = products[Math.min(2, products.length-1)];
+  var img0 = p0.images.edges[0] ? p0.images.edges[0].node.url : "";
+  var img1 = p1.images.edges[0] ? p1.images.edges[0].node.url : "";
+  if (img0) { main.style.backgroundImage = "url('" + img0 + "')"; main.classList.add("loaded"); }
+  if (img1) { accent.style.backgroundImage = "url('" + img1 + "')"; accent.classList.add("loaded"); }
+}
+
+// ── SIDEBAR CATEGORY FILTER ───────────────────────────────────
+function buildCatPills(products) {
+  var types = new Set();
+  products.forEach(function(p) { if(p.productType) types.add(p.productType); });
+
+  var container = document.getElementById("catPills");
+  container.innerHTML = '<button class="sf-btn active" data-cat="all">All Products</button>';
+  types.forEach(function(t) {
+    var btn = document.createElement("button");
+    btn.className = "sf-btn";
+    btn.dataset.cat = t;
+    btn.textContent = t;
+    container.appendChild(btn);
+  });
+
+  container.addEventListener("click", function(e) {
+    var btn = e.target.closest(".sf-btn");
+    if (!btn) return;
+    container.querySelectorAll(".sf-btn").forEach(function(b) { b.classList.remove("active"); });
+    btn.classList.add("active");
+    filterAndRender();
+  });
+
+  // Availability filter
+  var availBtns = document.querySelectorAll("[data-avail]");
+  availBtns.forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      availBtns.forEach(function(b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      filterAndRender();
+    });
+  });
+}
+
+function filterAndRender() {
+  var cat    = (document.querySelector(".sf-btn.active[data-cat]") || {}).dataset && document.querySelector(".sf-btn.active[data-cat]").dataset.cat || "all";
+  var avail  = (document.querySelector(".sf-btn.active[data-avail]") || {}).dataset && document.querySelector(".sf-btn.active[data-avail]").dataset.avail || "all";
+  var sort   = document.getElementById("sortSelect") ? document.getElementById("sortSelect").value : "default";
+
+  var filtered = allProducts.filter(function(p) {
+    var catOk   = cat === "all" || p.productType === cat;
+    var availOk = avail === "all" || (avail === "instock" && p.variants.edges.some(function(e){ return e.node.availableForSale; }));
+    return catOk && availOk;
+  });
+
+  // Sort
+  var sorted = filtered.slice();
+  if (sort === "price-asc") sorted.sort(function(a,b){ return parseFloat(a.priceRange.minVariantPrice.amount) - parseFloat(b.priceRange.minVariantPrice.amount); });
+  if (sort === "price-desc") sorted.sort(function(a,b){ return parseFloat(b.priceRange.minVariantPrice.amount) - parseFloat(a.priceRange.minVariantPrice.amount); });
+  if (sort === "name-asc") sorted.sort(function(a,b){ return a.title.localeCompare(b.title); });
+
+  document.getElementById("prodCountEl").textContent = sorted.length;
+  renderGrid(sorted);
+}
+
+function sortProducts(val) { filterAndRender(); }
+
 var selectedVariant = null;
 
 async function loadProducts() {
@@ -607,6 +804,7 @@ async function loadProducts() {
     document.getElementById("prodCountEl").textContent = allProducts.length;
     buildCatPills(allProducts);
     renderGrid(allProducts);
+    populateHero(allProducts);
 
   } catch (err) {
     console.error("Shopify error:", err);
