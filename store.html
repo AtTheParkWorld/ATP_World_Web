@@ -49,10 +49,11 @@ nav.scrolled{background:rgba(10,10,10,.97);border-bottom-color:rgba(122,194,49,.
 .reveal{opacity:0;transform:translateY(22px);transition:opacity .6s,transform .6s}
 .reveal.visible{opacity:1;transform:translateY(0)}
 .store-wrap{padding:48px 40px 100px;max-width:var(--max);margin:0 auto}
-.status-bar{padding:12px 18px;border-radius:var(--radius);margin-bottom:18px;font-size:13px;display:none;align-items:center;gap:10px;line-height:1.5}
+.status-bar{padding:14px 18px;border-radius:var(--radius);margin-bottom:18px;font-size:13px;display:none;align-items:flex-start;gap:10px;line-height:1.6}
 .status-bar.ok{background:rgba(122,194,49,.1);border:1px solid rgba(122,194,49,.25);color:#a8e055;display:flex}
 .status-bar.warn{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);color:#fcd34d;display:flex}
 .status-bar.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#fca5a5;display:flex}
+.status-bar.info{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:#a5b4fc;display:flex}
 .points-bar{background:var(--dark2);border:1px solid rgba(255,255,255,.07);border-radius:var(--radius-lg);padding:22px 28px;margin-bottom:28px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
 .points-bar-title{font-family:var(--ff-display);font-size:20px;font-weight:800;text-transform:uppercase;color:var(--white);margin-bottom:3px}
 .points-bar-title span{color:var(--green)}
@@ -415,456 +416,78 @@ document.querySelectorAll(".reveal").forEach(function(el){revObs.observe(el);});
 
 var SHOPIFY_TOKEN  = "31a1a5554b7f2fdaf2aa4dc44e13a127";
 var SHOPIFY_DOMAIN = "atp-store-7903.myshopify.com";
-var SHOPIFY_API    = "2024-01";
 
-async function shopifyFetch(query,variables){
-  var res=await fetch("https://"+SHOPIFY_DOMAIN+"/api/"+SHOPIFY_API+"/graphql.json",{
-    method:"POST",
-    headers:{"Content-Type":"application/json","X-Shopify-Storefront-Access-Token":SHOPIFY_TOKEN},
-    body:JSON.stringify({query:query,variables:variables||{}})
+// ── Shopify fetch with full diagnostics ─────────────────────────
+async function shopifyFetch(query, variables) {
+  var url = "https://" + SHOPIFY_DOMAIN + "/api/2024-01/graphql.json";
+  var res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Shopify-Storefront-Access-Token": SHOPIFY_TOKEN
+    },
+    body: JSON.stringify({ query: query, variables: variables || {} })
   });
-  if(!res.ok)throw new Error("HTTP "+res.status);
-  var json=await res.json();
-  if(json.errors)throw new Error(json.errors[0].message);
+  if(!res.ok) {
+    var txt = await res.text();
+    throw new Error("HTTP " + res.status + ": " + txt.substring(0,200));
+  }
+  var json = await res.json();
+  if(json.errors) throw new Error(json.errors.map(function(e){return e.message;}).join(", "));
   return json.data;
 }
 
-var Q_PRODUCTS="query GetProducts($n:Int!){products(first:$n){edges{node{id title description tags priceRange{minVariantPrice{amount currencyCode}}compareAtPriceRange{minVariantPrice{amount currencyCode}}images(first:1){edges{node{url altText}}}variants(first:10){edges{node{id title availableForSale price{amount currencyCode}}}}}}}}";
-var M_CHECKOUT="mutation CreateCheckout($input:CheckoutCreateInput!){checkoutCreate(input:$input){checkout{id webUrl}checkoutUserErrors{field message}}}";
+var Q_PRODUCTS = "query{products(first:24){edges{node{id title description tags priceRange{minVariantPrice{amount currencyCode}}compareAtPriceRange{minVariantPrice{amount currencyCode}}images(first:1){edges{node{url altText}}}variants(first:10){edges{node{id title availableForSale price{amount currencyCode}}}}}}}}";
 
-var cartItems=[];
+var M_CHECKOUT = "mutation CreateCheckout($input:CheckoutCreateInput!){checkoutCreate(input:$input){checkout{id webUrl}checkoutUserErrors{field message}}}";
 
-async function loadProducts(){
-  var bar=document.getElementById("statusBar");
-  try{
-    var data=await shopifyFetch(Q_PRODUCTS,{n:24});
-    var products=data.products.edges.map(function(e){return e.node;});
-    if(!products.length){
-      showStatus("warn","No products in your Shopify store yet. <a href='https://admin.shopify.com/store/atp-store-7903/products/new' target='_blank' style='color:#a8e055'>Add products →</a>");
-      renderFallback(); return;
+var cartItems = [];
+
+async function loadProducts() {
+  var bar = document.getElementById("statusBar");
+  showStatus("info", "⏳ Loading products from Shopify…");
+
+  try {
+    var data = await shopifyFetch(Q_PRODUCTS);
+    var products = data.products.edges.map(function(e){ return e.node; });
+
+    if(!products.length) {
+      showStatus("warn",
+        "⚠️ No products found. Make sure your product is: " +
+        "<br>1. <strong>Active</strong> (not Draft) in Shopify" +
+        "<br>2. Published to the <strong>Headless</strong> sales channel" +
+        "<br><a href='https://admin.shopify.com/store/atp-store-7903/products' target='_blank' style='color:#fcd34d'>Open Shopify Products →</a>"
+      );
+      renderFallback();
+      return;
     }
-    showStatus("ok","✅ "+products.length+" products loaded from Shopify.");
-    setTimeout(function(){bar.style.display="none";},3000);
+
+    showStatus("ok", "✅ " + products.length + " product" + (products.length > 1 ? "s" : "") + " loaded from your Shopify store.");
+    setTimeout(function(){ bar.style.display = "none"; }, 4000);
     renderProducts(products);
-  }catch(err){
-    console.error("Shopify error details:", err);
+
+  } catch(err) {
+    console.error("Shopify error:", err);
     var msg = err.message || "Unknown error";
-    // Common error messages and fixes
+    var hint = "";
+
     if(msg.includes("401") || msg.includes("403")) {
-      showStatus("err", "❌ Token rejected (401/403). Check your Storefront API token in Shopify.");
-    } else if(msg.includes("404")) {
-      showStatus("err", "❌ Store not found (404). Check domain: " + SHOPIFY_DOMAIN);
-    } else if(msg.includes("Failed to fetch") || msg.includes("NetworkError")) {
-      showStatus("warn", "⚠️ Store may be password protected. Go to Shopify → Online Store → Preferences → disable password. Showing preview.");
+      hint = "Token rejected — regenerate your Storefront API token in Shopify Headless channel.";
+    } else if(msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("CORS")) {
+      hint = "Network/CORS error — your store may still be password protected. " +
+             "<a href='https://admin.shopify.com/store/atp-store-7903/online_store/preferences' target='_blank' style='color:#fca5a5'>Check here →</a>";
     } else {
-      showStatus("warn", "⚠️ " + msg + " — showing preview catalogue.");
+      hint = msg;
     }
+
+    showStatus("err",
+      "❌ Could not load Shopify products: " + hint +
+      "<br><small style='opacity:.7'>Showing preview catalogue instead.</small>"
+    );
     renderFallback();
   }
 }
 
-function showStatus(type,html){
-  var bar=document.getElementById("statusBar");
-  bar.className="status-bar "+type;
-  bar.innerHTML=html;
-  bar.style.display="flex";
-}
-
-function renderProducts(products){
-  document.getElementById("prodCountEl").textContent=products.length;
-  var grid=document.getElementById("productGrid");
-  grid.innerHTML="";
-  var tags=new Set();
-  products.forEach(function(p){p.tags.forEach(function(t){tags.add(t.toLowerCase());});});
-  buildCatPills(tags);
-  products.forEach(function(p){
-    var img=p.images.edges[0]?p.images.edges[0].node.url:"";
-    var imgAlt=p.images.edges[0]?(p.images.edges[0].node.altText||p.title):p.title;
-    var price=parseFloat(p.priceRange.minVariantPrice.amount);
-    var cur=p.priceRange.minVariantPrice.currencyCode;
-    var cmp=p.compareAtPriceRange&&p.compareAtPriceRange.minVariantPrice?parseFloat(p.compareAtPriceRange.minVariantPrice.amount):0;
-    var v=p.variants.edges[0]?p.variants.edges[0].node:null;
-    var inStock=v?v.availableForSale:false;
-    var card=document.createElement("article");
-    card.className="product-card reveal";
-    card.dataset.tags=p.tags.join(" ").toLowerCase();
-    var badge=(p.tags.some(function(t){return t.toLowerCase()==="new";}))?'<span class="product-badge">New</span>':"";
-    var cmpHtml=(cmp>price)?'<span class="product-compare">'+cur+" "+cmp.toFixed(0)+"</span>":"";
-    card.innerHTML='<div class="product-img">'+badge+(img?'<img src="'+img+'" alt="'+imgAlt+'" loading="lazy">':"<div class='product-img-ph'>🎽</div>")+"</div>"+
-      '<div class="product-body"><div class="product-name">'+p.title+"</div>"+
-      '<div class="product-desc">'+(p.description?p.description.substring(0,60)+"…":"")+"</div>"+
-      '<div class="product-row"><div>'+cmpHtml+'<span class="product-price">'+cur+" "+price.toFixed(0)+"</span></div>"+
-      '<button class="add-btn"'+(!inStock?" disabled":"")+">"+(inStock?"Add to cart":"Sold out")+"</button></div></div>";
-    if(inStock&&v){
-      (function(vid,ttl,prc,num,imgU){
-        card.querySelector(".add-btn").addEventListener("click",function(){
-          addToCart(vid,ttl,cur+" "+num.toFixed(0),num,imgU);
-          var b=this;var o=b.textContent;b.textContent="✓ Added";b.classList.add("added");
-          setTimeout(function(){b.textContent=o;b.classList.remove("added");},1400);
-        });
-      })(v.id,p.title,cur+" "+price.toFixed(0),price,img);
-    }
-    grid.appendChild(card);
-  });
-  document.querySelectorAll(".product-card.reveal").forEach(function(el){revObs.observe(el);});
-}
-
-var FALLBACK=[
-  {title:"FlowFit Tank",sub:"Men · Athletic fit",price:"AED 79",e:"👕",cat:"tops"},
-  {title:"ATP Workout Mat",sub:"Non-slip · 6mm",price:"AED 150",e:"🧘",cat:"gear"},
-  {title:"AdaptMotion Tee",sub:"Women · Athletic fit",price:"AED 99",e:"👚",cat:"tops"},
-  {title:"UrbanEase PIN Tee",sub:"Men · Regular fit",price:"AED 109",e:"👕",cat:"tops"},
-  {title:"ATP Cap",sub:"Unisex · One size",price:"AED 65",e:"🧢",cat:"accessories"},
-  {title:"TrailBlaze Shorts",sub:"Men · 7 inch",price:"AED 119",e:"🩳",cat:"bottoms"},
-  {title:"ATP Water Bottle",sub:"750ml · BPA free",price:"AED 55",e:"🍶",cat:"gear"},
-  {title:"Community Hoodie",sub:"Unisex · Oversized",price:"AED 189",e:"🧥",cat:"tops"},
-];
-function renderFallback(){
-  document.getElementById("prodCountEl").textContent=FALLBACK.length;
-  var grid=document.getElementById("productGrid");
-  grid.innerHTML="";
-  var tags=new Set(["tops","bottoms","gear","accessories"]);
-  buildCatPills(tags);
-  FALLBACK.forEach(function(p){
-    var card=document.createElement("article");
-    card.className="product-card reveal";
-    card.dataset.tags=p.cat;
-    card.innerHTML='<div class="product-img"><div class="product-img-ph">'+p.e+"</div></div>"+
-      '<div class="product-body"><div class="product-name">'+p.title+"</div>"+
-      '<div class="product-desc">'+p.sub+"</div>"+
-      '<div class="product-row"><span class="product-price">'+p.price+'</span>'+
-      '<button class="add-btn">Add to cart</button></div></div>';
-    grid.appendChild(card);
-  });
-  document.querySelectorAll(".product-card.reveal").forEach(function(el){revObs.observe(el);});
-}
-
-var CAT_MAP={tops:"Tops",bottoms:"Bottoms",gear:"Gear",accessories:"Accessories",new:"New"};
-function buildCatPills(tagSet){
-  var c=document.getElementById("catPills");
-  c.innerHTML='<button class="cat-pill active" onclick="filterCat('all',this)">All</button>';
-  Object.keys(CAT_MAP).forEach(function(k){
-    if(tagSet.has(k)){
-      var btn=document.createElement("button");
-      btn.className="cat-pill";btn.textContent=CAT_MAP[k];
-      btn.onclick=function(){filterCat(k,this);};
-      c.appendChild(btn);
-    }
-  });
-}
-function filterCat(cat,btn){
-  document.querySelectorAll(".cat-pill").forEach(function(b){b.classList.remove("active");});
-  btn.classList.add("active");
-  document.querySelectorAll(".product-card").forEach(function(c){
-    c.style.display=(cat==="all"||c.dataset.tags.includes(cat))?"":"none";
-  });
-}
-
-function addToCart(variantId,title,priceStr,priceNum,imgUrl){
-  var ex=cartItems.find(function(i){return i.variantId===variantId;});
-  if(ex){ex.qty++;}else{cartItems.push({variantId:variantId,title:title,price:priceStr,priceNum:priceNum,imgUrl:imgUrl,qty:1});}
-  refreshCart();openCart();
-}
-function removeItem(i){cartItems.splice(i,1);refreshCart();}
-function changeQty(i,d){cartItems[i].qty+=d;if(cartItems[i].qty<1)cartItems.splice(i,1);refreshCart();}
-function refreshCart(){
-  var total=cartItems.reduce(function(s,i){return s+i.priceNum*i.qty;},0);
-  var count=cartItems.reduce(function(s,i){return s+i.qty;},0);
-  var badge=document.getElementById("cartBadge");
-  badge.textContent=count;badge.style.display=count>0?"flex":"none";
-  var body=document.getElementById("cartBody");
-  var foot=document.getElementById("cartFoot");
-  if(!cartItems.length){
-    body.innerHTML='<div class="cart-empty-msg">Your cart is empty.<br>Add some gear and show up in style. 🎽</div>';
-    foot.style.display="none";
-  }else{
-    body.innerHTML=cartItems.map(function(item,i){
-      return '<div class="cart-line">'+
-        '<div class="cart-line-img">'+(item.imgUrl?'<img src="'+item.imgUrl+'" alt="'+item.title+'">':"🎽")+"</div>"+
-        '<div class="cart-line-info">'+
-          '<div class="cart-line-name">'+item.title+"</div>"+
-          '<div class="cart-line-price">'+item.price+"</div>"+
-          '<div class="qty-row">'+
-            '<button class="qty-btn" onclick="changeQty('+i+',-1)">−</button>'+
-            '<span class="qty-num">'+item.qty+"</span>"+
-            '<button class="qty-btn" onclick="changeQty('+i+',+1)">+</button>'+
-          "</div></div>"+
-          '<button class="remove-btn" onclick="removeItem('+i+')" aria-label="Remove">×</button>'+
-        "</div>";
-    }).join("");
-    document.getElementById("cartTotalEl").textContent="AED "+total.toFixed(0);
-    foot.style.display="block";
-  }
-}
-function openCart(){document.getElementById("cartBackdrop").classList.add("open");document.getElementById("cartPanel").classList.add("open");document.body.style.overflow="hidden";}
-function closeCart(){document.getElementById("cartBackdrop").classList.remove("open");document.getElementById("cartPanel").classList.remove("open");document.body.style.overflow="";}
-async function doCheckout(){
-  if(!cartItems.length)return;
-  var btn=document.getElementById("checkoutBtn");
-  btn.disabled=true;btn.textContent="Creating checkout…";
-  try{
-    var lines=cartItems.map(function(i){return{variantId:i.variantId,quantity:i.qty};});
-    var data=await shopifyFetch(M_CHECKOUT,{input:{lineItems:lines}});
-    var r=data.checkoutCreate;
-    if(r.checkout&&r.checkout.webUrl){window.location.href=r.checkout.webUrl;}
-    else{throw new Error(r.checkoutUserErrors&&r.checkoutUserErrors[0]?r.checkoutUserErrors[0].message:"Unknown error");}
-  }catch(err){
-    showStatus("err","Checkout error: "+err.message);
-    btn.disabled=false;btn.innerHTML="🔒 Checkout via Shopify";
-  }
-}
-document.addEventListener("keydown",function(e){if(e.key==="Escape")closeCart();});
-
-// ══════════════════════════════════════════════════════════════
-// ATP AUTH ENGINE
-// Uses localStorage to persist session. Swap the mock functions
-// for real Firebase / Supabase calls when ready.
-// ══════════════════════════════════════════════════════════════
-
-var ATP_USER_KEY = 'atp:user';
-var atpUser = null; // { firstName, lastName, email, avatar, joinedAt }
-
-// ── Persistence ──────────────────────────────────────────────
-function authLoadUser() {
-  try {
-    var raw = localStorage.getItem(ATP_USER_KEY);
-    if(raw) atpUser = JSON.parse(raw);
-  } catch(e) { atpUser = null; }
-}
-function authSaveUser(user) {
-  atpUser = user;
-  try { localStorage.setItem(ATP_USER_KEY, JSON.stringify(user)); } catch(e){}
-}
-function authClearUser() {
-  atpUser = null;
-  try { localStorage.removeItem(ATP_USER_KEY); } catch(e){}
-}
-
-// ── Modal open/close ─────────────────────────────────────────
-function openAuth(mode) {
-  if(atpUser) return; // already signed in
-  mode = mode || 'signup';
-  if(mode === 'login') { switchToLogin(); } else { switchToSignup(); }
-  document.getElementById('authError').classList.remove('show');
-  document.getElementById('authSuccessPanel').style.display = 'none';
-  document.getElementById('authSignupForm').style.display = '';
-  document.getElementById('authLoginForm').style.display  = 'none';
-  document.getElementById('authSocialPanel').style.display = '';
-  document.getElementById('authOverlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-
-  // Set logo
-  var logo = document.getElementById('authLogo');
-  if(logo && typeof LOGO_SRC !== 'undefined') logo.src = LOGO_SRC;
-
-  // Focus first input
-  setTimeout(function(){
-    var first = document.getElementById(mode === 'login' ? 'loginEmail' : 'authFirstName');
-    if(first) first.focus();
-  }, 300);
-}
-function closeAuth() {
-  document.getElementById('authOverlay').classList.remove('open');
-  document.body.style.overflow = '';
-  // If a booking was waiting, resume it
-  if(atpUser && typeof pendingSession !== 'undefined' && pendingSession) {
-    var s = pendingSession; pendingSession = null;
-    openModal(s.name,s.tribe,s.dayTime,s.coach,s.loc,s.desc,s.day,s.time);
-  }
-}
-
-function switchToLogin() {
-  document.getElementById('authTitle').textContent = 'Welcome back';
-  document.getElementById('authSub').textContent   = 'Log in to your ATP account to book sessions.';
-  document.getElementById('authSignupForm').style.display = 'none';
-  document.getElementById('authLoginForm').style.display  = '';
-  document.getElementById('authSuccessPanel').style.display = 'none';
-  document.getElementById('authError').classList.remove('show');
-}
-function switchToSignup() {
-  document.getElementById('authTitle').textContent = 'Join free';
-  document.getElementById('authSub').textContent   = 'Become an ATP member to book sessions, track your streak and connect with 7,000+ members.';
-  document.getElementById('authSignupForm').style.display = '';
-  document.getElementById('authLoginForm').style.display  = 'none';
-  document.getElementById('authSuccessPanel').style.display = 'none';
-  document.getElementById('authError').classList.remove('show');
-}
-
-// ── Validation helpers ───────────────────────────────────────
-function validEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
-function showAuthError(msg){
-  var el = document.getElementById('authError');
-  el.textContent = msg; el.classList.add('show');
-}
-
-// ── Email signup ─────────────────────────────────────────────
-function submitSignup() {
-  var firstName = document.getElementById('authFirstName').value.trim();
-  var lastName  = document.getElementById('authLastName').value.trim();
-  var email     = document.getElementById('authEmail').value.trim();
-  var password  = document.getElementById('authPassword').value;
-
-  // Clear errors
-  ['authFirstName','authLastName','authEmail','authPassword'].forEach(function(id){
-    document.getElementById(id).classList.remove('err');
-  });
-  document.getElementById('authError').classList.remove('show');
-
-  var ok = true;
-  if(!firstName){ document.getElementById('authFirstName').classList.add('err'); ok=false; }
-  if(!lastName) { document.getElementById('authLastName').classList.add('err');  ok=false; }
-  if(!validEmail(email)){ document.getElementById('authEmail').classList.add('err'); ok=false; }
-  if(password.length < 8){ document.getElementById('authPassword').classList.add('err'); ok=false; }
-  if(!ok){ showAuthError('Please fill in all fields correctly.'); return; }
-
-  var btn = document.getElementById('authSubmitBtn');
-  btn.disabled = true; btn.textContent = 'Creating your account...';
-
-  // ── MOCK: replace with real Firebase/Supabase call ──
-  setTimeout(function(){
-    var user = {
-      firstName: firstName, lastName: lastName,
-      email: email, joinedAt: new Date().toISOString(),
-      avatar: (firstName[0] + lastName[0]).toUpperCase()
-    };
-    authSaveUser(user);
-    onAuthSuccess(user, 'signup');
-  }, 900);
-}
-
-// ── Email login ──────────────────────────────────────────────
-function submitLogin() {
-  var email    = document.getElementById('loginEmail').value.trim();
-  var password = document.getElementById('loginPassword').value;
-
-  ['loginEmail','loginPassword'].forEach(function(id){
-    document.getElementById(id).classList.remove('err');
-  });
-  document.getElementById('authError').classList.remove('show');
-
-  var ok = true;
-  if(!validEmail(email)){ document.getElementById('loginEmail').classList.add('err'); ok=false; }
-  if(!password){ document.getElementById('loginPassword').classList.add('err'); ok=false; }
-  if(!ok){ showAuthError('Please enter your email and password.'); return; }
-
-  var btn = document.getElementById('loginSubmitBtn');
-  btn.disabled = true; btn.textContent = 'Logging in...';
-
-  // ── MOCK: replace with real auth check ──
-  setTimeout(function(){
-    // In real implementation: verify against backend
-    var stored = null;
-    try { stored = JSON.parse(localStorage.getItem(ATP_USER_KEY)); } catch(e){}
-    if(stored && stored.email === email) {
-      authSaveUser(stored);
-      onAuthSuccess(stored, 'login');
-    } else {
-      // For demo: create session anyway
-      var user = {
-        firstName: email.split('@')[0], lastName: '',
-        email: email, joinedAt: new Date().toISOString(),
-        avatar: email[0].toUpperCase()
-      };
-      authSaveUser(user);
-      onAuthSuccess(user, 'login');
-    }
-  }, 700);
-}
-
-// ── Social auth (mock — replace with real OAuth) ─────────────
-function authWithGoogle() {
-  // Real: firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
-  var mockUser = {
-    firstName: 'Google', lastName: 'User',
-    email: 'user@gmail.com', joinedAt: new Date().toISOString(), avatar: 'G'
-  };
-  authSaveUser(mockUser);
-  onAuthSuccess(mockUser, 'google');
-}
-function authWithApple() {
-  // Real: firebase.auth().signInWithPopup(new firebase.auth.OAuthProvider('apple.com'))
-  var mockUser = {
-    firstName: 'Apple', lastName: 'User',
-    email: 'user@icloud.com', joinedAt: new Date().toISOString(), avatar: 'A'
-  };
-  authSaveUser(mockUser);
-  onAuthSuccess(mockUser, 'apple');
-}
-
-// ── Post-auth ────────────────────────────────────────────────
-function onAuthSuccess(user, method) {
-  // Update member counter
-  if(method === 'signup' && typeof window.atpAddMember === 'function') {
-    window.atpAddMember(1);
-  }
-
-  // Show success screen
-  document.getElementById('authSignupForm').style.display = 'none';
-  document.getElementById('authLoginForm').style.display  = 'none';
-  document.getElementById('authSocialPanel').style.display = 'none';
-  document.getElementById('authSuccessPanel').style.display = 'block';
-  document.getElementById('authSuccessTitle').textContent =
-    method === 'login' ? 'Welcome back, ' + user.firstName + '!' : 'Welcome, ' + user.firstName + '!';
-  document.getElementById('authSuccessSub').innerHTML =
-    method === 'login'
-      ? 'You\'re logged in. Go book a session! 💪'
-      : 'You are now an ATP member. <strong>' + user.email + '</strong> registered.<br><br>Go book your first free session — the community is waiting. 💪';
-
-  // Update nav
-  renderAuthNav(user);
-
-  // Auto close after 1.8s then resume any pending booking
-  setTimeout(function(){ closeAuth(); }, 1800);
-}
-
-// ── Nav render ───────────────────────────────────────────────
-function renderAuthNav(user) {
-  var actions = document.querySelector('.nav-actions');
-  if(!actions) return;
-  actions.innerHTML =
-    '<div class="nav-user">' +
-      '<div class="nav-avatar" title="' + user.firstName + ' ' + user.lastName + '">' + user.avatar + '</div>' +
-      '<div>' +
-        '<div class="nav-user-name">' + user.firstName + '</div>' +
-        '<button class="nav-logout" onclick="logOut()">Log out</button>' +
-      '</div>' +
-    '</div>';
-}
-
-// ── Log out ──────────────────────────────────────────────────
-function logOut() {
-  authClearUser();
-  var actions = document.querySelector('.nav-actions');
-  if(actions) {
-    actions.innerHTML =
-      '<button class="btn-ghost" onclick="openAuth(\'login\')">Log in</button>' +
-      '<button class="btn-primary" onclick="openAuth(\'signup\')">Join free →</button>';
-  }
-}
-
-// ── Guard: require auth before booking ───────────────────────
-function requireAuth(callback) {
-  if(atpUser) { callback(); return; }
-  // Store callback intent and open auth
-  pendingAuthCallback = callback;
-  openAuth('signup');
-}
-var pendingAuthCallback = null;
-
-// ── Init ─────────────────────────────────────────────────────
-authLoadUser();
-if(atpUser) renderAuthNav(atpUser);
-
-// Close on overlay click
-document.getElementById('authOverlay').addEventListener('click', function(e){
-  if(e.target === this) closeAuth();
-});
-document.addEventListener('keydown', function(e){
-  if(e.key === 'Escape') closeAuth();
-});
-// ══════════════════════════════════════════════════════════════
-
-loadProducts();
-</script>
+loadProducts();</script>
 </body>
 </html>
