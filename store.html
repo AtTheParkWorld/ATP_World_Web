@@ -352,12 +352,7 @@ footer{background:var(--dark2);padding:64px 40px 32px;border-top:1px solid rgba(
 
 /* Dynamic product grid */
 .product-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;grid-auto-rows:min-content}
-/* Hero card — spans 2 rows, taller image */
-.product-card.hero-card{grid-column:1;grid-row:span 2;display:flex;flex-direction:column}
-.product-card.hero-card .product-img{flex:1;aspect-ratio:unset;min-height:520px}
-.product-card.hero-card .product-name{font-size:17px}
-.product-card.hero-card .product-price{font-size:26px}
-.product-card.hero-card .product-body{padding:18px 20px 22px}
+
 
 /* ── RESPONSIVE ───────────────────────────────────────────── */
 @media(max-width:1200px){.shop-layout{padding:40px 40px 80px}.store-hero-inner{padding:0 0 0 40px}.store-hero-h1{font-size:clamp(56px,7vw,96px)}}
@@ -367,8 +362,6 @@ footer{background:var(--dark2);padding:64px 40px 32px;border-top:1px solid rgba(
 
 /* Parallax hero card */
 @keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.product-card.hero-card{will-change:transform;transition:transform .28s cubic-bezier(.25,.46,.45,.94),border-color .28s,box-shadow .28s}
-.product-card.hero-card:hover{transform:translateY(-10px)!important}
 </style>
 </head>
 <body>
@@ -923,8 +916,7 @@ function renderGrid(products) {
   grid.innerHTML = "";
   if (!products.length) return;
 
-  products.forEach(function(p, productIdx) {
-    var isHero = productIdx === 0; // first product = hero card
+  products.forEach(function(p) {
     var imgs = p.images.edges.map(function(e){ return e.node.url; });
     var img0 = imgs[0] || "";
     var img1 = imgs[1] || "";
@@ -970,7 +962,7 @@ function renderGrid(products) {
       : '';
 
     var card = document.createElement('article');
-    card.className = 'product-card reveal' + (isHero ? ' hero-card' : '');
+    card.className = 'product-card reveal';
     card.dataset.type = p.productType || '';
     card.dataset.pid = p.id;
 
@@ -1510,24 +1502,6 @@ document.addEventListener('keydown', function(e){
 
 
 
-// ── PARALLAX SCROLL for hero card ────────────────────────────
-var parallaxTicking = false;
-window.addEventListener("scroll", function() {
-  if (!parallaxTicking) {
-    requestAnimationFrame(function() {
-      var heroCard = document.querySelector(".product-card.hero-card");
-      if (heroCard) {
-        var rect    = heroCard.getBoundingClientRect();
-        var viewH   = window.innerHeight;
-        var cardCenter = rect.top + rect.height / 2;
-        var viewCenter = viewH / 2;
-        var dist    = cardCenter - viewCenter;
-        var shift   = Math.round(dist * -0.12);
-        shift = Math.max(-50, Math.min(50, shift));
-        heroCard.style.transform = "translateY(" + shift + "px)";
-      }
-      parallaxTicking = false;
-    });
     parallaxTicking = true;
   }
 }, { passive: true });

@@ -404,6 +404,12 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 .member-gate-sub{font-size:14px;color:var(--light);line-height:1.7;margin-bottom:24px}
 .member-gate-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 
+
+.skeleton-img{background:linear-gradient(90deg,#141414 25%,#1e1e1e 50%,#141414 75%);background-size:200% 100%;animation:shimmer 1.4s infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.shop-skel .product-img{aspect-ratio:3/4}
+a.product-card{text-decoration:none;display:block}
+a.product-card:hover{transform:translateY(-4px)}
 </style>
 </head>
 <body>
@@ -694,11 +700,12 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="#7AC231" stroke-width="1.8" stroke-linecap="round"><polygon points="8,2 10,6 14,6.5 11,9.5 11.8,14 8,12 4.2,14 5,9.5 2,6.5 6,6"/></svg>
       <p><strong>Members save with points.</strong> Every session earns points redeemable for store discounts. 280 points = 10% off your next order.</p>
     </div>
-    <div class="shop-grid">
-      <article class="product-card reveal"><div class="product-img"><span class="product-tag-overlay">Bestseller</span><p style="font-size:11px;color:#333;text-transform:uppercase;letter-spacing:.06em">FlowFit Tank</p></div><div class="product-body"><div class="product-name">FlowFit Tank</div><div class="product-sub">Men · Athletic fit</div><div class="product-price">AED 79</div></div></article>
-      <article class="product-card reveal rd1"><div class="product-img"><span class="product-tag-overlay">New</span><p style="font-size:11px;color:#333;text-transform:uppercase;letter-spacing:.06em">ATP Workout Mat</p></div><div class="product-body"><div class="product-name">ATP Workout Mat</div><div class="product-sub">One mat. Every session.</div><div class="product-price">AED 150</div></div></article>
-      <article class="product-card reveal rd2"><div class="product-img"><p style="font-size:11px;color:#333;text-transform:uppercase;letter-spacing:.06em">AdaptMotion Tee</p></div><div class="product-body"><div class="product-name">AdaptMotion Tee</div><div class="product-sub">Women · Athletic fit</div><div class="product-price">AED 99</div></div></article>
-      <article class="product-card reveal rd3"><div class="product-img"><p style="font-size:11px;color:#333;text-transform:uppercase;letter-spacing:.06em">UrbanEase PIN Tee</p></div><div class="product-body"><div class="product-name">UrbanEase PIN Tee</div><div class="product-sub">Men · Regular fit</div><div class="product-price">AED 109</div></div></article>
+    <div class="shop-grid" id="indexShopGrid">
+      <!-- loaded dynamically from Shopify -->
+      <a href="store.html" class="product-card reveal shop-skel"><div class="product-img skeleton-img"></div><div class="product-body"><div class="skel-line" style="width:60%;height:13px;border-radius:4px;background:#1e1e1e;margin-bottom:8px"></div><div class="skel-line" style="width:40%;height:11px;border-radius:4px;background:#1a1a1a;margin-bottom:10px"></div><div class="skel-line" style="width:35%;height:16px;border-radius:4px;background:#1e1e1e"></div></div></a>
+      <a href="store.html" class="product-card reveal shop-skel rd1"><div class="product-img skeleton-img"></div><div class="product-body"><div class="skel-line" style="width:65%;height:13px;border-radius:4px;background:#1e1e1e;margin-bottom:8px"></div><div class="skel-line" style="width:45%;height:11px;border-radius:4px;background:#1a1a1a;margin-bottom:10px"></div><div class="skel-line" style="width:38%;height:16px;border-radius:4px;background:#1e1e1e"></div></div></a>
+      <a href="store.html" class="product-card reveal shop-skel rd2"><div class="product-img skeleton-img"></div><div class="product-body"><div class="skel-line" style="width:55%;height:13px;border-radius:4px;background:#1e1e1e;margin-bottom:8px"></div><div class="skel-line" style="width:42%;height:11px;border-radius:4px;background:#1a1a1a;margin-bottom:10px"></div><div class="skel-line" style="width:32%;height:16px;border-radius:4px;background:#1e1e1e"></div></div></a>
+      <a href="store.html" class="product-card reveal shop-skel rd3"><div class="product-img skeleton-img"></div><div class="product-body"><div class="skel-line" style="width:70%;height:13px;border-radius:4px;background:#1e1e1e;margin-bottom:8px"></div><div class="skel-line" style="width:35%;height:11px;border-radius:4px;background:#1a1a1a;margin-bottom:10px"></div><div class="skel-line" style="width:40%;height:16px;border-radius:4px;background:#1e1e1e"></div></div></a>
     </div>
   </div>
 </section>
@@ -828,6 +835,49 @@ window.addEventListener("scroll", function(){ nav.classList.toggle("scrolled", w
 var obs = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("visible"); obs.unobserve(e.target); } }); }, {threshold:0.1, rootMargin:"0px 0px -40px 0px"});
 document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
 
+
+
+// ── INDEX SHOP: load 4 products from Shopify ─────────────────
+(function() {
+  var TOKEN  = "31a1a5554b7f2fdaf2aa4dc44e13a127";
+  var DOMAIN = "atp-store-7903.myshopify.com";
+  var grid   = document.getElementById("indexShopGrid");
+  if (!grid) return;
+
+  fetch("https://" + DOMAIN + "/api/2024-01/graphql.json", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Shopify-Storefront-Access-Token": TOKEN
+    },
+    body: JSON.stringify({ query: "{ products(first:4) { edges { node { id title productType priceRange { minVariantPrice { amount currencyCode } } images(first:1) { edges { node { url altText } } } } } } }" })
+  })
+  .then(function(r) { return r.json(); })
+  .then(function(data) {
+    var products = data.products.edges.map(function(e) { return e.node; });
+    if (!products.length) return;
+    grid.innerHTML = products.map(function(p, i) {
+      var img   = p.images.edges[0] ? p.images.edges[0].node.url : "";
+      var alt   = p.images.edges[0] ? (p.images.edges[0].node.altText || p.title) : p.title;
+      var price = parseFloat(p.priceRange.minVariantPrice.amount);
+      var cur   = p.priceRange.minVariantPrice.currencyCode;
+      var delay = i === 0 ? "" : " rd" + i;
+      return '<a href="store.html" class="product-card reveal' + delay + '" style="text-decoration:none;display:block">' +
+        '<div class="product-img">' +
+          (img ? '<img src="' + img + '" alt="' + alt + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">' : '') +
+        '</div>' +
+        '<div class="product-body">' +
+          '<div class="product-name">' + p.title + '</div>' +
+          '<div class="product-sub">' + (p.productType || '') + '</div>' +
+          '<div class="product-price">' + cur + ' ' + price.toFixed(0) + '</div>' +
+        '</div>' +
+      '</a>';
+    }).join('');
+    // re-observe new elements
+    grid.querySelectorAll('.reveal').forEach(function(el) { obs.observe(el); });
+  })
+  .catch(function() {}); // silent fail - skeletons remain
+})();
 
 // ── REVEAL SAFETY NET ────────────────────────────────────────
 // If IntersectionObserver fails, show everything after 2s
