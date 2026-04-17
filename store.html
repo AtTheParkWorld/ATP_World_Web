@@ -693,11 +693,13 @@ var SHOPIFY_DOMAIN = "atp-store-7903.myshopify.com";
 // ── STATUS BAR ───────────────────────────────────────────────
 function showStatus(type, html) {
   var bar = document.getElementById("statusBar");
+  if (!bar) return;
   bar.className = "status-bar show " + type;
   bar.innerHTML = html;
 }
 function hideStatus() {
-  document.getElementById("statusBar").className = "status-bar";
+  var bar = document.getElementById("statusBar");
+  if (bar) bar.className = "status-bar";
 }
 
 // ── SHOPIFY API ──────────────────────────────────────────────
@@ -733,12 +735,13 @@ function populateHero(products) {
   if (!products.length) return;
   var main   = document.getElementById("heroImgMain");
   var accent = document.getElementById("heroImgAccent");
+  if (!main && !accent) return; // elements removed from DOM - skip silently
   var p0 = products[0];
   var p1 = products[Math.min(2, products.length-1)];
   var img0 = p0.images.edges[0] ? p0.images.edges[0].node.url : "";
   var img1 = p1.images.edges[0] ? p1.images.edges[0].node.url : "";
-  if (img0) { main.style.backgroundImage = "url('" + img0 + "')"; main.classList.add("loaded"); }
-  if (img1) { accent.style.backgroundImage = "url('" + img1 + "')"; accent.classList.add("loaded"); }
+  if (main && img0) { main.style.backgroundImage = "url('" + img0 + "')"; main.classList.add("loaded"); }
+  if (accent && img1) { accent.style.backgroundImage = "url('" + img1 + "')"; accent.classList.add("loaded"); }
 }
 
 // ── SIDEBAR CATEGORY FILTER ───────────────────────────────────

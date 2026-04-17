@@ -841,42 +841,67 @@ document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
 (function() {
   var TOKEN  = "31a1a5554b7f2fdaf2aa4dc44e13a127";
   var DOMAIN = "atp-store-7903.myshopify.com";
-  var grid   = document.getElementById("indexShopGrid");
-  if (!grid) return;
 
-  fetch("https://" + DOMAIN + "/api/2024-01/graphql.json", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Shopify-Storefront-Access-Token": TOKEN
-    },
-    body: JSON.stringify({ query: "{ products(first:4) { edges { node { id title productType priceRange { minVariantPrice { amount currencyCode } } images(first:1) { edges { node { url altText } } } } } } }" })
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
-    var products = data.products.edges.map(function(e) { return e.node; });
-    if (!products.length) return;
-    grid.innerHTML = products.map(function(p, i) {
-      var img   = p.images.edges[0] ? p.images.edges[0].node.url : "";
-      var alt   = p.images.edges[0] ? (p.images.edges[0].node.altText || p.title) : p.title;
-      var price = parseFloat(p.priceRange.minVariantPrice.amount);
-      var cur   = p.priceRange.minVariantPrice.currencyCode;
-      var delay = i === 0 ? "" : " rd" + i;
-      return '<a href="store.html" class="product-card reveal' + delay + '" style="text-decoration:none;display:block">' +
-        '<div class="product-img">' +
-          (img ? '<img src="' + img + '" alt="' + alt + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">' : '') +
-        '</div>' +
-        '<div class="product-body">' +
-          '<div class="product-name">' + p.title + '</div>' +
-          '<div class="product-sub">' + (p.productType || '') + '</div>' +
-          '<div class="product-price">' + cur + ' ' + price.toFixed(0) + '</div>' +
-        '</div>' +
-      '</a>';
-    }).join('');
-    // re-observe new elements
-    grid.querySelectorAll('.reveal').forEach(function(el) { obs.observe(el); });
-  })
-  .catch(function() {}); // silent fail - skeletons remain
+  function loadShopProducts() {
+    var grid = document.getElementById("indexShopGrid");
+    if (!grid) return;
+
+    fetch("https://" + DOMAIN + "/api/2024-01/graphql.json", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Storefront-Access-Token": TOKEN
+      },
+      body: JSON.stringify({
+        query: "{ products(first:4) { edges { node { id title productType priceRange { minVariantPrice { amount currencyCode } } images(first:1) { edges { node { url altText } } } } } } }"
+      })
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (!data.products) return;
+      var products = data.products.edges.map(function(e) { return e.node; });
+      if (!products.length) return;
+      grid.innerHTML = products.map(function(p, i) {
+        var imgNode = p.images.edges[0] ? p.images.edges[0].node : null;
+        var img   = imgNode ? imgNode.url : "";
+        var alt   = imgNode ? (imgNode.altText || p.title) : p.title;
+        var price = parseFloat(p.priceRange.minVariantPrice.amount);
+        var cur   = p.priceRange.minVariantPrice.currencyCode;
+        var delay = i === 0 ? "" : " rd" + i;
+        return [
+          '<a href="store.html" class="product-card reveal' + delay + '" style="text-decoration:none;display:block">',
+            '<div class="product-img">',
+              img ? '<img src="' + img + '" alt="' + alt + '" loading="lazy" style="width:100%;height:100%;object-fit:cover;display:block">' : '',
+            '</div>',
+            '<div class="product-body">',
+              '<div class="product-name">' + p.title + '</div>',
+              '<div class="product-sub">' + (p.productType || '') + '</div>',
+              '<div class="product-price">' + cur + ' ' + price.toFixed(0) + '</div>',
+            '</div>',
+          '</a>'
+        ].join('');
+      }).join('');
+      // Re-observe for reveal animation
+      if (typeof obs !== 'undefined') {
+        grid.querySelectorAll('.reveal').forEach(function(el) { obs.observe(el); });
+      } else {
+        grid.querySelectorAll('.reveal').forEach(function(el) { el.classList.add('visible'); });
+      }
+    })
+    .catch(function(err) {
+      console.warn('Index shop load failed:', err);
+      // Make skeleton cards clickable at minimum
+      var skels = document.querySelectorAll('.shop-skel');
+      skels.forEach(function(s) { s.classList.add('visible'); });
+    });
+  }
+
+  // Run after DOM is ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadShopProducts);
+  } else {
+    loadShopProducts();
+  }
 })();
 
 // ── REVEAL SAFETY NET ────────────────────────────────────────
