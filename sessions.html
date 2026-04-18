@@ -270,7 +270,20 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 @media(max-width:900px){.cal-grid{font-size:11px}.cal-day{min-height:64px}}
 @media(max-width:600px){.cal-session-dot{display:none}.cal-day.has-session::after{content:"•";color:var(--green);position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:14px}}
 
+
+/* ── QR CODE ─────────────────────────────────────────────── */
+.qr-section{margin:20px 0;padding:20px;background:var(--dark3);border-radius:var(--radius-lg);border:1px solid rgba(255,255,255,.08);text-align:center}
+.qr-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.qr-canvas-wrap{display:inline-block;background:#fff;padding:12px;border-radius:10px;margin-bottom:12px}
+.qr-canvas-wrap canvas,.qr-canvas-wrap img{display:block}
+.qr-member-id{font-size:13px;font-weight:700;color:var(--white);margin-bottom:4px;font-family:monospace;letter-spacing:.06em}
+.qr-member-name{font-size:12px;color:var(--muted)}
+.qr-save-btn{display:inline-flex;align-items:center;gap:6px;margin-top:10px;font-size:12px;font-weight:700;padding:8px 18px;border-radius:var(--radius);border:1px solid rgba(122,194,49,.3);background:rgba(122,194,49,.08);color:var(--green);cursor:pointer;transition:all .2s}
+.qr-save-btn:hover{background:rgba(122,194,49,.18)}
+.confirm-email-note{font-size:12px;color:var(--muted);margin-top:12px;line-height:1.6;padding:10px 14px;background:rgba(122,194,49,.05);border-radius:8px;border-left:2px solid var(--green)}
+
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -511,8 +524,19 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       <h2 class="confirm-title">You're in!</h2>
       <p class="confirm-sub">
         See you at <span class="confirm-session-name" id="confirmName"></span>.<br>
-        Confirmation sent to your email. See you there! 🙌
+        Show your QR code to the ambassador to check in. 🙌
       </p>
+      <div class="qr-section">
+        <div class="qr-title">Your Check-in QR Code</div>
+        <div class="qr-canvas-wrap"><div id="qrCodeEl"></div></div>
+        <div class="qr-member-id" id="qrMemberId"></div>
+        <div class="qr-member-name" id="qrMemberName"></div>
+        <button class="qr-save-btn" onclick="saveQR()">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 13h12"/></svg>
+          Save QR to phone
+        </button>
+        <div class="confirm-email-note">📧 A copy has been sent to your email. Your QR code is also saved in <a href="profile.html" style="color:var(--green)">My Profile → Sessions</a>.</div>
+      </div>
 
       <div class="loop-actions">
         <a class="loop-btn loop-btn-cal" id="calBtn" href="#" target="_blank" rel="noopener">
@@ -708,6 +732,37 @@ function showConfirmation(name, email) {
 
   document.getElementById('modalForm').style.display = 'none';
   document.getElementById('confirmPanel').style.display = 'block';
+
+  // ── GENERATE QR CODE ──
+  var memberId = 'ATP-' + (atpUser ? atpUser.firstName[0] + (atpUser.lastName||'X')[0] : 'MB').toUpperCase() + String(Date.now()).slice(-5);
+  var memberName = atpUser ? atpUser.firstName + ' ' + (atpUser.lastName||'') : name;
+  var qrData = JSON.stringify({
+    id: memberId,
+    name: memberName,
+    email: email,
+    session: s.name,
+    dayTime: s.dayTime,
+    loc: s.loc,
+    booked: new Date().toISOString()
+  });
+  document.getElementById('qrMemberId').textContent = memberId;
+  document.getElementById('qrMemberName').textContent = memberName;
+  var qrEl = document.getElementById('qrCodeEl');
+  qrEl.innerHTML = '';
+  new QRCode(qrEl, {
+    text: qrData,
+    width: 160,
+    height: 160,
+    colorDark: '#000000',
+    colorLight: '#ffffff',
+    correctLevel: QRCode.CorrectLevel.M
+  });
+
+  // Save to localStorage for profile access
+  var bookings = JSON.parse(localStorage.getItem('atp:bookings') || '[]');
+  bookings.unshift({ id: memberId, session: s.name, dayTime: s.dayTime, loc: s.loc, coach: s.coach, qrData: qrData, status: 'upcoming', booked: new Date().toISOString() });
+  localStorage.setItem('atp:bookings', JSON.stringify(bookings.slice(0, 20)));
+
 }
 
 function getNextDateForDay(dayName, timeStr) {
@@ -1218,6 +1273,18 @@ function calToday() {
   renderCalendar();
 }
 // ─────────────────────────────────────────────────────────────────
+
+function saveQR() {
+  var canvas = document.querySelector('#qrCodeEl canvas');
+  if (!canvas) { alert('QR not ready yet, please wait.'); return; }
+  var link = document.createElement('a');
+  link.download = 'ATP-checkin-QR.png';
+  link.href = canvas.toDataURL('image/png');
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+}
+
 </script>
 </body>
 </html>

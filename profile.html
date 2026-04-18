@@ -302,7 +302,38 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
 .member-gate-sub{font-size:14px;color:var(--light);line-height:1.7;margin-bottom:24px}
 .member-gate-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 
+
+/* ── SESSION QR BTN ── */
+.session-qr-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid rgba(122,194,49,.3);background:rgba(122,194,49,.06);color:var(--green);cursor:pointer;transition:all .2s}
+.session-qr-btn:hover{background:rgba(122,194,49,.15)}
+
+/* ── QR MODAL ── */
+.qr-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(12px);z-index:600;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.qr-modal-overlay.open{opacity:1;pointer-events:all}
+.qr-modal{background:#111;border-radius:20px;padding:36px;text-align:center;border:1px solid rgba(255,255,255,.1);max-width:340px;width:90%;transform:scale(.95);transition:transform .25s}
+.qr-modal-overlay.open .qr-modal{transform:scale(1)}
+.qr-modal h3{font-family:var(--ff-display);font-size:24px;font-weight:900;text-transform:uppercase;color:#fff;margin-bottom:4px}
+.qr-modal-sub{font-size:13px;color:#666;margin-bottom:20px}
+.qr-modal-canvas{display:inline-block;background:#fff;padding:14px;border-radius:12px;margin-bottom:16px}
+.qr-modal-id{font-size:13px;font-weight:700;color:#fff;font-family:monospace;letter-spacing:.06em;margin-bottom:4px}
+.qr-modal-session{font-size:12px;color:#666;margin-bottom:20px}
+.qr-modal-actions{display:flex;gap:10px;justify-content:center}
+.qr-modal-btn{font-size:12px;font-weight:700;padding:9px 18px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#fff;cursor:pointer;transition:all .2s}
+.qr-modal-btn:hover{border-color:var(--green);color:var(--green)}
+.qr-modal-btn.primary{background:var(--green);border-color:var(--green)}
+.qr-modal-btn.primary:hover{background:var(--green-dark)}
+.qr-modal-close{position:absolute;top:14px;right:14px;width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:transparent;color:#888;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+
+/* ── AMBASSADOR BADGE ── */
+.ambassador-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 12px;border-radius:20px;background:linear-gradient(135deg,rgba(255,196,0,.15),rgba(255,150,0,.08));border:1px solid rgba(255,196,0,.35);color:#ffc400}
+.ambassador-card{background:linear-gradient(135deg,rgba(255,196,0,.06),rgba(255,150,0,.03));border:1px solid rgba(255,196,0,.2);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px}
+.ambassador-card-title{font-family:var(--ff-display);font-size:22px;font-weight:900;text-transform:uppercase;color:#ffc400;margin-bottom:6px}
+.ambassador-card-desc{font-size:13px;color:#999;line-height:1.6;margin-bottom:16px}
+.ambassador-scan-btn{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;padding:11px 22px;border-radius:var(--radius);background:#ffc400;color:#000;border:none;cursor:pointer;transition:all .2s;text-decoration:none}
+.ambassador-scan-btn:hover{background:#e6b000;transform:translateY(-1px)}
+
 </style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 </head>
 <body>
 
@@ -392,6 +423,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
       <button class="ptab" data-tab="friends" onclick="showTab('friends',this)">Friends</button>
       <button class="ptab" data-tab="notifications" onclick="showTab('notifications',this)">Notifications</button>
       <button class="ptab" data-tab="edit" onclick="showTab('edit',this)">Edit Profile</button>
+      <button class="ptab" id="ambassadorTab" data-tab="ambassador" onclick="showTab('ambassador',this)" style="display:none">Ambassador</button>
     </div>
   </div>
 
@@ -594,6 +626,60 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
         </div>
       </div>
 
+
+      <!-- AMBASSADOR PANEL -->
+      <div class="profile-panel" id="panel-ambassador">
+        <div class="ambassador-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <span class="ambassador-badge">⭐ Ambassador</span>
+          </div>
+          <div class="ambassador-card-title">ATP Ambassador</div>
+          <div class="ambassador-card-desc">As an ATP Ambassador you can check in members at sessions by scanning their QR code. You have access to the live session dashboard and attendance records.</div>
+          <a href="checkin.html" class="ambassador-scan-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><path d="M8 12h8M12 8v8"/></svg>
+            Open Check-in Scanner
+          </a>
+        </div>
+        <div class="widget">
+          <div class="widget-head"><span class="widget-title">Today's Sessions</span><span style="font-size:12px;color:var(--muted)">Tap to manage</span></div>
+          <div class="widget-body">
+            <div class="session-row" style="cursor:pointer" onclick="window.location='checkin.html?session=community-run'">
+              <div class="session-dot faster"></div>
+              <div class="session-info"><div class="session-name">Community Run</div><div class="session-meta">Tonight · 7:00 PM · Dubai Marina</div></div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:11px;color:var(--green);font-weight:700">24 booked</span>
+                <span class="session-status upcoming">Check in →</span>
+              </div>
+            </div>
+            <div class="session-row" style="cursor:pointer" onclick="window.location='checkin.html'">
+              <div class="session-dot stronger"></div>
+              <div class="session-info"><div class="session-name">Military Bootcamp</div><div class="session-meta">Tomorrow · 6:30 AM · Al Formal Park</div></div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:11px;color:var(--green);font-weight:700">18 booked</span>
+                <span class="session-status upcoming">Check in →</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="widget">
+          <div class="widget-head"><span class="widget-title">My Check-in History</span></div>
+          <div class="widget-body">
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+              <thead><tr style="border-bottom:1px solid rgba(255,255,255,.08)">
+                <th style="text-align:left;padding:8px 0;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Member</th>
+                <th style="text-align:left;padding:8px 0;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Session</th>
+                <th style="text-align:right;padding:8px 0;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Time</th>
+              </tr></thead>
+              <tbody id="checkinHistory">
+                <tr style="border-bottom:1px solid rgba(255,255,255,.04)"><td style="padding:10px 0;color:var(--white)">Jay Ashar</td><td style="color:var(--muted)">Community Run</td><td style="text-align:right;color:var(--green);font-weight:700">7:02 PM</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,.04)"><td style="padding:10px 0;color:var(--white)">Valentina R.</td><td style="color:var(--muted)">Community Run</td><td style="text-align:right;color:var(--green);font-weight:700">7:04 PM</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,.04)"><td style="padding:10px 0;color:var(--white)">Gwen Gaje</td><td style="color:var(--muted)">Community Run</td><td style="text-align:right;color:var(--green);font-weight:700">7:07 PM</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <!-- SIDEBAR -->
@@ -748,15 +834,23 @@ function showTab(name, btn) {
 }
 
 // ── DATA ─────────────────────────────────────────────────────
-var SESSIONS = [
-  {name:"Community Run",tribe:"faster",day:"Today",time:"7:00 PM",loc:"Dubai Marina",status:"upcoming"},
-  {name:"Military Bootcamp",tribe:"stronger",day:"Tomorrow",time:"6:30 AM",loc:"Al Formal Park",status:"upcoming"},
-  {name:"Hatha Yoga",tribe:"better",day:"Wed",time:"7:00 PM",loc:"DIC Amphitheatre",status:"upcoming"},
-  {name:"Cardio Calisthenics",tribe:"stronger",day:"Mon",time:"7:00 PM",loc:"Skydive Dubai",status:"done"},
-  {name:"Community Run",tribe:"faster",day:"Sun",time:"7:00 AM",loc:"Dubai Marina",status:"done"},
-  {name:"Sound Healing",tribe:"better",day:"Sat",time:"7:00 PM",loc:"Al Formal Park",status:"done"},
-  {name:"Group Cycling",tribe:"faster",day:"Fri",time:"6:00 AM",loc:"Dubai Marina",status:"done"},
-];
+// Load real bookings from localStorage (set when member books a session)
+function getSessionsData() {
+  var stored = JSON.parse(localStorage.getItem('atp:bookings') || '[]');
+  var fallback = [
+    {name:"Community Run",tribe:"faster",day:"Today",time:"7:00 PM",loc:"Dubai Marina",status:"upcoming"},
+    {name:"Military Bootcamp",tribe:"stronger",day:"Tomorrow",time:"6:30 AM",loc:"Al Formal Park",status:"upcoming"},
+    {name:"Hatha Yoga",tribe:"better",day:"Wed",time:"7:00 PM",loc:"DIC Amphitheatre",status:"upcoming"},
+    {name:"Cardio Calisthenics",tribe:"stronger",day:"Mon",time:"7:00 PM",loc:"Skydive Dubai",status:"done"},
+    {name:"Community Run",tribe:"faster",day:"Sun",time:"7:00 AM",loc:"Dubai Marina",status:"done"},
+    {name:"Sound Healing",tribe:"better",day:"Sat",time:"7:00 PM",loc:"Al Formal Park",status:"done"},
+  ];
+  if (!stored.length) return fallback;
+  return stored.map(function(b) {
+    return {name:b.session,tribe:"stronger",day:b.dayTime.split("·")[0].trim(),time:b.dayTime.split("·")[1]||"",loc:b.loc,status:b.status||"upcoming",id:b.id,qrData:b.qrData};
+  });
+}
+var SESSIONS = getSessionsData();
 
 var ACHIEVEMENTS = [
   {icon:"🔥",name:"First Session",desc:"Attend your first ATP session",unlocked:true},
@@ -844,14 +938,20 @@ function renderStreakGrid(el, days) {
 }
 
 function renderSessions(el, sessions) {
-  el.innerHTML = sessions.map(function(s){
+  el.innerHTML = sessions.map(function(s,i){
+    var qrBtn = s.qrData ? "<button class='session-qr-btn' onclick='showSessionQR(\'"+encodeURIComponent(s.qrData)+"\',\'"+s.id+"\')'>"+
+      "<svg width=\'12\' height=\'12\' viewBox=\'0 0 16 16\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.8\'><rect x=\'1\' y=\'1\' width=\'6\' height=\'6\' rx=\'1\'/><rect x=\'9\' y=\'1\' width=\'6\' height=\'6\' rx=\'1\'/><rect x=\'1\' y=\'9\' width=\'6\' height=\'6\' rx=\'1\'/><rect x=\'9\' y=\'9\' width=\'6\' height=\'6\' rx=\'1\'/></svg>"+
+      " QR</button>" : "";
     return "<div class='session-row'>"+
       "<div class='session-dot "+s.tribe+"'></div>"+
       "<div class='session-info'>"+
         "<div class='session-name'>"+s.name+"</div>"+
         "<div class='session-meta'>"+s.day+" · "+s.time+" · "+s.loc+"</div>"+
       "</div>"+
-      "<span class='session-status "+s.status+"'>"+(s.status==="upcoming"?"Upcoming":"Done")+"</span>"+
+      "<div style='display:flex;align-items:center;gap:8px'>"+
+        qrBtn+
+        "<span class='session-status "+s.status+"'>"+(s.status==="upcoming"?"Upcoming":"Done")+"</span>"+
+      "</div>"+
     "</div>";
   }).join("");
 }
@@ -991,6 +1091,56 @@ function handleAvatarUpload(input){
   };
   reader.readAsDataURL(input.files[0]);
 }
+
+
+// ── QR CODE LIBRARY ──────────────────────────────────────────
+// Loaded from CDN in head
+// ── SESSION QR MODAL ─────────────────────────────────────────
+var profileQRInstance = null;
+function showSessionQR(encodedData, id) {
+  var data = decodeURIComponent(encodedData);
+  var parsed = {};
+  try { parsed = JSON.parse(data); } catch(e) {}
+  document.getElementById('profileQRId').textContent = id || parsed.id || 'ATP-MEMBER';
+  document.getElementById('profileQRSession').textContent = (parsed.session || '') + ' · ' + (parsed.dayTime || '');
+  var el = document.getElementById('profileQREl');
+  el.innerHTML = '';
+  if (typeof QRCode !== 'undefined') {
+    profileQRInstance = new QRCode(el, { text: data, width: 180, height: 180, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
+  }
+  document.getElementById('qrModalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeQRModal() {
+  document.getElementById('qrModalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function saveProfileQR() {
+  var canvas = document.querySelector('#profileQREl canvas');
+  if (!canvas) return;
+  var a = document.createElement('a');
+  a.download = 'ATP-checkin-QR.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+// ── AMBASSADOR ROLE ───────────────────────────────────────────
+function checkAmbassadorRole() {
+  var user = atpUser;
+  var isAmbassador = user && (user.ambassador === true || localStorage.getItem('atp:ambassador') === 'true');
+  var tab = document.getElementById('ambassadorTab');
+  if (isAmbassador && tab) {
+    tab.style.display = 'block';
+    // Show ambassador badge in profile
+    var badge = document.getElementById('subBadge');
+    if (badge) {
+      badge.innerHTML += ' <span class="ambassador-badge" style="margin-left:6px">⭐ Ambassador</span>';
+    }
+  }
+}
+
+// Reload sessions from localStorage on init
+SESSIONS = getSessionsData();
 
 // ── INIT ────────────────────────────────────────────────────
 renderStreakGrid(document.getElementById("streakMiniGrid"),28);
@@ -1245,6 +1395,7 @@ var pendingAuthCallback = null;
 // ── Init ─────────────────────────────────────────────────────
 authLoadUser();
 if(atpUser) renderAuthNav(atpUser);
+checkAmbassadorRole();
 
 // Close on overlay click
 document.getElementById('authOverlay').addEventListener('click', function(e){
@@ -1256,5 +1407,25 @@ document.addEventListener('keydown', function(e){
 // ══════════════════════════════════════════════════════════════
 
 </script>
+
+<!-- QR MODAL (for viewing saved booking QR codes) -->
+<div class="qr-modal-overlay" id="qrModalOverlay" onclick="if(event.target===this)closeQRModal()">
+  <div class="qr-modal" style="position:relative">
+    <button class="qr-modal-close" onclick="closeQRModal()">×</button>
+    <h3>Check-in QR</h3>
+    <p class="qr-modal-sub">Show this to the ambassador at the session</p>
+    <div class="qr-modal-canvas"><div id="profileQREl"></div></div>
+    <div class="qr-modal-id" id="profileQRId"></div>
+    <div class="qr-modal-session" id="profileQRSession"></div>
+    <div class="qr-modal-actions">
+      <button class="qr-modal-btn" onclick="saveProfileQR()">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 13h12"/></svg>
+        Save
+      </button>
+      <button class="qr-modal-btn primary" onclick="closeQRModal()">Close</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
