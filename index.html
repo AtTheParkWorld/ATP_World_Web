@@ -474,6 +474,7 @@ a.product-card:hover{transform:translateY(-4px)}
       <li><a href="index.html" class="active">Home</a></li>
       <li><a href="sessions.html">Sessions</a></li>
       <li><a href="community.html">Community</a></li>
+      <li><a href="profile.html">Profile</a></li>
       <li><a href="store.html">Store</a></li>
       <li><a href="index.html#partners">Partners</a></li>
       <li><a href="index.html#story">About</a></li>
@@ -908,35 +909,38 @@ document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
     var track = document.getElementById("indexShopGrid");
     if (!track) return;
 
+    // Simple flat query - no nesting complexity
+    var query = "{products(first:8){edges{node{id title productType priceRange{minVariantPrice{amount currencyCode}}images(first:1){edges{node{url altText}}}}}}}";
+
     fetch("https://" + DOMAIN + "/api/2024-01/graphql.json", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Shopify-Storefront-Access-Token": TOKEN
       },
-      body: JSON.stringify({
-        query: "{products(first:8){edges{node{id title productType priceRange{minVariantPrice{amount currencyCode}}images(first:1){edges{node{url altText}}}}}}}"
-      })
+      body: JSON.stringify({ query: query })
     })
     .then(function(r) {
       if (!r.ok) throw new Error("HTTP " + r.status);
       return r.json();
     })
     .then(function(data) {
-      if (!data.products) throw new Error("No products in response");
+      if (!data || !data.products || !data.products.edges) {
+        throw new Error("Unexpected response: " + JSON.stringify(data).substring(0, 100));
+      }
       var products = data.products.edges.map(function(e) { return e.node; });
-      if (!products.length) throw new Error("Empty products");
+      if (!products.length) throw new Error("Zero products returned");
 
       track.innerHTML = products.map(function(p) {
         var imgNode = p.images.edges[0] ? p.images.edges[0].node : null;
-        var img     = imgNode ? imgNode.url : "";
-        var alt     = imgNode ? (imgNode.altText || p.title) : p.title;
-        var price   = parseFloat(p.priceRange.minVariantPrice.amount);
-        var cur     = p.priceRange.minVariantPrice.currencyCode;
+        var img = imgNode ? imgNode.url : "";
+        var alt = imgNode ? (imgNode.altText || p.title) : p.title;
+        var price = parseFloat(p.priceRange.minVariantPrice.amount);
+        var cur = p.priceRange.minVariantPrice.currencyCode;
         return [
           '<a href="store.html" class="swf-card">',
             '<div class="swf-img">',
-              img ? '<img src="' + img + '" alt="' + alt + '" loading="lazy">' : '',
+              img ? '<img src="' + img + '" alt="' + alt + '" loading="lazy">' : '<div style="width:100%;height:100%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:32px">🎽</div>',
             '</div>',
             '<div class="swf-label">',
               '<div class="swf-label-name">' + p.title + '</div>',
@@ -946,49 +950,43 @@ document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
         ].join('');
       }).join('');
 
-      // Wire arrow buttons
+      // Wire arrows
       var prev = document.getElementById("shopPrev");
       var next = document.getElementById("shopNext");
-      if (prev && next) {
-        var scrollAmt = track.clientWidth * 0.6;
+      if (prev && next && track) {
+        prev.disabled = true;
         next.addEventListener("click", function() {
-          track.scrollBy({ left: scrollAmt, behavior: "smooth" });
+          track.scrollBy({ left: track.clientWidth * 0.7, behavior: "smooth" });
         });
         prev.addEventListener("click", function() {
-          track.scrollBy({ left: -scrollAmt, behavior: "smooth" });
+          track.scrollBy({ left: -track.clientWidth * 0.7, behavior: "smooth" });
         });
         track.addEventListener("scroll", function() {
-          prev.disabled = track.scrollLeft < 10;
-          next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 10;
-        });
-        prev.disabled = true;
+          prev.disabled = track.scrollLeft < 20;
+          next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 20;
+        }, { passive: true });
       }
 
-      // Drag to scroll
-      var isDown = false, startX, scrollLeft;
-      track.addEventListener("mousedown", function(e) {
-        isDown = true; startX = e.pageX - track.offsetLeft; scrollLeft = track.scrollLeft;
-      });
-      track.addEventListener("mouseleave", function() { isDown = false; });
-      track.addEventListener("mouseup", function() { isDown = false; });
-      track.addEventListener("mousemove", function(e) {
-        if (!isDown) return;
-        e.preventDefault();
-        var x = e.pageX - track.offsetLeft;
-        track.scrollLeft = scrollLeft - (x - startX) * 1.2;
-      });
+      // Drag scroll
+      var down = false, sx, sl;
+      track.addEventListener("mousedown", function(e) { down=true; sx=e.pageX-track.offsetLeft; sl=track.scrollLeft; track.style.cursor="grabbing"; });
+      window.addEventListener("mouseup", function() { down=false; track.style.cursor="grab"; });
+      track.addEventListener("mousemove", function(e) { if(!down) return; e.preventDefault(); track.scrollLeft = sl-(e.pageX-track.offsetLeft-sx)*1.5; });
     })
     .catch(function(err) {
-      console.error("Shop carousel error:", err.message);
-      // Show a single "View all" card so section doesn't look broken
-      track.innerHTML = '<a href="store.html" class="swf-card" style="min-width:100%;display:flex;align-items:center;justify-content:center;padding:40px 0"><div style="text-align:center"><div style="font-family:var(--ff-display);font-size:28px;font-weight:900;color:#7AC231;letter-spacing:.04em;text-transform:uppercase">Shop Now</div><div style="font-size:13px;color:#666;margin-top:6px">View all products →</div></div></a>';
+      console.error("ATP Shop carousel:", err.message);
+      // Fallback: show clickable placeholder cards
+      track.innerHTML = '<a href="store.html" class="swf-card" style="min-width:100%;display:flex;align-items:center;justify-content:center;min-height:200px;border:1px solid rgba(122,194,49,.2);border-radius:12px;background:rgba(122,194,49,.04)">' +
+        '<div style="text-align:center"><div style="font-family:var(--ff-display);font-size:32px;font-weight:900;color:#7AC231;text-transform:uppercase;letter-spacing:.04em">Shop Now</div>' +
+        '<div style="font-size:13px;color:#555;margin-top:6px">View all products →</div></div></a>';
     });
   }
 
+  // Delay slightly to ensure DOM is ready
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", load);
+    document.addEventListener("DOMContentLoaded", function() { setTimeout(load, 200); });
   } else {
-    setTimeout(load, 50);
+    setTimeout(load, 200);
   }
 })();
 
