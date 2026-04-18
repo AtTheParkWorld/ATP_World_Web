@@ -706,7 +706,7 @@ function hideStatus() {
 // ── SHOPIFY API ──────────────────────────────────────────────
 async function shopifyQuery(query) {
   var res = await fetch(
-    "https://" + SHOPIFY_DOMAIN + "/api/2024-01/graphql.json",
+    "https://" + SHOPIFY_DOMAIN + "/api/2025-01/graphql.json",
     {
       method: "POST",
       headers: {
@@ -876,14 +876,17 @@ async function loadProducts() {
   } catch (err) {
     console.error("Shopify error:", err);
     var msg = err.message || String(err);
+    var hint = "";
     if (msg.includes("401") || msg.includes("403")) {
-      showStatus("err", "Token error (401/403). Regenerate your Storefront API token in Shopify Headless channel.");
-    } else if (msg.includes("Failed to fetch") || msg.includes("CORS") || msg.includes("NetworkError")) {
-      showStatus("err", "Network error. Your store may still be password protected. " +
-        "<a href='https://admin.shopify.com/store/atp-store-7903/online_store/preferences' target='_blank' style='color:inherit;text-decoration:underline'>Disable password →</a>");
-    } else {
-      showStatus("err", "Shopify error: " + msg);
+      hint = " Token may be invalid. <a href='https://admin.shopify.com/store/atp-store-7903/headless' target='_blank' style='color:inherit;text-decoration:underline'>Check Headless token →</a>";
+    } else if (msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("Load failed")) {
+      hint = " Network blocked. Check if store password is on. <a href='https://admin.shopify.com/store/atp-store-7903/online_store/preferences' target='_blank' style='color:inherit;text-decoration:underline'>Check preferences →</a>";
+    } else if (msg.includes("CORS")) {
+      hint = " CORS error — token may not have Storefront API permission.";
     }
+    showStatus("err", "Could not load products: " + msg + hint);
+    // Show skeleton cards so layout doesn't break
+    document.getElementById("prodCountEl").textContent = "—";
   }
 }
 
@@ -1524,6 +1527,37 @@ document.addEventListener('keydown', function(e){
   // Also try on user interaction
   document.addEventListener("click", function() { vid.play(); }, { once: true });
 })();
+
+// ── SHOPIFY CONNECTION TEST ───────────────────────────────────
+// Call testShopify() in browser console to diagnose
+window.testShopify = async function() {
+  var TOKEN  = SHOPIFY_TOKEN;
+  var DOMAIN = SHOPIFY_DOMAIN;
+  console.log("Testing Shopify connection...");
+  console.log("Domain:", DOMAIN);
+  console.log("Token:", TOKEN.substring(0,8) + "...");
+  try {
+    var res = await fetch("https://" + DOMAIN + "/api/2025-01/graphql.json", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Storefront-Access-Token": TOKEN
+      },
+      body: JSON.stringify({ query: "{ shop { name } }" })
+    });
+    console.log("HTTP status:", res.status);
+    var data = await res.json();
+    console.log("Response:", JSON.stringify(data, null, 2));
+    if (data.data && data.data.shop) {
+      console.log("✅ Connected! Shop name:", data.data.shop.name);
+    } else if (data.errors) {
+      console.error("❌ GraphQL errors:", data.errors);
+    }
+  } catch(e) {
+    console.error("❌ Fetch failed:", e.message);
+  }
+};
+
 loadProducts();
 </script>
 </body>

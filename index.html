@@ -912,7 +912,7 @@ document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
     // Simple flat query - no nesting complexity
     var query = "{products(first:8){edges{node{id title productType priceRange{minVariantPrice{amount currencyCode}}images(first:1){edges{node{url altText}}}}}}}";
 
-    fetch("https://" + DOMAIN + "/api/2024-01/graphql.json", {
+    fetch("https://" + DOMAIN + "/api/2025-01/graphql.json", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
