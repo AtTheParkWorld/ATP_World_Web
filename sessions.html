@@ -284,6 +284,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="atp-api.js"></script>
 </head>
 <body>
 
@@ -695,7 +696,7 @@ function closeModalAndScroll() {
 
 function validateEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 
-function submitBooking() {
+async function submitBooking() {
   var name  = document.getElementById('bookName').value.trim();
   var email = document.getElementById('bookEmail').value.trim();
   var ok = true;
@@ -707,12 +708,29 @@ function submitBooking() {
   btn.disabled = true;
   btn.textContent = 'Booking...';
 
-  setTimeout(function() {
-    showConfirmation(name, email);
-  }, 800);
+  try {
+    // If ATP API is available and user is logged in, use real booking
+    if (window.ATP && window.ATP.isLoggedIn() && activeSession.id) {
+      var result = await window.ATP.bookings.book(activeSession.id);
+      showConfirmation(name, email, result.qrData, result.qrToken);
+    } else {
+      // Fallback: local booking with generated QR
+      setTimeout(function() { showConfirmation(name, email); }, 800);
+    }
+  } catch(err) {
+    btn.disabled = false;
+    btn.textContent = 'Confirm booking';
+    var errEl = document.getElementById('bookError');
+    if (errEl) {
+      errEl.textContent = err.message || 'Booking failed. Please try again.';
+      errEl.style.display = 'block';
+    } else {
+      alert(err.message || 'Booking failed. Please try again.');
+    }
+  }
 }
 
-function showConfirmation(name, email) {
+function showConfirmation(name, email, apiQrData, apiQrToken) {
   var s = activeSession;
   document.getElementById('confirmName').textContent = s.name + ' · ' + s.dayTime;
 
@@ -734,6 +752,12 @@ function showConfirmation(name, email) {
   document.getElementById('confirmPanel').style.display = 'block';
 
   // ── GENERATE QR CODE ──
+  // Use API-provided QR data if available, otherwise generate locally
+  if (apiQrData && apiQrToken) {
+    var qrData = apiQrData;
+    var memberId = JSON.parse(apiQrData).id || apiQrToken.toUpperCase();
+    var memberName = JSON.parse(apiQrData).name || name;
+  } else {
   var memberId = 'ATP-' + (atpUser ? atpUser.firstName[0] + (atpUser.lastName||'X')[0] : 'MB').toUpperCase() + String(Date.now()).slice(-5);
   var memberName = atpUser ? atpUser.firstName + ' ' + (atpUser.lastName||'') : name;
   var qrData = JSON.stringify({
@@ -745,6 +769,7 @@ function showConfirmation(name, email) {
     loc: s.loc,
     booked: new Date().toISOString()
   });
+  }  // end else (local QR generation)
   document.getElementById('qrMemberId').textContent = memberId;
   document.getElementById('qrMemberName').textContent = memberName;
   var qrEl = document.getElementById('qrCodeEl');
@@ -1284,6 +1309,30 @@ function saveQR() {
   link.click();
   document.body.removeChild(link);
 }
+
+
+// ── ATP API INIT ─────────────────────────────────────────────
+(function() {
+  if (window.ATP) {
+    window.ATP.init().then(function(member) {
+      if (member && atpUser === null) {
+        // Sync API user to local auth state
+        atpUser = {
+          firstName: member.first_name,
+          lastName:  member.last_name,
+          email:     member.email,
+          avatar:    member.avatar_url || (member.first_name[0] + (member.last_name||'X')[0]).toUpperCase(),
+          joinedAt:  member.joined_at,
+          memberId:  member.id,
+          memberNumber: member.member_number,
+          ambassador: member.is_ambassador,
+          admin:      member.is_admin,
+        };
+        renderAuthNav(atpUser);
+      }
+    }).catch(function() {});
+  }
+})();
 
 </script>
 </body>

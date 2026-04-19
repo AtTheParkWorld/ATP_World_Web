@@ -334,6 +334,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
 
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="atp-api.js"></script>
 </head>
 <body>
 
@@ -834,7 +835,25 @@ function showTab(name, btn) {
 }
 
 // ── DATA ─────────────────────────────────────────────────────
-// Load real bookings from localStorage (set when member books a session)
+// Load bookings - tries API first, falls back to localStorage
+async function loadBookingsFromAPI() {
+  if (!window.ATP || !window.ATP.isLoggedIn()) return;
+  try {
+    var data = await window.ATP.members.getBookings();
+    SESSIONS = data.bookings.map(function(b) {
+      return {
+        name: b.session_name, tribe: (b.tribe_slug || 'stronger'),
+        day: new Date(b.scheduled_at).toLocaleDateString('en-AE', {weekday:'short'}),
+        time: new Date(b.scheduled_at).toLocaleTimeString('en-AE', {hour:'2-digit',minute:'2-digit'}),
+        loc: b.location, status: b.status === 'attended' ? 'done' : 'upcoming',
+        id: b.qr_token, qrData: b.qr_code,
+      };
+    });
+    renderSessions(document.getElementById('upcomingSessions'), SESSIONS.slice(0,3));
+    renderSessions(document.getElementById('allSessions'), SESSIONS);
+  } catch(e) { console.warn('Could not load bookings from API:', e.message); }
+}
+
 function getSessionsData() {
   var stored = JSON.parse(localStorage.getItem('atp:bookings') || '[]');
   var fallback = [
@@ -1144,6 +1163,19 @@ SESSIONS = getSessionsData();
 
 // ── INIT ────────────────────────────────────────────────────
 renderStreakGrid(document.getElementById("streakMiniGrid"),28);
+// Load real stats from API if available
+if (window.ATP && window.ATP.isLoggedIn()) {
+  window.ATP.members.getStats().then(function(data) {
+    var s = data.stats;
+    if (document.querySelector('.pstat-num')) {
+      var nums = document.querySelectorAll('.pstat-num');
+      if (nums[0]) nums[0].textContent = s.total_sessions || '0';
+      if (nums[2]) nums[2].textContent = s.current_balance || '0';
+      if (nums[3]) nums[3].textContent = s.total_referrals || '0';
+      if (nums[4]) nums[4].textContent = s.challenges_completed || '0';
+    }
+  }).catch(function(){});
+}
 renderStreakGrid(document.getElementById("streakFullGrid"),28);
 renderSessions(document.getElementById("upcomingSessions"),SESSIONS.slice(0,3));
 renderSessions(document.getElementById("allSessions"),SESSIONS);

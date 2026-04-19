@@ -462,6 +462,7 @@ a.product-card:hover{transform:translateY(-4px)}
 @media(max-width:600px){.swf-card{flex:0 0 calc(33.33% - 8px);min-width:120px}.shop-inner{padding:0 16px}}
 
 </style>
+<script src="atp-api.js"></script>
 </head>
 <body>
 
@@ -1417,6 +1418,83 @@ document.addEventListener('keydown', function(e){
   if(e.key === 'Escape') closeAuth();
 });
 // ══════════════════════════════════════════════════════════════
+
+
+// ── ATP API INIT ─────────────────────────────────────────────
+(function() {
+  if (!window.ATP) return;
+  window.ATP.init().then(function(member) {
+    if (!member) return;
+    // Sync to legacy auth state
+    if (typeof atpUser !== 'undefined' && atpUser === null) {
+      atpUser = {
+        firstName: member.first_name, lastName: member.last_name,
+        email: member.email, avatar: member.avatar_url ||
+          (member.first_name[0] + (member.last_name||'X')[0]).toUpperCase(),
+        joinedAt: member.joined_at, memberId: member.id,
+        memberNumber: member.member_number,
+        ambassador: member.is_ambassador, admin: member.is_admin,
+      };
+      if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
+    }
+    // Ambassador: show checkin link
+    if (member.is_ambassador && typeof checkAmbassadorRole === 'function') {
+      checkAmbassadorRole();
+    }
+    // Store ambassador flag for checkin page
+    if (member.is_ambassador) {
+      localStorage.setItem('atp:ambassador', 'true');
+    }
+  }).catch(function() {});
+})();
+
+
+// ── ATP REAL AUTH ─────────────────────────────────────────────
+window._atpInjectAuth = async function(isSignup, firstName, lastName, email, phone, password) {
+  if (!window.ATP) return false;
+  try {
+    var member;
+    if (isSignup) {
+      member = await window.ATP.auth.register(firstName, lastName, email, phone);
+    } else if (!password) {
+      await window.ATP.auth.requestMagicLink(email);
+      return 'magic_link';
+    } else {
+      member = await window.ATP.auth.login(email, password);
+    }
+    // Update local user state
+    window._atpSyncMember(member);
+    return true;
+  } catch(err) {
+    return err.message || 'Authentication failed';
+  }
+};
+
+window._atpSyncMember = function(member) {
+  if (!member) return;
+  var user = {
+    firstName: member.first_name, lastName: member.last_name || '',
+    email: member.email, avatar: member.avatar_url ||
+      (member.first_name[0]+(member.last_name||'X')[0]).toUpperCase(),
+    joinedAt: member.joined_at, memberId: member.id,
+    memberNumber: member.member_number,
+    ambassador: member.is_ambassador, admin: member.is_admin,
+  };
+  localStorage.setItem('atp:user', JSON.stringify(user));
+  return user;
+};
+
+window.handleGoogleSignIn = async function(response) {
+  if (!response.credential || !window.ATP) return;
+  try {
+    var member = await window.ATP.auth.googleLogin(response.credential);
+    var user = window._atpSyncMember(member);
+    if (typeof authSaveUser === 'function') authSaveUser(user);
+    if (typeof closeAuth === 'function') closeAuth();
+    if (typeof renderAuthNav === 'function') renderAuthNav(user);
+    else location.reload();
+  } catch(err) { console.error('Google sign-in failed:', err.message); }
+};
 
 </script>
 </body>

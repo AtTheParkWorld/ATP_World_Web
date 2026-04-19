@@ -135,6 +135,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
   .ci-camera-outer{max-width:300px}
 }
 </style>
+<script src="atp-api.js"></script>
 </head>
 <body>
 
@@ -264,7 +265,26 @@ var BOOKED_MEMBERS = [
 ];
 
 // Also load any real bookings from localStorage
-(function loadLocalBookings() {
+(async function loadSessionsFromAPI() {
+  var sel = document.getElementById('sessionSelect');
+  if (!sel || !window.ATP || !window.ATP.isLoggedIn()) return;
+  try {
+    var data = await window.ATP.sessions.list({ status: 'upcoming', limit: 30 });
+    if (data.sessions.length) {
+      sel.innerHTML = '<option value="">Choose session...</option>';
+      data.sessions.forEach(function(s) {
+        var dt = new Date(s.scheduled_at).toLocaleString('en-AE',
+          {weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+        var o = document.createElement('option');
+        o.value = s.id;
+        o.textContent = s.name + ' – ' + dt;
+        sel.appendChild(o);
+      });
+    }
+  } catch(e) { console.warn('Sessions API:', e.message); }
+}
+
+function loadLocalBookings() {
   var stored = JSON.parse(localStorage.getItem('atp:bookings') || '[]');
   stored.forEach(function(b) {
     if (!BOOKED_MEMBERS.find(function(m){return m.id===b.id;})) {
@@ -344,6 +364,27 @@ function scanFrame() {
 
 // ── PROCESS QR ────────────────────────────────────────────────
 function processQR(raw) {
+  // Try real API check-in first
+  var sessionId = document.getElementById('sessionSelect')?.value;
+  if (window.ATP && window.ATP.isLoggedIn() && sessionId) {
+    var token = '';
+    try { token = JSON.parse(raw).token || ''; } catch(e) {}
+    if (token) {
+      window.ATP.sessions.checkin(sessionId, { qr_token: token, method: 'qr_scan' })
+        .then(function(r) {
+          showResult(true, r.member.first_name + ' ' + r.member.last_name + ' ✅');
+        })
+        .catch(function(err) {
+          if (err.status === 409) { showResult(false, 'Already checked in'); return; }
+          // Fall through to local
+          _processQRLocal(raw);
+        });
+      return;
+    }
+  }
+  _processQRLocal(raw);
+}
+function _processQRLocal(raw) {
   var data = {};
   try { data = JSON.parse(raw); } catch(e) {
     showResult('error', '✗', 'Invalid QR Code', raw.substring(0,30), 'Not an ATP QR code');
@@ -518,6 +559,35 @@ function showToast(msg, type) {
 // ── INIT ──────────────────────────────────────────────────────
 renderList();
 updateStats();
+
+// ── ATP API INIT ─────────────────────────────────────────────
+(function() {
+  if (!window.ATP) return;
+  window.ATP.init().then(function(member) {
+    if (!member) return;
+    // Sync to legacy auth state
+    if (typeof atpUser !== 'undefined' && atpUser === null) {
+      atpUser = {
+        firstName: member.first_name, lastName: member.last_name,
+        email: member.email, avatar: member.avatar_url ||
+          (member.first_name[0] + (member.last_name||'X')[0]).toUpperCase(),
+        joinedAt: member.joined_at, memberId: member.id,
+        memberNumber: member.member_number,
+        ambassador: member.is_ambassador, admin: member.is_admin,
+      };
+      if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
+    }
+    // Ambassador: show checkin link
+    if (member.is_ambassador && typeof checkAmbassadorRole === 'function') {
+      checkAmbassadorRole();
+    }
+    // Store ambassador flag for checkin page
+    if (member.is_ambassador) {
+      localStorage.setItem('atp:ambassador', 'true');
+    }
+  }).catch(function() {});
+})();
+
 </script>
 </body>
 </html>

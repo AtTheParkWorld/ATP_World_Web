@@ -363,6 +363,7 @@ footer{background:var(--dark2);padding:64px 40px 32px;border-top:1px solid rgba(
 /* Parallax hero card */
 @keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
 </style>
+<script src="atp-api.js"></script>
 </head>
 <body>
 
@@ -1569,6 +1570,35 @@ window.testShopify = async function() {
 };
 
 loadProducts();
+
+// ── ATP API INIT ─────────────────────────────────────────────
+(function() {
+  if (!window.ATP) return;
+  window.ATP.init().then(function(member) {
+    if (!member) return;
+    // Sync to legacy auth state
+    if (typeof atpUser !== 'undefined' && atpUser === null) {
+      atpUser = {
+        firstName: member.first_name, lastName: member.last_name,
+        email: member.email, avatar: member.avatar_url ||
+          (member.first_name[0] + (member.last_name||'X')[0]).toUpperCase(),
+        joinedAt: member.joined_at, memberId: member.id,
+        memberNumber: member.member_number,
+        ambassador: member.is_ambassador, admin: member.is_admin,
+      };
+      if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
+    }
+    // Ambassador: show checkin link
+    if (member.is_ambassador && typeof checkAmbassadorRole === 'function') {
+      checkAmbassadorRole();
+    }
+    // Store ambassador flag for checkin page
+    if (member.is_ambassador) {
+      localStorage.setItem('atp:ambassador', 'true');
+    }
+  }).catch(function() {});
+})();
+
 </script>
 </body>
 </html>

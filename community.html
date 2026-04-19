@@ -302,6 +302,7 @@ nav.scrolled{background:rgba(10,10,10,.97);border-bottom-color:rgba(122,194,49,.
 .member-gate-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
 
 </style>
+<script src="atp-api.js"></script>
 </head>
 <body>
 
@@ -911,8 +912,29 @@ function setLbPeriod(period, btn) {
   renderLeaderboard();
 }
 
-function renderLeaderboard() {
+async function renderLeaderboard() {
+  // Try API first
+  if (window.ATP) {
+    try {
+      var result = await window.ATP.members.getLeaderboard(currentPeriod);
+      var data = result.leaderboard.map(function(m, i) {
+        return {
+          init: m.first_name[0],
+          name: m.first_name + ' ' + m.last_name,
+          tribe: m.tribe || 'Community',
+          pts: m.period_points,
+          chg: 0,
+          you: m.id === (window.ATP.getUser() && window.ATP.getUser().memberId)
+        };
+      });
+      _renderLeaderboardRows(data);
+      return;
+    } catch(e) { /* fall through to static data */ }
+  }
   var data = LB_DATA[currentPeriod].slice().sort(function(a,b){return b.pts-a.pts;});
+  _renderLeaderboardRows(data);
+}
+function _renderLeaderboardRows(data) {
   var medals = ["🥇","🥈","🥉"];
   document.getElementById("lbBody").innerHTML = data.map(function(m,i){
     var rankClass = i<3 ? ["gold","silver","bronze"][i] : "";
@@ -1292,6 +1314,35 @@ document.addEventListener('keydown', function(e){
   if(e.key === 'Escape') closeAuth();
 });
 // ══════════════════════════════════════════════════════════════
+
+
+// ── ATP API INIT ─────────────────────────────────────────────
+(function() {
+  if (!window.ATP) return;
+  window.ATP.init().then(function(member) {
+    if (!member) return;
+    // Sync to legacy auth state
+    if (typeof atpUser !== 'undefined' && atpUser === null) {
+      atpUser = {
+        firstName: member.first_name, lastName: member.last_name,
+        email: member.email, avatar: member.avatar_url ||
+          (member.first_name[0] + (member.last_name||'X')[0]).toUpperCase(),
+        joinedAt: member.joined_at, memberId: member.id,
+        memberNumber: member.member_number,
+        ambassador: member.is_ambassador, admin: member.is_admin,
+      };
+      if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
+    }
+    // Ambassador: show checkin link
+    if (member.is_ambassador && typeof checkAmbassadorRole === 'function') {
+      checkAmbassadorRole();
+    }
+    // Store ambassador flag for checkin page
+    if (member.is_ambassador) {
+      localStorage.setItem('atp:ambassador', 'true');
+    }
+  }).catch(function() {});
+})();
 
 </script>
 </body>
