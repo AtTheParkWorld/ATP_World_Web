@@ -13,7 +13,7 @@
   // ── CONFIG ──────────────────────────────────────────────────
   // Switch to your Railway URL when backend is live:
   // const API_BASE = 'https://atp-backend.railway.app/api';
-  const API_BASE = window.ATP_API_BASE || 'https://atp-backend-production.up.railway.app/api';
+  const API_BASE = window.ATP_API_BASE || 'https://atpworldweb-production.up.railway.app/api';
   const TOKEN_KEY = 'atp:jwt';
   const USER_KEY  = 'atp:user';
 
