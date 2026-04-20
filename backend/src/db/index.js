@@ -1,24 +1,26 @@
 const { Pool } = require('pg');
 require('dotenv').config();
 
+// Strip channel_binding from connection string if present
+// (not supported by all pg versions)
+const connStr = (process.env.DATABASE_URL || '')
+  .replace(/&?channel_binding=require/, '')
+  .replace(/\?channel_binding=require&?/, '?');
+
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === 'production'
-    ? { rejectUnauthorized: false }
-    : false,
+  connectionString: connStr,
+  ssl: { rejectUnauthorized: false },
   max: 20,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
+  connectionTimeoutMillis: 10000,
 });
 
 pool.on('error', (err) => {
   console.error('Unexpected DB client error:', err);
 });
 
-// Helper for single queries
 const query = (text, params) => pool.query(text, params);
 
-// Helper for transactions
 const transaction = async (callback) => {
   const client = await pool.connect();
   try {
