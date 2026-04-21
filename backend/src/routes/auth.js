@@ -358,7 +358,8 @@ router.post('/seed-sessions', async (req, res, next) => {
       const city_id = cityRows[0].id;
       await query(
         `INSERT INTO sessions (name, activity_type, day_of_week, start_time, location_name, duration_minutes, max_participants, city_id, status)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'active') ON CONFLICT DO NOTHING`,
+         SELECT $1,$2,$3,$4,$5,$6,$7,$8,'active'
+         WHERE NOT EXISTS (SELECT 1 FROM sessions WHERE name=$1 AND day_of_week=$3)`,
         [s.name, s.activity, s.day, s.time, s.location, s.duration, s.max, city_id]
       );
       created++;
