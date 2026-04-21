@@ -351,15 +351,20 @@ router.post('/seed-sessions', async (req, res, next) => {
 
     let created = 0;
     for (const s of sessions) {
-      const { rows: cityRows } = await query(
-        `INSERT INTO cities (name, country) VALUES ($1, 'UAE') ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id`,
-        [s.city]
-      );
-      const city_id = cityRows[0].id;
-      await query(
+      // Get or create city
+      let city_id;
+      const { rows: existingCity } = await query(`SELECT id FROM cities WHERE name=$1`, [s.city]);
+      if (existingCity.length > 0) {
+        city_id = existingCity[0].id;
+      } else {
+        const { rows: newCity } = await query(`INSERT INTO cities (name, country) VALUES ($1,'UAE') RETURNING id`, [s.city]);
+        city_id = newCity[0].id;
+      }
+      // Insert session only if it doesn't exist
+      const { rows: existSess } = await query(`SELECT id FROM sessions WHERE name=$1 AND day_of_week=$2`, [s.name, s.day]);
+      if (existSess.length === 0) await query(
         `INSERT INTO sessions (name, activity_type, day_of_week, start_time, location_name, duration_minutes, max_participants, city_id, status)
-         SELECT $1,$2,$3,$4,$5,$6,$7,$8,'active'
-         WHERE NOT EXISTS (SELECT 1 FROM sessions WHERE name=$1 AND day_of_week=$3)`,
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'active')`,
         [s.name, s.activity, s.day, s.time, s.location, s.duration, s.max, city_id]
       );
       created++;

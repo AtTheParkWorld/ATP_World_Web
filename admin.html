@@ -411,36 +411,38 @@ var ADMIN_CREDENTIALS = { user: 'atpadmin', pass: 'atp2015!' };
 var adminLoggedIn = false;
 
 function adminLogin() {
-  // ATP API login injection
-  var u = document.getElementById('adminUser')?.value.trim() || '';
-  var p = document.getElementById('adminPass')?.value.trim() || '';
-  if (window.ATP && u && p) {
-    window.ATP.auth.login(u, p).then(function(member) {
-      if (member.is_admin) {
-        document.getElementById('adminLoginPanel').style.display = 'none';
-        document.getElementById('adminDashboard').style.display  = 'block';
-        localStorage.setItem('atp_token', member.token || '');
-        loadDashboardAPI();
-        loadMembersAPI();
-      }
-    }).catch(function() { /* fall through to local */ });
-  }
   var u = document.getElementById('adminUser').value.trim();
   var p = document.getElementById('adminPass').value;
-  if (u === ADMIN_CREDENTIALS.user && p === ADMIN_CREDENTIALS.pass) {
-    adminLoggedIn = true;
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('adminWrap').style.display = 'block';
-    renderMembers();
-    renderAmbassadors();
-    renderActiveChallenges();
-    updateLiveCount();
-  } else {
-    var err = document.getElementById('loginErr');
-    err.style.display = 'block';
-    setTimeout(function(){err.style.display='none';}, 2000);
-  }
+  var errEl = document.getElementById('loginErr');
+  errEl.style.display = 'none';
+  if (!u || !p) { errEl.textContent = 'Please enter email and password'; errEl.style.display = 'block'; return; }
+  fetch('https://atpworldweb-production.up.railway.app/api/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email: u, password: p})
+  }).then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.token && data.member && data.member.is_admin) {
+      localStorage.setItem('atp_token', data.token);
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('adminWrap').style.display = 'block';
+      var LOGO = 'https://raw.githubusercontent.com/AtTheParkWorld/ATP_World_Web/main/atthepark_assets02.png';
+      document.querySelectorAll('#adminLogo,#adminLogoNav').forEach(function(img) { img.src = LOGO; img.style.filter = 'none'; });
+      loadDashboardAPI();
+      loadMembersAPI();
+    } else if (data.token && data.member && !data.member.is_admin) {
+      errEl.textContent = 'Account found but does not have admin access.';
+      errEl.style.display = 'block';
+    } else {
+      errEl.textContent = data.error || 'Invalid email or password.';
+      errEl.style.display = 'block';
+    }
+  }).catch(function() {
+    errEl.textContent = 'Connection error — please try again.';
+    errEl.style.display = 'block';
+  });
 }
+
 
 function adminLogout() {
   adminLoggedIn = false;
