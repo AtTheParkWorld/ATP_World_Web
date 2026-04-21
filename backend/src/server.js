@@ -62,6 +62,7 @@ app.use('/api/challenges',   require('./routes/challenges'));
 app.use('/api/notifications',require('./routes/notifications'));
 app.use('/api/admin',        require('./routes/admin'));
 app.use('/api/cms',          require('./routes/cms'));
+app.use('/api/migrate',      require('./routes/migrate'));
 
 // ── 404 ───────────────────────────────────────────────────────
 app.use((req, res) => {
