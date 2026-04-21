@@ -10,8 +10,12 @@ async function migrate() {
     await pool.query(sql);
     console.log('✅ Migration complete — all tables created');
   } catch (err) {
-    console.error('❌ Migration failed:', err.message);
-    process.exit(1);
+    if (err.message.includes('already exists')) {
+      console.log('✅ Tables already exist — skipping migration');
+    } else {
+      console.error('❌ Migration failed:', err.message);
+      process.exit(1);
+    }
   } finally {
     await pool.end();
   }
