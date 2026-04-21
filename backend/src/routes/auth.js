@@ -325,3 +325,44 @@ router.post('/grant-admin', async (req, res, next) => {
     res.json({ success: true, member: rows[0] });
   } catch (err) { next(err); }
 });
+
+// ── POST /api/auth/seed-sessions  (setup only) ───────────────
+router.post('/seed-sessions', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Invalid setup key' });
+    }
+
+    const sessions = [
+      { name: 'Morning Run', activity: 'Running', day: 'Monday', time: '06:00', location: 'Safa Park, Dubai', duration: 60, max: 50, city: 'Dubai' },
+      { name: 'HIIT Circuit', activity: 'HIIT', day: 'Tuesday', time: '06:30', location: 'Jumeirah Beach, Dubai', duration: 45, max: 30, city: 'Dubai' },
+      { name: 'Yoga Flow', activity: 'Yoga', day: 'Wednesday', time: '07:00', location: 'Creek Park, Dubai', duration: 60, max: 25, city: 'Dubai' },
+      { name: 'Strength & Conditioning', activity: 'Strength Training', day: 'Thursday', time: '06:00', location: 'Mushrif Park, Dubai', duration: 60, max: 20, city: 'Dubai' },
+      { name: 'Trail Run', activity: 'Running', day: 'Friday', time: '06:30', location: 'Al Qudra, Dubai', duration: 90, max: 40, city: 'Dubai' },
+      { name: 'Saturday Bootcamp', activity: 'Bootcamp', day: 'Saturday', time: '07:00', location: 'Kite Beach, Dubai', duration: 60, max: 50, city: 'Dubai' },
+      { name: 'Sunday Recovery', activity: 'Stretching', day: 'Sunday', time: '08:00', location: 'Zabeel Park, Dubai', duration: 45, max: 30, city: 'Dubai' },
+      { name: 'Al Ain Morning Run', activity: 'Running', day: 'Tuesday', time: '06:00', location: 'Hili Park, Al Ain', duration: 60, max: 30, city: 'Al Ain' },
+      { name: 'Al Ain HIIT', activity: 'HIIT', day: 'Thursday', time: '06:30', location: 'Central Park, Al Ain', duration: 45, max: 25, city: 'Al Ain' },
+      { name: 'Al Ain Weekend Session', activity: 'Bootcamp', day: 'Friday', time: '07:00', location: 'Formal Park, Al Ain', duration: 60, max: 40, city: 'Al Ain' },
+      { name: 'Muscat Morning Run', activity: 'Running', day: 'Wednesday', time: '06:00', location: 'Qurum Beach, Muscat', duration: 60, max: 30, city: 'Muscat' },
+      { name: 'Muscat Weekend Bootcamp', activity: 'Bootcamp', day: 'Saturday', time: '07:00', location: 'Al Qurm Park, Muscat', duration: 60, max: 35, city: 'Muscat' },
+    ];
+
+    let created = 0;
+    for (const s of sessions) {
+      const { rows: cityRows } = await query(
+        `INSERT INTO cities (name, country) VALUES ($1, 'UAE') ON CONFLICT (name) DO UPDATE SET name=EXCLUDED.name RETURNING id`,
+        [s.city]
+      );
+      const city_id = cityRows[0].id;
+      await query(
+        `INSERT INTO sessions (name, activity_type, day_of_week, start_time, location_name, duration_minutes, max_participants, city_id, status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,'active') ON CONFLICT DO NOTHING`,
+        [s.name, s.activity, s.day, s.time, s.location, s.duration, s.max, city_id]
+      );
+      created++;
+    }
+    res.json({ success: true, created });
+  } catch (err) { next(err); }
+});
