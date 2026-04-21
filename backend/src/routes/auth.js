@@ -309,3 +309,19 @@ router.post('/change-password', authenticate, async (req, res, next) => {
 });
 
 module.exports = router;
+
+// ── POST /api/auth/grant-admin  (setup only) ──────────────────
+router.post('/grant-admin', async (req, res, next) => {
+  try {
+    const { email, setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Invalid setup key' });
+    }
+    const { rows } = await query(
+      `UPDATE members SET is_admin=true WHERE LOWER(email)=LOWER($1) RETURNING id, email, first_name`,
+      [email]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Member not found' });
+    res.json({ success: true, member: rows[0] });
+  } catch (err) { next(err); }
+});
