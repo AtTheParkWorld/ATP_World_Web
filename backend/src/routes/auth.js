@@ -366,3 +366,103 @@ router.post('/seed-sessions', async (req, res, next) => {
     res.json({ success: true, created });
   } catch (err) { next(err); }
 });
+
+// ── POST /api/auth/migrate-members  (one-time migration) ─────
+router.post('/migrate-members', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Invalid setup key' });
+    }
+
+    const https = require('https');
+    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/1yalnFyBcT3f596VDEFlL1cCoxBVEOXpm7JLPUykQNDo/export?format=csv&gid=0';
+
+    function fetchURL(url, redirects = 0) {
+      return new Promise((resolve, reject) => {
+        if (redirects > 5) return reject(new Error('Too many redirects'));
+        const mod = url.startsWith('https') ? require('https') : require('http');
+        mod.get(url, { headers: { 'User-Agent': 'Node.js Migration' } }, r => {
+          if (r.statusCode === 301 || r.statusCode === 302) {
+            return fetchURL(r.headers.location, redirects + 1).then(resolve).catch(reject);
+          }
+          let d = '';
+          r.on('data', c => d += c);
+          r.on('end', () => resolve(d));
+          r.on('error', reject);
+        }).on('error', reject);
+      });
+    }
+
+    function parseCSV(text) {
+      const lines = text.split('\n');
+      const rows = [];
+      for (let i = 1; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        const fields = [];
+        let field = '', inQ = false;
+        for (let c = 0; c < line.length; c++) {
+          if (line[c] === '"') { inQ = !inQ; }
+          else if (line[c] === ',' && !inQ) { fields.push(field.trim()); field = ''; }
+          else { field += line[c]; }
+        }
+        fields.push(field.trim());
+        const email = (fields[3] || '').toLowerCase().trim();
+        if (!email || !email.includes('@')) continue;
+        let dob = null;
+        if (fields[8] && fields[8] !== '01-01-1970') {
+          const p = fields[8].split('-');
+          if (p.length === 3) dob = `${p[2]}-${p[1]}-${p[0]}`;
+        }
+        rows.push({
+          first_name: fields[0] || '',
+          last_name: fields[1] || '',
+          member_number: fields[2] || '',
+          email,
+          nationality: fields[4] || null,
+          gender: fields[5] || null,
+          points: parseInt(fields[6]) || 0,
+          padel_level: fields[7] || null,
+          date_of_birth: dob,
+          status: (fields[9] || 'Active').toLowerCase() === 'active' ? 'active' : 'inactive',
+          interests: fields[10] || null,
+        });
+      }
+      return rows;
+    }
+
+    res.json({ message: 'Migration started in background' });
+
+    // Run async after responding
+    (async () => {
+      try {
+        console.log('[MIGRATE] Fetching Google Sheet CSV...');
+        const csv = await fetchURL(SHEET_URL);
+        const members = parseCSV(csv);
+        console.log(`[MIGRATE] Parsed ${members.length} members`);
+        let inserted = 0, errors = 0;
+        for (const m of members) {
+          try {
+            await query(`
+              INSERT INTO members (email, first_name, last_name, member_number, nationality, gender, points, padel_level, date_of_birth, status, interests, password_hash, is_active, created_at)
+              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,NOW())
+              ON CONFLICT (email) DO UPDATE SET
+                first_name=EXCLUDED.first_name, last_name=EXCLUDED.last_name,
+                member_number=EXCLUDED.member_number, nationality=EXCLUDED.nationality,
+                gender=EXCLUDED.gender, points=EXCLUDED.points,
+                padel_level=EXCLUDED.padel_level, date_of_birth=EXCLUDED.date_of_birth,
+                status=EXCLUDED.status, interests=EXCLUDED.interests, is_active=EXCLUDED.is_active
+            `, [m.email, m.first_name, m.last_name, m.member_number, m.nationality,
+               m.gender, m.points, m.padel_level, m.date_of_birth, m.status,
+               m.interests, '$2b$10$nomigrationpassword00000000000000000000000000', m.status === 'active']);
+            inserted++;
+            if (inserted % 500 === 0) console.log(`[MIGRATE] ${inserted} done...`);
+          } catch (e) { errors++; if (errors <= 5) console.log(`[MIGRATE] Error: ${e.message}`); }
+        }
+        console.log(`[MIGRATE] ✅ Done! Inserted: ${inserted}, Errors: ${errors}`);
+      } catch (e) { console.error('[MIGRATE] Failed:', e.message); }
+    })();
+
+  } catch (err) { next(err); }
+});
