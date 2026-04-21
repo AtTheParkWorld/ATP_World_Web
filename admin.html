@@ -178,19 +178,19 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
       <div class="admin-page-sub">Welcome back. Here's a quick overview of ATP activity.</div>
       <div class="admin-stats-row">
         <div class="admin-stat-card">
-          <div class="admin-stat-num">7,024</div>
+          <div class="admin-stat-num" id="stat-members">7,024</div>
           <div class="admin-stat-label">Total Members</div>
         </div>
         <div class="admin-stat-card">
-          <div class="admin-stat-num">127</div>
+          <div class="admin-stat-num" id="stat-sessions">127</div>
           <div class="admin-stat-label">Sessions this month</div>
         </div>
         <div class="admin-stat-card">
-          <div class="admin-stat-num">21</div>
+          <div class="admin-stat-num" id="stat-ambassadors">21</div>
           <div class="admin-stat-label">Active Ambassadors</div>
         </div>
         <div class="admin-stat-card">
-          <div class="admin-stat-num">89%</div>
+          <div class="admin-stat-num" id="stat-attendance">89%</div>
           <div class="admin-stat-label">Avg. attendance rate</div>
         </div>
       </div>
@@ -419,7 +419,9 @@ function adminLogin() {
       if (member.is_admin) {
         document.getElementById('adminLoginPanel').style.display = 'none';
         document.getElementById('adminDashboard').style.display  = 'block';
+        localStorage.setItem('atp_token', member.token || '');
         loadDashboardAPI();
+        loadMembersAPI();
       }
     }).catch(function() { /* fall through to local */ });
   }
@@ -692,23 +694,65 @@ function createSession() {
 
 
 // ── ATP REAL API FUNCTIONS ────────────────────────────────────
+var ATP_API = 'https://atpworldweb-production.up.railway.app/api';
+function getToken() { return localStorage.getItem('atp_token') || ''; }
+function apiGet(path) {
+  return fetch(ATP_API + path, {
+    headers: { 'Authorization': 'Bearer ' + getToken() }
+  }).then(function(r) { return r.json(); });
+}
+
 async function loadDashboardAPI() {
-  if (!window.ATP || !window.ATP.isLoggedIn()) return;
+  var token = getToken();
+  if (!token) return;
   try {
-    var data = await window.ATP.admin.getDashboard();
-    var m = data.members, s = data.sessions;
-    // Update stat cards
-    var cards = document.querySelectorAll('.stat-number, .admin-stat-num, [data-stat]');
-    console.log('Dashboard loaded:', m.total, 'members');
-  } catch(e) { console.warn('Admin API:', e.message); }
+    var memberData = await apiGet('/admin/members?limit=1');
+    if (memberData.total !== undefined) {
+      var total = memberData.total;
+      document.getElementById('stat-members').textContent = total.toLocaleString();
+      var lbl = document.querySelector('.admin-section-title span');
+      if (lbl) lbl.textContent = total.toLocaleString() + ' total';
+    }
+    var ambData = await apiGet('/admin/members?is_ambassador=true&limit=1');
+    if (ambData.total !== undefined) {
+      document.getElementById('stat-ambassadors').textContent = ambData.total;
+    }
+    var sessionData = await apiGet('/sessions?limit=1');
+    if (sessionData && sessionData.total !== undefined) {
+      document.getElementById('stat-sessions').textContent = sessionData.total;
+    }
+    console.log('Dashboard stats loaded live');
+  } catch(e) { console.warn('Dashboard API:', e.message); }
 }
 
 async function loadMembersAPI() {
-  if (!window.ATP || !window.ATP.isLoggedIn()) return;
-  var search = document.getElementById('memberSearch')?.value || '';
+  var token = getToken();
+  if (!token) return;
+  var search = (document.getElementById('memberSearch') || {}).value || '';
   try {
-    var result = await window.ATP.admin.getMembers({ search, limit: 100 });
-    console.log('Members loaded:', result.total);
+    var url = '/admin/members?limit=100' + (search ? '&search=' + encodeURIComponent(search) : '');
+    var result = await apiGet(url);
+    if (result.members && result.members.length) {
+      // Map API response to the table format
+      var tbody = document.getElementById('membersTbody');
+      if (tbody) {
+        tbody.innerHTML = result.members.map(function(m) {
+          var name = (m.first_name || '') + ' ' + (m.last_name || '');
+          var initials = ((m.first_name||'?')[0] + (m.last_name||'?')[0]).toUpperCase();
+          var joined = m.joined_at ? new Date(m.joined_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '—';
+          return '<tr>' +
+            '<td style="display:flex;align-items:center"><div class="admin-av">' + initials + '</div><div><div class="admin-member-name">' + name.trim() + '</div><div class="admin-member-email">' + m.member_number + ' · ' + m.email + '</div></div></td>' +
+            '<td style="color:#555;font-size:12px">' + joined + '</td>' +
+            '<td style="color:#fff;font-size:13px;font-weight:600">' + (m.sessions_count || 0) + '</td>' +
+            '<td><span class="badge ' + (m.is_banned ? 'badge-grey' : 'badge-green') + '">' + (m.is_banned ? 'Inactive' : 'Active') + '</span></td>' +
+            '<td><button class="admin-btn" onclick="makeAmbassador(' + "'" + m.id + "'" + ')">Make Ambassador</button></td>' +
+            '</tr>';
+        }).join('');
+      }
+      // Update total count label
+      var lbl = document.querySelector('.admin-section-title span');
+      if (lbl) lbl.textContent = result.total.toLocaleString() + ' total';
+    }
     return result.members;
   } catch(e) { console.warn('Members API:', e.message); return null; }
 }
