@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<!-- ATP Admin v202604220555 -->
+<html lang="en">
+<head>
+  <script src="atp.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Admin Panel | At The Park</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#7AC231;--green-dark:#5a9a1f;
+  --black:#0a0a0a;--dark:#111111;--dark2:#1a1a1a;--dark3:#222222;
+  --muted:#888888;--light:#aaaaaa;--white:#ffffff;
+  --ff-display:'Barlow Condensed',sans-serif;--ff-body:'DM Sans',sans-serif;
+  --nav-h:68px;--max:1320px;--radius:6px;--radius-lg:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff-body);background:#050505;color:#fff;-webkit-font-smoothing:antialiased;min-height:100vh}
+a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-body)}
+
+/* LOGIN SCREEN */
+.admin-login{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#050505;padding:24px}
+.admin-login-box{width:100%;max-width:400px;text-align:center}
+.admin-login-logo{height:40px;margin:0 auto 28px;}
+.admin-login-title{font-family:var(--ff-display);font-size:28px;font-weight:900;text-transform:uppercase;color:#fff;margin-bottom:6px}
+.admin-login-sub{font-size:13px;color:#555;margin-bottom:28px}
+.admin-login-input{width:100%;background:#111;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:13px 16px;color:#fff;font-size:14px;font-family:var(--ff-body);margin-bottom:12px;transition:border-color .2s}
+.admin-login-input:focus{outline:none;border-color:rgba(122,194,49,.4)}
+.admin-login-btn{width:100%;padding:13px;background:#7AC231;color:#fff;font-size:15px;font-weight:800;border:none;border-radius:10px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:background .2s}
+.admin-login-btn:hover{background:#68a82a}
+.admin-login-err{font-size:13px;color:#ef4444;margin-top:8px;display:none}
+
+/* ADMIN LAYOUT */
+.admin-wrap{display:none;min-height:100vh}
+.admin-sidebar{position:fixed;top:0;left:0;bottom:0;width:220px;background:#080808;border-right:1px solid rgba(255,255,255,.07);padding:20px 0;display:flex;flex-direction:column}
+.admin-logo-wrap{padding:0 20px 24px;border-bottom:1px solid rgba(255,255,255,.07)}
+.admin-logo{height:30px;}
+.admin-version{font-size:10px;color:#333;margin-top:6px;letter-spacing:.08em;text-transform:uppercase}
+.admin-nav{flex:1;padding:16px 0}
+.admin-nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;font-size:13px;font-weight:500;color:#555;cursor:pointer;transition:all .2s;border-left:2px solid transparent}
+.admin-nav-item:hover{color:#fff;background:rgba(255,255,255,.03)}
+.admin-nav-item.active{color:#fff;border-left-color:#7AC231;background:rgba(122,194,49,.05)}
+.admin-nav-item svg{flex-shrink:0;opacity:.7}
+.admin-nav-item.active svg{opacity:1}
+.admin-logout{padding:16px 20px;border-top:1px solid rgba(255,255,255,.07);font-size:12px;color:#444;cursor:pointer;transition:color .2s}
+.admin-logout:hover{color:#ef4444}
+
+.admin-main{margin-left:220px;padding:32px 40px 80px;min-height:100vh}
+.admin-page-title{font-family:var(--ff-display);font-size:32px;font-weight:900;text-transform:uppercase;color:#fff;margin-bottom:4px}
+.admin-page-sub{font-size:13px;color:#555;margin-bottom:28px}
+
+/* STATS ROW */
+.admin-stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
+.admin-stat-card{background:#0d0d0d;border-radius:14px;border:1px solid rgba(255,255,255,.07);padding:20px}
+.admin-stat-num{font-family:var(--ff-display);font-size:36px;font-weight:900;color:#7AC231;line-height:1;margin-bottom:4px}
+.admin-stat-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#444}
+
+/* SECTIONS */
+.admin-section{background:#0d0d0d;border-radius:14px;border:1px solid rgba(255,255,255,.07);margin-bottom:20px;overflow:hidden}
+.admin-section-head{display:flex;align-items:center;justify-content:space-between;padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06)}
+.admin-section-title{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#fff;display:flex;align-items:center;gap:8px}
+.admin-section-body{padding:20px}
+
+/* TABLE */
+.admin-table{width:100%;border-collapse:collapse}
+.admin-table th{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#444;padding:10px 12px;text-align:left;border-bottom:1px solid rgba(255,255,255,.06)}
+.admin-table td{padding:12px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+.admin-table tr:last-child td{border-bottom:none}
+.admin-table tr:hover td{background:rgba(255,255,255,.02)}
+.admin-av{width:34px;height:34px;border-radius:50%;background:#1a1a1a;display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:#fff;margin-right:8px}
+.admin-member-name{font-size:13px;font-weight:600;color:#fff}
+.admin-member-email{font-size:11px;color:#444}
+
+/* TOGGLE SWITCH */
+.toggle-wrap{display:flex;align-items:center;gap:10px}
+.toggle{position:relative;width:44px;height:24px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0;position:absolute}
+.toggle-slider{position:absolute;inset:0;background:#1e1e1e;border-radius:24px;cursor:pointer;transition:background .2s;border:1px solid rgba(255,255,255,.1)}
+.toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:2px;top:2px;background:#555;border-radius:50%;transition:transform .2s,background .2s}
+.toggle input:checked+.toggle-slider{background:rgba(122,194,49,.2);border-color:rgba(122,194,49,.4)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(20px);background:#7AC231}
+.toggle-label{font-size:12px;font-weight:600;color:#555}
+.toggle input:checked~.toggle-label{color:#7AC231}
+
+/* BADGES */
+.badge{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:20px}
+.badge-green{background:rgba(122,194,49,.1);color:#7AC231;border:1px solid rgba(122,194,49,.2)}
+.badge-gold{background:rgba(255,196,0,.1);color:#ffc400;border:1px solid rgba(255,196,0,.2)}
+.badge-red{background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
+.badge-grey{background:rgba(255,255,255,.05);color:#555;border:1px solid rgba(255,255,255,.08)}
+
+/* BUTTONS */
+.admin-btn{font-size:12px;font-weight:700;padding:7px 16px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:transparent;color:#fff;cursor:pointer;transition:all .2s;letter-spacing:.03em}
+.admin-btn:hover{border-color:var(--green);color:var(--green)}
+.admin-btn-primary{background:var(--green);border-color:var(--green);color:#fff}
+.admin-btn-primary:hover{background:var(--green-dark)}
+.admin-btn-danger{border-color:rgba(239,68,68,.3);color:#ef4444}
+.admin-btn-danger:hover{background:rgba(239,68,68,.08)}
+
+/* FORM */
+.admin-form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.admin-form-group{display:flex;flex-direction:column;gap:6px}
+.admin-form-group.full{grid-column:1/-1}
+.admin-form-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#444}
+.admin-form-input,.admin-form-select{background:#111;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 13px;color:#fff;font-size:13px;font-family:var(--ff-body);width:100%;transition:border-color .2s}
+.admin-form-input:focus,.admin-form-select:focus{outline:none;border-color:rgba(122,194,49,.4)}
+.admin-form-select option{background:#111}
+
+/* SESSIONS VIEW */
+.session-attendance-card{background:#111;border-radius:12px;padding:16px;margin-bottom:10px;border:1px solid rgba(255,255,255,.06)}
+.session-attendance-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.session-attendance-name{font-size:15px;font-weight:700;color:#fff}
+.session-attendance-bar{height:6px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
+.session-attendance-fill{height:100%;background:#7AC231;border-radius:4px;transition:width .6s}
+
+/* TOAST */
+.admin-toast{position:fixed;bottom:24px;right:24px;background:#111;border:1px solid rgba(255,255,255,.1);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:200;transform:translateY(80px);transition:transform .3s;max-width:300px}
+.admin-toast.show{transform:translateY(0)}
+.admin-toast.success{border-color:rgba(122,194,49,.4);color:#7AC231}
+</style>
+<script src="atp-api.js"></script>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="admin-login" id="loginScreen">
+  <div class="admin-login-box">
+    <img class="admin-login-logo" id="adminLogo" src="" alt="ATP">
+    <div class="admin-login-title">Admin Panel</div>
+    <div class="admin-login-sub">At The Park · Internal Access Only</div>
+    <input class="admin-login-input" type="text" id="adminUser" placeholder="Username" onkeydown="if(event.key==='Enter')document.getElementById('adminPass').focus()">
+    <input class="admin-login-input" type="password" id="adminPass" placeholder="Password" onkeydown="if(event.key==='Enter')adminLogin()">
+    <button class="admin-login-btn" onclick="adminLogin()">Sign in</button>
+    <div class="admin-login-err" id="loginErr">Invalid credentials</div>
+  </div>
+</div>
+
+<!-- ADMIN WRAP -->
+<div class="admin-wrap" id="adminWrap">
+
+  <!-- SIDEBAR -->
+  <nav class="admin-sidebar">
+    <div class="admin-logo-wrap">
+      <img class="admin-logo" id="adminLogoNav" src="" alt="ATP">
+      <div class="admin-version">Admin Panel v1.0</div>
+    </div>
+    <div class="admin-nav">
+      <div class="admin-nav-item active" onclick="showAdminSection('dashboard',this)">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+        Dashboard
+      </div>
+      <div class="admin-nav-item" onclick="showAdminSection('members',this)">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="6" cy="5" r="3"/><path d="M1 14c0-3 2-5 5-5s5 2 5 5"/><path d="M11 3c1.66 0 3 1.34 3 3s-1.34 3-3 3"/><path d="M14 14c0-2-1-4-3-4.5"/></svg>
+        Members
+      </div>
+      <div class="admin-nav-item" onclick="showAdminSection('ambassadors',this)">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="8,1 10,6 15,6 11,9.5 12.5,14.5 8,11.5 3.5,14.5 5,9.5 1,6 6,6"/></svg>
+        Ambassadors
+      </div>
+      <div class="admin-nav-item" onclick="showAdminSection('sessions',this)">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="12" height="11" rx="2"/><line x1="5" y1="1" x2="5" y2="5"/><line x1="11" y1="1" x2="11" y2="5"/><line x1="2" y1="7" x2="14" y2="7"/></svg>
+        Sessions
+      </div>
+      <div class="admin-nav-item" onclick="showAdminSection('challenges',this)">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l3 2"/></svg>
+        Challenges
+      </div>
+    </div>
+    <div class="admin-logout" onclick="adminLogout()">← Sign out</div>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="admin-main">
+
+    <!-- DASHBOARD -->
+    <div id="section-dashboard">
+      <div class="admin-page-title">Dashboard</div>
+      <div class="admin-page-sub">Welcome back. Here's a quick overview of ATP activity.</div>
+      <div class="admin-stats-row">
+        <div class="admin-stat-card">
+          <div class="admin-stat-num" id="stat-members">7,024</div>
+          <div class="admin-stat-label">Total Members</div>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-num" id="stat-sessions">127</div>
+          <div class="admin-stat-label">Sessions this month</div>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-num" id="stat-ambassadors">21</div>
+          <div class="admin-stat-label">Active Ambassadors</div>
+        </div>
+        <div class="admin-stat-card">
+          <div class="admin-stat-num" id="stat-attendance">89%</div>
+          <div class="admin-stat-label">Avg. attendance rate</div>
+        </div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-head">
+          <span class="admin-section-title">Recent Sessions Attendance</span>
+          <button class="admin-btn" onclick="showAdminSection('sessions')">View all</button>
+        </div>
+        <div class="admin-section-body">
+          <div class="session-attendance-card">
+            <div class="session-attendance-header">
+              <div><div class="session-attendance-name">Community Run · Tonight 7PM</div><div style="font-size:11px;color:#444;margin-top:2px">Dubai Marina Walk</div></div>
+              <div style="text-align:right"><div style="font-family:var(--ff-display);font-size:20px;font-weight:900;color:#7AC231">18/24</div><div style="font-size:10px;color:#444">checked in</div></div>
+            </div>
+            <div class="session-attendance-bar"><div class="session-attendance-fill" style="width:75%"></div></div>
+          </div>
+          <div class="session-attendance-card">
+            <div class="session-attendance-header">
+              <div><div class="session-attendance-name">Military Bootcamp · Yesterday</div><div style="font-size:11px;color:#444;margin-top:2px">Al Formal Park</div></div>
+              <div style="text-align:right"><div style="font-family:var(--ff-display);font-size:20px;font-weight:900;color:#7AC231">31/35</div><div style="font-size:10px;color:#444">checked in</div></div>
+            </div>
+            <div class="session-attendance-bar"><div class="session-attendance-fill" style="width:89%"></div></div>
+          </div>
+          <div class="session-attendance-card">
+            <div class="session-attendance-header">
+              <div><div class="session-attendance-name">Hatha Yoga · Mon</div><div style="font-size:11px;color:#444;margin-top:2px">DIC Amphitheatre</div></div>
+              <div style="text-align:right"><div style="font-family:var(--ff-display);font-size:20px;font-weight:900;color:#7AC231">22/28</div><div style="font-size:10px;color:#444">checked in</div></div>
+            </div>
+            <div class="session-attendance-bar"><div class="session-attendance-fill" style="width:79%"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MEMBERS -->
+    <div id="section-members" style="display:none">
+      <div class="admin-page-title">Members</div>
+      <div class="admin-page-sub">Manage all ATP registered members.</div>
+      <div class="admin-section">
+        <div class="admin-section-head">
+          <span class="admin-section-title">All Members <span style="color:#444;font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;margin-left:8px">7,024 total</span></span>
+          <input type="search" id="memberSearch" placeholder="Search name, email, or ID…" style="background:#111;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:7px 14px;color:#fff;font-size:12px;font-family:var(--ff-body);width:240px" oninput="filterMembers(this.value)">
+        </div>
+        <div class="admin-section-body" style="padding:0">
+          <table class="admin-table" id="membersTable">
+            <thead><tr>
+              <th>Member</th><th>Joined</th><th>Sessions</th><th>Status</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="membersTbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- AMBASSADORS -->
+    <div id="section-ambassadors" style="display:none">
+      <div class="admin-page-title">Ambassadors</div>
+      <div class="admin-page-sub">Ambassadors can check in members at sessions. Activate or revoke access below.</div>
+      <div class="admin-section">
+        <div class="admin-section-head">
+          <span class="admin-section-title">Ambassador Management</span>
+          <button class="admin-btn admin-btn-primary" onclick="showAddAmbassador()">+ Add Ambassador</button>
+        </div>
+        <div class="admin-section-body" style="padding:0">
+          <table class="admin-table" id="ambassadorTable">
+            <thead><tr>
+              <th>Member</th><th>Assigned</th><th>Sessions checked</th><th>Ambassador Access</th><th></th>
+            </tr></thead>
+            <tbody id="ambassadorTbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <!-- Add Ambassador Form -->
+      <div class="admin-section" id="addAmbForm" style="display:none">
+        <div class="admin-section-head">
+          <span class="admin-section-title">Add New Ambassador</span>
+          <button class="admin-btn" onclick="document.getElementById('addAmbForm').style.display='none'">Cancel</button>
+        </div>
+        <div class="admin-section-body">
+          <div class="admin-form-grid">
+            <div class="admin-form-group">
+              <label class="admin-form-label">Member ID or Email</label>
+              <input class="admin-form-input" type="text" id="newAmbInput" placeholder="ATP-XX0000 or email@address.com">
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Role Note (optional)</label>
+              <input class="admin-form-input" type="text" placeholder="e.g. Lead Ambassador Dubai">
+            </div>
+          </div>
+          <button class="admin-btn admin-btn-primary" style="margin-top:16px" onclick="addAmbassador()">Activate Ambassador Access</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SESSIONS -->
+    <div id="section-sessions" style="display:none">
+      <div class="admin-page-title">Sessions</div>
+      <div class="admin-page-sub">Create and manage ATP sessions across Dubai, Al Ain and Muscat.</div>
+
+      <!-- CREATE SESSION FORM -->
+      <div class="admin-section">
+        <div class="admin-section-head">
+          <span class="admin-section-title">Create New Session</span>
+        </div>
+        <div class="admin-section-body">
+          <div id="sessionFormMsg" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px"></div>
+          <div class="admin-form-grid">
+            <div class="admin-form-group">
+              <label class="admin-form-label">Session Name *</label>
+              <input class="admin-form-input" type="text" id="sName" placeholder="e.g. Community Run">
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">City *</label>
+              <select class="admin-form-select" id="sCity">
+                <option value="">Loading cities...</option>
+              </select>
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Date &amp; Time *</label>
+              <input class="admin-form-input" type="datetime-local" id="sDate">
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Duration (mins)</label>
+              <input class="admin-form-input" type="number" id="sDuration" value="60" min="15" max="240">
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Location / Venue *</label>
+              <input class="admin-form-input" type="text" id="sLoc" placeholder="e.g. Safa Park, Gate 1">
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Capacity</label>
+              <input class="admin-form-input" type="number" id="sCap" value="30" min="1" max="500">
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Points Reward</label>
+              <input class="admin-form-input" type="number" id="sPoints" value="10" min="0">
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Session Type</label>
+              <select class="admin-form-select" id="sType">
+                <option value="free">Free</option>
+                <option value="paid">Paid</option>
+              </select>
+            </div>
+            <div class="admin-form-group full">
+              <label class="admin-form-label">Description</label>
+              <input class="admin-form-input" type="text" id="sDesc" placeholder="Brief session description (optional)">
+            </div>
+            <div class="admin-form-group full">
+              <label class="admin-form-label">Google Maps URL</label>
+              <input class="admin-form-input" type="text" id="sMaps" placeholder="https://maps.google.com/... (optional)">
+            </div>
+            <div class="admin-form-group full">
+              <label class="admin-form-label" style="display:flex;align-items:center;gap:12px;cursor:pointer">
+                <div style="position:relative;width:44px;height:24px">
+                  <input type="checkbox" id="sLiveEnabled" style="opacity:0;width:0;height:0;position:absolute">
+                  <span id="sLiveToggle" onclick="toggleLive()" style="position:absolute;top:0;left:0;right:0;bottom:0;background:#1a1a1a;border:1px solid #333;border-radius:12px;cursor:pointer;transition:background .2s">
+                    <span id="sLiveKnob" style="position:absolute;top:2px;left:2px;width:18px;height:18px;background:#444;border-radius:50%;transition:all .2s"></span>
+                  </span>
+                </div>
+                <span style="font-size:13px;color:#ccc">Enable Livestream for this session</span>
+                <span style="font-size:11px;color:#444;margin-left:4px">· Members can join via the app when live</span>
+              </label>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:18px;align-items:center">
+            <button class="admin-btn admin-btn-primary" style="padding:10px 24px;font-size:13px" onclick="createSession()">
+              ＋ Create Session
+            </button>
+            <button class="admin-btn" style="padding:10px 18px;font-size:13px" onclick="loadSessionsList()">
+              ↻ Refresh List
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- SESSIONS LIST -->
+      <div class="admin-section">
+        <div class="admin-section-head">
+          <span class="admin-section-title">Upcoming Sessions <span id="sessionsCountLabel" style="color:#444;font-size:11px;font-weight:400;margin-left:8px"></span></span>
+        </div>
+        <div class="admin-section-body">
+          <table class="admin-table" style="width:100%">
+            <thead><tr>
+              <th>Session</th><th>City</th><th>Date &amp; Time</th><th>Capacity</th><th>Status</th><th>Actions</th>
+            </tr></thead>
+            <tbody id="sessionsTbody">
+              <tr><td colspan="6" style="text-align:center;color:#444;padding:24px">Loading sessions...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-head">
+          <span class="admin-section-title">Live Attendance</span>
+          <a href="checkin.html" class="admin-btn" style="display:inline-flex;align-items:center;gap:6px">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+            Open Scanner
+          </a>
+        </div>
+        <div class="admin-section-body" id="liveAttendance">
+          <div class="session-attendance-card">
+            <div class="session-attendance-header">
+              <div><div class="session-attendance-name">Community Run · Tonight 7PM</div><div style="font-size:11px;color:#444;margin-top:2px">Dubai Marina Walk · Ambassador: Jay A.</div></div>
+              <div style="text-align:right"><div style="font-family:var(--ff-display);font-size:20px;font-weight:900;color:#7AC231" id="liveCount">0</div><div style="font-size:10px;color:#444">checked in live</div></div>
+            </div>
+            <div class="session-attendance-bar"><div class="session-attendance-fill" id="liveBar" style="width:0%"></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- CHALLENGES -->
+    <div id="section-challenges" style="display:none">
+      <div class="admin-page-title">Challenges</div>
+      <div class="admin-page-sub">Create weekly and monthly challenges for the community.</div>
+      <div class="admin-section">
+        <div class="admin-section-head">
+          <span class="admin-section-title">Create Challenge</span>
+        </div>
+        <div class="admin-section-body">
+          <div class="admin-form-grid">
+            <div class="admin-form-group">
+              <label class="admin-form-label">Challenge name</label>
+              <input class="admin-form-input" type="text" id="cName" placeholder="July Run Challenge">
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Type</label>
+              <select class="admin-form-select" id="cType">
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+              </select>
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Metric</label>
+              <select class="admin-form-select" id="cMetric">
+                <option>Sessions attended</option>
+                <option>Calories burned (kcal)</option>
+                <option>Kilometers run</option>
+                <option>Steps logged</option>
+                <option>Streak days</option>
+              </select>
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Target</label>
+              <input class="admin-form-input" type="number" id="cTarget" placeholder="e.g. 8">
+            </div>
+            <div class="admin-form-group full">
+              <label class="admin-form-label">Description</label>
+              <input class="admin-form-input" type="text" id="cDesc" placeholder="Describe the challenge for members…">
+            </div>
+          </div>
+          <button class="admin-btn admin-btn-primary" style="margin-top:16px" onclick="createChallenge()">Publish Challenge</button>
+        </div>
+      </div>
+      <div class="admin-section">
+        <div class="admin-section-head"><span class="admin-section-title">Active Challenges</span></div>
+        <div class="admin-section-body" id="activeChallengesList"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="admin-toast" id="adminToast"></div>
+<script>
+// ── AUTH ─────────────────────────────────────────────────────
+var ADMIN_CREDENTIALS = { user: 'atpadmin', pass: 'atp2015!' };
+var adminLoggedIn = false;
+
+function adminLogin() {
+  var u = document.getElementById('adminUser').value.trim();
+  var p = document.getElementById('adminPass').value;
+  var errEl = document.getElementById('loginErr');
+  errEl.style.display = 'none';
+  if (!u || !p) { errEl.textContent = 'Please enter email and password'; errEl.style.display = 'block'; return; }
+  fetch('https://atpworldweb-production.up.railway.app/api/auth/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email: u, password: p})
+  }).then(function(r) { return r.json(); })
+  .then(function(data) {
+    if (data.token && data.member && data.member.is_admin) {
+      localStorage.setItem('atp_token', data.token);
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('adminWrap').style.display = 'block';
+      var LOGO = 'https://raw.githubusercontent.com/AtTheParkWorld/ATP_World_Web/main/atthepark_assets02.png';
+      document.querySelectorAll('#adminLogo,#adminLogoNav').forEach(function(img) { img.src = LOGO; img.style.filter = 'none'; });
+      loadDashboardAPI();
+      loadMembersAPI();
+    } else if (data.token && data.member && !data.member.is_admin) {
+      errEl.textContent = 'Account found but does not have admin access.';
+      errEl.style.display = 'block';
+    } else {
+      errEl.textContent = data.error || 'Invalid email or password.';
+      errEl.style.display = 'block';
+    }
+  }).catch(function() {
+    errEl.textContent = 'Connection error — please try again.';
+    errEl.style.display = 'block';
+  });
+}
+
+
+function adminLogout() {
+  adminLoggedIn = false;
+  document.getElementById('adminWrap').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('adminUser').value = '';
+  document.getElementById('adminPass').value = '';
+}
+
+document.getElementById('adminPass').addEventListener('keydown', function(e){
+  if(e.key==='Enter') adminLogin();
+});
+
+// ── NAVIGATION ────────────────────────────────────────────────
+function showAdminSection(name, btn) {
+  ['dashboard','members','ambassadors','sessions','challenges'].forEach(function(s){
+    document.getElementById('section-'+s).style.display = 'none';
+  });
+  document.getElementById('section-'+name).style.display = 'block';
+  document.querySelectorAll('.admin-nav-item').forEach(function(b){b.classList.remove('active');});
+  if (btn) btn.classList.add('active');
+  else {
+    document.querySelectorAll('.admin-nav-item').forEach(function(b){
+      if(b.textContent.toLowerCase().includes(name)) b.classList.add('active');
+    });
+  }
+  // Auto-load real data when switching sections
+  if (name === 'members') loadMembersAPI();
+  if (name === 'ambassadors') loadAmbassadorsAPI();
+  if (name === 'dashboard') loadDashboardAPI();
+}
+
+// ── DATA ──────────────────────────────────────────────────────
+var MEMBERS_DATA = []; // Populated from API
+
+var CHALLENGES_DATA = [
+  {icon:'🏃',name:'July Run Challenge',type:'monthly',metric:'Sessions attended',target:8,desc:'Complete 8 running sessions this month',active:true,participants:127},
+  {icon:'🔥',name:'Bootcamp Blitz',    type:'weekly', metric:'Sessions attended',target:4,desc:'Attend 4 bootcamp sessions in 2 weeks', active:true,participants:89},
+];
+
+// ── MEMBERS ───────────────────────────────────────────────────
+function renderMembers(filter) {
+  // Route to API version
+  loadMembersAPI(filter);
+  return;
+  var list = MEMBERS_DATA;
+  if (filter) {
+    var q = filter.toLowerCase();
+    list = list.filter(function(m){ return m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q) || m.email.toLowerCase().includes(q); });
+  }
+  document.getElementById('membersTbody').innerHTML = list.map(function(m) {
+    return '<tr>'+
+      '<td style="display:flex;align-items:center"><div class="admin-av">'+m.name[0]+'</div><div><div class="admin-member-name">'+m.name+'</div><div class="admin-member-email">'+m.id+' · '+m.email+'</div></div></td>'+
+      '<td style="color:#555;font-size:12px">'+m.joined+'</td>'+
+      '<td style="color:#fff;font-size:13px;font-weight:600">'+m.sessions+'</td>'+
+      '<td><span class="badge '+(m.active?'badge-green':'badge-grey')+'">'+(m.active?'Active':'Inactive')+'</span></td>'+
+      '<td><button class="admin-btn" onclick="makeAmbassador(\'' + m.id + '\')">Make Ambassador</button></td>'+
+    '</tr>';
+  }).join('');
+}
+
+var _searchTimer = null;
+function filterMembers(q) {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(function() {
+    // If logged in and search has content, hit real API
+    var token = getToken();
+    if (token && q && q.length > 1) {
+      var url = 'https://atpworldweb-production.up.railway.app/api/admin/members?limit=50&search=' + encodeURIComponent(q);
+      fetch(url, {headers:{'Authorization':'Bearer '+token}})
+        .then(function(r){return r.json();})
+        .then(function(data) {
+          if (!data.members) return;
+          var tbody = document.getElementById('membersTbody');
+          if (!tbody) return;
+          if (!data.members.length) {
+            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#444;padding:24px">No members found for "'+q+'"</td></tr>';
+            return;
+          }
+          tbody.innerHTML = data.members.map(function(m) {
+            var name = ((m.first_name||'')+' '+(m.last_name||'')).trim();
+            var ini  = ((m.first_name||'?')[0]+(m.last_name||'?')[0]).toUpperCase();
+            var joined = m.joined_at ? new Date(m.joined_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '—';
+            return '<tr>'+
+              '<td style="display:flex;align-items:center;gap:10px"><div class="admin-av">'+ini+'</div>'+
+              '<div><div class="admin-member-name">'+name+'</div>'+
+              '<div class="admin-member-email">'+m.member_number+' · '+m.email+'</div></div></td>'+
+              '<td style="color:#555;font-size:12px">'+joined+'</td>'+
+              '<td style="color:#fff;font-size:13px;font-weight:600">'+(m.sessions_count||0)+'</td>'+
+              '<td><span class="badge '+(m.is_banned?'badge-grey':'badge-green')+'">'+(m.is_banned?'Inactive':'Active')+'</span></td>'+
+              '<td><button class="admin-btn" onclick="makeAmbassador(this.dataset.mid)" data-mid="'+m.id+'">Make Ambassador</button></td>'+
+              '</tr>';
+          }).join('');
+          var lbl = document.querySelector('.admin-section-title span');
+          if (lbl) lbl.textContent = data.total.toLocaleString()+' total · showing '+data.members.length+' results';
+        }).catch(function(){});
+    } else if (!q || !q.length) {
+      // Empty search — reload full list
+      loadMembersAPI();
+    } else {
+      // Short query — filter local data
+      renderMembers(q);
+    }
+  }, 350); // 350ms debounce
+}
+
+// ── AMBASSADORS ───────────────────────────────────────────────
+function renderAmbassadors() {
+  var ambs = MEMBERS_DATA.filter(function(m){return m.ambassador;});
+  document.getElementById('ambassadorTbody').innerHTML = ambs.map(function(m) {
+    var isOn = m.ambassadorActive !== false;
+    return '<tr>'+
+      '<td style="display:flex;align-items:center"><div class="admin-av" style="background:rgba(255,196,0,.15);color:#ffc400">'+m.name[0]+'</div><div><div class="admin-member-name">'+m.name+'</div><div class="admin-member-email">'+m.id+'</div></div></td>'+
+      '<td style="color:#555;font-size:12px">'+m.joined+'</td>'+
+      '<td style="color:#7AC231;font-weight:700">'+Math.floor(m.sessions/8)+' sessions</td>'+
+      '<td>'+
+        '<div class="toggle-wrap">'+
+          '<label class="toggle">'+
+            '<input type="checkbox" '+(isOn?'checked':'')+' onchange="toggleAmbassador('+m.id+',this.checked)">'+
+            '<span class="toggle-slider"></span>'+
+          '</label>'+
+          '<span class="toggle-label">'+(isOn?'Active':'Inactive')+'</span>'+
+        '</div>'+
+      '</td>'+
+      '<td><button class="admin-btn admin-btn-danger" onclick="revokeAmbassador('+m.id+')">Revoke</button></td>'+
+    '</tr>';
+  }).join('');
+}
+
+function toggleAmbassador(id, enabled) {
+  var m = MEMBERS_DATA.find(function(x){return x.id===id;});
+  if (m) m.ambassadorActive = enabled;
+  // In real app: API call to update user role
+  showAdminToast((enabled?'✓ Ambassador activated':'Ambassador deactivated')+' for '+m.name);
+  renderAmbassadors();
+  
+  // If this is the logged-in user, update localStorage
+  var stored = null;
+  try { stored = JSON.parse(localStorage.getItem('atp:user')); } catch(e){}
+  if (stored && stored.email === m.email) {
+    localStorage.setItem('atp:ambassador', enabled ? 'true' : 'false');
+  }
+}
+
+function revokeAmbassador(id) {
+  var m = MEMBERS_DATA.find(function(x){return x.id===id;});
+  if (!m || !confirm('Revoke ambassador access for '+m.name+'?')) return;
+  m.ambassador = false;
+  m.ambassadorActive = false;
+  showAdminToast('Ambassador access revoked for '+m.name, 'warn');
+  renderAmbassadors();
+}
+
+// ── SESSIONS ──────────────────────────────────────────────────
+async function loadCities() {
+  // Fetch cities from DB via members endpoint (cities are embedded in sessions)
+  // Use a hardcoded list + dynamically add from DB
+  var sel = document.getElementById('sCity');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">Select city...</option>';
+
+  // Try to get from API
+  try {
+    var token = getToken();
+    var data = await fetch('https://atpworldweb-production.up.railway.app/api/sessions?limit=1', {
+      headers: {'Authorization':'Bearer '+token}
+    }).then(function(r){return r.json();});
+
+    // Use known cities + any from sessions
+    var cities = ['Dubai', 'Al Ain', 'Muscat'];
+    cities.forEach(function(c) {
+      var o = document.createElement('option');
+      o.value = c;
+      o.textContent = c;
+      sel.appendChild(o);
+    });
+  } catch(e) {
+    ['Dubai','Al Ain','Muscat'].forEach(function(c) {
+      var o = document.createElement('option');
+      o.value = c; o.textContent = c;
+      sel.appendChild(o);
+    });
+  }
+
+  // Set default date to tomorrow at 7pm
+  var dt = document.getElementById('sDate');
+  if (dt) {
+    var d = new Date();
+    d.setDate(d.getDate() + 1);
+    d.setHours(19, 0, 0, 0);
+    var pad = function(n){ return n < 10 ? '0'+n : n; };
+    dt.value = d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate())+'T'+pad(d.getHours())+':'+pad(d.getMinutes());
+  }
+}
+
+function toggleLive() {
+  var cb = document.getElementById('sLiveEnabled');
+  var toggle = document.getElementById('sLiveToggle');
+  var knob = document.getElementById('sLiveKnob');
+  cb.checked = !cb.checked;
+  if (cb.checked) {
+    toggle.style.background = '#7AC231';
+    toggle.style.borderColor = '#7AC231';
+    knob.style.left = '22px';
+    knob.style.background = '#fff';
+  } else {
+    toggle.style.background = '#1a1a1a';
+    toggle.style.borderColor = '#333';
+    knob.style.left = '2px';
+    knob.style.background = '#444';
+  }
+}
+
+async function createSession() {
+  var token = getToken();
+  if (!token) { showAdminToast('Please log in first'); return; }
+
+  var name     = document.getElementById('sName').value.trim();
+  var city     = document.getElementById('sCity').value;
+  var dateVal  = document.getElementById('sDate').value;
+  var loc      = document.getElementById('sLoc').value.trim();
+  var duration = parseInt(document.getElementById('sDuration').value) || 60;
+  var cap      = parseInt(document.getElementById('sCap').value) || 30;
+  var points   = parseInt(document.getElementById('sPoints').value) || 10;
+  var stype    = document.getElementById('sType').value;
+  var desc     = document.getElementById('sDesc').value.trim();
+  var maps     = document.getElementById('sMaps').value.trim();
+  var msgEl    = document.getElementById('sessionFormMsg');
+
+  if (!name || !city || !dateVal || !loc) {
+    msgEl.textContent = '⚠️ Session name, city, date/time and location are required.';
+    msgEl.style.cssText = 'display:block;background:#2a1a00;color:#ffc400;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+    return;
+  }
+
+  // Get city_id from backend
+  try {
+    // First get or create the city
+    var cityResp = await fetch('https://atpworldweb-production.up.railway.app/api/sessions?limit=1', {
+      headers: {'Authorization':'Bearer '+token}
+    }).then(function(r){return r.json();});
+
+    // We'll send city name and let the backend resolve it
+    // But our POST /api/sessions needs a city_id UUID...
+    // So we need to resolve the city first
+    var cityId = await getCityId(city, token);
+    if (!cityId) {
+      msgEl.textContent = '❌ Could not find or create city. Try again.';
+      msgEl.style.cssText = 'display:block;background:#2a0000;color:#ff6b6b;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+      return;
+    }
+
+    var liveEnabled = document.getElementById('sLiveEnabled') ? document.getElementById('sLiveEnabled').checked : false;
+    var payload = {
+      name: name,
+      city_id: cityId,
+      scheduled_at: new Date(dateVal).toISOString(),
+      location: loc,
+      duration_mins: duration,
+      capacity: cap,
+      points_reward: points,
+      session_type: stype,
+      description: desc || null,
+      location_maps_url: maps || null,
+      is_live_enabled: liveEnabled,
+    };
+
+    var resp = await fetch('https://atpworldweb-production.up.railway.app/api/sessions', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify(payload)
+    }).then(function(r){return r.json();});
+
+    if (resp.error) {
+      msgEl.textContent = '❌ ' + resp.error;
+      msgEl.style.cssText = 'display:block;background:#2a0000;color:#ff6b6b;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+      return;
+    }
+
+    // Success
+    msgEl.textContent = '✅ Session "' + name + '" created successfully!';
+    msgEl.style.cssText = 'display:block;background:#0a2a0a;color:#7AC231;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+    document.getElementById('sName').value = '';
+    document.getElementById('sLoc').value = '';
+    document.getElementById('sDesc').value = '';
+    document.getElementById('sMaps').value = '';
+    // Reset livestream toggle
+    var cb = document.getElementById('sLiveEnabled');
+    if (cb && cb.checked) toggleLive();
+    showAdminToast('✅ Session created!');
+    setTimeout(function(){ loadSessionsList(); loadDashboardAPI(); }, 600);
+
+  } catch(e) {
+    msgEl.textContent = '❌ Error: ' + e.message;
+    msgEl.style.cssText = 'display:block;background:#2a0000;color:#ff6b6b;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+  }
+}
+
+// Get city_id by name - resolves via a known list cached at boot
+var _cityCache = {};
+async function getCityId(cityName, token) {
+  if (_cityCache[cityName]) return _cityCache[cityName];
+  // Try to get via the sessions endpoint to find city IDs
+  try {
+    var resp = await fetch('https://atpworldweb-production.up.railway.app/api/sessions?limit=50', {
+      headers: {'Authorization':'Bearer '+token}
+    }).then(function(r){return r.json();});
+    if (resp.sessions) {
+      resp.sessions.forEach(function(s) {
+        if (s.city_name && s.city_id) _cityCache[s.city_name] = s.city_id;
+      });
+    }
+    if (_cityCache[cityName]) return _cityCache[cityName];
+  } catch(e) {}
+
+  // City not found in cache — ask backend to create it via seed endpoint
+  try {
+    var r2 = await fetch('https://atpworldweb-production.up.railway.app/api/auth/get-or-create-city', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({name: cityName, setupKey: 'atp-internal-2026'})
+    }).then(function(r){return r.json();});
+    if (r2.id) { _cityCache[cityName] = r2.id; return r2.id; }
+  } catch(e) {}
+  return null;
+}
+
+async function loadSessionsList() {
+  var token = getToken();
+  var tbody = document.getElementById('sessionsTbody');
+  var label = document.getElementById('sessionsCountLabel');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#444;padding:24px">Loading...</td></tr>';
+  try {
+    var data = await fetch('https://atpworldweb-production.up.railway.app/api/sessions?limit=50&status=upcoming', {
+      headers: {'Authorization':'Bearer '+(token||'')}
+    }).then(function(r){return r.json();});
+
+    var sessions = data.sessions || [];
+    if (label) label.textContent = sessions.length + ' upcoming';
+
+    // Update sessions stat on dashboard
+    var statEl = document.getElementById('stat-sessions');
+    if (statEl) statEl.textContent = sessions.length;
+
+    if (!sessions.length) {
+      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#444;padding:24px">No upcoming sessions yet</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = sessions.map(function(s) {
+      var dt = new Date(s.scheduled_at);
+      var dateStr = dt.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
+      var timeStr = dt.toLocaleTimeString('en-AE',{hour:'2-digit',minute:'2-digit'});
+      var booked = parseInt(s.bookings_count)||0;
+      var cap = s.capacity||'—';
+      var pct = s.capacity ? Math.round(booked/s.capacity*100) : 0;
+      return '<tr>'+
+        '<td><div style="font-weight:600;color:#fff;font-size:13px">'+s.name+'</div>'+
+             '<div style="font-size:11px;color:#555;margin-top:2px">'+s.location+'</div></td>'+
+        '<td style="color:#aaa;font-size:12px">'+(s.city_name||'—')+'</td>'+
+        '<td style="color:#aaa;font-size:12px">'+dateStr+' · '+timeStr+'</td>'+
+        '<td><span style="font-size:12px;color:'+(pct>80?'#ff6b6b':'#7AC231')+'">'+booked+'/'+cap+'</span>'+
+            '<div style="height:3px;background:#1a1a1a;border-radius:2px;margin-top:4px;width:80px">'+
+            '<div style="height:3px;background:#7AC231;border-radius:2px;width:'+pct+'%"></div></div></td>'+
+        '<td>'+
+          '<span class="badge badge-green">'+s.status+'</span>'+
+          (s.is_live_enabled ? ' <span style="font-size:10px;color:#7AC231;margin-left:4px">📡 Live</span>' : '')+
+          '</td>'+
+        '<td><button class="admin-btn" style="font-size:11px" onclick="completeSession(this.dataset.sid)" data-sid="'+s.id+'">Complete</button></td>'+
+        '</tr>';
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#ff6b6b;padding:24px">Error loading sessions: '+e.message+'</td></tr>';
+  }
+}
+
+async function completeSession(id) {
+  if (!confirm('Mark this session as completed? This will award points to all attended members.')) return;
+  var token = getToken();
+  try {
+    var r = await fetch('https://atpworldweb-production.up.railway.app/api/sessions/'+id+'/complete', {
+      method: 'PATCH', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}
+    }).then(function(r){return r.json();});
+    showAdminToast(r.error ? '❌ '+r.error : '✅ Session completed + points awarded!');
+    loadSessionsList();
+  } catch(e) { showAdminToast('❌ Error: '+e.message); }
+}
+
+
+function makeAmbassador(id) {
+  // Call real API to grant ambassador role
+  var token = localStorage.getItem('atp_token');
+  fetch('https://atpworldweb-production.up.railway.app/api/admin/members/' + id + '/ambassador', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({is_ambassador: true})
+  }).then(function(r){return r.json();}).then(function(d){
+    if (d.error) { showAdminToast('❌ ' + d.error); return; }
+    showAdminToast('⭐ Member is now an Ambassador!');
+    setTimeout(function(){ loadMembersAPI(); loadAmbassadorsAPI(); loadDashboardAPI(); }, 600);
+  }).catch(function(){ showAdminToast('❌ Connection error'); });
+}
+
+function _makeAmbassadorLegacy(id) { // kept for reference
+  renderAmbassadors();
+}
+
+function showAddAmbassador() {
+  var f = document.getElementById('addAmbForm');
+  f.style.display = f.style.display === 'none' ? 'block' : 'none';
+}
+
+function addAmbassador() {
+  var val = document.getElementById('newAmbInput').value.trim();
+  if (!val) return;
+  var m = MEMBERS_DATA.find(function(x){return x.id===val||x.email===val;});
+  if (!m) {
+    // Add as new entry
+    MEMBERS_DATA.push({id:val,name:val,email:'',joined:'Now',sessions:0,ambassador:true,ambassadorActive:true});
+  } else {
+    m.ambassador = true;
+    m.ambassadorActive = true;
+  }
+  localStorage.setItem('atp:ambassador','true');
+  document.getElementById('addAmbForm').style.display = 'none';
+  document.getElementById('newAmbInput').value = '';
+  showAdminToast('⭐ Ambassador access granted!');
+  renderAmbassadors();
+}
+
+// ── CHALLENGES ────────────────────────────────────────────────
+function createChallenge() {
+  var name   = document.getElementById('cName').value.trim();
+  var type   = document.getElementById('cType').value;
+  var metric = document.getElementById('cMetric').value;
+  var target = document.getElementById('cTarget').value;
+  var desc   = document.getElementById('cDesc').value.trim();
+  if (!name || !target) { showAdminToast('Fill in name and target', 'warn'); return; }
+  CHALLENGES_DATA.push({icon:'⚡',name:name,type:type,metric:metric,target:parseInt(target),desc:desc,active:true,participants:0});
+  ['cName','cTarget','cDesc'].forEach(function(id){document.getElementById(id).value='';});
+  renderActiveChallenges();
+  showAdminToast('✓ Challenge "'+name+'" published!');
+}
+
+function renderActiveChallenges() {
+  document.getElementById('activeChallengesList').innerHTML = CHALLENGES_DATA.map(function(c,i) {
+    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.05)">'+
+      '<div style="display:flex;align-items:center;gap:12px">'+
+        '<div style="width:36px;height:36px;border-radius:8px;background:rgba(122,194,49,.1);display:flex;align-items:center;justify-content:center;font-size:18px">'+c.icon+'</div>'+
+        '<div>'+
+          '<div style="font-size:13px;font-weight:700;color:#fff">'+c.name+'</div>'+
+          '<div style="font-size:11px;color:#444;margin-top:2px">'+c.type+' · '+c.metric+': '+c.target+' · '+c.participants+' joined</div>'+
+        '</div>'+
+      '</div>'+
+      '<div style="display:flex;align-items:center;gap:8px">'+
+        '<span class="badge '+(c.active?'badge-green':'badge-grey')+'">'+(c.active?'Active':'Ended')+'</span>'+
+        '<button class="admin-btn admin-btn-danger" onclick="endChallenge('+i+')">End</button>'+
+      '</div>'+
+    '</div>';
+  }).join('') || '<div style="color:#444;font-size:13px;text-align:center;padding:20px">No active challenges. Create one above.</div>';
+}
+
+function endChallenge(i) {
+  CHALLENGES_DATA[i].active = false;
+  renderActiveChallenges();
+  showAdminToast('Challenge ended');
+}
+
+// ── LIVE COUNT ────────────────────────────────────────────────
+function updateLiveCount() {
+  var saved = JSON.parse(localStorage.getItem('atp:checkins:community-run') || '[]');
+  var count = saved.length;
+  var el = document.getElementById('liveCount');
+  var bar = document.getElementById('liveBar');
+  if (el) { el.textContent = count; }
+  if (bar) { bar.style.width = Math.round(count/24*100)+'%'; }
+  setTimeout(updateLiveCount, 5000); // refresh every 5s
+}
+
+// ── TOAST ─────────────────────────────────────────────────────
+function showAdminToast(msg, type) {
+  var t = document.getElementById('adminToast');
+  t.textContent = msg;
+  t.className = 'admin-toast '+(type==='warn'?'':'success');
+  t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');}, 3000);
+}
+
+// ── SESSION CREATE ────────────────────────────────────────────
+function createSession() {
+  var name  = document.getElementById('sName').value.trim();
+  var tribe = document.getElementById('sTribe').value;
+  var day   = document.getElementById('sDay').value;
+  var time  = document.getElementById('sTime').value;
+  var loc   = document.getElementById('sLoc').value.trim();
+  var coach = document.getElementById('sCoach').value.trim();
+  var desc  = document.getElementById('sDesc').value.trim();
+  if (!name || !loc) { showAdminToast('Name and location required','warn'); return; }
+  // Save to localStorage so sessions.html can pick it up
+  var sessions = JSON.parse(localStorage.getItem('atp:sessions') || '[]');
+  sessions.unshift({name:name,tribe:tribe.toLowerCase(),day:day,time:time,loc:loc,coach:coach,desc:desc});
+  localStorage.setItem('atp:sessions', JSON.stringify(sessions));
+  ['sName','sLoc','sCoach','sDesc'].forEach(function(id){document.getElementById(id).value='';});
+  showAdminToast('✓ Session "'+name+'" created!');
+}
+
+// ── ATP API INIT ─────────────────────────────────────────────
+(function() {
+  if (!window.ATP) return;
+  window.ATP.init().then(function(member) {
+    if (!member) return;
+    // Sync to legacy auth state
+    if (typeof atpUser !== 'undefined' && atpUser === null) {
+      atpUser = {
+        firstName: member.first_name, lastName: member.last_name,
+        email: member.email, avatar: member.avatar_url ||
+          (member.first_name[0] + (member.last_name||'X')[0]).toUpperCase(),
+        joinedAt: member.joined_at, memberId: member.id,
+        memberNumber: member.member_number,
+        ambassador: member.is_ambassador, admin: member.is_admin,
+      };
+      if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
+    }
+    // Ambassador: show checkin link
+    if (member.is_ambassador && typeof checkAmbassadorRole === 'function') {
+      checkAmbassadorRole();
+    }
+    // Store ambassador flag for checkin page
+    if (member.is_ambassador) {
+      localStorage.setItem('atp:ambassador', 'true');
+    }
+  }).catch(function() {});
+})();
+
+
+// ── ATP REAL API FUNCTIONS ────────────────────────────────────
+var ATP_API = 'https://atpworldweb-production.up.railway.app/api';
+function getToken() { return localStorage.getItem('atp_token') || ''; }
+function apiGet(path) {
+  return fetch(ATP_API + path, {
+    headers: { 'Authorization': 'Bearer ' + getToken() }
+  }).then(function(r) { return r.json(); });
+}
+
+async function loadDashboardAPI() {
+  var token = getToken();
+  if (!token) return;
+  try {
+    var memberData = await apiGet('/admin/members?limit=1');
+    if (memberData.total !== undefined) {
+      var total = memberData.total;
+      document.getElementById('stat-members').textContent = total.toLocaleString();
+      var lbl = document.querySelector('.admin-section-title span');
+      if (lbl) lbl.textContent = total.toLocaleString() + ' total';
+    }
+    var ambData = await apiGet('/admin/members?is_ambassador=true&limit=1');
+    if (ambData.total !== undefined) {
+      document.getElementById('stat-ambassadors').textContent = ambData.total;
+    }
+    var sessionData = await apiGet('/sessions?limit=1');
+    if (sessionData && sessionData.total !== undefined) {
+      document.getElementById('stat-sessions').textContent = sessionData.total;
+    }
+    console.log('Dashboard stats loaded live');
+  } catch(e) { console.warn('Dashboard API:', e.message); }
+}
+
+async function loadMembersAPI() {
+  var token = getToken();
+  if (!token) return;
+  var search = (document.getElementById('memberSearch') || {}).value || '';
+  try {
+    var url = '/admin/members?limit=100' + (search ? '&search=' + encodeURIComponent(search) : '');
+    var result = await apiGet(url);
+    if (result.members && result.members.length) {
+      // Map API response to the table format
+      var tbody = document.getElementById('membersTbody');
+      if (tbody) {
+        tbody.innerHTML = result.members.map(function(m) {
+          var name = (m.first_name || '') + ' ' + (m.last_name || '');
+          var initials = ((m.first_name||'?')[0] + (m.last_name||'?')[0]).toUpperCase();
+          var joined = m.joined_at ? new Date(m.joined_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '—';
+          return '<tr>' +
+            '<td style="display:flex;align-items:center"><div class="admin-av">' + initials + '</div><div><div class="admin-member-name">' + name.trim() + '</div><div class="admin-member-email">' + m.member_number + ' · ' + m.email + '</div></div></td>' +
+            '<td style="color:#555;font-size:12px">' + joined + '</td>' +
+            '<td style="color:#fff;font-size:13px;font-weight:600">' + (m.sessions_count || 0) + '</td>' +
+            '<td><span class="badge ' + (m.is_banned ? 'badge-grey' : 'badge-green') + '">' + (m.is_banned ? 'Inactive' : 'Active') + '</span></td>' +
+            '<td><button class="admin-btn" onclick="makeAmbassador(' + "'" + m.id + "'" + ')">Make Ambassador</button></td>' +
+            '</tr>';
+        }).join('');
+      }
+      // Update total count label
+      var lbl = document.querySelector('.admin-section-title span');
+      if (lbl) lbl.textContent = result.total.toLocaleString() + ' total';
+    }
+    return result.members;
+  } catch(e) { console.warn('Members API:', e.message); return null; }
+}
+
+async function loadAmbassadorsAPI() {
+  var token = getToken();
+  if (!token) return;
+  try {
+    var data = await apiGet('/admin/members?is_ambassador=true&limit=100');
+    if (!data.members) return;
+    var tbody = document.getElementById('ambassadorsTbody') || document.querySelector('#section-ambassadors tbody');
+    if (!tbody) return;
+    if (data.members.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#444;padding:32px">No ambassadors yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.members.map(function(m) {
+      var name = ((m.first_name||'')+' '+(m.last_name||'')).trim();
+      var ini = ((m.first_name||'?')[0]+(m.last_name||'?')[0]).toUpperCase();
+      var joined = m.joined_at ? new Date(m.joined_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '—';
+      var btnId = 'revbtn-' + m.id.replace(/-/g,'');
+      return '<tr>'+
+        '<td style="display:flex;align-items:center;gap:10px">'+
+          '<div class="admin-av" style="background:#7AC231;color:#000">'+ini+'</div>'+
+          '<div><div class="admin-member-name">'+name+'</div>'+
+          '<div class="admin-member-email">'+m.member_number+' · '+m.email+'</div></div></td>'+
+        '<td style="color:#555;font-size:12px">'+joined+'</td>'+
+        '<td style="color:#fff;font-size:13px;font-weight:600">'+(m.sessions_count||0)+'</td>'+
+        '<td><span class="badge badge-green">Active</span></td>'+
+        '<td><button class="admin-btn" style="background:#ef4444" id="'+btnId+'" onclick="revokeAmbassador(this.dataset.mid)" data-mid="'+m.id+'">Revoke</button></td>'+
+        '</tr>';
+    }).join('');
+    document.getElementById('stat-ambassadors').textContent = data.total;
+    console.log('✅ Ambassadors loaded:', data.total);
+  } catch(e) { console.warn('Ambassadors API:', e.message); }
+}
+
+
+function revokeAmbassador(id) {
+  var token = getToken();
+  if (!confirm('Remove ambassador status?')) return;
+  fetch('https://atpworldweb-production.up.railway.app/api/admin/members/' + id + '/ambassador', {
+    method:'PATCH', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({is_ambassador:false})
+  }).then(function(r){return r.json();}).then(function(){
+    showAdminToast('Ambassador status removed');
+    loadAmbassadorsAPI();
+    loadDashboardAPI();
+  });
+}
+
+async function setAmbassadorAPI(memberId, enabled) {
+  if (!window.ATP || !window.ATP.isLoggedIn()) return;
+  try {
+    await window.ATP.admin.setAmbassador(memberId, enabled);
+    console.log('Ambassador updated:', memberId, enabled);
+  } catch(e) { console.warn('Ambassador API:', e.message); }
+}
+
+</script>
+
+<script>
+var LOGO_SRC = "https://raw.githubusercontent.com/AtTheParkWorld/ATP_World_Web/main/atthepark_assets02.png";
+document.getElementById('adminLogo').src = LOGO_SRC;
+document.getElementById('adminLogoNav').src = LOGO_SRC;
+
+</script>
+</body>
+</html>

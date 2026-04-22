@@ -52,6 +52,18 @@ app.get('/health', (req, res) => {
 });
 
 // ── ROUTES ────────────────────────────────────────────────────
+// ── Static frontend (fallback while GitHub Pages rebuilds) ───────────────────
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../../public')));
+app.get('/admin',    (req, res) => res.sendFile(path.join(__dirname, '../../public/admin.html')));
+app.get('/sessions', (req, res) => res.sendFile(path.join(__dirname, '../../public/sessions.html')));
+app.get('/community',(req, res) => res.sendFile(path.join(__dirname, '../../public/community.html')));
+app.get('/profile',  (req, res) => res.sendFile(path.join(__dirname, '../../public/profile.html')));
+app.get('/store',    (req, res) => res.sendFile(path.join(__dirname, '../../public/store.html')));
+app.get('/checkin',  (req, res) => res.sendFile(path.join(__dirname, '../../public/checkin.html')));
+app.get('/',         (req, res) => res.sendFile(path.join(__dirname, '../../public/index.html')));
+
+// ── API Routes ───────────────────────────────────────────────────────────────
 app.use('/api/auth',         require('./routes/auth'));
 app.use('/api/members',      require('./routes/members'));
 app.use('/api/sessions',     require('./routes/sessions'));

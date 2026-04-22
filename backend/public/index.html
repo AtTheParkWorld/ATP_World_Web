@@ -1,0 +1,1550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="atp.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>At The Park — Never Train Alone | Free Fitness Community Dubai</title>
+<meta name="description" content="At The Park is the UAE's largest free outdoor fitness community. Founded in 2015 by Fredy & Tatiana Martins. Running, yoga, crosstraining, kickboxing — always free. Join 7,000+ registered members today.">
+<meta name="keywords" content="free fitness Dubai, outdoor workout Dubai, free yoga Dubai, free running club Dubai, community fitness UAE, At The Park">
+<meta property="og:title" content="At The Park — Never Train Alone | Free Fitness Community Dubai">
+<meta property="og:description" content="7,000+ registered members. 19 activities. Dubai, Al Ain & Muscat. Always free. The UAE's largest outdoor fitness community.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://www.atthepark.world">
+<link rel="canonical" href="https://www.atthepark.world">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@type":"SportsOrganization","name":"At The Park","url":"https://www.atthepark.world","description":"Dubai largest free outdoor fitness community. Free running, yoga, crosstraining, kickboxing and more — 7 days a week.","address":{"@type":"PostalAddress","addressLocality":"Dubai","addressCountry":"AE"},"foundingDate":"2015","founder":[{"@type":"Person","name":"Fredy Martins"},{"@type":"Person","name":"Tatiana Martins"}],"sameAs":["https://www.instagram.com/atthepark_uae","https://www.facebook.com/theparkuae/"]}
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#7AC231;--green-dark:#5a9a1f;
+  --black:#0a0a0a;--dark:#111111;--dark2:#1a1a1a;--dark3:#222222;
+  --muted:#888888;--light:#aaaaaa;--white:#ffffff;
+  --ff-display:'Barlow Condensed',sans-serif;--ff-body:'DM Sans',sans-serif;
+  --nav-h:68px;--max:1320px;--radius:6px;--radius-lg:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--ff-body);background:var(--black);color:var(--white);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;font-family:var(--ff-body)}
+
+/* NAV */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;padding:0 40px;transition:background .3s,border-color .3s;border-bottom:1px solid transparent}
+nav.scrolled{background:rgba(10,10,10,.97);border-bottom-color:rgba(122,194,49,.18);backdrop-filter:blur(16px)}
+.nav-inner{width:100%;max-width:var(--max);margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.nav-logo img{height:32px;width:auto;display:block}
+.nav-links{display:flex;align-items:center;gap:32px;list-style:none}
+.nav-links a{font-size:13px;font-weight:500;letter-spacing:.04em;color:var(--light);transition:color .2s}
+.nav-links a:hover{color:var(--green)}
+.nav-actions{display:flex;align-items:center;gap:12px}
+.btn-ghost{font-size:13px;font-weight:600;color:var(--white);border:1px solid rgba(255,255,255,.2);padding:9px 20px;border-radius:var(--radius);background:transparent;transition:border-color .2s}
+.btn-ghost:hover{border-color:var(--white)}
+.btn-primary{font-size:13px;font-weight:700;background:var(--green);color:var(--white);padding:10px 22px;border-radius:var(--radius);border:none;letter-spacing:.03em;transition:background .2s,transform .15s}
+.btn-primary:hover{background:var(--green-dark);transform:translateY(-1px)}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
+.hamburger span{display:block;width:22px;height:2px;background:var(--white);border-radius:2px}
+
+/* HERO */
+.hero{min-height:100vh;padding-top:var(--nav-h);display:grid;grid-template-columns:1fr 1fr;position:relative;overflow:hidden}
+.hero-left{display:flex;flex-direction:column;justify-content:center;padding:80px 56px 80px 64px;position:relative;z-index:2}
+.hero-tag{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin-bottom:28px}
+.hero-tag::before{content:'';display:block;width:24px;height:2px;background:var(--green)}
+.hero-h1{font-family:var(--ff-display);font-size:clamp(68px,7.5vw,108px);font-weight:900;line-height:.9;letter-spacing:-.01em;text-transform:uppercase;margin-bottom:30px}
+.word-never{display:block;color:var(--white)}
+.word-train{display:block;color:var(--green)}
+.word-alone{display:block;-webkit-text-stroke:2.5px var(--white);color:transparent}
+.hero-sub{font-size:17px;line-height:1.7;color:var(--light);max-width:400px;margin-bottom:40px;font-weight:300}
+.hero-sub strong{color:var(--white);font-weight:600}
+.hero-cta-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.btn-hero{font-size:15px;font-weight:700;background:var(--green);color:var(--white);padding:16px 36px;border-radius:var(--radius);border:none;letter-spacing:.02em;transition:background .2s,transform .15s;display:inline-flex;align-items:center;gap:8px}
+.btn-hero:hover{background:var(--green-dark);transform:translateY(-2px)}
+.btn-hero-sec{font-size:14px;font-weight:500;color:var(--light);display:inline-flex;align-items:center;gap:6px;border:none;background:none;transition:color .2s}
+.btn-hero-sec:hover{color:var(--white)}
+.btn-hero-sec span{text-decoration:underline;text-underline-offset:3px}
+.hero-right{position:relative;overflow:hidden;background:var(--dark2);border-left:1px solid rgba(255,255,255,.06)}
+.hero-img-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
+.hero-img-placeholder .img-note{font-size:11px;color:#444;letter-spacing:.08em;text-transform:uppercase;text-align:center;line-height:1.8;max-width:200px}
+.hero-right::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:4px;background:var(--green)}
+.hero-right::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--green)}
+.hero-video-label{position:absolute;bottom:28px;right:28px;display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.75);background:rgba(10,10,10,.55);backdrop-filter:blur(8px);padding:7px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.12)}
+.hvl-dot{display:block;width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse-dot 1.8s ease-in-out infinite;flex-shrink:0}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.75)}}
+/* LIVE MEMBER COUNTER */
+.live-counter{display:inline-flex;align-items:center;gap:12px;margin-bottom:28px}
+.lc-pulse{position:relative;width:10px;height:10px;flex-shrink:0}
+.lc-pulse-dot{position:absolute;inset:0;background:var(--green);border-radius:50%}
+.lc-pulse-ring{position:absolute;inset:-4px;border:2px solid var(--green);border-radius:50%;animation:ring-out 2s ease-out infinite;opacity:0}
+@keyframes ring-out{0%{transform:scale(.5);opacity:.8}100%{transform:scale(2.2);opacity:0}}
+.lc-text{font-family:var(--ff-display);font-size:clamp(18px,2vw,24px);font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:var(--white);line-height:1}
+.lc-text strong{color:var(--green)}
+.lc-divider{width:1px;height:24px;background:rgba(255,255,255,.15);flex-shrink:0}
+.lc-sub{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);line-height:1.4}
+
+
+.hero-stats{display:flex;gap:0;margin-top:56px;padding-top:36px;border-top:1px solid rgba(255,255,255,.1)}
+.stat{flex:1;padding-right:20px;border-right:1px solid rgba(255,255,255,.1);margin-right:20px}
+.stat:last-child{border-right:none;margin-right:0;padding-right:0}
+.stat-num{font-family:var(--ff-display);font-size:40px;font-weight:900;line-height:1;color:var(--green);letter-spacing:-.02em}
+.stat-label{font-size:12px;color:var(--muted);margin-top:4px}
+.scroll-hint{position:absolute;bottom:32px;left:64px;display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#444;animation:float 2.2s ease-in-out infinite}
+.scroll-hint::after{content:'';display:block;width:1px;height:36px;background:linear-gradient(to bottom,#444,transparent)}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
+
+/* TRUST TICKER */
+.trust-bar{background:var(--green);padding:13px 0;overflow:hidden}
+.trust-ticker{display:flex;gap:60px;animation:ticker 22s linear infinite;white-space:nowrap}
+.trust-ticker-item{display:flex;align-items:center;gap:12px;font-family:var(--ff-display);font-size:14px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--white);flex-shrink:0}
+.trust-ticker-item::before{content:'';display:block;width:5px;height:5px;background:rgba(255,255,255,.5);border-radius:50%}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* STORY */
+.story-section{background:var(--dark2);padding:100px 40px;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06)}
+.story-inner{max-width:var(--max);margin:0 auto;display:grid;grid-template-columns:5fr 7fr;gap:80px;align-items:start}
+.story-img-box{width:100%;aspect-ratio:3/4;background:var(--dark3);border-radius:var(--radius-lg);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
+.story-img-box::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)}
+.img-ph{font-size:11px;color:#333;letter-spacing:.08em;text-transform:uppercase;text-align:center;line-height:1.8}
+.story-badge{position:absolute;bottom:0;right:-18px;transform:translateY(50%);width:100px;height:100px;background:var(--green);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;z-index:3;border:3px solid var(--dark2)}
+.story-badge-num{font-family:var(--ff-display);font-size:32px;font-weight:900;color:var(--white);line-height:1}
+.story-badge-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.85);letter-spacing:.06em;text-transform:uppercase}
+.section-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:12px;display:flex;align-items:center;gap:10px}
+.section-label::before{content:'';display:block;width:20px;height:2px;background:var(--green)}
+.story-h2{font-family:var(--ff-display);font-size:clamp(40px,4.5vw,58px);font-weight:900;line-height:.95;letter-spacing:-.01em;text-transform:uppercase;margin-bottom:24px}
+.story-h2 .acc{color:var(--green)}
+.story-intro{font-size:20px;line-height:1.65;color:var(--white);font-weight:300;margin-bottom:16px}
+.story-intro em{font-style:italic;color:var(--green)}
+.story-p{font-size:15px;line-height:1.8;color:var(--light);font-weight:300;margin-bottom:14px}
+.story-p strong{color:var(--white);font-weight:500}
+.story-moment{background:rgba(122,194,49,.06);border-left:3px solid var(--green);border-radius:0 var(--radius) var(--radius) 0;padding:20px 24px;margin:20px 0;font-size:16px;line-height:1.65;color:var(--white);font-weight:300;font-style:italic}
+.story-moment strong{font-weight:700;font-style:normal;color:var(--green)}
+.story-chapter{font-family:var(--ff-display);font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green);margin:24px 0 10px;display:flex;align-items:center;gap:8px}
+.story-chapter::before{content:'';display:block;width:16px;height:2px;background:var(--green)}
+.story-closing{background:var(--dark3);border-radius:var(--radius-lg);padding:28px;margin-top:28px;border:1px solid rgba(255,255,255,.06)}
+.story-closing-title{font-family:var(--ff-display);font-size:26px;font-weight:800;text-transform:uppercase;color:var(--white);margin-bottom:12px;line-height:1.1}
+.story-closing-title span{color:var(--green)}
+.story-closing-p{font-size:15px;line-height:1.7;color:var(--light);font-weight:300;margin-bottom:16px}
+.story-closing-cta{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:700;background:var(--green);color:var(--white);padding:13px 28px;border-radius:var(--radius);border:none;cursor:pointer;transition:background .2s,transform .15s}
+.story-closing-cta:hover{background:var(--green-dark);transform:translateY(-1px)}
+.story-timeline{display:flex;margin-top:40px;border-top:1px solid rgba(255,255,255,.08);padding-top:24px}
+.tl-item{flex:1;text-align:center;padding:0 8px;border-right:1px solid rgba(255,255,255,.08)}
+.tl-item:last-child{border-right:none}
+.tl-year{font-family:var(--ff-display);font-size:20px;font-weight:800;color:var(--green);margin-bottom:3px}
+.tl-event{font-size:11px;color:var(--muted);line-height:1.5}
+
+/* READ MORE */
+.story-expanded{max-height:0;overflow:hidden;transition:max-height .65s cubic-bezier(.4,0,.2,1),opacity .45s ease;opacity:0}
+.story-expanded.open{max-height:3000px;opacity:1}
+.read-more-btn{display:inline-flex;align-items:center;gap:10px;margin:20px 0 0;font-size:14px;font-weight:600;color:var(--green);background:transparent;border:1px solid rgba(122,194,49,.3);padding:11px 22px;border-radius:var(--radius);cursor:pointer;transition:all .2s;letter-spacing:.03em;width:100%;justify-content:space-between}
+.read-more-btn:hover{background:rgba(122,194,49,.06);border-color:rgba(122,194,49,.6)}
+.read-more-btn.open .rmb-icon svg{transform:rotate(180deg)}
+.rmb-icon svg{transition:transform .3s;width:16px;height:16px}
+
+/* TRIBES */
+.tribes-section{padding:100px 40px}
+.tribes-inner{max-width:var(--max);margin:0 auto}
+.tribes-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:44px;gap:24px}
+.section-h2{font-family:var(--ff-display);font-size:clamp(38px,4.5vw,58px);font-weight:900;line-height:.95;letter-spacing:-.01em;text-transform:uppercase;margin-bottom:16px}
+.section-h2 .accent{color:var(--green)}
+.link-arrow{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--green);transition:gap .2s}
+.link-arrow:hover{gap:10px}
+.tribes-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:2px;background:rgba(255,255,255,.05);border-radius:var(--radius-lg);overflow:hidden}
+.tribe-card{background:var(--dark2);padding:40px 30px 34px;position:relative;overflow:hidden;cursor:pointer;transition:background .25s}
+.tribe-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--green);transform:scaleX(0);transform-origin:left;transition:transform .3s}
+.tribe-card:hover{background:var(--dark3)}
+.tribe-card:hover::before{transform:scaleX(1)}
+.tribe-card.featured{background:var(--green)}
+.tribe-card.featured .tribe-name,.tribe-card.featured .tribe-count,.tribe-card.featured .tribe-desc,.tribe-card.featured .tribe-next{color:var(--white)}
+.tribe-card.featured .tribe-divider{background:rgba(255,255,255,.2)}
+.tribe-card.featured .tribe-activities li{color:rgba(255,255,255,.85);border-bottom-color:rgba(255,255,255,.12)}
+.tribe-card.featured .tribe-activities li::before{background:rgba(255,255,255,.6)}
+.tribe-card.featured .tribe-tag{color:rgba(255,255,255,.6)}
+.tribe-card.featured::before{display:none}
+.tribe-tag{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
+.tribe-name{font-family:var(--ff-display);font-size:48px;font-weight:900;line-height:.9;text-transform:uppercase;color:var(--white);margin-bottom:8px}
+.tribe-count{font-size:13px;color:var(--muted);margin-bottom:18px}
+.tribe-divider{height:1px;background:rgba(255,255,255,.08);margin-bottom:18px}
+.tribe-desc{font-size:14px;line-height:1.6;color:var(--light);font-weight:300;margin-bottom:20px;min-height:56px}
+.tribe-activities{list-style:none;margin-bottom:22px}
+.tribe-activities li{font-size:13px;color:var(--light);padding:6px 0;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:8px}
+.tribe-activities li::before{content:'';display:block;width:4px;height:4px;background:var(--green);border-radius:50%;flex-shrink:0}
+.tribe-next{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:5px;margin-bottom:18px}
+.tribe-next::before{content:'●';color:var(--green);font-size:7px}
+.tribe-cta{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--white)}
+.tribe-cta-ghost{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--green);border-top:1px solid rgba(255,255,255,.08);padding-top:16px;width:100%}
+
+/* SESSIONS */
+.sessions-section{background:var(--dark2);padding:100px 40px;border-top:1px solid rgba(255,255,255,.06)}
+.sessions-inner{max-width:var(--max);margin:0 auto}
+.sessions-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:32px}
+.sessions-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:32px}
+.session-card{background:var(--dark3);border-radius:var(--radius-lg);padding:22px 20px;border:1px solid transparent;cursor:pointer;transition:border-color .25s,transform .2s;position:relative}
+.session-card:hover{border-color:rgba(122,194,49,.35);transform:translateY(-3px)}
+.session-time{font-size:11px;font-weight:700;letter-spacing:.08em;color:var(--green);text-transform:uppercase;margin-bottom:9px}
+.session-name{font-family:var(--ff-display);font-size:21px;font-weight:800;text-transform:uppercase;color:var(--white);margin-bottom:5px;line-height:1.1}
+.session-coach{font-size:12px;color:var(--muted);margin-bottom:10px}
+.session-loc{font-size:12px;color:var(--light);display:flex;align-items:center;gap:5px}
+.session-loc::before{content:'◈';color:var(--green);font-size:10px}
+.session-badge{position:absolute;top:13px;right:13px;font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 8px;border-radius:20px;background:rgba(122,194,49,.12);color:var(--green)}
+.sessions-cta-row{text-align:center;padding-top:18px;border-top:1px solid rgba(255,255,255,.06)}
+
+/* MEMBER STORIES */
+.stories-section{padding:100px 40px}
+.stories-inner{max-width:var(--max);margin:0 auto}
+.stories-header{margin-bottom:40px}
+.stories-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;align-items:start}
+.story-card{background:var(--dark2);border-radius:var(--radius-lg);overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+.story-card-img{width:100%;aspect-ratio:4/3;background:var(--dark3);display:flex;align-items:center;justify-content:center}
+.story-card-img.tall{aspect-ratio:3/4}
+.story-card-body{padding:20px}
+.story-card-stat{font-family:var(--ff-display);font-size:32px;font-weight:900;color:var(--green);line-height:1;margin-bottom:4px}
+.story-card-name{font-size:13px;font-weight:600;color:var(--white);margin-bottom:8px}
+.story-card-quote{font-size:13px;line-height:1.65;color:var(--light);font-weight:300;font-style:italic}
+
+/* APP */
+.app-section{background:var(--dark2);padding:100px 40px;border-top:1px solid rgba(255,255,255,.06)}
+.app-inner{max-width:var(--max);margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
+.app-features{margin:28px 0;display:flex;flex-direction:column;gap:14px}
+.app-feature{display:flex;gap:14px;align-items:flex-start;padding:16px;background:rgba(255,255,255,.04);border-radius:var(--radius);border:1px solid rgba(255,255,255,.07)}
+.app-feature-icon{width:36px;height:36px;border-radius:var(--radius);background:rgba(122,194,49,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.app-feature-title{font-size:14px;font-weight:600;color:var(--white);margin-bottom:3px}
+.app-feature-desc{font-size:13px;color:var(--muted);line-height:1.55}
+.app-badges{display:flex;gap:10px;flex-wrap:wrap}
+.app-badge{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:var(--radius);padding:10px 18px;cursor:pointer;transition:border-color .2s}
+.app-badge:hover{border-color:var(--green)}
+.app-badge-text{font-size:11px;color:var(--muted);line-height:1.2}
+.app-badge-text strong{display:block;font-size:13px;color:var(--white);font-weight:600}
+.app-visual{position:relative;display:flex;justify-content:center;align-items:flex-end;gap:14px;padding-top:20px}
+.phone-mock{width:190px;background:rgba(255,255,255,.04);border-radius:28px;border:1px solid rgba(255,255,255,.1);overflow:hidden}
+.phone-mock.main{width:210px;z-index:2}
+.phone-mock-screen{aspect-ratio:9/19.5;background:#0d0d0d;display:flex;flex-direction:column;padding:28px 14px 18px;gap:10px}
+.phone-top{display:flex;justify-content:space-between;align-items:center}
+.phone-greeting{font-size:10px;color:var(--muted)}
+.phone-points{font-size:10px;font-weight:600;color:var(--green);background:rgba(122,194,49,.12);padding:3px 7px;border-radius:20px}
+.phone-h{font-family:var(--ff-display);font-size:20px;font-weight:800;color:var(--white);line-height:1.1}
+.phone-session-card{background:var(--green);border-radius:9px;padding:12px}
+.phone-session-time{font-size:9px;font-weight:700;color:rgba(255,255,255,.75);letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px}
+.phone-session-name{font-family:var(--ff-display);font-size:16px;font-weight:800;color:var(--white);text-transform:uppercase;margin-bottom:4px}
+.phone-session-loc{font-size:9px;color:rgba(255,255,255,.7)}
+.phone-mini-cards{display:grid;grid-template-columns:1fr 1fr;gap:7px}
+.phone-mini{background:rgba(255,255,255,.06);border-radius:7px;padding:9px;border:1px solid rgba(255,255,255,.08)}
+.phone-mini-label{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
+.phone-mini-val{font-family:var(--ff-display);font-size:17px;font-weight:800;color:var(--green)}
+
+/* SHOP */
+.shop-section{padding:100px 40px;border-top:1px solid rgba(255,255,255,.06)}
+.shop-inner{max-width:var(--max);margin:0 auto}
+.shop-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:28px}
+.shop-points-note{background:rgba(122,194,49,.07);border:1px solid rgba(122,194,49,.18);border-radius:var(--radius);padding:12px 16px;display:flex;align-items:center;gap:10px;margin-bottom:20px}
+.shop-points-note p{font-size:13px;color:var(--light)}
+.shop-points-note p strong{color:var(--white)}
+.shop-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:28px}
+.product-card{background:var(--dark2);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;border:1px solid rgba(255,255,255,.06);transition:transform .2s,border-color .2s}
+.product-card:hover{transform:translateY(-4px);border-color:rgba(122,194,49,.25)}
+.product-img{aspect-ratio:3/4;background:var(--dark3);display:flex;align-items:center;justify-content:center;position:relative}
+.product-tag-overlay{position:absolute;top:10px;left:10px;font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:var(--green);color:var(--white)}
+.product-body{padding:14px}
+.product-name{font-size:14px;font-weight:600;color:var(--white);margin-bottom:3px}
+.product-sub{font-size:12px;color:var(--muted);margin-bottom:8px}
+.product-price{font-family:var(--ff-display);font-size:20px;font-weight:800;color:var(--green)}
+
+/* PARTNERS */
+.partners-section{background:var(--dark2);padding:80px 40px;border-top:1px solid rgba(255,255,255,.06)}
+.partners-inner{max-width:var(--max);margin:0 auto}
+.partners-top-row{display:grid;grid-template-columns:1fr 2fr;gap:60px;align-items:start;margin-bottom:32px}
+.partners-pitch{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-lg);padding:28px 32px}
+.pitch-headline{font-family:var(--ff-display);font-size:22px;font-weight:800;text-transform:uppercase;color:var(--white);margin-bottom:14px}
+.pitch-body{font-size:14px;line-height:1.75;color:var(--light);font-weight:300;margin-bottom:12px}
+.pitch-body strong{color:var(--white);font-weight:500}
+.pitch-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin:20px 0}
+.pitch-stat{background:var(--dark3);border-radius:var(--radius);padding:14px 12px;text-align:center}
+.pitch-stat-num{font-family:var(--ff-display);font-size:26px;font-weight:900;color:var(--green);line-height:1;margin-bottom:4px}
+.pitch-stat-label{font-size:11px;color:var(--muted);line-height:1.4}
+.pitch-why{font-size:13px;line-height:1.7;color:var(--muted);border-top:1px solid rgba(255,255,255,.06);padding-top:14px;margin-top:4px}
+.pitch-why strong{color:var(--light);font-weight:500}
+.partners-grid{display:flex;gap:1px;flex-wrap:wrap;background:rgba(255,255,255,.06);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:24px}
+.partner-tile{flex:1;min-width:160px;background:var(--dark3);padding:32px 24px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .25s,box-shadow .25s}
+.partner-tile:hover{background:var(--green);box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
+.partner-name{font-family:var(--ff-display);font-size:20px;font-weight:800;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;transition:color .25s}
+.partner-tile:hover .partner-name{color:var(--white)}
+.partner-tile-open{border:1px dashed rgba(122,194,49,.35)!important;background:rgba(122,194,49,.04)!important}
+.partner-tile-open:hover{background:var(--green)!important}
+.partner-name-open{font-family:var(--ff-display);font-size:20px;font-weight:800;color:rgba(122,194,49,.55);text-transform:uppercase;letter-spacing:.06em;transition:color .25s}
+.partner-tile-open:hover .partner-name-open{color:var(--white)}
+.partner-cta-strip{background:rgba(122,194,49,.06);border:1px solid rgba(122,194,49,.15);border-radius:var(--radius-lg);padding:26px;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.partner-cta-text h3{font-family:var(--ff-display);font-size:22px;font-weight:800;text-transform:uppercase;color:var(--white);margin-bottom:3px}
+.partner-cta-text p{font-size:14px;color:var(--muted)}
+
+/* FINAL CTA */
+.final-cta{background:var(--green);padding:100px 40px;text-align:center;position:relative;overflow:hidden}
+.final-cta-bg{position:absolute;inset:0;background-image:repeating-linear-gradient(45deg,rgba(0,0,0,.04) 0,rgba(0,0,0,.04) 1px,transparent 1px,transparent 50%);background-size:20px 20px}
+.final-cta-inner{position:relative;z-index:1;max-width:680px;margin:0 auto}
+.final-cta h2{font-family:var(--ff-display);font-size:clamp(52px,7vw,92px);font-weight:900;line-height:.9;text-transform:uppercase;color:var(--white);margin-bottom:16px;letter-spacing:-.02em}
+.final-cta p{font-size:17px;color:rgba(255,255,255,.75);margin-bottom:40px;font-weight:300}
+.btn-dark{font-size:16px;font-weight:700;background:var(--black);color:var(--white);padding:18px 44px;border-radius:var(--radius);border:none;cursor:pointer;letter-spacing:.03em;transition:background .2s,transform .15s;display:inline-flex;align-items:center;gap:10px}
+.btn-dark:hover{background:var(--dark2);transform:translateY(-2px)}
+
+/* FOOTER */
+footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-top:1px solid rgba(255,255,255,.06)}
+.footer-inner{max-width:var(--max);margin:0 auto}
+.footer-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr 1fr;gap:48px;margin-bottom:52px}
+.footer-tagline{font-size:14px;color:var(--muted);line-height:1.7;margin:14px 0 22px;max-width:240px;font-weight:300}
+.footer-socials{display:flex;gap:8px}
+.social-btn{width:34px;height:34px;border-radius:var(--radius);border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;color:var(--muted);cursor:pointer;transition:border-color .2s,color .2s;font-size:12px;text-decoration:none}
+.social-btn:hover{border-color:var(--green);color:var(--green)}
+.footer-col h4{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--white);margin-bottom:18px}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:10px}
+.footer-col ul li a{font-size:14px;color:var(--muted);transition:color .2s;font-weight:300}
+.footer-col ul li a:hover{color:var(--green)}
+.footer-bottom{padding-top:24px;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:12px}
+.footer-copy{font-size:12px;color:var(--muted)}
+.footer-legal{display:flex;gap:20px}
+.footer-legal a{font-size:12px;color:var(--muted);transition:color .2s}
+.footer-legal a:hover{color:var(--white)}
+
+/* REVEAL */
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .6s,transform .6s}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.rd1{transition-delay:.1s}.rd2{transition-delay:.2s}.rd3{transition-delay:.3s}
+
+/* RESPONSIVE */
+@media(max-width:1100px){
+  .footer-top{grid-template-columns:1fr 1fr}
+  .sessions-grid{grid-template-columns:repeat(2,1fr)}
+  .shop-grid{grid-template-columns:repeat(2,1fr)}
+  .partners-top-row{grid-template-columns:1fr}
+  .pitch-stats{grid-template-columns:repeat(2,1fr)}
+}
+@media(max-width:900px){
+  .hero{grid-template-columns:1fr}
+  .hero-right{display:none}
+  .hero-left{padding:60px 24px}
+  .story-inner{grid-template-columns:1fr;gap:48px}
+  .app-inner{grid-template-columns:1fr;gap:48px}
+  .tribes-grid{grid-template-columns:1fr}
+  .stories-grid{grid-template-columns:1fr}
+  .nav-links{display:none}
+  .hamburger{display:flex}
+}
+@media(max-width:600px){
+  .sessions-grid{grid-template-columns:1fr}
+  .shop-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .footer-top{grid-template-columns:1fr;gap:28px}
+  .hero-stats{flex-direction:column;gap:14px}
+  .stat{border-right:none;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:14px}
+  .stat:last-child{border-bottom:none}
+}
+
+/* ══ AUTH MODAL ══════════════════════════════════════════════ */
+.auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(10px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s}
+.auth-overlay.open{opacity:1;pointer-events:all}
+.auth-modal{background:var(--dark2);border-radius:16px;padding:0;width:100%;max-width:440px;border:1px solid rgba(255,255,255,.1);position:relative;transform:translateY(28px) scale(.97);transition:transform .3s cubic-bezier(.4,0,.2,1);overflow:hidden}
+.auth-overlay.open .auth-modal{transform:translateY(0) scale(1)}
+.auth-modal-top{background:linear-gradient(135deg,rgba(122,194,49,.12) 0%,transparent 100%);padding:36px 36px 28px;border-bottom:1px solid rgba(255,255,255,.06)}
+.auth-modal-logo{height:28px;width:auto;display:block;margin-bottom:18px}
+.auth-modal-title{font-family:var(--ff-display);font-size:32px;font-weight:900;text-transform:uppercase;color:var(--white);line-height:1;margin-bottom:6px}
+.auth-modal-sub{font-size:13px;color:var(--muted);line-height:1.6}
+.auth-modal-body{padding:28px 36px 32px}
+.auth-close{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,.1);background:transparent;color:var(--muted);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .2s;line-height:1}
+.auth-close:hover{border-color:rgba(255,255,255,.3);color:var(--white)}
+
+/* Social buttons */
+.auth-social-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;padding:13px 20px;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;margin-bottom:10px;letter-spacing:.02em;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--white)}
+.auth-social-btn:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.25)}
+.auth-social-btn svg{flex-shrink:0}
+.auth-social-btn.google{background:rgba(255,255,255,.05)}
+.auth-social-btn.apple{background:rgba(255,255,255,.05)}
+
+/* Divider */
+.auth-divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08)}
+
+/* Form fields */
+.auth-field{margin-bottom:14px}
+.auth-field label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.auth-field input{width:100%;background:var(--dark3);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:13px 16px;color:var(--white);font-size:14px;font-family:var(--ff-body);transition:border-color .2s;outline:none}
+.auth-field input:focus{border-color:var(--green)}
+.auth-field input::placeholder{color:#444}
+.auth-field input.err{border-color:#ef4444}
+.auth-field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* Submit */
+.auth-submit{width:100%;padding:14px;background:var(--green);color:var(--white);font-size:15px;font-weight:700;border:none;border-radius:var(--radius);cursor:pointer;letter-spacing:.04em;margin-top:6px;transition:background .2s,transform .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.auth-submit:hover{background:var(--green-dark);transform:translateY(-1px)}
+.auth-submit:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* Toggle login/signup */
+.auth-toggle{text-align:center;margin-top:18px;font-size:13px;color:var(--muted)}
+.auth-toggle button{background:none;border:none;color:var(--green);font-weight:700;cursor:pointer;font-size:13px;padding:0;margin-left:4px}
+.auth-toggle button:hover{text-decoration:underline}
+
+/* Error */
+.auth-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#fca5a5;margin-bottom:14px;display:none}
+.auth-error.show{display:block}
+
+/* Success panel */
+.auth-success{text-align:center;padding:12px 0 4px}
+.auth-success-icon{width:64px;height:64px;border-radius:50%;background:rgba(122,194,49,.12);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px}
+.auth-success-title{font-family:var(--ff-display);font-size:30px;font-weight:900;text-transform:uppercase;color:var(--green);margin-bottom:6px}
+.auth-success-sub{font-size:14px;color:var(--light);line-height:1.7}
+
+/* ══ NAV AUTH STATE ══ */
+.nav-user{display:flex;align-items:center;gap:10px}
+.nav-avatar{width:32px;height:32px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:14px;font-weight:800;color:var(--white);cursor:pointer;flex-shrink:0;border:2px solid transparent;transition:border-color .2s}
+.nav-avatar:hover{border-color:var(--green)}
+.nav-user-name{font-size:13px;font-weight:600;color:var(--white);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-logout{font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;transition:color .2s}
+.nav-logout:hover{color:var(--white)}
+
+/* ══ MEMBER GATE (sessions) ══ */
+.member-gate{display:none;text-align:center;padding:12px 0}
+.member-gate-icon{font-size:36px;margin-bottom:12px}
+.member-gate-title{font-family:var(--ff-display);font-size:28px;font-weight:900;text-transform:uppercase;color:var(--white);margin-bottom:8px}
+.member-gate-sub{font-size:14px;color:var(--light);line-height:1.7;margin-bottom:24px}
+.member-gate-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+
+.skeleton-img{background:linear-gradient(90deg,#141414 25%,#1e1e1e 50%,#141414 75%);background-size:200% 100%;animation:shimmer 1.4s infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.shop-skel .product-img{aspect-ratio:3/4}
+a.product-card{text-decoration:none;display:block}
+a.product-card:hover{transform:translateY(-4px)}
+
+/* ── INDEX SHOP CAROUSEL ─────────────────────────────────── */
+.shop-carousel-wrap{position:relative;margin:0 -40px;padding:0 40px;overflow:hidden}
+.shop-carousel{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:16px;scrollbar-width:none}
+.shop-carousel::-webkit-scrollbar{display:none}
+.shop-card,.shop-card-skel{flex:0 0 calc(25% - 11px);min-width:220px;max-width:280px;border-radius:12px;overflow:hidden;background:var(--dark2);border:1px solid rgba(255,255,255,.07);text-decoration:none;display:block;scroll-snap-align:start;transition:transform .22s,border-color .22s}
+.shop-card:hover{transform:translateY(-4px);border-color:rgba(122,194,49,.3)}
+.shop-card-img,.shop-card-skel .shop-card-img{aspect-ratio:3/4;overflow:hidden;background:var(--dark3)}
+.shop-card-img img{width:100%;height:100%;object-fit:cover;display:block}
+.shop-card-body,.shop-card-skel .shop-card-body{padding:13px 14px 15px}
+.shop-card-name{font-size:13px;font-weight:700;color:#fff;margin-bottom:2px;line-height:1.3}
+.shop-card-type{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+.shop-card-price{font-family:var(--ff-display);font-size:20px;font-weight:900;color:#7AC231}
+.skel-b{height:11px;border-radius:4px;background:#1e1e1e}
+@media(max-width:900px){.shop-carousel-wrap{margin:0 -24px;padding:0 24px}.shop-card,.shop-card-skel{flex:0 0 200px}}
+@media(max-width:600px){.shop-carousel-wrap{margin:0 -16px;padding:0 16px}.shop-card,.shop-card-skel{flex:0 0 160px;min-width:160px}}
+
+/* ── SHOP SECTION ────────────────────────────────────────── */
+.shop-section{padding:80px 0 100px;background:var(--black);overflow:hidden}
+.shop-inner{max-width:var(--max);margin:0 auto;padding:0 40px}
+.shop-header{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:40px}
+
+/* ── SQUATWOLF-STYLE CAROUSEL ────────────────────────────── */
+.swf-carousel-outer{position:relative}
+.swf-track{display:flex;gap:12px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scroll-behavior:smooth;padding-bottom:4px;cursor:grab}
+.swf-track:active{cursor:grabbing}
+.swf-track::-webkit-scrollbar{display:none}
+.swf-track{scrollbar-width:none}
+
+.swf-card{flex:0 0 calc(16.66% - 10px);min-width:180px;scroll-snap-align:start;text-decoration:none;display:block;cursor:pointer}
+.swf-img{aspect-ratio:1/1;overflow:hidden;background:var(--dark3);position:relative}
+.swf-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s cubic-bezier(.25,.46,.45,.94)}
+.swf-card:hover .swf-img img{transform:scale(1.06)}
+.swf-label{padding:12px 0 0;text-align:center}
+.swf-label-name{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--white);margin-bottom:2px}
+.swf-label-price{font-family:var(--ff-display);font-size:16px;font-weight:800;color:#7AC231}
+.swf-skel .swf-img{aspect-ratio:1/1}
+.swf-skel .swf-label{padding:12px 0 0}
+
+/* Arrow buttons */
+.swf-arrow{position:absolute;top:calc(50% - 24px);transform:translateY(-50%);width:44px;height:44px;border-radius:50%;background:rgba(10,10,10,.85);border:1px solid rgba(255,255,255,.15);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:10;transition:background .2s,border-color .2s,opacity .2s;opacity:0}
+.swf-carousel-outer:hover .swf-arrow{opacity:1}
+.swf-arrow:hover{background:rgba(30,30,30,.95);border-color:rgba(255,255,255,.35)}
+.swf-arrow-prev{left:-22px}
+.swf-arrow-next{right:-22px}
+.swf-arrow:disabled{opacity:0!important;pointer-events:none}
+
+@media(max-width:1100px){.swf-card{flex:0 0 calc(20% - 10px)}}
+@media(max-width:900px){.swf-card{flex:0 0 calc(25% - 9px);min-width:150px}.shop-inner{padding:0 24px}.swf-arrow{display:none}}
+@media(max-width:600px){.swf-card{flex:0 0 calc(33.33% - 8px);min-width:120px}.shop-inner{padding:0 16px}}
+
+</style>
+<script src="atp-api.js"></script>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo" aria-label="At The Park">
+      <img id="nav-logo-img" alt="At The Park" style="height:32px;width:auto;display:block;">
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html" class="active">Home</a></li>
+      <li><a href="sessions.html">Sessions</a></li>
+      <li><a href="community.html">Community</a></li>
+      <li><a href="profile.html">Profile</a></li>
+      <li><a href="store.html">Store</a></li>
+      <li><a href="index.html#partners">Partners</a></li>
+      <li><a href="index.html#story">About</a></li>
+    </ul>
+    <div class="nav-actions">
+      <button class="btn-ghost" onclick="openAuth('login')">Log in</button>
+      <button class="btn-primary" onclick="openAuth('signup')">Join free →</button>
+    </div>
+    <div class="hamburger"><span></span><span></span><span></span></div>
+  </div>
+</nav>
+
+<main>
+
+<!-- HERO -->
+<section class="hero" aria-labelledby="hero-heading">
+  <div class="hero-left">
+    <p class="hero-tag">Dubai's #1 free fitness community</p>
+    <h1 class="hero-h1" id="hero-heading">
+      <span class="word-never">Never,</span>
+      <span class="word-train">Train,</span>
+      <span class="word-alone">Alone.</span>
+    </h1>
+
+    <!-- LIVE MEMBER COUNTER -->
+    <div class="live-counter" aria-live="polite" aria-label="Active ATP members">
+      <div class="lc-pulse" aria-hidden="true">
+        <div class="lc-pulse-dot"></div>
+        <div class="lc-pulse-ring"></div>
+      </div>
+      <div class="lc-text">
+        <strong id="liveCount">7,000</strong> ATP Active Members
+      </div>
+      <div class="lc-divider" aria-hidden="true"></div>
+      <div class="lc-sub">Always<br>free</div>
+    </div>
+
+    <p class="hero-sub">
+      <strong>Training together across Dubai, Al Ain and Muscat</strong> — completely free.
+      19 activities, 21 expert coaches, 7 days a week. No gym fees. No excuses. Just community.
+    </p>
+    <div class="hero-cta-row">
+      <button class="btn-hero" onclick="document.getElementById('sessions').scrollIntoView({behavior:'smooth'})">
+        Find a session
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+      </button>
+      <button class="btn-hero-sec"><span>Watch what we do</span>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M6.5 6l4 2-4 2V6z" fill="currentColor" stroke="none"/></svg>
+      </button>
+    </div>
+    <div class="hero-stats">
+      <div class="stat"><div class="stat-num" data-count="19">19</div><div class="stat-label">Activity types</div></div>
+      <div class="stat"><div class="stat-num" data-count="21">21</div><div class="stat-label">Expert coaches</div></div>
+      <div class="stat"><div class="stat-num" data-count="7">7</div><div class="stat-label">Days a week</div></div>
+      <div class="stat"><div class="stat-num">AED 0</div><div class="stat-label">Cost to you</div></div>
+    </div>
+  </div>
+  <div class="hero-right" aria-hidden="true">
+    <video
+      id="hero-video"
+      autoplay
+      muted
+      loop
+      playsinline
+      style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;"
+    >
+      <source src="hero-video.mp4" type="video/mp4">
+    </video>
+    <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(10,10,10,.55) 0%,transparent 50%);pointer-events:none;"></div>
+    <div class="hero-video-label">
+      <span class="hvl-dot"></span>
+      Live sessions · Dubai · Al Ain · Muscat
+    </div>
+  </div>
+  <div class="scroll-hint" aria-hidden="true">Scroll to explore</div>
+</section>
+
+<!-- TICKER -->
+<div class="trust-bar" aria-hidden="true">
+  <div class="trust-ticker">
+    <span class="trust-ticker-item">Free since 2015</span>
+    <span class="trust-ticker-item">Dubai · Al Ain · Muscat</span>
+    <span class="trust-ticker-item">Never Train Alone</span>
+    <span class="trust-ticker-item">7,000+ registered members</span>
+    <span class="trust-ticker-item">21 volunteer coaches</span>
+    <span class="trust-ticker-item">19 activities</span>
+    <span class="trust-ticker-item">7 days a week</span>
+    <span class="trust-ticker-item">Gulf News featured</span>
+    <span class="trust-ticker-item">Free since 2015</span>
+    <span class="trust-ticker-item">Dubai · Al Ain · Muscat</span>
+    <span class="trust-ticker-item">Never Train Alone</span>
+    <span class="trust-ticker-item">7,000+ registered members</span>
+    <span class="trust-ticker-item">21 volunteer coaches</span>
+    <span class="trust-ticker-item">19 activities</span>
+    <span class="trust-ticker-item">7 days a week</span>
+    <span class="trust-ticker-item">Gulf News featured</span>
+  </div>
+</div>
+
+<!-- STORY -->
+<section class="story-section" aria-labelledby="story-heading" itemscope itemtype="https://schema.org/AboutPage">
+  <div class="story-inner">
+
+    <div class="story-img-col reveal" style="position:relative">
+      <div class="story-img-box">
+        <p class="img-ph">Fredy + Tatiana<br>founders photo</p>
+      </div>
+      <div class="story-timeline">
+        <div class="tl-item"><div class="tl-year">2015</div><div class="tl-event">Founded Al Formal Park, Abu Dhabi</div></div>
+        <div class="tl-item"><div class="tl-year">2017</div><div class="tl-event">Expanded to Dubai</div></div>
+        <div class="tl-item"><div class="tl-year">2023</div><div class="tl-event">Expanded to Muscat & Al Ain</div></div>
+        <div class="tl-item"><div class="tl-year">2026</div><div class="tl-event">7,000+ members</div></div>
+      </div>
+    </div>
+
+    <div class="story-body reveal rd1">
+      <p class="section-label">Our story</p>
+      <h2 class="story-h2" id="story-heading" itemprop="name">
+        Why we started<br><span class="acc">At The Park</span>
+      </h2>
+
+      <!-- VISIBLE INTRO -->
+      <div itemprop="description">
+        <p class="story-intro">It started with a simple sentence.<br><em>"Let's meet at the park after work."</em></p>
+        <p class="story-p">No website. No logo. No plan. Just <strong>Fredy and Tatiana</strong> — two people who believed that movement shouldn't cost a thing, and that the hardest part of fitness isn't the workout. It's doing it alone.</p>
+        <p class="story-p">What began at <strong>Al Formal Park in Abu Dhabi</strong> in 2015 with five colleagues is now the UAE's largest free outdoor fitness community — <strong>7,000+ registered members across Dubai, Al Ain and Muscat.</strong></p>
+        <div class="story-moment">
+          <strong>"We didn't build a community. We just kept showing up. And so did everyone else."</strong>
+        </div>
+      </div>
+
+      <button class="read-more-btn" id="readMoreBtn" onclick="toggleStory()" aria-expanded="false" aria-controls="storyExpanded">
+        <span class="rmb-text">Read the full story</span>
+        <span class="rmb-icon">
+          <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6l4 4 4-4"/></svg>
+        </span>
+      </button>
+
+      <!-- EXPANDABLE — fully in DOM for SEO -->
+      <div class="story-expanded" id="storyExpanded" aria-hidden="true">
+        <div style="margin-top:24px">
+          <p class="story-p">Back in 2015, Fredy and Tatiana arrived in Abu Dhabi from London, building teams and opening stores for Nike. They were surrounded by people passionate about sport — people who believed in what they were selling. But many had never truly experienced it themselves.</p>
+          <p class="story-p">Something kept bothering them.</p>
+        </div>
+        <div class="story-moment">
+          <strong>How can you talk about movement… how can you inspire someone to be active… if you've never really lived it?</strong>
+        </div>
+        <p class="story-p">So one afternoon, they sat on the grass with a few colleagues. No equipment. No pressure. Just simple bodyweight exercises and honest conversation. No memberships. No expectations. Just people showing up.</p>
+        <div class="story-chapter">What happened next</div>
+        <p class="story-p">At first, it was small. A few friends. A few colleagues. And honestly — they had no idea what it would become. But they remember how people started to feel after those sessions. Smiling more. Stronger. More confident. But what stayed with them most was something quieter:</p>
+        <div class="story-moment">
+          <strong>They didn't feel alone anymore.</strong><br>
+          That's when they realized… this was never just about fitness.
+        </div>
+        <p class="story-p">People brought their friends. Then their families. Even customers joined. And without trying to build anything — <strong>a community built itself.</strong></p>
+        <p class="story-p">Today, At The Park runs free fitness sessions in Dubai, Al Ain and Muscat every week. Running, yoga, crosstraining, kickboxing, cycling, dance and more. Different levels. Different stories. But all of them with one thing in common:</p>
+        <div class="story-moment" style="font-size:20px"><strong>They showed up.</strong></div>
+        <div class="story-chapter">Why it's always free</div>
+        <p class="story-p">Most people don't struggle with fitness because they're lazy. They struggle because they're doing it alone. People start strong, life gets busy, motivation drops. Not because they don't care. But because it's hard to keep going on your own.</p>
+        <p class="story-p">That's why At The Park exists. Not to replace gyms. Not to compete with anyone. But to give people a place where they feel comfortable starting — and even more importantly, <strong>continuing.</strong></p>
+        <p class="story-p">Everything we do is free. Fitness should be accessible to everyone. It shouldn't depend on money, background, or experience. You shouldn't have to think twice before deciding to take care of yourself.</p>
+        <div class="story-closing">
+          <div class="story-closing-title">Maybe you're reading this<br><span>thinking about starting again.</span></div>
+          <p class="story-closing-p">Or maybe you've tried before and stopped. Or maybe you've always felt like fitness just isn't for you. We get it. We've seen that story so many times. That's why we're telling you this personally — you don't need to be fit to start. You don't need to be ready. <strong>You just need to show up.</strong></p>
+          <p class="story-closing-p" style="font-size:13px;color:var(--muted);margin-bottom:20px">If you ever feel like you're doing this alone… you don't have to.</p>
+          <button class="story-closing-cta" onclick="window.location.href='sessions.html'">
+            Find a free session near you
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- TRIBES -->
+<section class="tribes-section" aria-labelledby="tribes-heading">
+  <div class="tribes-inner">
+    <div class="tribes-header">
+      <div>
+        <p class="section-label">Find your fit</p>
+        <h2 class="section-h2" id="tribes-heading">Your <span class="accent">tribe</span><br>is here</h2>
+      </div>
+      <a href="sessions.html" class="link-arrow">All sessions <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7h10M8 3l4 4-4 4"/></svg></a>
+    </div>
+    <div class="tribes-grid">
+      <article class="tribe-card reveal">
+        <p class="tribe-tag">For the mind + body</p>
+        <h3 class="tribe-name">Better</h3>
+        <p class="tribe-count">5 activities · Yoga-focused</p>
+        <div class="tribe-divider"></div>
+        <p class="tribe-desc">Breathe deeper. Move with intention. Reconnect body and mind through yoga, pilates, and sound healing.</p>
+        <ul class="tribe-activities"><li>Traditional yoga</li><li>Hatha &amp; ashtanga</li><li>Pilates &amp; yoga</li><li>Sound healing</li></ul>
+        <p class="tribe-next">Next session: Today, 7:00 PM · DIC Amphitheatre</p>
+        <a href="sessions.html" class="tribe-cta-ghost">Explore Better →</a>
+      </article>
+      <article class="tribe-card featured reveal rd1">
+        <p class="tribe-tag">For the runner + cyclist</p>
+        <h3 class="tribe-name">Faster</h3>
+        <p class="tribe-count">3 activities · Endurance</p>
+        <div class="tribe-divider"></div>
+        <p class="tribe-desc">Push your pace. Chase your PB. Running, cycling, and swimming communities training side by side.</p>
+        <ul class="tribe-activities"><li>Community running</li><li>Group cycling</li><li>Open water swimming</li></ul>
+        <p class="tribe-next">Next session: Tomorrow, 7:00 AM · Dubai Marina</p>
+        <a href="sessions.html" class="tribe-cta">Explore Faster →</a>
+      </article>
+      <article class="tribe-card reveal rd2">
+        <p class="tribe-tag">For the athlete in you</p>
+        <h3 class="tribe-name">Stronger</h3>
+        <p class="tribe-count">11 activities · High intensity</p>
+        <div class="tribe-divider"></div>
+        <p class="tribe-desc">Burn. Build. Repeat. From kickboxing to military bootcamp — the most diverse tribe in the UAE.</p>
+        <ul class="tribe-activities"><li>Cardio calisthenics</li><li>Kickboxing</li><li>Military bootcamp</li><li>CrossTraining + more</li></ul>
+        <p class="tribe-next">Next session: Today, 7:00 PM · Skydive Dubai</p>
+        <a href="sessions.html" class="tribe-cta-ghost">Explore Stronger →</a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- SESSIONS -->
+<section class="sessions-section" id="sessions" aria-labelledby="sessions-heading">
+  <div class="sessions-inner">
+    <div class="sessions-header">
+      <div>
+        <p class="section-label">This week</p>
+        <h2 class="section-h2" id="sessions-heading">What's on<br><span class="accent">near you</span></h2>
+      </div>
+      <a href="sessions.html" class="link-arrow">Full calendar <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7h10M8 3l4 4-4 4"/></svg></a>
+    </div>
+    <div class="sessions-grid">
+      <article class="session-card reveal"><span class="session-badge">Today</span><p class="session-time">Monday · 7:00 PM</p><h3 class="session-name">Community run</h3><p class="session-coach">With Coach Hugo</p><p class="session-loc">Dubai Marina Walk</p></article>
+      <article class="session-card reveal rd1"><span class="session-badge">Tomorrow</span><p class="session-time">Tuesday · 7:00 PM</p><h3 class="session-name">Cardio Calisthenics</h3><p class="session-coach">With Coach Valentina</p><p class="session-loc">DIC Amphitheatre</p></article>
+      <article class="session-card reveal rd2"><p class="session-time">Wednesday · 7:00 PM</p><h3 class="session-name">Traditional yoga</h3><p class="session-coach">With Coach Manju</p><p class="session-loc">DIC Amphitheatre</p></article>
+      <article class="session-card reveal rd3"><p class="session-time">Friday · 7:00 PM</p><h3 class="session-name">Kickboxing</h3><p class="session-coach">With Coach Shodhan</p><p class="session-loc">Skydive Dubai</p></article>
+    </div>
+    <div class="sessions-cta-row">
+      <button class="btn-primary" style="font-size:15px;padding:14px 36px">Book a free session →</button>
+    </div>
+  </div>
+</section>
+
+<!-- MEMBER STORIES -->
+<section class="stories-section" aria-labelledby="stories-heading">
+  <div class="stories-inner">
+    <div class="stories-header">
+      <p class="section-label reveal">Real results</p>
+      <h2 class="section-h2 reveal rd1" id="stories-heading">These are real<br><span class="accent">ATP members</span></h2>
+    </div>
+    <div class="stories-grid">
+      <article class="story-card reveal">
+        <div class="story-card-img"><p style="font-size:11px;color:#333;text-transform:uppercase;letter-spacing:.06em">Jay Ashar · member photo</p></div>
+        <div class="story-card-body"><div class="story-card-stat">−9 kg</div><div class="story-card-name">Jay Ashar · Running tribe</div><p class="story-card-quote">"From 84 kg to 75 kg in one year. Three triathlons. Two full marathons. ATP gave me my life back."</p></div>
+      </article>
+      <article class="story-card reveal rd1">
+        <div class="story-card-img tall"><p style="font-size:11px;color:#333;text-transform:uppercase;letter-spacing:.06em">Gwen Gaje · member photo</p></div>
+        <div class="story-card-body"><div class="story-card-stat">Spartan</div><div class="story-card-name">Gwen Gaje · Better tribe</div><p class="story-card-quote">"I joined for free yoga. Today I'm a Spartan racer."</p></div>
+      </article>
+      <article class="story-card reveal rd2">
+        <div class="story-card-img tall"><p style="font-size:11px;color:#333;text-transform:uppercase;letter-spacing:.06em">Valentina G. · member photo</p></div>
+        <div class="story-card-body"><div class="story-card-stat">6×/wk</div><div class="story-card-name">Valentina · Stronger tribe</div><p class="story-card-quote">"ATP is sport and socialising in one. Friends for life."</p></div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- SHOP -->
+<section class="shop-section" aria-labelledby="shop-heading">
+  <div class="shop-inner">
+    <div class="shop-header">
+      <div>
+        <p class="section-label reveal">ATP Store</p>
+        <h2 class="section-h2 reveal rd1" id="shop-heading">Our Collection</h2>
+      </div>
+      <a href="store.html" class="link-arrow reveal">Shop all <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7h10M8 3l4 4-4 4"/></svg></a>
+    </div>
+
+    <div class="swf-carousel-outer reveal">
+      <button class="swf-arrow swf-arrow-prev" id="shopPrev" aria-label="Previous">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="swf-track" id="indexShopGrid">
+        <!-- 8 skeleton placeholders -->
+        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:70%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
+        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:60%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
+        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:65%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
+        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:75%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
+        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:55%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
+        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:68%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
+      </div>
+      <button class="swf-arrow swf-arrow-next" id="shopNext" aria-label="Next">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+
+  </div>
+</section>
+
+<!-- APP -->
+<section class="app-section" aria-labelledby="app-heading">
+  <div class="app-inner">
+    <div class="reveal">
+      <p class="section-label">The ATP app</p>
+      <h2 class="section-h2" id="app-heading">Your sessions.<br><span class="accent">Your streak.</span><br>Your community.</h2>
+      <div class="app-features">
+        <div class="app-feature"><div class="app-feature-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="#7AC231" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="2" width="12" height="14" rx="2"/><line x1="6" y1="6" x2="12" y2="6"/><line x1="6" y1="9" x2="12" y2="9"/><line x1="6" y1="12" x2="9" y2="12"/></svg></div><div><div class="app-feature-title">One-tap booking</div><div class="app-feature-desc">Browse the full calendar. Book any free session in seconds.</div></div></div>
+        <div class="app-feature"><div class="app-feature-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="#7AC231" stroke-width="1.8" stroke-linecap="round"><polygon points="9,2 11,7 16,7.5 12.5,11 13.5,16 9,13.5 4.5,16 5.5,11 2,7.5 7,7"/></svg></div><div><div class="app-feature-title">Streak &amp; points tracker</div><div class="app-feature-desc">Earn points every session. Redeem in the store. Keep your streak alive.</div></div></div>
+        <div class="app-feature"><div class="app-feature-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="#7AC231" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="9" r="7"/><path d="M9 5v4l3 2"/></svg></div><div><div class="app-feature-title">Live community feed</div><div class="app-feature-desc">Session recaps, milestones, events. Stay connected between sessions.</div></div></div>
+      </div>
+      <div class="app-badges">
+        <a class="app-badge" href="https://apps.apple.com/ae/app/attheparkworld/id6469771815" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 20 20" fill="white"><path d="M15.5 10.5c0-2.2 1.8-3.3 1.9-3.3-1-1.5-2.6-1.7-3.2-1.8-1.4-.1-2.7.8-3.4.8-.7 0-1.8-.8-2.9-.8-1.5 0-2.9.9-3.7 2.2-1.6 2.7-.4 6.8 1.1 9 .7 1.1 1.6 2.3 2.8 2.2 1.1 0 1.5-.7 2.9-.7 1.3 0 1.7.7 2.9.7 1.2 0 2-1.1 2.7-2.2.9-1.3 1.2-2.6 1.2-2.6-.1-.1-2.3-.9-2.3-3.5zm-2.1-6.5c.6-.7 1-1.7.9-2.7-.9 0-1.9.6-2.5 1.3-.6.6-1.1 1.6-.9 2.6.9.1 1.9-.5 2.5-1.2z"/></svg><div class="app-badge-text">Download on the<strong>App Store</strong></div></a>
+        <a class="app-badge" href="https://play.google.com/store/apps/details?id=com.atthepark.app" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 20 20" fill="white"><path d="M3.2 1.5L11.7 10 3.2 18.5C2.7 18.2 2.5 17.7 2.5 17V3C2.5 2.3 2.7 1.8 3.2 1.5ZM14.5 7.5L5.8 2.5 13.2 10 14.5 12.5V7.5ZM5.8 17.5L14.5 12.5V7.5L5.8 17.5ZM15.5 11L17.3 10 15.5 9 14.5 12.5Z"/></svg><div class="app-badge-text">Get it on<strong>Google Play</strong></div></a>
+      </div>
+    </div>
+    <div class="app-visual reveal rd2" aria-hidden="true">
+      <div class="phone-mock"><div class="phone-mock-screen"><div class="phone-mini-cards"><div class="phone-mini"><div class="phone-mini-label">Streak</div><div class="phone-mini-val">14d</div></div><div class="phone-mini"><div class="phone-mini-label">Points</div><div class="phone-mini-val">280</div></div></div></div></div>
+      <div class="phone-mock main"><div class="phone-mock-screen"><div class="phone-top"><div class="phone-greeting">Good evening, Fredy</div><div class="phone-points">280 pts</div></div><div class="phone-h">What's<br>on today?</div><div class="phone-session-card"><div class="phone-session-time">Tonight · 7:00 PM</div><div class="phone-session-name">Community Run</div><div class="phone-session-loc">Dubai Marina · 12 spots left</div></div><div class="phone-session-card" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)"><div class="phone-session-time" style="color:#7AC231">Tomorrow · 7:00 PM</div><div class="phone-session-name" style="color:white">Cardio Calisthenics</div><div class="phone-session-loc">DIC Amphitheatre</div></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- PARTNERS -->
+<section class="partners-section" aria-labelledby="partners-heading">
+  <div class="partners-inner">
+    <div class="partners-top-row">
+      <div class="reveal">
+        <p class="section-label">Our partners</p>
+        <h2 class="section-h2" id="partners-heading">They support<br><span class="accent">the mission</span></h2>
+      </div>
+      <div class="partners-pitch reveal rd1">
+        <div class="pitch-headline">Why sponsor At The Park?</div>
+        <p class="pitch-body">We're not a media channel. We're not a billboard. We're something far more valuable — <strong>a trusted community</strong> that people show up to, week after week, because it genuinely changed their lives.</p>
+        <p class="pitch-body">When your brand stands alongside At The Park, you're not interrupting people's day. You're <strong>part of the reason they showed up.</strong> That's a different kind of brand relationship — one built on shared values, not ad spend.</p>
+        <div class="pitch-stats">
+          <div class="pitch-stat"><div class="pitch-stat-num">7,000+</div><div class="pitch-stat-label">Registered members</div></div>
+          <div class="pitch-stat"><div class="pitch-stat-num">7</div><div class="pitch-stat-label">Sessions per week</div></div>
+          <div class="pitch-stat"><div class="pitch-stat-num">3</div><div class="pitch-stat-label">Cities: Dubai, Al Ain & Muscat</div></div>
+          <div class="pitch-stat"><div class="pitch-stat-num">AED 0</div><div class="pitch-stat-label">Cost to members</div></div>
+        </div>
+        <p class="pitch-why">Our audience is <strong>health-conscious, loyal, and active</strong> — exactly the people sport, wellness, nutrition, hospitality, and lifestyle brands want to reach. Because everything we do is free, the community trusts us completely. That trust extends to the brands we choose to work with.</p>
+      </div>
+    </div>
+    <div class="partners-grid reveal">
+      <div class="partner-tile"><div class="partner-name">Dusit Thani</div></div>
+      <div class="partner-tile"><div class="partner-name">Al Wasl Water</div></div>
+      <div class="partner-tile"><div class="partner-name">DIC</div></div>
+      <div class="partner-tile"><div class="partner-name">Satyug Yoga</div></div>
+      <div class="partner-tile partner-tile-open"><div class="partner-name-open">Your brand here</div></div>
+    </div>
+    <div class="partner-cta-strip reveal">
+      <div class="partner-cta-text">
+        <h3>Ready to move with us?</h3>
+        <p>We work with brands who believe in what we believe. Let's build something real together.</p>
+      </div>
+      <a href="index.html#partners" class="btn-primary" style="white-space:nowrap;font-size:14px;padding:12px 28px">Explore partnerships →</a>
+    </div>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="final-cta" aria-labelledby="cta-heading">
+  <div class="final-cta-bg" aria-hidden="true"></div>
+  <div class="final-cta-inner">
+    <h2 id="cta-heading">Never.<br>Train.<br>Alone.</h2>
+    <p>Join hundreds of people who show up every week — for free, for themselves, for each other.</p>
+    <a href="community.html"><button class="btn-dark" onclick="openAuth('signup')">Join the community — it's free <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></button></a>
+  </div>
+</section>
+
+</main>
+
+<!-- FOOTER -->
+<footer role="contentinfo">
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <img id="footer-logo-img" alt="At The Park" style="height:26px;width:auto;display:block;margin-bottom:14px;">
+        <p class="footer-tagline">Changing the world's fitness — one free session at a time. Dubai, UAE. Est. 2015.</p>
+        <div class="footer-socials">
+          <a class="social-btn" href="https://www.instagram.com/atthepark_uae" target="_blank" rel="noopener" aria-label="Instagram">ig</a>
+          <a class="social-btn" href="https://www.facebook.com/theparkuae/" target="_blank" rel="noopener" aria-label="Facebook">fb</a>
+          <a class="social-btn" href="https://api.whatsapp.com/send?phone=97156445177" target="_blank" rel="noopener" aria-label="WhatsApp">wa</a>
+        </div>
+      </div>
+      <div class="footer-col"><h4>Sessions</h4><ul><li><a href="sessions.html">All sessions</a></li><li><a href="sessions.html?tribe=better">Better tribe</a></li><li><a href="sessions.html?tribe=faster">Faster tribe</a></li><li><a href="sessions.html?tribe=stronger">Stronger tribe</a></li><li><a href="sessions.html">Weekly calendar</a></li></ul></div>
+      <div class="footer-col"><h4>Community</h4><ul><li><a href="community.html">Feed</a></li><li><a href="community.html">Member stories</a></li><li><a href="community.html">Leaderboard</a></li><li><a href="community.html">Events</a></li><li><a href="community.html">Refer a friend</a></li></ul></div>
+      <div class="footer-col"><h4>ATP</h4><ul><li><a href="index.html#story">Our story</a></li><li><a href="index.html">Meet the coaches</a></li><li><a href="index.html">Become a coach</a></li><li><a href="index.html#partners">Partner with us</a></li><li><a href="https://apps.apple.com/ae/app/attheparkworld/id6469771815">Download app</a></li></ul></div>
+      <div class="footer-col"><h4>Support</h4><ul><li><a href="mailto:general@atthepark.world">FAQ</a></li><li><a href="mailto:general@atthepark.world">Contact us</a></li><li><a href="store.html">Store</a></li><li><a href="mailto:general@atthepark.world">Refund policy</a></li></ul>
+        <div style="margin-top:22px">
+          <p style="font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:.06em;text-transform:uppercase">Contact</p>
+          <a href="mailto:general@atthepark.world" style="font-size:13px;color:var(--muted)">general@atthepark.world</a><br>
+          <a href="tel:+971585792378" style="font-size:13px;color:var(--muted)">+971 58 579 2378</a>
+        </div>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-copy">© 2026 At The Park. All rights reserved. Dubai, United Arab Emirates.</p>
+      <nav class="footer-legal"><a href="index.html">Privacy</a><a href="index.html">Terms</a><a href="mailto:general@atthepark.world">Refunds</a></nav>
+    </div>
+  </div>
+</footer>
+
+<script>
+var LOGO_SRC = "https://raw.githubusercontent.com/AtTheParkWorld/ATP_World_Web/main/atthepark_assets02.png";
+(function() {
+  var imgs = [
+    document.getElementById("nav-logo-img"),
+    document.getElementById("footer-logo-img"),
+    document.getElementById("authLogo")
+  ];
+  imgs.forEach(function(img) { if (img) img.src = LOGO_SRC; });
+})();
+
+
+
+// Nav scroll
+var nav = document.getElementById("nav");
+window.addEventListener("scroll", function(){ nav.classList.toggle("scrolled", window.scrollY > 40); }, {passive:true});
+
+// Scroll reveal
+var obs = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("visible"); obs.unobserve(e.target); } }); }, {threshold:0.1, rootMargin:"0px 0px -40px 0px"});
+document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
+
+
+
+// ── INDEX SHOP: Squatwolf-style carousel ────────────────────
+(function() {
+  var TOKEN  = "31a1a5554b7f2fdaf2aa4dc44e13a127";
+  var DOMAIN = "atp-store-7903.myshopify.com";
+
+  function load() {
+    var track = document.getElementById("indexShopGrid");
+    if (!track) return;
+
+    // Simple flat query - no nesting complexity
+    var query = "{products(first:8){edges{node{id title productType priceRange{minVariantPrice{amount currencyCode}}images(first:1){edges{node{url altText}}}}}}}";
+
+    fetch("https://" + DOMAIN + "/api/2025-01/graphql.json", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Storefront-Access-Token": TOKEN,
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({ query: query })
+    })
+    .then(function(r) {
+      if (!r.ok) throw new Error("HTTP " + r.status + " " + r.statusText);
+      return r.json();
+    })
+    .then(function(data) {
+      if (!data || !data.products || !data.products.edges) {
+        throw new Error("Unexpected response: " + JSON.stringify(data).substring(0, 100));
+      }
+      var products = data.products.edges.map(function(e) { return e.node; });
+      if (!products.length) throw new Error("Zero products returned");
+
+      track.innerHTML = products.map(function(p) {
+        var imgNode = p.images.edges[0] ? p.images.edges[0].node : null;
+        var img = imgNode ? imgNode.url : "";
+        var alt = imgNode ? (imgNode.altText || p.title) : p.title;
+        var price = parseFloat(p.priceRange.minVariantPrice.amount);
+        var cur = p.priceRange.minVariantPrice.currencyCode;
+        return [
+          '<a href="store.html" class="swf-card">',
+            '<div class="swf-img">',
+              img ? '<img src="' + img + '" alt="' + alt + '" loading="lazy">' : '<div style="width:100%;height:100%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:32px">🎽</div>',
+            '</div>',
+            '<div class="swf-label">',
+              '<div class="swf-label-name">' + p.title + '</div>',
+              '<div class="swf-label-price">' + cur + ' ' + price.toFixed(0) + '</div>',
+            '</div>',
+          '</a>'
+        ].join('');
+      }).join('');
+
+      // Wire arrows
+      var prev = document.getElementById("shopPrev");
+      var next = document.getElementById("shopNext");
+      if (prev && next && track) {
+        prev.disabled = true;
+        next.addEventListener("click", function() {
+          track.scrollBy({ left: track.clientWidth * 0.7, behavior: "smooth" });
+        });
+        prev.addEventListener("click", function() {
+          track.scrollBy({ left: -track.clientWidth * 0.7, behavior: "smooth" });
+        });
+        track.addEventListener("scroll", function() {
+          prev.disabled = track.scrollLeft < 20;
+          next.disabled = track.scrollLeft + track.clientWidth >= track.scrollWidth - 20;
+        }, { passive: true });
+      }
+
+      // Drag scroll
+      var down = false, sx, sl;
+      track.addEventListener("mousedown", function(e) { down=true; sx=e.pageX-track.offsetLeft; sl=track.scrollLeft; track.style.cursor="grabbing"; });
+      window.addEventListener("mouseup", function() { down=false; track.style.cursor="grab"; });
+      track.addEventListener("mousemove", function(e) { if(!down) return; e.preventDefault(); track.scrollLeft = sl-(e.pageX-track.offsetLeft-sx)*1.5; });
+    })
+    .catch(function(err) {
+      console.error("ATP Shop carousel error:", err.message);
+      // Show error in page for debugging
+      var track = document.getElementById("indexShopGrid");
+      if (track) {
+        track.innerHTML = '<a href="store.html" class="swf-card" style="min-width:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:8px;border:1px dashed rgba(239,68,68,.3);border-radius:12px">' +
+          '<div style="font-size:11px;color:#ef4444;font-weight:700;text-transform:uppercase">Shopify Error</div>' +
+          '<div style="font-size:11px;color:#555;text-align:center;max-width:180px">' + err.message + '</div>' +
+          '<div style="font-size:12px;color:#7AC231;margin-top:4px">Browse store →</div>' +
+          '</a>';
+      }
+      // Fallback: show clickable placeholder cards
+      track.innerHTML = '<a href="store.html" class="swf-card" style="min-width:100%;display:flex;align-items:center;justify-content:center;min-height:200px;border:1px solid rgba(122,194,49,.2);border-radius:12px;background:rgba(122,194,49,.04)">' +
+        '<div style="text-align:center"><div style="font-family:var(--ff-display);font-size:32px;font-weight:900;color:#7AC231;text-transform:uppercase;letter-spacing:.04em">Shop Now</div>' +
+        '<div style="font-size:13px;color:#555;margin-top:6px">View all products →</div></div></a>';
+    });
+  }
+
+  // Delay slightly to ensure DOM is ready
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", function() { setTimeout(load, 200); });
+  } else {
+    setTimeout(load, 200);
+  }
+})();
+
+// ── REVEAL SAFETY NET ────────────────────────────────────────
+// If IntersectionObserver fails, show everything after 2s
+setTimeout(function() {
+  document.querySelectorAll(".reveal:not(.visible)").forEach(function(el) {
+    el.classList.add("visible");
+  });
+}, 2000);
+
+// Counter animation
+function animateCounter(el, target, dur){
+  dur = dur || 1400;
+  if(el.textContent.includes("AED")) return;
+  var plus = el.textContent.includes("+");
+  var st = null;
+  function step(ts){ if(!st) st=ts; var p=Math.min((ts-st)/dur,1); var e=1-Math.pow(1-p,3); el.textContent=Math.round(e*target)+(plus?"+":""); if(p<1) requestAnimationFrame(step); }
+  requestAnimationFrame(step);
+}
+var cObs = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ animateCounter(e.target, parseInt(e.target.dataset.count)); cObs.unobserve(e.target); } }); }, {threshold:0.5});
+document.querySelectorAll(".stat-num[data-count]").forEach(function(el){ cObs.observe(el); });
+
+// ── LIVE MEMBER COUNTER ──────────────────────────────────────────
+// Base count — keep this in sync with your real member count.
+// The shared storage layer accumulates new signups on top of this.
+var ATP_BASE_COUNT = 7000;
+var ATP_STORAGE_KEY = 'atp:member_count';
+
+function formatCount(n) {
+  return n.toLocaleString('en-US');
+}
+function renderCount(n) {
+  var el = document.getElementById('liveCount');
+  if (el) el.textContent = formatCount(n);
+}
+async function loadCount() {
+  // Try to get real count from backend
+  try {
+    var resp = await fetch('https://atpworldweb-production.up.railway.app/api/admin/members?limit=1');
+    var data = await resp.json();
+    if (data.total && data.total > ATP_BASE_COUNT) {
+      renderCount(data.total);
+      return data.total;
+    }
+  } catch(e) {}
+  // Fallback to stored or base
+  try {
+    var result = await window.storage.get(ATP_STORAGE_KEY, true);
+    var stored = result ? parseInt(result.value, 10) : ATP_BASE_COUNT;
+    var count = Math.max(stored, ATP_BASE_COUNT);
+    renderCount(count);
+    return count;
+  } catch(e) {
+    renderCount(ATP_BASE_COUNT);
+    return ATP_BASE_COUNT;
+  }
+}
+// Call window.atpAddMember() from your signup API callback to increment.
+window.atpAddMember = async function(delta) {
+  delta = delta || 1;
+  try {
+    var current = await loadCount();
+    var newCount = current + delta;
+    await window.storage.set(ATP_STORAGE_KEY, String(newCount), true);
+    renderCount(newCount);
+    var el = document.getElementById('liveCount');
+    if (el) {
+      el.style.transition = 'color .15s';
+      el.style.color = '#fff';
+      setTimeout(function(){ el.style.color = ''; el.style.transition = ''; }, 450);
+    }
+    return newCount;
+  } catch(e) { console.warn('ATP counter update failed:', e); }
+};
+loadCount();
+// ────────────────────────────────────────────────────────────────
+
+// Read more toggle
+function toggleStory(){
+  var btn = document.getElementById("readMoreBtn");
+  var exp = document.getElementById("storyExpanded");
+  var isOpen = exp.classList.contains("open");
+  exp.classList.toggle("open", !isOpen);
+  exp.setAttribute("aria-hidden", isOpen ? "true" : "false");
+  btn.classList.toggle("open", !isOpen);
+  btn.setAttribute("aria-expanded", String(!isOpen));
+  btn.querySelector(".rmb-text").textContent = isOpen ? "Read the full story" : "Show less";
+  if(!isOpen) setTimeout(function(){ exp.scrollIntoView({behavior:"smooth", block:"nearest"}); }, 100);
+}
+</script>
+
+<!-- ══ AUTH MODAL ══════════════════════════════════════════ -->
+<div class="auth-overlay" id="authOverlay" role="dialog" aria-modal="true" aria-label="Sign in or join">
+  <div class="auth-modal" id="authModal">
+    <button class="auth-close" onclick="closeAuth()" aria-label="Close">×</button>
+
+    <div class="auth-modal-top">
+      <img class="auth-modal-logo" id="authLogo" alt="At The Park" style="height:28px;width:auto;display:block;margin-bottom:18px;">
+      <h2 class="auth-modal-title" id="authTitle">Join free</h2>
+      <p class="auth-modal-sub" id="authSub">Become an ATP member to book sessions, track your streak and connect with 7,000+ members.</p>
+    </div>
+
+    <div class="auth-modal-body">
+      <!-- ERROR -->
+      <div class="auth-error" id="authError"></div>
+
+      <!-- SOCIAL -->
+      <div id="authSocialPanel">
+        <button class="auth-social-btn google" onclick="authWithGoogle()">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/><path d="M3.964 10.707A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
+          Continue with Google
+        </button>
+        <button class="auth-social-btn apple" onclick="authWithApple()">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><path d="M13.23 9.26c-.02-2.01 1.64-2.98 1.71-3.03-.93-1.36-2.38-1.55-2.9-1.57-1.24-.13-2.42.73-3.05.73-.63 0-1.6-.71-2.63-.69-1.35.02-2.6.79-3.29 2-.4.69-.99 2.97-.07 5.58.65 1.89 1.67 2.99 2.47 3.04.8.05 1.4-.52 2.62-.52 1.22 0 1.78.52 2.62.5.83-.01 1.73-1.04 2.37-2.95.02-.01.08-.03.08-.03-.01 0-2.03-.78-2.05-3.06z"/><path d="M11.37 3.19c.63-.77 1.05-1.83.94-2.9-.9.04-2 .61-2.65 1.37-.58.67-1.09 1.74-.95 2.77 1 .08 2.03-.51 2.66-1.24z"/></svg>
+          Continue with Apple
+        </button>
+
+        <div class="auth-divider">or use email</div>
+      </div>
+
+      <!-- EMAIL FORM (signup) -->
+      <div id="authSignupForm">
+        <div class="auth-field-row">
+          <div class="auth-field">
+            <label for="authFirstName">First name</label>
+            <input type="text" id="authFirstName" placeholder="Fredy" autocomplete="given-name">
+          </div>
+          <div class="auth-field">
+            <label for="authLastName">Last name</label>
+            <input type="text" id="authLastName" placeholder="Martins" autocomplete="family-name">
+          </div>
+        </div>
+        <div class="auth-field">
+          <label for="authEmail">Email address</label>
+          <input type="email" id="authEmail" placeholder="you@email.com" autocomplete="email">
+        </div>
+        <div class="auth-field">
+          <label for="authPassword">Password</label>
+          <input type="password" id="authPassword" placeholder="Min. 8 characters" autocomplete="new-password">
+        </div>
+        <button class="auth-submit" id="authSubmitBtn" onclick="submitSignup()">
+          Become a member — it's free 🎉
+        </button>
+        <div class="auth-toggle">
+          Already a member?
+          <button onclick="switchToLogin()">Log in</button>
+        </div>
+      </div>
+
+      <!-- EMAIL FORM (login) -->
+      <div id="authLoginForm" style="display:none">
+        <div class="auth-field">
+          <label for="loginEmail">Email address</label>
+          <input type="email" id="loginEmail" placeholder="you@email.com" autocomplete="email">
+        </div>
+        <div class="auth-field">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password">
+        </div>
+        <button class="auth-submit" id="loginSubmitBtn" onclick="submitLogin()">
+          Log in →
+        </button>
+        <div class="auth-toggle">
+          Not a member yet?
+          <button onclick="switchToSignup()">Join free</button>
+        </div>
+      </div>
+
+      <!-- SUCCESS -->
+      <div id="authSuccessPanel" style="display:none" class="auth-success">
+        <div class="auth-success-icon">🎉</div>
+        <h3 class="auth-success-title" id="authSuccessTitle">Welcome!</h3>
+        <p class="auth-success-sub" id="authSuccessSub"></p>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ════════════════════════════════════════════════════════ -->
+
+<script>
+
+// ══════════════════════════════════════════════════════════════
+// ATP AUTH ENGINE
+// Uses localStorage to persist session. Swap the mock functions
+// for real Firebase / Supabase calls when ready.
+// ══════════════════════════════════════════════════════════════
+
+var ATP_USER_KEY = 'atp:user';
+var atpUser = null; // { firstName, lastName, email, avatar, joinedAt }
+
+// ── Persistence ──────────────────────────────────────────────
+function authLoadUser() {
+  try {
+    var raw = localStorage.getItem(ATP_USER_KEY);
+    if(raw) atpUser = JSON.parse(raw);
+  } catch(e) { atpUser = null; }
+}
+function authSaveUser(user) {
+  atpUser = user;
+  try { localStorage.setItem(ATP_USER_KEY, JSON.stringify(user)); } catch(e){}
+}
+function authClearUser() {
+  atpUser = null;
+  try { localStorage.removeItem(ATP_USER_KEY); } catch(e){}
+}
+
+// ── Modal open/close ─────────────────────────────────────────
+function openAuth(mode) {
+  if(atpUser) return; // already signed in
+  mode = mode || 'signup';
+  if(mode === 'login') { switchToLogin(); } else { switchToSignup(); }
+  document.getElementById('authError').classList.remove('show');
+  document.getElementById('authSuccessPanel').style.display = 'none';
+  document.getElementById('authSignupForm').style.display = '';
+  document.getElementById('authLoginForm').style.display  = 'none';
+  document.getElementById('authSocialPanel').style.display = '';
+  document.getElementById('authOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Set logo
+  var logo = document.getElementById('authLogo');
+  if(logo && typeof LOGO_SRC !== 'undefined') logo.src = LOGO_SRC;
+
+  // Focus first input
+  setTimeout(function(){
+    var first = document.getElementById(mode === 'login' ? 'loginEmail' : 'authFirstName');
+    if(first) first.focus();
+  }, 300);
+}
+function closeAuth() {
+  document.getElementById('authOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+  // If a booking was waiting, resume it
+  if(atpUser && typeof pendingSession !== 'undefined' && pendingSession) {
+    var s = pendingSession; pendingSession = null;
+    openModal(s.name,s.tribe,s.dayTime,s.coach,s.loc,s.desc,s.day,s.time);
+  }
+}
+
+function switchToLogin() {
+  document.getElementById('authTitle').textContent = 'Welcome back';
+  document.getElementById('authSub').textContent   = 'Log in to your ATP account to book sessions.';
+  document.getElementById('authSignupForm').style.display = 'none';
+  document.getElementById('authLoginForm').style.display  = '';
+  document.getElementById('authSuccessPanel').style.display = 'none';
+  document.getElementById('authError').classList.remove('show');
+}
+function switchToSignup() {
+  document.getElementById('authTitle').textContent = 'Join free';
+  document.getElementById('authSub').textContent   = 'Become an ATP member to book sessions, track your streak and connect with 7,000+ members.';
+  document.getElementById('authSignupForm').style.display = '';
+  document.getElementById('authLoginForm').style.display  = 'none';
+  document.getElementById('authSuccessPanel').style.display = 'none';
+  document.getElementById('authError').classList.remove('show');
+}
+
+// ── Validation helpers ───────────────────────────────────────
+function validEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function showAuthError(msg){
+  var el = document.getElementById('authError');
+  el.textContent = msg; el.classList.add('show');
+}
+
+// ── Email signup ─────────────────────────────────────────────
+function submitSignup() {
+  var firstName = document.getElementById('authFirstName').value.trim();
+  var lastName  = document.getElementById('authLastName').value.trim();
+  var email     = document.getElementById('authEmail').value.trim();
+  var password  = document.getElementById('authPassword').value;
+
+  // Clear errors
+  ['authFirstName','authLastName','authEmail','authPassword'].forEach(function(id){
+    document.getElementById(id).classList.remove('err');
+  });
+  document.getElementById('authError').classList.remove('show');
+
+  var ok = true;
+  if(!firstName){ document.getElementById('authFirstName').classList.add('err'); ok=false; }
+  if(!lastName) { document.getElementById('authLastName').classList.add('err');  ok=false; }
+  if(!validEmail(email)){ document.getElementById('authEmail').classList.add('err'); ok=false; }
+  if(password.length < 8){ document.getElementById('authPassword').classList.add('err'); ok=false; }
+  if(!ok){ showAuthError('Please fill in all fields correctly.'); return; }
+
+  var btn = document.getElementById('authSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Creating your account...';
+
+  // ── REAL API signup ──────────────────────────────────────
+  var phone = document.getElementById('authPhone') ? document.getElementById('authPhone').value.trim() : '';
+
+  window.ATP.auth.register({
+    first_name: firstName,
+    last_name:  lastName,
+    email:      email,
+    phone:      phone || null,
+    password:   password
+  }).then(function(data) {
+    btn.disabled = false;
+    btn.textContent = 'Join free →';
+    if (data.error || data.token === undefined) {
+      showAuthError(data.error || 'Sign up failed. Please try again.');
+      return;
+    }
+    // Success — ATP SDK already saved token
+    var user = {
+      firstName:    data.member.first_name,
+      lastName:     data.member.last_name,
+      email:        data.member.email,
+      memberId:     data.member.id,
+      memberNumber: data.member.member_number,
+      joinedAt:     data.member.joined_at,
+      avatar:       (data.member.first_name[0] + (data.member.last_name||'X')[0]).toUpperCase(),
+      points:       0,
+      ambassador:   false,
+      admin:        false,
+    };
+    authSaveUser(user);
+    onAuthSuccess(user, 'signup');
+  }).catch(function(err) {
+    btn.disabled = false;
+    btn.textContent = 'Join free →';
+    showAuthError('Connection error. Please check your internet and try again.');
+  });
+}
+
+// ── Email login ──────────────────────────────────────────────
+function submitLogin() {
+  var email    = document.getElementById('loginEmail').value.trim();
+  var password = document.getElementById('loginPassword').value;
+
+  ['loginEmail','loginPassword'].forEach(function(id){
+    document.getElementById(id).classList.remove('err');
+  });
+  document.getElementById('authError').classList.remove('show');
+
+  var ok = true;
+  if(!validEmail(email)){ document.getElementById('loginEmail').classList.add('err'); ok=false; }
+  if(!password){ document.getElementById('loginPassword').classList.add('err'); ok=false; }
+  if(!ok){ showAuthError('Please enter your email and password.'); return; }
+
+  var btn = document.getElementById('loginSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Logging in...';
+
+  // ── REAL API login ───────────────────────────────────────
+  window.ATP.auth.login(email, password).then(function(data) {
+    btn.disabled = false;
+    btn.textContent = 'Log in →';
+    if (data.error || !data.token) {
+      showAuthError(data.error || 'Invalid email or password.');
+      document.getElementById('loginEmail').classList.add('err');
+      document.getElementById('loginPassword').classList.add('err');
+      return;
+    }
+    var m = data.member;
+    var user = {
+      firstName:    m.first_name,
+      lastName:     m.last_name,
+      email:        m.email,
+      memberId:     m.id,
+      memberNumber: m.member_number,
+      joinedAt:     m.joined_at,
+      avatar:       m.avatar_url || (m.first_name[0] + (m.last_name||'X')[0]).toUpperCase(),
+      points:       m.points_balance || 0,
+      ambassador:   m.is_ambassador,
+      admin:        m.is_admin,
+    };
+    authSaveUser(user);
+    onAuthSuccess(user, 'login');
+  }).catch(function() {
+    btn.disabled = false;
+    btn.textContent = 'Log in →';
+    showAuthError('Connection error. Please try again.');
+  });
+}
+
+// ── Social auth (mock — replace with real OAuth) ─────────────
+function authWithGoogle() {
+  // Google OAuth — opens popup, then exchanges token with backend
+  showAuthError('Google sign-in coming soon. Please use email sign-up for now.');
+}
+function authWithApple() {
+  // Apple OAuth — coming soon
+  showAuthError('Apple sign-in coming soon. Please use email sign-up for now.');
+}
+
+// ── Post-auth ────────────────────────────────────────────────
+function onAuthSuccess(user, method) {
+  // Update member counter
+  if(method === 'signup' && typeof window.atpAddMember === 'function') {
+    window.atpAddMember(1);
+  }
+
+  // Show success screen
+  document.getElementById('authSignupForm').style.display = 'none';
+  document.getElementById('authLoginForm').style.display  = 'none';
+  document.getElementById('authSocialPanel').style.display = 'none';
+  document.getElementById('authSuccessPanel').style.display = 'block';
+  document.getElementById('authSuccessTitle').textContent =
+    method === 'login' ? 'Welcome back, ' + user.firstName + '!' : 'Welcome, ' + user.firstName + '!';
+  document.getElementById('authSuccessSub').innerHTML =
+    method === 'login'
+      ? 'You\'re logged in. Go book a session! 💪'
+      : 'You are now an ATP member. <strong>' + user.email + '</strong> registered.<br><br>Go book your first free session — the community is waiting. 💪';
+
+  // Update nav
+  renderAuthNav(user);
+
+  // Auto close after 1.8s then resume any pending booking
+  setTimeout(function(){ closeAuth(); }, 1800);
+}
+
+// ── Nav render ───────────────────────────────────────────────
+function renderAuthNav(user) {
+  var actions = document.querySelector('.nav-actions');
+  if(!actions) return;
+  actions.innerHTML =
+    '<div class="nav-user">' +
+      '<div class="nav-avatar" title="' + user.firstName + ' ' + user.lastName + '">' + user.avatar + '</div>' +
+      '<div>' +
+        '<div class="nav-user-name">' + user.firstName + '</div>' +
+        '<button class="nav-logout" onclick="logOut()">Log out</button>' +
+      '</div>' +
+    '</div>';
+}
+
+// ── Log out ──────────────────────────────────────────────────
+function logOut() {
+  authClearUser();
+  var actions = document.querySelector('.nav-actions');
+  if(actions) {
+    actions.innerHTML =
+      '<button class="btn-ghost" onclick="openAuth(\'login\')">Log in</button>' +
+      '<button class="btn-primary" onclick="openAuth(\'signup\')">Join free →</button>';
+  }
+}
+
+// ── Guard: require auth before booking ───────────────────────
+function requireAuth(callback) {
+  if(atpUser) { callback(); return; }
+  // Store callback intent and open auth
+  pendingAuthCallback = callback;
+  openAuth('signup');
+}
+var pendingAuthCallback = null;
+
+// ── Init ─────────────────────────────────────────────────────
+authLoadUser();
+if(atpUser) renderAuthNav(atpUser);
+
+// Close on overlay click
+document.getElementById('authOverlay').addEventListener('click', function(e){
+  if(e.target === this) closeAuth();
+});
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape') closeAuth();
+});
+// ══════════════════════════════════════════════════════════════
+
+
+// ── ATP API INIT ─────────────────────────────────────────────
+(function() {
+  if (!window.ATP) return;
+
+  function syncMember(member) {
+    if (!member) return;
+    atpUser = {
+      firstName: member.first_name, lastName: member.last_name,
+      email: member.email,
+      avatar: member.avatar_url || (member.first_name[0] + (member.last_name||'X')[0]).toUpperCase(),
+      joinedAt: member.joined_at, memberId: member.id,
+      memberNumber: member.member_number,
+      ambassador: member.is_ambassador, admin: member.is_admin,
+      points: member.points_balance || 0,
+    };
+    if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
+    if (member.is_ambassador) {
+      localStorage.setItem('atp:ambassador', 'true');
+      if (typeof checkAmbassadorRole === 'function') checkAmbassadorRole();
+    }
+  }
+
+  // Listen for login events
+  window.addEventListener('atp:login', function(e) { syncMember(e.detail); });
+  window.addEventListener('atp:logout', function() {
+    atpUser = null;
+    if (typeof renderAuthNav === 'function') renderAuthNav(null);
+  });
+
+  // Init on page load if already logged in
+  window.ATP.init().then(syncMember).catch(function() {});
+})();
+
+
+// ── ATP REAL AUTH ─────────────────────────────────────────────
+window._atpInjectAuth = async function(isSignup, firstName, lastName, email, phone, password) {
+  if (!window.ATP) return false;
+  try {
+    var member;
+    if (isSignup) {
+      member = await window.ATP.auth.register({
+        first_name: firstName, last_name: lastName,
+        email: email, phone: phone
+      });
+    } else if (!password) {
+      // Magic link not yet implemented — fall through to password login
+      return 'magic_link';
+    } else {
+      member = await window.ATP.auth.login(email, password);
+    }
+    // Update local user state
+    window._atpSyncMember(member);
+    return true;
+  } catch(err) {
+    return err.message || 'Authentication failed';
+  }
+};
+
+window._atpSyncMember = function(member) {
+  if (!member) return;
+  var user = {
+    firstName: member.first_name, lastName: member.last_name || '',
+    email: member.email, avatar: member.avatar_url ||
+      (member.first_name[0]+(member.last_name||'X')[0]).toUpperCase(),
+    joinedAt: member.joined_at, memberId: member.id,
+    memberNumber: member.member_number,
+    ambassador: member.is_ambassador, admin: member.is_admin,
+  };
+  localStorage.setItem('atp:user', JSON.stringify(user));
+  return user;
+};
+
+window.handleGoogleSignIn = async function(response) {
+  if (!response.credential || !window.ATP) return;
+  try {
+    var member = await window.ATP.auth.googleLogin(response.credential);
+    var user = window._atpSyncMember(member);
+    if (typeof authSaveUser === 'function') authSaveUser(user);
+    if (typeof closeAuth === 'function') closeAuth();
+    if (typeof renderAuthNav === 'function') renderAuthNav(user);
+    else location.reload();
+  } catch(err) { console.error('Google sign-in failed:', err.message); }
+};
+
+</script>
+</body>
+</html>

@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="atp.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no">
+<title>Check-in Scanner | At The Park</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jsQR/1.4.0/jsQR.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#7AC231;--green-dark:#5a9a1f;
+  --black:#0a0a0a;--dark:#111111;--dark2:#1a1a1a;--dark3:#222222;
+  --muted:#888888;--light:#aaaaaa;--white:#ffffff;
+  --ff-display:'Barlow Condensed',sans-serif;--ff-body:'DM Sans',sans-serif;
+  --nav-h:68px;--max:1320px;--radius:6px;--radius-lg:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff-body);background:#050505;color:#fff;-webkit-font-smoothing:antialiased;overflow-x:hidden;min-height:100vh}
+a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-body)}
+
+/* ── HEADER ── */
+.ci-header{display:flex;align-items:center;justify-content:space-between;padding:16px 24px;background:rgba(0,0,0,.8);border-bottom:1px solid rgba(255,255,255,.08);position:sticky;top:0;z-index:50;backdrop-filter:blur(12px)}
+.ci-logo{display:flex;align-items:center;gap:10px}
+.ci-logo img{height:28px;}
+.ci-badge{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;padding:3px 10px;border-radius:20px;background:rgba(255,196,0,.15);border:1px solid rgba(255,196,0,.3);color:#ffc400}
+.ci-header-right{display:flex;align-items:center;gap:12px}
+.ci-back{font-size:12px;font-weight:600;color:rgba(255,255,255,.5);padding:7px 14px;border:1px solid rgba(255,255,255,.1);border-radius:8px;transition:all .2s}
+.ci-back:hover{color:#fff;border-color:rgba(255,255,255,.3)}
+
+/* ── LAYOUT ── */
+.ci-layout{display:grid;grid-template-columns:1fr 420px;min-height:calc(100vh - 61px);gap:0}
+
+/* ── SCANNER SIDE ── */
+.ci-scanner-side{display:flex;flex-direction:column;background:#080808;position:relative;overflow:hidden}
+.ci-session-bar{padding:16px 24px;background:rgba(122,194,49,.08);border-bottom:1px solid rgba(122,194,49,.15);display:flex;align-items:center;justify-content:space-between}
+.ci-session-name{font-family:var(--ff-display);font-size:20px;font-weight:900;text-transform:uppercase;color:#fff}
+.ci-session-meta{font-size:12px;color:rgba(255,255,255,.5);margin-top:2px}
+.ci-session-count{text-align:right}
+.ci-session-count-num{font-family:var(--ff-display);font-size:28px;font-weight:900;color:#7AC231;line-height:1}
+.ci-session-count-label{font-size:10px;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:.08em}
+
+/* CAMERA */
+.ci-camera-wrap{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px 24px;gap:24px;position:relative}
+.ci-camera-outer{position:relative;width:100%;max-width:400px;aspect-ratio:1}
+.ci-camera-video{width:100%;height:100%;object-fit:cover;border-radius:16px;display:block;background:#111}
+.ci-camera-overlay{position:absolute;inset:0;pointer-events:none}
+.ci-scan-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:200px;height:200px}
+.ci-scan-corner{position:absolute;width:24px;height:24px;border-color:#7AC231;border-style:solid}
+.ci-scan-corner.tl{top:0;left:0;border-width:3px 0 0 3px;border-radius:4px 0 0 0}
+.ci-scan-corner.tr{top:0;right:0;border-width:3px 3px 0 0;border-radius:0 4px 0 0}
+.ci-scan-corner.bl{bottom:0;left:0;border-width:0 0 3px 3px;border-radius:0 0 0 4px}
+.ci-scan-corner.br{bottom:0;right:0;border-width:0 3px 3px 0;border-radius:0 0 4px 0}
+.ci-scan-line{position:absolute;left:10px;right:10px;height:2px;background:linear-gradient(90deg,transparent,#7AC231,transparent);animation:scanLine 2s ease-in-out infinite;top:50%}
+@keyframes scanLine{0%,100%{top:10%;opacity:0}10%{opacity:1}90%{opacity:1}50%{top:90%}}
+.ci-camera-hint{font-size:13px;color:rgba(255,255,255,.4);text-align:center;line-height:1.6}
+.ci-camera-status{font-size:12px;font-weight:600;padding:6px 16px;border-radius:20px;background:rgba(255,255,255,.06);color:rgba(255,255,255,.5)}
+.ci-camera-status.scanning{background:rgba(122,194,49,.1);color:#7AC231}
+.ci-camera-status.error{background:rgba(239,68,68,.1);color:#ef4444}
+
+.ci-start-btn{display:flex;align-items:center;gap:8px;font-size:15px;font-weight:700;padding:14px 28px;border-radius:12px;background:#7AC231;color:#fff;border:none;letter-spacing:.02em;transition:all .2s}
+.ci-start-btn:hover{background:#68a82a;transform:translateY(-1px)}
+.ci-start-btn.stop{background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.3)}
+.ci-start-btn.stop:hover{background:rgba(239,68,68,.25)}
+
+/* MANUAL INPUT */
+.ci-manual{width:100%;max-width:400px}
+.ci-manual-label{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.ci-manual-label::before,.ci-manual-label::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08)}
+.ci-manual-row{display:flex;gap:8px}
+.ci-manual-input{flex:1;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:11px 14px;color:#fff;font-size:13px;font-family:var(--ff-body);transition:border-color .2s}
+.ci-manual-input:focus{outline:none;border-color:rgba(122,194,49,.5)}
+.ci-manual-btn{padding:11px 18px;background:rgba(122,194,49,.12);border:1px solid rgba(122,194,49,.25);border-radius:10px;color:#7AC231;font-size:13px;font-weight:700;transition:all .2s}
+.ci-manual-btn:hover{background:rgba(122,194,49,.2)}
+
+/* ── RESULT PANEL (shows on scan) ── */
+.ci-result-overlay{position:absolute;inset:0;background:rgba(5,5,5,.95);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;z-index:20;opacity:0;pointer-events:none;transition:opacity .3s}
+.ci-result-overlay.show{opacity:1;pointer-events:all}
+.ci-result-status{width:72px;height:72px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-bottom:20px;font-size:32px}
+.ci-result-status.success{background:rgba(122,194,49,.15);border:2px solid #7AC231;animation:pulse 1s ease}
+.ci-result-status.duplicate{background:rgba(255,196,0,.12);border:2px solid #ffc400}
+.ci-result-status.error{background:rgba(239,68,68,.12);border:2px solid #ef4444}
+@keyframes pulse{0%{transform:scale(.8);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+.ci-result-name{font-family:var(--ff-display);font-size:32px;font-weight:900;text-transform:uppercase;color:#fff;text-align:center;margin-bottom:4px}
+.ci-result-detail{font-size:13px;color:rgba(255,255,255,.5);text-align:center;margin-bottom:6px}
+.ci-result-label{font-size:12px;font-weight:700;text-align:center;margin-bottom:28px;padding:5px 16px;border-radius:20px}
+.ci-result-label.success{background:rgba(122,194,49,.15);color:#7AC231}
+.ci-result-label.duplicate{background:rgba(255,196,0,.12);color:#ffc400}
+.ci-result-label.error{background:rgba(239,68,68,.12);color:#ef4444}
+.ci-result-actions{display:flex;gap:10px}
+.ci-result-btn{padding:11px 22px;border-radius:10px;font-size:13px;font-weight:700;border:none;cursor:pointer;transition:all .2s}
+.ci-result-btn.primary{background:#7AC231;color:#fff}
+.ci-result-btn.primary:hover{background:#68a82a}
+.ci-result-btn.ghost{background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);border:1px solid rgba(255,255,255,.1)}
+.ci-result-btn.ghost:hover{background:rgba(255,255,255,.1);color:#fff}
+
+/* ── ATTENDANCE LIST SIDE ── */
+.ci-list-side{background:#0a0a0a;border-left:1px solid rgba(255,255,255,.07);display:flex;flex-direction:column;overflow:hidden}
+.ci-list-header{padding:20px 20px 14px;border-bottom:1px solid rgba(255,255,255,.07)}
+.ci-list-title{font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:8px}
+.ci-list-search{width:100%;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;font-family:var(--ff-body)}
+.ci-list-search:focus{outline:none;border-color:rgba(122,194,49,.4)}
+.ci-list-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,.06);border-radius:10px;overflow:hidden;margin:14px 20px 0}
+.ci-stat{background:#0a0a0a;padding:12px 10px;text-align:center}
+.ci-stat-num{font-family:var(--ff-display);font-size:24px;font-weight:900;color:#7AC231;line-height:1}
+.ci-stat-label{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.35);margin-top:2px}
+.ci-list-body{flex:1;overflow-y:auto;padding:12px 20px 20px}
+.ci-list-body::-webkit-scrollbar{width:4px}
+.ci-list-body::-webkit-scrollbar-track{background:transparent}
+.ci-list-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,.1);border-radius:2px}
+.ci-member-row{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;margin-bottom:6px;border:1px solid transparent;transition:all .2s}
+.ci-member-row.checked-in{background:rgba(122,194,49,.05);border-color:rgba(122,194,49,.12)}
+.ci-member-row.pending{background:rgba(255,255,255,.02)}
+.ci-member-row.not-arrived{opacity:.5}
+.ci-av{width:36px;height:36px;border-radius:50%;background:var(--dark3);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:#fff;flex-shrink:0}
+.ci-av.checked{background:rgba(122,194,49,.2);color:#7AC231;border:1px solid rgba(122,194,49,.3)}
+.ci-member-info{flex:1;min-width:0}
+.ci-member-name{font-size:13px;font-weight:600;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ci-member-id{font-size:10px;color:rgba(255,255,255,.35);font-family:monospace}
+.ci-member-time{font-size:11px;font-weight:700;color:#7AC231;white-space:nowrap;flex-shrink:0}
+.ci-member-pending{font-size:11px;color:rgba(255,255,255,.25);white-space:nowrap;flex-shrink:0}
+.ci-list-empty{text-align:center;padding:40px 20px;color:rgba(255,255,255,.3);font-size:13px}
+
+/* TOAST */
+.ci-toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#111;border:1px solid rgba(255,255,255,.1);color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;z-index:200;transition:transform .3s cubic-bezier(.25,.46,.45,.94);white-space:nowrap}
+.ci-toast.show{transform:translateX(-50%) translateY(0)}
+.ci-toast.success{border-color:rgba(122,194,49,.4);background:rgba(122,194,49,.12);color:#7AC231}
+.ci-toast.warn{border-color:rgba(255,196,0,.3);background:rgba(255,196,0,.08);color:#ffc400}
+.ci-toast.err{border-color:rgba(239,68,68,.3);background:rgba(239,68,68,.08);color:#ef4444}
+
+@media(max-width:900px){
+  .ci-layout{grid-template-columns:1fr}
+  .ci-list-side{min-height:40vh}
+  .ci-camera-outer{max-width:300px}
+}
+</style>
+<script src="atp-api.js"></script>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="ci-header">
+  <div class="ci-logo">
+    <img src="" id="ciLogo" alt="ATP">
+    <span class="ci-badge">⭐ Ambassador</span>
+  </div>
+  <div class="ci-header-right">
+    <select id="sessionSelect" style="background:#111;border:1px solid rgba(255,255,255,.12);color:#fff;padding:7px 12px;border-radius:8px;font-size:13px;font-family:var(--ff-body);cursor:pointer" onchange="changeSession()">
+      <option value="community-run">Community Run · Tonight 7PM</option>
+      <option value="bootcamp">Military Bootcamp · Tomorrow 6:30AM</option>
+      <option value="yoga">Hatha Yoga · Wed 7PM</option>
+      <option value="cycling">Group Cycling · Fri 6AM</option>
+    </select>
+    <a href="profile.html" class="ci-back">← Profile</a>
+  </div>
+</header>
+
+<div class="ci-layout">
+
+  <!-- SCANNER SIDE -->
+  <div class="ci-scanner-side">
+    <div class="ci-session-bar">
+      <div>
+        <div class="ci-session-name" id="ciSessionName">Community Run</div>
+        <div class="ci-session-meta" id="ciSessionMeta">Tonight · 7:00 PM · Dubai Marina Walk</div>
+      </div>
+      <div class="ci-session-count">
+        <div class="ci-session-count-num" id="ciCheckedCount">0</div>
+        <div class="ci-session-count-label">Checked in</div>
+      </div>
+    </div>
+
+    <div class="ci-camera-wrap">
+      <!-- CAMERA -->
+      <div class="ci-camera-outer">
+        <video id="ciVideo" class="ci-camera-video" autoplay muted playsinline></video>
+        <canvas id="ciCanvas" style="display:none"></canvas>
+        <div class="ci-camera-overlay">
+          <div class="ci-scan-frame">
+            <div class="ci-scan-corner tl"></div>
+            <div class="ci-scan-corner tr"></div>
+            <div class="ci-scan-corner bl"></div>
+            <div class="ci-scan-corner br"></div>
+            <div class="ci-scan-line" id="scanLine" style="display:none"></div>
+          </div>
+        </div>
+
+        <!-- RESULT OVERLAY -->
+        <div class="ci-result-overlay" id="resultOverlay">
+          <div class="ci-result-status" id="resultIcon"></div>
+          <div class="ci-result-name" id="resultName"></div>
+          <div class="ci-result-detail" id="resultDetail"></div>
+          <div class="ci-result-label" id="resultLabel"></div>
+          <div class="ci-result-actions">
+            <button class="ci-result-btn primary" onclick="dismissResult()">Next Scan</button>
+            <button class="ci-result-btn ghost" onclick="undoCheckin()">Undo</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ci-camera-status" id="cameraStatus">Camera off</div>
+
+      <button class="ci-start-btn" id="startBtn" onclick="toggleCamera()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
+        Start Scanner
+      </button>
+
+      <!-- MANUAL ENTRY -->
+      <div class="ci-manual">
+        <div class="ci-manual-label">or enter member ID manually</div>
+        <div class="ci-manual-row">
+          <input class="ci-manual-input" id="manualId" type="text" placeholder="ATP-FM12345" onkeydown="if(event.key==='Enter')manualCheckin()">
+          <button class="ci-manual-btn" onclick="manualCheckin()">Check in</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ATTENDANCE LIST -->
+  <div class="ci-list-side">
+    <div class="ci-list-header">
+      <div class="ci-list-title">Attendance</div>
+      <input class="ci-list-search" id="listSearch" type="search" placeholder="Search members…" oninput="filterList()">
+    </div>
+    <div class="ci-list-stats">
+      <div class="ci-stat"><div class="ci-stat-num" id="statChecked">0</div><div class="ci-stat-label">Checked in</div></div>
+      <div class="ci-stat"><div class="ci-stat-num" id="statBooked">24</div><div class="ci-stat-label">Booked</div></div>
+      <div class="ci-stat"><div class="ci-stat-num" id="statPct">0%</div><div class="ci-stat-label">Attendance</div></div>
+    </div>
+    <div class="ci-list-body" id="attendanceList"></div>
+  </div>
+
+</div>
+
+<!-- TOAST -->
+<div class="ci-toast" id="ciToast"></div>
+
+<script>
+var LOGO_SRC = "https://raw.githubusercontent.com/AtTheParkWorld/ATP_World_Web/main/atthepark_assets02.png";
+document.getElementById('ciLogo').src = LOGO_SRC;
+
+// ── SESSION DATA ──────────────────────────────────────────────
+var SESSIONS_DATA = {
+  'community-run': {name:'Community Run', meta:'Tonight · 7:00 PM · Dubai Marina Walk', booked:24},
+  'bootcamp':      {name:'Military Bootcamp', meta:'Tomorrow · 6:30 AM · Al Formal Park', booked:18},
+  'yoga':          {name:'Hatha Yoga', meta:'Wednesday · 7:00 PM · DIC Amphitheatre', booked:31},
+  'cycling':       {name:'Group Cycling', meta:'Friday · 6:00 AM · Dubai Marina', booked:15},
+};
+
+var currentSession = 'community-run';
+
+// Simulated pre-booked members (in production = API call)
+var BOOKED_MEMBERS = [
+  {id:'ATP-JA8821',name:'Jay Ashar',    checkedIn:false,time:null},
+  {id:'ATP-VR6543',name:'Valentina R.', checkedIn:false,time:null},
+  {id:'ATP-GG3312',name:'Gwen Gaje',    checkedIn:false,time:null},
+  {id:'ATP-HM9901',name:'Hugo M.',      checkedIn:false,time:null},
+  {id:'ATP-SK2278',name:'Shodhan K.',   checkedIn:false,time:null},
+  {id:'ATP-MP4455',name:'Manju P.',     checkedIn:false,time:null},
+  {id:'ATP-FM0001',name:'Fredy M.',     checkedIn:false,time:null},
+  {id:'ATP-TM0002',name:'Tatiana M.',   checkedIn:false,time:null},
+  {id:'ATP-CV7734',name:'Carlos V.',    checkedIn:false,time:null},
+  {id:'ATP-PN5521',name:'Priya N.',     checkedIn:false,time:null},
+];
+
+// Also load any real bookings from localStorage
+(async function loadSessionsFromAPI() {
+  var sel = document.getElementById('sessionSelect');
+  if (!sel) return;
+  try {
+    var token = localStorage.getItem('atp_token');
+    if (!token) return;
+    var data = await fetch('https://atpworldweb-production.up.railway.app/api/sessions?status=upcoming&limit=30', {
+      headers: {'Authorization': 'Bearer ' + token}
+    }).then(function(r) { return r.json(); });
+    if (data.sessions && data.sessions.length) {
+      sel.innerHTML = '<option value="">Choose session...</option>';
+      data.sessions.forEach(function(s) {
+        var dt = new Date(s.scheduled_at).toLocaleString('en-AE', {weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+        var o = document.createElement('option');
+        o.value = s.id;
+        o.textContent = s.name + ' – ' + dt;
+        sel.appendChild(o);
+      });
+    }
+  } catch(e) { console.warn('Sessions API:', e.message); }
+})();
+
+function loadLocalBookings() {
+  var stored = JSON.parse(localStorage.getItem('atp:bookings') || '[]');
+  stored.forEach(function(b) {
+    if (!BOOKED_MEMBERS.find(function(m){return m.id===b.id;})) {
+      BOOKED_MEMBERS.push({id:b.id, name:b.name||b.id, checkedIn:false, time:null});
+    }
+  });
+}
+
+var lastCheckinId = null;
+
+// ── CAMERA SCANNER ────────────────────────────────────────────
+var scanning = false;
+var stream   = null;
+var scanInterval = null;
+
+function toggleCamera() {
+  if (scanning) stopCamera();
+  else          startCamera();
+}
+
+function startCamera() {
+  var video = document.getElementById('ciVideo');
+  var btn   = document.getElementById('startBtn');
+  var status = document.getElementById('cameraStatus');
+  status.className = 'ci-camera-status';
+  status.textContent = 'Requesting camera…';
+
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+  })
+  .then(function(s) {
+    stream = s;
+    video.srcObject = s;
+    video.play();
+    scanning = true;
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> Stop Scanner';
+    btn.className = 'ci-start-btn stop';
+    status.className = 'ci-camera-status scanning';
+    status.textContent = '● Scanning…';
+    document.getElementById('scanLine').style.display = 'block';
+    scanInterval = setInterval(scanFrame, 200);
+  })
+  .catch(function(err) {
+    status.className = 'ci-camera-status error';
+    status.textContent = '✗ Camera error: ' + err.message;
+    showToast('Camera access denied. Use manual entry.', 'err');
+  });
+}
+
+function stopCamera() {
+  if (stream) { stream.getTracks().forEach(function(t){t.stop();}); stream = null; }
+  clearInterval(scanInterval);
+  scanning = false;
+  var btn = document.getElementById('startBtn');
+  btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg> Start Scanner';
+  btn.className = 'ci-start-btn';
+  document.getElementById('cameraStatus').className = 'ci-camera-status';
+  document.getElementById('cameraStatus').textContent = 'Camera off';
+  document.getElementById('scanLine').style.display = 'none';
+}
+
+function scanFrame() {
+  var video  = document.getElementById('ciVideo');
+  var canvas = document.getElementById('ciCanvas');
+  if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  var ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  var code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+  if (code && code.data) {
+    processQR(code.data);
+    stopCamera();
+  }
+}
+
+// ── PROCESS QR ────────────────────────────────────────────────
+function processQR(raw) {
+  // Try real API check-in first
+  var sessionId = document.getElementById('sessionSelect')?.value;
+  if (window.ATP && window.ATP.isLoggedIn() && sessionId) {
+    var token = '';
+    try { token = JSON.parse(raw).token || ''; } catch(e) {}
+    if (token) {
+      // POST direct to API with qr data
+      fetch('https://atpworldweb-production.up.railway.app/api/sessions/' + sessionId + '/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('atp_token') },
+        body: JSON.stringify({ qr_token: token, method: 'qr_scan' })
+      }).then(function(r) { return r.json(); })
+        .then(function(r) {
+          if (r.error) { showResult(false, r.error); return; }
+          var name = (r.member && (r.member.first_name + ' ' + r.member.last_name)) || 'Member';
+          showResult(true, name + ' ✅');
+        })
+        .catch(function() { _processQRLocal(raw); });
+      return;
+    }
+  }
+  _processQRLocal(raw);
+}
+function _processQRLocal(raw) {
+  var data = {};
+  try { data = JSON.parse(raw); } catch(e) {
+    showResult('error', '✗', 'Invalid QR Code', raw.substring(0,30), 'Not an ATP QR code');
+    return;
+  }
+  var memberId   = data.id   || 'UNKNOWN';
+  var memberName = data.name || memberId;
+  var sessionName = data.session || '';
+
+  // Find or create member
+  var member = BOOKED_MEMBERS.find(function(m){ return m.id === memberId; });
+
+  if (!member) {
+    // Walk-in / not pre-booked
+    member = {id: memberId, name: memberName, checkedIn: false, time: null, walkIn: true};
+    BOOKED_MEMBERS.push(member);
+    renderList();
+  }
+
+  if (member.checkedIn) {
+    showResult('duplicate', '⚠', memberName, 'Already checked in at ' + member.time, 'Already checked in');
+    showToast(memberName + ' already checked in', 'warn');
+    return;
+  }
+
+  // Check in!
+  member.checkedIn = true;
+  member.time = new Date().toLocaleTimeString('en-AE', {hour:'2-digit', minute:'2-digit'});
+  lastCheckinId = memberId;
+
+  // Save to localStorage
+  saveCheckins();
+  renderList();
+  updateStats();
+  showResult('success', '✓', memberName, (sessionName || currentSession) + ' · ' + member.time, '✓ Checked in successfully');
+  showToast('✓ ' + memberName + ' checked in!', 'success');
+
+  // Vibrate (mobile feedback)
+  if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+}
+
+function manualCheckin() {
+  var val = document.getElementById('manualId').value.trim().toUpperCase();
+  if (!val) return;
+  // Build minimal QR data for manual entry
+  var member = BOOKED_MEMBERS.find(function(m){ return m.id === val; });
+  var name = member ? member.name : val;
+  processQR(JSON.stringify({id: val, name: name, session: SESSIONS_DATA[currentSession].name}));
+  document.getElementById('manualId').value = '';
+}
+
+// ── RESULT DISPLAY ────────────────────────────────────────────
+function showResult(type, icon, name, detail, label) {
+  document.getElementById('resultIcon').textContent = icon;
+  document.getElementById('resultIcon').className = 'ci-result-status ' + type;
+  document.getElementById('resultName').textContent = name;
+  document.getElementById('resultDetail').textContent = detail;
+  document.getElementById('resultLabel').textContent = label;
+  document.getElementById('resultLabel').className = 'ci-result-label ' + type;
+  document.getElementById('resultOverlay').className = 'ci-result-overlay show';
+}
+
+function dismissResult() {
+  document.getElementById('resultOverlay').className = 'ci-result-overlay';
+  if (!scanning) startCamera();
+}
+
+function undoCheckin() {
+  if (!lastCheckinId) { dismissResult(); return; }
+  var member = BOOKED_MEMBERS.find(function(m){return m.id===lastCheckinId;});
+  if (member) { member.checkedIn = false; member.time = null; }
+  saveCheckins();
+  renderList();
+  updateStats();
+  showToast('Check-in reversed for ' + (member ? member.name : lastCheckinId), 'warn');
+  lastCheckinId = null;
+  dismissResult();
+}
+
+// ── ATTENDANCE LIST ───────────────────────────────────────────
+function renderList(filter) {
+  var list = BOOKED_MEMBERS.slice().sort(function(a,b){
+    if (a.checkedIn && !b.checkedIn) return -1;
+    if (!a.checkedIn && b.checkedIn) return 1;
+    return 0;
+  });
+  if (filter) {
+    var q = filter.toLowerCase();
+    list = list.filter(function(m){ return m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q); });
+  }
+  var el = document.getElementById('attendanceList');
+  if (!list.length) { el.innerHTML = '<div class="ci-list-empty">No members found</div>'; return; }
+  el.innerHTML = list.map(function(m) {
+    var initials = m.name.split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+    return '<div class="ci-member-row '+(m.checkedIn?'checked-in':'pending')+'" onclick="quickCheckin(this.dataset.mid)" data-mid="'+m.id+'">'+
+      '<div class="ci-av '+(m.checkedIn?'checked':'')+'">'+initials+'</div>'+
+      '<div class="ci-member-info">'+
+        '<div class="ci-member-name">'+m.name+(m.walkIn?' <span style="font-size:10px;color:#ffc400">Walk-in</span>':'')+'</div>'+
+        '<div class="ci-member-id">'+m.id+'</div>'+
+      '</div>'+
+      (m.checkedIn ?
+        '<div class="ci-member-time">'+m.time+'</div>' :
+        '<div class="ci-member-pending">Tap to check in</div>')+
+    '</div>';
+  }).join('');
+}
+
+function quickCheckin(id) {
+  var member = BOOKED_MEMBERS.find(function(m){return m.id===id;});
+  if (!member || member.checkedIn) return;
+  processQR(JSON.stringify({id:id, name:member.name, session:SESSIONS_DATA[currentSession].name}));
+}
+
+function filterList() {
+  renderList(document.getElementById('listSearch').value);
+}
+
+function updateStats() {
+  var checked = BOOKED_MEMBERS.filter(function(m){return m.checkedIn;}).length;
+  var booked  = Math.max(SESSIONS_DATA[currentSession].booked, BOOKED_MEMBERS.length);
+  var pct     = booked > 0 ? Math.round(checked/booked*100) : 0;
+  document.getElementById('statChecked').textContent = checked;
+  document.getElementById('statBooked').textContent  = booked;
+  document.getElementById('statPct').textContent     = pct + '%';
+  document.getElementById('ciCheckedCount').textContent = checked;
+}
+
+function saveCheckins() {
+  var key = 'atp:checkins:' + currentSession;
+  var data = BOOKED_MEMBERS.filter(function(m){return m.checkedIn;}).map(function(m){
+    return {id:m.id, name:m.name, time:m.time};
+  });
+  localStorage.setItem(key, JSON.stringify(data));
+}
+
+function changeSession() {
+  currentSession = document.getElementById('sessionSelect').value;
+  var s = SESSIONS_DATA[currentSession];
+  document.getElementById('ciSessionName').textContent = s.name;
+  document.getElementById('ciSessionMeta').textContent = s.meta;
+  // Reset members
+  BOOKED_MEMBERS.forEach(function(m){m.checkedIn=false;m.time=null;});
+  // Load saved checkins for this session
+  var saved = JSON.parse(localStorage.getItem('atp:checkins:'+currentSession) || '[]');
+  saved.forEach(function(s){
+    var m = BOOKED_MEMBERS.find(function(x){return x.id===s.id;});
+    if(m){m.checkedIn=true;m.time=s.time;}
+  });
+  renderList();
+  updateStats();
+}
+
+function showToast(msg, type) {
+  var t = document.getElementById('ciToast');
+  t.textContent = msg;
+  t.className = 'ci-toast ' + (type||'');
+  t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');}, 2800);
+}
+
+// ── AMBASSADOR GUARD ──────────────────────────────────────────
+(function() {
+  var user = null;
+  try { user = JSON.parse(localStorage.getItem('atp:user')); } catch(e){}
+  var isAmbassador = user && (user.ambassador === true || localStorage.getItem('atp:ambassador') === 'true');
+  if (!isAmbassador) {
+    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;gap:20px;padding:40px"><div style="font-size:48px">🔒</div><div style="font-family:Barlow Condensed,sans-serif;font-size:32px;font-weight:900;text-transform:uppercase;color:#fff">Ambassador Access Only</div><div style="font-size:14px;color:rgba(255,255,255,.5);max-width:320px;line-height:1.6">This page is restricted to ATP Ambassadors. Contact your admin to get access.</div><a href="profile.html" style="margin-top:12px;padding:12px 24px;background:#7AC231;color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none">← Back to Profile</a></div>';
+    return;
+  }
+})();
+
+// ── INIT ──────────────────────────────────────────────────────
+renderList();
+updateStats();
+
+// ── ATP API INIT ─────────────────────────────────────────────
+(function() {
+  if (!window.ATP) return;
+  window.ATP.init().then(function(member) {
+    if (!member) return;
+    if (!member) return;
+    // Sync to legacy auth state
+    if (typeof atpUser !== 'undefined' && atpUser === null) {
+      atpUser = {
+        firstName: member.first_name, lastName: member.last_name,
+        email: member.email, avatar: member.avatar_url ||
+          (member.first_name[0] + (member.last_name||'X')[0]).toUpperCase(),
+        joinedAt: member.joined_at, memberId: member.id,
+        memberNumber: member.member_number,
+        ambassador: member.is_ambassador, admin: member.is_admin,
+      };
+      if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
+    }
+    // Ambassador: show checkin link
+    if (member.is_ambassador && typeof checkAmbassadorRole === 'function') {
+      checkAmbassadorRole();
+    }
+    // Store ambassador flag for checkin page
+    if (member.is_ambassador) {
+      localStorage.setItem('atp:ambassador', 'true');
+    }
+  }).catch(function() {});
+})();
+
+</script>
+</body>
+</html
+function loadLocalBookings() {
+  var stored = JSON.parse(localStorage.getItem('atp:bookings') || '[]');
+  stored.forEach(function(b) {
+    if (!BOOKED_MEMBERS.find(function(m){return m.id===b.id;})) {
+      BOOKED_MEMBERS.push({id:b.id, name:b.name||b.id, checkedIn:false, time:null});
+    }
+  });
+}
+
+var lastCheckinId = null;
+
+// ── CAMERA SCANNER ────────────────────────────────────────────
+var scanning = false;
+var stream   = null;
+var scanInterval = null;
+
+function toggleCamera() {
+  if (scanning) stopCamera();
+  else          startCamera();
+}
+
+function startCamera() {
+  var video = document.getElementById('ciVideo');
+  var btn   = document.getElementById('startBtn');
+  var status = document.getElementById('cameraStatus');
+  status.className = 'ci-camera-status';
+  status.textContent = 'Requesting camera…';
+
+  navigator.mediaDevices.getUserMedia({
+    video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+  })
+  .then(function(s) {
+    stream = s;
+    video.srcObject = s;
+    video.play();
+    scanning = true;
+    btn.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg> Stop Scanner';
+    btn.className = 'ci-start-btn stop';
+    status.className = 'ci-camera-status scanning';
+    status.textContent = '● Scanning…';
+    document.getElementById('scanLine').style.display = 'block';
+    scanInterval = setInterval(scanFrame, 200);
+  })
+  .catch(function(err) {
+    status.className = 'ci-camera-status error';
+    status.textContent = '✗ Camera error: ' + err.message;
+    showToast('Camera access denied. Use manual entry.', 'err');
+  });
+}
+
+function stopCamera() {
+  if (stream) { stream.getTracks().forEach(function(t){t.stop();}); stream = null; }
+  clearInterval(scanInterval);
+  scanning = false;
+  var btn = document.getElementById('startBtn');
+  btn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg> Start Scanner';
+  btn.className = 'ci-start-btn';
+  document.getElementById('cameraStatus').className = 'ci-camera-status';
+  document.getElementById('cameraStatus').textContent = 'Camera off';
+  document.getElementById('scanLine').style.display = 'none';
+}
+
+function scanFrame() {
+  var video  = document.getElementById('ciVideo');
+  var canvas = document.getElementById('ciCanvas');
+  if (video.readyState !== video.HAVE_ENOUGH_DATA) return;
+  canvas.width  = video.videoWidth;
+  canvas.height = video.videoHeight;
+  var ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  var imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  var code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: 'dontInvert' });
+  if (code && code.data) {
+    processQR(code.data);
+    stopCamera();
+  }
+}
+
+// ── PROCESS QR ────────────────────────────────────────────────
+function processQR(raw) {
+  // Try real API check-in first
+  var sessionId = document.getElementById('sessionSelect')?.value;
+  if (window.ATP && window.ATP.isLoggedIn() && sessionId) {
+    var token = '';
+    try { token = JSON.parse(raw).token || ''; } catch(e) {}
+    if (token) {
+      // POST direct to API with qr data
+      fetch('https://atpworldweb-production.up.railway.app/api/sessions/' + sessionId + '/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('atp_token') },
+        body: JSON.stringify({ qr_token: token, method: 'qr_scan' })
+      }).then(function(r) { return r.json(); })
+        .then(function(r) {
+          if (r.error) { showResult(false, r.error); return; }
+          var name = (r.member && (r.member.first_name + ' ' + r.member.last_name)) || 'Member';
+          showResult(true, name + ' ✅');
+        })
+        .catch(function() { _processQRLocal(raw); });
+      return;
+    }
+  }
+  _processQRLocal(raw);
+}
+function _processQRLocal(raw) {
+  var data = {};
+  try { data = JSON.parse(raw); } catch(e) {
+    showResult('error', '✗', 'Invalid QR Code', raw.substring(0,30), 'Not an ATP QR code');
+    return;
+  }
+  var memberId   = data.id   || 'UNKNOWN';
+  var memberName = data.name || memberId;
+  var sessionName = data.session || '';
+
+  // Find or create member
+  var member = BOOKED_MEMBERS.find(function(m){ return m.id === memberId; });
+
+  if (!member) {
+    // Walk-in / not pre-booked
+    member = {id: memberId, name: memberName, checkedIn: false, time: null, walkIn: true};
+    BOOKED_MEMBERS.push(member);
+    renderList();
+  }
+
+  if (member.checkedIn) {
+    showResult('duplicate', '⚠', memberName, 'Already checked in at ' + member.time, 'Already checked in');
+    showToast(memberName + ' already checked in', 'warn');
+    return;
+  }
+
+  // Check in!
+  member.checkedIn = true;
+  member.time = new Date().toLocaleTimeString('en-AE', {hour:'2-digit', minute:'2-digit'});
+  lastCheckinId = memberId;
+
+  // Save to localStorage
+  saveCheckins();
+  renderList();
+  updateStats();
+  showResult('success', '✓', memberName, (sessionName || currentSession) + ' · ' + member.time, '✓ Checked in successfully');
+  showToast('✓ ' + memberName + ' checked in!', 'success');
+
+  // Vibrate (mobile feedback)
+  if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+}
+
+function manualCheckin() {
+  var val = document.getElementById('manualId').value.trim().toUpperCase();
+  if (!val) return;
+  // Build minimal QR data for manual entry
+  var member = BOOKED_MEMBERS.find(function(m){ return m.id === val; });
+  var name = member ? member.name : val;
+  processQR(JSON.stringify({id: val, name: name, session: SESSIONS_DATA[currentSession].name}));
+  document.getElementById('manualId').value = '';
+}
+
+// ── RESULT DISPLAY ────────────────────────────────────────────
+function showResult(type, icon, name, detail, label) {
+  document.getElementById('resultIcon').textContent = icon;
+  document.getElementById('resultIcon').className = 'ci-result-status ' + type;
+  document.getElementById('resultName').textContent = name;
+  document.getElementById('resultDetail').textContent = detail;
+  document.getElementById('resultLabel').textContent = label;
+  document.getElementById('resultLabel').className = 'ci-result-label ' + type;
+  document.getElementById('resultOverlay').className = 'ci-result-overlay show';
+}
+
+function dismissResult() {
+  document.getElementById('resultOverlay').className = 'ci-result-overlay';
+  if (!scanning) startCamera();
+}
+
+function undoCheckin() {
+  if (!lastCheckinId) { dismissResult(); return; }
+  var member = BOOKED_MEMBERS.find(function(m){return m.id===lastCheckinId;});
+  if (member) { member.checkedIn = false; member.time = null; }
+  saveCheckins();
+  renderList();
+  updateStats();
+  showToast('Check-in reversed for ' + (member ? member.name : lastCheckinId), 'warn');
+  lastCheckinId = null;
+  dismissResult();
+}
+
+// ── ATTENDANCE LIST ───────────────────────────────────────────
+function renderList(filter) {
+  var list = BOOKED_MEMBERS.slice().sort(function(a,b){
+    if (a.checkedIn && !b.checkedIn) return -1;
+    if (!a.checkedIn && b.checkedIn) return 1;
+    return 0;
+  });
+  if (filter) {
+    var q = filter.toLowerCase();
+    list = list.filter(function(m){ return m.name.toLowerCase().includes(q) || m.id.toLowerCase().includes(q); });
+  }
+  var el = document.getElementById('attendanceList');
+  if (!list.length) { el.innerHTML = '<div class="ci-list-empty">No members found</div>'; return; }
+  el.innerHTML = list.map(function(m) {
+    var initials = m.name.split(' ').map(function(w){return w[0];}).join('').substring(0,2).toUpperCase();
+    return '<div class="ci-member-row '+(m.checkedIn?'checked-in':'pending')+'" onclick="quickCheckin(this.dataset.mid)" data-mid="'+m.id+'">'+
+      '<div class="ci-av '+(m.checkedIn?'checked':'')+'">'+initials+'</div>'+
+      '<div class="ci-member-info">'+
+        '<div class="ci-member-name">'+m.name+(m.walkIn?' <span style="font-size:10px;color:#ffc400">Walk-in</span>':'')+'</div>'+
+        '<div class="ci-member-id">'+m.id+'</div>'+
+      '</div>'+
+      (m.checkedIn ?
+        '<div class="ci-member-time">'+m.time+'</div>' :
+        '<div class="ci-member-pending">Tap to check in</div>')+
+    '</div>';
+  }).join('');
+}
+
+function quickCheckin(id) {
+  var member = BOOKED_MEMBERS.find(function(m){return m.id===id;});
+  if (!member || member.checkedIn) return;
+  processQR(JSON.stringify({id:id, name:member.name, session:SESSIONS_DATA[currentSession].name}));
+}
+
+function filterList() {
+  renderList(document.getElementById('listSearch').value);
+}
+
+function updateStats() {
+  var checked = BOOKED_MEMBERS.filter(function(m){return m.checkedIn;}).length;
+  var booked  = Math.max(SESSIONS_DATA[currentSession].booked, BOOKED_MEMBERS.length);
+  var pct     = booked > 0 ? Math.round(checked/booked*100) : 0;
+  document.getElementById('statChecked').textContent = checked;
+  document.getElementById('statBooked').textContent  = booked;
+  document.getElementById('statPct').textContent     = pct + '%';
+  document.getElementById('ciCheckedCount').textContent = checked;
+}
+
+function saveCheckins() {
+  var key = 'atp:checkins:' + currentSession;
+  var data = BOOKED_MEMBERS.filter(function(m){return m.checkedIn;}).map(function(m){
+    return {id:m.id, name:m.name, time:m.time};
+  });
+  localStorage.setItem(key, JSON.stringify(data));
+}
+
+function changeSession() {
+  currentSession = document.getElementById('sessionSelect').value;
+  var s = SESSIONS_DATA[currentSession];
+  document.getElementById('ciSessionName').textContent = s.name;
+  document.getElementById('ciSessionMeta').textContent = s.meta;
+  // Reset members
+  BOOKED_MEMBERS.forEach(function(m){m.checkedIn=false;m.time=null;});
+  // Load saved checkins for this session
+  var saved = JSON.parse(localStorage.getItem('atp:checkins:'+currentSession) || '[]');
+  saved.forEach(function(s){
+    var m = BOOKED_MEMBERS.find(function(x){return x.id===s.id;});
+    if(m){m.checkedIn=true;m.time=s.time;}
+  });
+  renderList();
+  updateStats();
+}
+
+function showToast(msg, type) {
+  var t = document.getElementById('ciToast');
+  t.textContent = msg;
+  t.className = 'ci-toast ' + (type||'');
+  t.classList.add('show');
+  setTimeout(function(){t.classList.remove('show');}, 2800);
+}
+
+// ── AMBASSADOR GUARD ──────────────────────────────────────────
+(function() {
+  var user = null;
+  try { user = JSON.parse(localStorage.getItem('atp:user')); } catch(e){}
+  var isAmbassador = user && (user.ambassador === true || localStorage.getItem('atp:ambassador') === 'true');
+  if (!isAmbassador) {
+    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;gap:20px;padding:40px"><div style="font-size:48px">🔒</div><div style="font-family:Barlow Condensed,sans-serif;font-size:32px;font-weight:900;text-transform:uppercase;color:#fff">Ambassador Access Only</div><div style="font-size:14px;color:rgba(255,255,255,.5);max-width:320px;line-height:1.6">This page is restricted to ATP Ambassadors. Contact your admin to get access.</div><a href="profile.html" style="margin-top:12px;padding:12px 24px;background:#7AC231;color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none">← Back to Profile</a></div>';
+    return;
+  }
+})();
+
+// ── INIT ──────────────────────────────────────────────────────
+renderList();
+updateStats();
+
+// ── ATP API INIT ─────────────────────────────────────────────
+(function() {
+  if (!window.ATP) return;
+  window.ATP.init().then(function(member) {
+    if (!member) return;
+    if (!member) return;
+    // Sync to legacy auth state
+    if (typeof atpUser !== 'undefined' && atpUser === null) {
+      atpUser = {
+        firstName: member.first_name, lastName: member.last_name,
+        email: member.email, avatar: member.avatar_url ||
+          (member.first_name[0] + (member.last_name||'X')[0]).toUpperCase(),
+        joinedAt: member.joined_at, memberId: member.id,
+        memberNumber: member.member_number,
+        ambassador: member.is_ambassador, admin: member.is_admin,
+      };
+      if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
+    }
+    // Ambassador: show checkin link
+    if (member.is_ambassador && typeof checkAmbassadorRole === 'function') {
+      checkAmbassadorRole();
+    }
+    // Store ambassador flag for checkin page
+    if (member.is_ambassador) {
+      localStorage.setItem('atp:ambassador', 'true');
+    }
+  }).catch(function() {});
+})();
+
+</script>
+</body>
+</html>

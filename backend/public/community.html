@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="atp.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Community | At The Park</title>
+<meta name="description" content="The ATP community — feed, challenges, leaderboard and blog.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#7AC231;--green-dark:#5a9a1f;
+  --black:#0a0a0a;--dark:#111111;--dark2:#1a1a1a;--dark3:#222222;
+  --muted:#888888;--light:#aaaaaa;--white:#ffffff;
+  --ff-display:'Barlow Condensed',sans-serif;--ff-body:'DM Sans',sans-serif;
+  --nav-h:68px;--max:1320px;--radius:6px;--radius-lg:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--ff-body);background:var(--black);color:var(--white);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-body)}
+
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;padding:0 40px;transition:background .3s,border-color .3s;border-bottom:1px solid transparent}
+nav.scrolled{background:rgba(10,10,10,.97);border-bottom-color:rgba(122,194,49,.18);backdrop-filter:blur(16px)}
+.nav-inner{width:100%;max-width:var(--max);margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.nav-logo img{height:32px;width:auto;display:block;}
+.nav-links{display:flex;align-items:center;gap:28px;list-style:none}
+.nav-links a{font-size:13px;font-weight:500;letter-spacing:.04em;color:var(--light);transition:color .2s}
+.nav-links a:hover,.nav-links a.active{color:var(--green)}
+.nav-actions{display:flex;align-items:center;gap:10px}
+.btn-ghost{font-size:13px;font-weight:600;color:var(--white);border:1px solid rgba(255,255,255,.2);padding:9px 20px;border-radius:var(--radius);background:transparent;transition:border-color .2s}
+.btn-ghost:hover{border-color:var(--white)}
+.btn-primary{font-size:13px;font-weight:700;background:var(--green);color:var(--white);padding:10px 22px;border-radius:var(--radius);border:none;transition:background .2s}
+.btn-primary:hover{background:var(--green-dark)}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer}
+.hamburger span{display:block;width:22px;height:2px;background:var(--white);border-radius:2px}
+
+/* PAGE HERO */
+.page-hero{padding:calc(var(--nav-h)+60px) 40px 52px;background:var(--dark2);border-bottom:1px solid rgba(255,255,255,.06);position:relative}
+.page-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--green)}
+.page-hero-inner{max-width:var(--max);margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:end}
+.page-hero-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.page-hero-label::before{content:'';display:block;width:20px;height:2px;background:var(--green)}
+.page-hero h1{font-family:var(--ff-display);font-size:clamp(52px,6vw,80px);font-weight:900;line-height:.92;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:16px}
+.page-hero h1 .acc{color:var(--green)}
+.page-hero-sub{font-size:16px;color:var(--light);line-height:1.65;font-weight:300;max-width:480px}
+.page-hero-stats{display:flex;gap:32px}
+.ph-stat{text-align:right}
+.ph-stat-num{font-family:var(--ff-display);font-size:38px;font-weight:900;color:var(--green);line-height:1}
+.ph-stat-label{font-size:12px;color:var(--muted);margin-top:3px}
+
+/* TABS */
+.comm-tabs-bar{background:var(--dark2);border-bottom:1px solid rgba(255,255,255,.07);position:sticky;top:var(--nav-h);z-index:50}
+.comm-tabs-inner{max-width:var(--max);margin:0 auto;padding:0 40px;display:flex;gap:0;overflow-x:auto;scrollbar-width:none}
+.comm-tabs-inner::-webkit-scrollbar{display:none}
+.comm-tab{font-size:13px;font-weight:600;color:var(--muted);padding:16px 20px;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;white-space:nowrap;transition:color .2s,border-color .2s}
+.comm-tab:hover{color:var(--light)}
+.comm-tab.active{color:var(--white);border-bottom-color:var(--green)}
+
+/* LAYOUT */
+.comm-layout{max-width:var(--max);margin:0 auto;padding:32px 40px 100px;display:grid;grid-template-columns:1fr 320px;gap:32px;align-items:start}
+.comm-panel{display:none}
+.comm-panel.active{display:block}
+
+/* ── FEED ── */
+.post-composer{background:var(--dark2);border-radius:var(--radius-lg);border:1px solid rgba(255,255,255,.07);margin-bottom:20px;overflow:hidden}
+.composer-header{display:flex;align-items:center;gap:12px;padding:16px 18px 0}
+.composer-av{width:38px;height:38px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:16px;font-weight:900;color:#fff;flex-shrink:0}
+.composer-input{flex:1;background:var(--dark3);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:11px 14px;color:var(--white);font-size:13px;font-family:var(--ff-body);resize:none;min-height:80px;transition:border-color .2s;width:100%}
+.composer-input:focus{outline:none;border-color:rgba(122,194,49,.4)}
+.composer-media-preview{display:flex;gap:8px;flex-wrap:wrap;padding:0 18px;margin-top:10px;min-height:0}
+.composer-media-preview.has-items{padding-bottom:8px}
+.media-thumb{width:80px;height:80px;border-radius:8px;overflow:hidden;position:relative;background:var(--dark3)}
+.media-thumb img,.media-thumb video{width:100%;height:100%;object-fit:cover;display:block}
+.media-thumb-rm{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.7);border:none;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.composer-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid rgba(255,255,255,.06)}
+.composer-media-btns{display:flex;gap:8px}
+.composer-media-btn{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);background:none;border:1px solid rgba(255,255,255,.1);padding:7px 12px;border-radius:var(--radius);cursor:pointer;transition:all .2s}
+.composer-media-btn:hover{border-color:var(--green);color:var(--green)}
+.post-btn{font-size:13px;font-weight:700;background:var(--green);color:#fff;border:none;padding:9px 22px;border-radius:var(--radius);cursor:pointer;transition:background .2s}
+.post-btn:hover{background:var(--green-dark)}
+.post-btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* POST CARD */
+.post-card{background:var(--dark2);border-radius:var(--radius-lg);border:1px solid rgba(255,255,255,.07);margin-bottom:16px;overflow:hidden}
+.post-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 0}
+.post-author-wrap{display:flex;align-items:center;gap:10px}
+.post-avatar{width:40px;height:40px;border-radius:50%;background:var(--dark3);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--white);flex-shrink:0;overflow:hidden}
+.post-avatar img{width:100%;height:100%;object-fit:cover}
+.post-author{font-size:13px;font-weight:700;color:var(--white)}
+.post-tribe{font-size:11px;font-weight:700;color:var(--green)}
+.post-time{font-size:11px;color:var(--muted);margin-top:1px}
+.post-menu{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px 8px;font-size:18px;line-height:1;border-radius:4px;transition:color .2s}
+.post-menu:hover{color:var(--white)}
+.post-content{font-size:14px;color:var(--light);line-height:1.65;padding:12px 16px}
+
+/* MEDIA CAROUSEL */
+.post-media-wrap{position:relative;overflow:hidden}
+.post-media-track{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none}
+.post-media-track::-webkit-scrollbar{display:none}
+.post-media-item{flex:0 0 100%;scroll-snap-align:start;position:relative}
+.post-media-item img{width:100%;max-height:500px;object-fit:cover;display:block}
+.post-media-item video{width:100%;max-height:400px;display:block;background:#000}
+.post-media-counter{position:absolute;top:10px;right:10px;background:rgba(0,0,0,.65);color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px}
+.post-media-nav{position:absolute;top:50%;transform:translateY(-50%);background:rgba(0,0,0,.55);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;z-index:2}
+.post-media-nav:hover{background:rgba(0,0,0,.85)}
+.post-media-prev{left:10px}
+.post-media-next{right:10px}
+.post-media-dots{display:flex;justify-content:center;gap:5px;padding:8px 0}
+.post-media-dot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,.25);cursor:pointer;transition:background .2s}
+.post-media-dot.active{background:#fff}
+
+/* ACTIONS */
+.post-actions{display:flex;align-items:center;gap:4px;padding:4px 10px 12px}
+.post-action-btn{display:flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--muted);background:none;border:none;padding:7px 10px;border-radius:8px;cursor:pointer;transition:all .2s}
+.post-action-btn:hover{color:var(--white);background:rgba(255,255,255,.06)}
+.post-action-btn.liked{color:#ef4444}
+.post-action-btn svg{width:15px;height:15px}
+.post-actions-right{margin-left:auto;display:flex;gap:4px}
+
+/* COMMENTS */
+.post-comments{border-top:1px solid rgba(255,255,255,.06);padding:12px 16px}
+.comment{display:flex;gap:9px;margin-bottom:12px}
+.comment-av{width:30px;height:30px;border-radius:50%;background:var(--dark3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:var(--white);flex-shrink:0}
+.comment-body{flex:1}
+.comment-bubble{background:var(--dark3);border-radius:0 12px 12px 12px;padding:9px 12px}
+.comment-author{font-size:12px;font-weight:700;color:var(--white);margin-bottom:2px}
+.comment-text{font-size:13px;color:var(--light);line-height:1.5}
+.comment-actions{display:flex;gap:12px;margin-top:5px}
+.comment-action{font-size:11px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;transition:color .2s;padding:0}
+.comment-action:hover{color:var(--green)}
+.comment-reply{background:var(--dark3);border-radius:0 12px 12px 12px;padding:7px 12px;margin-top:6px;font-size:12px;color:var(--light);font-style:italic}
+.comment-input-wrap{display:flex;gap:8px;margin-top:8px}
+.comment-input{flex:1;background:var(--dark3);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:8px 14px;color:var(--white);font-size:12px;font-family:var(--ff-body);transition:border-color .2s}
+.comment-input:focus{outline:none;border-color:rgba(122,194,49,.4)}
+.comment-send{background:var(--green);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s}
+.comment-send:hover{background:var(--green-dark)}
+.friend-req-btn{font-size:11px;font-weight:700;padding:4px 10px;border-radius:12px;border:1px solid rgba(122,194,49,.3);background:rgba(122,194,49,.06);color:var(--green);cursor:pointer;transition:all .2s;margin-left:auto;white-space:nowrap}
+.friend-req-btn:hover{background:rgba(122,194,49,.15)}
+.friend-req-btn.sent{color:var(--muted);border-color:rgba(255,255,255,.1);background:transparent;cursor:default}
+
+/* ── LEADERBOARD ── */
+.lb-period-btns{display:flex;gap:8px;margin-bottom:20px}
+.lb-period-btn{font-size:12px;font-weight:700;padding:7px 18px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s}
+.lb-period-btn.active{border-color:var(--green);color:var(--green);background:rgba(122,194,49,.08)}
+.lb-table{width:100%;border-collapse:collapse}
+.lb-table th{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:10px 14px;text-align:left;border-bottom:1px solid rgba(255,255,255,.08)}
+.lb-table th:last-child,.lb-table th:nth-child(3){text-align:right}
+.lb-row{transition:background .2s}
+.lb-row:hover{background:rgba(255,255,255,.03)}
+.lb-row td{padding:12px 14px;border-bottom:1px solid rgba(255,255,255,.04);vertical-align:middle}
+.lb-rank{font-family:var(--ff-display);font-size:18px;font-weight:900;width:44px}
+.lb-rank.gold{color:#ffc400}
+.lb-rank.silver{color:#aaa}
+.lb-rank.bronze{color:#cd7f32}
+.lb-av{width:36px;height:36px;border-radius:50%;background:var(--dark3);display:inline-flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;color:var(--white);margin-right:10px;flex-shrink:0}
+.lb-name-cell{display:flex;align-items:center}
+.lb-member-name{font-size:13px;font-weight:600;color:var(--white)}
+.lb-member-tribe{font-size:11px;color:var(--muted);margin-top:1px}
+.lb-pts{font-family:var(--ff-display);font-size:18px;font-weight:800;color:var(--green);text-align:right}
+.lb-chg{font-size:12px;font-weight:600;text-align:right}
+.lb-chg.up{color:#4ade80}
+.lb-chg.down{color:#f97316}
+.lb-chg.same{color:var(--muted)}
+.lb-you{background:rgba(122,194,49,.05)!important;border-left:2px solid var(--green)}
+
+/* ── BLOG ── */
+.blog-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
+.blog-card{background:var(--dark2);border-radius:var(--radius-lg);overflow:hidden;border:1px solid rgba(255,255,255,.07);cursor:pointer;transition:transform .2s,border-color .2s}
+.blog-card:hover{transform:translateY(-3px);border-color:rgba(122,194,49,.25)}
+.blog-card-img{aspect-ratio:16/9;background:var(--dark3);overflow:hidden}
+.blog-card-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s}
+.blog-card:hover .blog-card-img img{transform:scale(1.04)}
+.blog-card-img-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:32px;background:linear-gradient(135deg,var(--dark3),#1a2a12)}
+.blog-card-body{padding:16px}
+.blog-cat{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green);margin-bottom:8px}
+.blog-title{font-family:var(--ff-display);font-size:20px;font-weight:800;color:var(--white);line-height:1.1;margin-bottom:6px;text-transform:uppercase}
+.blog-excerpt{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px}
+.blog-meta{display:flex;align-items:center;justify-content:space-between}
+.blog-author{font-size:11px;color:var(--muted)}
+.blog-read{font-size:11px;font-weight:700;color:var(--green)}
+.blog-featured{grid-column:1/-1}
+.blog-featured .blog-card-img{aspect-ratio:21/9}
+.blog-featured .blog-title{font-size:28px}
+
+/* ── CHALLENGES ── */
+.challenge-filter{display:flex;gap:8px;margin-bottom:20px}
+.challenge-filter-btn{font-size:12px;font-weight:700;padding:6px 16px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s}
+.challenge-filter-btn.active{border-color:var(--green);color:var(--green);background:rgba(122,194,49,.08)}
+.challenge-card{background:var(--dark2);border-radius:var(--radius-lg);border:1px solid rgba(255,255,255,.07);overflow:hidden;margin-bottom:14px;transition:border-color .2s}
+.challenge-card.active-c{border-color:rgba(122,194,49,.2)}
+.challenge-head{padding:18px 18px 14px;display:flex;align-items:flex-start;gap:14px}
+.challenge-icon-wrap{width:50px;height:50px;border-radius:12px;background:rgba(122,194,49,.1);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.challenge-info{flex:1}
+.challenge-title{font-family:var(--ff-display);font-size:20px;font-weight:800;text-transform:uppercase;color:var(--white);line-height:1;margin-bottom:4px}
+.challenge-desc{font-size:13px;color:var(--muted);line-height:1.5}
+.challenge-meta-row{display:flex;gap:12px;margin-top:10px;flex-wrap:wrap}
+.challenge-tag{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.05);color:var(--muted)}
+.challenge-tag.weekly{background:rgba(96,165,250,.1);color:#60a5fa}
+.challenge-tag.monthly{background:rgba(122,194,49,.1);color:var(--green)}
+.challenge-tag.active{background:rgba(74,222,128,.1);color:#4ade80}
+.challenge-progress-section{padding:0 18px 18px}
+.challenge-progress-header{display:flex;justify-content:space-between;margin-bottom:8px}
+.challenge-progress-label{font-size:12px;font-weight:600;color:var(--light)}
+.challenge-progress-pct{font-size:12px;font-weight:700;color:var(--green)}
+.challenge-bar-wrap{background:rgba(255,255,255,.06);border-radius:6px;height:8px;overflow:hidden}
+.challenge-bar{height:100%;background:linear-gradient(90deg,var(--green),#a8e055);border-radius:6px;transition:width .8s cubic-bezier(.25,.46,.45,.94)}
+.challenge-participants{display:flex;align-items:center;justify-content:space-between;margin-top:12px}
+.challenge-avatars{display:flex}
+.challenge-av{width:28px;height:28px;border-radius:50%;background:var(--dark3);border:2px solid var(--dark2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--white);margin-left:-8px}
+.challenge-av:first-child{margin-left:0}
+.challenge-count{font-size:12px;color:var(--muted)}
+.challenge-join-btn{font-size:12px;font-weight:700;padding:7px 18px;border-radius:var(--radius);background:var(--green);border:none;color:#fff;cursor:pointer;transition:background .2s}
+.challenge-join-btn:hover{background:var(--green-dark)}
+.challenge-join-btn.joined{background:rgba(122,194,49,.1);color:var(--green);border:1px solid rgba(122,194,49,.3)}
+
+/* SIDEBAR */
+.comm-sidebar{position:sticky;top:calc(var(--nav-h) + 60px);display:flex;flex-direction:column;gap:16px}
+.sidebar-widget{background:var(--dark2);border-radius:var(--radius-lg);border:1px solid rgba(255,255,255,.07);overflow:hidden}
+.sw-title{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);padding:16px 18px 12px;border-bottom:1px solid rgba(255,255,255,.06)}
+.sw-body{padding:14px 18px}
+
+/* SHARE DROPDOWN */
+.share-dropdown{position:relative}
+.share-menu{position:absolute;bottom:calc(100% + 8px);right:0;background:var(--dark2);border:1px solid rgba(255,255,255,.12);border-radius:var(--radius-lg);padding:6px;min-width:180px;z-index:20;opacity:0;pointer-events:none;transform:translateY(4px);transition:opacity .2s,transform .2s;box-shadow:0 8px 32px rgba(0,0,0,.4)}
+.share-menu.open{opacity:1;pointer-events:all;transform:translateY(0)}
+.share-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;cursor:pointer;transition:background .15s;font-size:13px;font-weight:500;color:var(--light);border:none;background:none;width:100%;text-align:left}
+.share-item:hover{background:rgba(255,255,255,.06);color:var(--white)}
+.share-item-icon{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+
+.reveal{opacity:0;transform:translateY(18px);transition:opacity .5s,transform .5s}
+.reveal.visible{opacity:1;transform:none}
+
+@media(max-width:900px){.nav-links{display:none}.hamburger{display:flex}.comm-layout{grid-template-columns:1fr;padding:24px 16px 80px}.comm-sidebar{position:static}.page-hero-inner{grid-template-columns:1fr}.page-hero-stats{display:none}.blog-grid{grid-template-columns:1fr}.comm-tabs-inner{padding:0 16px}.page-hero{padding-left:24px;padding-right:24px}}
+
+/* ══ AUTH MODAL ══════════════════════════════════════════════ */
+.auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(10px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s}
+.auth-overlay.open{opacity:1;pointer-events:all}
+.auth-modal{background:var(--dark2);border-radius:16px;padding:0;width:100%;max-width:440px;border:1px solid rgba(255,255,255,.1);position:relative;transform:translateY(28px) scale(.97);transition:transform .3s cubic-bezier(.4,0,.2,1);overflow:hidden}
+.auth-overlay.open .auth-modal{transform:translateY(0) scale(1)}
+.auth-modal-top{background:linear-gradient(135deg,rgba(122,194,49,.12) 0%,transparent 100%);padding:36px 36px 28px;border-bottom:1px solid rgba(255,255,255,.06)}
+.auth-modal-logo{height:28px;width:auto;display:block;margin-bottom:18px}
+.auth-modal-title{font-family:var(--ff-display);font-size:32px;font-weight:900;text-transform:uppercase;color:var(--white);line-height:1;margin-bottom:6px}
+.auth-modal-sub{font-size:13px;color:var(--muted);line-height:1.6}
+.auth-modal-body{padding:28px 36px 32px}
+.auth-close{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,.1);background:transparent;color:var(--muted);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .2s;line-height:1}
+.auth-close:hover{border-color:rgba(255,255,255,.3);color:var(--white)}
+
+/* Social buttons */
+.auth-social-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;padding:13px 20px;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;margin-bottom:10px;letter-spacing:.02em;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--white)}
+.auth-social-btn:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.25)}
+.auth-social-btn svg{flex-shrink:0}
+.auth-social-btn.google{background:rgba(255,255,255,.05)}
+.auth-social-btn.apple{background:rgba(255,255,255,.05)}
+
+/* Divider */
+.auth-divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08)}
+
+/* Form fields */
+.auth-field{margin-bottom:14px}
+.auth-field label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.auth-field input{width:100%;background:var(--dark3);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:13px 16px;color:var(--white);font-size:14px;font-family:var(--ff-body);transition:border-color .2s;outline:none}
+.auth-field input:focus{border-color:var(--green)}
+.auth-field input::placeholder{color:#444}
+.auth-field input.err{border-color:#ef4444}
+.auth-field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* Submit */
+.auth-submit{width:100%;padding:14px;background:var(--green);color:var(--white);font-size:15px;font-weight:700;border:none;border-radius:var(--radius);cursor:pointer;letter-spacing:.04em;margin-top:6px;transition:background .2s,transform .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.auth-submit:hover{background:var(--green-dark);transform:translateY(-1px)}
+.auth-submit:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* Toggle login/signup */
+.auth-toggle{text-align:center;margin-top:18px;font-size:13px;color:var(--muted)}
+.auth-toggle button{background:none;border:none;color:var(--green);font-weight:700;cursor:pointer;font-size:13px;padding:0;margin-left:4px}
+.auth-toggle button:hover{text-decoration:underline}
+
+/* Error */
+.auth-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#fca5a5;margin-bottom:14px;display:none}
+.auth-error.show{display:block}
+
+/* Success panel */
+.auth-success{text-align:center;padding:12px 0 4px}
+.auth-success-icon{width:64px;height:64px;border-radius:50%;background:rgba(122,194,49,.12);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px}
+.auth-success-title{font-family:var(--ff-display);font-size:30px;font-weight:900;text-transform:uppercase;color:var(--green);margin-bottom:6px}
+.auth-success-sub{font-size:14px;color:var(--light);line-height:1.7}
+
+/* ══ NAV AUTH STATE ══ */
+.nav-user{display:flex;align-items:center;gap:10px}
+.nav-avatar{width:32px;height:32px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:14px;font-weight:800;color:var(--white);cursor:pointer;flex-shrink:0;border:2px solid transparent;transition:border-color .2s}
+.nav-avatar:hover{border-color:var(--green)}
+.nav-user-name{font-size:13px;font-weight:600;color:var(--white);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-logout{font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;transition:color .2s}
+.nav-logout:hover{color:var(--white)}
+
+/* ══ MEMBER GATE (sessions) ══ */
+.member-gate{display:none;text-align:center;padding:12px 0}
+.member-gate-icon{font-size:36px;margin-bottom:12px}
+.member-gate-title{font-family:var(--ff-display);font-size:28px;font-weight:900;text-transform:uppercase;color:var(--white);margin-bottom:8px}
+.member-gate-sub{font-size:14px;color:var(--light);line-height:1.7;margin-bottom:24px}
+.member-gate-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+</style>
+<script src="atp-api.js"></script>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo"><img id="nav-logo-img" alt="At The Park" style="height:32px;width:auto;display:block;"></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="sessions.html">Sessions</a></li>
+      <li><a href="community.html" class="active">Community</a></li>
+      <li><a href="profile.html">Profile</a></li>
+      <li><a href="store.html">Store</a></li>
+      <li><a href="index.html#partners">Partners</a></li>
+      <li><a href="index.html#story">About</a></li>
+    </ul>
+    <div class="nav-actions" id="navActions">
+      <button class="btn-ghost" onclick="openAuth('login')">Log in</button>
+      <button class="btn-primary" onclick="openAuth('signup')">Join free →</button>
+    </div>
+    <div class="hamburger"><span></span><span></span><span></span></div>
+  </div>
+</nav>
+
+<main>
+  <section class="page-hero">
+    <div class="page-hero-inner">
+      <div>
+        <p class="page-hero-label">Community</p>
+        <h1>Never train<br><span class="acc">alone.</span></h1>
+        <p class="page-hero-sub">7,000 people showing up every week. Share sessions, take on challenges, read the blog.</p>
+      </div>
+      <div class="page-hero-stats">
+        <div class="ph-stat"><div class="ph-stat-num">7,000+</div><div class="ph-stat-label">Members</div></div>
+        <div class="ph-stat"><div class="ph-stat-num">3</div><div class="ph-stat-label">Cities</div></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="comm-tabs-bar">
+    <div class="comm-tabs-inner">
+      <button class="comm-tab active" onclick="showTab('feed',this)">Feed</button>
+      <button class="comm-tab" onclick="showTab('leaderboard',this)">Leaderboard</button>
+      <button class="comm-tab" onclick="showTab('challenges',this)">Challenges</button>
+      <button class="comm-tab" onclick="showTab('blog',this)">Blog</button>
+    </div>
+  </div>
+
+  <div class="comm-layout">
+    <div>
+
+      <!-- ── FEED ── -->
+      <div class="comm-panel active" id="tab-feed">
+
+        <!-- Composer -->
+        <div class="post-composer">
+          <div class="composer-header">
+            <div class="composer-av" id="compAv">FM</div>
+            <textarea class="composer-input" id="postText" placeholder="Share a session recap, milestone or shoutout…" oninput="updatePostBtn()"></textarea>
+          </div>
+          <div class="composer-media-preview" id="mediaPreview"></div>
+          <div class="composer-footer">
+            <div class="composer-media-btns">
+              <button class="composer-media-btn" onclick="document.getElementById('imgInput').click()">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="3" width="14" height="11" rx="2"/><circle cx="5.5" cy="7.5" r="1.5"/><path d="M1 11l4-4 3 3 2-2 5 5"/></svg>
+                Photos
+              </button>
+              <button class="composer-media-btn" onclick="document.getElementById('vidInput').click()">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="3" width="10" height="10" rx="2"/><path d="M11 6l4-2v8l-4-2V6z"/></svg>
+                Video
+              </button>
+            </div>
+            <button class="post-btn" id="postBtn" disabled onclick="submitPost()">Post</button>
+          </div>
+          <input type="file" id="imgInput" accept="image/*" multiple style="display:none" onchange="handleMedia(this,'image')">
+          <input type="file" id="vidInput" accept="video/*" style="display:none" onchange="handleMedia(this,'video')">
+        </div>
+
+        <!-- Posts -->
+        <div id="postsContainer"></div>
+      </div>
+
+      <!-- ── LEADERBOARD ── -->
+      <div class="comm-panel" id="tab-leaderboard">
+        <div class="lb-period-btns">
+          <button class="lb-period-btn active" onclick="setLbPeriod('mtd',this)">Month to Date</button>
+          <button class="lb-period-btn" onclick="setLbPeriod('ytd',this)">Year to Date</button>
+          <button class="lb-period-btn" onclick="setLbPeriod('all',this)">All Time</button>
+        </div>
+        <div style="background:var(--dark2);border-radius:var(--radius-lg);border:1px solid rgba(255,255,255,.07);overflow:hidden">
+          <table class="lb-table" id="lbTable">
+            <thead><tr>
+              <th>#</th><th>Member</th>
+              <th style="text-align:right">Points</th>
+              <th style="text-align:right">Change</th>
+            </tr></thead>
+            <tbody id="lbBody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:14px;padding:14px 18px;background:rgba(122,194,49,.05);border-radius:var(--radius-lg);border:1px solid rgba(122,194,49,.12);font-size:13px;color:var(--muted)">
+          <strong style="color:var(--green)">How to earn points</strong> — Each session attended earns <strong style="color:var(--white)">10 pts</strong>. Refer a friend: <strong style="color:var(--white)">50 pts</strong>. 14-day streak: <strong style="color:var(--white)">+20 bonus pts</strong>.
+        </div>
+      </div>
+
+      <!-- ── CHALLENGES ── -->
+      <div class="comm-panel" id="tab-challenges">
+        <div class="challenge-filter">
+          <button class="challenge-filter-btn active" onclick="filterChallenges('all',this)">All</button>
+          <button class="challenge-filter-btn" onclick="filterChallenges('weekly',this)">Weekly</button>
+          <button class="challenge-filter-btn" onclick="filterChallenges('monthly',this)">Monthly</button>
+          <button class="challenge-filter-btn" onclick="filterChallenges('joined',this)">Joined</button>
+        </div>
+        <div id="challengesContainer"></div>
+      </div>
+
+      <!-- ── BLOG ── -->
+      <div class="comm-panel" id="tab-blog">
+        <div class="blog-grid" id="blogGrid"></div>
+      </div>
+
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="comm-sidebar">
+      <div class="sidebar-widget">
+        <div class="sw-title">Next Session</div>
+        <div class="sw-body">
+          <div style="background:var(--green);border-radius:var(--radius);padding:14px">
+            <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:4px">Tonight · 7:00 PM</div>
+            <div style="font-family:var(--ff-display);font-size:20px;font-weight:800;color:white;text-transform:uppercase">Community Run</div>
+            <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px">Dubai Marina Walk</div>
+          </div>
+          <a href="sessions.html" style="display:block;margin-top:12px;text-align:center;font-size:13px;font-weight:600;color:var(--green)">View all sessions →</a>
+        </div>
+      </div>
+      <div class="sidebar-widget">
+        <div class="sw-title">Active Challenges</div>
+        <div class="sw-body" id="sidebarChallenges"></div>
+      </div>
+      <div class="sidebar-widget">
+        <div class="sw-body" style="padding:0">
+          <a href="profile.html" style="display:flex;align-items:center;gap:12px;padding:16px 18px;text-decoration:none;transition:background .2s;border-radius:var(--radius-lg)">
+            <div style="width:42px;height:42px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:18px;font-weight:900;color:#fff;flex-shrink:0" id="sidebarAv">FM</div>
+            <div>
+              <div style="font-size:13px;font-weight:700;color:var(--white)">My Profile</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:1px">Streak · Wallet · Tribe →</div>
+            </div>
+          </a>
+        </div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+
+<!-- ══ AUTH MODAL ══════════════════════════════════════════ -->
+<div class="auth-overlay" id="authOverlay" role="dialog" aria-modal="true" aria-label="Sign in or join">
+  <div class="auth-modal" id="authModal">
+    <button class="auth-close" onclick="closeAuth()" aria-label="Close">×</button>
+
+    <div class="auth-modal-top">
+      <img class="auth-modal-logo" id="authLogo" alt="At The Park">
+      <h2 class="auth-modal-title" id="authTitle">Join free</h2>
+      <p class="auth-modal-sub" id="authSub">Become an ATP member to book sessions, track your streak and connect with 7,000+ members.</p>
+    </div>
+
+    <div class="auth-modal-body">
+      <!-- ERROR -->
+      <div class="auth-error" id="authError"></div>
+
+      <!-- SOCIAL -->
+      <div id="authSocialPanel">
+        <button class="auth-social-btn google" onclick="authWithGoogle()">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/><path d="M3.964 10.707A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
+          Continue with Google
+        </button>
+        <button class="auth-social-btn apple" onclick="authWithApple()">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><path d="M13.23 9.26c-.02-2.01 1.64-2.98 1.71-3.03-.93-1.36-2.38-1.55-2.9-1.57-1.24-.13-2.42.73-3.05.73-.63 0-1.6-.71-2.63-.69-1.35.02-2.6.79-3.29 2-.4.69-.99 2.97-.07 5.58.65 1.89 1.67 2.99 2.47 3.04.8.05 1.4-.52 2.62-.52 1.22 0 1.78.52 2.62.5.83-.01 1.73-1.04 2.37-2.95.02-.01.08-.03.08-.03-.01 0-2.03-.78-2.05-3.06z"/><path d="M11.37 3.19c.63-.77 1.05-1.83.94-2.9-.9.04-2 .61-2.65 1.37-.58.67-1.09 1.74-.95 2.77 1 .08 2.03-.51 2.66-1.24z"/></svg>
+          Continue with Apple
+        </button>
+
+        <div class="auth-divider">or use email</div>
+      </div>
+
+      <!-- EMAIL FORM (signup) -->
+      <div id="authSignupForm">
+        <div class="auth-field-row">
+          <div class="auth-field">
+            <label for="authFirstName">First name</label>
+            <input type="text" id="authFirstName" placeholder="Fredy" autocomplete="given-name">
+          </div>
+          <div class="auth-field">
+            <label for="authLastName">Last name</label>
+            <input type="text" id="authLastName" placeholder="Martins" autocomplete="family-name">
+          </div>
+        </div>
+        <div class="auth-field">
+          <label for="authEmail">Email address</label>
+          <input type="email" id="authEmail" placeholder="you@email.com" autocomplete="email">
+        </div>
+        <div class="auth-field">
+          <label for="authPassword">Password</label>
+          <input type="password" id="authPassword" placeholder="Min. 8 characters" autocomplete="new-password">
+        </div>
+        <button class="auth-submit" id="authSubmitBtn" onclick="submitSignup()">
+          Become a member — it's free 🎉
+        </button>
+        <div class="auth-toggle">
+          Already a member?
+          <button onclick="switchToLogin()">Log in</button>
+        </div>
+      </div>
+
+      <!-- EMAIL FORM (login) -->
+      <div id="authLoginForm" style="display:none">
+        <div class="auth-field">
+          <label for="loginEmail">Email address</label>
+          <input type="email" id="loginEmail" placeholder="you@email.com" autocomplete="email">
+        </div>
+        <div class="auth-field">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password">
+        </div>
+        <button class="auth-submit" id="loginSubmitBtn" onclick="submitLogin()">
+          Log in →
+        </button>
+        <div class="auth-toggle">
+          Not a member yet?
+          <button onclick="switchToSignup()">Join free</button>
+        </div>
+      </div>
+
+      <!-- SUCCESS -->
+      <div id="authSuccessPanel" style="display:none" class="auth-success">
+        <div class="auth-success-icon">🎉</div>
+        <h3 class="auth-success-title" id="authSuccessTitle">Welcome!</h3>
+        <p class="auth-success-sub" id="authSuccessSub"></p>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ════════════════════════════════════════════════════════ -->
+
+
+<script>
+var LOGO_SRC = "https://raw.githubusercontent.com/AtTheParkWorld/ATP_World_Web/main/atthepark_assets02.png";
+(function(){
+  var imgs=[document.getElementById("nav-logo-img"),document.getElementById("authLogo")];
+  imgs.forEach(function(img){if(img)img.src=LOGO_SRC;});
+})();
+var navEl=document.getElementById("nav");
+window.addEventListener("scroll",function(){navEl.classList.toggle("scrolled",window.scrollY>40);},{passive:true});
+var revObs=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("visible");revObs.unobserve(e.target);}});},{threshold:0.08});
+document.querySelectorAll(".reveal").forEach(function(el){revObs.observe(el);});
+
+// ── TABS ────────────────────────────────────────────────────
+function showTab(name, btn) {
+  document.querySelectorAll(".comm-panel").forEach(function(p){p.classList.remove("active");});
+  document.querySelectorAll(".comm-tab").forEach(function(t){t.classList.remove("active");});
+  document.getElementById("tab-"+name).classList.add("active");
+  if(btn) btn.classList.add("active");
+}
+
+// ── DATA ────────────────────────────────────────────────────
+var POSTS = [
+  {id:1,av:"F",author:"Fredy M.",tribe:"Stronger",time:"2h ago",text:"Just finished the <strong>Military Bootcamp</strong> at Al Formal Park. Absolute madness — but the kind of madness you love. Who else was there today? 💪",media:[],likes:24,comments:[
+    {av:"J",author:"Jay A.",text:"Was there! Best session this month 🔥",replies:[]},
+    {av:"V",author:"Valentina R.",text:"I was there too! See you next week 🙌",replies:[{av:"F",author:"Fredy M.",text:"Amazing! Keep it up 💚"}]}
+  ],friendAdded:false},
+  {id:2,av:"J",author:"Jay A.",tribe:"Faster",time:"5h ago",text:"Marathon training update: Week 8 done. 34km this week. The <strong>community run group</strong> is keeping me accountable like nothing else. Can't thank you all enough. 🏃",media:[],likes:41,comments:[
+    {av:"G",author:"Gwen G.",text:"Incredible dedication! You've got this 🏃‍♀️",replies:[]}
+  ],friendAdded:false},
+  {id:3,av:"G",author:"Gwen G.",tribe:"Better",time:"Yesterday",text:"First time doing <strong>Sound Healing</strong> yesterday and wow. I didn't know I needed that. Highly recommend to anyone feeling stressed. Thank you Manju! 🧘",media:[],likes:33,comments:[],friendAdded:false},
+];
+
+var LB_DATA = {
+  mtd:[
+    {init:"J",name:"Jay Ashar",tribe:"Faster",pts:270,chg:2},
+    {init:"V",name:"Valentina R.",tribe:"Stronger",pts:220,chg:-1},
+    {init:"G",name:"Gwen Gaje",tribe:"Better",pts:190,chg:1},
+    {init:"H",name:"Hugo M.",tribe:"Faster",pts:170,chg:0},
+    {init:"S",name:"Shodhan K.",tribe:"Stronger",pts:150,chg:2},
+    {init:"M",name:"Manju P.",tribe:"Better",pts:140,chg:-1},
+    {init:"F",name:"Fredy M.",tribe:"Stronger",pts:130,chg:0,you:true},
+    {init:"T",name:"Tatiana M.",tribe:"Better",pts:120,chg:1},
+    {init:"C",name:"Carlos V.",tribe:"Faster",pts:110,chg:-2},
+    {init:"P",name:"Priya N.",tribe:"Better",pts:100,chg:0},
+  ],
+  ytd:[
+    {init:"J",name:"Jay Ashar",tribe:"Faster",pts:1270,chg:0},
+    {init:"V",name:"Valentina R.",tribe:"Stronger",pts:1180,chg:0},
+    {init:"G",name:"Gwen Gaje",tribe:"Better",pts:1040,chg:0},
+    {init:"F",name:"Fredy M.",tribe:"Stronger",pts:830,chg:0,you:true},
+    {init:"H",name:"Hugo M.",tribe:"Faster",pts:980,chg:0},
+    {init:"S",name:"Shodhan K.",tribe:"Stronger",pts:910,chg:0},
+    {init:"M",name:"Manju P.",tribe:"Better",pts:870,chg:0},
+    {init:"T",name:"Tatiana M.",tribe:"Better",pts:790,chg:0},
+    {init:"C",name:"Carlos V.",tribe:"Faster",pts:740,chg:0},
+    {init:"P",name:"Priya N.",tribe:"Better",pts:710,chg:0},
+  ],
+  all:[
+    {init:"F",name:"Fredy M.",tribe:"Stronger",pts:8300,chg:0,you:true},
+    {init:"T",name:"Tatiana M.",tribe:"Better",pts:7900,chg:0},
+    {init:"J",name:"Jay Ashar",tribe:"Faster",pts:3200,chg:0},
+    {init:"V",name:"Valentina R.",tribe:"Stronger",pts:2800,chg:0},
+    {init:"G",name:"Gwen Gaje",tribe:"Better",pts:2400,chg:0},
+    {init:"H",name:"Hugo M.",tribe:"Faster",pts:2100,chg:0},
+    {init:"S",name:"Shodhan K.",tribe:"Stronger",pts:1900,chg:0},
+    {init:"M",name:"Manju P.",tribe:"Better",pts:1800,chg:0},
+    {init:"C",name:"Carlos V.",tribe:"Faster",pts:1600,chg:0},
+    {init:"P",name:"Priya N.",tribe:"Better",pts:1500,chg:0},
+  ]
+};
+
+var CHALLENGES = [
+  {id:1,icon:"🏃",title:"July Run Challenge",desc:"Complete 8 running sessions this month. Track your consistency and push the pace.",type:"monthly",metric:"Sessions",target:8,unit:"sessions",participants:127,joined:true,done:6},
+  {id:2,icon:"🔥",title:"Bootcamp Blitz",desc:"Attend 4 bootcamp or calisthenics sessions in 2 weeks. Bring everything you have.",type:"weekly",metric:"Sessions",target:4,unit:"sessions",participants:89,joined:true,done:3},
+  {id:3,icon:"🚴",title:"100km July",desc:"Log 100 kilometers total — cycling, running, or swimming. Any distance counts.",type:"monthly",metric:"Distance",target:100,unit:"km",participants:64,joined:false,done:0},
+  {id:4,icon:"🧘",title:"Mindful Monday",desc:"Join a yoga or sound healing session every Monday this month.",type:"monthly",metric:"Sessions",target:4,unit:"Mondays",participants:203,joined:false,done:0},
+  {id:5,icon:"⚡",title:"5,000 Cal Week",desc:"Burn 5,000 calories across all sessions this week. Track via ATP app.",type:"weekly",metric:"Calories",target:5000,unit:"kcal",participants:45,joined:false,done:0},
+  {id:6,icon:"👟",title:"Step Master",desc:"Log 70,000 steps total this month. Every walk counts.",type:"monthly",metric:"Steps",target:70000,unit:"steps",participants:312,joined:false,done:0},
+];
+
+var BLOG_POSTS = [
+  {cat:"Training",title:"Why Consistency Beats Intensity Every Time",excerpt:"The science behind showing up — even on the days you don't feel like it.",author:"Coach Manju",date:"Apr 14",img:"",featured:true},
+  {cat:"Community",title:"7,000 Members: How ATP Grew Without Spending a Dirham on Ads",excerpt:"Word of mouth, sweat, and a park in Abu Dhabi. The real story.",author:"Fredy Martins",date:"Apr 10",img:""},
+  {cat:"Nutrition",title:"What to Eat Before a 6AM Bootcamp",excerpt:"Quick, effective fuel that won't slow you down.",author:"Coach Sarah",date:"Apr 8",img:""},
+  {cat:"Running",title:"Your First 5K: A 6-Week ATP Plan",excerpt:"Complete beginner to race-ready in 42 days.",author:"Coach Jay",date:"Apr 5",img:""},
+  {cat:"Recovery",title:"The 20-Minute Post-Session Routine That Changes Everything",excerpt:"Foam rolling, breathwork, and why cold water matters.",author:"Coach Manju",date:"Apr 2",img:""},
+  {cat:"Padel",title:"ATP Padel Night: What to Expect at Your First Session",excerpt:"Beginner-friendly, high-energy, and always a good time.",author:"Fredy Martins",date:"Mar 28",img:""},
+];
+
+// ── RENDER POSTS ─────────────────────────────────────────────
+var mediaFiles = [];
+
+function handleMedia(input, type) {
+  var files = Array.from(input.files);
+  files.forEach(function(file) {
+    if(type==="video" && file.size > 200*1024*1024) { alert("Video must be under 2 minutes / 200MB"); return; }
+    mediaFiles.push({file:file, type:type});
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      addMediaPreview(e.target.result, type, mediaFiles.length-1);
+    };
+    reader.readAsDataURL(file);
+  });
+  updatePostBtn();
+}
+
+function addMediaPreview(src, type, idx) {
+  var preview = document.getElementById("mediaPreview");
+  preview.classList.add("has-items");
+  var div = document.createElement("div");
+  div.className = "media-thumb";
+  div.dataset.idx = idx;
+  if(type==="image") {
+    div.innerHTML = '<img src="'+src+'" alt="preview"><button class="media-thumb-rm" onclick="removeMedia('+idx+')">×</button>';
+  } else {
+    div.innerHTML = '<video src="'+src+'" muted></video><button class="media-thumb-rm" onclick="removeMedia('+idx+')">×</button>';
+  }
+  preview.appendChild(div);
+}
+
+function removeMedia(idx) {
+  mediaFiles[idx] = null;
+  var thumb = document.querySelector('[data-idx="'+idx+'"]');
+  if(thumb) thumb.remove();
+  if(document.querySelectorAll(".media-thumb").length===0) {
+    document.getElementById("mediaPreview").classList.remove("has-items");
+  }
+}
+
+function updatePostBtn() {
+  var txt = document.getElementById("postText").value.trim();
+  var hasMedia = mediaFiles.filter(function(f){return f!==null;}).length > 0;
+  document.getElementById("postBtn").disabled = !txt && !hasMedia;
+}
+
+function submitPost() {
+  var txt = document.getElementById("postText").value.trim();
+  var files = mediaFiles.filter(function(f){return f!==null;});
+  var mediaSrcs = [];
+  var loaded = 0;
+  if(!files.length) { createPost(txt, []); return; }
+  files.forEach(function(m, i) {
+    var reader = new FileReader();
+    reader.onload = function(e) {
+      mediaSrcs[i] = {src: e.target.result, type: m.type};
+      loaded++;
+      if(loaded===files.length) createPost(txt, mediaSrcs);
+    };
+    reader.readAsDataURL(m.file);
+  });
+}
+
+function createPost(txt, media) {
+  // Try real API post first
+  if (window.ATP && window.ATP.isLoggedIn()) {
+    window.ATP.community.post({content: txt}).then(function(data) {
+      var me = window.ATP.getUser() || {};
+      var ini = me.firstName ? (me.firstName[0]+(me.lastName||'')[0]).toUpperCase() : 'Y';
+      POSTS.unshift({id:data.post ? data.post.id : Date.now(),av:ini,
+        author:(me.firstName||'You')+' '+(me.lastName||''),tribe:'Community',
+        time:'Just now',text:txt,media:media,likes:0,comments:[],friendAdded:true,realId:data.post&&data.post.id});
+      renderFeedFromPosts();
+    }).catch(function(){
+      POSTS.unshift({id:Date.now(),av:'Y',author:'You',tribe:'Community',time:'Just now',text:txt,media:media,likes:0,comments:[],friendAdded:true});
+      renderFeedFromPosts();
+    });
+    return;
+  }
+  POSTS.unshift({id:Date.now(),av:"FM",author:"You",tribe:"Stronger",time:"Just now",text:txt,media:media,likes:0,comments:[],friendAdded:true});
+  document.getElementById("postText").value = "";
+  mediaFiles = [];
+  document.getElementById("mediaPreview").innerHTML = "";
+  document.getElementById("mediaPreview").classList.remove("has-items");
+  document.getElementById("postBtn").disabled = true;
+  renderPosts();
+}
+
+function renderPosts() {
+  var container = document.getElementById("postsContainer");
+  container.innerHTML = POSTS.map(function(post) {
+    return buildPostCard(post);
+  }).join("");
+}
+
+function buildPostCard(post) {
+  var mediaHtml = "";
+  if(post.media && post.media.length > 0) {
+    var items = post.media.map(function(m, i) {
+      var cnt = post.media.length > 1 ? '<div class="post-media-counter">'+(i+1)+'/'+post.media.length+'</div>' : '';
+      if(m.type==="video") {
+        return '<div class="post-media-item">'+cnt+'<video src="'+m.src+'" controls playsinline></video></div>';
+      }
+      return '<div class="post-media-item">'+cnt+'<img src="'+m.src+'" alt="post image" loading="lazy"></div>';
+    }).join("");
+    var nav = post.media.length > 1 ?
+      '<button class="post-media-nav post-media-prev" onclick="mediaScroll('+post.id+',-1)">‹</button>'+
+      '<button class="post-media-nav post-media-next" onclick="mediaScroll('+post.id+',1)">›</button>' : "";
+    var dots = post.media.length > 1 ?
+      '<div class="post-media-dots">'+post.media.map(function(_,i){
+        return '<div class="post-media-dot'+(i===0?" active":"")+'" onclick="mediaGoTo('+post.id+','+i+')"></div>';
+      }).join("")+'</div>' : "";
+    mediaHtml = '<div class="post-media-wrap"><div class="post-media-track" id="media-'+post.id+'">'+items+'</div>'+nav+dots+'</div>';
+  }
+
+  var commentsHtml = post.comments.map(function(c,ci) {
+    var replies = c.replies && c.replies.length ?
+      c.replies.map(function(r){
+        return '<div class="comment-reply"><strong>'+r.author+':</strong> '+r.text+'</div>';
+      }).join("") : "";
+    return '<div class="comment">'+
+      '<div class="comment-av">'+c.av+'</div>'+
+      '<div class="comment-body">'+
+        '<div class="comment-bubble">'+
+          '<div class="comment-author">'+c.author+'</div>'+
+          '<div class="comment-text">'+c.text+'</div>'+
+        '</div>'+
+        replies+
+        '<div class="comment-actions">'+
+          '<button class="comment-action" onclick="likeComment('+post.id+','+ci+',this)">Like</button>'+
+          '<button class="comment-action" onclick="replyComment('+post.id+','+ci+',this)">Reply</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join("");
+
+  var showComments = post.comments.length > 0;
+  return '<div class="post-card" id="post-'+post.id+'">'+
+    '<div class="post-header">'+
+      '<div class="post-author-wrap">'+
+        '<div class="post-avatar">'+post.av+'</div>'+
+        '<div>'+
+          '<div style="display:flex;align-items:center;gap:8px">'+
+            '<span class="post-author">'+post.author+'</span>'+
+            '<span class="post-tribe">'+post.tribe+' Tribe</span>'+
+            (!post.friendAdded ?
+              '<button class="friend-req-btn" id="freq-'+post.id+'" onclick="sendFriendReq('+post.id+')">+ Friend</button>' :
+              '') +
+          '</div>'+
+          '<div class="post-time">'+post.time+'</div>'+
+        '</div>'+
+      '</div>'+
+      '<button class="post-menu" onclick="togglePostMenu('+post.id+')">···</button>'+
+    '</div>'+
+    (post.text ? '<div class="post-content">'+post.text+'</div>' : '')+
+    mediaHtml+
+    '<div class="post-actions">'+
+      '<button class="post-action-btn" id="like-'+post.id+'" onclick="likePost('+post.id+',this)">'+
+        '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 13.5S1.5 9.5 1.5 5.5a3 3 0 015-2.2A3 3 0 0114.5 5.5c0 4-6.5 8-6.5 8z"/></svg>'+
+        '<span id="likes-'+post.id+'">'+post.likes+'</span>'+
+      '</button>'+
+      '<button class="post-action-btn" onclick="toggleComments('+post.id+')">'+
+        '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 5c0-1.7-1.3-3-3-3H5C3.3 2 2 3.3 2 5v3c0 1.7 1.3 3 3 3h1v2.5L8.5 11H11c1.7 0 3-1.3 3-3V5z"/></svg>'+
+        post.comments.length+
+      '</button>'+
+      '<div class="share-dropdown">'+
+        '<button class="post-action-btn" onclick="toggleShare('+post.id+')">'+
+          '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="3" r="1.5"/><circle cx="4" cy="8" r="1.5"/><circle cx="12" cy="13" r="1.5"/><path d="M5.5 9l5 3M5.5 7l5-3"/></svg>'+
+          'Share'+
+        '</button>'+
+        '<div class="share-menu" id="share-'+post.id+'">'+
+          '<button class="share-item" onclick="shareWhatsApp('+post.id+')"><div class="share-item-icon" style="background:#25d366">💬</div>Share on WhatsApp</button>'+
+          '<button class="share-item" onclick="downloadMedia('+post.id+')"><div class="share-item-icon" style="background:rgba(255,255,255,.08)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 13h12"/></svg></div>Download</button>'+
+          '<button class="share-item" onclick="copyPostLink('+post.id+')"><div class="share-item-icon" style="background:rgba(255,255,255,.08)">🔗</div>Copy link</button>'+
+        '</div>'+
+      '</div>'+
+    '</div>'+
+    '<div class="post-comments" id="comments-'+post.id+'" style="display:'+(showComments?'block':'none')+'">'+
+      commentsHtml+
+      '<div class="comment-input-wrap">'+
+        '<input class="comment-input" id="cinput-'+post.id+'" type="text" placeholder="Write a comment…" onkeydown="if(event.key==\'Enter\')addComment('+post.id+')">'+
+        '<button class="comment-send" onclick="addComment('+post.id+')">'+
+          '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 8l12-6-5 12-2-5-5-1z"/></svg>'+
+        '</button>'+
+      '</div>'+
+    '</div>'+
+  '</div>';
+}
+
+function likePost(id, btn) {
+  var post = POSTS.find(function(p){return p.id===id;});
+  if(!post) return;
+  post.liked = !post.liked;
+  post.likes += post.liked ? 1 : -1;
+  btn.classList.toggle("liked", post.liked);
+  document.getElementById("likes-"+id).textContent = post.likes;
+}
+
+function toggleComments(id) {
+  var el = document.getElementById("comments-"+id);
+  el.style.display = el.style.display==="none" ? "block" : "none";
+  if(el.style.display==="block") el.querySelector(".comment-input").focus();
+}
+
+function addComment(id) {
+  var input = document.getElementById("cinput-"+id);
+  var txt = input.value.trim();
+  if(!txt) return;
+  var post = POSTS.find(function(p){return p.id===id;});
+  post.comments.push({av:"FM",author:"You",text:txt,replies:[]});
+  input.value = "";
+  renderPosts();
+  setTimeout(function(){
+    var el=document.getElementById("comments-"+id);
+    if(el) el.style.display="block";
+  },10);
+}
+
+function likeComment(postId, ci, btn) { btn.textContent = btn.textContent==="Like" ? "Liked ✓" : "Like"; }
+
+function replyComment(postId, ci, btn) {
+  var post = POSTS.find(function(p){return p.id===postId;});
+  var reply = prompt("Reply to "+post.comments[ci].author+":");
+  if(!reply) return;
+  post.comments[ci].replies = post.comments[ci].replies || [];
+  post.comments[ci].replies.push({av:"FM",author:"You",text:reply});
+  renderPosts();
+  setTimeout(function(){document.getElementById("comments-"+postId).style.display="block";},10);
+}
+
+function sendFriendReq(id) {
+  var btn = document.getElementById("freq-"+id);
+  if(btn) { btn.textContent="Sent ✓"; btn.classList.add("sent"); }
+}
+
+function mediaScroll(id, dir) {
+  var track = document.getElementById("media-"+id);
+  if(!track) return;
+  track.scrollBy({left: dir * track.clientWidth, behavior:"smooth"});
+  setTimeout(function(){
+    var idx = Math.round(track.scrollLeft / track.clientWidth);
+    track.closest(".post-media-wrap").querySelectorAll(".post-media-dot").forEach(function(d,i){
+      d.classList.toggle("active", i===idx);
+    });
+  },350);
+}
+
+function mediaGoTo(id, idx) {
+  var track = document.getElementById("media-"+id);
+  if(!track) return;
+  track.scrollTo({left: idx * track.clientWidth, behavior:"smooth"});
+}
+
+function toggleShare(id) {
+  document.querySelectorAll(".share-menu").forEach(function(m){if(m.id!=="share-"+id)m.classList.remove("open");});
+  document.getElementById("share-"+id).classList.toggle("open");
+}
+document.addEventListener("click",function(e){
+  if(!e.target.closest(".share-dropdown")) document.querySelectorAll(".share-menu").forEach(function(m){m.classList.remove("open");});
+});
+
+function shareWhatsApp(id) {
+  var post = POSTS.find(function(p){return p.id===id;});
+  var text = encodeURIComponent("Check this out on ATP Community: "+(post.text||"")+"\nhttps://attheparkworld.github.io/ATP_World_Web/community.html");
+  window.open("https://wa.me/?text="+text,"_blank");
+}
+
+function downloadMedia(id) {
+  var post = POSTS.find(function(p){return p.id===id;});
+  if(!post||!post.media||!post.media.length){alert("No media to download.");return;}
+  post.media.forEach(function(m,i){
+    var a=document.createElement("a");
+    a.href=m.src;a.download="atp-post-"+id+"-"+i+(m.type==="video"?".mp4":".jpg");
+    document.body.appendChild(a);a.click();document.body.removeChild(a);
+  });
+}
+
+function copyPostLink(id) {
+  navigator.clipboard&&navigator.clipboard.writeText("https://attheparkworld.github.io/ATP_World_Web/community.html#post-"+id);
+  alert("Link copied!");
+}
+
+function togglePostMenu(id) {}
+
+// ── LEADERBOARD ──────────────────────────────────────────────
+var currentPeriod = "mtd";
+function setLbPeriod(period, btn) {
+  currentPeriod = period;
+  document.querySelectorAll(".lb-period-btn").forEach(function(b){b.classList.remove("active");});
+  btn.classList.add("active");
+  renderLeaderboard();
+}
+
+async function renderLeaderboard() {
+  // Try API first
+  if (window.ATP) {
+    try {
+      var result = await window.ATP.members.leaderboard(currentPeriod);
+      var data = result.leaderboard.map(function(m, i) {
+        return {
+          init: m.first_name[0],
+          name: m.first_name + ' ' + m.last_name,
+          tribe: m.tribe || 'Community',
+          pts: m.period_points,
+          chg: 0,
+          you: m.id === (window.ATP.getUser() && window.ATP.getUser().memberId)
+        };
+      });
+      _renderLeaderboardRows(data);
+      return;
+    } catch(e) { /* fall through to static data */ }
+  }
+  var data = LB_DATA[currentPeriod].slice().sort(function(a,b){return b.pts-a.pts;});
+  _renderLeaderboardRows(data);
+}
+function _renderLeaderboardRows(data) {
+  var medals = ["🥇","🥈","🥉"];
+  document.getElementById("lbBody").innerHTML = data.map(function(m,i){
+    var rankClass = i<3 ? ["gold","silver","bronze"][i] : "";
+    var chgHtml = currentPeriod==="all" ? "" :
+      m.chg>0 ? '<span class="lb-chg up">▲'+m.chg+'</span>' :
+      m.chg<0 ? '<span class="lb-chg down">▼'+Math.abs(m.chg)+'</span>' :
+      '<span class="lb-chg same">—</span>';
+    return '<tr class="lb-row'+(m.you?" lb-you":"")+'">'+
+      '<td class="lb-rank '+rankClass+'">'+(i<3?medals[i]:i+1)+'</td>'+
+      '<td class="lb-name-cell">'+
+        '<div class="lb-av">'+m.init+'</div>'+
+        '<div><div class="lb-member-name">'+m.name+(m.you?" (you)":"")+'</div>'+
+        '<div class="lb-member-tribe">'+m.tribe+' Tribe</div></div>'+
+      '</td>'+
+      '<td class="lb-pts">'+m.pts.toLocaleString()+'</td>'+
+      '<td>'+chgHtml+'</td>'+
+    '</tr>';
+  }).join("");
+}
+
+// ── CHALLENGES ───────────────────────────────────────────────
+var challengeFilter = "all";
+function filterChallenges(f, btn) {
+  challengeFilter = f;
+  document.querySelectorAll(".challenge-filter-btn").forEach(function(b){b.classList.remove("active");});
+  btn.classList.add("active");
+  renderChallenges();
+}
+
+function renderChallenges() {
+  var filtered = CHALLENGES.filter(function(c){
+    if(challengeFilter==="all") return true;
+    if(challengeFilter==="joined") return c.joined;
+    return c.type===challengeFilter;
+  });
+  document.getElementById("challengesContainer").innerHTML = filtered.map(function(c){
+    var pct = c.joined ? Math.round((c.done/c.target)*100) : 0;
+    var joinedClass = c.joined ? "joined" : "";
+    var joinLabel = c.joined ? (c.done>=c.target?"✓ Completed":"Joined") : "Join Challenge";
+    var avs = ["J","V","G","H","S"].slice(0,Math.min(5,Math.floor(c.participants/20)+2));
+    return '<div class="challenge-card'+(c.joined?" active-c":"")+'">'+
+      '<div class="challenge-head">'+
+        '<div class="challenge-icon-wrap">'+c.icon+'</div>'+
+        '<div class="challenge-info">'+
+          '<div class="challenge-title">'+c.title+'</div>'+
+          '<div class="challenge-desc">'+c.desc+'</div>'+
+          '<div class="challenge-meta-row">'+
+            '<span class="challenge-tag '+c.type+'">'+c.type.charAt(0).toUpperCase()+c.type.slice(1)+'</span>'+
+            '<span class="challenge-tag">'+c.metric+': '+c.target.toLocaleString()+' '+c.unit+'</span>'+
+            (c.joined?'<span class="challenge-tag active">Active</span>':'')+
+          '</div>'+
+        '</div>'+
+      '</div>'+
+      (c.joined?
+        '<div class="challenge-progress-section">'+
+          '<div class="challenge-progress-header">'+
+            '<span class="challenge-progress-label">'+(c.done>=c.target?"Completed! 🎉":c.done+' / '+c.target+' '+c.unit)+'</span>'+
+            '<span class="challenge-progress-pct">'+pct+'%</span>'+
+          '</div>'+
+          '<div class="challenge-bar-wrap"><div class="challenge-bar" style="width:'+pct+'%"></div></div>'+
+        '</div>' : '')+
+      '<div class="challenge-participants" style="padding:0 18px 16px">'+
+        '<div style="display:flex;align-items:center;gap:8px">'+
+          '<div class="challenge-avatars">'+avs.map(function(a){return '<div class="challenge-av">'+a+'</div>';}).join('')+'</div>'+
+          '<span class="challenge-count">'+c.participants+' joined</span>'+
+        '</div>'+
+        '<button class="challenge-join-btn '+joinedClass+'" onclick="joinChallenge('+c.id+',this)" '+(c.done>=c.target&&c.joined?'disabled':'')+'>'+joinLabel+'</button>'+
+      '</div>'+
+    '</div>';
+  }).join("");
+  renderSidebarChallenges();
+}
+
+function joinChallenge(id, btn) {
+  var c = CHALLENGES.find(function(x){return x.id===id;});
+  if(!c) return;
+  c.joined = !c.joined;
+  if(c.joined) c.participants++;
+  renderChallenges();
+}
+
+function renderSidebarChallenges() {
+  var joined = CHALLENGES.filter(function(c){return c.joined;});
+  document.getElementById("sidebarChallenges").innerHTML = joined.slice(0,3).map(function(c){
+    var pct = Math.round((c.done/c.target)*100);
+    return '<div style="margin-bottom:12px">'+
+      '<div style="display:flex;justify-content:space-between;margin-bottom:4px">'+
+        '<span style="font-size:12px;font-weight:600;color:var(--white)">'+c.icon+' '+c.title+'</span>'+
+        '<span style="font-size:11px;color:var(--green)">'+pct+'%</span>'+
+      '</div>'+
+      '<div style="background:rgba(255,255,255,.06);border-radius:4px;height:5px;overflow:hidden">'+
+        '<div style="width:'+pct+'%;height:100%;background:var(--green);border-radius:4px"></div>'+
+      '</div>'+
+    '</div>';
+  }).join("") || '<div style="font-size:13px;color:var(--muted)">No active challenges. <a href="#" onclick="showTab(\'challenges\');return false" style="color:var(--green)">Browse →</a></div>';
+}
+
+// ── BLOG ─────────────────────────────────────────────────────
+function renderBlog() {
+  var catColors = {Training:"#60a5fa",Community:"#4ade80",Nutrition:"#fb923c",Running:"#f472b6",Recovery:"#a78bfa",Padel:"#fbbf24"};
+  document.getElementById("blogGrid").innerHTML = BLOG_POSTS.map(function(post, i) {
+    var featured = i===0 ? " blog-featured" : "";
+    var col = catColors[post.cat] || "var(--green)";
+    return '<div class="blog-card'+featured+'">'+
+      '<div class="blog-card-img">'+
+        '<div class="blog-card-img-ph">'+["🏃","👥","🥑","🏅","💪","🎾"][i % 6]+'</div>'+
+      '</div>'+
+      '<div class="blog-card-body">'+
+        '<div class="blog-cat" style="color:'+col+'">'+post.cat+'</div>'+
+        '<div class="blog-title">'+post.title+'</div>'+
+        '<div class="blog-excerpt">'+post.excerpt+'</div>'+
+        '<div class="blog-meta">'+
+          '<span class="blog-author">'+post.author+' · '+post.date+'</span>'+
+          '<span class="blog-read">Read →</span>'+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join("");
+}
+
+// ── INIT ─────────────────────────────────────────────────────
+renderPosts();
+renderLeaderboard();
+renderChallenges();
+renderBlog();
+
+setTimeout(function(){
+  document.querySelectorAll(".reveal").forEach(function(el){revObs.observe(el);});
+},100);
+
+
+// ══════════════════════════════════════════════════════════════
+// ATP AUTH ENGINE
+// Uses localStorage to persist session. Swap the mock functions
+// for real Firebase / Supabase calls when ready.
+// ══════════════════════════════════════════════════════════════
+
+var ATP_USER_KEY = 'atp:user';
+var atpUser = null; // { firstName, lastName, email, avatar, joinedAt }
+
+// ── Persistence ──────────────────────────────────────────────
+function authLoadUser() {
+  try {
+    var raw = localStorage.getItem(ATP_USER_KEY);
+    if(raw) atpUser = JSON.parse(raw);
+  } catch(e) { atpUser = null; }
+}
+function authSaveUser(user) {
+  atpUser = user;
+  try { localStorage.setItem(ATP_USER_KEY, JSON.stringify(user)); } catch(e){}
+}
+function authClearUser() {
+  atpUser = null;
+  try { localStorage.removeItem(ATP_USER_KEY); } catch(e){}
+}
+
+// ── Modal open/close ─────────────────────────────────────────
+function openAuth(mode) {
+  if(atpUser) return; // already signed in
+  mode = mode || 'signup';
+  if(mode === 'login') { switchToLogin(); } else { switchToSignup(); }
+  document.getElementById('authError').classList.remove('show');
+  document.getElementById('authSuccessPanel').style.display = 'none';
+  document.getElementById('authSignupForm').style.display = '';
+  document.getElementById('authLoginForm').style.display  = 'none';
+  document.getElementById('authSocialPanel').style.display = '';
+  document.getElementById('authOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Set logo
+  var logo = document.getElementById('authLogo');
+  if(logo && typeof LOGO_SRC !== 'undefined') logo.src = LOGO_SRC;
+
+  // Focus first input
+  setTimeout(function(){
+    var first = document.getElementById(mode === 'login' ? 'loginEmail' : 'authFirstName');
+    if(first) first.focus();
+  }, 300);
+}
+function closeAuth() {
+  document.getElementById('authOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+  // If a booking was waiting, resume it
+  if(atpUser && typeof pendingSession !== 'undefined' && pendingSession) {
+    var s = pendingSession; pendingSession = null;
+    openModal(s.name,s.tribe,s.dayTime,s.coach,s.loc,s.desc,s.day,s.time);
+  }
+}
+
+function switchToLogin() {
+  document.getElementById('authTitle').textContent = 'Welcome back';
+  document.getElementById('authSub').textContent   = 'Log in to your ATP account to book sessions.';
+  document.getElementById('authSignupForm').style.display = 'none';
+  document.getElementById('authLoginForm').style.display  = '';
+  document.getElementById('authSuccessPanel').style.display = 'none';
+  document.getElementById('authError').classList.remove('show');
+}
+function switchToSignup() {
+  document.getElementById('authTitle').textContent = 'Join free';
+  document.getElementById('authSub').textContent   = 'Become an ATP member to book sessions, track your streak and connect with 7,000+ members.';
+  document.getElementById('authSignupForm').style.display = '';
+  document.getElementById('authLoginForm').style.display  = 'none';
+  document.getElementById('authSuccessPanel').style.display = 'none';
+  document.getElementById('authError').classList.remove('show');
+}
+
+// ── Validation helpers ───────────────────────────────────────
+function validEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function showAuthError(msg){
+  var el = document.getElementById('authError');
+  el.textContent = msg; el.classList.add('show');
+}
+
+// ── Email signup ─────────────────────────────────────────────
+function submitSignup() {
+  var firstName = document.getElementById('authFirstName').value.trim();
+  var lastName  = document.getElementById('authLastName').value.trim();
+  var email     = document.getElementById('authEmail').value.trim();
+  var password  = document.getElementById('authPassword').value;
+
+  // Clear errors
+  ['authFirstName','authLastName','authEmail','authPassword'].forEach(function(id){
+    document.getElementById(id).classList.remove('err');
+  });
+  document.getElementById('authError').classList.remove('show');
+
+  var ok = true;
+  if(!firstName){ document.getElementById('authFirstName').classList.add('err'); ok=false; }
+  if(!lastName) { document.getElementById('authLastName').classList.add('err');  ok=false; }
+  if(!validEmail(email)){ document.getElementById('authEmail').classList.add('err'); ok=false; }
+  if(password.length < 8){ document.getElementById('authPassword').classList.add('err'); ok=false; }
+  if(!ok){ showAuthError('Please fill in all fields correctly.'); return; }
+
+  var btn = document.getElementById('authSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Creating your account...';
+
+  // ── MOCK: replace with real Firebase/Supabase call ──
+  setTimeout(function(){
+    var user = {
+      firstName: firstName, lastName: lastName,
+      email: email, joinedAt: new Date().toISOString(),
+      avatar: (firstName[0] + lastName[0]).toUpperCase()
+    };
+    authSaveUser(user);
+    onAuthSuccess(user, 'signup');
+  }, 900);
+}
+
+// ── Email login ──────────────────────────────────────────────
+function submitLogin() {
+  var email    = document.getElementById('loginEmail').value.trim();
+  var password = document.getElementById('loginPassword').value;
+
+  ['loginEmail','loginPassword'].forEach(function(id){
+    document.getElementById(id).classList.remove('err');
+  });
+  document.getElementById('authError').classList.remove('show');
+
+  var ok = true;
+  if(!validEmail(email)){ document.getElementById('loginEmail').classList.add('err'); ok=false; }
+  if(!password){ document.getElementById('loginPassword').classList.add('err'); ok=false; }
+  if(!ok){ showAuthError('Please enter your email and password.'); return; }
+
+  var btn = document.getElementById('loginSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Logging in...';
+
+  // ── MOCK: replace with real auth check ──
+  setTimeout(function(){
+    // In real implementation: verify against backend
+    var stored = null;
+    try { stored = JSON.parse(localStorage.getItem(ATP_USER_KEY)); } catch(e){}
+    if(stored && stored.email === email) {
+      authSaveUser(stored);
+      onAuthSuccess(stored, 'login');
+    } else {
+      // For demo: create session anyway
+      var user = {
+        firstName: email.split('@')[0], lastName: '',
+        email: email, joinedAt: new Date().toISOString(),
+        avatar: email[0].toUpperCase()
+      };
+      authSaveUser(user);
+      onAuthSuccess(user, 'login');
+    }
+  }, 700);
+}
+
+// ── Social auth (mock — replace with real OAuth) ─────────────
+function authWithGoogle() {
+  // Real: firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
+  var mockUser = {
+    firstName: 'Google', lastName: 'User',
+    email: 'user@gmail.com', joinedAt: new Date().toISOString(), avatar: 'G'
+  };
+  authSaveUser(mockUser);
+  onAuthSuccess(mockUser, 'google');
+}
+function authWithApple() {
+  // Real: firebase.auth().signInWithPopup(new firebase.auth.OAuthProvider('apple.com'))
+  var mockUser = {
+    firstName: 'Apple', lastName: 'User',
+    email: 'user@icloud.com', joinedAt: new Date().toISOString(), avatar: 'A'
+  };
+  authSaveUser(mockUser);
+  onAuthSuccess(mockUser, 'apple');
+}
+
+// ── Post-auth ────────────────────────────────────────────────
+function onAuthSuccess(user, method) {
+  // Update member counter
+  if(method === 'signup' && typeof window.atpAddMember === 'function') {
+    window.atpAddMember(1);
+  }
+
+  // Show success screen
+  document.getElementById('authSignupForm').style.display = 'none';
+  document.getElementById('authLoginForm').style.display  = 'none';
+  document.getElementById('authSocialPanel').style.display = 'none';
+  document.getElementById('authSuccessPanel').style.display = 'block';
+  document.getElementById('authSuccessTitle').textContent =
+    method === 'login' ? 'Welcome back, ' + user.firstName + '!' : 'Welcome, ' + user.firstName + '!';
+  document.getElementById('authSuccessSub').innerHTML =
+    method === 'login'
+      ? 'You\'re logged in. Go book a session! 💪'
+      : 'You are now an ATP member. <strong>' + user.email + '</strong> registered.<br><br>Go book your first free session — the community is waiting. 💪';
+
+  // Update nav
+  renderAuthNav(user);
+
+  // Auto close after 1.8s then resume any pending booking
+  setTimeout(function(){ closeAuth(); }, 1800);
+}
+
+// ── Nav render ───────────────────────────────────────────────
+function renderAuthNav(user) {
+  var actions = document.querySelector('.nav-actions');
+  if(!actions) return;
+  actions.innerHTML =
+    '<div class="nav-user">' +
+      '<div class="nav-avatar" title="' + user.firstName + ' ' + user.lastName + '">' + user.avatar + '</div>' +
+      '<div>' +
+        '<div class="nav-user-name">' + user.firstName + '</div>' +
+        '<button class="nav-logout" onclick="logOut()">Log out</button>' +
+      '</div>' +
+    '</div>';
+}
+
+// ── Log out ──────────────────────────────────────────────────
+function logOut() {
+  authClearUser();
+  var actions = document.querySelector('.nav-actions');
+  if(actions) {
+    actions.innerHTML =
+      '<button class="btn-ghost" onclick="openAuth(\'login\')">Log in</button>' +
+      '<button class="btn-primary" onclick="openAuth(\'signup\')">Join free →</button>';
+  }
+}
+
+// ── Guard: require auth before booking ───────────────────────
+function requireAuth(callback) {
+  if(atpUser) { callback(); return; }
+  // Store callback intent and open auth
+  pendingAuthCallback = callback;
+  openAuth('signup');
+}
+var pendingAuthCallback = null;
+
+// ── Init ─────────────────────────────────────────────────────
+authLoadUser();
+if(atpUser) renderAuthNav(atpUser);
+
+// Close on overlay click
+document.getElementById('authOverlay').addEventListener('click', function(e){
+  if(e.target === this) closeAuth();
+});
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape') closeAuth();
+});
+// ══════════════════════════════════════════════════════════════
+
+
+// ── ATP API INIT ─────────────────────────────────────────────
+(function() {
+  // Load real community feed
+  function loadRealFeed() {
+    if (!window.ATP) return;
+    window.ATP.community.feed().then(function(data) {
+      if (!data.posts || !data.posts.length) return;
+      // Map API posts to POSTS format and re-render
+      var me = window.ATP.getUser();
+      var apiPosts = data.posts.map(function(p) {
+        var ini = p.author_first ? (p.author_first[0]+(p.author_last||'')[0]).toUpperCase() : '?';
+        var dt = new Date(p.created_at);
+        var ago = getTimeAgo(dt);
+        return {
+          id:       p.id,
+          av:       ini,
+          author:   (p.author_first||'') + ' ' + (p.author_last||''),
+          tribe:    p.tribe_name || 'Community',
+          time:     ago,
+          text:     p.content || '',
+          media:    (p.media_urls||[]).map(function(u){return{type:'image',src:u};}),
+          likes:    parseInt(p.likes_count)||0,
+          comments: (p.recent_comments||[]).map(function(c){
+            return {av:(c.first_name||'?')[0].toUpperCase(), author:c.first_name+' '+(c.last_name||''), text:c.content, replies:[]};
+          }),
+          liked:    p.liked_by_me || false,
+          friendAdded: true,
+          realId:   p.id,
+        };
+      });
+      if (apiPosts.length > 0) {
+        POSTS = apiPosts;
+        renderFeedFromPosts();
+        console.log('✅ Community feed:', apiPosts.length, 'posts from DB');
+      }
+    }).catch(function(e){ console.warn('Feed API:', e); });
+  }
+
+  function getTimeAgo(dt) {
+    var diff = (Date.now() - dt.getTime()) / 1000;
+    if (diff < 60)   return 'Just now';
+    if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+    return Math.floor(diff/86400) + 'd ago';
+  }
+
+  function renderFeedFromPosts() {
+    var feed = document.getElementById('feedList') || document.querySelector('#tab-feed .feed-list, #tab-feed [class*="feed"]');
+    if (!feed) { feed = document.querySelector('#tab-feed'); }
+    if (!feed) return;
+    var html = POSTS.map(function(p){ return buildPostCard(p); }).join('');
+    // Find the post composer and inject after it
+    var composer = feed.querySelector('.post-composer, .compose-wrap');
+    if (composer) {
+      var existingCards = feed.querySelectorAll('.post-card');
+      existingCards.forEach(function(c){ c.remove(); });
+      composer.insertAdjacentHTML('afterend', html);
+    } else {
+      feed.innerHTML = html;
+    }
+  }
+
+  // Load real leaderboard
+  function loadRealLeaderboard(period) {
+    if (!window.ATP) return;
+    window.ATP.members.leaderboard(period).then(function(data) {
+      if (data.leaderboard) {
+        console.log('✅ Leaderboard loaded:', data.leaderboard.length, 'members');
+        // Trigger existing render if it exists
+        if (typeof renderLeaderboard === 'function') renderLeaderboard(data.leaderboard);
+      }
+    }).catch(function(){});
+  }
+
+  // Load real challenges from API
+  function loadRealChallenges() {
+    if (!window.ATP) return;
+    window.ATP.challenges.list().then(function(data) {
+      if (!data.challenges || !data.challenges.length) return;
+      CHALLENGES = data.challenges.map(function(c) {
+        return {
+          id: c.id, icon: c.icon || '🏆', title: c.name,
+          desc: c.description || '', type: c.challenge_type || 'monthly',
+          metric: c.metric_type || 'Sessions', target: c.target_value || 10,
+          unit: c.unit || 'sessions', participants: c.participants_count || 0,
+          joined: c.my_progress !== undefined, done: c.my_progress || 0,
+        };
+      });
+      renderChallenges();
+      console.log('✅ Challenges:', CHALLENGES.length, 'from DB');
+    }).catch(function(){});
+  }
+
+  if (!window.ATP) return;
+  loadRealFeed();
+  loadRealChallenges();
+  window.ATP.init().then(function(member) {
+    if (!member) return;
+    // Sync to legacy auth state
+    if (typeof atpUser !== 'undefined' && atpUser === null) {
+      atpUser = {
+        firstName: member.first_name, lastName: member.last_name,
+        email: member.email, avatar: member.avatar_url ||
+          (member.first_name[0] + (member.last_name||'X')[0]).toUpperCase(),
+        joinedAt: member.joined_at, memberId: member.id,
+        memberNumber: member.member_number,
+        ambassador: member.is_ambassador, admin: member.is_admin,
+      };
+      if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
+    }
+    // Ambassador: show checkin link
+    if (member.is_ambassador && typeof checkAmbassadorRole === 'function') {
+      checkAmbassadorRole();
+    }
+    // Store ambassador flag for checkin page
+    if (member.is_ambassador) {
+      localStorage.setItem('atp:ambassador', 'true');
+    }
+  }).catch(function() {});
+})();
+
+</script>
+</body>
+</html>

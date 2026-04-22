@@ -1,0 +1,1618 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="atp.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ATP Store — Wear It. Share It. Let's Move Together | At The Park</title>
+<meta name="description" content="Shop the official At The Park collection. Tanks, tees and more. Secure checkout via Shopify.">
+<meta property="og:title" content="ATP Store | At The Park">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#7AC231;--green-dark:#5a9a1f;
+  --black:#0a0a0a;--dark:#111111;--dark2:#1a1a1a;--dark3:#222222;
+  --muted:#888888;--light:#aaaaaa;--white:#ffffff;
+  --ff-display:'Barlow Condensed',sans-serif;--ff-body:'DM Sans',sans-serif;
+  --nav-h:68px;--max:1320px;--radius:6px;--radius-lg:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--ff-body);background:var(--black);color:var(--white);overflow-x:hidden;-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-body)}
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;padding:0 40px;transition:background .3s,border-color .3s;border-bottom:1px solid transparent}
+nav.scrolled{background:rgba(10,10,10,.97);border-bottom-color:rgba(122,194,49,.18);backdrop-filter:blur(16px)}
+.nav-inner{width:100%;max-width:var(--max);margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.nav-logo img{height:32px;width:auto;display:block;}
+.nav-links{display:flex;align-items:center;gap:28px;list-style:none}
+.nav-links a{font-size:13px;font-weight:500;letter-spacing:.04em;color:var(--light);transition:color .2s}
+.nav-links a:hover,.nav-links a.active{color:var(--green)}
+.nav-actions{display:flex;align-items:center;gap:10px}
+.btn-ghost{font-size:13px;font-weight:600;color:var(--white);border:1px solid rgba(255,255,255,.2);padding:9px 20px;border-radius:var(--radius);background:transparent;transition:border-color .2s}
+.btn-ghost:hover{border-color:var(--white)}
+.btn-primary{font-size:13px;font-weight:700;background:var(--green);color:var(--white);padding:10px 22px;border-radius:var(--radius);border:none;transition:background .2s,transform .15s}
+.btn-primary:hover{background:var(--green-dark);transform:translateY(-1px)}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
+.hamburger span{display:block;width:22px;height:2px;background:var(--white);border-radius:2px}
+.cart-icon-btn{position:relative;display:flex;align-items:center;gap:8px;font-size:13px;font-weight:600;color:var(--white);border:1px solid rgba(255,255,255,.2);padding:9px 16px;border-radius:var(--radius);background:transparent;cursor:pointer;transition:border-color .2s}
+.cart-icon-btn:hover{border-color:var(--green)}
+.cart-count-badge{background:var(--green);color:var(--white);font-size:10px;font-weight:800;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:absolute;top:-7px;right:-7px}
+.page-hero{padding:calc(var(--nav-h) + 64px) 40px 60px;background:var(--dark2);border-bottom:1px solid rgba(255,255,255,.06);position:relative}
+.page-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--green)}
+.page-hero-inner{max-width:var(--max);margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:end}
+.page-hero-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.page-hero-label::before{content:'';display:block;width:20px;height:2px;background:var(--green)}
+.page-hero h1{font-family:var(--ff-display);font-size:clamp(44px,5vw,72px);font-weight:900;line-height:.92;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:16px}
+.page-hero h1 .acc{color:var(--green)}
+.page-hero-sub{font-size:15px;color:var(--light);line-height:1.65;font-weight:300;max-width:460px}
+.page-hero-stats{display:flex;gap:32px;flex-shrink:0}
+.ph-stat{text-align:right}.ph-stat-num{font-family:var(--ff-display);font-size:36px;font-weight:900;color:var(--green);line-height:1}
+.ph-stat-label{font-size:12px;color:var(--muted);margin-top:3px}
+.reveal{opacity:0;transform:translateY(22px);transition:opacity .6s,transform .6s}
+.reveal.visible{opacity:1;transform:translateY(0)}
+.store-wrap{padding:48px 40px 100px;max-width:var(--max);margin:0 auto}
+.status-bar{padding:14px 18px;border-radius:var(--radius);margin-bottom:20px;font-size:13px;line-height:1.7;display:none;gap:10px;align-items:flex-start}
+.status-bar.show{display:flex}
+.status-bar.ok{background:rgba(122,194,49,.1);border:1px solid rgba(122,194,49,.25);color:#a8e055}
+.status-bar.warn{background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.25);color:#fcd34d}
+.status-bar.err{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);color:#fca5a5}
+.status-bar.info{background:rgba(99,102,241,.1);border:1px solid rgba(99,102,241,.25);color:#c7d2fe}
+.points-bar{background:var(--dark2);border:1px solid rgba(255,255,255,.07);border-radius:var(--radius-lg);padding:22px 28px;margin-bottom:28px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.points-title{font-family:var(--ff-display);font-size:20px;font-weight:800;text-transform:uppercase;color:var(--white);margin-bottom:3px}
+.points-title span{color:var(--green)}.points-sub{font-size:13px;color:var(--muted)}
+.toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:22px;gap:12px;flex-wrap:wrap}
+.cat-pills{display:flex;gap:6px;flex-wrap:wrap}
+.cat-pill{font-size:12px;font-weight:600;padding:6px 16px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s}
+.cat-pill.active,.cat-pill:hover{border-color:var(--green);color:var(--green);background:rgba(122,194,49,.08)}
+.product-card{background:#111;border-radius:14px;overflow:hidden;border:1px solid rgba(255,255,255,.06);transition:transform .28s cubic-bezier(.25,.46,.45,.94),border-color .28s,box-shadow .28s;cursor:pointer;position:relative}
+.product-card:hover{transform:translateY(-7px);border-color:rgba(122,194,49,.4);box-shadow:0 20px 60px rgba(0,0,0,.5),0 0 0 1px rgba(122,194,49,.12)}
+
+/* Image zone */
+.product-img{aspect-ratio:3/4;background:#1a1a1a;position:relative;overflow:hidden}
+.product-img .img-primary{width:100%;height:100%;object-fit:cover;display:block;transition:transform .6s cubic-bezier(.25,.46,.45,.94),opacity .4s}
+.product-img .img-secondary{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .45s ease}
+.product-card:hover .img-primary{transform:scale(1.04)}
+.product-card:hover .img-secondary{opacity:1}
+.product-img-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:40px;background:#1a1a1a}
+
+/* Image dots */
+.img-dots{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);display:flex;gap:5px;z-index:3;opacity:0;transition:opacity .2s}
+.product-card:hover .img-dots{opacity:1}
+.img-dot{width:5px;height:5px;border-radius:50%;background:rgba(255,255,255,.35);transition:all .2s;cursor:pointer}
+.img-dot.active{background:#7AC231;width:16px;border-radius:3px}
+
+/* Badge */
+.product-badge{position:absolute;top:12px;left:12px;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:20px;z-index:3}
+.product-badge.new{background:#7AC231;color:#fff}
+.product-badge.hot{background:#ef4444;color:#fff}
+
+/* Wishlist */
+.wishlist-btn{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:rgba(10,10,10,.65);border:1px solid rgba(255,255,255,.12);color:rgba(255,255,255,.6);cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s,border-color .2s,color .2s;z-index:3}
+.product-card:hover .wishlist-btn{opacity:1}
+.wishlist-btn:hover{border-color:rgba(255,255,255,.4);color:#fff}
+.wishlist-btn.active{color:#ef4444;border-color:#ef4444;opacity:1}
+
+/* Quick-add panel slides up on hover */
+.quick-add-panel{position:absolute;bottom:0;left:0;right:0;padding:28px 14px 14px;background:linear-gradient(transparent,rgba(8,8,8,.96) 30%);transform:translateY(100%);transition:transform .32s cubic-bezier(.25,.46,.45,.94);z-index:4}
+.product-card:hover .quick-add-panel{transform:translateY(0)}
+.size-row{display:flex;gap:4px;justify-content:center;margin-bottom:9px;flex-wrap:wrap}
+.sz-btn{font-size:11px;font-weight:700;padding:5px 10px;border-radius:7px;border:1px solid rgba(255,255,255,.18);background:rgba(255,255,255,.04);color:rgba(255,255,255,.65);cursor:pointer;transition:all .15s;line-height:1}
+.sz-btn:hover,.sz-btn.sel{border-color:#7AC231;color:#7AC231;background:rgba(122,194,49,.1)}
+.sz-btn:disabled{opacity:.3;cursor:not-allowed;text-decoration:line-through}
+.quick-add-btn{width:100%;padding:10px;background:#7AC231;border:none;border-radius:9px;color:#fff;font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;transition:background .2s}
+.quick-add-btn:hover{background:#5a9a1f}
+
+/* Card body */
+.product-body{padding:14px 16px 16px}
+.product-name{font-size:13px;font-weight:700;color:#fff;line-height:1.3;margin-bottom:2px}
+.product-type{font-size:10px;color:#555;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px}
+.product-row{display:flex;align-items:center;justify-content:space-between}
+.product-price{font-family:var(--ff-display);font-size:20px;font-weight:900;color:#7AC231;line-height:1}
+.product-price-sub{font-size:11px;color:#444;margin-top:1px}
+.stock-pill{font-size:10px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:.04em}
+.stock-pill.in{background:rgba(122,194,49,.12);color:#7AC231;border:1px solid rgba(122,194,49,.2)}
+.stock-pill.out{background:rgba(100,100,100,.1);color:#555;border:1px solid rgba(100,100,100,.15)}
+.skeleton{background:linear-gradient(90deg,var(--dark3) 25%,#1e1e1e 50%,var(--dark3) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:var(--radius)}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+.skel-card{background:var(--dark2);border-radius:var(--radius-lg);overflow:hidden;border:1px solid rgba(255,255,255,.06)}
+.skel-img{aspect-ratio:3/4}.skel-body{padding:15px;display:flex;flex-direction:column;gap:8px}
+.skel-line{height:11px;border-radius:4px}
+/* Cart Drawer */
+.cart-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:400;opacity:0;pointer-events:none;transition:opacity .3s}
+.cart-backdrop.open{opacity:1;pointer-events:all}
+.cart-panel{position:fixed;top:0;right:0;bottom:0;width:400px;max-width:94vw;background:var(--dark2);border-left:1px solid rgba(255,255,255,.07);z-index:401;transform:translateX(100%);transition:transform .32s cubic-bezier(.4,0,.2,1);display:flex;flex-direction:column}
+.cart-panel.open{transform:translateX(0)}
+.cart-top{padding:24px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;flex-shrink:0}
+.cart-top h3{font-family:var(--ff-display);font-size:24px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+.cart-x{width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--muted);cursor:pointer;font-size:20px;display:flex;align-items:center;justify-content:center;transition:all .2s}
+.cart-x:hover{border-color:var(--white);color:var(--white)}
+.cart-body{flex:1;overflow-y:auto;padding:20px 24px}
+.cart-empty-msg{text-align:center;padding:60px 16px;color:var(--muted);font-size:14px;line-height:1.8}
+.cart-line{display:flex;gap:14px;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.05);align-items:flex-start}
+.cart-line-img{width:64px;height:64px;background:var(--dark3);border-radius:var(--radius);flex-shrink:0;overflow:hidden}
+.cart-line-img img{width:100%;height:100%;object-fit:cover;display:block}
+.cart-line-info{flex:1;min-width:0}
+.cart-line-name{font-size:13px;font-weight:600;color:var(--white);margin-bottom:2px}
+.cart-line-variant{font-size:11px;color:var(--muted);margin-bottom:4px}
+.cart-line-price{font-family:var(--ff-display);font-size:16px;font-weight:800;color:var(--green);margin-bottom:6px}
+.qty-row{display:flex;align-items:center;gap:8px}
+.qty-btn{width:24px;height:24px;border-radius:4px;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--white);font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:border-color .2s}
+.qty-btn:hover{border-color:var(--green);color:var(--green)}
+.qty-num{font-size:13px;font-weight:600;min-width:20px;text-align:center}
+.remove-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:18px;padding:4px;transition:color .2s;margin-left:auto;flex-shrink:0;align-self:center}
+.remove-btn:hover{color:#ef4444}
+.cart-foot{padding:20px 24px;border-top:1px solid rgba(255,255,255,.06);flex-shrink:0}
+.cart-total-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:5px}
+.cart-total-label{font-size:13px;color:var(--muted)}
+.cart-total-amt{font-family:var(--ff-display);font-size:28px;font-weight:900;color:var(--white)}
+.cart-ship-note{font-size:12px;color:var(--muted);margin-bottom:16px}
+.checkout-btn{width:100%;padding:15px;background:var(--green);color:var(--white);font-size:14px;font-weight:700;border:none;border-radius:var(--radius);cursor:pointer;letter-spacing:.04em;transition:background .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.checkout-btn:hover{background:var(--green-dark)}
+.checkout-btn:disabled{opacity:.5;cursor:not-allowed}
+.secure-note{font-size:11px;color:var(--muted);text-align:center;margin-top:10px;line-height:1.6}
+/* Product Detail Modal */
+.pdp-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(12px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s}
+.pdp-overlay.open{opacity:1;pointer-events:all}
+.pdp-modal{background:#111;border-radius:18px;width:100%;max-width:820px;border:1px solid rgba(255,255,255,.1);overflow:hidden;transform:translateY(24px) scale(.97);transition:transform .35s cubic-bezier(.25,.46,.45,.94);display:grid;grid-template-columns:1fr 1fr;max-height:92vh}
+.pdp-overlay.open .pdp-modal{transform:translateY(0) scale(1)}
+
+/* Gallery side */
+.pdp-gallery{display:flex;flex-direction:column;background:#0e0e0e;overflow:hidden}
+.pdp-main-img{flex:1;position:relative;overflow:hidden;min-height:360px}
+.pdp-main-img img{width:100%;height:100%;object-fit:cover;display:block;transition:opacity .3s}
+.pdp-close{position:absolute;top:12px;right:12px;width:32px;height:32px;border-radius:50%;background:rgba(10,10,10,.8);border:1px solid rgba(255,255,255,.15);color:#fff;cursor:pointer;font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;transition:background .2s;z-index:2}
+.pdp-close:hover{background:rgba(30,30,30,.95)}
+.pdp-thumbs{display:flex;gap:6px;padding:10px;background:#0a0a0a;overflow-x:auto}
+.pdp-thumbs::-webkit-scrollbar{height:3px}.pdp-thumbs::-webkit-scrollbar-thumb{background:#333}
+.pdp-thumb{width:52px;height:52px;flex-shrink:0;border-radius:7px;overflow:hidden;cursor:pointer;border:1.5px solid transparent;transition:border-color .2s;opacity:.55;transition:opacity .2s,border-color .2s}
+.pdp-thumb:hover{opacity:.85}
+.pdp-thumb.active{border-color:#7AC231;opacity:1}
+.pdp-thumb img{width:100%;height:100%;object-fit:cover;display:block}
+
+/* Info side */
+.pdp-body{padding:28px 30px;overflow-y:auto;display:flex;flex-direction:column;gap:0}
+.pdp-name{font-family:var(--ff-display);font-size:26px;font-weight:900;text-transform:uppercase;color:#fff;line-height:1;margin-bottom:4px}
+.pdp-type{font-size:11px;color:#555;letter-spacing:.08em;text-transform:uppercase;margin-bottom:18px}
+.pdp-price{font-family:var(--ff-display);font-size:34px;font-weight:900;color:#7AC231;margin-bottom:6px;line-height:1}
+.pdp-price-note{font-size:12px;color:#444;margin-bottom:18px}
+.pdp-desc{font-size:13px;color:#999;line-height:1.75;margin-bottom:22px}
+.pdp-label{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#555;margin-bottom:10px}
+.pdp-variants{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:22px}
+.pdp-v-btn{padding:8px 16px;border-radius:8px;border:1px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);color:#999;font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;letter-spacing:.03em}
+.pdp-v-btn:hover{border-color:rgba(122,194,49,.5);color:#7AC231;background:rgba(122,194,49,.06)}
+.pdp-v-btn.selected{border-color:#7AC231;background:rgba(122,194,49,.1);color:#7AC231}
+.pdp-v-btn:disabled{opacity:.25;cursor:not-allowed;text-decoration:line-through}
+.pdp-add-btn{width:100%;padding:15px;background:#7AC231;border:none;border-radius:10px;color:#fff;font-size:14px;font-weight:800;cursor:pointer;letter-spacing:.06em;text-transform:uppercase;transition:background .2s,transform .15s;margin-top:auto}
+.pdp-add-btn:hover{background:#5a9a1f;transform:translateY(-1px)}
+.pdp-add-btn:active{transform:translateY(0)}
+.pdp-share{display:flex;align-items:center;gap:8px;margin-top:14px;justify-content:center}
+.pdp-share-link{font-size:11px;color:#444;cursor:pointer;transition:color .2s}
+.pdp-share-link:hover{color:#7AC231}
+footer{background:var(--dark2);padding:64px 40px 32px;border-top:1px solid rgba(255,255,255,.06)}
+.footer-inner{max-width:var(--max);margin:0 auto}
+.footer-top{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:48px;margin-bottom:48px}
+.footer-tagline{font-size:13px;color:var(--muted);line-height:1.7;margin:12px 0 20px;max-width:220px;font-weight:300}
+.footer-socials{display:flex;gap:8px}
+.social-btn{width:34px;height:34px;border-radius:var(--radius);border:1px solid rgba(255,255,255,.12);display:flex;align-items:center;justify-content:center;color:var(--muted);transition:border-color .2s,color .2s;font-size:12px;text-decoration:none}
+.social-btn:hover{border-color:var(--green);color:var(--green)}
+.footer-col h4{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--white);margin-bottom:16px}
+.footer-col ul{list-style:none;display:flex;flex-direction:column;gap:9px}
+.footer-col ul li a{font-size:13px;color:var(--muted);transition:color .2s}
+.footer-col ul li a:hover{color:var(--green)}
+.footer-bottom{padding-top:22px;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px}
+.footer-copy{font-size:12px;color:var(--muted)}
+.footer-legal{display:flex;gap:18px}
+.footer-legal a{font-size:12px;color:var(--muted);transition:color .2s}
+.footer-legal a:hover{color:var(--white)}
+
+/* ══ AUTH MODAL ══════════════════════════════════════════════ */
+.auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(10px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s}
+.auth-overlay.open{opacity:1;pointer-events:all}
+.auth-modal{background:var(--dark2);border-radius:16px;padding:0;width:100%;max-width:440px;border:1px solid rgba(255,255,255,.1);position:relative;transform:translateY(28px) scale(.97);transition:transform .3s cubic-bezier(.4,0,.2,1);overflow:hidden}
+.auth-overlay.open .auth-modal{transform:translateY(0) scale(1)}
+.auth-modal-top{background:linear-gradient(135deg,rgba(122,194,49,.12) 0%,transparent 100%);padding:36px 36px 28px;border-bottom:1px solid rgba(255,255,255,.06)}
+.auth-modal-logo{height:28px;width:auto;display:block;margin-bottom:18px}
+.auth-modal-title{font-family:var(--ff-display);font-size:32px;font-weight:900;text-transform:uppercase;color:var(--white);line-height:1;margin-bottom:6px}
+.auth-modal-sub{font-size:13px;color:var(--muted);line-height:1.6}
+.auth-modal-body{padding:28px 36px 32px}
+.auth-close{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,.1);background:transparent;color:var(--muted);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .2s;line-height:1}
+.auth-close:hover{border-color:rgba(255,255,255,.3);color:var(--white)}
+
+/* Social buttons */
+.auth-social-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;padding:13px 20px;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;margin-bottom:10px;letter-spacing:.02em;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--white)}
+.auth-social-btn:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.25)}
+.auth-social-btn svg{flex-shrink:0}
+.auth-social-btn.google{background:rgba(255,255,255,.05)}
+.auth-social-btn.apple{background:rgba(255,255,255,.05)}
+
+/* Divider */
+.auth-divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08)}
+
+/* Form fields */
+.auth-field{margin-bottom:14px}
+.auth-field label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.auth-field input{width:100%;background:var(--dark3);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:13px 16px;color:var(--white);font-size:14px;font-family:var(--ff-body);transition:border-color .2s;outline:none}
+.auth-field input:focus{border-color:var(--green)}
+.auth-field input::placeholder{color:#444}
+.auth-field input.err{border-color:#ef4444}
+.auth-field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* Submit */
+.auth-submit{width:100%;padding:14px;background:var(--green);color:var(--white);font-size:15px;font-weight:700;border:none;border-radius:var(--radius);cursor:pointer;letter-spacing:.04em;margin-top:6px;transition:background .2s,transform .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.auth-submit:hover{background:var(--green-dark);transform:translateY(-1px)}
+.auth-submit:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* Toggle login/signup */
+.auth-toggle{text-align:center;margin-top:18px;font-size:13px;color:var(--muted)}
+.auth-toggle button{background:none;border:none;color:var(--green);font-weight:700;cursor:pointer;font-size:13px;padding:0;margin-left:4px}
+.auth-toggle button:hover{text-decoration:underline}
+
+/* Error */
+.auth-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#fca5a5;margin-bottom:14px;display:none}
+.auth-error.show{display:block}
+
+/* Success panel */
+.auth-success{text-align:center;padding:12px 0 4px}
+.auth-success-icon{width:64px;height:64px;border-radius:50%;background:rgba(122,194,49,.12);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px}
+.auth-success-title{font-family:var(--ff-display);font-size:30px;font-weight:900;text-transform:uppercase;color:var(--green);margin-bottom:6px}
+.auth-success-sub{font-size:14px;color:var(--light);line-height:1.7}
+
+/* ══ NAV AUTH STATE ══ */
+.nav-user{display:flex;align-items:center;gap:10px}
+.nav-avatar{width:32px;height:32px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:14px;font-weight:800;color:var(--white);cursor:pointer;flex-shrink:0;border:2px solid transparent;transition:border-color .2s}
+.nav-avatar:hover{border-color:var(--green)}
+.nav-user-name{font-size:13px;font-weight:600;color:var(--white);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-logout{font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;transition:color .2s}
+.nav-logout:hover{color:var(--white)}
+
+/* ══ MEMBER GATE (sessions) ══ */
+.member-gate{display:none;text-align:center;padding:12px 0}
+.member-gate-icon{font-size:36px;margin-bottom:12px}
+.member-gate-title{font-family:var(--ff-display);font-size:28px;font-weight:900;text-transform:uppercase;color:var(--white);margin-bottom:8px}
+.member-gate-sub{font-size:14px;color:var(--light);line-height:1.7;margin-bottom:24px}
+.member-gate-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+@media(max-width:1100px){.product-grid{grid-template-columns:repeat(3,1fr)}.pdp-modal{max-width:560px}}
+@media(max-width:900px){.nav-links{display:none}.hamburger{display:flex}.page-hero-inner{grid-template-columns:1fr}.page-hero-stats{display:none}.pdp-modal{grid-template-columns:1fr;max-width:400px}.pdp-img{display:none}}
+@media(max-width:768px){.product-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.product-grid{grid-template-columns:repeat(2,1fr);gap:10px}.store-wrap{padding:24px 16px 80px}.points-bar{flex-direction:column}.footer-top{grid-template-columns:1fr;gap:28px}}
+
+/* ── STORE HERO ──────────────────────────────────────────────*/
+.store-hero{padding:calc(var(--nav-h) + 0px) 0 0;background:#0a0a0a;overflow:hidden;position:relative}
+.store-hero::after{content:'';position:absolute;bottom:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(122,194,49,.3),transparent)}
+.store-hero-inner{max-width:1400px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;min-height:88vh;padding:0 0 0 60px}
+.store-hero-text{display:flex;flex-direction:column;justify-content:center;padding:60px 60px 60px 0;position:relative;z-index:2}
+/* Video */
+.store-hero-video-wrap{position:relative;overflow:hidden;background:#0e0e0e}
+.video-placeholder{position:absolute;inset:0;display:flex;align-items:stretch}
+.video-placeholder video{width:100%;height:100%;object-fit:cover;display:block;opacity:.9;flex:1}
+.video-overlay{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:space-between;padding:24px;pointer-events:none}
+.video-play-icon{align-self:center;margin-top:auto;margin-bottom:auto;opacity:.7}
+.video-badge{display:flex;align-items:center;gap:8px;align-self:flex-end;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);padding:7px 14px;border-radius:20px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.7)}
+.video-badge-dot{width:6px;height:6px;border-radius:50%;background:#7AC231;animation:blink 1.8s infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+.store-hero-eyebrow{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:#7AC231;margin-bottom:24px;display:flex;align-items:center;gap:10px}
+.store-hero-eyebrow::before{content:'';display:block;width:24px;height:1px;background:#7AC231}
+.store-hero-h1{font-family:var(--ff-display);font-size:clamp(72px,8vw,120px);font-weight:900;line-height:.88;text-transform:uppercase;letter-spacing:-.02em;color:#fff;margin-bottom:28px}
+.store-hero-h1 em{font-style:normal;color:#7AC231}
+.store-hero-sub{font-size:16px;color:#666;line-height:1.7;font-weight:300;max-width:380px;margin-bottom:36px}
+.store-hero-badges{display:flex;flex-wrap:wrap;gap:8px}
+.hero-badge{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:7px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.1);color:#888;background:rgba(255,255,255,.03)}
+
+/* hero image side */
+.store-hero-img-wrap{position:relative;overflow:hidden}
+.store-hero-img-main{position:absolute;inset:0;background-size:cover;background-position:center top;transition:opacity .6s}
+.store-hero-img-accent{position:absolute;bottom:40px;right:-20px;width:220px;height:280px;background-size:cover;background-position:center;border-radius:12px;border:2px solid rgba(122,194,49,.25);opacity:0;transition:opacity .8s .4s}
+.store-hero-img-accent.loaded{opacity:1}
+.store-hero-img-main.loaded{opacity:1}
+.store-hero-img-main{opacity:0}
+
+/* vertical ticker on hero */
+.store-hero-ticker-vert{position:absolute;left:-18px;top:0;bottom:0;width:36px;display:flex;flex-direction:column;justify-content:flex-start;overflow:hidden;pointer-events:none;writing-mode:vertical-rl;text-orientation:mixed}
+.store-hero-ticker-vert span{font-family:var(--ff-display);font-size:11px;font-weight:900;letter-spacing:.2em;color:rgba(255,255,255,.04);text-transform:uppercase;white-space:nowrap;padding:8px 0;animation:tickV 18s linear infinite}
+@keyframes tickV{0%{transform:translateY(0)}100%{transform:translateY(-50%)}}
+
+/* ── MARQUEE ──────────────────────────────────────────────── */
+.store-marquee-wrap{background:#7AC231;overflow:hidden;padding:12px 0;border-top:none}
+.store-marquee{display:flex;gap:0;white-space:nowrap;animation:marquee 28s linear infinite}
+.store-marquee span{font-family:var(--ff-display);font-size:13px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;color:#fff;padding:0 20px}
+.store-marquee .dot{color:rgba(255,255,255,.5);padding:0 4px}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* ── SHOP LAYOUT ─────────────────────────────────────────── */
+.shop-layout{display:grid;grid-template-columns:240px 1fr;max-width:1400px;margin:0 auto;padding:48px 60px 100px;gap:48px;align-items:start}
+
+/* Sidebar */
+.shop-sidebar{position:sticky;top:calc(var(--nav-h) + 24px);display:flex;flex-direction:column;gap:0}
+.sidebar-section{padding:0 0 28px;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:24px}
+.sidebar-section:last-of-type{border-bottom:none}
+.sidebar-title{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#555;margin-bottom:14px}
+.sidebar-filters{display:flex;flex-direction:column;gap:4px}
+.sf-btn{font-size:13px;font-weight:500;color:#666;background:transparent;border:none;padding:7px 12px;border-radius:8px;cursor:pointer;transition:all .18s;text-align:left;display:flex;align-items:center;gap:8px}
+.sf-btn::before{content:'';display:block;width:6px;height:6px;border-radius:50%;background:transparent;border:1px solid rgba(255,255,255,.2);flex-shrink:0;transition:all .18s}
+.sf-btn:hover{color:#ccc;background:rgba(255,255,255,.04)}
+.sf-btn.active{color:#fff;background:rgba(122,194,49,.08)}
+.sf-btn.active::before{background:#7AC231;border-color:#7AC231}
+.sidebar-divider{height:1px;background:rgba(255,255,255,.06);margin:4px 0 24px}
+.sidebar-promo{background:rgba(122,194,49,.06);border:1px solid rgba(122,194,49,.15);border-radius:12px;padding:18px}
+.sidebar-promo-label{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#7AC231;margin-bottom:8px}
+.sidebar-promo p{font-size:12px;color:#777;line-height:1.6;margin-bottom:14px}
+.sidebar-app-btn{display:block;font-size:12px;font-weight:700;color:#7AC231;text-decoration:none;transition:color .2s}
+.sidebar-app-btn:hover{color:#a8e055}
+
+/* Shop main */
+.shop-main{min-width:0}
+.shop-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:24px;padding-bottom:16px;border-bottom:1px solid rgba(255,255,255,.06)}
+.shop-count{font-size:13px;color:#555;font-weight:500}
+.shop-count span{color:#fff;font-weight:700}
+.shop-sort select{font-size:12px;font-weight:600;color:#999;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.1);padding:7px 12px;border-radius:8px;cursor:pointer;outline:none;font-family:var(--ff-body);transition:border-color .2s}
+.shop-sort select:hover{border-color:rgba(255,255,255,.2)}
+.shop-sort select option{background:#1a1a1a}
+
+/* Dynamic product grid */
+.product-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;grid-auto-rows:min-content}
+
+
+/* ── RESPONSIVE ───────────────────────────────────────────── */
+@media(max-width:1200px){.shop-layout{padding:40px 40px 80px}.store-hero-inner{padding:0 0 0 40px}.store-hero-h1{font-size:clamp(56px,7vw,96px)}}
+@media(max-width:1024px){.shop-layout{grid-template-columns:200px 1fr;gap:32px}.product-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){.store-hero-inner{grid-template-columns:1fr;padding:60px 24px}.store-hero-img-wrap{display:none}.shop-layout{grid-template-columns:1fr}.shop-sidebar{display:none}.nav-links{display:none}.hamburger{display:flex}}
+@media(max-width:640px){.shop-layout{padding:24px 16px 80px}.product-grid{grid-template-columns:repeat(2,1fr);gap:10px}.store-hero-h1{font-size:clamp(52px,12vw,80px)}}
+
+/* Parallax hero card */
+@keyframes heroFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+</style>
+<script src="atp-api.js"></script>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo" aria-label="At The Park">
+      <img id="nav-logo-img" alt="At The Park" style="height:32px;width:auto;display:block;">
+    </a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="sessions.html">Sessions</a></li>
+      <li><a href="community.html">Community</a></li>
+      <li><a href="profile.html">Profile</a></li>
+      <li><a href="store.html" class="active">Store</a></li>
+      <li><a href="index.html#partners">Partners</a></li>
+      <li><a href="index.html#story">About</a></li>
+    </ul>
+    <div class="nav-actions" id="navActions">
+      <button class="cart-icon-btn" onclick="openCart()" aria-label="Cart">
+        <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M1 1h2.5l2 9h8.5l1.5-6H5"/><circle cx="7.5" cy="15" r="1.3"/><circle cx="13" cy="15" r="1.3"/></svg>
+        Cart <span class="cart-count-badge" id="cartBadge" style="display:none">0</span>
+      </button>
+      <button class="btn-ghost" onclick="openAuth('login')">Log in</button>
+      <button class="btn-primary" onclick="openAuth('signup')">Join free →</button>
+    </div>
+    <div class="hamburger"><span></span><span></span><span></span></div>
+  </div>
+</nav>
+
+<main>
+  <!-- ── STORE HERO ──────────────────────────────────────────── -->
+<section class="store-hero">
+  <div class="store-hero-inner">
+    <div class="store-hero-text">
+      <span class="store-hero-eyebrow">ATP Collection 2026</span>
+      <h1 class="store-hero-h1">Wear it.<br><em>Share it.</em><br>Let's move<br>together.</h1>
+      <p class="store-hero-sub">Gear made for the community. Every purchase keeps the sessions free — forever.</p>
+      <div class="store-hero-badges">
+        <span class="hero-badge">Free delivery AED 150+</span>
+        <span class="hero-badge">Never Train Alone</span>
+      </div>
+    </div>
+    <div class="store-hero-video-wrap">
+      <div class="video-placeholder" id="videoBanner">
+        <video id="heroVideo" autoplay muted loop playsinline preload="auto">
+          <source src="hero-video.mp4" type="video/mp4">
+        </video>
+        <div class="video-overlay">
+          <div class="video-play-icon">
+            <svg width="28" height="28" viewBox="0 0 32 32" fill="none"><circle cx="16" cy="16" r="15" stroke="rgba(255,255,255,.4)" stroke-width="1.5"/><path d="M13 10.5l10 5.5-10 5.5V10.5z" fill="white"/></svg>
+          </div>
+          <div class="video-badge">
+            <span>Now Playing</span>
+            <span class="video-badge-dot"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── MARQUEE STRIP ────────────────────────────────────────── -->
+<div class="store-marquee-wrap">
+  <div class="store-marquee">
+    <span>FREE SESSIONS DAILY</span><span class="dot">·</span>
+    <span>7,000+ MEMBERS</span><span class="dot">·</span>
+    <span>DUBAI · AL AIN · MUSCAT</span><span class="dot">·</span>
+    <span>WEAR THE COMMUNITY</span><span class="dot">·</span>
+    <span>FREE DELIVERY AED 150+</span><span class="dot">·</span>
+    <span>FREE SESSIONS DAILY</span><span class="dot">·</span>
+    <span>7,000+ MEMBERS</span><span class="dot">·</span>
+    <span>DUBAI · AL AIN · MUSCAT</span><span class="dot">·</span>
+    <span>WEAR THE COMMUNITY</span><span class="dot">·</span>
+    <span>FREE DELIVERY AED 150+</span><span class="dot">·</span>
+  </div>
+</div>
+
+<!-- ── SHOP LAYOUT: sidebar + grid ──────────────────────────── -->
+<div class="shop-layout">
+
+  <!-- Sidebar filters -->
+  <aside class="shop-sidebar">
+    <div class="sidebar-section">
+      <h3 class="sidebar-title">Category</h3>
+      <div class="sidebar-filters" id="catPills">
+        <button class="sf-btn active" data-cat="all">All Products</button>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h3 class="sidebar-title">Gender</h3>
+      <div class="sidebar-filters" id="genderPills">
+        <button class="sf-btn active" data-gender="all">All</button>
+        <button class="sf-btn" data-gender="men">Men</button>
+        <button class="sf-btn" data-gender="women">Women</button>
+      </div>
+    </div>
+    <div class="sidebar-section">
+      <h3 class="sidebar-title">Availability</h3>
+      <div class="sidebar-filters">
+        <button class="sf-btn active" data-avail="all">All</button>
+        <button class="sf-btn" data-avail="instock">In Stock</button>
+      </div>
+    </div>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-promo">
+      <div class="sidebar-promo-label">ATP Points</div>
+      <p>Every session earns points. <strong style="color:#7AC231">280 pts = 10% off</strong> your next order.</p>
+      <a href="https://apps.apple.com/ae/app/attheparkworld/id6469771815" target="_blank" rel="noopener" class="sidebar-app-btn">Get the app →</a>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <div class="shop-main">
+    <div id="statusBar" class="status-bar"></div>
+
+    <!-- Toolbar -->
+    <div class="shop-toolbar">
+      <p class="shop-count"><span id="prodCountEl">—</span> products</p>
+      <div class="shop-sort">
+        <select id="sortSelect" onchange="sortProducts(this.value)">
+          <option value="default">Sort: Featured</option>
+          <option value="price-asc">Price: Low to High</option>
+          <option value="price-desc">Price: High to Low</option>
+          <option value="name-asc">Name: A–Z</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Product grid -->
+    <div class="product-grid" id="productGrid">
+<div class="skel-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line" style="width:70%"></div><div class="skeleton skel-line" style="width:45%"></div><div class="skeleton skel-line" style="width:55%;height:16px"></div></div></div><div class="skel-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line" style="width:70%"></div><div class="skeleton skel-line" style="width:45%"></div><div class="skeleton skel-line" style="width:55%;height:16px"></div></div></div><div class="skel-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line" style="width:70%"></div><div class="skeleton skel-line" style="width:45%"></div><div class="skeleton skel-line" style="width:55%;height:16px"></div></div></div><div class="skel-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line" style="width:70%"></div><div class="skeleton skel-line" style="width:45%"></div><div class="skeleton skel-line" style="width:55%;height:16px"></div></div></div><div class="skel-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line" style="width:70%"></div><div class="skeleton skel-line" style="width:45%"></div><div class="skeleton skel-line" style="width:55%;height:16px"></div></div></div><div class="skel-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line" style="width:70%"></div><div class="skeleton skel-line" style="width:45%"></div><div class="skeleton skel-line" style="width:55%;height:16px"></div></div></div><div class="skel-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line" style="width:70%"></div><div class="skeleton skel-line" style="width:45%"></div><div class="skeleton skel-line" style="width:55%;height:16px"></div></div></div><div class="skel-card"><div class="skeleton skel-img"></div><div class="skel-body"><div class="skeleton skel-line" style="width:70%"></div><div class="skeleton skel-line" style="width:45%"></div><div class="skeleton skel-line" style="width:55%;height:16px"></div></div></div>
+    </div>
+  </div>
+
+</div>
+</main>
+
+<!-- Cart Drawer -->
+<div class="cart-backdrop" id="cartBackdrop" onclick="closeCart()"></div>
+<div class="cart-panel" id="cartPanel" role="dialog" aria-label="Cart">
+  <div class="cart-top"><h3>Your Cart</h3><button class="cart-x" onclick="closeCart()">×</button></div>
+  <div class="cart-body" id="cartBody">
+    <div class="cart-empty-msg">Your cart is empty.<br>Add some gear and show up in style. 🎽</div>
+  </div>
+  <div class="cart-foot" id="cartFoot" style="display:none">
+    <div class="cart-total-row"><span class="cart-total-label">Subtotal</span><span class="cart-total-amt" id="cartTotalEl">AED 0</span></div>
+    <p class="cart-ship-note">Shipping at checkout · Free over AED 150</p>
+    <button class="checkout-btn" id="checkoutBtn" onclick="doCheckout()">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="12" height="9" rx="2"/><path d="M5 5V4a3 3 0 016 0v1"/></svg>
+      Checkout via Shopify
+    </button>
+    <p class="secure-note">Stripe · Apple Pay · Google Pay · Secure SSL</p>
+  </div>
+</div>
+
+<!-- Product Detail Modal -->
+<div class="pdp-overlay" id="pdpOverlay">
+  <div class="pdp-modal" id="pdpModal">
+    <div class="pdp-gallery">
+      <div class="pdp-main-img" id="pdpMainImg">
+        <button class="pdp-close" onclick="closePDP()">×</button>
+        <img id="pdpMainImgEl" src="" alt="">
+      </div>
+      <div class="pdp-thumbs" id="pdpThumbs"></div>
+    </div>
+    <div class="pdp-body">
+      <h2 class="pdp-name" id="pdpName"></h2>
+      <p class="pdp-type" id="pdpType"></p>
+      <div class="pdp-price" id="pdpPrice"></div>
+      <p class="pdp-price-note">Free delivery over AED 150</p>
+      <p class="pdp-desc" id="pdpDesc"></p>
+      <div class="pdp-label">Select size</div>
+      <div class="pdp-variants" id="pdpVariants"></div>
+      <button class="pdp-add-btn" id="pdpAddBtn" onclick="addFromPDP()">Add to Cart</button>
+      <div class="pdp-share">
+        <span class="pdp-share-link" onclick="navigator.share&&navigator.share({title:document.getElementById('pdpName').textContent,url:location.href})">Share →</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <div class="footer-inner">
+    <div class="footer-top">
+      <div>
+        <img id="footer-logo-img" alt="At The Park" style="height:26px;width:auto;display:block;margin-bottom:12px;">
+        <p class="footer-tagline">Free fitness for everyone. . Est. 2015.</p>
+        <div class="footer-socials">
+          <a class="social-btn" href="https://www.instagram.com/atthepark_uae" target="_blank" rel="noopener">ig</a>
+          <a class="social-btn" href="https://www.facebook.com/theparkuae/" target="_blank" rel="noopener">fb</a>
+          <a class="social-btn" href="https://api.whatsapp.com/send?phone=97156445177" target="_blank" rel="noopener">wa</a>
+        </div>
+      </div>
+      <div class="footer-col"><h4>Sessions</h4><ul>
+        <li><a href="sessions.html">All sessions</a></li>
+        <li><a href="sessions.html?tribe=better">Better tribe</a></li>
+        <li><a href="sessions.html?tribe=faster">Faster tribe</a></li>
+        <li><a href="sessions.html?tribe=stronger">Stronger tribe</a></li>
+      </ul></div>
+      <div class="footer-col"><h4>ATP</h4><ul>
+        <li><a href="index.html#story">Our story</a></li>
+        <li><a href="index.html#partners">Partner with us</a></li>
+        <li><a href="community.html">Community</a></li>
+        <li><a href="https://apps.apple.com/ae/app/attheparkworld/id6469771815" target="_blank" rel="noopener">Download app</a></li>
+      </ul></div>
+      <div class="footer-col"><h4>Support</h4><ul>
+        <li><a href="mailto:general@atthepark.world">Contact us</a></li>
+        <li><a href="tel:+971585792378">+971 58 579 2378</a></li>
+      </ul></div>
+    </div>
+    <div class="footer-bottom">
+      <p class="footer-copy">© 2026 At The Park. All rights reserved. Dubai, UAE.</p>
+      <nav class="footer-legal"><a href="#">Privacy</a><a href="#">Terms</a></nav>
+    </div>
+  </div>
+</footer>
+
+
+<!-- ══ AUTH MODAL ══════════════════════════════════════════ -->
+<div class="auth-overlay" id="authOverlay" role="dialog" aria-modal="true" aria-label="Sign in or join">
+  <div class="auth-modal" id="authModal">
+    <button class="auth-close" onclick="closeAuth()" aria-label="Close">×</button>
+
+    <div class="auth-modal-top">
+      <img class="auth-modal-logo" id="authLogo" alt="At The Park" style="height:28px;width:auto;display:block;margin-bottom:18px;">
+      <h2 class="auth-modal-title" id="authTitle">Join free</h2>
+      <p class="auth-modal-sub" id="authSub">Become an ATP member to book sessions, track your streak and connect with 7,000+ members.</p>
+    </div>
+
+    <div class="auth-modal-body">
+      <!-- ERROR -->
+      <div class="auth-error" id="authError"></div>
+
+      <!-- SOCIAL -->
+      <div id="authSocialPanel">
+        <button class="auth-social-btn google" onclick="authWithGoogle()">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/><path d="M3.964 10.707A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
+          Continue with Google
+        </button>
+        <button class="auth-social-btn apple" onclick="authWithApple()">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><path d="M13.23 9.26c-.02-2.01 1.64-2.98 1.71-3.03-.93-1.36-2.38-1.55-2.9-1.57-1.24-.13-2.42.73-3.05.73-.63 0-1.6-.71-2.63-.69-1.35.02-2.6.79-3.29 2-.4.69-.99 2.97-.07 5.58.65 1.89 1.67 2.99 2.47 3.04.8.05 1.4-.52 2.62-.52 1.22 0 1.78.52 2.62.5.83-.01 1.73-1.04 2.37-2.95.02-.01.08-.03.08-.03-.01 0-2.03-.78-2.05-3.06z"/><path d="M11.37 3.19c.63-.77 1.05-1.83.94-2.9-.9.04-2 .61-2.65 1.37-.58.67-1.09 1.74-.95 2.77 1 .08 2.03-.51 2.66-1.24z"/></svg>
+          Continue with Apple
+        </button>
+
+        <div class="auth-divider">or use email</div>
+      </div>
+
+      <!-- EMAIL FORM (signup) -->
+      <div id="authSignupForm">
+        <div class="auth-field-row">
+          <div class="auth-field">
+            <label for="authFirstName">First name</label>
+            <input type="text" id="authFirstName" placeholder="Fredy" autocomplete="given-name">
+          </div>
+          <div class="auth-field">
+            <label for="authLastName">Last name</label>
+            <input type="text" id="authLastName" placeholder="Martins" autocomplete="family-name">
+          </div>
+        </div>
+        <div class="auth-field">
+          <label for="authEmail">Email address</label>
+          <input type="email" id="authEmail" placeholder="you@email.com" autocomplete="email">
+        </div>
+        <div class="auth-field">
+          <label for="authPassword">Password</label>
+          <input type="password" id="authPassword" placeholder="Min. 8 characters" autocomplete="new-password">
+        </div>
+        <button class="auth-submit" id="authSubmitBtn" onclick="submitSignup()">
+          Become a member — it's free 🎉
+        </button>
+        <div class="auth-toggle">
+          Already a member?
+          <button onclick="switchToLogin()">Log in</button>
+        </div>
+      </div>
+
+      <!-- EMAIL FORM (login) -->
+      <div id="authLoginForm" style="display:none">
+        <div class="auth-field">
+          <label for="loginEmail">Email address</label>
+          <input type="email" id="loginEmail" placeholder="you@email.com" autocomplete="email">
+        </div>
+        <div class="auth-field">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password">
+        </div>
+        <button class="auth-submit" id="loginSubmitBtn" onclick="submitLogin()">
+          Log in →
+        </button>
+        <div class="auth-toggle">
+          Not a member yet?
+          <button onclick="switchToSignup()">Join free</button>
+        </div>
+      </div>
+
+      <!-- SUCCESS -->
+      <div id="authSuccessPanel" style="display:none" class="auth-success">
+        <div class="auth-success-icon">🎉</div>
+        <h3 class="auth-success-title" id="authSuccessTitle">Welcome!</h3>
+        <p class="auth-success-sub" id="authSuccessSub"></p>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ════════════════════════════════════════════════════════ -->
+
+<script>
+var LOGO_SRC = "https://raw.githubusercontent.com/AtTheParkWorld/ATP_World_Web/main/atthepark_assets02.png";
+(function(){
+  var n=document.getElementById("nav-logo-img"),
+      f=document.getElementById("footer-logo-img"),
+      a=document.getElementById("authLogo");
+  if(n){ n.src=LOGO_SRC; }
+  if(f){ f.src=LOGO_SRC; }
+  if(a){ a.src=LOGO_SRC; }
+})();
+// ── LOGO & NAV ───────────────────────────────────────────────
+var navEl = document.getElementById("nav");
+window.addEventListener("scroll", function(){ navEl.classList.toggle("scrolled", window.scrollY > 40); }, { passive:true });
+var revObs = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("visible"); revObs.unobserve(e.target); } }); }, { threshold:0.08 });
+document.querySelectorAll(".reveal").forEach(function(el){ revObs.observe(el); });
+
+// Auth logo
+
+// ── SHOPIFY CONFIG ───────────────────────────────────────────
+var SHOPIFY_TOKEN  = "31a1a5554b7f2fdaf2aa4dc44e13a127";
+var SHOPIFY_DOMAIN = "atp-store-7903.myshopify.com";
+
+// ── STATUS BAR ───────────────────────────────────────────────
+function showStatus(type, html) {
+  var bar = document.getElementById("statusBar");
+  if (!bar) return;
+  bar.className = "status-bar show " + type;
+  bar.innerHTML = html;
+}
+function hideStatus() {
+  var bar = document.getElementById("statusBar");
+  if (bar) bar.className = "status-bar";
+}
+
+// ── SHOPIFY API ──────────────────────────────────────────────
+async function shopifyQuery(query) {
+  var url = "https://" + SHOPIFY_DOMAIN + "/api/2025-01/graphql.json";
+  var res;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Storefront-Access-Token": SHOPIFY_TOKEN,
+        "Accept": "application/json"
+      },
+      body: JSON.stringify({ query: query })
+    });
+  } catch(networkErr) {
+    throw new Error("Network error — " + networkErr.message + ". Check: (1) Store password off, (2) Headless channel enabled.");
+  }
+  if (!res.ok) {
+    var body = "";
+    try { body = await res.text(); } catch(e){}
+    throw new Error("HTTP " + res.status + " " + res.statusText + (body ? " — " + body.substring(0, 200) : ""));
+  }
+  var json;
+  try { json = await res.json(); } catch(e) {
+    throw new Error("Invalid JSON response from Shopify");
+  }
+  if (json.errors && json.errors.length) {
+    throw new Error(json.errors.map(function(e){ return e.message; }).join("; "));
+  }
+  if (!json.data) {
+    throw new Error("Empty data in response: " + JSON.stringify(json).substring(0, 200));
+  }
+  return json.data;
+}
+
+// ── LOAD PRODUCTS ────────────────────────────────────────────
+var allProducts = [];
+
+// ── HERO IMAGES (populate from first 2 loaded products) ──────
+function populateHero(products) {
+  if (!products.length) return;
+  var main   = document.getElementById("heroImgMain");
+  var accent = document.getElementById("heroImgAccent");
+  if (!main && !accent) return; // elements removed from DOM - skip silently
+  var p0 = products[0];
+  var p1 = products[Math.min(2, products.length-1)];
+  var img0 = p0.images.edges[0] ? p0.images.edges[0].node.url : "";
+  var img1 = p1.images.edges[0] ? p1.images.edges[0].node.url : "";
+  if (main && img0) { main.style.backgroundImage = "url('" + img0 + "')"; main.classList.add("loaded"); }
+  if (accent && img1) { accent.style.backgroundImage = "url('" + img1 + "')"; accent.classList.add("loaded"); }
+}
+
+// ── SIDEBAR CATEGORY FILTER ───────────────────────────────────
+function buildCatPills(products) {
+  var types = new Set();
+  products.forEach(function(p) { if(p.productType) types.add(p.productType); });
+
+  var container = document.getElementById("catPills");
+  container.innerHTML = '<button class="sf-btn active" data-cat="all">All Products</button>';
+  types.forEach(function(t) {
+    var btn = document.createElement("button");
+    btn.className = "sf-btn";
+    btn.dataset.cat = t;
+    btn.textContent = t;
+    container.appendChild(btn);
+  });
+
+  container.addEventListener("click", function(e) {
+    var btn = e.target.closest(".sf-btn");
+    if (!btn) return;
+    container.querySelectorAll(".sf-btn").forEach(function(b) { b.classList.remove("active"); });
+    btn.classList.add("active");
+    filterAndRender();
+  });
+
+  // Availability filter
+  var availBtns = document.querySelectorAll("[data-avail]");
+  availBtns.forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      availBtns.forEach(function(b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      filterAndRender();
+    });
+  });
+
+  // Gender filter
+  var genderBtns = document.querySelectorAll("[data-gender]");
+  genderBtns.forEach(function(btn) {
+    btn.addEventListener("click", function() {
+      genderBtns.forEach(function(b) { b.classList.remove("active"); });
+      btn.classList.add("active");
+      filterAndRender();
+    });
+  });
+}
+
+function filterAndRender() {
+  var catEl    = document.querySelector(".sf-btn.active[data-cat]");
+  var availEl  = document.querySelector(".sf-btn.active[data-avail]");
+  var genderEl = document.querySelector(".sf-btn.active[data-gender]");
+  var sortEl   = document.getElementById("sortSelect");
+
+  var cat    = catEl    ? catEl.dataset.cat       : "all";
+  var avail  = availEl  ? availEl.dataset.avail   : "all";
+  var gender = genderEl ? genderEl.dataset.gender : "all";
+  var sort   = sortEl   ? sortEl.value            : "default";
+
+  var filtered = allProducts.filter(function(p) {
+    var catOk    = cat === "all" || p.productType === cat;
+    var availOk  = avail === "all" || p.variants.edges.some(function(e){ return e.node.availableForSale; });
+    // Gender: match by product title containing Men/Women or tags
+    var genderOk = gender === "all";
+    if (!genderOk) {
+      var titleLower = p.title.toLowerCase();
+      var tagsLower  = (p.tags || []).map(function(t){ return t.toLowerCase(); });
+      if (gender === "men") {
+        genderOk = titleLower.includes("men") && !titleLower.includes("women") ||
+                   tagsLower.includes("men") && !tagsLower.includes("women") ||
+                   titleLower.includes("(men)");
+      } else if (gender === "women") {
+        genderOk = titleLower.includes("women") || tagsLower.includes("women") ||
+                   titleLower.includes("(women)");
+      }
+    }
+    return catOk && availOk && genderOk;
+  });
+
+  // Sort
+  var sorted = filtered.slice();
+  if (sort === "price-asc")  sorted.sort(function(a,b){ return parseFloat(a.priceRange.minVariantPrice.amount) - parseFloat(b.priceRange.minVariantPrice.amount); });
+  if (sort === "price-desc") sorted.sort(function(a,b){ return parseFloat(b.priceRange.minVariantPrice.amount) - parseFloat(a.priceRange.minVariantPrice.amount); });
+  if (sort === "name-asc")   sorted.sort(function(a,b){ return a.title.localeCompare(b.title); });
+
+  document.getElementById("prodCountEl").textContent = sorted.length;
+  renderGrid(sorted);
+}
+
+function sortProducts(val) { filterAndRender(); }
+
+var selectedVariant = null;
+
+async function loadProducts() {
+  showStatus("info", "Loading your products…");
+
+  var gql = [
+    "{ products(first: 24) {",
+    "  edges { node {",
+    "    id title description productType tags",
+    "    priceRange { minVariantPrice { amount currencyCode } }",
+    "    images(first: 5) { edges { node { url altText } } }",
+    "    variants(first: 20) {",
+    "      edges { node {",
+    "        id title availableForSale",
+    "        price { amount currencyCode }",
+    "        selectedOptions { name value }",
+    "      } }",
+    "    }",
+    "  } }",
+    "} }"
+  ].join(" ");
+
+  try {
+    var data = await shopifyQuery(gql);
+    allProducts = data.products.edges.map(function(e) { return e.node; });
+
+    if (!allProducts.length) {
+      showStatus("warn",
+        "No products found. Make sure each product is <strong>Active</strong> and published to the <strong>Headless</strong> sales channel in Shopify." +
+        " <a href='https://admin.shopify.com/store/atp-store-7903/products' target='_blank' style='color:inherit;text-decoration:underline'>Open Shopify →</a>"
+      );
+      renderGrid(allProducts);
+      return;
+    }
+
+    hideStatus();
+    document.getElementById("prodCountEl").textContent = allProducts.length;
+    buildCatPills(allProducts);
+    renderGrid(allProducts);
+    populateHero(allProducts);
+
+  } catch (err) {
+    console.error("Shopify error:", err);
+    var msg = err.message || String(err);
+    var hint = "";
+    if (msg.includes("401") || msg.includes("403")) {
+      hint = " Token may be invalid. <a href='https://admin.shopify.com/store/atp-store-7903/headless' target='_blank' style='color:inherit;text-decoration:underline'>Check Headless token →</a>";
+    } else if (msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("Load failed")) {
+      hint = " Network blocked. Check if store password is on. <a href='https://admin.shopify.com/store/atp-store-7903/online_store/preferences' target='_blank' style='color:inherit;text-decoration:underline'>Check preferences →</a>";
+    } else if (msg.includes("CORS")) {
+      hint = " CORS error — token may not have Storefront API permission.";
+    }
+    showStatus("err", "Could not load products: " + msg + hint);
+    // Show skeleton cards so layout doesn't break
+    document.getElementById("prodCountEl").textContent = "—";
+  }
+}
+
+// ── CATEGORY  ──────────────────────────────────────────
+function buildCatPills(products) {
+  var types = new Set();
+  products.forEach(function(p) { if(p.productType) types.add(p.productType); });
+
+  var container = document.getElementById("catPills");
+  container.innerHTML = '<button class="cat-pill active" data-cat="all">All</button>';
+  types.forEach(function(t) {
+    var btn = document.createElement("button");
+    btn.className = "cat-pill";
+    btn.dataset.cat = t;
+    btn.textContent = t;
+    container.appendChild(btn);
+  });
+
+  container.addEventListener("click", function(e) {
+    var btn = e.target.closest(".cat-pill");
+    if (!btn) return;
+    container.querySelectorAll(".cat-pill").forEach(function(b) { b.classList.remove("active"); });
+    btn.classList.add("active");
+    var cat = btn.dataset.cat;
+    document.querySelectorAll(".product-card").forEach(function(c) {
+      c.style.display = (cat === "all" || c.dataset.type === cat) ? "" : "none";
+    });
+  });
+}
+
+// ── RENDER PRODUCTS ──────────────────────────────────────────
+function renderGrid(products) {
+  var grid = document.getElementById("productGrid");
+  grid.innerHTML = "";
+  if (!products.length) return;
+
+  products.forEach(function(p) {
+    var imgs = p.images.edges.map(function(e){ return e.node.url; });
+    var img0 = imgs[0] || "";
+    var img1 = imgs[1] || "";
+    var imgAlt = (p.images.edges[0] && p.images.edges[0].node.altText) || p.title;
+    var price  = parseFloat(p.priceRange.minVariantPrice.amount);
+    var cur    = p.priceRange.minVariantPrice.currencyCode;
+
+    // Gather sizes from variants
+    var sizes = [];
+    var variantMap = {};
+    p.variants.edges.forEach(function(e) {
+      var v = e.node;
+      var size = v.title;
+      // If selectedOptions has Size, use that
+      v.selectedOptions && v.selectedOptions.forEach(function(o){
+        if(o.name.toLowerCase() === 'size') size = o.value;
+      });
+      sizes.push({ label: size, id: v.id, available: v.availableForSale, price: parseFloat(v.price.amount) });
+      variantMap[v.id] = v;
+    });
+
+    var firstAvailable = sizes.find(function(s){ return s.available; });
+    var inStock = !!firstAvailable;
+
+    // Badge
+    var isNew = p.tags && p.tags.some(function(t){ return t.toLowerCase()==='new'; });
+    var badgeHtml = isNew ? '<span class="product-badge new">New</span>' : '';
+
+    // Size buttons
+    var sizeHtml = sizes.map(function(s,i){
+      var isFirst = s === firstAvailable;
+      return '<button class="sz-btn' + (isFirst?' sel':'') + '"'
+        + (s.available ? '' : ' disabled')
+        + ' data-vid="' + s.id + '" data-price="' + s.price + '" data-size="' + s.label + '">'
+        + s.label + '</button>';
+    }).join('');
+
+    // Image dots (only if multiple images)
+    var dotsHtml = imgs.length > 1
+      ? '<div class="img-dots">' + imgs.slice(0,4).map(function(_,i){
+          return '<div class="img-dot' + (i===0?' active':'') + '" data-idx="'+i+'"></div>';
+        }).join('') + '</div>'
+      : '';
+
+    var card = document.createElement('article');
+    card.className = 'product-card reveal';
+    card.dataset.type = p.productType || '';
+    card.dataset.pid = p.id;
+
+    // Store all image URLs on card for dot switching
+    card.dataset.imgs = JSON.stringify(imgs);
+
+    card.innerHTML =
+      '<div class="product-img">' +
+        badgeHtml +
+        '<button class="wishlist-btn" data-pid="' + p.id + '" aria-label="Save" onclick="event.stopPropagation();toggleWish(this)">' +
+          '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 13.5S1.5 9.5 1.5 5.5a3 3 0 015-2.2A3 3 0 0114.5 5.5c0 4-6.5 8-6.5 8z"/></svg>' +
+        '</button>' +
+        (img0 ? '<img class="img-primary" src="' + img0 + '" alt="' + imgAlt + '" loading="lazy">' : '<div class="product-img-ph">🎽</div>') +
+        (img1 ? '<img class="img-secondary" src="' + img1 + '" alt="' + imgAlt + ' alternate view">' : '') +
+        dotsHtml +
+        (inStock ?
+          '<div class="quick-add-panel">' +
+            '<div class="size-row">' + sizeHtml + '</div>' +
+            '<button class="quick-add-btn" onclick="event.stopPropagation();quickAdd(this)">Add to Cart</button>' +
+          '</div>'
+        : '') +
+      '</div>' +
+      '<div class="product-body">' +
+        '<div class="product-name">' + p.title + '</div>' +
+        '<div class="product-type">' + (p.productType||'') + '</div>' +
+        '<div class="product-row">' +
+          '<div>' +
+            '<div class="product-price">' + cur + ' ' + price.toFixed(0) + '</div>' +
+          '</div>' +
+          '<span class="stock-pill ' + (inStock?'in':'out') + '">' + (inStock?'In stock':'Sold out') + '</span>' +
+        '</div>' +
+      '</div>';
+
+    // Size button selection within card
+    card.querySelectorAll('.sz-btn').forEach(function(btn) {
+      btn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        card.querySelectorAll('.sz-btn').forEach(function(b){ b.classList.remove('sel'); });
+        btn.classList.add('sel');
+      });
+    });
+
+    // Image dot switching
+    card.querySelectorAll('.img-dot').forEach(function(dot) {
+      dot.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var idx = parseInt(dot.dataset.idx);
+        var imageList = JSON.parse(card.dataset.imgs);
+        var primaryEl = card.querySelector('.img-primary');
+        var secEl     = card.querySelector('.img-secondary');
+        if (primaryEl && imageList[idx]) {
+          primaryEl.src = imageList[0];
+          if (secEl) secEl.src = imageList[idx] || imageList[1] || '';
+        }
+        card.querySelectorAll('.img-dot').forEach(function(d){ d.classList.remove('active'); });
+        dot.classList.add('active');
+      });
+    });
+
+    // Click on card → open PDP
+    card.addEventListener('click', function() { openPDP(p); });
+
+    grid.appendChild(card);
+  });
+
+  document.querySelectorAll('.product-card.reveal').forEach(function(el){ revObs.observe(el); });
+}
+
+// Quick add from card hover panel (skips PDP, uses selected size)
+function quickAdd(btn) {
+  var card = btn.closest('.product-card');
+  var sel  = card.querySelector('.sz-btn.sel');
+  if (!sel) { openPDP(allProducts.find(function(p){ return p.id === card.dataset.pid; })); return; }
+  var vid   = sel.dataset.vid;
+  var size  = sel.dataset.size;
+  var price = parseFloat(sel.dataset.price);
+  var pid   = card.dataset.pid;
+  var prod  = allProducts.find(function(p){ return p.id === pid; });
+  if (!prod) return;
+  var img = prod.images.edges[0] ? prod.images.edges[0].node.url : '';
+  var cur = prod.priceRange.minVariantPrice.currencyCode;
+  addToCart(vid, prod.title, size, cur + ' ' + price.toFixed(0), price, img);
+  // Flash button
+  var orig = btn.textContent;
+  btn.textContent = '✓ Added!';
+  btn.style.background = '#2d6010';
+  setTimeout(function(){ btn.textContent = orig; btn.style.background = ''; }, 1600);
+}
+
+// Wishlist toggle (local only, no backend)
+var wishlist = {};
+function toggleWish(btn) {
+  var pid = btn.dataset.pid;
+  wishlist[pid] = !wishlist[pid];
+  btn.classList.toggle('active', !!wishlist[pid]);
+  btn.querySelector('svg').style.fill = wishlist[pid] ? '#ef4444' : 'none';
+}
+// ── PRODUCT DETAIL MODAL ─────────────────────────────────────
+var pdpProduct = null;
+
+function openPDP(product) {
+  pdpProduct = product;
+  selectedVariant = null;
+
+  var imgs    = product.images.edges.map(function(e){ return { url: e.node.url, alt: e.node.altText || product.title }; });
+  var price   = parseFloat(product.priceRange.minVariantPrice.amount);
+  var cur     = product.priceRange.minVariantPrice.currencyCode;
+
+  // Main image
+  var mainImg = document.getElementById("pdpMainImgEl");
+  if (imgs[0]) { mainImg.src = imgs[0].url; mainImg.alt = imgs[0].alt; }
+  else { mainImg.src = ""; mainImg.alt = ""; }
+
+  // Thumbnail strip
+  var thumbsEl = document.getElementById("pdpThumbs");
+  thumbsEl.innerHTML = "";
+  imgs.forEach(function(img, i) {
+    var div = document.createElement("div");
+    div.className = "pdp-thumb" + (i===0?" active":"");
+    div.innerHTML = '<img src="' + img.url + '" alt="' + img.alt + ' view ' + (i+1) + '">';
+    div.addEventListener("click", function() {
+      mainImg.style.opacity = "0";
+      setTimeout(function(){ mainImg.src = img.url; mainImg.alt = img.alt; mainImg.style.opacity = "1"; }, 150);
+      thumbsEl.querySelectorAll(".pdp-thumb").forEach(function(t){ t.classList.remove("active"); });
+      div.classList.add("active");
+    });
+    thumbsEl.appendChild(div);
+  });
+
+  document.getElementById("pdpName").textContent = product.title;
+  document.getElementById("pdpType").textContent = product.productType || "";
+  document.getElementById("pdpPrice").textContent = cur + " " + price.toFixed(0);
+  document.getElementById("pdpDesc").textContent = product.description || "Premium ATP performance gear built for the community.";
+
+  // Variants / sizes
+  var varContainer = document.getElementById("pdpVariants");
+  varContainer.innerHTML = "";
+  product.variants.edges.forEach(function(e) {
+    var v = e.node;
+    var label = v.title;
+    v.selectedOptions && v.selectedOptions.forEach(function(o){
+      if(o.name.toLowerCase()==="size") label = o.value;
+    });
+    var btn = document.createElement("button");
+    btn.className = "pdp-v-btn";
+    btn.textContent = label;
+    if (!v.availableForSale) { btn.disabled = true; }
+    btn.addEventListener("click", function() {
+      varContainer.querySelectorAll(".pdp-v-btn").forEach(function(b){ b.classList.remove("selected"); });
+      btn.classList.add("selected");
+      selectedVariant = v;
+      document.getElementById("pdpPrice").textContent = cur + " " + parseFloat(v.price.amount).toFixed(0);
+    });
+    varContainer.appendChild(btn);
+  });
+
+  // Auto-select first available variant
+  var firstAvailBtn = varContainer.querySelector(".pdp-v-btn:not(:disabled)");
+  if (firstAvailBtn) firstAvailBtn.click();
+
+  document.getElementById("pdpOverlay").classList.add("open");
+  document.body.style.overflow = "hidden";
+}
+
+function closePDP() {
+  document.getElementById("pdpOverlay").classList.remove("open");
+  document.body.style.overflow = "";
+}
+
+function addFromPDP() {
+  if (!pdpProduct || !selectedVariant) return;
+  var price = parseFloat(selectedVariant.price.amount);
+  var cur   = selectedVariant.price.currencyCode;
+  var img   = pdpProduct.images.edges[0] ? pdpProduct.images.edges[0].node.url : "";
+  addToCart(
+    selectedVariant.id,
+    pdpProduct.title,
+    selectedVariant.title,
+    cur + " " + price.toFixed(0),
+    price,
+    img
+  );
+  closePDP();
+}
+
+document.getElementById("pdpOverlay").addEventListener("click", function(e) {
+  if (e.target === this) closePDP();
+});
+
+// ── CART ─────────────────────────────────────────────────────
+var cartItems = [];
+
+function addToCart(variantId, productTitle, variantTitle, priceStr, priceNum, imgUrl) {
+  var key = variantId;
+  var ex = cartItems.find(function(i) { return i.key === key; });
+  if (ex) { ex.qty++; }
+  else { cartItems.push({ key:key, variantId:variantId, title:productTitle, variant:variantTitle, price:priceStr, priceNum:priceNum, imgUrl:imgUrl, qty:1 }); }
+  refreshCart();
+  openCart();
+}
+
+function removeItem(idx) { cartItems.splice(idx, 1); refreshCart(); }
+function changeQty(idx, d) {
+  cartItems[idx].qty += d;
+  if (cartItems[idx].qty < 1) cartItems.splice(idx, 1);
+  refreshCart();
+}
+
+function refreshCart() {
+  var total = cartItems.reduce(function(s, i) { return s + i.priceNum * i.qty; }, 0);
+  var count = cartItems.reduce(function(s, i) { return s + i.qty; }, 0);
+  var badge = document.getElementById("cartBadge");
+  badge.textContent = count;
+  badge.style.display = count > 0 ? "flex" : "none";
+
+  var body = document.getElementById("cartBody");
+  var foot = document.getElementById("cartFoot");
+
+  if (!cartItems.length) {
+    body.innerHTML = '<div class="cart-empty-msg">Your cart is empty.<br>Add some gear and show up in style. 🎽</div>';
+    foot.style.display = "none";
+  } else {
+    body.innerHTML = cartItems.map(function(item, i) {
+      return '<div class="cart-line">' +
+        '<div class="cart-line-img">' +
+          (item.imgUrl ? '<img src="' + item.imgUrl + '" alt="' + item.title + '">' : '') +
+        '</div>' +
+        '<div class="cart-line-info">' +
+          '<div class="cart-line-name">' + item.title + '</div>' +
+          '<div class="cart-line-variant">' + item.variant + '</div>' +
+          '<div class="cart-line-price">' + item.price + '</div>' +
+          '<div class="qty-row">' +
+            '<button class="qty-btn" onclick="changeQty(' + i + ',-1)">−</button>' +
+            '<span class="qty-num">' + item.qty + '</span>' +
+            '<button class="qty-btn" onclick="changeQty(' + i + ',+1)">+</button>' +
+          '</div>' +
+        '</div>' +
+        '<button class="remove-btn" onclick="removeItem(' + i + ')" aria-label="Remove">×</button>' +
+      '</div>';
+    }).join("");
+    document.getElementById("cartTotalEl").textContent = "AED " + total.toFixed(0);
+    foot.style.display = "block";
+  }
+}
+
+function openCart()  { document.getElementById("cartBackdrop").classList.add("open"); document.getElementById("cartPanel").classList.add("open"); document.body.style.overflow = "hidden"; }
+function closeCart() { document.getElementById("cartBackdrop").classList.remove("open"); document.getElementById("cartPanel").classList.remove("open"); document.body.style.overflow = ""; }
+
+// ── CHECKOUT ─────────────────────────────────────────────────
+async function doCheckout() {
+  if (!cartItems.length) return;
+  var btn = document.getElementById("checkoutBtn");
+  btn.disabled = true; btn.textContent = "Creating checkout…";
+  var mutation = [
+    "mutation {",
+    "  checkoutCreate(input: {",
+    "    lineItems: [" +
+      cartItems.map(function(i) {
+        return '{ variantId: "' + i.variantId + '", quantity: ' + i.qty + " }";
+      }).join(", ") +
+    "]",
+    "  }) {",
+    "    checkout { id webUrl }",
+    "    checkoutUserErrors { field message }",
+    "  }",
+    "}"
+  ].join(" ");
+
+  try {
+    var data = await shopifyQuery(mutation);
+    var result = data.checkoutCreate;
+    if (result.checkout && result.checkout.webUrl) {
+      window.location.href = result.checkout.webUrl;
+    } else {
+      var errs = result.checkoutUserErrors;
+      throw new Error(errs && errs.length ? errs[0].message : "Checkout failed");
+    }
+  } catch(err) {
+    showStatus("err", "Checkout error: " + err.message);
+    btn.disabled = false;
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="12" height="9" rx="2"/><path d="M5 5V4a3 3 0 016 0v1"/></svg> Checkout via Shopify';
+  }
+}
+
+document.addEventListener("keydown", function(e) { if(e.key === "Escape") { closeCart(); closePDP(); } });
+
+// ── AUTH ────────────────────────────────────────────────────
+
+// ══════════════════════════════════════════════════════════════
+// ATP AUTH ENGINE
+// Uses localStorage to persist session. Swap the mock functions
+// for real Firebase / Supabase calls when ready.
+// ══════════════════════════════════════════════════════════════
+
+var ATP_USER_KEY = 'atp:user';
+var atpUser = null; // { firstName, lastName, email, avatar, joinedAt }
+
+// ── Persistence ──────────────────────────────────────────────
+function authLoadUser() {
+  try {
+    var raw = localStorage.getItem(ATP_USER_KEY);
+    if(raw) atpUser = JSON.parse(raw);
+  } catch(e) { atpUser = null; }
+}
+function authSaveUser(user) {
+  atpUser = user;
+  try { localStorage.setItem(ATP_USER_KEY, JSON.stringify(user)); } catch(e){}
+}
+function authClearUser() {
+  atpUser = null;
+  try { localStorage.removeItem(ATP_USER_KEY); } catch(e){}
+}
+
+// ── Modal open/close ─────────────────────────────────────────
+function openAuth(mode) {
+  if(atpUser) return; // already signed in
+  mode = mode || 'signup';
+  if(mode === 'login') { switchToLogin(); } else { switchToSignup(); }
+  document.getElementById('authError').classList.remove('show');
+  document.getElementById('authSuccessPanel').style.display = 'none';
+  document.getElementById('authSignupForm').style.display = '';
+  document.getElementById('authLoginForm').style.display  = 'none';
+  document.getElementById('authSocialPanel').style.display = '';
+  document.getElementById('authOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Set logo
+  var logo = document.getElementById('authLogo');
+  if(logo && typeof LOGO_SRC !== 'undefined') logo.src = LOGO_SRC;
+
+  // Focus first input
+  setTimeout(function(){
+    var first = document.getElementById(mode === 'login' ? 'loginEmail' : 'authFirstName');
+    if(first) first.focus();
+  }, 300);
+}
+function closeAuth() {
+  document.getElementById('authOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+  // If a booking was waiting, resume it
+  if(atpUser && typeof pendingSession !== 'undefined' && pendingSession) {
+    var s = pendingSession; pendingSession = null;
+    openModal(s.name,s.tribe,s.dayTime,s.coach,s.loc,s.desc,s.day,s.time);
+  }
+}
+
+function switchToLogin() {
+  document.getElementById('authTitle').textContent = 'Welcome back';
+  document.getElementById('authSub').textContent   = 'Log in to your ATP account to book sessions.';
+  document.getElementById('authSignupForm').style.display = 'none';
+  document.getElementById('authLoginForm').style.display  = '';
+  document.getElementById('authSuccessPanel').style.display = 'none';
+  document.getElementById('authError').classList.remove('show');
+}
+function switchToSignup() {
+  document.getElementById('authTitle').textContent = 'Join free';
+  document.getElementById('authSub').textContent   = 'Become an ATP member to book sessions, track your streak and connect with 7,000+ members.';
+  document.getElementById('authSignupForm').style.display = '';
+  document.getElementById('authLoginForm').style.display  = 'none';
+  document.getElementById('authSuccessPanel').style.display = 'none';
+  document.getElementById('authError').classList.remove('show');
+}
+
+// ── Validation helpers ───────────────────────────────────────
+function validEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function showAuthError(msg){
+  var el = document.getElementById('authError');
+  el.textContent = msg; el.classList.add('show');
+}
+
+// ── Email signup ─────────────────────────────────────────────
+function submitSignup() {
+  var firstName = document.getElementById('authFirstName').value.trim();
+  var lastName  = document.getElementById('authLastName').value.trim();
+  var email     = document.getElementById('authEmail').value.trim();
+  var password  = document.getElementById('authPassword').value;
+
+  // Clear errors
+  ['authFirstName','authLastName','authEmail','authPassword'].forEach(function(id){
+    document.getElementById(id).classList.remove('err');
+  });
+  document.getElementById('authError').classList.remove('show');
+
+  var ok = true;
+  if(!firstName){ document.getElementById('authFirstName').classList.add('err'); ok=false; }
+  if(!lastName) { document.getElementById('authLastName').classList.add('err');  ok=false; }
+  if(!validEmail(email)){ document.getElementById('authEmail').classList.add('err'); ok=false; }
+  if(password.length < 8){ document.getElementById('authPassword').classList.add('err'); ok=false; }
+  if(!ok){ showAuthError('Please fill in all fields correctly.'); return; }
+
+  var btn = document.getElementById('authSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Creating your account...';
+
+  // ── MOCK: replace with real Firebase/Supabase call ──
+  setTimeout(function(){
+    var user = {
+      firstName: firstName, lastName: lastName,
+      email: email, joinedAt: new Date().toISOString(),
+      avatar: (firstName[0] + lastName[0]).toUpperCase()
+    };
+    authSaveUser(user);
+    onAuthSuccess(user, 'signup');
+  }, 900);
+}
+
+// ── Email login ──────────────────────────────────────────────
+function submitLogin() {
+  var email    = document.getElementById('loginEmail').value.trim();
+  var password = document.getElementById('loginPassword').value;
+
+  ['loginEmail','loginPassword'].forEach(function(id){
+    document.getElementById(id).classList.remove('err');
+  });
+  document.getElementById('authError').classList.remove('show');
+
+  var ok = true;
+  if(!validEmail(email)){ document.getElementById('loginEmail').classList.add('err'); ok=false; }
+  if(!password){ document.getElementById('loginPassword').classList.add('err'); ok=false; }
+  if(!ok){ showAuthError('Please enter your email and password.'); return; }
+
+  var btn = document.getElementById('loginSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Logging in...';
+
+  // ── MOCK: replace with real auth check ──
+  setTimeout(function(){
+    // In real implementation: verify against backend
+    var stored = null;
+    try { stored = JSON.parse(localStorage.getItem(ATP_USER_KEY)); } catch(e){}
+    if(stored && stored.email === email) {
+      authSaveUser(stored);
+      onAuthSuccess(stored, 'login');
+    } else {
+      // For demo: create session anyway
+      var user = {
+        firstName: email.split('@')[0], lastName: '',
+        email: email, joinedAt: new Date().toISOString(),
+        avatar: email[0].toUpperCase()
+      };
+      authSaveUser(user);
+      onAuthSuccess(user, 'login');
+    }
+  }, 700);
+}
+
+// ── Social auth (mock — replace with real OAuth) ─────────────
+function authWithGoogle() {
+  // Real: firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
+  var mockUser = {
+    firstName: 'Google', lastName: 'User',
+    email: 'user@gmail.com', joinedAt: new Date().toISOString(), avatar: 'G'
+  };
+  authSaveUser(mockUser);
+  onAuthSuccess(mockUser, 'google');
+}
+function authWithApple() {
+  // Real: firebase.auth().signInWithPopup(new firebase.auth.OAuthProvider('apple.com'))
+  var mockUser = {
+    firstName: 'Apple', lastName: 'User',
+    email: 'user@icloud.com', joinedAt: new Date().toISOString(), avatar: 'A'
+  };
+  authSaveUser(mockUser);
+  onAuthSuccess(mockUser, 'apple');
+}
+
+// ── Post-auth ────────────────────────────────────────────────
+function onAuthSuccess(user, method) {
+  // Update member counter
+  if(method === 'signup' && typeof window.atpAddMember === 'function') {
+    window.atpAddMember(1);
+  }
+
+  // Show success screen
+  document.getElementById('authSignupForm').style.display = 'none';
+  document.getElementById('authLoginForm').style.display  = 'none';
+  document.getElementById('authSocialPanel').style.display = 'none';
+  document.getElementById('authSuccessPanel').style.display = 'block';
+  document.getElementById('authSuccessTitle').textContent =
+    method === 'login' ? 'Welcome back, ' + user.firstName + '!' : 'Welcome, ' + user.firstName + '!';
+  document.getElementById('authSuccessSub').innerHTML =
+    method === 'login'
+      ? 'You\'re logged in. Go book a session! 💪'
+      : 'You are now an ATP member. <strong>' + user.email + '</strong> registered.<br><br>Go book your first free session — the community is waiting. 💪';
+
+  // Update nav
+  renderAuthNav(user);
+
+  // Auto close after 1.8s then resume any pending booking
+  setTimeout(function(){ closeAuth(); }, 1800);
+}
+
+// ── Nav render ───────────────────────────────────────────────
+function renderAuthNav(user) {
+  var actions = document.querySelector('.nav-actions');
+  if(!actions) return;
+  actions.innerHTML =
+    '<div class="nav-user">' +
+      '<div class="nav-avatar" title="' + user.firstName + ' ' + user.lastName + '">' + user.avatar + '</div>' +
+      '<div>' +
+        '<div class="nav-user-name">' + user.firstName + '</div>' +
+        '<button class="nav-logout" onclick="logOut()">Log out</button>' +
+      '</div>' +
+    '</div>';
+}
+
+// ── Log out ──────────────────────────────────────────────────
+function logOut() {
+  authClearUser();
+  var actions = document.querySelector('.nav-actions');
+  if(actions) {
+    actions.innerHTML =
+      '<button class="btn-ghost" onclick="openAuth(\'login\')">Log in</button>' +
+      '<button class="btn-primary" onclick="openAuth(\'signup\')">Join free →</button>';
+  }
+}
+
+// ── Guard: require auth before booking ───────────────────────
+function requireAuth(callback) {
+  if(atpUser) { callback(); return; }
+  // Store callback intent and open auth
+  pendingAuthCallback = callback;
+  openAuth('signup');
+}
+var pendingAuthCallback = null;
+
+// ── Init ─────────────────────────────────────────────────────
+authLoadUser();
+if(atpUser) renderAuthNav(atpUser);
+
+// Close on overlay click
+document.getElementById('authOverlay').addEventListener('click', function(e){
+  if(e.target === this) closeAuth();
+});
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape') closeAuth();
+});
+// ══════════════════════════════════════════════════════════════
+
+
+
+// ── VIDEO AUTOPLAY FALLBACK ───────────────────────────────────
+(function() {
+  var vid = document.getElementById("heroVideo");
+  if (!vid) return;
+  vid.muted = true;
+  var tryPlay = function() {
+    vid.play().then(function() {
+      vid.style.opacity = "0.9";
+    }).catch(function() {
+      // autoplay blocked - show poster frame
+      vid.style.opacity = "0.5";
+    });
+  };
+  if (vid.readyState >= 2) { tryPlay(); }
+  else { vid.addEventListener("loadeddata", tryPlay); }
+  // Also try on user interaction
+  document.addEventListener("click", function() { vid.play(); }, { once: true });
+})();
+
+// ── SHOPIFY CONNECTION TEST ───────────────────────────────────
+// Call testShopify() in browser console to diagnose
+window.testShopify = async function() {
+  var TOKEN  = SHOPIFY_TOKEN;
+  var DOMAIN = SHOPIFY_DOMAIN;
+  console.log("Testing Shopify connection...");
+  console.log("Domain:", DOMAIN);
+  console.log("Token:", TOKEN.substring(0,8) + "...");
+  try {
+    var res = await fetch("https://" + DOMAIN + "/api/2025-01/graphql.json", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Shopify-Storefront-Access-Token": TOKEN
+      },
+      body: JSON.stringify({ query: "{ shop { name } }" })
+    });
+    console.log("HTTP status:", res.status);
+    var data = await res.json();
+    console.log("Response:", JSON.stringify(data, null, 2));
+    if (data.data && data.data.shop) {
+      console.log("✅ Connected! Shop name:", data.data.shop.name);
+    } else if (data.errors) {
+      console.error("❌ GraphQL errors:", data.errors);
+    }
+  } catch(e) {
+    console.error("❌ Fetch failed:", e.message);
+  }
+};
+
+loadProducts();
+
+// ── ATP API INIT ─────────────────────────────────────────────
+(function() {
+  if (!window.ATP) return;
+
+  function syncMember(member) {
+    if (!member) return;
+    atpUser = {
+      firstName: member.first_name, lastName: member.last_name,
+      email: member.email,
+      avatar: member.avatar_url || (member.first_name[0]+(member.last_name||'X')[0]).toUpperCase(),
+      joinedAt: member.joined_at, memberId: member.id,
+      memberNumber: member.member_number,
+      ambassador: member.is_ambassador, admin: member.is_admin,
+      points: member.points_balance || 0,
+    };
+    if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
+    if (member.is_ambassador) localStorage.setItem('atp:ambassador', 'true');
+
+    // Show ATP member points balance on store page
+    var ptEl = document.querySelector('.wallet-pts, .points-display, [data-points]');
+    if (ptEl) ptEl.textContent = (member.points_balance||0).toLocaleString() + ' pts';
+
+    // Load real points balance
+    window.ATP.points.balance().then(function(data) {
+      var bal = data.balance || data.points_balance || 0;
+      var els = document.querySelectorAll('.points-balance, .wallet-balance, [data-points]');
+      els.forEach(function(el) { el.textContent = bal.toLocaleString() + ' pts'; });
+    }).catch(function(){});
+  }
+
+  window.addEventListener('atp:login', function(e) { syncMember(e.detail); });
+  window.addEventListener('atp:logout', function() {
+    atpUser = null;
+    if (typeof renderAuthNav === 'function') renderAuthNav(null);
+  });
+  window.ATP.init().then(syncMember).catch(function() {});
+})();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,1512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="atp.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>My Profile | At The Park</title>
+<meta name="description" content="Your ATP member profile — streak, sessions, achievements, tribe and more.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#7AC231;--green-dark:#5a9a1f;
+  --black:#0a0a0a;--dark:#111111;--dark2:#1a1a1a;--dark3:#222222;
+  --muted:#888888;--light:#aaaaaa;--white:#ffffff;
+  --ff-display:'Barlow Condensed',sans-serif;--ff-body:'DM Sans',sans-serif;
+  --nav-h:68px;--max:1320px;--radius:6px;--radius-lg:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--ff-body);background:var(--black);color:var(--white);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-body)}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;padding:0 40px;background:rgba(10,10,10,.97);border-bottom:1px solid rgba(255,255,255,.07);backdrop-filter:blur(16px)}
+.nav-inner{width:100%;max-width:1400px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.nav-logo img{height:32px;width:auto;display:block;}
+.nav-links{display:flex;align-items:center;gap:28px;list-style:none}
+.nav-links a{font-size:13px;font-weight:500;letter-spacing:.04em;color:var(--light);transition:color .2s}
+.nav-links a:hover,.nav-links a.active{color:var(--green)}
+.nav-actions{display:flex;align-items:center;gap:10px}
+.btn-ghost{font-size:13px;font-weight:600;color:var(--white);border:1px solid rgba(255,255,255,.2);padding:9px 20px;border-radius:var(--radius);background:transparent;transition:border-color .2s}
+.btn-ghost:hover{border-color:var(--white)}
+.btn-primary{font-size:13px;font-weight:700;background:var(--green);color:var(--white);padding:10px 22px;border-radius:var(--radius);border:none;transition:background .2s,transform .15s}
+.btn-primary:hover{background:var(--green-dark);transform:translateY(-1px)}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer}
+.hamburger span{display:block;width:22px;height:2px;background:var(--white);border-radius:2px}
+
+/* ── PROFILE LAYOUT ── */
+.profile-wrap{padding-top:var(--nav-h);min-height:100vh}
+
+/* ── COVER + HERO ── */
+.profile-cover{height:220px;background:linear-gradient(135deg,#0f1e0a 0%,#0a1a08 40%,#0d1a0a 60%,#111 100%);position:relative;overflow:hidden}
+.profile-cover::before{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%237AC231' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")}
+.profile-cover-edit{position:absolute;top:16px;right:16px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);color:#fff;padding:7px 14px;border-radius:var(--radius);font-size:12px;font-weight:600;cursor:pointer;transition:background .2s}
+.profile-cover-edit:hover{background:rgba(0,0,0,.8)}
+
+.profile-hero{max-width:1200px;margin:0 auto;padding:0 40px;position:relative}
+.profile-avatar-wrap{position:absolute;top:-56px;left:40px}
+.profile-avatar{width:112px;height:112px;border-radius:50%;background:var(--green);border:4px solid var(--black);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:44px;font-weight:900;color:#fff;position:relative;overflow:hidden;cursor:pointer}
+.profile-avatar img{width:100%;height:100%;object-fit:cover;display:block}
+.avatar-upload{position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;border-radius:50%}
+.profile-avatar:hover .avatar-upload{opacity:1}
+.avatar-upload svg{width:24px;height:24px;color:#fff}
+.profile-avatar-badge{position:absolute;bottom:4px;right:4px;width:22px;height:22px;border-radius:50%;background:var(--green);border:2px solid var(--black);display:flex;align-items:center;justify-content:center}
+.profile-avatar-badge svg{width:10px;height:10px;color:#fff}
+
+.profile-meta{padding-top:68px;padding-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px}
+.profile-name{font-family:var(--ff-display);font-size:36px;font-weight:900;text-transform:uppercase;letter-spacing:-.01em;line-height:1;margin-bottom:6px}
+.profile-sub{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.member-badge{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 12px;border-radius:20px;background:rgba(122,194,49,.12);border:1px solid rgba(122,194,49,.3);color:var(--green)}
+.member-badge.premium{background:linear-gradient(135deg,rgba(255,196,0,.12),rgba(255,150,0,.08));border-color:rgba(255,196,0,.35);color:#ffc400}
+.member-num{font-size:12px;color:var(--muted)}
+.profile-actions{display:flex;gap:8px;flex-wrap:wrap}
+.pf-btn{font-size:12px;font-weight:700;padding:9px 18px;border-radius:var(--radius);border:1px solid rgba(255,255,255,.15);background:transparent;color:var(--white);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
+.pf-btn:hover{border-color:var(--green);color:var(--green)}
+.pf-btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+.pf-btn.primary:hover{background:var(--green-dark)}
+
+/* ── STATS BAR ── */
+.profile-stats-bar{max-width:1200px;margin:0 auto;padding:0 40px 28px;display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:rgba(255,255,255,.06);border-radius:var(--radius-lg);overflow:hidden}
+.pstat{background:var(--dark2);padding:20px 16px;text-align:center}
+.pstat-num{font-family:var(--ff-display);font-size:30px;font-weight:900;color:var(--green);line-height:1;margin-bottom:4px}
+.pstat-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+
+/* ── TABS ── */
+.profile-tabs-wrap{border-bottom:1px solid rgba(255,255,255,.07);background:var(--dark2);position:sticky;top:var(--nav-h);z-index:50}
+.profile-tabs{max-width:1200px;margin:0 auto;padding:0 40px;display:flex;gap:0;overflow-x:auto;scrollbar-width:none}
+.profile-tabs::-webkit-scrollbar{display:none}
+.ptab{font-size:13px;font-weight:600;color:var(--muted);padding:16px 20px;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;white-space:nowrap;transition:color .2s,border-color .2s;letter-spacing:.02em}
+.ptab:hover{color:var(--light)}
+.ptab.active{color:var(--white);border-bottom-color:var(--green)}
+
+/* ── CONTENT AREA ── */
+.profile-content{max-width:1200px;margin:0 auto;padding:36px 40px 100px;display:grid;grid-template-columns:1fr 340px;gap:32px;align-items:start}
+.profile-panel{display:none}
+.profile-panel.active{display:block}
+
+/* ── WIDGET CARD ── */
+.widget{background:var(--dark2);border-radius:var(--radius-lg);border:1px solid rgba(255,255,255,.07);margin-bottom:20px;overflow:hidden}
+.widget-head{padding:18px 20px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between}
+.widget-title{font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--white)}
+.widget-action{font-size:12px;font-weight:600;color:var(--green);cursor:pointer;transition:opacity .2s}
+.widget-action:hover{opacity:.8}
+.widget-body{padding:20px}
+
+/* ── STREAK ── */
+.streak-hero{display:flex;align-items:center;gap:20px;padding:20px;background:linear-gradient(135deg,rgba(122,194,49,.08),rgba(122,194,49,.03));border-radius:var(--radius)}
+.streak-fire-big{font-size:52px;line-height:1}
+.streak-num-big{font-family:var(--ff-display);font-size:64px;font-weight:900;color:var(--green);line-height:1}
+.streak-days{font-size:14px;color:var(--light);font-weight:500;margin-top:4px}
+.streak-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:16px}
+.streak-day{aspect-ratio:1;border-radius:6px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--muted)}
+.streak-day.done{background:var(--green);color:#fff}
+.streak-day.today{background:var(--green);box-shadow:0 0 0 2px rgba(122,194,49,.4);color:#fff}
+.streak-day.missed{background:rgba(239,68,68,.15);color:rgba(239,68,68,.6)}
+
+/* ── SESSIONS ── */
+.session-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.session-row:last-child{border-bottom:none}
+.session-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.session-dot.better{background:#4ade80}
+.session-dot.faster{background:#60a5fa}
+.session-dot.stronger{background:#f97316}
+.session-info{flex:1}
+.session-name{font-size:13px;font-weight:600;color:var(--white)}
+.session-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.session-status{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px}
+.session-status.upcoming{background:rgba(122,194,49,.1);color:var(--green);border:1px solid rgba(122,194,49,.2)}
+.session-status.done{background:rgba(255,255,255,.05);color:var(--muted)}
+
+/* ── ACHIEVEMENTS ── */
+.achievement-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.achievement{background:var(--dark3);border-radius:12px;padding:16px;text-align:center;border:1px solid rgba(255,255,255,.05);transition:border-color .2s}
+.achievement.unlocked{border-color:rgba(122,194,49,.2)}
+.achievement.locked{opacity:.4}
+.ach-icon{font-size:28px;margin-bottom:8px}
+.ach-name{font-size:11px;font-weight:700;color:var(--white);margin-bottom:2px;line-height:1.3}
+.ach-desc{font-size:10px;color:var(--muted)}
+
+/* ── TRIBE ── */
+.tribe-member-row{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.tribe-member-row:last-child{border-bottom:none}
+.tribe-av{width:38px;height:38px;border-radius:50%;background:var(--dark3);border:2px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex-shrink:0;color:var(--white)}
+.tribe-info{flex:1}
+.tribe-mname{font-size:13px;font-weight:600;color:var(--white)}
+.tribe-msub{font-size:11px;color:var(--muted)}
+.tribe-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(122,194,49,.1);color:var(--green);border:1px solid rgba(122,194,49,.2)}
+
+/* ── FRIENDS ── */
+.friend-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.friend-row:last-child{border-bottom:none}
+.friend-av{width:44px;height:44px;border-radius:50%;background:var(--dark3);display:flex;align-items:center;justify-content:center;font-size:17px;font-weight:800;color:var(--white);flex-shrink:0}
+.friend-info{flex:1}
+.friend-name{font-size:13px;font-weight:600;color:var(--white)}
+.friend-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.friend-actions{display:flex;gap:6px}
+.friend-btn{font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--white);cursor:pointer;transition:all .2s}
+.friend-btn.accept{background:var(--green);border-color:var(--green);color:#fff}
+.friend-btn.accept:hover{background:var(--green-dark)}
+.friend-btn.decline:hover{border-color:#ef4444;color:#ef4444}
+
+/* ── NOTIFICATIONS ── */
+.notif-row{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.notif-row:last-child{border-bottom:none}
+.notif-row.unread{background:rgba(122,194,49,.03);margin:0 -20px;padding:13px 20px}
+.notif-dot-wrap{padding-top:3px}
+.notif-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0}
+.notif-text{font-size:13px;color:var(--light);line-height:1.5;flex:1}
+.notif-text strong{color:var(--white)}
+.notif-time{font-size:11px;color:var(--muted);white-space:nowrap;flex-shrink:0;padding-top:3px}
+
+/* ── WALLET ── */
+.wallet-hero{background:linear-gradient(135deg,#0f2a08,#0a1a06);border-radius:var(--radius-lg);padding:28px;margin-bottom:16px;position:relative;overflow:hidden}
+.wallet-hero::after{content:'ATP';position:absolute;right:-12px;top:-8px;font-family:var(--ff-display);font-size:110px;font-weight:900;color:rgba(122,194,49,.04);line-height:1;pointer-events:none;user-select:none}
+.wallet-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(122,194,49,.7);margin-bottom:8px}
+.wallet-points{font-family:var(--ff-display);font-size:64px;font-weight:900;color:var(--green);line-height:1;margin-bottom:4px}
+.wallet-pts-label{font-size:14px;color:rgba(122,194,49,.7);font-weight:500}
+.wallet-equiv{font-size:13px;color:rgba(255,255,255,.4);margin-top:12px}
+.wallet-txn{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.wallet-txn:last-child{border-bottom:none}
+.wallet-txn-left{display:flex;align-items:center;gap:10px}
+.wallet-txn-icon{width:32px;height:32px;border-radius:8px;background:rgba(122,194,49,.1);display:flex;align-items:center;justify-content:center;font-size:14px}
+.wallet-txn-name{font-size:13px;font-weight:500;color:var(--white)}
+.wallet-txn-date{font-size:11px;color:var(--muted);margin-top:1px}
+.wallet-txn-amt{font-family:var(--ff-display);font-size:16px;font-weight:800}
+.wallet-txn-amt.earn{color:var(--green)}
+.wallet-txn-amt.spend{color:#f97316}
+
+/* ── EDIT PROFILE FORM ── */
+.form-section-title{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin:24px 0 14px;padding-bottom:8px;border-bottom:1px solid rgba(122,194,49,.15)}
+.form-section-title:first-child{margin-top:0}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.form-group{display:flex;flex-direction:column;gap:6px}
+.form-group.full{grid-column:1/-1}
+.form-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.form-input,.form-select{background:var(--dark3);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);padding:11px 14px;color:var(--white);font-size:13px;font-family:var(--ff-body);transition:border-color .2s;width:100%}
+.form-input:focus,.form-select:focus{outline:none;border-color:var(--green)}
+.form-select option{background:var(--dark2)}
+.sport-pills{display:flex;flex-wrap:wrap;gap:6px}
+.sport-pill{font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--muted);cursor:pointer;transition:all .18s}
+.sport-pill.sel{border-color:var(--green);color:var(--green);background:rgba(122,194,49,.08)}
+.padel-row{display:flex;gap:8px}
+.padel-btn{flex:1;padding:10px;border-radius:var(--radius);border:1px solid rgba(255,255,255,.1);background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;text-align:center}
+.padel-btn.sel{border-color:var(--green);color:var(--green);background:rgba(122,194,49,.08)}
+.form-save-btn{width:100%;padding:14px;background:var(--green);color:#fff;font-size:14px;font-weight:800;border:none;border-radius:var(--radius);cursor:pointer;margin-top:24px;letter-spacing:.04em;text-transform:uppercase;transition:background .2s}
+.form-save-btn:hover{background:var(--green-dark)}
+
+/* ── REFERRAL ── */
+.referral-hero{background:var(--dark3);border-radius:var(--radius-lg);padding:24px;text-align:center;margin-bottom:16px}
+.referral-code{font-family:var(--ff-display);font-size:32px;font-weight:900;color:var(--green);letter-spacing:.06em;margin:12px 0}
+.referral-copy-btn{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;padding:10px 20px;border-radius:var(--radius);border:1px solid rgba(122,194,49,.3);background:rgba(122,194,49,.08);color:var(--green);cursor:pointer;transition:all .2s}
+.referral-copy-btn:hover{background:rgba(122,194,49,.15)}
+.referral-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:rgba(255,255,255,.06);border-radius:var(--radius);overflow:hidden;margin-top:16px}
+.ref-stat{background:var(--dark2);padding:16px;text-align:center}
+.ref-stat-num{font-family:var(--ff-display);font-size:26px;font-weight:900;color:var(--white)}
+.ref-stat-label{font-size:10px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.06em}
+
+/* ── CHALLENGES ── */
+.challenge-card{background:var(--dark3);border-radius:var(--radius-lg);padding:18px;margin-bottom:12px;border:1px solid rgba(255,255,255,.05);position:relative;overflow:hidden}
+.challenge-card.active-c{border-color:rgba(122,194,49,.2)}
+.challenge-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.challenge-icon{width:40px;height:40px;border-radius:10px;background:rgba(122,194,49,.1);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.challenge-name{font-size:14px;font-weight:700;color:var(--white)}
+.challenge-sub{font-size:11px;color:var(--muted);margin-top:2px}
+.challenge-progress-wrap{background:rgba(255,255,255,.06);border-radius:4px;height:6px;overflow:hidden}
+.challenge-progress-bar{height:100%;background:var(--green);border-radius:4px;transition:width .6s cubic-bezier(.25,.46,.45,.94)}
+.challenge-footer{display:flex;justify-content:space-between;margin-top:8px}
+.challenge-done{font-size:12px;font-weight:700;color:var(--green)}
+.challenge-total{font-size:12px;color:var(--muted)}
+
+/* ── SIDEBAR ── */
+.profile-sidebar{display:flex;flex-direction:column;gap:20px;position:sticky;top:calc(var(--nav-h) + 68px)}
+.sub-card{background:var(--dark2);border-radius:var(--radius-lg);padding:20px;border:1px solid rgba(255,255,255,.07)}
+.sub-card-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+.sub-free{display:flex;align-items:center;gap:10px}
+.sub-icon{width:40px;height:40px;border-radius:10px;background:rgba(122,194,49,.1);display:flex;align-items:center;justify-content:center;font-size:20px}
+.sub-name{font-family:var(--ff-display);font-size:22px;font-weight:900;text-transform:uppercase;color:var(--white)}
+.sub-desc{font-size:12px;color:var(--muted);margin-top:2px}
+.upgrade-btn{width:100%;padding:11px;background:rgba(255,196,0,.08);border:1px solid rgba(255,196,0,.25);border-radius:var(--radius);color:#ffc400;font-size:12px;font-weight:700;cursor:pointer;margin-top:14px;transition:all .2s;letter-spacing:.04em;text-transform:uppercase}
+.upgrade-btn:hover{background:rgba(255,196,0,.15)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1024px){.profile-stats-bar{grid-template-columns:repeat(3,1fr)}.profile-content{grid-template-columns:1fr}}
+@media(max-width:900px){.nav-links{display:none}.hamburger{display:flex}.profile-content{padding:24px 16px 80px}.profile-hero{padding:0 16px}.profile-avatar-wrap{left:16px}.profile-stats-bar{padding:0 16px 20px}.achievement-grid{grid-template-columns:repeat(2,1fr)}.form-grid{grid-template-columns:1fr}.profile-sidebar{position:static}}
+@media(max-width:600px){.profile-tabs{padding:0 16px}}
+
+/* ══ AUTH MODAL ══════════════════════════════════════════════ */
+.auth-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(10px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s}
+.auth-overlay.open{opacity:1;pointer-events:all}
+.auth-modal{background:var(--dark2);border-radius:16px;padding:0;width:100%;max-width:440px;border:1px solid rgba(255,255,255,.1);position:relative;transform:translateY(28px) scale(.97);transition:transform .3s cubic-bezier(.4,0,.2,1);overflow:hidden}
+.auth-overlay.open .auth-modal{transform:translateY(0) scale(1)}
+.auth-modal-top{background:linear-gradient(135deg,rgba(122,194,49,.12) 0%,transparent 100%);padding:36px 36px 28px;border-bottom:1px solid rgba(255,255,255,.06)}
+.auth-modal-logo{height:28px;width:auto;display:block;margin-bottom:18px}
+.auth-modal-title{font-family:var(--ff-display);font-size:32px;font-weight:900;text-transform:uppercase;color:var(--white);line-height:1;margin-bottom:6px}
+.auth-modal-sub{font-size:13px;color:var(--muted);line-height:1.6}
+.auth-modal-body{padding:28px 36px 32px}
+.auth-close{position:absolute;top:14px;right:14px;width:30px;height:30px;border-radius:50%;border:1px solid rgba(255,255,255,.1);background:transparent;color:var(--muted);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;transition:all .2s;line-height:1}
+.auth-close:hover{border-color:rgba(255,255,255,.3);color:var(--white)}
+
+/* Social buttons */
+.auth-social-btn{width:100%;display:flex;align-items:center;justify-content:center;gap:12px;padding:13px 20px;border-radius:var(--radius);font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;margin-bottom:10px;letter-spacing:.02em;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:var(--white)}
+.auth-social-btn:hover{background:rgba(255,255,255,.09);border-color:rgba(255,255,255,.25)}
+.auth-social-btn svg{flex-shrink:0}
+.auth-social-btn.google{background:rgba(255,255,255,.05)}
+.auth-social-btn.apple{background:rgba(255,255,255,.05)}
+
+/* Divider */
+.auth-divider{display:flex;align-items:center;gap:12px;margin:18px 0;color:var(--muted);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.auth-divider::before,.auth-divider::after{content:'';flex:1;height:1px;background:rgba(255,255,255,.08)}
+
+/* Form fields */
+.auth-field{margin-bottom:14px}
+.auth-field label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.auth-field input{width:100%;background:var(--dark3);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:13px 16px;color:var(--white);font-size:14px;font-family:var(--ff-body);transition:border-color .2s;outline:none}
+.auth-field input:focus{border-color:var(--green)}
+.auth-field input::placeholder{color:#444}
+.auth-field input.err{border-color:#ef4444}
+.auth-field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+
+/* Submit */
+.auth-submit{width:100%;padding:14px;background:var(--green);color:var(--white);font-size:15px;font-weight:700;border:none;border-radius:var(--radius);cursor:pointer;letter-spacing:.04em;margin-top:6px;transition:background .2s,transform .15s;display:flex;align-items:center;justify-content:center;gap:8px}
+.auth-submit:hover{background:var(--green-dark);transform:translateY(-1px)}
+.auth-submit:disabled{opacity:.5;cursor:not-allowed;transform:none}
+
+/* Toggle login/signup */
+.auth-toggle{text-align:center;margin-top:18px;font-size:13px;color:var(--muted)}
+.auth-toggle button{background:none;border:none;color:var(--green);font-weight:700;cursor:pointer;font-size:13px;padding:0;margin-left:4px}
+.auth-toggle button:hover{text-decoration:underline}
+
+/* Error */
+.auth-error{background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.25);border-radius:var(--radius);padding:10px 14px;font-size:13px;color:#fca5a5;margin-bottom:14px;display:none}
+.auth-error.show{display:block}
+
+/* Success panel */
+.auth-success{text-align:center;padding:12px 0 4px}
+.auth-success-icon{width:64px;height:64px;border-radius:50%;background:rgba(122,194,49,.12);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px}
+.auth-success-title{font-family:var(--ff-display);font-size:30px;font-weight:900;text-transform:uppercase;color:var(--green);margin-bottom:6px}
+.auth-success-sub{font-size:14px;color:var(--light);line-height:1.7}
+
+/* ══ NAV AUTH STATE ══ */
+.nav-user{display:flex;align-items:center;gap:10px}
+.nav-avatar{width:32px;height:32px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:14px;font-weight:800;color:var(--white);cursor:pointer;flex-shrink:0;border:2px solid transparent;transition:border-color .2s}
+.nav-avatar:hover{border-color:var(--green)}
+.nav-user-name{font-size:13px;font-weight:600;color:var(--white);max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-logout{font-size:12px;color:var(--muted);background:none;border:none;cursor:pointer;padding:0;transition:color .2s}
+.nav-logout:hover{color:var(--white)}
+
+/* ══ MEMBER GATE (sessions) ══ */
+.member-gate{display:none;text-align:center;padding:12px 0}
+.member-gate-icon{font-size:36px;margin-bottom:12px}
+.member-gate-title{font-family:var(--ff-display);font-size:28px;font-weight:900;text-transform:uppercase;color:var(--white);margin-bottom:8px}
+.member-gate-sub{font-size:14px;color:var(--light);line-height:1.7;margin-bottom:24px}
+.member-gate-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap}
+
+
+/* ── SESSION QR BTN ── */
+.session-qr-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid rgba(122,194,49,.3);background:rgba(122,194,49,.06);color:var(--green);cursor:pointer;transition:all .2s}
+.session-qr-btn:hover{background:rgba(122,194,49,.15)}
+
+/* ── QR MODAL ── */
+.qr-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(12px);z-index:600;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
+.qr-modal-overlay.open{opacity:1;pointer-events:all}
+.qr-modal{background:#111;border-radius:20px;padding:36px;text-align:center;border:1px solid rgba(255,255,255,.1);max-width:340px;width:90%;transform:scale(.95);transition:transform .25s}
+.qr-modal-overlay.open .qr-modal{transform:scale(1)}
+.qr-modal h3{font-family:var(--ff-display);font-size:24px;font-weight:900;text-transform:uppercase;color:#fff;margin-bottom:4px}
+.qr-modal-sub{font-size:13px;color:#666;margin-bottom:20px}
+.qr-modal-canvas{display:inline-block;background:#fff;padding:14px;border-radius:12px;margin-bottom:16px}
+.qr-modal-id{font-size:13px;font-weight:700;color:#fff;font-family:monospace;letter-spacing:.06em;margin-bottom:4px}
+.qr-modal-session{font-size:12px;color:#666;margin-bottom:20px}
+.qr-modal-actions{display:flex;gap:10px;justify-content:center}
+.qr-modal-btn{font-size:12px;font-weight:700;padding:9px 18px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:transparent;color:#fff;cursor:pointer;transition:all .2s}
+.qr-modal-btn:hover{border-color:var(--green);color:var(--green)}
+.qr-modal-btn.primary{background:var(--green);border-color:var(--green)}
+.qr-modal-btn.primary:hover{background:var(--green-dark)}
+.qr-modal-close{position:absolute;top:14px;right:14px;width:28px;height:28px;border-radius:50%;border:1px solid rgba(255,255,255,.12);background:transparent;color:#888;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center}
+
+/* ── AMBASSADOR BADGE ── */
+.ambassador-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 12px;border-radius:20px;background:linear-gradient(135deg,rgba(255,196,0,.15),rgba(255,150,0,.08));border:1px solid rgba(255,196,0,.35);color:#ffc400}
+.ambassador-card{background:linear-gradient(135deg,rgba(255,196,0,.06),rgba(255,150,0,.03));border:1px solid rgba(255,196,0,.2);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px}
+.ambassador-card-title{font-family:var(--ff-display);font-size:22px;font-weight:900;text-transform:uppercase;color:#ffc400;margin-bottom:6px}
+.ambassador-card-desc{font-size:13px;color:#999;line-height:1.6;margin-bottom:16px}
+.ambassador-scan-btn{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;padding:11px 22px;border-radius:var(--radius);background:#ffc400;color:#000;border:none;cursor:pointer;transition:all .2s;text-decoration:none}
+.ambassador-scan-btn:hover{background:#e6b000;transform:translateY(-1px)}
+
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="atp-api.js"></script>
+</head>
+<body>
+
+<nav id="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo"><img id="nav-logo-img" alt="At The Park" style="height:32px;width:auto;display:block;"></a>
+    <ul class="nav-links">
+      <li><a href="index.html">Home</a></li>
+      <li><a href="sessions.html">Sessions</a></li>
+      <li><a href="community.html">Community</a></li>
+      <li><a href="profile.html" class="active">Profile</a></li>
+      <li><a href="store.html">Store</a></li>
+      <li><a href="index.html#partners">Partners</a></li>
+      <li><a href="index.html#story">About</a></li>
+    </ul>
+    <div class="nav-actions" id="navActions">
+      <button class="btn-ghost" onclick="openAuth('login')">Log in</button>
+      <button class="btn-primary" onclick="openAuth('signup')">Join free →</button>
+    </div>
+    <div class="hamburger"><span></span><span></span><span></span></div>
+  </div>
+</nav>
+
+<div class="profile-wrap">
+
+  <!-- COVER -->
+  <div class="profile-cover">
+    <button class="profile-cover-edit" onclick="showTab('edit')">Edit cover</button>
+  </div>
+
+  <!-- HERO -->
+  <div class="profile-hero">
+    <div class="profile-avatar-wrap">
+      <div class="profile-avatar" id="profileAvatar" onclick="triggerAvatarUpload()">
+        <span id="avatarInitials">FM</span>
+        <div class="avatar-upload">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        </div>
+        <div class="profile-avatar-badge">
+          <svg viewBox="0 0 12 12" fill="currentColor"><path d="M6 1l1.5 3 3.3.5-2.4 2.3.6 3.2L6 8.5l-3 1.5.6-3.2L1.2 4.5l3.3-.5z"/></svg>
+        </div>
+      </div>
+      <input type="file" id="avatarInput" accept="image/*" style="display:none" onchange="handleAvatarUpload(this)">
+    </div>
+    <div class="profile-meta">
+      <div>
+        <div class="profile-name" id="profileName">Frederico Martins</div>
+        <div class="profile-sub">
+          <span class="member-badge" id="subBadge">Free Member</span>
+          <span class="member-num">#ATP-00001 · Member since 2015</span>
+        </div>
+      </div>
+      <div class="profile-actions">
+        <button class="pf-btn" onclick="showTab('notifications')">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1a5 5 0 015 5v3l1.5 2.5H1.5L3 9V6a5 5 0 015-5z"/><path d="M6.5 13.5a1.5 1.5 0 003 0"/></svg>
+          <span id="notifCount" style="display:none;background:var(--green);color:#fff;width:18px;height:18px;border-radius:50%;font-size:10px;display:inline-flex;align-items:center;justify-content:center">3</span>
+        </button>
+        <button class="pf-btn" onclick="showTab('friends')">Friend requests <span style="background:rgba(122,194,49,.15);color:var(--green);padding:1px 7px;border-radius:10px;font-size:11px;margin-left:2px">2</span></button>
+        <button class="pf-btn primary" onclick="showTab('edit')">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 2l3 3-9 9H2v-3l9-9z"/></svg>
+          Edit Profile
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STATS BAR -->
+  <div class="profile-stats-bar">
+    <div class="pstat"><div class="pstat-num">127</div><div class="pstat-label">Sessions</div></div>
+    <div class="pstat"><div class="pstat-num" id="statStreak">14</div><div class="pstat-label">Day Streak</div></div>
+    <div class="pstat"><div class="pstat-num">280</div><div class="pstat-label">ATP Points</div></div>
+    <div class="pstat"><div class="pstat-num">12</div><div class="pstat-label">Referred</div></div>
+    <div class="pstat"><div class="pstat-num">8</div><div class="pstat-label">Achievements</div></div>
+    <div class="pstat"><div class="pstat-num">3</div><div class="pstat-label">Challenges</div></div>
+  </div>
+
+  <!-- TABS -->
+  <div class="profile-tabs-wrap">
+    <div class="profile-tabs" id="profileTabs">
+      <button class="ptab active" data-tab="overview" onclick="showTab('overview',this)">Overview</button>
+      <button class="ptab" data-tab="sessions" onclick="showTab('sessions',this)">Sessions</button>
+      <button class="ptab" data-tab="streak" onclick="showTab('streak',this)">My Streak</button>
+      <button class="ptab" data-tab="achievements" onclick="showTab('achievements',this)">Achievements</button>
+      <button class="ptab" data-tab="challenges" onclick="showTab('challenges',this)">Challenges</button>
+      <button class="ptab" data-tab="tribe" onclick="showTab('tribe',this)">My Tribe</button>
+      <button class="ptab" data-tab="wallet" onclick="showTab('wallet',this)">Wallet</button>
+      <button class="ptab" data-tab="friends" onclick="showTab('friends',this)">Friends</button>
+      <button class="ptab" data-tab="notifications" onclick="showTab('notifications',this)">Notifications</button>
+      <button class="ptab" data-tab="edit" onclick="showTab('edit',this)">Edit Profile</button>
+      <button class="ptab" id="ambassadorTab" data-tab="ambassador" onclick="showTab('ambassador',this)" style="display:none">Ambassador</button>
+    </div>
+  </div>
+
+  <!-- CONTENT -->
+  <div class="profile-content">
+    <div>
+
+      <!-- OVERVIEW -->
+      <div class="profile-panel active" id="panel-overview">
+        <div class="widget">
+          <div class="widget-head"><span class="widget-title">🔥 Current Streak</span><span class="widget-action" onclick="showTab('streak')">Full view →</span></div>
+          <div class="widget-body">
+            <div class="streak-hero">
+              <div class="streak-fire-big">🔥</div>
+              <div><div class="streak-num-big">14</div><div class="streak-days">days in a row · Best: 32 days</div></div>
+            </div>
+            <div class="streak-grid" id="streakMiniGrid"></div>
+          </div>
+        </div>
+        <div class="widget">
+          <div class="widget-head"><span class="widget-title">📅 Upcoming Sessions</span><span class="widget-action" onclick="window.location='sessions.html'">Book more →</span></div>
+          <div class="widget-body" id="upcomingSessions"></div>
+        </div>
+        <div class="widget">
+          <div class="widget-head"><span class="widget-title">🏆 Recent Achievements</span><span class="widget-action" onclick="showTab('achievements')">All →</span></div>
+          <div class="widget-body"><div class="achievement-grid" id="achieveMini"></div></div>
+        </div>
+      </div>
+
+      <!-- SESSIONS -->
+      <div class="profile-panel" id="panel-sessions">
+        <div class="widget">
+          <div class="widget-head"><span class="widget-title">Booked Sessions</span></div>
+          <div class="widget-body" id="allSessions"></div>
+        </div>
+      </div>
+
+      <!-- STREAK -->
+      <div class="profile-panel" id="panel-streak">
+        <div class="widget">
+          <div class="widget-head"><span class="widget-title">My Streak</span></div>
+          <div class="widget-body">
+            <div class="streak-hero" style="margin-bottom:24px">
+              <div class="streak-fire-big">🔥</div>
+              <div>
+                <div class="streak-num-big">14</div>
+                <div class="streak-days">days in a row</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:4px">Personal best: <strong style="color:var(--white)">32 days</strong></div>
+              </div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,.06);border-radius:var(--radius);overflow:hidden;margin-bottom:24px">
+              <div style="background:var(--dark3);padding:16px;text-align:center"><div style="font-family:var(--ff-display);font-size:24px;font-weight:900;color:var(--green)">127</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Total Sessions</div></div>
+              <div style="background:var(--dark3);padding:16px;text-align:center"><div style="font-family:var(--ff-display);font-size:24px;font-weight:900;color:var(--green)">32</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Best Streak</div></div>
+              <div style="background:var(--dark3);padding:16px;text-align:center"><div style="font-family:var(--ff-display);font-size:24px;font-weight:900;color:var(--green)">4.2</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Avg / Week</div></div>
+            </div>
+            <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Last 28 Days</div>
+            <div class="streak-grid" id="streakFullGrid" style="grid-template-columns:repeat(7,1fr)"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ACHIEVEMENTS -->
+      <div class="profile-panel" id="panel-achievements">
+        <div class="widget">
+          <div class="widget-head"><span class="widget-title">Achievements</span><span style="font-size:12px;color:var(--muted)">8 of 24 unlocked</span></div>
+          <div class="widget-body"><div class="achievement-grid" id="allAchievements"></div></div>
+        </div>
+      </div>
+
+      <!-- CHALLENGES -->
+      <div class="profile-panel" id="panel-challenges">
+        <div class="widget">
+          <div class="widget-head"><span class="widget-title">My Challenges</span></div>
+          <div class="widget-body" id="challengesList"></div>
+        </div>
+      </div>
+
+      <!-- TRIBE -->
+      <div class="profile-panel" id="panel-tribe">
+        <div class="widget">
+          <div class="widget-head"><span class="widget-title">My Tribe</span><span style="font-size:12px;color:var(--muted)">12 people referred</span></div>
+          <div class="widget-body">
+            <div class="referral-hero" style="margin-bottom:16px">
+              <div style="font-size:13px;color:var(--muted)">Your referral link</div>
+              <div class="referral-code" id="refCode">ATP-FM001</div>
+              <button class="referral-copy-btn" onclick="copyReferral()">
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="9" height="9" rx="1"/><path d="M3 12H2a1 1 0 01-1-1V2a1 1 0 011-1h9a1 1 0 011 1v1"/></svg>
+                Copy referral link
+              </button>
+              <div class="referral-stats">
+                <div class="ref-stat"><div class="ref-stat-num">12</div><div class="ref-stat-label">Referred</div></div>
+                <div class="ref-stat"><div class="ref-stat-num">600</div><div class="ref-stat-label">Points earned</div></div>
+                <div class="ref-stat"><div class="ref-stat-num">8</div><div class="ref-stat-label">Active</div></div>
+              </div>
+            </div>
+            <div id="tribeList"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- WALLET -->
+      <div class="profile-panel" id="panel-wallet">
+        <div class="wallet-hero">
+          <div class="wallet-label">ATP Points Balance</div>
+          <div class="wallet-points">280</div>
+          <div class="wallet-pts-label">points</div>
+          <div class="wallet-equiv">≈ AED 10 store credit · 280 pts = 10% off next order</div>
+        </div>
+        <div class="widget">
+          <div class="widget-head"><span class="widget-title">Transaction History</span></div>
+          <div class="widget-body" id="walletTxns"></div>
+        </div>
+      </div>
+
+      <!-- FRIENDS -->
+      <div class="profile-panel" id="panel-friends">
+        <div class="widget">
+          <div class="widget-head"><span class="widget-title">Friend Requests</span><span class="member-badge" style="font-size:11px">2 pending</span></div>
+          <div class="widget-body" id="friendRequests"></div>
+        </div>
+        <div class="widget" style="margin-top:20px">
+          <div class="widget-head"><span class="widget-title">My Friends</span></div>
+          <div class="widget-body" id="friendsList"></div>
+        </div>
+      </div>
+
+      <!-- NOTIFICATIONS -->
+      <div class="profile-panel" id="panel-notifications">
+        <div class="widget">
+          <div class="widget-head"><span class="widget-title">Notifications</span><span class="widget-action" onclick="markAllRead()">Mark all read</span></div>
+          <div class="widget-body" id="notifList"></div>
+        </div>
+      </div>
+
+      <!-- EDIT PROFILE -->
+      <div class="profile-panel" id="panel-edit">
+        <div class="widget">
+          <div class="widget-head"><span class="widget-title">Edit Profile</span></div>
+          <div class="widget-body">
+            <div class="form-section-title">Personal Information</div>
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">First name</label><input class="form-input" type="text" value="Frederico" id="fFirstName"></div>
+              <div class="form-group"><label class="form-label">Last name</label><input class="form-input" type="text" value="Martins" id="fLastName"></div>
+              <div class="form-group"><label class="form-label">Date of birth</label><input class="form-input" type="date" id="fDob"></div>
+              <div class="form-group"><label class="form-label">Nationality</label><input class="form-input" type="text" placeholder="e.g. Brazilian" id="fNationality"></div>
+              <div class="form-group"><label class="form-label">Gender</label>
+                <select class="form-select" id="fGender"><option>Male</option><option>Female</option><option>Non-binary</option><option>Prefer not to say</option></select>
+              </div>
+            </div>
+
+            <div class="form-section-title">Contact</div>
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" value="fredericmartins21@me.com" id="fEmail"></div>
+              <div class="form-group"><label class="form-label">Mobile</label><input class="form-input" type="tel" placeholder="+971 50 000 0000" id="fMobile"></div>
+            </div>
+
+            <div class="form-section-title">Sports & Interests</div>
+            <div class="form-group full">
+              <label class="form-label">Favourite sports</label>
+              <div class="sport-pills" id="sportPills">
+                <button class="sport-pill sel" onclick="togglePill(this)">Running</button>
+                <button class="sport-pill sel" onclick="togglePill(this)">Yoga</button>
+                <button class="sport-pill" onclick="togglePill(this)">Cycling</button>
+                <button class="sport-pill sel" onclick="togglePill(this)">Bootcamp</button>
+                <button class="sport-pill" onclick="togglePill(this)">Swimming</button>
+                <button class="sport-pill" onclick="togglePill(this)">Kickboxing</button>
+                <button class="sport-pill" onclick="togglePill(this)">Pilates</button>
+                <button class="sport-pill" onclick="togglePill(this)">Padel</button>
+                <button class="sport-pill" onclick="togglePill(this)">CrossTraining</button>
+                <button class="sport-pill" onclick="togglePill(this)">Sound Healing</button>
+              </div>
+            </div>
+
+            <div class="form-section-title">Padel Level</div>
+            <div class="padel-row">
+              <button class="padel-btn" onclick="setPadel(this)">Beginner</button>
+              <button class="padel-btn sel" onclick="setPadel(this)">Intermediate</button>
+              <button class="padel-btn" onclick="setPadel(this)">Advanced</button>
+              <button class="padel-btn" onclick="setPadel(this)">Professional</button>
+            </div>
+
+            <div class="form-section-title">Sizing</div>
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">Top size</label>
+                <select class="form-select" id="fTopSize"><option>XS</option><option>S</option><option selected>M</option><option>L</option><option>XL</option><option>XXL</option></select>
+              </div>
+              <div class="form-group"><label class="form-label">Bottom size</label>
+                <select class="form-select" id="fBotSize"><option>XS</option><option>S</option><option selected>M</option><option>L</option><option>XL</option><option>XXL</option></select>
+              </div>
+            </div>
+
+            <div class="form-section-title">Security</div>
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label">New password</label><input class="form-input" type="password" placeholder="Enter new password" id="fPwd"></div>
+              <div class="form-group"><label class="form-label">Confirm password</label><input class="form-input" type="password" placeholder="Confirm new password" id="fPwd2"></div>
+            </div>
+
+            <button class="form-save-btn" onclick="saveProfile()">Save changes</button>
+          </div>
+        </div>
+      </div>
+
+
+      <!-- AMBASSADOR PANEL -->
+      <div class="profile-panel" id="panel-ambassador">
+        <div class="ambassador-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <span class="ambassador-badge">⭐ Ambassador</span>
+          </div>
+          <div class="ambassador-card-title">ATP Ambassador</div>
+          <div class="ambassador-card-desc">As an ATP Ambassador you can check in members at sessions by scanning their QR code. You have access to the live session dashboard and attendance records.</div>
+          <a href="checkin.html" class="ambassador-scan-btn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><path d="M8 12h8M12 8v8"/></svg>
+            Open Check-in Scanner
+          </a>
+        </div>
+        <div class="widget">
+          <div class="widget-head"><span class="widget-title">Today's Sessions</span><span style="font-size:12px;color:var(--muted)">Tap to manage</span></div>
+          <div class="widget-body">
+            <div class="session-row" style="cursor:pointer" onclick="window.location='checkin.html?session=community-run'">
+              <div class="session-dot faster"></div>
+              <div class="session-info"><div class="session-name">Community Run</div><div class="session-meta">Tonight · 7:00 PM · Dubai Marina</div></div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:11px;color:var(--green);font-weight:700">24 booked</span>
+                <span class="session-status upcoming">Check in →</span>
+              </div>
+            </div>
+            <div class="session-row" style="cursor:pointer" onclick="window.location='checkin.html'">
+              <div class="session-dot stronger"></div>
+              <div class="session-info"><div class="session-name">Military Bootcamp</div><div class="session-meta">Tomorrow · 6:30 AM · Al Formal Park</div></div>
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:11px;color:var(--green);font-weight:700">18 booked</span>
+                <span class="session-status upcoming">Check in →</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="widget">
+          <div class="widget-head"><span class="widget-title">My Check-in History</span></div>
+          <div class="widget-body">
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+              <thead><tr style="border-bottom:1px solid rgba(255,255,255,.08)">
+                <th style="text-align:left;padding:8px 0;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Member</th>
+                <th style="text-align:left;padding:8px 0;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Session</th>
+                <th style="text-align:right;padding:8px 0;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Time</th>
+              </tr></thead>
+              <tbody id="checkinHistory">
+                <tr style="border-bottom:1px solid rgba(255,255,255,.04)"><td style="padding:10px 0;color:var(--white)">Jay Ashar</td><td style="color:var(--muted)">Community Run</td><td style="text-align:right;color:var(--green);font-weight:700">7:02 PM</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,.04)"><td style="padding:10px 0;color:var(--white)">Valentina R.</td><td style="color:var(--muted)">Community Run</td><td style="text-align:right;color:var(--green);font-weight:700">7:04 PM</td></tr>
+                <tr style="border-bottom:1px solid rgba(255,255,255,.04)"><td style="padding:10px 0;color:var(--white)">Gwen Gaje</td><td style="color:var(--muted)">Community Run</td><td style="text-align:right;color:var(--green);font-weight:700">7:07 PM</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- SIDEBAR -->
+    <aside class="profile-sidebar">
+      <div class="sub-card">
+        <div class="sub-card-label">Subscription</div>
+        <div class="sub-free">
+          <div class="sub-icon">🎽</div>
+          <div>
+            <div class="sub-name" id="subName">Free</div>
+            <div class="sub-desc">All sessions included</div>
+          </div>
+        </div>
+        <button class="upgrade-btn">⭐ Upgrade to Premium</button>
+      </div>
+
+      <div class="sub-card">
+        <div class="sub-card-label">Referral Link</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6">Share ATP. Every referral earns <strong style="color:var(--green)">50 points</strong>.</div>
+        <div style="background:var(--dark3);border-radius:var(--radius);padding:11px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="copyReferral()">
+          <span style="font-size:12px;color:var(--light);font-family:monospace">atthepark.world/ref/fm001</span>
+          <span style="font-size:11px;font-weight:700;color:var(--green)" id="copyText">Copy</span>
+        </div>
+      </div>
+
+      <div class="sub-card">
+        <div class="sub-card-label">Quick Stats</div>
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between"><span style="font-size:13px;color:var(--muted)">Member since</span><span style="font-size:13px;font-weight:600;color:var(--white)">2015</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="font-size:13px;color:var(--muted)">Home city</span><span style="font-size:13px;font-weight:600;color:var(--white)">Dubai</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="font-size:13px;color:var(--muted)">Favourite tribe</span><span style="font-size:13px;font-weight:600;color:var(--green)">Stronger</span></div>
+          <div style="display:flex;justify-content:space-between"><span style="font-size:13px;color:var(--muted)">Padel level</span><span style="font-size:13px;font-weight:600;color:var(--white)">Intermediate</span></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+
+<!-- ══ AUTH MODAL ══════════════════════════════════════════ -->
+<div class="auth-overlay" id="authOverlay" role="dialog" aria-modal="true" aria-label="Sign in or join">
+  <div class="auth-modal" id="authModal">
+    <button class="auth-close" onclick="closeAuth()" aria-label="Close">×</button>
+
+    <div class="auth-modal-top">
+      <img class="auth-modal-logo" id="authLogo" alt="At The Park">
+      <h2 class="auth-modal-title" id="authTitle">Join free</h2>
+      <p class="auth-modal-sub" id="authSub">Become an ATP member to book sessions, track your streak and connect with 7,000+ members.</p>
+    </div>
+
+    <div class="auth-modal-body">
+      <!-- ERROR -->
+      <div class="auth-error" id="authError"></div>
+
+      <!-- SOCIAL -->
+      <div id="authSocialPanel">
+        <button class="auth-social-btn google" onclick="authWithGoogle()">
+          <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/><path d="M3.964 10.707A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
+          Continue with Google
+        </button>
+        <button class="auth-social-btn apple" onclick="authWithApple()">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><path d="M13.23 9.26c-.02-2.01 1.64-2.98 1.71-3.03-.93-1.36-2.38-1.55-2.9-1.57-1.24-.13-2.42.73-3.05.73-.63 0-1.6-.71-2.63-.69-1.35.02-2.6.79-3.29 2-.4.69-.99 2.97-.07 5.58.65 1.89 1.67 2.99 2.47 3.04.8.05 1.4-.52 2.62-.52 1.22 0 1.78.52 2.62.5.83-.01 1.73-1.04 2.37-2.95.02-.01.08-.03.08-.03-.01 0-2.03-.78-2.05-3.06z"/><path d="M11.37 3.19c.63-.77 1.05-1.83.94-2.9-.9.04-2 .61-2.65 1.37-.58.67-1.09 1.74-.95 2.77 1 .08 2.03-.51 2.66-1.24z"/></svg>
+          Continue with Apple
+        </button>
+
+        <div class="auth-divider">or use email</div>
+      </div>
+
+      <!-- EMAIL FORM (signup) -->
+      <div id="authSignupForm">
+        <div class="auth-field-row">
+          <div class="auth-field">
+            <label for="authFirstName">First name</label>
+            <input type="text" id="authFirstName" placeholder="Fredy" autocomplete="given-name">
+          </div>
+          <div class="auth-field">
+            <label for="authLastName">Last name</label>
+            <input type="text" id="authLastName" placeholder="Martins" autocomplete="family-name">
+          </div>
+        </div>
+        <div class="auth-field">
+          <label for="authEmail">Email address</label>
+          <input type="email" id="authEmail" placeholder="you@email.com" autocomplete="email">
+        </div>
+        <div class="auth-field">
+          <label for="authPassword">Password</label>
+          <input type="password" id="authPassword" placeholder="Min. 8 characters" autocomplete="new-password">
+        </div>
+        <button class="auth-submit" id="authSubmitBtn" onclick="submitSignup()">
+          Become a member — it's free 🎉
+        </button>
+        <div class="auth-toggle">
+          Already a member?
+          <button onclick="switchToLogin()">Log in</button>
+        </div>
+      </div>
+
+      <!-- EMAIL FORM (login) -->
+      <div id="authLoginForm" style="display:none">
+        <div class="auth-field">
+          <label for="loginEmail">Email address</label>
+          <input type="email" id="loginEmail" placeholder="you@email.com" autocomplete="email">
+        </div>
+        <div class="auth-field">
+          <label for="loginPassword">Password</label>
+          <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password">
+        </div>
+        <button class="auth-submit" id="loginSubmitBtn" onclick="submitLogin()">
+          Log in →
+        </button>
+        <div class="auth-toggle">
+          Not a member yet?
+          <button onclick="switchToSignup()">Join free</button>
+        </div>
+      </div>
+
+      <!-- SUCCESS -->
+      <div id="authSuccessPanel" style="display:none" class="auth-success">
+        <div class="auth-success-icon">🎉</div>
+        <h3 class="auth-success-title" id="authSuccessTitle">Welcome!</h3>
+        <p class="auth-success-sub" id="authSuccessSub"></p>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ════════════════════════════════════════════════════════ -->
+
+
+<script>
+var LOGO_SRC = "https://raw.githubusercontent.com/AtTheParkWorld/ATP_World_Web/main/atthepark_assets02.png";
+(function(){
+  var imgs=[document.getElementById("nav-logo-img"),document.getElementById("authLogo")];
+  imgs.forEach(function(img){if(img)img.src=LOGO_SRC;});
+})();
+
+// ── NAV ─────────────────────────────────────────────────────
+var navEl=document.getElementById("nav");
+window.addEventListener("scroll",function(){navEl.classList.toggle("scrolled",window.scrollY>40);},{passive:true});
+
+// ── TAB SYSTEM ───────────────────────────────────────────────
+function showTab(name, btn) {
+  document.querySelectorAll(".profile-panel").forEach(function(p){p.classList.remove("active");});
+  document.querySelectorAll(".ptab").forEach(function(t){t.classList.remove("active");});
+  var panel = document.getElementById("panel-"+name);
+  if(panel) panel.classList.add("active");
+  if(btn) { btn.classList.add("active"); }
+  else {
+    var t = document.querySelector('[data-tab="'+name+'"]');
+    if(t) t.classList.add("active");
+  }
+  window.scrollTo({top:document.querySelector(".profile-tabs-wrap").offsetTop - 80, behavior:"smooth"});
+}
+
+// ── DATA ─────────────────────────────────────────────────────
+// Load bookings - tries API first, falls back to localStorage
+async function loadBookingsFromAPI() {
+  if (!window.ATP || !window.ATP.isLoggedIn()) return;
+  try {
+    var data = await window.ATP.members.bookings();
+    if (!data.bookings) return;
+    var apiSessions = data.bookings.map(function(b) {
+      var dt = b.scheduled_at ? new Date(b.scheduled_at) : null;
+      return {
+        name:    b.session_name || b.name || 'Session',
+        tribe:   b.tribe_slug || 'stronger',
+        day:     dt ? dt.toLocaleDateString('en-AE', {weekday:'short', day:'numeric', month:'short'}) : '—',
+        time:    dt ? dt.toLocaleTimeString('en-AE', {hour:'2-digit', minute:'2-digit'}) : '',
+        loc:     b.location || '',
+        status:  b.status === 'attended' ? 'done' : (b.status === 'cancelled' ? 'cancelled' : 'upcoming'),
+        id:      b.id,
+        qr_token: b.qr_token,
+        session_id: b.session_id,
+        points_reward: b.points_reward || 10,
+      };
+    });
+    if (apiSessions.length) {
+      SESSIONS = apiSessions;
+      renderSessions(document.getElementById('upcomingSessions'),
+        SESSIONS.filter(function(s){return s.status==='upcoming';}).slice(0,3));
+      renderSessions(document.getElementById('allSessions'), SESSIONS);
+      console.log('✅ Profile: loaded', SESSIONS.length, 'bookings from API');
+    }
+  } catch(e) { console.warn('Could not load bookings from API:', e.message); }
+}
+
+function getSessionsData() {
+  var stored = JSON.parse(localStorage.getItem('atp:bookings') || '[]');
+  var fallback = [
+    {name:"Community Run",tribe:"faster",day:"Today",time:"7:00 PM",loc:"Dubai Marina",status:"upcoming"},
+    {name:"Military Bootcamp",tribe:"stronger",day:"Tomorrow",time:"6:30 AM",loc:"Al Formal Park",status:"upcoming"},
+    {name:"Hatha Yoga",tribe:"better",day:"Wed",time:"7:00 PM",loc:"DIC Amphitheatre",status:"upcoming"},
+    {name:"Cardio Calisthenics",tribe:"stronger",day:"Mon",time:"7:00 PM",loc:"Skydive Dubai",status:"done"},
+    {name:"Community Run",tribe:"faster",day:"Sun",time:"7:00 AM",loc:"Dubai Marina",status:"done"},
+    {name:"Sound Healing",tribe:"better",day:"Sat",time:"7:00 PM",loc:"Al Formal Park",status:"done"},
+  ];
+  if (!stored.length) return fallback;
+  return stored.map(function(b) {
+    return {name:b.session,tribe:"stronger",day:b.dayTime.split("·")[0].trim(),time:b.dayTime.split("·")[1]||"",loc:b.loc,status:b.status||"upcoming",id:b.id,qrData:b.qrData};
+  });
+}
+var SESSIONS = getSessionsData();
+
+var ACHIEVEMENTS = [
+  {icon:"🔥",name:"First Session",desc:"Attend your first ATP session",unlocked:true},
+  {icon:"🏃",name:"5-Day Streak",desc:"5 consecutive days",unlocked:true},
+  {icon:"💪",name:"10 Sessions",desc:"Complete 10 sessions",unlocked:true},
+  {icon:"🌟",name:"Community Star",desc:"Refer 5 friends",unlocked:true},
+  {icon:"🏆",name:"50 Sessions",desc:"Complete 50 sessions",unlocked:true},
+  {icon:"🔥",name:"30-Day Streak",desc:"30 consecutive days",unlocked:true},
+  {icon:"🎽",name:"Gear Up",desc:"First store purchase",unlocked:true},
+  {icon:"👥",name:"Tribe Leader",desc:"Refer 10 friends",unlocked:true},
+  {icon:"🚀",name:"100 Sessions",desc:"Complete 100 sessions",unlocked:false},
+  {icon:"⚡",name:"60-Day Streak",desc:"60 consecutive days",unlocked:false},
+  {icon:"🌍",name:"3 Cities",desc:"Session in all 3 cities",unlocked:false},
+  {icon:"👑",name:"Co-Founder Fan",desc:"10 years of ATP",unlocked:false},
+];
+
+var TRIBE = [
+  {init:"J",name:"Jay Ashar",joined:"Jan 2024",sessions:127,active:true},
+  {init:"V",name:"Valentina R.",joined:"Mar 2024",sessions:118,active:true},
+  {init:"G",name:"Gwen Gaje",joined:"Feb 2024",sessions:104,active:true},
+  {init:"H",name:"Hugo M.",joined:"Apr 2024",sessions:98,active:true},
+  {init:"S",name:"Shodhan K.",joined:"May 2024",sessions:91,active:true},
+  {init:"M",name:"Manju P.",joined:"Jun 2024",sessions:87,active:true},
+  {init:"C",name:"Carlos V.",joined:"Jul 2024",sessions:74,active:false},
+  {init:"P",name:"Priya N.",joined:"Aug 2024",sessions:71,active:true},
+  {init:"A",name:"Ana L.",joined:"Sep 2024",sessions:65,active:true},
+  {init:"R",name:"Ravi S.",joined:"Oct 2024",sessions:58,active:false},
+  {init:"N",name:"Nina K.",joined:"Nov 2024",sessions:42,active:true},
+  {init:"T",name:"Tom B.",joined:"Dec 2024",sessions:31,active:false},
+];
+
+var FRIENDS_REQUESTS = [
+  {init:"L",name:"Lucas P.",meta:"Faster Tribe · 89 sessions"},
+  {init:"E",name:"Elena M.",meta:"Better Tribe · 62 sessions"},
+];
+var FRIENDS = [
+  {init:"J",name:"Jay Ashar",meta:"127 sessions · 28d streak"},
+  {init:"V",name:"Valentina R.",meta:"118 sessions · 21d streak"},
+  {init:"G",name:"Gwen Gaje",meta:"104 sessions · 14d streak"},
+  {init:"H",name:"Hugo M.",meta:"98 sessions · 10d streak"},
+];
+
+var NOTIFS = [
+  {unread:true,text:"<strong>Jay Ashar</strong> liked your session check-in",time:"2m ago"},
+  {unread:true,text:"<strong>New session</strong> added: Padel Night at JBR — book now",time:"1h ago"},
+  {unread:true,text:"<strong>Elena M.</strong> sent you a friend request",time:"3h ago"},
+  {unread:false,text:"You earned the <strong>Tribe Leader</strong> achievement 🏆",time:"Yesterday"},
+  {unread:false,text:"Your streak is at <strong>14 days</strong> — keep it up! 🔥",time:"Yesterday"},
+  {unread:false,text:"<strong>Lucas P.</strong> joined ATP via your referral link",time:"2 days ago"},
+  {unread:false,text:"New challenge available: <strong>July Bootcamp Blitz</strong>",time:"3 days ago"},
+];
+
+var WALLET_TXNS = [
+  {icon:"🔥",name:"Session attendance",date:"Today",amt:"+10",earn:true},
+  {icon:"👥",name:"Referral bonus (Nina K.)",date:"Yesterday",amt:"+50",earn:true},
+  {icon:"🎽",name:"Store purchase — FlowFit Tank",date:"2 days ago",amt:"-50",earn:false},
+  {icon:"🔥",name:"Session attendance",date:"3 days ago",amt:"+10",earn:true},
+  {icon:"🔥",name:"Session attendance",date:"4 days ago",amt:"+10",earn:true},
+  {icon:"👥",name:"Referral bonus (Tom B.)",date:"5 days ago",amt:"+50",earn:true},
+  {icon:"🎉",name:"Streak bonus — 14 days",date:"6 days ago",amt:"+20",earn:true},
+];
+
+var CHALLENGES = [
+  {icon:"🏃",name:"July Run Challenge",sub:"Complete 8 running sessions this month",done:6,total:8,active:true},
+  {icon:"💪",name:"Bootcamp Blitz",sub:"Attend 4 bootcamp sessions in 2 weeks",done:3,total:4,active:true},
+  {icon:"🧘",name:"Mindful July",sub:"3 yoga or sound healing sessions",done:3,total:3,active:false},
+];
+
+// ── RENDER FUNCTIONS ─────────────────────────────────────────
+function renderStreakGrid(el, days) {
+  var html = "";
+  var today = new Date();
+  var days_arr = ["S","M","T","W","T","F","S"];
+  for(var i=days-1;i>=0;i--) {
+    var d = new Date(today); d.setDate(today.getDate()-i);
+    var dow = d.getDay();
+    var label = days_arr[dow];
+    var cls = "streak-day";
+    if(i<14 && i%3!==0) cls+=" done";
+    if(i===0) cls+=" today";
+    if(i>=14 && i<16) cls+=" missed";
+    html += "<div class='"+cls+"'>"+label+"</div>";
+  }
+  el.innerHTML = html;
+}
+
+function renderSessions(el, sessions) {
+  el.innerHTML = sessions.map(function(s,i){
+    var qrBtn = (s.qr_token || s.qrData) ? "<button class='session-qr-btn' onclick='showSessionQR(\'"+encodeURIComponent(s.qr_token ? JSON.stringify({token:s.qr_token,session:s.name}) : s.qrData)+"\',\'"+s.id+"\')'>"+
+      "<svg width=\'12\' height=\'12\' viewBox=\'0 0 16 16\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.8\'><rect x=\'1\' y=\'1\' width=\'6\' height=\'6\' rx=\'1\'/><rect x=\'9\' y=\'1\' width=\'6\' height=\'6\' rx=\'1\'/><rect x=\'1\' y=\'9\' width=\'6\' height=\'6\' rx=\'1\'/><rect x=\'9\' y=\'9\' width=\'6\' height=\'6\' rx=\'1\'/></svg>"+
+      " QR</button>" : "";
+    return "<div class='session-row'>"+
+      "<div class='session-dot "+s.tribe+"'></div>"+
+      "<div class='session-info'>"+
+        "<div class='session-name'>"+s.name+"</div>"+
+        "<div class='session-meta'>"+s.day+" · "+s.time+" · "+s.loc+"</div>"+
+      "</div>"+
+      "<div style='display:flex;align-items:center;gap:8px'>"+
+        qrBtn+
+        "<span class='session-status "+s.status+"'>"+(s.status==="upcoming"?"Upcoming":"Done")+"</span>"+
+      "</div>"+
+    "</div>";
+  }).join("");
+}
+
+function renderAchievements(el, list) {
+  el.innerHTML = list.map(function(a){
+    return "<div class='achievement "+(a.unlocked?"unlocked":"locked")+"'>"+
+      "<div class='ach-icon'>"+a.icon+"</div>"+
+      "<div class='ach-name'>"+a.name+"</div>"+
+      "<div class='ach-desc'>"+a.desc+"</div>"+
+    "</div>";
+  }).join("");
+}
+
+function renderTribe(el) {
+  el.innerHTML = TRIBE.map(function(m){
+    return "<div class='tribe-member-row'>"+
+      "<div class='tribe-av'>"+m.init+"</div>"+
+      "<div class='tribe-info'>"+
+        "<div class='tribe-mname'>"+m.name+"</div>"+
+        "<div class='tribe-msub'>Joined "+m.joined+" · "+m.sessions+" sessions</div>"+
+      "</div>"+
+      "<span class='tribe-badge'>"+(m.active?"Active":"Inactive")+"</span>"+
+    "</div>";
+  }).join("");
+}
+
+function renderFriends() {
+  var reqEl = document.getElementById("friendRequests");
+  var lstEl = document.getElementById("friendsList");
+  reqEl.innerHTML = FRIENDS_REQUESTS.map(function(f,i){
+    return "<div class='friend-row'>"+
+      "<div class='friend-av'>"+f.init+"</div>"+
+      "<div class='friend-info'><div class='friend-name'>"+f.name+"</div><div class='friend-meta'>"+f.meta+"</div></div>"+
+      "<div class='friend-actions'>"+
+        "<button class='friend-btn accept' onclick='acceptFriend("+i+",this)'>Accept</button>"+
+        "<button class='friend-btn' onclick='declineFriend("+i+")'>Decline</button>"+
+      "</div>"+
+    "</div>";
+  }).join("");
+  lstEl.innerHTML = FRIENDS.map(function(f){
+    return "<div class='friend-row'>"+
+      "<div class='friend-av'>"+f.init+"</div>"+
+      "<div class='friend-info'><div class='friend-name'>"+f.name+"</div><div class='friend-meta'>"+f.meta+"</div></div>"+
+      "<a href='sessions.html' class='friend-btn' style='text-decoration:none'>Train together</a>"+
+    "</div>";
+  }).join("");
+}
+
+function renderNotifs() {
+  document.getElementById("notifList").innerHTML = NOTIFS.map(function(n){
+    return "<div class='notif-row "+(n.unread?"unread":"")+"'>"+
+      "<div class='notif-dot-wrap'><div class='notif-dot' style='"+(n.unread?"":"background:transparent;border:1px solid rgba(255,255,255,.1)")+"'></div></div>"+
+      "<div class='notif-text'>"+n.text+"</div>"+
+      "<div class='notif-time'>"+n.time+"</div>"+
+    "</div>";
+  }).join("");
+}
+
+function renderWallet() {
+  document.getElementById("walletTxns").innerHTML = WALLET_TXNS.map(function(t){
+    return "<div class='wallet-txn'>"+
+      "<div class='wallet-txn-left'>"+
+        "<div class='wallet-txn-icon'>"+t.icon+"</div>"+
+        "<div><div class='wallet-txn-name'>"+t.name+"</div><div class='wallet-txn-date'>"+t.date+"</div></div>"+
+      "</div>"+
+      "<div class='wallet-txn-amt "+(t.earn?"earn":"spend")+"'>"+t.amt+" pts</div>"+
+    "</div>";
+  }).join("");
+}
+
+function renderChallenges() {
+  document.getElementById("challengesList").innerHTML = CHALLENGES.map(function(c){
+    var pct = Math.round((c.done/c.total)*100);
+    return "<div class='challenge-card "+(c.active?"active-c":"")+"'>"+
+      "<div class='challenge-header'>"+
+        "<div class='challenge-icon'>"+c.icon+"</div>"+
+        "<div><div class='challenge-name'>"+c.name+"</div><div class='challenge-sub'>"+c.sub+"</div></div>"+
+        (c.done===c.total?"<span class='member-badge' style='margin-left:auto'>✓ Done</span>":"")+
+      "</div>"+
+      "<div class='challenge-progress-wrap'><div class='challenge-progress-bar' style='width:"+pct+"%'></div></div>"+
+      "<div class='challenge-footer'><span class='challenge-done'>"+c.done+"/"+c.total+" sessions</span><span class='challenge-total'>"+pct+"% complete</span></div>"+
+    "</div>";
+  }).join("");
+}
+
+function markAllRead() {
+  NOTIFS.forEach(function(n){n.unread=false;});
+  renderNotifs();
+}
+
+function acceptFriend(i,btn){
+  FRIENDS.unshift(FRIENDS_REQUESTS[i]);
+  FRIENDS_REQUESTS.splice(i,1);
+  renderFriends();
+}
+function declineFriend(i){
+  FRIENDS_REQUESTS.splice(i,1);
+  renderFriends();
+}
+
+function copyReferral(){
+  navigator.clipboard && navigator.clipboard.writeText("https://atthepark.world/ref/fm001");
+  var el=document.getElementById("copyText");
+  if(el){el.textContent="Copied!";setTimeout(function(){el.textContent="Copy";},2000);}
+}
+
+function togglePill(btn){btn.classList.toggle("sel");}
+function setPadel(btn){document.querySelectorAll(".padel-btn").forEach(function(b){b.classList.remove("sel");});btn.classList.add("sel");}
+
+function saveProfile(){
+  var n=document.getElementById("fFirstName").value+" "+document.getElementById("fLastName").value;
+  document.getElementById("profileName").textContent=n;
+  document.getElementById("avatarInitials").textContent=(n[0]+(n.split(" ")[1]||"")[0]||"").toUpperCase();
+  showMessage("Profile saved ✓");
+  showTab("overview");
+}
+
+function showMessage(msg){
+  var toast=document.createElement("div");
+  toast.style.cssText="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:12px 24px;border-radius:var(--radius);font-size:14px;font-weight:700;z-index:999;animation:fadeIn .3s";
+  toast.textContent=msg;
+  document.body.appendChild(toast);
+  setTimeout(function(){toast.remove();},2500);
+}
+
+function triggerAvatarUpload(){document.getElementById("avatarInput").click();}
+function handleAvatarUpload(input){
+  if(!input.files||!input.files[0])return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    var av=document.getElementById("profileAvatar");
+    av.querySelector("#avatarInitials").style.display="none";
+    var img=av.querySelector("img")||document.createElement("img");
+    img.src=e.target.result;img.style.cssText="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%";
+    av.insertBefore(img,av.firstChild);
+  };
+  reader.readAsDataURL(input.files[0]);
+}
+
+
+// ── QR CODE LIBRARY ──────────────────────────────────────────
+// Loaded from CDN in head
+// ── SESSION QR MODAL ─────────────────────────────────────────
+var profileQRInstance = null;
+function showSessionQR(encodedData, id) {
+  var data = decodeURIComponent(encodedData);
+  var parsed = {};
+  try { parsed = JSON.parse(data); } catch(e) {}
+  document.getElementById('profileQRId').textContent = id || parsed.id || 'ATP-MEMBER';
+  document.getElementById('profileQRSession').textContent = (parsed.session || '') + ' · ' + (parsed.dayTime || '');
+  var el = document.getElementById('profileQREl');
+  el.innerHTML = '';
+  if (typeof QRCode !== 'undefined') {
+    profileQRInstance = new QRCode(el, { text: data, width: 180, height: 180, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
+  }
+  document.getElementById('qrModalOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+function closeQRModal() {
+  document.getElementById('qrModalOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+}
+function saveProfileQR() {
+  var canvas = document.querySelector('#profileQREl canvas');
+  if (!canvas) return;
+  var a = document.createElement('a');
+  a.download = 'ATP-checkin-QR.png';
+  a.href = canvas.toDataURL('image/png');
+  a.click();
+}
+
+// ── AMBASSADOR ROLE ───────────────────────────────────────────
+function checkAmbassadorRole() {
+  var user = atpUser;
+  var isAmbassador = user && (user.ambassador === true || localStorage.getItem('atp:ambassador') === 'true');
+  var tab = document.getElementById('ambassadorTab');
+  if (isAmbassador && tab) {
+    tab.style.display = 'block';
+    // Show ambassador badge in profile
+    var badge = document.getElementById('subBadge');
+    if (badge) {
+      badge.innerHTML += ' <span class="ambassador-badge" style="margin-left:6px">⭐ Ambassador</span>';
+    }
+  }
+}
+
+// Reload sessions from localStorage on init
+SESSIONS = getSessionsData();
+
+// ── INIT ────────────────────────────────────────────────────
+renderStreakGrid(document.getElementById("streakMiniGrid"),28);
+
+// Load real data from API
+function loadRealProfileData() {
+  if (!window.ATP || !window.ATP.isLoggedIn()) return;
+  var h = {'Authorization':'Bearer '+(localStorage.getItem('atp_token')||'')};
+
+  // Real member profile
+  window.ATP.members.profile().then(function(m) {
+    if (!m || m.error) return;
+    // Update name/avatar in header
+    var nameEl = document.querySelector('.profile-name, .member-name, h1.name');
+    if (nameEl) nameEl.textContent = m.first_name + ' ' + (m.last_name||'');
+    var numEl = document.querySelector('.member-number, .profile-id');
+    if (numEl) numEl.textContent = m.member_number || '';
+    var ptEl = document.querySelector('.points-balance, .wallet-balance');
+    if (ptEl) ptEl.textContent = (m.points_balance||0).toLocaleString();
+    console.log('✅ Profile loaded:', m.first_name, m.member_number);
+  }).catch(function(){});
+
+  // Real stats
+  window.ATP.members.stats().then(function(data) {
+    var s = data.stats || data;
+    var nums = document.querySelectorAll('.pstat-num');
+    if (nums[0]) nums[0].textContent = s.total_sessions || '0';
+    if (nums[1]) nums[1].textContent = s.current_streak || '0';
+    if (nums[2]) nums[2].textContent = (s.points_balance||s.current_balance||0).toLocaleString();
+    if (nums[3]) nums[3].textContent = s.total_referrals || '0';
+    if (nums[4]) nums[4].textContent = s.challenges_completed || '0';
+    console.log('✅ Stats loaded');
+  }).catch(function(){});
+
+  // Real upcoming bookings
+  window.ATP.members.bookings().then(function(data) {
+    var bookings = (data.bookings||[]).filter(function(b){ return b.status==='confirmed'; });
+    var container = document.getElementById('upcomingSessions');
+    if (container && bookings.length) {
+      container.innerHTML = bookings.slice(0,3).map(function(b) {
+        var d = new Date(b.scheduled_at||b.session_date);
+        var dateStr = d.toLocaleDateString('en-GB',{weekday:'short',month:'short',day:'numeric'});
+        return '<div class="session-card">' +
+          '<div class="session-day">' + dateStr + '</div>' +
+          '<div class="session-name">' + (b.session_name||b.name||'Session') + '</div>' +
+          '<div class="session-loc">' + (b.location||'') + '</div>' +
+          '</div>';
+      }).join('');
+      console.log('✅ Bookings loaded:', bookings.length);
+    }
+  }).catch(function(){});
+
+  // Real points history
+  window.ATP.members.pointsHistory().then(function(data) {
+    console.log('✅ Points history loaded:', (data.history||[]).length, 'entries');
+  }).catch(function(){});
+}
+
+loadRealProfileData();
+renderStreakGrid(document.getElementById("streakFullGrid"),28);
+renderSessions(document.getElementById("upcomingSessions"),SESSIONS.slice(0,3));
+renderSessions(document.getElementById("allSessions"),SESSIONS);
+renderAchievements(document.getElementById("achieveMini"),ACHIEVEMENTS.slice(0,6));
+renderAchievements(document.getElementById("allAchievements"),ACHIEVEMENTS);
+renderTribe(document.getElementById("tribeList"));
+renderFriends();
+renderNotifs();
+renderWallet();
+renderChallenges();
+
+
+// ══════════════════════════════════════════════════════════════
+// ATP AUTH ENGINE
+// Uses localStorage to persist session. Swap the mock functions
+// for real Firebase / Supabase calls when ready.
+// ══════════════════════════════════════════════════════════════
+
+var ATP_USER_KEY = 'atp:user';
+var atpUser = null; // { firstName, lastName, email, avatar, joinedAt }
+
+// ── Persistence ──────────────────────────────────────────────
+function authLoadUser() {
+  try {
+    var raw = localStorage.getItem(ATP_USER_KEY);
+    if(raw) atpUser = JSON.parse(raw);
+  } catch(e) { atpUser = null; }
+}
+function authSaveUser(user) {
+  atpUser = user;
+  try { localStorage.setItem(ATP_USER_KEY, JSON.stringify(user)); } catch(e){}
+}
+function authClearUser() {
+  atpUser = null;
+  try { localStorage.removeItem(ATP_USER_KEY); } catch(e){}
+}
+
+// ── Modal open/close ─────────────────────────────────────────
+function openAuth(mode) {
+  if(atpUser) return; // already signed in
+  mode = mode || 'signup';
+  if(mode === 'login') { switchToLogin(); } else { switchToSignup(); }
+  document.getElementById('authError').classList.remove('show');
+  document.getElementById('authSuccessPanel').style.display = 'none';
+  document.getElementById('authSignupForm').style.display = '';
+  document.getElementById('authLoginForm').style.display  = 'none';
+  document.getElementById('authSocialPanel').style.display = '';
+  document.getElementById('authOverlay').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Set logo
+  var logo = document.getElementById('authLogo');
+  if(logo && typeof LOGO_SRC !== 'undefined') logo.src = LOGO_SRC;
+
+  // Focus first input
+  setTimeout(function(){
+    var first = document.getElementById(mode === 'login' ? 'loginEmail' : 'authFirstName');
+    if(first) first.focus();
+  }, 300);
+}
+function closeAuth() {
+  document.getElementById('authOverlay').classList.remove('open');
+  document.body.style.overflow = '';
+  // If a booking was waiting, resume it
+  if(atpUser && typeof pendingSession !== 'undefined' && pendingSession) {
+    var s = pendingSession; pendingSession = null;
+    openModal(s.name,s.tribe,s.dayTime,s.coach,s.loc,s.desc,s.day,s.time);
+  }
+}
+
+function switchToLogin() {
+  document.getElementById('authTitle').textContent = 'Welcome back';
+  document.getElementById('authSub').textContent   = 'Log in to your ATP account to book sessions.';
+  document.getElementById('authSignupForm').style.display = 'none';
+  document.getElementById('authLoginForm').style.display  = '';
+  document.getElementById('authSuccessPanel').style.display = 'none';
+  document.getElementById('authError').classList.remove('show');
+}
+function switchToSignup() {
+  document.getElementById('authTitle').textContent = 'Join free';
+  document.getElementById('authSub').textContent   = 'Become an ATP member to book sessions, track your streak and connect with 7,000+ members.';
+  document.getElementById('authSignupForm').style.display = '';
+  document.getElementById('authLoginForm').style.display  = 'none';
+  document.getElementById('authSuccessPanel').style.display = 'none';
+  document.getElementById('authError').classList.remove('show');
+}
+
+// ── Validation helpers ───────────────────────────────────────
+function validEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+function showAuthError(msg){
+  var el = document.getElementById('authError');
+  el.textContent = msg; el.classList.add('show');
+}
+
+// ── Email signup ─────────────────────────────────────────────
+function submitSignup() {
+  var firstName = document.getElementById('authFirstName').value.trim();
+  var lastName  = document.getElementById('authLastName').value.trim();
+  var email     = document.getElementById('authEmail').value.trim();
+  var password  = document.getElementById('authPassword').value;
+
+  // Clear errors
+  ['authFirstName','authLastName','authEmail','authPassword'].forEach(function(id){
+    document.getElementById(id).classList.remove('err');
+  });
+  document.getElementById('authError').classList.remove('show');
+
+  var ok = true;
+  if(!firstName){ document.getElementById('authFirstName').classList.add('err'); ok=false; }
+  if(!lastName) { document.getElementById('authLastName').classList.add('err');  ok=false; }
+  if(!validEmail(email)){ document.getElementById('authEmail').classList.add('err'); ok=false; }
+  if(password.length < 8){ document.getElementById('authPassword').classList.add('err'); ok=false; }
+  if(!ok){ showAuthError('Please fill in all fields correctly.'); return; }
+
+  var btn = document.getElementById('authSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Creating your account...';
+
+  window.ATP.auth.register({first_name:firstName,last_name:lastName,email:email,phone:null,password:password}).then(function(data){btn.disabled=false;btn.textContent='Join free →';if(!data.token){showAuthError(data.error||'Sign up failed.');return;}var m=data.member;authSaveUser({firstName:m.first_name,lastName:m.last_name,email:m.email,memberId:m.id,memberNumber:m.member_number,avatar:(m.first_name[0]+(m.last_name||'X')[0]).toUpperCase(),points:0,ambassador:false,admin:false});onAuthSuccess(atpUser,'signup');}).catch(function(){btn.disabled=false;btn.textContent='Join free →';showAuthError('Connection error.');});}
+
+// ── Email login ──────────────────────────────────────────────
+function submitLogin() {
+  var email    = document.getElementById('loginEmail').value.trim();
+  var password = document.getElementById('loginPassword').value;
+
+  ['loginEmail','loginPassword'].forEach(function(id){
+    document.getElementById(id).classList.remove('err');
+  });
+  document.getElementById('authError').classList.remove('show');
+
+  var ok = true;
+  if(!validEmail(email)){ document.getElementById('loginEmail').classList.add('err'); ok=false; }
+  if(!password){ document.getElementById('loginPassword').classList.add('err'); ok=false; }
+  if(!ok){ showAuthError('Please enter your email and password.'); return; }
+
+  var btn = document.getElementById('loginSubmitBtn');
+  btn.disabled = true; btn.textContent = 'Logging in...';
+
+  // ── MOCK: replace with real auth check ──
+  setTimeout(function(){
+    // In real implementation: verify against backend
+    var stored = null;
+    try { stored = JSON.parse(localStorage.getItem(ATP_USER_KEY)); } catch(e){}
+    if(stored && stored.email === email) {
+      authSaveUser(stored);
+      onAuthSuccess(stored, 'login');
+    } else {
+      // For demo: create session anyway
+      var user = {
+        firstName: email.split('@')[0], lastName: '',
+        email: email, joinedAt: new Date().toISOString(),
+        avatar: email[0].toUpperCase()
+      };
+      authSaveUser(user);
+      onAuthSuccess(user, 'login');
+    }
+  }, 700);
+}
+
+// ── Social auth (mock — replace with real OAuth) ─────────────
+function authWithGoogle() {
+  // Real: firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
+  var mockUser = {
+    firstName: 'Google', lastName: 'User',
+    email: 'user@gmail.com', joinedAt: new Date().toISOString(), avatar: 'G'
+  };
+  authSaveUser(mockUser);
+  onAuthSuccess(mockUser, 'google');
+}
+function authWithApple() {
+  // Real: firebase.auth().signInWithPopup(new firebase.auth.OAuthProvider('apple.com'))
+  var mockUser = {
+    firstName: 'Apple', lastName: 'User',
+    email: 'user@icloud.com', joinedAt: new Date().toISOString(), avatar: 'A'
+  };
+  authSaveUser(mockUser);
+  onAuthSuccess(mockUser, 'apple');
+}
+
+// ── Post-auth ────────────────────────────────────────────────
+function onAuthSuccess(user, method) {
+  // Update member counter
+  if(method === 'signup' && typeof window.atpAddMember === 'function') {
+    window.atpAddMember(1);
+  }
+
+  // Show success screen
+  document.getElementById('authSignupForm').style.display = 'none';
+  document.getElementById('authLoginForm').style.display  = 'none';
+  document.getElementById('authSocialPanel').style.display = 'none';
+  document.getElementById('authSuccessPanel').style.display = 'block';
+  document.getElementById('authSuccessTitle').textContent =
+    method === 'login' ? 'Welcome back, ' + user.firstName + '!' : 'Welcome, ' + user.firstName + '!';
+  document.getElementById('authSuccessSub').innerHTML =
+    method === 'login'
+      ? 'You\'re logged in. Go book a session! 💪'
+      : 'You are now an ATP member. <strong>' + user.email + '</strong> registered.<br><br>Go book your first free session — the community is waiting. 💪';
+
+  // Update nav
+  renderAuthNav(user);
+
+  // Auto close after 1.8s then resume any pending booking
+  setTimeout(function(){ closeAuth(); }, 1800);
+}
+
+// ── Nav render ───────────────────────────────────────────────
+function renderAuthNav(user) {
+  var actions = document.querySelector('.nav-actions');
+  if(!actions) return;
+  actions.innerHTML =
+    '<div class="nav-user">' +
+      '<div class="nav-avatar" title="' + user.firstName + ' ' + user.lastName + '">' + user.avatar + '</div>' +
+      '<div>' +
+        '<div class="nav-user-name">' + user.firstName + '</div>' +
+        '<button class="nav-logout" onclick="logOut()">Log out</button>' +
+      '</div>' +
+    '</div>';
+}
+
+// ── Log out ──────────────────────────────────────────────────
+function logOut() {
+  authClearUser();
+  var actions = document.querySelector('.nav-actions');
+  if(actions) {
+    actions.innerHTML =
+      '<button class="btn-ghost" onclick="openAuth(\'login\')">Log in</button>' +
+      '<button class="btn-primary" onclick="openAuth(\'signup\')">Join free →</button>';
+  }
+}
+
+// ── Guard: require auth before booking ───────────────────────
+function requireAuth(callback) {
+  if(atpUser) { callback(); return; }
+  // Store callback intent and open auth
+  pendingAuthCallback = callback;
+  openAuth('signup');
+}
+var pendingAuthCallback = null;
+
+// ── Init ─────────────────────────────────────────────────────
+authLoadUser();
+if(atpUser) renderAuthNav(atpUser);
+checkAmbassadorRole();
+
+// Close on overlay click
+document.getElementById('authOverlay').addEventListener('click', function(e){
+  if(e.target === this) closeAuth();
+});
+document.addEventListener('keydown', function(e){
+  if(e.key === 'Escape') closeAuth();
+});
+// ══════════════════════════════════════════════════════════════
+
+</script>
+
+<!-- QR MODAL (for viewing saved booking QR codes) -->
+<div class="qr-modal-overlay" id="qrModalOverlay" onclick="if(event.target===this)closeQRModal()">
+  <div class="qr-modal" style="position:relative">
+    <button class="qr-modal-close" onclick="closeQRModal()">×</button>
+    <h3>Check-in QR</h3>
+    <p class="qr-modal-sub">Show this to the ambassador at the session</p>
+    <div class="qr-modal-canvas"><div id="profileQREl"></div></div>
+    <div class="qr-modal-id" id="profileQRId"></div>
+    <div class="qr-modal-session" id="profileQRSession"></div>
+    <div class="qr-modal-actions">
+      <button class="qr-modal-btn" onclick="saveProfileQR()">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 13h12"/></svg>
+        Save
+      </button>
+      <button class="qr-modal-btn primary" onclick="closeQRModal()">Close</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>
