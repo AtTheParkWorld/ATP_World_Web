@@ -502,7 +502,7 @@ function renderMembers(filter) {
       '<td style="color:#555;font-size:12px">'+m.joined+'</td>'+
       '<td style="color:#fff;font-size:13px;font-weight:600">'+m.sessions+'</td>'+
       '<td><span class="badge '+(m.active?'badge-green':'badge-grey')+'">'+(m.active?'Active':'Inactive')+'</span></td>'+
-      '<td><button class="admin-btn" onclick="makeAmbassador('+m.id+')">Make Ambassador</button></td>'+
+      '<td><button class="admin-btn" onclick="makeAmbassador(\'' + m.id + '\')">Make Ambassador</button></td>'+
     '</tr>';
   }).join('');
 }
