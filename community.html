@@ -702,6 +702,21 @@ function submitPost() {
 }
 
 function createPost(txt, media) {
+  // Try real API post first
+  if (window.ATP && window.ATP.isLoggedIn()) {
+    window.ATP.community.post({content: txt}).then(function(data) {
+      var me = window.ATP.getUser() || {};
+      var ini = me.firstName ? (me.firstName[0]+(me.lastName||'')[0]).toUpperCase() : 'Y';
+      POSTS.unshift({id:data.post ? data.post.id : Date.now(),av:ini,
+        author:(me.firstName||'You')+' '+(me.lastName||''),tribe:'Community',
+        time:'Just now',text:txt,media:media,likes:0,comments:[],friendAdded:true,realId:data.post&&data.post.id});
+      renderFeedFromPosts();
+    }).catch(function(){
+      POSTS.unshift({id:Date.now(),av:'Y',author:'You',tribe:'Community',time:'Just now',text:txt,media:media,likes:0,comments:[],friendAdded:true});
+      renderFeedFromPosts();
+    });
+    return;
+  }
   POSTS.unshift({id:Date.now(),av:"FM",author:"You",tribe:"Stronger",time:"Just now",text:txt,media:media,likes:0,comments:[],friendAdded:true});
   document.getElementById("postText").value = "";
   mediaFiles = [];
@@ -920,7 +935,7 @@ async function renderLeaderboard() {
   // Try API first
   if (window.ATP) {
     try {
-      var result = await window.ATP.members.getLeaderboard(currentPeriod);
+      var result = await window.ATP.members.leaderboard(currentPeriod);
       var data = result.leaderboard.map(function(m, i) {
         return {
           init: m.first_name[0],
@@ -1327,11 +1342,59 @@ document.addEventListener('keydown', function(e){
     if (!window.ATP) return;
     window.ATP.community.feed().then(function(data) {
       if (!data.posts || !data.posts.length) return;
-      var feed = document.getElementById('communityFeed') || document.querySelector('.feed-list, .posts-list, [class*="feed"]');
-      if (feed && data.posts.length > 0) {
-        console.log('✅ Community feed:', data.posts.length, 'posts loaded');
+      // Map API posts to POSTS format and re-render
+      var me = window.ATP.getUser();
+      var apiPosts = data.posts.map(function(p) {
+        var ini = p.author_first ? (p.author_first[0]+(p.author_last||'')[0]).toUpperCase() : '?';
+        var dt = new Date(p.created_at);
+        var ago = getTimeAgo(dt);
+        return {
+          id:       p.id,
+          av:       ini,
+          author:   (p.author_first||'') + ' ' + (p.author_last||''),
+          tribe:    p.tribe_name || 'Community',
+          time:     ago,
+          text:     p.content || '',
+          media:    (p.media_urls||[]).map(function(u){return{type:'image',src:u};}),
+          likes:    parseInt(p.likes_count)||0,
+          comments: (p.recent_comments||[]).map(function(c){
+            return {av:(c.first_name||'?')[0].toUpperCase(), author:c.first_name+' '+(c.last_name||''), text:c.content, replies:[]};
+          }),
+          liked:    p.liked_by_me || false,
+          friendAdded: true,
+          realId:   p.id,
+        };
+      });
+      if (apiPosts.length > 0) {
+        POSTS = apiPosts;
+        renderFeedFromPosts();
+        console.log('✅ Community feed:', apiPosts.length, 'posts from DB');
       }
-    }).catch(function(){});
+    }).catch(function(e){ console.warn('Feed API:', e); });
+  }
+
+  function getTimeAgo(dt) {
+    var diff = (Date.now() - dt.getTime()) / 1000;
+    if (diff < 60)   return 'Just now';
+    if (diff < 3600) return Math.floor(diff/60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
+    return Math.floor(diff/86400) + 'd ago';
+  }
+
+  function renderFeedFromPosts() {
+    var feed = document.getElementById('feedList') || document.querySelector('#tab-feed .feed-list, #tab-feed [class*="feed"]');
+    if (!feed) { feed = document.querySelector('#tab-feed'); }
+    if (!feed) return;
+    var html = POSTS.map(function(p){ return buildPostCard(p); }).join('');
+    // Find the post composer and inject after it
+    var composer = feed.querySelector('.post-composer, .compose-wrap');
+    if (composer) {
+      var existingCards = feed.querySelectorAll('.post-card');
+      existingCards.forEach(function(c){ c.remove(); });
+      composer.insertAdjacentHTML('afterend', html);
+    } else {
+      feed.innerHTML = html;
+    }
   }
 
   // Load real leaderboard
@@ -1346,11 +1409,22 @@ document.addEventListener('keydown', function(e){
     }).catch(function(){});
   }
 
-  // Load real challenges
+  // Load real challenges from API
   function loadRealChallenges() {
     if (!window.ATP) return;
     window.ATP.challenges.list().then(function(data) {
-      if (data.challenges) console.log('✅ Challenges:', data.challenges.length, 'loaded');
+      if (!data.challenges || !data.challenges.length) return;
+      CHALLENGES = data.challenges.map(function(c) {
+        return {
+          id: c.id, icon: c.icon || '🏆', title: c.name,
+          desc: c.description || '', type: c.challenge_type || 'monthly',
+          metric: c.metric_type || 'Sessions', target: c.target_value || 10,
+          unit: c.unit || 'sessions', participants: c.participants_count || 0,
+          joined: c.my_progress !== undefined, done: c.my_progress || 0,
+        };
+      });
+      renderChallenges();
+      console.log('✅ Challenges:', CHALLENGES.length, 'from DB');
     }).catch(function(){});
   }
 
