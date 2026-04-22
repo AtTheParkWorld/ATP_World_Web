@@ -473,19 +473,13 @@ function showAdminSection(name, btn) {
       if(b.textContent.toLowerCase().includes(name)) b.classList.add('active');
     });
   }
+  // Auto-load real data when switching sections
+  if (name === 'members') loadMembersAPI();
+  if (name === 'dashboard') loadDashboardAPI();
 }
 
 // ── DATA ──────────────────────────────────────────────────────
-var MEMBERS_DATA = [
-  {id:'ATP-JA8821',name:'Jay Ashar',    email:'jay@email.com',   joined:'Jan 2024',sessions:127,ambassador:false,active:true},
-  {id:'ATP-VR6543',name:'Valentina R.', email:'val@email.com',   joined:'Mar 2024',sessions:118,ambassador:true, active:true},
-  {id:'ATP-GG3312',name:'Gwen Gaje',    email:'gwen@email.com',  joined:'Feb 2024',sessions:104,ambassador:false,active:true},
-  {id:'ATP-HM9901',name:'Hugo M.',      email:'hugo@email.com',  joined:'Apr 2024',sessions:98, ambassador:true, active:true},
-  {id:'ATP-SK2278',name:'Shodhan K.',   email:'sk@email.com',    joined:'May 2024',sessions:91, ambassador:false,active:true},
-  {id:'ATP-MP4455',name:'Manju P.',     email:'manju@email.com', joined:'Jun 2024',sessions:87, ambassador:true, active:true},
-  {id:'ATP-FM0001',name:'Fredy M.',     email:'fredy@atp.world', joined:'2015',    sessions:830,ambassador:true, active:true},
-  {id:'ATP-TM0002',name:'Tatiana M.',   email:'tatiana@atp.world',joined:'2015',   sessions:790,ambassador:true, active:true},
-];
+var MEMBERS_DATA = []; // Populated from API
 
 var CHALLENGES_DATA = [
   {icon:'🏃',name:'July Run Challenge',type:'monthly',metric:'Sessions attended',target:8,desc:'Complete 8 running sessions this month',active:true,participants:127},
@@ -494,6 +488,9 @@ var CHALLENGES_DATA = [
 
 // ── MEMBERS ───────────────────────────────────────────────────
 function renderMembers(filter) {
+  // Route to API version
+  loadMembersAPI(filter);
+  return;
   var list = MEMBERS_DATA;
   if (filter) {
     var q = filter.toLowerCase();
