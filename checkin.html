@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="atp.js"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -270,14 +271,17 @@ var BOOKED_MEMBERS = [
 // Also load any real bookings from localStorage
 (async function loadSessionsFromAPI() {
   var sel = document.getElementById('sessionSelect');
-  if (!sel || !window.ATP || !window.ATP.isLoggedIn()) return;
+  if (!sel) return;
   try {
-    var data = await window.ATP.sessions.list({ status: 'upcoming', limit: 30 });
-    if (data.sessions.length) {
+    var token = localStorage.getItem('atp_token');
+    if (!token) return;
+    var data = await fetch('https://atpworldweb-production.up.railway.app/api/sessions?status=upcoming&limit=30', {
+      headers: {'Authorization': 'Bearer ' + token}
+    }).then(function(r) { return r.json(); });
+    if (data.sessions && data.sessions.length) {
       sel.innerHTML = '<option value="">Choose session...</option>';
       data.sessions.forEach(function(s) {
-        var dt = new Date(s.scheduled_at).toLocaleString('en-AE',
-          {weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
+        var dt = new Date(s.scheduled_at).toLocaleString('en-AE', {weekday:'short',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'});
         var o = document.createElement('option');
         o.value = s.id;
         o.textContent = s.name + ' – ' + dt;
@@ -285,7 +289,7 @@ var BOOKED_MEMBERS = [
       });
     }
   } catch(e) { console.warn('Sessions API:', e.message); }
-}
+})();
 
 function loadLocalBookings() {
   var stored = JSON.parse(localStorage.getItem('atp:bookings') || '[]');

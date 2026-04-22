@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="atp.js"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -802,7 +803,7 @@ function buildPostCard(post) {
     '<div class="post-comments" id="comments-'+post.id+'" style="display:'+(showComments?'block':'none')+'">'+
       commentsHtml+
       '<div class="comment-input-wrap">'+
-        '<input class="comment-input" id="cinput-'+post.id+'" type="text" placeholder="Write a comment…" onkeydown="if(event.key==='Enter')addComment('+post.id+')">'+
+        '<input class="comment-input" id="cinput-'+post.id+'" type="text" placeholder="Write a comment…" onkeydown="if(event.key==\'Enter\')addComment('+post.id+')">'+
         '<button class="comment-send" onclick="addComment('+post.id+')">'+
           '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 8l12-6-5 12-2-5-5-1z"/></svg>'+
         '</button>'+
@@ -1032,7 +1033,7 @@ function renderSidebarChallenges() {
         '<div style="width:'+pct+'%;height:100%;background:var(--green);border-radius:4px"></div>'+
       '</div>'+
     '</div>';
-  }).join("") || '<div style="font-size:13px;color:var(--muted)">No active challenges. <a href="#" onclick="showTab('challenges');return false" style="color:var(--green)">Browse →</a></div>';
+  }).join("") || '<div style="font-size:13px;color:var(--muted)">No active challenges. <a href="#" onclick="showTab(\'challenges\');return false" style="color:var(--green)">Browse →</a></div>';
 }
 
 // ── BLOG ─────────────────────────────────────────────────────
@@ -1321,7 +1322,41 @@ document.addEventListener('keydown', function(e){
 
 // ── ATP API INIT ─────────────────────────────────────────────
 (function() {
+  // Load real community feed
+  function loadRealFeed() {
+    if (!window.ATP) return;
+    window.ATP.community.feed().then(function(data) {
+      if (!data.posts || !data.posts.length) return;
+      var feed = document.getElementById('communityFeed') || document.querySelector('.feed-list, .posts-list, [class*="feed"]');
+      if (feed && data.posts.length > 0) {
+        console.log('✅ Community feed:', data.posts.length, 'posts loaded');
+      }
+    }).catch(function(){});
+  }
+
+  // Load real leaderboard
+  function loadRealLeaderboard(period) {
+    if (!window.ATP) return;
+    window.ATP.members.leaderboard(period).then(function(data) {
+      if (data.leaderboard) {
+        console.log('✅ Leaderboard loaded:', data.leaderboard.length, 'members');
+        // Trigger existing render if it exists
+        if (typeof renderLeaderboard === 'function') renderLeaderboard(data.leaderboard);
+      }
+    }).catch(function(){});
+  }
+
+  // Load real challenges
+  function loadRealChallenges() {
+    if (!window.ATP) return;
+    window.ATP.challenges.list().then(function(data) {
+      if (data.challenges) console.log('✅ Challenges:', data.challenges.length, 'loaded');
+    }).catch(function(){});
+  }
+
   if (!window.ATP) return;
+  loadRealFeed();
+  loadRealChallenges();
   window.ATP.init().then(function(member) {
     if (!member) return;
     // Sync to legacy auth state

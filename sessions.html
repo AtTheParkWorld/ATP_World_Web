@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="atp.js"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -1316,10 +1317,44 @@ function saveQR() {
 
 // ── ATP API INIT ─────────────────────────────────────────────
 (function() {
+  // Load real sessions from DB and merge into calendar
+  function loadRealSessions() {
+    if (!window.ATP) return;
+    window.ATP.sessions.list({limit:50, status:'upcoming'}).then(function(data) {
+      if (!data.sessions || !data.sessions.length) return;
+      // Map API sessions to calendar format
+      var dayMap = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      var apiSessions = data.sessions.map(function(s) {
+        var d = new Date(s.scheduled_at);
+        var h = d.getHours(), m = d.getMinutes();
+        var ampm = h >= 12 ? 'PM' : 'AM';
+        var h12 = h > 12 ? h-12 : (h===0?12:h);
+        var timeStr = h12 + ':' + (m<10?'0':'')+m + ' ' + ampm;
+        return {
+          id:    s.id,
+          name:  s.name,
+          tribe: 'stronger',
+          dow:   d.getDay(),
+          time:  timeStr,
+          coach: s.coach_name || 'ATP Coach',
+          loc:   s.location || s.location_name || 'TBC',
+          city:  s.city_name || 'Dubai',
+          cap:   s.capacity,
+          scheduled_at: s.scheduled_at
+        };
+      });
+      // Replace hardcoded sessions
+      if (apiSessions.length > 0) {
+        CAL_SESSIONS = apiSessions;
+        renderCalendar();
+        console.log('✅ Loaded', apiSessions.length, 'real sessions from DB');
+      }
+    }).catch(function(e) { console.warn('Sessions API:', e.message); });
+  }
+
   if (window.ATP) {
     window.ATP.init().then(function(member) {
-      if (member && atpUser === null) {
-        // Sync API user to local auth state
+      if (member) {
         atpUser = {
           firstName: member.first_name,
           lastName:  member.last_name,
@@ -1330,10 +1365,12 @@ function saveQR() {
           memberNumber: member.member_number,
           ambassador: member.is_ambassador,
           admin:      member.is_admin,
+          points:     member.points_balance || 0,
         };
         renderAuthNav(atpUser);
       }
     }).catch(function() {});
+    loadRealSessions();
   }
 })();
 

@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <script src="atp.js"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -1166,19 +1167,62 @@ SESSIONS = getSessionsData();
 
 // ── INIT ────────────────────────────────────────────────────
 renderStreakGrid(document.getElementById("streakMiniGrid"),28);
-// Load real stats from API if available
-if (window.ATP && window.ATP.isLoggedIn()) {
-  window.ATP.members.getStats().then(function(data) {
-    var s = data.stats;
-    if (document.querySelector('.pstat-num')) {
-      var nums = document.querySelectorAll('.pstat-num');
-      if (nums[0]) nums[0].textContent = s.total_sessions || '0';
-      if (nums[2]) nums[2].textContent = s.current_balance || '0';
-      if (nums[3]) nums[3].textContent = s.total_referrals || '0';
-      if (nums[4]) nums[4].textContent = s.challenges_completed || '0';
+
+// Load real data from API
+function loadRealProfileData() {
+  if (!window.ATP || !window.ATP.isLoggedIn()) return;
+  var h = {'Authorization':'Bearer '+(localStorage.getItem('atp_token')||'')};
+
+  // Real member profile
+  window.ATP.members.profile().then(function(m) {
+    if (!m || m.error) return;
+    // Update name/avatar in header
+    var nameEl = document.querySelector('.profile-name, .member-name, h1.name');
+    if (nameEl) nameEl.textContent = m.first_name + ' ' + (m.last_name||'');
+    var numEl = document.querySelector('.member-number, .profile-id');
+    if (numEl) numEl.textContent = m.member_number || '';
+    var ptEl = document.querySelector('.points-balance, .wallet-balance');
+    if (ptEl) ptEl.textContent = (m.points_balance||0).toLocaleString();
+    console.log('✅ Profile loaded:', m.first_name, m.member_number);
+  }).catch(function(){});
+
+  // Real stats
+  window.ATP.members.stats().then(function(data) {
+    var s = data.stats || data;
+    var nums = document.querySelectorAll('.pstat-num');
+    if (nums[0]) nums[0].textContent = s.total_sessions || '0';
+    if (nums[1]) nums[1].textContent = s.current_streak || '0';
+    if (nums[2]) nums[2].textContent = (s.points_balance||s.current_balance||0).toLocaleString();
+    if (nums[3]) nums[3].textContent = s.total_referrals || '0';
+    if (nums[4]) nums[4].textContent = s.challenges_completed || '0';
+    console.log('✅ Stats loaded');
+  }).catch(function(){});
+
+  // Real upcoming bookings
+  window.ATP.members.bookings().then(function(data) {
+    var bookings = (data.bookings||[]).filter(function(b){ return b.status==='confirmed'; });
+    var container = document.getElementById('upcomingSessions');
+    if (container && bookings.length) {
+      container.innerHTML = bookings.slice(0,3).map(function(b) {
+        var d = new Date(b.scheduled_at||b.session_date);
+        var dateStr = d.toLocaleDateString('en-GB',{weekday:'short',month:'short',day:'numeric'});
+        return '<div class="session-card">' +
+          '<div class="session-day">' + dateStr + '</div>' +
+          '<div class="session-name">' + (b.session_name||b.name||'Session') + '</div>' +
+          '<div class="session-loc">' + (b.location||'') + '</div>' +
+          '</div>';
+      }).join('');
+      console.log('✅ Bookings loaded:', bookings.length);
     }
   }).catch(function(){});
+
+  // Real points history
+  window.ATP.members.pointsHistory().then(function(data) {
+    console.log('✅ Points history loaded:', (data.history||[]).length, 'entries');
+  }).catch(function(){});
 }
+
+loadRealProfileData();
 renderStreakGrid(document.getElementById("streakFullGrid"),28);
 renderSessions(document.getElementById("upcomingSessions"),SESSIONS.slice(0,3));
 renderSessions(document.getElementById("allSessions"),SESSIONS);
