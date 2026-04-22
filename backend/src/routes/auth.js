@@ -376,11 +376,13 @@ router.post('/seed-sessions', async (req, res, next) => {
       // Skip if session already exists
       const { rows: es } = await query('SELECT id FROM sessions WHERE name=$1 AND city_id=$2', [s.name, city_id]);
       if (es.length > 0) continue;
-      // Insert with correct schema columns
+      // Insert with correct schema columns (created_by = admin member)
+      const { rows: adminRow } = await query(`SELECT id FROM members WHERE is_admin=true LIMIT 1`);
+      const created_by = adminRow[0]?.id;
       await query(
-        `INSERT INTO sessions (name, city_id, location, scheduled_at, duration_mins, capacity, is_recurring, recurrence_rule, status, points_reward)
-         VALUES ($1,$2,$3,$4,$5,$6,true,'WEEKLY',$7,10)`,
-        [s.name, city_id, s.location, nextDayTime(s.day, s.time), s.duration, s.cap, 'upcoming']
+        `INSERT INTO sessions (name, city_id, location, scheduled_at, duration_mins, capacity, is_recurring, recurrence_rule, status, points_reward, created_by)
+         VALUES ($1,$2,$3,$4,$5,$6,true,'WEEKLY',$7,10,$8)`,
+        [s.name, city_id, s.location, nextDayTime(s.day, s.time), s.duration, s.cap, 'upcoming', created_by]
       );
       created++;
     }
