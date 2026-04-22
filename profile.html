@@ -843,18 +843,30 @@ function showTab(name, btn) {
 async function loadBookingsFromAPI() {
   if (!window.ATP || !window.ATP.isLoggedIn()) return;
   try {
-    var data = await window.ATP.members.getBookings();
-    SESSIONS = data.bookings.map(function(b) {
+    var data = await window.ATP.members.bookings();
+    if (!data.bookings) return;
+    var apiSessions = data.bookings.map(function(b) {
+      var dt = b.scheduled_at ? new Date(b.scheduled_at) : null;
       return {
-        name: b.session_name, tribe: (b.tribe_slug || 'stronger'),
-        day: new Date(b.scheduled_at).toLocaleDateString('en-AE', {weekday:'short'}),
-        time: new Date(b.scheduled_at).toLocaleTimeString('en-AE', {hour:'2-digit',minute:'2-digit'}),
-        loc: b.location, status: b.status === 'attended' ? 'done' : 'upcoming',
-        id: b.qr_token, qrData: b.qr_code,
+        name:    b.session_name || b.name || 'Session',
+        tribe:   b.tribe_slug || 'stronger',
+        day:     dt ? dt.toLocaleDateString('en-AE', {weekday:'short', day:'numeric', month:'short'}) : '—',
+        time:    dt ? dt.toLocaleTimeString('en-AE', {hour:'2-digit', minute:'2-digit'}) : '',
+        loc:     b.location || '',
+        status:  b.status === 'attended' ? 'done' : (b.status === 'cancelled' ? 'cancelled' : 'upcoming'),
+        id:      b.id,
+        qr_token: b.qr_token,
+        session_id: b.session_id,
+        points_reward: b.points_reward || 10,
       };
     });
-    renderSessions(document.getElementById('upcomingSessions'), SESSIONS.slice(0,3));
-    renderSessions(document.getElementById('allSessions'), SESSIONS);
+    if (apiSessions.length) {
+      SESSIONS = apiSessions;
+      renderSessions(document.getElementById('upcomingSessions'),
+        SESSIONS.filter(function(s){return s.status==='upcoming';}).slice(0,3));
+      renderSessions(document.getElementById('allSessions'), SESSIONS);
+      console.log('✅ Profile: loaded', SESSIONS.length, 'bookings from API');
+    }
   } catch(e) { console.warn('Could not load bookings from API:', e.message); }
 }
 
@@ -962,7 +974,7 @@ function renderStreakGrid(el, days) {
 
 function renderSessions(el, sessions) {
   el.innerHTML = sessions.map(function(s,i){
-    var qrBtn = s.qrData ? "<button class='session-qr-btn' onclick='showSessionQR(\'"+encodeURIComponent(s.qrData)+"\',\'"+s.id+"\')'>"+
+    var qrBtn = (s.qr_token || s.qrData) ? "<button class='session-qr-btn' onclick='showSessionQR(\'"+encodeURIComponent(s.qr_token ? JSON.stringify({token:s.qr_token,session:s.name}) : s.qrData)+"\',\'"+s.id+"\')'>"+
       "<svg width=\'12\' height=\'12\' viewBox=\'0 0 16 16\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.8\'><rect x=\'1\' y=\'1\' width=\'6\' height=\'6\' rx=\'1\'/><rect x=\'9\' y=\'1\' width=\'6\' height=\'6\' rx=\'1\'/><rect x=\'1\' y=\'9\' width=\'6\' height=\'6\' rx=\'1\'/><rect x=\'9\' y=\'9\' width=\'6\' height=\'6\' rx=\'1\'/></svg>"+
       " QR</button>" : "";
     return "<div class='session-row'>"+
@@ -1340,17 +1352,7 @@ function submitSignup() {
   var btn = document.getElementById('authSubmitBtn');
   btn.disabled = true; btn.textContent = 'Creating your account...';
 
-  // ── MOCK: replace with real Firebase/Supabase call ──
-  setTimeout(function(){
-    var user = {
-      firstName: firstName, lastName: lastName,
-      email: email, joinedAt: new Date().toISOString(),
-      avatar: (firstName[0] + lastName[0]).toUpperCase()
-    };
-    authSaveUser(user);
-    onAuthSuccess(user, 'signup');
-  }, 900);
-}
+  window.ATP.auth.register({first_name:firstName,last_name:lastName,email:email,phone:null,password:password}).then(function(data){btn.disabled=false;btn.textContent='Join free →';if(!data.token){showAuthError(data.error||'Sign up failed.');return;}var m=data.member;authSaveUser({firstName:m.first_name,lastName:m.last_name,email:m.email,memberId:m.id,memberNumber:m.member_number,avatar:(m.first_name[0]+(m.last_name||'X')[0]).toUpperCase(),points:0,ambassador:false,admin:false});onAuthSuccess(atpUser,'signup');}).catch(function(){btn.disabled=false;btn.textContent='Join free →';showAuthError('Connection error.');});}
 
 // ── Email login ──────────────────────────────────────────────
 function submitLogin() {

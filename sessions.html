@@ -712,25 +712,43 @@ async function submitBooking() {
   btn.disabled = true;
   btn.textContent = 'Booking...';
 
+  var errEl = document.getElementById('bookError');
+  if (errEl) errEl.style.display = 'none';
+
+  // Must be logged in to book
+  if (!window.ATP || !window.ATP.isLoggedIn()) {
+    btn.disabled = false;
+    btn.textContent = 'Book my free spot →';
+    closeModal();
+    openAuth('login');
+    return;
+  }
+
+  if (!activeSession || !activeSession.id) {
+    // No real session ID — local fallback
+    setTimeout(function() { showConfirmation(name, email); }, 500);
+    return;
+  }
+
   try {
-    // If ATP API is available and user is logged in, use real booking
-    if (window.ATP && window.ATP.isLoggedIn() && activeSession.id) {
-      var result = await window.ATP.bookings.book(activeSession.id);
-      showConfirmation(name, email, result.qrData, result.qrToken);
-    } else {
-      // Fallback: local booking with generated QR
-      setTimeout(function() { showConfirmation(name, email); }, 800);
+    var result = await window.ATP.bookings.book(activeSession.id);
+    if (result.error) {
+      // Handle "already booked" gracefully
+      if (result.error.toLowerCase().includes('already')) {
+        showConfirmation(name, email, null, null, true);
+        return;
+      }
+      btn.disabled = false;
+      btn.textContent = 'Book my free spot →';
+      if (errEl) { errEl.textContent = result.error; errEl.style.display = 'block'; }
+      return;
     }
+    // Real booking created — pass qr_token to confirmation
+    showConfirmation(name, email, null, result.booking ? result.booking.qr_token : null);
   } catch(err) {
     btn.disabled = false;
-    btn.textContent = 'Confirm booking';
-    var errEl = document.getElementById('bookError');
-    if (errEl) {
-      errEl.textContent = err.message || 'Booking failed. Please try again.';
-      errEl.style.display = 'block';
-    } else {
-      alert(err.message || 'Booking failed. Please try again.');
-    }
+    btn.textContent = 'Book my free spot →';
+    if (errEl) { errEl.textContent = 'Booking failed. Please try again.'; errEl.style.display = 'block'; }
   }
 }
 
@@ -1020,16 +1038,26 @@ function submitSignup() {
   var btn = document.getElementById('authSubmitBtn');
   btn.disabled = true; btn.textContent = 'Creating your account...';
 
-  // ── MOCK: replace with real Firebase/Supabase call ──
-  setTimeout(function(){
+  // ── REAL API signup ──
+  window.ATP.auth.register({
+    first_name: firstName, last_name: lastName,
+    email: email, phone: null, password: password
+  }).then(function(data) {
+    btn.disabled = false; btn.textContent = 'Join free →';
+    if (!data.token) { showAuthError(data.error || 'Sign up failed. Please try again.'); return; }
+    var m = data.member;
     var user = {
-      firstName: firstName, lastName: lastName,
-      email: email, joinedAt: new Date().toISOString(),
-      avatar: (firstName[0] + lastName[0]).toUpperCase()
+      firstName: m.first_name, lastName: m.last_name, email: m.email,
+      memberId: m.id, memberNumber: m.member_number, joinedAt: m.joined_at,
+      avatar: m.avatar_url || (m.first_name[0]+(m.last_name||'X')[0]).toUpperCase(),
+      points: 0, ambassador: false, admin: false,
     };
     authSaveUser(user);
     onAuthSuccess(user, 'signup');
-  }, 900);
+  }).catch(function() {
+    btn.disabled = false; btn.textContent = 'Join free →';
+    showAuthError('Connection error. Please try again.');
+  });
 }
 
 // ── Email login ──────────────────────────────────────────────
@@ -1050,25 +1078,23 @@ function submitLogin() {
   var btn = document.getElementById('loginSubmitBtn');
   btn.disabled = true; btn.textContent = 'Logging in...';
 
-  // ── MOCK: replace with real auth check ──
-  setTimeout(function(){
-    // In real implementation: verify against backend
-    var stored = null;
-    try { stored = JSON.parse(localStorage.getItem(ATP_USER_KEY)); } catch(e){}
-    if(stored && stored.email === email) {
-      authSaveUser(stored);
-      onAuthSuccess(stored, 'login');
-    } else {
-      // For demo: create session anyway
-      var user = {
-        firstName: email.split('@')[0], lastName: '',
-        email: email, joinedAt: new Date().toISOString(),
-        avatar: email[0].toUpperCase()
-      };
-      authSaveUser(user);
-      onAuthSuccess(user, 'login');
-    }
-  }, 700);
+  // ── REAL API login ──
+  window.ATP.auth.login(email, password).then(function(data) {
+    btn.disabled = false; btn.textContent = 'Log in →';
+    if (!data.token) { showAuthError(data.error || 'Invalid email or password.'); return; }
+    var m = data.member;
+    var user = {
+      firstName: m.first_name, lastName: m.last_name, email: m.email,
+      memberId: m.id, memberNumber: m.member_number, joinedAt: m.joined_at,
+      avatar: m.avatar_url || (m.first_name[0]+(m.last_name||'X')[0]).toUpperCase(),
+      points: m.points_balance || 0, ambassador: m.is_ambassador, admin: m.is_admin,
+    };
+    authSaveUser(user);
+    onAuthSuccess(user, 'login');
+  }).catch(function() {
+    btn.disabled = false; btn.textContent = 'Log in →';
+    showAuthError('Connection error. Please try again.');
+  });
 }
 
 // ── Social auth (mock — replace with real OAuth) ─────────────

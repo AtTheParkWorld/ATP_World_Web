@@ -1289,16 +1289,42 @@ function submitSignup() {
   var btn = document.getElementById('authSubmitBtn');
   btn.disabled = true; btn.textContent = 'Creating your account...';
 
-  // ── MOCK: replace with real Firebase/Supabase call ──
-  setTimeout(function(){
+  // ── REAL API signup ──────────────────────────────────────
+  var phone = document.getElementById('authPhone') ? document.getElementById('authPhone').value.trim() : '';
+
+  window.ATP.auth.register({
+    first_name: firstName,
+    last_name:  lastName,
+    email:      email,
+    phone:      phone || null,
+    password:   password
+  }).then(function(data) {
+    btn.disabled = false;
+    btn.textContent = 'Join free →';
+    if (data.error || data.token === undefined) {
+      showAuthError(data.error || 'Sign up failed. Please try again.');
+      return;
+    }
+    // Success — ATP SDK already saved token
     var user = {
-      firstName: firstName, lastName: lastName,
-      email: email, joinedAt: new Date().toISOString(),
-      avatar: (firstName[0] + lastName[0]).toUpperCase()
+      firstName:    data.member.first_name,
+      lastName:     data.member.last_name,
+      email:        data.member.email,
+      memberId:     data.member.id,
+      memberNumber: data.member.member_number,
+      joinedAt:     data.member.joined_at,
+      avatar:       (data.member.first_name[0] + (data.member.last_name||'X')[0]).toUpperCase(),
+      points:       0,
+      ambassador:   false,
+      admin:        false,
     };
     authSaveUser(user);
     onAuthSuccess(user, 'signup');
-  }, 900);
+  }).catch(function(err) {
+    btn.disabled = false;
+    btn.textContent = 'Join free →';
+    showAuthError('Connection error. Please check your internet and try again.');
+  });
 }
 
 // ── Email login ──────────────────────────────────────────────
@@ -1319,45 +1345,46 @@ function submitLogin() {
   var btn = document.getElementById('loginSubmitBtn');
   btn.disabled = true; btn.textContent = 'Logging in...';
 
-  // ── MOCK: replace with real auth check ──
-  setTimeout(function(){
-    // In real implementation: verify against backend
-    var stored = null;
-    try { stored = JSON.parse(localStorage.getItem(ATP_USER_KEY)); } catch(e){}
-    if(stored && stored.email === email) {
-      authSaveUser(stored);
-      onAuthSuccess(stored, 'login');
-    } else {
-      // For demo: create session anyway
-      var user = {
-        firstName: email.split('@')[0], lastName: '',
-        email: email, joinedAt: new Date().toISOString(),
-        avatar: email[0].toUpperCase()
-      };
-      authSaveUser(user);
-      onAuthSuccess(user, 'login');
+  // ── REAL API login ───────────────────────────────────────
+  window.ATP.auth.login(email, password).then(function(data) {
+    btn.disabled = false;
+    btn.textContent = 'Log in →';
+    if (data.error || !data.token) {
+      showAuthError(data.error || 'Invalid email or password.');
+      document.getElementById('loginEmail').classList.add('err');
+      document.getElementById('loginPassword').classList.add('err');
+      return;
     }
-  }, 700);
+    var m = data.member;
+    var user = {
+      firstName:    m.first_name,
+      lastName:     m.last_name,
+      email:        m.email,
+      memberId:     m.id,
+      memberNumber: m.member_number,
+      joinedAt:     m.joined_at,
+      avatar:       m.avatar_url || (m.first_name[0] + (m.last_name||'X')[0]).toUpperCase(),
+      points:       m.points_balance || 0,
+      ambassador:   m.is_ambassador,
+      admin:        m.is_admin,
+    };
+    authSaveUser(user);
+    onAuthSuccess(user, 'login');
+  }).catch(function() {
+    btn.disabled = false;
+    btn.textContent = 'Log in →';
+    showAuthError('Connection error. Please try again.');
+  });
 }
 
 // ── Social auth (mock — replace with real OAuth) ─────────────
 function authWithGoogle() {
-  // Real: firebase.auth().signInWithPopup(new firebase.auth.GoogleAuthProvider())
-  var mockUser = {
-    firstName: 'Google', lastName: 'User',
-    email: 'user@gmail.com', joinedAt: new Date().toISOString(), avatar: 'G'
-  };
-  authSaveUser(mockUser);
-  onAuthSuccess(mockUser, 'google');
+  // Google OAuth — opens popup, then exchanges token with backend
+  showAuthError('Google sign-in coming soon. Please use email sign-up for now.');
 }
 function authWithApple() {
-  // Real: firebase.auth().signInWithPopup(new firebase.auth.OAuthProvider('apple.com'))
-  var mockUser = {
-    firstName: 'Apple', lastName: 'User',
-    email: 'user@icloud.com', joinedAt: new Date().toISOString(), avatar: 'A'
-  };
-  authSaveUser(mockUser);
-  onAuthSuccess(mockUser, 'apple');
+  // Apple OAuth — coming soon
+  showAuthError('Apple sign-in coming soon. Please use email sign-up for now.');
 }
 
 // ── Post-auth ────────────────────────────────────────────────
