@@ -348,6 +348,18 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
               <label class="admin-form-label">Google Maps URL</label>
               <input class="admin-form-input" type="text" id="sMaps" placeholder="https://maps.google.com/... (optional)">
             </div>
+            <div class="admin-form-group full">
+              <label class="admin-form-label" style="display:flex;align-items:center;gap:12px;cursor:pointer">
+                <div style="position:relative;width:44px;height:24px">
+                  <input type="checkbox" id="sLiveEnabled" style="opacity:0;width:0;height:0;position:absolute">
+                  <span id="sLiveToggle" onclick="toggleLive()" style="position:absolute;top:0;left:0;right:0;bottom:0;background:#1a1a1a;border:1px solid #333;border-radius:12px;cursor:pointer;transition:background .2s">
+                    <span id="sLiveKnob" style="position:absolute;top:2px;left:2px;width:18px;height:18px;background:#444;border-radius:50%;transition:all .2s"></span>
+                  </span>
+                </div>
+                <span style="font-size:13px;color:#ccc">Enable Livestream for this session</span>
+                <span style="font-size:11px;color:#444;margin-left:4px">· Members can join via the app when live</span>
+              </label>
+            </div>
           </div>
           <div style="display:flex;gap:10px;margin-top:18px;align-items:center">
             <button class="admin-btn admin-btn-primary" style="padding:10px 24px;font-size:13px" onclick="createSession()">
@@ -640,6 +652,24 @@ async function loadCities() {
   }
 }
 
+function toggleLive() {
+  var cb = document.getElementById('sLiveEnabled');
+  var toggle = document.getElementById('sLiveToggle');
+  var knob = document.getElementById('sLiveKnob');
+  cb.checked = !cb.checked;
+  if (cb.checked) {
+    toggle.style.background = '#7AC231';
+    toggle.style.borderColor = '#7AC231';
+    knob.style.left = '22px';
+    knob.style.background = '#fff';
+  } else {
+    toggle.style.background = '#1a1a1a';
+    toggle.style.borderColor = '#333';
+    knob.style.left = '2px';
+    knob.style.background = '#444';
+  }
+}
+
 async function createSession() {
   var token = getToken();
   if (!token) { showAdminToast('Please log in first'); return; }
@@ -679,6 +709,7 @@ async function createSession() {
       return;
     }
 
+    var liveEnabled = document.getElementById('sLiveEnabled') ? document.getElementById('sLiveEnabled').checked : false;
     var payload = {
       name: name,
       city_id: cityId,
@@ -690,6 +721,7 @@ async function createSession() {
       session_type: stype,
       description: desc || null,
       location_maps_url: maps || null,
+      is_live_enabled: liveEnabled,
     };
 
     var resp = await fetch('https://atpworldweb-production.up.railway.app/api/sessions', {
@@ -711,6 +743,9 @@ async function createSession() {
     document.getElementById('sLoc').value = '';
     document.getElementById('sDesc').value = '';
     document.getElementById('sMaps').value = '';
+    // Reset livestream toggle
+    var cb = document.getElementById('sLiveEnabled');
+    if (cb && cb.checked) toggleLive();
     showAdminToast('✅ Session created!');
     setTimeout(function(){ loadSessionsList(); loadDashboardAPI(); }, 600);
 
@@ -787,7 +822,10 @@ async function loadSessionsList() {
         '<td><span style="font-size:12px;color:'+(pct>80?'#ff6b6b':'#7AC231')+'">'+booked+'/'+cap+'</span>'+
             '<div style="height:3px;background:#1a1a1a;border-radius:2px;margin-top:4px;width:80px">'+
             '<div style="height:3px;background:#7AC231;border-radius:2px;width:'+pct+'%"></div></div></td>'+
-        '<td><span class="badge badge-green">'+s.status+'</span></td>'+
+        '<td>'+
+          '<span class="badge badge-green">'+s.status+'</span>'+
+          (s.is_live_enabled ? ' <span style="font-size:10px;color:#7AC231;margin-left:4px">📡 Live</span>' : '')+
+          '</td>'+
         '<td><button class="admin-btn" style="font-size:11px" onclick="completeSession(this.dataset.sid)" data-sid="'+s.id+'">Complete</button></td>'+
         '</tr>';
     }).join('');
