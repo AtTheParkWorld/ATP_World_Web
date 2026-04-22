@@ -327,6 +327,32 @@ router.post('/get-or-create-city', async (req, res, next) => {
 });
 
 
+
+// ── POST /api/auth/migrate-sessions-schema  (run once) ───────
+router.post('/migrate-sessions-schema', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS session_category VARCHAR(20) DEFAULT 'regular'`);
+    await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS sport_type VARCHAR(50)`);
+    await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS courts JSONB`);
+    await query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS court_name VARCHAR(100)`);
+    // Add UAE + Oman countries to cities
+    const cities = [
+      ['Dubai', 'UAE'], ['Al Ain', 'UAE'], ['Abu Dhabi', 'UAE'],
+      ['Sharjah', 'UAE'], ['Ras Al Khaimah', 'UAE'], ['Fujairah', 'UAE'],
+      ['Muscat', 'Oman'], ['Salalah', 'Oman']
+    ];
+    for (const [name, country] of cities) {
+      await query(
+        `INSERT INTO cities (name, country) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
+        [name, country]
+      ).catch(() => {});
+    }
+    res.json({ success: true, message: 'Sessions schema migrated' });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
 
 // ── POST /api/auth/grant-admin  (setup only) ──────────────────

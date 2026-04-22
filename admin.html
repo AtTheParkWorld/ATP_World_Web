@@ -122,6 +122,35 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
 .admin-toast{position:fixed;bottom:24px;right:24px;background:#111;border:1px solid rgba(255,255,255,.1);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:200;transform:translateY(80px);transition:transform .3s;max-width:300px}
 .admin-toast.show{transform:translateY(0)}
 .admin-toast.success{border-color:rgba(122,194,49,.4);color:#7AC231}
+
+/* ── Session category selector ─────── */
+.session-cat-btn{
+  flex:1;min-width:120px;max-width:180px;
+  background:#111;border:2px solid #222;border-radius:12px;
+  padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s;
+  user-select:none;
+}
+.session-cat-btn:hover{border-color:#7AC231;background:#0d1a0a}
+.session-cat-btn.active{border-color:#7AC231;background:#0d1a0a;box-shadow:0 0 12px rgba(122,194,49,.2)}
+
+/* ── Day selector buttons ────────────── */
+.day-check-btn{
+  display:inline-flex;align-items:center;gap:6px;
+  background:#1a1a1a;border:2px solid #333;border-radius:8px;
+  padding:7px 14px;cursor:pointer;font-size:13px;font-weight:600;
+  color:#888;transition:all .2s;user-select:none;
+}
+.day-check-btn:has(input:checked){border-color:#7AC231;background:#0d1a0a;color:#7AC231}
+.day-check-btn input{display:none}
+
+/* ── Court card ─────────────────────── */
+.court-card{
+  background:#1a1a1a;border:1px solid #2a2a2a;border-radius:10px;
+  padding:14px;margin-bottom:10px;
+}
+.court-card-header{
+  font-weight:700;font-size:13px;color:#7AC231;margin-bottom:10px;
+}
 </style>
 <script src="atp-api.js"></script>
 </head>
@@ -295,38 +324,82 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
       <div class="admin-page-title">Sessions</div>
       <div class="admin-page-sub">Create and manage ATP sessions across Dubai, Al Ain and Muscat.</div>
 
-      <!-- CREATE SESSION FORM -->
-      <div class="admin-section">
+      <!-- CREATE / EDIT SESSION FORM -->
+      <div class="admin-section" id="sessionFormSection">
         <div class="admin-section-head">
-          <span class="admin-section-title">Create New Session</span>
+          <span class="admin-section-title" id="sessionFormTitle">Create New Session</span>
+          <button class="admin-btn" onclick="cancelEditSession()" id="cancelEditBtn" style="display:none;font-size:12px">✕ Cancel Edit</button>
         </div>
         <div class="admin-section-body">
           <div id="sessionFormMsg" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px"></div>
+          <input type="hidden" id="sEditId" value="">
+
+          <!-- STEP 1: SESSION CATEGORY -->
+          <div style="margin-bottom:20px">
+            <label class="admin-form-label" style="margin-bottom:10px;display:block">Session Category *</label>
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+              <div class="session-cat-btn active" data-cat="regular" onclick="selectCategory('regular')">
+                <div style="font-size:20px;margin-bottom:4px">🏃</div>
+                <div style="font-weight:700;font-size:13px">Regular</div>
+                <div style="font-size:11px;color:#888;margin-top:2px">Running, Yoga, HIIT...</div>
+              </div>
+              <div class="session-cat-btn" data-cat="social" onclick="selectCategory('social')">
+                <div style="font-size:20px;margin-bottom:4px">🎉</div>
+                <div style="font-weight:700;font-size:13px">Social</div>
+                <div style="font-size:11px;color:#888;margin-top:2px">BBQ, Breakfast...</div>
+              </div>
+              <div class="session-cat-btn" data-cat="team_sports" onclick="selectCategory('team_sports')">
+                <div style="font-size:20px;margin-bottom:4px">🏆</div>
+                <div style="font-weight:700;font-size:13px">Team Sports</div>
+                <div style="font-size:11px;color:#888;margin-top:2px">Padel, Football...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- COMMON FIELDS -->
           <div class="admin-form-grid">
             <div class="admin-form-group">
               <label class="admin-form-label">Session Name *</label>
-              <input class="admin-form-input" type="text" id="sName" placeholder="e.g. Community Run">
+              <input class="admin-form-input" type="text" id="sName" placeholder="e.g. Morning Run">
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Coach</label>
+              <select class="admin-form-select" id="sCoach">
+                <option value="">Loading coaches...</option>
+              </select>
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Country *</label>
+              <select class="admin-form-select" id="sCountry" onchange="filterCitiesByCountry()">
+                <option value="">Select Country</option>
+                <option value="UAE">🇦🇪 UAE</option>
+                <option value="Oman">🇴🇲 Oman</option>
+                <option value="KSA">🇸🇦 Saudi Arabia</option>
+                <option value="Bahrain">🇧🇭 Bahrain</option>
+                <option value="Qatar">🇶🇦 Qatar</option>
+                <option value="Kuwait">🇰🇼 Kuwait</option>
+              </select>
             </div>
             <div class="admin-form-group">
               <label class="admin-form-label">City *</label>
               <select class="admin-form-select" id="sCity">
-                <option value="">Loading cities...</option>
+                <option value="">Select country first</option>
               </select>
-            </div>
-            <div class="admin-form-group">
-              <label class="admin-form-label">Date &amp; Time *</label>
-              <input class="admin-form-input" type="datetime-local" id="sDate">
-            </div>
-            <div class="admin-form-group">
-              <label class="admin-form-label">Duration (mins)</label>
-              <input class="admin-form-input" type="number" id="sDuration" value="60" min="15" max="240">
             </div>
             <div class="admin-form-group">
               <label class="admin-form-label">Location / Venue *</label>
               <input class="admin-form-input" type="text" id="sLoc" placeholder="e.g. Safa Park, Gate 1">
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Capacity</label>
+              <label class="admin-form-label">Google Maps URL</label>
+              <input class="admin-form-input" type="text" id="sMaps" placeholder="https://maps.google.com/...">
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Duration (mins)</label>
+              <input class="admin-form-input" type="number" id="sDuration" value="60" min="15" max="240">
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Capacity (total)</label>
               <input class="admin-form-input" type="number" id="sCap" value="30" min="1" max="500">
             </div>
             <div class="admin-form-group">
@@ -334,7 +407,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
               <input class="admin-form-input" type="number" id="sPoints" value="10" min="0">
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Session Type</label>
+              <label class="admin-form-label">Paid / Free</label>
               <select class="admin-form-select" id="sType">
                 <option value="free">Free</option>
                 <option value="paid">Paid</option>
@@ -344,66 +417,117 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
               <label class="admin-form-label">Description</label>
               <input class="admin-form-input" type="text" id="sDesc" placeholder="Brief session description (optional)">
             </div>
-            <div class="admin-form-group full">
-              <label class="admin-form-label">Google Maps URL</label>
-              <input class="admin-form-input" type="text" id="sMaps" placeholder="https://maps.google.com/... (optional)">
+          </div>
+
+          <!-- SCHEDULE: DAYS + TIME -->
+          <div style="margin-top:16px;padding:14px;background:#111;border-radius:10px;border:1px solid #222">
+            <label class="admin-form-label" style="margin-bottom:12px;display:block">Schedule — Select Day(s) &amp; Time *</label>
+            <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+              <label class="day-check-btn" id="day-Mon"><input type="checkbox" value="Mon" onchange="updateDayTimes()"> Mon</label>
+              <label class="day-check-btn" id="day-Tue"><input type="checkbox" value="Tue" onchange="updateDayTimes()"> Tue</label>
+              <label class="day-check-btn" id="day-Wed"><input type="checkbox" value="Wed" onchange="updateDayTimes()"> Wed</label>
+              <label class="day-check-btn" id="day-Thu"><input type="checkbox" value="Thu" onchange="updateDayTimes()"> Thu</label>
+              <label class="day-check-btn" id="day-Fri"><input type="checkbox" value="Fri" onchange="updateDayTimes()"> Fri</label>
+              <label class="day-check-btn" id="day-Sat"><input type="checkbox" value="Sat" onchange="updateDayTimes()"> Sat</label>
+              <label class="day-check-btn" id="day-Sun"><input type="checkbox" value="Sun" onchange="updateDayTimes()"> Sun</label>
             </div>
-            <div class="admin-form-group full">
-              <label class="admin-form-label" style="display:flex;align-items:center;gap:12px;cursor:pointer">
-                <div style="position:relative;width:44px;height:24px">
-                  <input type="checkbox" id="sLiveEnabled" style="opacity:0;width:0;height:0;position:absolute">
-                  <span id="sLiveToggle" onclick="toggleLive()" style="position:absolute;top:0;left:0;right:0;bottom:0;background:#1a1a1a;border:1px solid #333;border-radius:12px;cursor:pointer;transition:background .2s">
-                    <span id="sLiveKnob" style="position:absolute;top:2px;left:2px;width:18px;height:18px;background:#444;border-radius:50%;transition:all .2s"></span>
-                  </span>
-                </div>
-                <span style="font-size:13px;color:#ccc">Enable Livestream for this session</span>
-                <span style="font-size:11px;color:#444;margin-left:4px">· Members can join via the app when live</span>
-              </label>
+            <div id="dayTimesContainer" style="display:flex;flex-wrap:wrap;gap:10px"></div>
+            <div style="margin-top:10px;display:flex;align-items:center;gap:12px">
+              <label class="admin-form-label" style="margin:0;min-width:80px">Start Date</label>
+              <input class="admin-form-input" type="date" id="sStartDate" style="width:160px">
+              <label class="admin-form-label" style="margin:0;min-width:80px">End Date</label>
+              <input class="admin-form-input" type="date" id="sEndDate" style="width:160px">
+              <span style="font-size:11px;color:#555">Leave end date empty for single occurrence</span>
             </div>
           </div>
-          <div style="display:flex;gap:10px;margin-top:18px;align-items:center">
+
+          <!-- TEAM SPORTS SECTION -->
+          <div id="teamSportsSection" style="display:none;margin-top:16px;padding:14px;background:#111;border-radius:10px;border:1px solid #333">
+            <label class="admin-form-label" style="margin-bottom:12px;display:block">🏆 Team Sports Settings</label>
+            <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+              <div class="admin-form-group" style="flex:1;min-width:180px">
+                <label class="admin-form-label">Sport *</label>
+                <select class="admin-form-select" id="sSport" onchange="updateSportLevels()">
+                  <option value="">Select Sport</option>
+                  <option value="padel">🎾 Padel Tennis</option>
+                  <option value="football">⚽ Football</option>
+                  <option value="volleyball">🏐 Volleyball</option>
+                  <option value="badminton">🏸 Badminton</option>
+                  <option value="basketball">🏀 Basketball</option>
+                </select>
+              </div>
+              <div class="admin-form-group" style="flex:1;min-width:160px">
+                <label class="admin-form-label">Number of Courts</label>
+                <input class="admin-form-input" type="number" id="sNumCourts" value="1" min="1" max="20" onchange="buildCourtsUI()">
+              </div>
+            </div>
+            <div id="courtsContainer"></div>
+          </div>
+
+          <!-- LIVESTREAM TOGGLE -->
+          <div style="margin-top:16px">
+            <label class="admin-form-label" style="display:flex;align-items:center;gap:12px;cursor:pointer">
+              <div style="position:relative;width:44px;height:24px">
+                <input type="checkbox" id="sLiveEnabled" style="opacity:0;width:0;height:0;position:absolute">
+                <span id="sLiveToggle" onclick="toggleLive()" style="position:absolute;top:0;left:0;right:0;bottom:0;background:#1a1a1a;border:1px solid #333;border-radius:12px;cursor:pointer;transition:background .2s">
+                  <span id="sLiveKnob" style="position:absolute;top:2px;left:2px;width:18px;height:18px;background:#444;border-radius:50%;transition:all .2s"></span>
+                </span>
+              </div>
+              <span style="font-size:13px;color:#ccc">Enable Livestream for this session</span>
+            </label>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:20px;align-items:center">
             <button class="admin-btn admin-btn-primary" style="padding:10px 24px;font-size:13px" onclick="createSession()">
-              ＋ Create Session
+              <span id="sessionSubmitLabel">＋ Create Session</span>
             </button>
-            <button class="admin-btn" style="padding:10px 18px;font-size:13px" onclick="loadSessionsList()">
-              ↻ Refresh List
-            </button>
+            <button class="admin-btn" style="padding:10px 18px;font-size:13px" onclick="loadSessionsList()">↻ Refresh</button>
           </div>
+        </div>
+      </div>
+
+      <!-- REGISTRATIONS MODAL -->
+      <div id="registrationsModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:9999;display:none;align-items:center;justify-content:center">
+        <div style="background:#111;border:1px solid #222;border-radius:14px;width:90%;max-width:700px;max-height:80vh;overflow-y:auto;padding:24px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
+            <div style="font-family:var(--ff-display);font-size:18px;font-weight:900" id="regModalTitle">Registrations</div>
+            <button class="admin-btn" onclick="closeRegistrations()" style="padding:6px 12px">✕ Close</button>
+          </div>
+          <div id="regModalBody">Loading...</div>
         </div>
       </div>
 
       <!-- SESSIONS LIST -->
       <div class="admin-section">
-        <div class="admin-section-head">
-          <span class="admin-section-title">Upcoming Sessions <span id="sessionsCountLabel" style="color:#444;font-size:11px;font-weight:400;margin-left:8px"></span></span>
+        <div class="admin-section-head" style="flex-wrap:wrap;gap:10px">
+          <span class="admin-section-title">Sessions <span id="sessionsCountLabel" style="color:#444;font-size:11px;font-weight:400;margin-left:8px"></span></span>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <select class="admin-form-select" id="filterCity" onchange="loadSessionsList()" style="width:140px;padding:6px 10px;font-size:12px">
+              <option value="">All Cities</option>
+            </select>
+            <select class="admin-form-select" id="filterCategory" onchange="loadSessionsList()" style="width:140px;padding:6px 10px;font-size:12px">
+              <option value="">All Types</option>
+              <option value="regular">Regular</option>
+              <option value="social">Social</option>
+              <option value="team_sports">Team Sports</option>
+            </select>
+            <select class="admin-form-select" id="filterStatus" onchange="loadSessionsList()" style="width:130px;padding:6px 10px;font-size:12px">
+              <option value="upcoming">Upcoming</option>
+              <option value="completed">Completed</option>
+              <option value="">All</option>
+            </select>
+            <input class="admin-form-input" type="text" id="filterSearch" placeholder="Search..." onkeyup="loadSessionsList()" style="width:150px;padding:6px 10px;font-size:12px">
+          </div>
         </div>
         <div class="admin-section-body">
           <table class="admin-table" style="width:100%">
             <thead><tr>
-              <th>Session</th><th>City</th><th>Date &amp; Time</th><th>Capacity</th><th>Status</th><th>Actions</th>
+              <th>Session</th><th>Category</th><th>City</th><th>Date &amp; Time</th><th>Capacity</th><th>Coach</th><th>Actions</th>
             </tr></thead>
             <tbody id="sessionsTbody">
-              <tr><td colspan="6" style="text-align:center;color:#444;padding:24px">Loading sessions...</td></tr>
+              <tr><td colspan="7" style="text-align:center;color:#444;padding:24px">Loading sessions...</td></tr>
             </tbody>
           </table>
-        </div>
-      </div>
-      <div class="admin-section">
-        <div class="admin-section-head">
-          <span class="admin-section-title">Live Attendance</span>
-          <a href="checkin.html" class="admin-btn" style="display:inline-flex;align-items:center;gap:6px">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
-            Open Scanner
-          </a>
-        </div>
-        <div class="admin-section-body" id="liveAttendance">
-          <div class="session-attendance-card">
-            <div class="session-attendance-header">
-              <div><div class="session-attendance-name">Community Run · Tonight 7PM</div><div style="font-size:11px;color:#444;margin-top:2px">Dubai Marina Walk · Ambassador: Jay A.</div></div>
-              <div style="text-align:right"><div style="font-family:var(--ff-display);font-size:20px;font-weight:900;color:#7AC231" id="liveCount">0</div><div style="font-size:10px;color:#444">checked in live</div></div>
-            </div>
-            <div class="session-attendance-bar"><div class="session-attendance-fill" id="liveBar" style="width:0%"></div></div>
-          </div>
         </div>
       </div>
     </div>
@@ -487,6 +611,8 @@ function adminLogin() {
       document.querySelectorAll('#adminLogo,#adminLogoNav').forEach(function(img) { img.src = LOGO; img.style.filter = 'none'; });
       loadDashboardAPI();
       loadMembersAPI();
+      loadCities();
+      loadCoaches();
     } else if (data.token && data.member && !data.member.is_admin) {
       errEl.textContent = 'Account found but does not have admin access.';
       errEl.style.display = 'block';
@@ -713,438 +839,418 @@ function toggleLive() {
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+// SESSIONS MODULE
+// ═══════════════════════════════════════════════════════════
+
+var ALL_CITIES = [];
+var SESSIONS_CACHE = {};
+var SESSION_EDIT_ID = null;
+
+var SPORT_LEVELS = {
+  padel:      ['Beginner','Level D+','Level C-','Level C+','Level B'],
+  football:   ['Beginner','Intermediate','Advanced'],
+  volleyball: ['Beginner','Intermediate','Advanced'],
+  badminton:  ['Beginner','Intermediate','Advanced'],
+  basketball: ['Beginner','Intermediate','Advanced'],
+};
+
+function selectCategory(cat) {
+  document.querySelectorAll('.session-cat-btn').forEach(function(b){ b.classList.remove('active'); });
+  document.querySelector('[data-cat="'+cat+'"]').classList.add('active');
+  document.getElementById('teamSportsSection').style.display = cat === 'team_sports' ? 'block' : 'none';
+  if (cat === 'team_sports') buildCourtsUI();
+}
+
+function updateDayTimes() {
+  var container = document.getElementById('dayTimesContainer');
+  var checked = Array.from(document.querySelectorAll('.day-check-btn input:checked')).map(function(i){ return i.value; });
+  container.innerHTML = checked.map(function(day) {
+    return '<div style="display:flex;align-items:center;gap:8px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:8px 12px">' +
+      '<span style="font-size:12px;font-weight:700;color:#7AC231;min-width:32px">'+day+'</span>' +
+      '<input class="admin-form-input" type="time" id="time-'+day+'" value="06:30" style="width:100px;padding:4px 8px">' +
+      '</div>';
+  }).join('');
+}
+
+function filterCitiesByCountry() {
+  var country = document.getElementById('sCountry').value;
+  var cityEl = document.getElementById('sCity');
+  cityEl.innerHTML = '<option value="">Select City</option>';
+  var filtered = ALL_CITIES.filter(function(c){ return !country || c.country === country; });
+  filtered.forEach(function(c){
+    cityEl.innerHTML += '<option value="'+c.id+'">'+c.name+'</option>';
+  });
+  // Also update filter dropdown
+  var filterEl = document.getElementById('filterCity');
+  if (filterEl) {
+    filterEl.innerHTML = '<option value="">All Cities</option>';
+    ALL_CITIES.forEach(function(c){
+      filterEl.innerHTML += '<option value="'+c.id+'">'+c.name+'</option>';
+    });
+  }
+}
+
+async function loadCities() {
+  try {
+    var data = await apiGet('/cities');
+    ALL_CITIES = data.cities || [];
+    filterCitiesByCountry();
+  } catch(e) { console.warn('Cities load error:', e.message); }
+}
+
+async function loadCoaches() {
+  try {
+    // Load ambassadors + admins as potential coaches
+    var data = await apiGet('/admin/members?is_ambassador=true&limit=200');
+    var coachEl = document.getElementById('sCoach');
+    if (!coachEl) return;
+    coachEl.innerHTML = '<option value="">No coach assigned</option>';
+    (data.members || []).forEach(function(m){
+      coachEl.innerHTML += '<option value="'+m.id+'">'+m.first_name+' '+m.last_name+'</option>';
+    });
+  } catch(e) { console.warn('Coaches load error:', e.message); }
+}
+
+function updateSportLevels() {
+  buildCourtsUI();
+}
+
+function buildCourtsUI() {
+  var sport = document.getElementById('sSport').value;
+  var numCourts = parseInt(document.getElementById('sNumCourts').value) || 1;
+  var levels = SPORT_LEVELS[sport] || ['Beginner','Intermediate','Advanced'];
+  var container = document.getElementById('courtsContainer');
+  container.innerHTML = '';
+  for (var i = 1; i <= numCourts; i++) {
+    var levOpts = levels.map(function(l){ return '<option value="'+l+'">'+l+'</option>'; }).join('');
+    container.innerHTML += '<div class="court-card">' +
+      '<div class="court-card-header">Court '+ i +'</div>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
+        '<div class="admin-form-group" style="flex:1;min-width:150px">' +
+          '<label class="admin-form-label">Court Name</label>' +
+          '<input class="admin-form-input" type="text" id="court-name-'+i+'" placeholder="e.g. Court '+i+'" value="Court '+i+'">' +
+        '</div>' +
+        '<div class="admin-form-group" style="flex:1;min-width:150px">' +
+          '<label class="admin-form-label">Level Allowed</label>' +
+          '<select class="admin-form-select" id="court-level-'+i+'">'+levOpts+'</select>' +
+        '</div>' +
+        '<div class="admin-form-group" style="flex:1;min-width:120px">' +
+          '<label class="admin-form-label">Players per Court</label>' +
+          '<input class="admin-form-input" type="number" id="court-players-'+i+'" value="4" min="2" max="20">' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
+}
+
+function getCourtsData() {
+  var sport = document.getElementById('sSport').value;
+  var numCourts = parseInt(document.getElementById('sNumCourts').value) || 1;
+  var courts = [];
+  for (var i = 1; i <= numCourts; i++) {
+    courts.push({
+      court_number: i,
+      name: (document.getElementById('court-name-'+i) || {}).value || ('Court '+i),
+      level: (document.getElementById('court-level-'+i) || {}).value || 'Beginner',
+      max_players: parseInt((document.getElementById('court-players-'+i) || {}).value) || 4,
+    });
+  }
+  return courts;
+}
+
+function buildRepeatDates(days, startDate, endDate, times) {
+  if (!days.length || !startDate) return null;
+  var dayMap = {Mon:1,Tue:2,Wed:3,Thu:4,Fri:5,Sat:6,Sun:0};
+  var dates = [];
+  var start = new Date(startDate);
+  var end = endDate ? new Date(endDate) : new Date(startDate);
+  // If no end date, just get next occurrence of each selected day
+  if (!endDate) {
+    days.forEach(function(day) {
+      var d = new Date(start);
+      var target = dayMap[day];
+      var diff = (target - d.getDay() + 7) % 7;
+      if (diff === 0) diff = 0;
+      d.setDate(d.getDate() + diff);
+      var time = times[day] || '06:30';
+      d.setHours(parseInt(time.split(':')[0]), parseInt(time.split(':')[1]), 0, 0);
+      dates.push(d.toISOString());
+    });
+  } else {
+    // Iterate from start to end date
+    var current = new Date(start);
+    while (current <= end) {
+      var dayName = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][current.getDay()];
+      if (days.indexOf(dayName) !== -1) {
+        var d = new Date(current);
+        var time = times[dayName] || '06:30';
+        d.setHours(parseInt(time.split(':')[0]), parseInt(time.split(':')[1]), 0, 0);
+        dates.push(d.toISOString());
+      }
+      current.setDate(current.getDate() + 1);
+    }
+  }
+  return dates;
+}
+
+function editSessionById(id) {
+  var s = SESSIONS_CACHE[id];
+  if (s) editSession(s);
+}
+
 async function createSession() {
-  var token = getToken();
-  if (!token) { showAdminToast('Please log in first'); return; }
+  var msgEl = document.getElementById('sessionFormMsg');
+  var isEdit = !!SESSION_EDIT_ID;
 
-  var name     = document.getElementById('sName').value.trim();
-  var city     = document.getElementById('sCity').value;
-  var dateVal  = document.getElementById('sDate').value;
-  var loc      = document.getElementById('sLoc').value.trim();
-  var duration = parseInt(document.getElementById('sDuration').value) || 60;
-  var cap      = parseInt(document.getElementById('sCap').value) || 30;
-  var points   = parseInt(document.getElementById('sPoints').value) || 10;
-  var stype    = document.getElementById('sType').value;
-  var desc     = document.getElementById('sDesc').value.trim();
-  var maps     = document.getElementById('sMaps').value.trim();
-  var msgEl    = document.getElementById('sessionFormMsg');
+  var name      = document.getElementById('sName').value.trim();
+  var city_id   = document.getElementById('sCity').value;
+  var location  = document.getElementById('sLoc').value.trim();
+  var duration  = parseInt(document.getElementById('sDuration').value) || 60;
+  var capacity  = parseInt(document.getElementById('sCap').value) || 30;
+  var points    = parseInt(document.getElementById('sPoints').value) || 10;
+  var stype     = document.getElementById('sType').value;
+  var desc      = document.getElementById('sDesc').value.trim();
+  var maps      = document.getElementById('sMaps').value.trim();
+  var live      = document.getElementById('sLiveEnabled').checked;
+  var coach_id  = document.getElementById('sCoach').value || null;
+  var cat       = (document.querySelector('.session-cat-btn.active') || {}).dataset?.cat || 'regular';
+  var sport     = document.getElementById('sSport').value || null;
 
-  if (!name || !city || !dateVal || !loc) {
-    msgEl.textContent = '⚠️ Session name, city, date/time and location are required.';
-    msgEl.style.cssText = 'display:block;background:#2a1a00;color:#ffc400;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+  if (!name || !city_id || !location) {
+    msgEl.textContent = '⚠️ Session Name, City and Location are required.';
+    msgEl.style.cssText = 'display:block;background:#2a1010;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
     return;
   }
 
-  // Get city_id from backend
+  // Get selected days + times
+  var days = Array.from(document.querySelectorAll('.day-check-btn input:checked')).map(function(i){ return i.value; });
+  var startDate = document.getElementById('sStartDate').value;
+  var endDate = document.getElementById('sEndDate').value;
+
+  if (!days.length && !isEdit) {
+    msgEl.textContent = '⚠️ Please select at least one day.';
+    msgEl.style.cssText = 'display:block;background:#2a1010;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+    return;
+  }
+
+  var times = {};
+  days.forEach(function(day) {
+    var el = document.getElementById('time-'+day);
+    times[day] = el ? el.value : '06:30';
+  });
+
+  var repeat_dates = null;
+  if (!isEdit) {
+    repeat_dates = buildRepeatDates(days, startDate || new Date().toISOString().split('T')[0], endDate, times);
+    if (!repeat_dates || !repeat_dates.length) {
+      msgEl.textContent = '⚠️ Please set a start date and select at least one day.';
+      msgEl.style.cssText = 'display:block;background:#2a1010;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+      return;
+    }
+  }
+
+  var courts = cat === 'team_sports' ? getCourtsData() : null;
+  var scheduled_at = repeat_dates ? repeat_dates[0] : document.getElementById('sEditDate')?.value;
+
+  var payload = {
+    name, city_id, description: desc, coach_id, location,
+    location_maps_url: maps, session_type: stype, capacity,
+    scheduled_at, duration_mins: duration, points_reward: points,
+    is_live_enabled: live, session_category: cat,
+    sport_type: sport, courts,
+    repeat_dates: repeat_dates && repeat_dates.length > 1 ? repeat_dates : null,
+  };
+
+  var btnLabel = document.getElementById('sessionSubmitLabel');
+  var origLabel = btnLabel.textContent;
+  btnLabel.textContent = '⏳ Saving...';
+
   try {
-    // First get or create the city
-    var cityResp = await fetch('https://atpworldweb-production.up.railway.app/api/sessions?limit=1', {
-      headers: {'Authorization':'Bearer '+token}
-    }).then(function(r){return r.json();});
+    var token = getToken();
+    var url = isEdit
+      ? 'https://atpworldweb-production.up.railway.app/api/sessions/' + SESSION_EDIT_ID
+      : 'https://atpworldweb-production.up.railway.app/api/sessions';
+    var method = isEdit ? 'PUT' : 'POST';
 
-    // We'll send city name and let the backend resolve it
-    // But our POST /api/sessions needs a city_id UUID...
-    // So we need to resolve the city first
-    var cityId = await getCityId(city, token);
-    if (!cityId) {
-      msgEl.textContent = '❌ Could not find or create city. Try again.';
-      msgEl.style.cssText = 'display:block;background:#2a0000;color:#ff6b6b;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
-      return;
-    }
-
-    var liveEnabled = document.getElementById('sLiveEnabled') ? document.getElementById('sLiveEnabled').checked : false;
-    var payload = {
-      name: name,
-      city_id: cityId,
-      scheduled_at: new Date(dateVal).toISOString(),
-      location: loc,
-      duration_mins: duration,
-      capacity: cap,
-      points_reward: points,
-      session_type: stype,
-      description: desc || null,
-      location_maps_url: maps || null,
-      is_live_enabled: liveEnabled,
-    };
-
-    var resp = await fetch('https://atpworldweb-production.up.railway.app/api/sessions', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+    var res = await fetch(url, {
+      method, headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
       body: JSON.stringify(payload)
-    }).then(function(r){return r.json();});
+    });
+    var data = await res.json();
 
-    if (resp.error) {
-      msgEl.textContent = '❌ ' + resp.error;
-      msgEl.style.cssText = 'display:block;background:#2a0000;color:#ff6b6b;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
-      return;
+    if (data.sessions || data.session) {
+      var count = data.sessions ? data.sessions.length : 1;
+      msgEl.textContent = isEdit ? '✅ Session updated!' : '✅ '+count+' session(s) created!';
+      msgEl.style.cssText = 'display:block;background:#0d1a0a;color:#7AC231;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+      resetSessionForm();
+      setTimeout(function(){ loadSessionsList(); loadDashboardAPI(); }, 800);
+    } else {
+      throw new Error(data.error || 'Failed to save session');
     }
-
-    // Success
-    msgEl.textContent = '✅ Session "' + name + '" created successfully!';
-    msgEl.style.cssText = 'display:block;background:#0a2a0a;color:#7AC231;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
-    document.getElementById('sName').value = '';
-    document.getElementById('sLoc').value = '';
-    document.getElementById('sDesc').value = '';
-    document.getElementById('sMaps').value = '';
-    // Reset livestream toggle
-    var cb = document.getElementById('sLiveEnabled');
-    if (cb && cb.checked) toggleLive();
-    showAdminToast('✅ Session created!');
-    setTimeout(function(){ loadSessionsList(); loadDashboardAPI(); }, 600);
-
   } catch(e) {
-    msgEl.textContent = '❌ Error: ' + e.message;
-    msgEl.style.cssText = 'display:block;background:#2a0000;color:#ff6b6b;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+    msgEl.textContent = '❌ '+e.message;
+    msgEl.style.cssText = 'display:block;background:#2a1010;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+  } finally {
+    btnLabel.textContent = origLabel;
   }
 }
 
-// Get city_id by name - resolves via a known list cached at boot
-var _cityCache = {};
-async function getCityId(cityName, token) {
-  if (_cityCache[cityName]) return _cityCache[cityName];
-  // Try to get via the sessions endpoint to find city IDs
-  try {
-    var resp = await fetch('https://atpworldweb-production.up.railway.app/api/sessions?limit=50', {
-      headers: {'Authorization':'Bearer '+token}
-    }).then(function(r){return r.json();});
-    if (resp.sessions) {
-      resp.sessions.forEach(function(s) {
-        if (s.city_name && s.city_id) _cityCache[s.city_name] = s.city_id;
-      });
-    }
-    if (_cityCache[cityName]) return _cityCache[cityName];
-  } catch(e) {}
+function resetSessionForm() {
+  SESSION_EDIT_ID = null;
+  document.getElementById('sEditId').value = '';
+  document.getElementById('sName').value = '';
+  document.getElementById('sDesc').value = '';
+  document.getElementById('sLoc').value = '';
+  document.getElementById('sMaps').value = '';
+  document.getElementById('sCity').value = '';
+  document.getElementById('sCountry').value = '';
+  document.getElementById('sStartDate').value = '';
+  document.getElementById('sEndDate').value = '';
+  document.querySelectorAll('.day-check-btn input').forEach(function(cb){ cb.checked = false; });
+  document.getElementById('dayTimesContainer').innerHTML = '';
+  selectCategory('regular');
+  document.getElementById('sessionFormTitle').textContent = 'Create New Session';
+  document.getElementById('sessionSubmitLabel').textContent = '＋ Create Session';
+  document.getElementById('cancelEditBtn').style.display = 'none';
+}
 
-  // City not found in cache — ask backend to create it via seed endpoint
-  try {
-    var r2 = await fetch('https://atpworldweb-production.up.railway.app/api/auth/get-or-create-city', {
-      method: 'POST',
-      headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
-      body: JSON.stringify({name: cityName, setupKey: 'atp-internal-2026'})
-    }).then(function(r){return r.json();});
-    if (r2.id) { _cityCache[cityName] = r2.id; return r2.id; }
-  } catch(e) {}
-  return null;
+function cancelEditSession() { resetSessionForm(); }
+
+function editSession(s) {
+  SESSION_EDIT_ID = s.id;
+  document.getElementById('sName').value = s.name || '';
+  document.getElementById('sDesc').value = s.description || '';
+  document.getElementById('sLoc').value = s.location || '';
+  document.getElementById('sMaps').value = s.location_maps_url || '';
+  document.getElementById('sDuration').value = s.duration_mins || 60;
+  document.getElementById('sCap').value = s.capacity || 30;
+  document.getElementById('sPoints').value = s.points_reward || 10;
+  document.getElementById('sType').value = s.session_type || 'free';
+  if (s.coach_id) document.getElementById('sCoach').value = s.coach_id;
+  // Set city + country
+  var cityObj = ALL_CITIES.find(function(c){ return c.id === s.city_id; });
+  if (cityObj) {
+    document.getElementById('sCountry').value = cityObj.country || 'UAE';
+    filterCitiesByCountry();
+    document.getElementById('sCity').value = s.city_id;
+  }
+  selectCategory(s.session_category || 'regular');
+  if (s.sport_type) document.getElementById('sSport').value = s.sport_type;
+  if (s.courts) {
+    document.getElementById('sNumCourts').value = s.courts.length;
+    buildCourtsUI();
+  }
+  document.getElementById('sessionFormTitle').textContent = 'Edit Session';
+  document.getElementById('sessionSubmitLabel').textContent = '✓ Save Changes';
+  document.getElementById('cancelEditBtn').style.display = 'inline-block';
+  document.getElementById('sessionFormSection').scrollIntoView({behavior:'smooth'});
 }
 
 async function loadSessionsList() {
-  var token = getToken();
   var tbody = document.getElementById('sessionsTbody');
-  var label = document.getElementById('sessionsCountLabel');
+  var countEl = document.getElementById('sessionsCountLabel');
   if (!tbody) return;
-  tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#444;padding:24px">Loading...</td></tr>';
+
+  var cityF = (document.getElementById('filterCity') || {}).value || '';
+  var catF = (document.getElementById('filterCategory') || {}).value || '';
+  var statusF = (document.getElementById('filterStatus') || {}).value || 'upcoming';
+  var searchF = (document.getElementById('filterSearch') || {}).value || '';
+
+  tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#444;padding:24px">Loading...</td></tr>';
+
   try {
-    var data = await fetch('https://atpworldweb-production.up.railway.app/api/sessions?limit=50&status=upcoming', {
-      headers: {'Authorization':'Bearer '+(token||'')}
-    }).then(function(r){return r.json();});
+    var params = 'limit=100';
+    if (cityF) params += '&city_id='+cityF;
+    if (statusF) params += '&status='+statusF;
+    var data = await apiGet('/sessions?'+params);
+    var sessions = (data.sessions || []);
 
-    var sessions = data.sessions || [];
-    if (label) label.textContent = sessions.length + ' upcoming';
+    // Client-side filter for category + search
+    if (catF) sessions = sessions.filter(function(s){ return s.session_category === catF; });
+    if (searchF) {
+      var q = searchF.toLowerCase();
+      sessions = sessions.filter(function(s){ return (s.name||'').toLowerCase().includes(q) || (s.location||'').toLowerCase().includes(q); });
+    }
 
-    // Update sessions stat on dashboard
-    var statEl = document.getElementById('stat-sessions');
-    if (statEl) statEl.textContent = sessions.length;
+    if (countEl) countEl.textContent = sessions.length + ' sessions';
 
     if (!sessions.length) {
-      tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#444;padding:24px">No upcoming sessions yet</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#444;padding:24px">No sessions found</td></tr>';
       return;
     }
 
+    var catIcon = {regular:'🏃',social:'🎉',team_sports:'🏆'};
+    var catLabel = {regular:'Regular',social:'Social',team_sports:'Team Sports'};
+
+    tbody.innerHTML = sessions.forEach(function(s){ SESSIONS_CACHE[s.id]=s; });
     tbody.innerHTML = sessions.map(function(s) {
-      var dt = new Date(s.scheduled_at);
-      var dateStr = dt.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'});
-      var timeStr = dt.toLocaleTimeString('en-AE',{hour:'2-digit',minute:'2-digit'});
-      var booked = parseInt(s.bookings_count)||0;
-      var cap = s.capacity||'—';
-      var pct = s.capacity ? Math.round(booked/s.capacity*100) : 0;
-      return '<tr>'+
-        '<td><div style="font-weight:600;color:#fff;font-size:13px">'+s.name+'</div>'+
-             '<div style="font-size:11px;color:#555;margin-top:2px">'+s.location+'</div></td>'+
-        '<td style="color:#aaa;font-size:12px">'+(s.city_name||'—')+'</td>'+
-        '<td style="color:#aaa;font-size:12px">'+dateStr+' · '+timeStr+'</td>'+
-        '<td><span style="font-size:12px;color:'+(pct>80?'#ff6b6b':'#7AC231')+'">'+booked+'/'+cap+'</span>'+
-            '<div style="height:3px;background:#1a1a1a;border-radius:2px;margin-top:4px;width:80px">'+
-            '<div style="height:3px;background:#7AC231;border-radius:2px;width:'+pct+'%"></div></div></td>'+
-        '<td>'+
-          '<span class="badge badge-green">'+s.status+'</span>'+
-          (s.is_live_enabled ? ' <span style="font-size:10px;color:#7AC231;margin-left:4px">📡 Live</span>' : '')+
-          '</td>'+
-        '<td><button class="admin-btn" style="font-size:11px" onclick="completeSession(this.dataset.sid)" data-sid="'+s.id+'">Complete</button></td>'+
+      var dt = s.scheduled_at ? new Date(s.scheduled_at) : null;
+      var dateStr = dt ? dt.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) + ' ' + dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}) : '—';
+      var cat = s.session_category || 'regular';
+      var statusBadge = s.status === 'completed'
+        ? '<span class="badge badge-grey">Completed</span>'
+        : '<span class="badge badge-green">Upcoming</span>';
+      return '<tr>' +
+        '<td><div class="admin-member-name">'+s.name+'</div><div class="admin-member-email">'+(s.location||'')+'</div></td>' +
+        '<td><span style="font-size:16px">'+catIcon[cat]+'</span> <span style="font-size:12px;color:#888">'+catLabel[cat]+'</span></td>' +
+        '<td style="font-size:12px;color:#888">'+(s.city_name||'—')+'</td>' +
+        '<td style="font-size:12px">'+dateStr+'</td>' +
+        '<td style="font-size:13px">'+(s.checkins_count||0)+' / '+(s.capacity||'?')+'</td>' +
+        '<td style="font-size:12px;color:#888">'+(s.coach_name||'—')+'</td>' +
+        '<td style="white-space:nowrap">' +
+          '<button class="admin-btn" style="font-size:11px;padding:4px 10px;margin-right:4px" onclick="editSessionById(\'' + s.id + '\')">✏️ Edit</button>' +
+          '<button class="admin-btn" style="font-size:11px;padding:4px 10px" onclick="viewRegistrations(\'' + s.id + '\')">' +
+          '👥 ' + (s.registrations_count || 0) +
+          '</button>' +
+        '</td>' +
         '</tr>';
     }).join('');
+
   } catch(e) {
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:#ff6b6b;padding:24px">Error loading sessions: '+e.message+'</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#f87171;padding:24px">Error: '+e.message+'</td></tr>';
   }
 }
 
-async function completeSession(id) {
-  if (!confirm('Mark this session as completed? This will award points to all attended members.')) return;
-  var token = getToken();
+async function viewRegistrations(sessionId) {
+  var s = SESSIONS_CACHE[sessionId] || {};
+  var sessionName = s.name || 'Session';
+  var modal = document.getElementById('registrationsModal');
+  var body = document.getElementById('regModalBody');
+  var title = document.getElementById('regModalTitle');
+  title.textContent = '👥 ' + sessionName;
+  modal.style.display = 'flex';
+  body.innerHTML = '<div style="text-align:center;color:#444;padding:24px">Loading...</div>';
+
   try {
-    var r = await fetch('https://atpworldweb-production.up.railway.app/api/sessions/'+id+'/complete', {
-      method: 'PATCH', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}
-    }).then(function(r){return r.json();});
-    showAdminToast(r.error ? '❌ '+r.error : '✅ Session completed + points awarded!');
-    loadSessionsList();
-  } catch(e) { showAdminToast('❌ Error: '+e.message); }
-}
-
-
-function makeAmbassador(id) {
-  // Call real API to grant ambassador role
-  var token = localStorage.getItem('atp_token');
-  fetch('https://atpworldweb-production.up.railway.app/api/admin/members/' + id + '/ambassador', {
-    method: 'PATCH',
-    headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
-    body: JSON.stringify({is_ambassador: true})
-  }).then(function(r){return r.json();}).then(function(d){
-    if (d.error) { showAdminToast('❌ ' + d.error); return; }
-    showAdminToast('⭐ Member is now an Ambassador!');
-    setTimeout(function(){ loadMembersAPI(); loadAmbassadorsAPI(); loadDashboardAPI(); }, 600);
-  }).catch(function(){ showAdminToast('❌ Connection error'); });
-}
-
-function _makeAmbassadorLegacy(id) { // kept for reference
-  renderAmbassadors();
-}
-
-function showAddAmbassador() {
-  var f = document.getElementById('addAmbForm');
-  f.style.display = f.style.display === 'none' ? 'block' : 'none';
-}
-
-function addAmbassador() {
-  var val = document.getElementById('newAmbInput').value.trim();
-  if (!val) return;
-  var m = MEMBERS_DATA.find(function(x){return x.id===val||x.email===val;});
-  if (!m) {
-    // Add as new entry
-    MEMBERS_DATA.push({id:val,name:val,email:'',joined:'Now',sessions:0,ambassador:true,ambassadorActive:true});
-  } else {
-    m.ambassador = true;
-    m.ambassadorActive = true;
-  }
-  localStorage.setItem('atp:ambassador','true');
-  document.getElementById('addAmbForm').style.display = 'none';
-  document.getElementById('newAmbInput').value = '';
-  showAdminToast('⭐ Ambassador access granted!');
-  renderAmbassadors();
-}
-
-// ── CHALLENGES ────────────────────────────────────────────────
-function createChallenge() {
-  var name   = document.getElementById('cName').value.trim();
-  var type   = document.getElementById('cType').value;
-  var metric = document.getElementById('cMetric').value;
-  var target = document.getElementById('cTarget').value;
-  var desc   = document.getElementById('cDesc').value.trim();
-  if (!name || !target) { showAdminToast('Fill in name and target', 'warn'); return; }
-  CHALLENGES_DATA.push({icon:'⚡',name:name,type:type,metric:metric,target:parseInt(target),desc:desc,active:true,participants:0});
-  ['cName','cTarget','cDesc'].forEach(function(id){document.getElementById(id).value='';});
-  renderActiveChallenges();
-  showAdminToast('✓ Challenge "'+name+'" published!');
-}
-
-function renderActiveChallenges() {
-  document.getElementById('activeChallengesList').innerHTML = CHALLENGES_DATA.map(function(c,i) {
-    return '<div style="display:flex;align-items:center;justify-content:space-between;padding:14px 0;border-bottom:1px solid rgba(255,255,255,.05)">'+
-      '<div style="display:flex;align-items:center;gap:12px">'+
-        '<div style="width:36px;height:36px;border-radius:8px;background:rgba(122,194,49,.1);display:flex;align-items:center;justify-content:center;font-size:18px">'+c.icon+'</div>'+
-        '<div>'+
-          '<div style="font-size:13px;font-weight:700;color:#fff">'+c.name+'</div>'+
-          '<div style="font-size:11px;color:#444;margin-top:2px">'+c.type+' · '+c.metric+': '+c.target+' · '+c.participants+' joined</div>'+
-        '</div>'+
-      '</div>'+
-      '<div style="display:flex;align-items:center;gap:8px">'+
-        '<span class="badge '+(c.active?'badge-green':'badge-grey')+'">'+(c.active?'Active':'Ended')+'</span>'+
-        '<button class="admin-btn admin-btn-danger" onclick="endChallenge('+i+')">End</button>'+
-      '</div>'+
-    '</div>';
-  }).join('') || '<div style="color:#444;font-size:13px;text-align:center;padding:20px">No active challenges. Create one above.</div>';
-}
-
-function endChallenge(i) {
-  CHALLENGES_DATA[i].active = false;
-  renderActiveChallenges();
-  showAdminToast('Challenge ended');
-}
-
-// ── LIVE COUNT ────────────────────────────────────────────────
-function updateLiveCount() {
-  var saved = JSON.parse(localStorage.getItem('atp:checkins:community-run') || '[]');
-  var count = saved.length;
-  var el = document.getElementById('liveCount');
-  var bar = document.getElementById('liveBar');
-  if (el) { el.textContent = count; }
-  if (bar) { bar.style.width = Math.round(count/24*100)+'%'; }
-  setTimeout(updateLiveCount, 5000); // refresh every 5s
-}
-
-// ── TOAST ─────────────────────────────────────────────────────
-function showAdminToast(msg, type) {
-  var t = document.getElementById('adminToast');
-  t.textContent = msg;
-  t.className = 'admin-toast '+(type==='warn'?'':'success');
-  t.classList.add('show');
-  setTimeout(function(){t.classList.remove('show');}, 3000);
-}
-
-// ── SESSION CREATE ────────────────────────────────────────────
-function createSession() {
-  var name  = document.getElementById('sName').value.trim();
-  var tribe = document.getElementById('sTribe').value;
-  var day   = document.getElementById('sDay').value;
-  var time  = document.getElementById('sTime').value;
-  var loc   = document.getElementById('sLoc').value.trim();
-  var coach = document.getElementById('sCoach').value.trim();
-  var desc  = document.getElementById('sDesc').value.trim();
-  if (!name || !loc) { showAdminToast('Name and location required','warn'); return; }
-  // Save to localStorage so sessions.html can pick it up
-  var sessions = JSON.parse(localStorage.getItem('atp:sessions') || '[]');
-  sessions.unshift({name:name,tribe:tribe.toLowerCase(),day:day,time:time,loc:loc,coach:coach,desc:desc});
-  localStorage.setItem('atp:sessions', JSON.stringify(sessions));
-  ['sName','sLoc','sCoach','sDesc'].forEach(function(id){document.getElementById(id).value='';});
-  showAdminToast('✓ Session "'+name+'" created!');
-}
-
-// ── ATP API INIT ─────────────────────────────────────────────
-(function() {
-  if (!window.ATP) return;
-  window.ATP.init().then(function(member) {
-    if (!member) return;
-    // Sync to legacy auth state
-    if (typeof atpUser !== 'undefined' && atpUser === null) {
-      atpUser = {
-        firstName: member.first_name, lastName: member.last_name,
-        email: member.email, avatar: member.avatar_url ||
-          (member.first_name[0] + (member.last_name||'X')[0]).toUpperCase(),
-        joinedAt: member.joined_at, memberId: member.id,
-        memberNumber: member.member_number,
-        ambassador: member.is_ambassador, admin: member.is_admin,
-      };
-      if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
-    }
-    // Ambassador: show checkin link
-    if (member.is_ambassador && typeof checkAmbassadorRole === 'function') {
-      checkAmbassadorRole();
-    }
-    // Store ambassador flag for checkin page
-    if (member.is_ambassador) {
-      localStorage.setItem('atp:ambassador', 'true');
-    }
-  }).catch(function() {});
-})();
-
-
-// ── ATP REAL API FUNCTIONS ────────────────────────────────────
-var ATP_API = 'https://atpworldweb-production.up.railway.app/api';
-function getToken() { return localStorage.getItem('atp_token') || ''; }
-function apiGet(path) {
-  return fetch(ATP_API + path, {
-    headers: { 'Authorization': 'Bearer ' + getToken() }
-  }).then(function(r) { return r.json(); });
-}
-
-async function loadDashboardAPI() {
-  var token = getToken();
-  if (!token) return;
-  try {
-    var memberData = await apiGet('/admin/members?limit=1');
-    if (memberData.total !== undefined) {
-      var total = memberData.total;
-      document.getElementById('stat-members').textContent = total.toLocaleString();
-      var lbl = document.querySelector('.admin-section-title span');
-      if (lbl) lbl.textContent = total.toLocaleString() + ' total';
-    }
-    var ambData = await apiGet('/admin/members?is_ambassador=true&limit=1');
-    if (ambData.total !== undefined) {
-      document.getElementById('stat-ambassadors').textContent = ambData.total;
-    }
-    var sessionData = await apiGet('/sessions?limit=1');
-    if (sessionData && sessionData.total !== undefined) {
-      document.getElementById('stat-sessions').textContent = sessionData.total;
-    }
-    console.log('Dashboard stats loaded live');
-  } catch(e) { console.warn('Dashboard API:', e.message); }
-}
-
-async function loadMembersAPI() {
-  var token = getToken();
-  if (!token) return;
-  var search = (document.getElementById('memberSearch') || {}).value || '';
-  try {
-    var url = '/admin/members?limit=100' + (search ? '&search=' + encodeURIComponent(search) : '');
-    var result = await apiGet(url);
-    if (result.members && result.members.length) {
-      // Map API response to the table format
-      var tbody = document.getElementById('membersTbody');
-      if (tbody) {
-        tbody.innerHTML = result.members.map(function(m) {
-          var name = (m.first_name || '') + ' ' + (m.last_name || '');
-          var initials = ((m.first_name||'?')[0] + (m.last_name||'?')[0]).toUpperCase();
-          var joined = m.joined_at ? new Date(m.joined_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '—';
-          return '<tr>' +
-            '<td style="display:flex;align-items:center"><div class="admin-av">' + initials + '</div><div><div class="admin-member-name">' + name.trim() + '</div><div class="admin-member-email">' + m.member_number + ' · ' + m.email + '</div></div></td>' +
-            '<td style="color:#555;font-size:12px">' + joined + '</td>' +
-            '<td style="color:#fff;font-size:13px;font-weight:600">' + (m.sessions_count || 0) + '</td>' +
-            '<td><span class="badge ' + (m.is_banned ? 'badge-grey' : 'badge-green') + '">' + (m.is_banned ? 'Inactive' : 'Active') + '</span></td>' +
-            '<td><button class="admin-btn" onclick="makeAmbassador(' + "'" + m.id + "'" + ')">Make Ambassador</button></td>' +
-            '</tr>';
-        }).join('');
-      }
-      // Update total count label
-      var lbl = document.querySelector('.admin-section-title span');
-      if (lbl) lbl.textContent = result.total.toLocaleString() + ' total';
-    }
-    return result.members;
-  } catch(e) { console.warn('Members API:', e.message); return null; }
-}
-
-async function loadAmbassadorsAPI() {
-  var token = getToken();
-  if (!token) return;
-  try {
-    var data = await apiGet('/admin/members?is_ambassador=true&limit=100');
-    if (!data.members) return;
-    var tbody = document.getElementById('ambassadorsTbody') || document.querySelector('#section-ambassadors tbody');
-    if (!tbody) return;
-    if (data.members.length === 0) {
-      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#444;padding:32px">No ambassadors yet</td></tr>';
+    var token = getToken();
+    var res = await fetch('https://atpworldweb-production.up.railway.app/api/sessions/'+sessionId+'/registrations', {
+      headers:{'Authorization':'Bearer '+token}
+    });
+    var data = await res.json();
+    var regs = data.registrations || [];
+    if (!regs.length) {
+      body.innerHTML = '<div style="text-align:center;color:#444;padding:24px">No registrations yet</div>';
       return;
     }
-    tbody.innerHTML = data.members.map(function(m) {
-      var name = ((m.first_name||'')+' '+(m.last_name||'')).trim();
-      var ini = ((m.first_name||'?')[0]+(m.last_name||'?')[0]).toUpperCase();
-      var joined = m.joined_at ? new Date(m.joined_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '—';
-      var btnId = 'revbtn-' + m.id.replace(/-/g,'');
-      return '<tr>'+
-        '<td style="display:flex;align-items:center;gap:10px">'+
-          '<div class="admin-av" style="background:#7AC231;color:#000">'+ini+'</div>'+
-          '<div><div class="admin-member-name">'+name+'</div>'+
-          '<div class="admin-member-email">'+m.member_number+' · '+m.email+'</div></div></td>'+
-        '<td style="color:#555;font-size:12px">'+joined+'</td>'+
-        '<td style="color:#fff;font-size:13px;font-weight:600">'+(m.sessions_count||0)+'</td>'+
-        '<td><span class="badge badge-green">Active</span></td>'+
-        '<td><button class="admin-btn" style="background:#ef4444" id="'+btnId+'" onclick="revokeAmbassador(this.dataset.mid)" data-mid="'+m.id+'">Revoke</button></td>'+
-        '</tr>';
-    }).join('');
-    document.getElementById('stat-ambassadors').textContent = data.total;
-    console.log('✅ Ambassadors loaded:', data.total);
-  } catch(e) { console.warn('Ambassadors API:', e.message); }
+    body.innerHTML = '<div style="font-size:12px;color:#888;margin-bottom:12px">'+regs.length+' registered</div>' +
+      '<table class="admin-table" style="width:100%"><thead><tr><th>Member</th><th>Member #</th><th>Level</th><th>Court</th><th>Status</th></tr></thead><tbody>' +
+      regs.map(function(r){
+        return '<tr>'+
+          '<td><div class="admin-member-name">'+r.first_name+' '+r.last_name+'</div><div class="admin-member-email">'+r.email+'</div></td>'+
+          '<td style="font-size:12px;color:#888">'+r.member_number+'</td>'+
+          '<td style="font-size:12px;color:#888">'+(r.padel_level||'—')+'</td>'+
+          '<td style="font-size:12px;color:#7AC231">'+(r.court_name||'—')+'</td>'+
+          '<td><span class="badge '+(r.status==='attended'?'badge-green':'badge-grey')+'">'+r.status+'</span></td>'+
+          '</tr>';
+      }).join('')+'</tbody></table>';
+  } catch(e) {
+    body.innerHTML = '<div style="text-align:center;color:#f87171;padding:24px">Error: '+e.message+'</div>';
+  }
 }
 
-
-function revokeAmbassador(id) {
-  var token = getToken();
-  if (!confirm('Remove ambassador status?')) return;
-  fetch('https://atpworldweb-production.up.railway.app/api/admin/members/' + id + '/ambassador', {
-    method:'PATCH', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-    body: JSON.stringify({is_ambassador:false})
-  }).then(function(r){return r.json();}).then(function(){
-    showAdminToast('Ambassador status removed');
-    loadAmbassadorsAPI();
-    loadDashboardAPI();
-  });
+function closeRegistrations() {
+  document.getElementById('registrationsModal').style.display = 'none';
 }
 
 async function setAmbassadorAPI(memberId, enabled) {

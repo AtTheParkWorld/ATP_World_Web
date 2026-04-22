@@ -93,6 +93,10 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
       location_maps_url, session_type = 'free', price = 0, capacity,
       scheduled_at, duration_mins = 60, points_reward = 10,
       is_live_enabled = false, repeat_dates,
+      // New fields
+      session_category = 'regular',  // regular, social, team_sports
+      sport_type,                    // padel, football, volleyball, badminton
+      courts,                        // JSONB array for team sports
     } = req.body;
 
     if (!name || !city_id || !scheduled_at || !location) {
@@ -111,13 +115,14 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
             (name, tribe_id, city_id, description, coach_id, location,
              location_maps_url, session_type, price, capacity, scheduled_at,
              duration_mins, points_reward, is_live_enabled, is_recurring,
-             created_by)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+             session_category, sport_type, courts, created_by)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
            RETURNING *`,
           [name, tribe_id, city_id, description, coach_id, location,
            location_maps_url, session_type, price, capacity, date,
            duration_mins, points_reward, is_live_enabled,
-           dates.length > 1, req.member.id]
+           dates.length > 1, session_category, sport_type || null,
+           courts ? JSON.stringify(courts) : null, req.member.id]
         );
         sessions.push(rows[0]);
       }
@@ -286,5 +291,50 @@ async function awardSessionPoints(sessionId) {
     });
   }
 }
+
+
+// ── PUT /api/sessions/:id  (edit session) ────────────────────
+router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const {
+      name, city_id, description, coach_id, location, location_maps_url,
+      session_type, capacity, scheduled_at, duration_mins, points_reward,
+      is_live_enabled, session_category, sport_type, courts
+    } = req.body;
+
+    const { rows } = await query(
+      `UPDATE sessions SET
+        name=$1, city_id=$2, description=$3, coach_id=$4, location=$5,
+        location_maps_url=$6, session_type=$7, capacity=$8, scheduled_at=$9,
+        duration_mins=$10, points_reward=$11, is_live_enabled=$12,
+        session_category=$13, sport_type=$14, courts=$15, updated_at=NOW()
+       WHERE id=$16 RETURNING *`,
+      [name, city_id, description, coach_id, location, location_maps_url,
+       session_type, capacity, scheduled_at, duration_mins, points_reward,
+       is_live_enabled, session_category, sport_type || null,
+       courts ? JSON.stringify(courts) : null, id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Session not found' });
+    res.json({ session: rows[0] });
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/sessions/:id/registrations ──────────────────────
+router.get('/:id/registrations', authenticate, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT b.id, b.status, b.registered_at, b.court_name,
+              m.first_name, m.last_name, m.member_number, m.email,
+              m.padel_level, m.sports_preferences, m.points_balance
+       FROM bookings b
+       JOIN members m ON m.id = b.member_id
+       WHERE b.session_id = $1
+       ORDER BY b.registered_at ASC`,
+      [req.params.id]
+    );
+    res.json({ registrations: rows, total: rows.length });
+  } catch (err) { next(err); }
+});
 
 module.exports = router;
