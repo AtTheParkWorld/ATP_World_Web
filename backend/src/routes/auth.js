@@ -308,6 +308,25 @@ router.post('/change-password', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/get-or-create-city ────────────────────────
+router.post('/get-or-create-city', async (req, res, next) => {
+  try {
+    const { name, setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    if (!name) return res.status(400).json({ error: 'name required' });
+
+    const { rows: existing } = await query('SELECT id FROM cities WHERE name=$1', [name]);
+    if (existing.length) return res.json({ id: existing[0].id, name });
+
+    const { rows: created } = await query(
+      "INSERT INTO cities (name, country) VALUES ($1, 'UAE') RETURNING id",
+      [name]
+    );
+    res.json({ id: created[0].id, name });
+  } catch (err) { next(err); }
+});
+
+
 module.exports = router;
 
 // ── POST /api/auth/grant-admin  (setup only) ──────────────────
