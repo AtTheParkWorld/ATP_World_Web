@@ -8,7 +8,9 @@ require('dotenv').config();
 const app = express();
 
 // ── SECURITY ──────────────────────────────────────────────────
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: false,  // disabled: frontend uses inline onclick handlers
+}));
 app.use(cors({
   origin: [
     process.env.FRONTEND_URL,
