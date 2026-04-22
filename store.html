@@ -1578,29 +1578,39 @@ loadProducts();
 // ── ATP API INIT ─────────────────────────────────────────────
 (function() {
   if (!window.ATP) return;
-  window.ATP.init().then(function(member) {
+
+  function syncMember(member) {
     if (!member) return;
-    // Sync to legacy auth state
-    if (typeof atpUser !== 'undefined' && atpUser === null) {
-      atpUser = {
-        firstName: member.first_name, lastName: member.last_name,
-        email: member.email, avatar: member.avatar_url ||
-          (member.first_name[0] + (member.last_name||'X')[0]).toUpperCase(),
-        joinedAt: member.joined_at, memberId: member.id,
-        memberNumber: member.member_number,
-        ambassador: member.is_ambassador, admin: member.is_admin,
-      };
-      if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
-    }
-    // Ambassador: show checkin link
-    if (member.is_ambassador && typeof checkAmbassadorRole === 'function') {
-      checkAmbassadorRole();
-    }
-    // Store ambassador flag for checkin page
-    if (member.is_ambassador) {
-      localStorage.setItem('atp:ambassador', 'true');
-    }
-  }).catch(function() {});
+    atpUser = {
+      firstName: member.first_name, lastName: member.last_name,
+      email: member.email,
+      avatar: member.avatar_url || (member.first_name[0]+(member.last_name||'X')[0]).toUpperCase(),
+      joinedAt: member.joined_at, memberId: member.id,
+      memberNumber: member.member_number,
+      ambassador: member.is_ambassador, admin: member.is_admin,
+      points: member.points_balance || 0,
+    };
+    if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
+    if (member.is_ambassador) localStorage.setItem('atp:ambassador', 'true');
+
+    // Show ATP member points balance on store page
+    var ptEl = document.querySelector('.wallet-pts, .points-display, [data-points]');
+    if (ptEl) ptEl.textContent = (member.points_balance||0).toLocaleString() + ' pts';
+
+    // Load real points balance
+    window.ATP.points.balance().then(function(data) {
+      var bal = data.balance || data.points_balance || 0;
+      var els = document.querySelectorAll('.points-balance, .wallet-balance, [data-points]');
+      els.forEach(function(el) { el.textContent = bal.toLocaleString() + ' pts'; });
+    }).catch(function(){});
+  }
+
+  window.addEventListener('atp:login', function(e) { syncMember(e.detail); });
+  window.addEventListener('atp:logout', function() {
+    atpUser = null;
+    if (typeof renderAuthNav === 'function') renderAuthNav(null);
+  });
+  window.ATP.init().then(syncMember).catch(function() {});
 })();
 
 </script>

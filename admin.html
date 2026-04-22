@@ -476,6 +476,7 @@ function showAdminSection(name, btn) {
   }
   // Auto-load real data when switching sections
   if (name === 'members') loadMembersAPI();
+  if (name === 'ambassadors') loadAmbassadorsAPI();
   if (name === 'dashboard') loadDashboardAPI();
 }
 
@@ -558,14 +559,20 @@ function revokeAmbassador(id) {
 }
 
 function makeAmbassador(id) {
-  var m = MEMBERS_DATA.find(function(x){return x.id===id;});
-  if (!m) return;
-  m.ambassador = true;
-  m.ambassadorActive = true;
-  // Grant access to logged-in user if it's them
-  localStorage.setItem('atp:ambassador', 'true');
-  showAdminToast('⭐ '+m.name+' is now an Ambassador!');
-  showAdminSection('ambassadors');
+  // Call real API to grant ambassador role
+  var token = localStorage.getItem('atp_token');
+  fetch('https://atpworldweb-production.up.railway.app/api/admin/members/' + id + '/ambassador', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({is_ambassador: true})
+  }).then(function(r){return r.json();}).then(function(d){
+    if (d.error) { showAdminToast('❌ ' + d.error); return; }
+    showAdminToast('⭐ Member is now an Ambassador!');
+    setTimeout(function(){ loadMembersAPI(); loadAmbassadorsAPI(); loadDashboardAPI(); }, 600);
+  }).catch(function(){ showAdminToast('❌ Connection error'); });
+}
+
+function _makeAmbassadorLegacy(id) { // kept for reference
   renderAmbassadors();
 }
 
@@ -759,6 +766,53 @@ async function loadMembersAPI() {
     }
     return result.members;
   } catch(e) { console.warn('Members API:', e.message); return null; }
+}
+
+async function loadAmbassadorsAPI() {
+  var token = getToken();
+  if (!token) return;
+  try {
+    var data = await apiGet('/admin/members?is_ambassador=true&limit=100');
+    if (!data.members) return;
+    var tbody = document.getElementById('ambassadorsTbody') || document.querySelector('#section-ambassadors tbody');
+    if (!tbody) return;
+    if (data.members.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#444;padding:32px">No ambassadors yet</td></tr>';
+      return;
+    }
+    tbody.innerHTML = data.members.map(function(m) {
+      var name = ((m.first_name||'')+' '+(m.last_name||'')).trim();
+      var ini = ((m.first_name||'?')[0]+(m.last_name||'?')[0]).toUpperCase();
+      var joined = m.joined_at ? new Date(m.joined_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '—';
+      var btnId = 'revbtn-' + m.id.replace(/-/g,'');
+      return '<tr>'+
+        '<td style="display:flex;align-items:center;gap:10px">'+
+          '<div class="admin-av" style="background:#7AC231;color:#000">'+ini+'</div>'+
+          '<div><div class="admin-member-name">'+name+'</div>'+
+          '<div class="admin-member-email">'+m.member_number+' · '+m.email+'</div></div></td>'+
+        '<td style="color:#555;font-size:12px">'+joined+'</td>'+
+        '<td style="color:#fff;font-size:13px;font-weight:600">'+(m.sessions_count||0)+'</td>'+
+        '<td><span class="badge badge-green">Active</span></td>'+
+        '<td><button class="admin-btn" style="background:#ef4444" id="'+btnId+'" onclick="revokeAmbassador(this.dataset.mid)" data-mid="'+m.id+'">Revoke</button></td>'+
+        '</tr>';
+    }).join('');
+    document.getElementById('stat-ambassadors').textContent = data.total;
+    console.log('✅ Ambassadors loaded:', data.total);
+  } catch(e) { console.warn('Ambassadors API:', e.message); }
+}
+
+
+function revokeAmbassador(id) {
+  var token = getToken();
+  if (!confirm('Remove ambassador status?')) return;
+  fetch('https://atpworldweb-production.up.railway.app/api/admin/members/' + id + '/ambassador', {
+    method:'PATCH', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({is_ambassador:false})
+  }).then(function(r){return r.json();}).then(function(){
+    showAdminToast('Ambassador status removed');
+    loadAmbassadorsAPI();
+    loadDashboardAPI();
+  });
 }
 
 async function setAmbassadorAPI(memberId, enabled) {

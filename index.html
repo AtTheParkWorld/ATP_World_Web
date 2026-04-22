@@ -1039,6 +1039,16 @@ function renderCount(n) {
   if (el) el.textContent = formatCount(n);
 }
 async function loadCount() {
+  // Try to get real count from backend
+  try {
+    var resp = await fetch('https://atpworldweb-production.up.railway.app/api/admin/members?limit=1');
+    var data = await resp.json();
+    if (data.total && data.total > ATP_BASE_COUNT) {
+      renderCount(data.total);
+      return data.total;
+    }
+  } catch(e) {}
+  // Fallback to stored or base
   try {
     var result = await window.storage.get(ATP_STORAGE_KEY, true);
     var stored = result ? parseInt(result.value, 10) : ATP_BASE_COUNT;
@@ -1427,29 +1437,34 @@ document.addEventListener('keydown', function(e){
 // ── ATP API INIT ─────────────────────────────────────────────
 (function() {
   if (!window.ATP) return;
-  window.ATP.init().then(function(member) {
+
+  function syncMember(member) {
     if (!member) return;
-    // Sync to legacy auth state
-    if (typeof atpUser !== 'undefined' && atpUser === null) {
-      atpUser = {
-        firstName: member.first_name, lastName: member.last_name,
-        email: member.email, avatar: member.avatar_url ||
-          (member.first_name[0] + (member.last_name||'X')[0]).toUpperCase(),
-        joinedAt: member.joined_at, memberId: member.id,
-        memberNumber: member.member_number,
-        ambassador: member.is_ambassador, admin: member.is_admin,
-      };
-      if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
-    }
-    // Ambassador: show checkin link
-    if (member.is_ambassador && typeof checkAmbassadorRole === 'function') {
-      checkAmbassadorRole();
-    }
-    // Store ambassador flag for checkin page
+    atpUser = {
+      firstName: member.first_name, lastName: member.last_name,
+      email: member.email,
+      avatar: member.avatar_url || (member.first_name[0] + (member.last_name||'X')[0]).toUpperCase(),
+      joinedAt: member.joined_at, memberId: member.id,
+      memberNumber: member.member_number,
+      ambassador: member.is_ambassador, admin: member.is_admin,
+      points: member.points_balance || 0,
+    };
+    if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
     if (member.is_ambassador) {
       localStorage.setItem('atp:ambassador', 'true');
+      if (typeof checkAmbassadorRole === 'function') checkAmbassadorRole();
     }
-  }).catch(function() {});
+  }
+
+  // Listen for login events
+  window.addEventListener('atp:login', function(e) { syncMember(e.detail); });
+  window.addEventListener('atp:logout', function() {
+    atpUser = null;
+    if (typeof renderAuthNav === 'function') renderAuthNav(null);
+  });
+
+  // Init on page load if already logged in
+  window.ATP.init().then(syncMember).catch(function() {});
 })();
 
 
@@ -1459,9 +1474,12 @@ window._atpInjectAuth = async function(isSignup, firstName, lastName, email, pho
   try {
     var member;
     if (isSignup) {
-      member = await window.ATP.auth.register(firstName, lastName, email, phone);
+      member = await window.ATP.auth.register({
+        first_name: firstName, last_name: lastName,
+        email: email, phone: phone
+      });
     } else if (!password) {
-      await window.ATP.auth.requestMagicLink(email);
+      // Magic link not yet implemented — fall through to password login
       return 'magic_link';
     } else {
       member = await window.ATP.auth.login(email, password);
