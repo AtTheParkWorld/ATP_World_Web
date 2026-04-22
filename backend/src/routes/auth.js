@@ -334,6 +334,68 @@ router.post('/seed-sessions', async (req, res, next) => {
       return res.status(401).json({ error: 'Invalid setup key' });
     }
 
+    // Build scheduled_at: next occurrence of each day starting from now
+    function nextDayTime(dayName, timeStr) {
+      const days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      const targetDay = days.indexOf(dayName);
+      const now = new Date();
+      const d = new Date();
+      d.setHours(parseInt(timeStr.split(':')[0]), parseInt(timeStr.split(':')[1]), 0, 0);
+      let diff = targetDay - now.getDay();
+      if (diff <= 0) diff += 7;
+      d.setDate(d.getDate() + diff);
+      return d.toISOString();
+    }
+
+    const sessions = [
+      { name:'Morning Run', day:'Monday',    time:'06:00', location:'Safa Park, Dubai',          duration:60,  cap:50, city:'Dubai'  },
+      { name:'HIIT Circuit', day:'Tuesday',  time:'06:30', location:'Jumeirah Beach, Dubai',      duration:45,  cap:30, city:'Dubai'  },
+      { name:'Yoga Flow',   day:'Wednesday', time:'07:00', location:'Creek Park, Dubai',          duration:60,  cap:25, city:'Dubai'  },
+      { name:'Strength & Conditioning', day:'Thursday', time:'06:00', location:'Mushrif Park, Dubai', duration:60, cap:20, city:'Dubai' },
+      { name:'Trail Run',   day:'Friday',    time:'06:30', location:'Al Qudra, Dubai',            duration:90,  cap:40, city:'Dubai'  },
+      { name:'Saturday Bootcamp', day:'Saturday', time:'07:00', location:'Kite Beach, Dubai',     duration:60,  cap:50, city:'Dubai'  },
+      { name:'Sunday Recovery', day:'Sunday', time:'08:00', location:'Zabeel Park, Dubai',        duration:45,  cap:30, city:'Dubai'  },
+      { name:'Al Ain Morning Run', day:'Tuesday', time:'06:00', location:'Hili Park, Al Ain',     duration:60,  cap:30, city:'Al Ain' },
+      { name:'Al Ain HIIT', day:'Thursday',  time:'06:30', location:'Central Park, Al Ain',       duration:45,  cap:25, city:'Al Ain' },
+      { name:'Al Ain Weekend Session', day:'Friday', time:'07:00', location:'Formal Park, Al Ain',duration:60,  cap:40, city:'Al Ain' },
+      { name:'Muscat Morning Run', day:'Wednesday', time:'06:00', location:'Qurum Beach, Muscat', duration:60,  cap:30, city:'Muscat' },
+      { name:'Muscat Weekend Bootcamp', day:'Saturday', time:'07:00', location:'Al Qurm Park, Muscat', duration:60, cap:35, city:'Muscat' },
+    ];
+
+    let created = 0;
+    for (const s of sessions) {
+      // Get or create city
+      let city_id;
+      const { rows: ec } = await query('SELECT id FROM cities WHERE name=$1', [s.city]);
+      if (ec.length > 0) {
+        city_id = ec[0].id;
+      } else {
+        const { rows: nc } = await query("INSERT INTO cities (name, country) VALUES ($1,'UAE') RETURNING id", [s.city]);
+        city_id = nc[0].id;
+      }
+      // Skip if session already exists
+      const { rows: es } = await query('SELECT id FROM sessions WHERE name=$1 AND city_id=$2', [s.name, city_id]);
+      if (es.length > 0) continue;
+      // Insert with correct schema columns
+      await query(
+        `INSERT INTO sessions (name, city_id, location, scheduled_at, duration_mins, capacity, is_recurring, recurrence_rule, status, points_reward)
+         VALUES ($1,$2,$3,$4,$5,$6,true,'WEEKLY',$7,10)`,
+        [s.name, city_id, s.location, nextDayTime(s.day, s.time), s.duration, s.cap, 'upcoming']
+      );
+      created++;
+    }
+    res.json({ success: true, created, total: sessions.length });
+  } catch (err) { next(err); }
+});
+
+
+router.post('/seed-sessions', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Invalid setup key' });
+    }
+
     const sessions = [
       { name: 'Morning Run', activity: 'Running', day: 'Monday', time: '06:00', location: 'Safa Park, Dubai', duration: 60, max: 50, city: 'Dubai' },
       { name: 'HIIT Circuit', activity: 'HIIT', day: 'Tuesday', time: '06:30', location: 'Jumeirah Beach, Dubai', duration: 45, max: 30, city: 'Dubai' },
