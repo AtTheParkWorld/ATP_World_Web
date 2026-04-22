@@ -587,6 +587,23 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
 <!-- TOAST -->
 <div class="admin-toast" id="adminToast"></div>
 <script>
+// ── Global API helpers ────────────────────────────────────────
+var ATP_API = 'https://atpworldweb-production.up.railway.app/api';
+function getToken() { return localStorage.getItem('atp_token') || ''; }
+function apiGet(path) {
+  return fetch(ATP_API + path, {
+    headers: { 'Authorization': 'Bearer ' + getToken() }
+  }).then(function(r) { return r.json(); });
+}
+function apiPost(path, body) {
+  return fetch(ATP_API + path, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+    body: JSON.stringify(body)
+  }).then(function(r) { return r.json(); });
+}
+// ─────────────────────────────────────────────────────────────
+
 // ── AUTH ─────────────────────────────────────────────────────
 var ADMIN_CREDENTIALS = { user: 'atpadmin', pass: 'atp2015!' };
 var adminLoggedIn = false;
