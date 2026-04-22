@@ -353,6 +353,33 @@ router.post('/migrate-sessions-schema', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+
+// ── POST /api/auth/dedup-cities (cleanup duplicate cities) ───
+router.post('/dedup-cities', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    // Keep one of each city name, update sessions + members to point to the keeper, delete dupes
+    const { rows: cities } = await query('SELECT id, name, country FROM cities ORDER BY name, created_at ASC');
+    const seen = {};
+    let deduped = 0;
+    for (const city of cities) {
+      const key = city.name.toLowerCase().trim();
+      if (seen[key]) {
+        // This is a duplicate — update references then delete
+        const keeper = seen[key];
+        await query('UPDATE sessions SET city_id=$1 WHERE city_id=$2', [keeper.id, city.id]);
+        await query('UPDATE members SET city_id=$1 WHERE city_id=$2', [keeper.id, city.id]).catch(()=>{});
+        await query('DELETE FROM cities WHERE id=$1', [city.id]);
+        deduped++;
+      } else {
+        seen[key] = city;
+      }
+    }
+    res.json({ success: true, deduped, remaining: Object.keys(seen).length });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
 
 // ── POST /api/auth/grant-admin  (setup only) ──────────────────

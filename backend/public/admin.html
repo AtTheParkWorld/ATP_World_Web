@@ -641,6 +641,7 @@ document.getElementById('adminPass').addEventListener('keydown', function(e){
 
 // ── NAVIGATION ────────────────────────────────────────────────
 function showAdminSection(name, btn) {
+  if (name === 'sessions') { loadCities(); loadCoaches(); setTimeout(loadSessionsList, 300); }
   ['dashboard','members','ambassadors','sessions','challenges'].forEach(function(s){
     document.getElementById('section-'+s).style.display = 'none';
   });
@@ -878,6 +879,9 @@ function filterCitiesByCountry() {
   var cityEl = document.getElementById('sCity');
   cityEl.innerHTML = '<option value="">Select City</option>';
   var filtered = ALL_CITIES.filter(function(c){ return !country || c.country === country; });
+  // Deduplicate by name - keep first occurrence
+  var seen = {};
+  filtered = filtered.filter(function(c){ if(seen[c.name]) return false; seen[c.name]=true; return true; });
   filtered.forEach(function(c){
     cityEl.innerHTML += '<option value="'+c.id+'">'+c.name+'</option>';
   });
