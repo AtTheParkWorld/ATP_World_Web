@@ -19,22 +19,49 @@ function fetchURL(url, redirectCount = 0) {
 }
 
 function parseCSV(text) {
-  const lines = text.split('\n');
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+  // Robust CSV parser that handles quoted fields with commas and newlines
   const rows = [];
-  for (let i = 1; i < lines.length; i++) {
-    if (!lines[i].trim()) continue;
-    const cols = [];
-    let cur = '', inQ = false;
-    for (const ch of lines[i]) {
-      if (ch === '"') { inQ = !inQ; }
-      else if (ch === ',' && !inQ) { cols.push(cur.trim()); cur = ''; }
-      else cur += ch;
+  const headers = [];
+  let field = '', inQuote = false, isHeader = true;
+  const currentRow = [];
+
+  const flush = () => {
+    const val = field.replace(/^"|"$/g, '').trim();
+    field = '';
+    if (isHeader) { headers.push(val); }
+    else { currentRow.push(val); }
+  };
+
+  for (let i = 0; i < text.length; i++) {
+    const ch = text[i];
+    const next = text[i + 1];
+    if (ch === '"') {
+      if (inQuote && next === '"') { field += '"'; i++; }
+      else { inQuote = !inQuote; }
+    } else if (ch === ',' && !inQuote) {
+      flush();
+    } else if ((ch === '\n' || (ch === '\r' && next === '\n')) && !inQuote) {
+      if (ch === '\r') i++;
+      flush();
+      if (isHeader) { isHeader = false; }
+      else if (currentRow.length > 1) {
+        const row = {};
+        headers.forEach((h, idx) => { row[h] = currentRow[idx] || ''; });
+        rows.push(row);
+      }
+      currentRow.length = 0;
+    } else {
+      field += ch;
     }
-    cols.push(cur.trim());
-    const row = {};
-    headers.forEach((h, idx) => { row[h] = (cols[idx] || '').replace(/^"|"$/g, '').trim(); });
-    rows.push(row);
+  }
+  // Handle last field/row
+  if (field || currentRow.length) {
+    flush();
+    if (!isHeader && currentRow.length > 1) {
+      const row = {};
+      headers.forEach((h, idx) => { row[h] = currentRow[idx] || ''; });
+      rows.push(row);
+    }
   }
   return rows;
 }
