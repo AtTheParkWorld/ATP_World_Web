@@ -429,6 +429,17 @@ router.post('/migrate-schema-v2', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+
+// ── POST /api/auth/migrate-badge-image ────────────────────────
+router.post('/migrate-badge-image', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    await query(`ALTER TABLE challenges ADD COLUMN IF NOT EXISTS badge_image TEXT`);
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
 
 // ── POST /api/auth/grant-admin  (setup only) ──────────────────

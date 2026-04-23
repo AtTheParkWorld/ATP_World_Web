@@ -59,17 +59,17 @@ router.get('/:id/leaderboard', optionalAuth, async (req, res, next) => {
 // POST /api/challenges — Admin creates
 router.post('/', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const { title, description, icon, badge_svg, challenge_type, metric, target, unit,
+    const { title, description, icon, badge_svg, badge_image, challenge_type, metric, target, unit,
             points_reward, starts_at, ends_at, city_id, tribe_id, device_metric } = req.body;
     if (!title || !challenge_type || !metric || !target || !starts_at || !ends_at) {
       return res.status(400).json({ error: 'Required fields missing' });
     }
     const { rows } = await query(
       `INSERT INTO challenges
-        (title,description,icon,badge_svg,challenge_type,metric,target,unit,points_reward,
+        (title,description,icon,badge_svg,badge_image,challenge_type,metric,target,unit,points_reward,
          starts_at,ends_at,city_id,tribe_id,device_metric,is_published,created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,false,$15) RETURNING *`,
-      [title,description,icon||'🏆',badge_svg||null,challenge_type,metric,target,unit||metric,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,false,$16) RETURNING *`,
+      [title,description,icon||'🏆',badge_svg||null,badge_image||null,challenge_type,metric,target,unit||metric,
        points_reward||0,starts_at,ends_at,city_id||null,tribe_id||null,device_metric||null,req.member.id]
     );
     res.status(201).json({ challenge: rows[0] });

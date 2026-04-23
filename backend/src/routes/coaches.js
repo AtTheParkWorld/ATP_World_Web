@@ -101,21 +101,24 @@ router.post('/:id/feedback', authenticate, async (req, res, next) => {
     const { rating, comment, session_id } = req.body;
     if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: 'Rating 1-5 required' });
 
-    // Check member attended a session with this coach
-    if (session_id) {
+    // Verify member has attended at least one session with this coach (unless admin)
+    if (!req.member.is_admin) {
       const { rows: attended } = await query(
         `SELECT 1 FROM bookings b
          JOIN sessions s ON s.id=b.session_id
-         WHERE b.member_id=$1 AND s.coach_id=$2 AND s.id=$3 AND b.status IN ('attended','confirmed')`,
-        [req.member.id, req.params.id, session_id]
+         WHERE b.member_id=$1 AND s.coach_id=$2 AND b.status IN ('attended','confirmed')
+         LIMIT 1`,
+        [req.member.id, req.params.id]
       );
-      if (!attended.length) return res.status(403).json({ error: 'You must have attended this session to leave feedback' });
+      if (!attended.length) return res.status(403).json({ error: 'You can only leave feedback after attending a session with this coach' });
     }
 
+    // Upsert - admins can update their test feedback; members can update their own
     await query(
       `INSERT INTO coach_feedback (coach_id,member_id,rating,comment,session_id,is_approved)
-       VALUES ($1,$2,$3,$4,$5,true) ON CONFLICT (coach_id,member_id,session_id) DO UPDATE
-       SET rating=EXCLUDED.rating, comment=EXCLUDED.comment`,
+       VALUES ($1,$2,$3,$4,$5,true)
+       ON CONFLICT (coach_id,member_id,session_id) DO UPDATE
+       SET rating=EXCLUDED.rating, comment=EXCLUDED.comment, created_at=NOW()`,
       [req.params.id, req.member.id, rating, comment||null, session_id||null]
     );
 
