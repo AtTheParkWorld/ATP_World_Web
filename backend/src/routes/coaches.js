@@ -17,7 +17,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
        FROM members m
        LEFT JOIN coach_profiles cp ON cp.member_id=m.id
        LEFT JOIN cities ci ON ci.id=m.city_id
-       WHERE m.is_ambassador=true
+       WHERE m.is_coach=true
        ORDER BY cp.is_featured DESC NULLS LAST, cp.rating_avg DESC NULLS LAST, m.joined_at ASC`,
       []
     );
@@ -40,7 +40,7 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
        FROM members m
        LEFT JOIN coach_profiles cp ON cp.member_id=m.id
        LEFT JOIN cities ci ON ci.id=m.city_id
-       WHERE m.id=$1`,
+       WHERE m.id=$1 AND m.is_coach=true`,
       [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Coach not found' });

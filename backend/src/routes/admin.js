@@ -158,7 +158,7 @@ router.get('/analytics', async (req, res, next) => {
 // ── GET /api/admin/members ────────────────────────────────────
 router.get('/members', async (req, res, next) => {
   try {
-    const { search, city_id, subscription_type, is_ambassador,
+    const { search, city_id, subscription_type, is_ambassador, is_coach,
             limit = 50, offset = 0 } = req.query;
 
     let where = ['m.is_banned=false'];
@@ -172,11 +172,12 @@ router.get('/members', async (req, res, next) => {
     if (city_id) { where.push(`m.city_id=$${idx++}`); params.push(city_id); }
     if (subscription_type) { where.push(`m.subscription_type=$${idx++}`); params.push(subscription_type); }
     if (is_ambassador === 'true') { where.push('m.is_ambassador=true'); }
+    if (is_coach === 'true') { where.push('m.is_coach=true'); }
 
     const { rows } = await query(
       `SELECT m.id, m.member_number, m.first_name, m.last_name, m.email,
               m.phone, m.subscription_type, m.points_balance, m.is_ambassador,
-              m.is_admin, m.profile_complete_pct, m.joined_at, m.last_active_at,
+              m.is_coach, m.is_admin, m.profile_complete_pct, m.joined_at, m.last_active_at,
               c.name AS city_name,
               (SELECT COUNT(*) FROM bookings b WHERE b.member_id=m.id AND b.status='attended') AS sessions_count
        FROM members m
@@ -204,7 +205,10 @@ router.patch('/members/:id/ambassador', async (req, res, next) => {
       `UPDATE members SET
          is_ambassador=$1,
          ambassador_activated_at=CASE WHEN $1=true THEN NOW() ELSE NULL END,
-         ambassador_activated_by=CASE WHEN $1=true THEN $2::uuid ELSE NULL END
+         ambassador_activated_by=CASE WHEN $1=true THEN $2::uuid ELSE NULL END,
+         is_coach=CASE WHEN $1=false THEN false ELSE is_coach END,
+         coach_activated_at=CASE WHEN $1=false THEN NULL ELSE coach_activated_at END,
+         coach_activated_by=CASE WHEN $1=false THEN NULL ELSE coach_activated_by END
        WHERE id=$3::uuid`,
       [enabled, req.member?.id || null, req.params.id]
     );
@@ -220,6 +224,36 @@ router.patch('/members/:id/ambassador', async (req, res, next) => {
     }
 
     res.json({ message: `Ambassador ${enabled ? 'activated' : 'deactivated'}` });
+  } catch (err) { next(err); }
+});
+
+// ── PATCH /api/admin/members/:id/coach ────────────────────────
+router.patch('/members/:id/coach', async (req, res, next) => {
+  try {
+    const { enabled } = req.body;
+    const { rows: check } = await query(`SELECT is_ambassador FROM members WHERE id=$1::uuid`, [req.params.id]);
+    if (!check.length) return res.status(404).json({ error: 'Member not found' });
+    if (enabled && !check[0].is_ambassador) {
+      return res.status(400).json({ error: 'Member must be an Ambassador before being assigned as Coach' });
+    }
+    await query(
+      `UPDATE members SET is_coach=$1,
+         coach_activated_at=CASE WHEN $1=true THEN NOW() ELSE NULL END,
+         coach_activated_by=CASE WHEN $1=true THEN $2::uuid ELSE NULL END
+       WHERE id=$3::uuid`,
+      [enabled, req.member?.id || null, req.params.id]
+    );
+
+    if (enabled) {
+      await query(
+        `INSERT INTO notifications (member_id, type, title, body)
+         VALUES ($1,'coach_activated','🎽 You are now an ATP Coach!',
+         'You have been assigned as a Coach. Your profile is now public in the Coaches directory.')`,
+        [req.params.id]
+      ).catch(() => {});
+    }
+
+    res.json({ message: `Coach ${enabled ? 'activated' : 'deactivated'}`, is_coach: enabled });
   } catch (err) { next(err); }
 });
 

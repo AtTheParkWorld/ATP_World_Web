@@ -440,6 +440,18 @@ router.post('/migrate-badge-image', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-coach-role ─────────────────────────
+router.post('/migrate-coach-role', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    await query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS is_coach BOOLEAN NOT NULL DEFAULT false`);
+    await query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS coach_activated_at TIMESTAMPTZ`);
+    await query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS coach_activated_by UUID REFERENCES members(id)`);
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
 
 // ── POST /api/auth/grant-admin  (setup only) ──────────────────
