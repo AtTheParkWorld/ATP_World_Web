@@ -2353,15 +2353,16 @@ async function loadDashboardWidgets() {
     try {
       var recent = await fetch(ATP_API+'/sessions?status=completed&limit=3', {headers:{'Authorization':'Bearer '+token}}).then(r=>r.json());
       var recentList = recent.sessions || [];
-      var container = document.querySelector('.admin-section-body');
-      if (recentList.length) {
-        // Find the "Recent Sessions Attendance" section body
-        var sections = document.querySelectorAll('.admin-section');
-        sections.forEach(function(sec) {
-          var title = sec.querySelector('.admin-section-title');
-          if (title && title.textContent.includes('Recent Sessions Attendance')) {
-            var body = sec.querySelector('.admin-section-body');
-            if (body) {
+      // Always update the "Recent Sessions Attendance" section — real data or empty state
+      var sections = document.querySelectorAll('.admin-section');
+      sections.forEach(function(sec) {
+        var title = sec.querySelector('.admin-section-title');
+        if (title && title.textContent.includes('Recent Sessions Attendance')) {
+          var body = sec.querySelector('.admin-section-body');
+          if (body) {
+            if (!recentList.length) {
+              body.innerHTML = '<div style="text-align:center;color:#444;padding:28px;font-size:13px;font-style:italic">No completed sessions yet. Completed sessions will appear here with attendance stats.</div>';
+            } else {
               body.innerHTML = recentList.map(function(ss) {
                 var dt = ss.scheduled_at ? new Date(ss.scheduled_at).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short'}) : '—';
                 var att = parseInt(ss.checkins_count)||0;
@@ -2377,8 +2378,8 @@ async function loadDashboardWidgets() {
               }).join('');
             }
           }
-        });
-      }
+        }
+      });
     } catch(e) { /* swallow */ }
 
     // Growth chart
