@@ -337,7 +337,6 @@ router.get('/:id/registrations', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-module.exports = router;
 
 // ── PATCH /api/sessions/:id/cancel ────────────────────────────
 router.patch('/:id/cancel', authenticate, requireAdmin, async (req, res, next) => {
@@ -374,3 +373,5 @@ router.patch('/series/cancel', authenticate, requireAdmin, async (req, res, next
     res.json({ cancelled: rows.length, ids: rows.map(r => r.id) });
   } catch (err) { next(err); }
 });
+
+module.exports = router;
