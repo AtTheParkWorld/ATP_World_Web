@@ -338,3 +338,39 @@ router.get('/:id/registrations', authenticate, async (req, res, next) => {
 });
 
 module.exports = router;
+
+// ── PATCH /api/sessions/:id/cancel ────────────────────────────
+router.patch('/:id/cancel', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { reason } = req.body;
+    const { rows } = await query(
+      `UPDATE sessions SET status='cancelled', cancellation_reason=$1, updated_at=NOW()
+       WHERE id=$2 RETURNING *`,
+      [reason || null, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Session not found' });
+    // Notify registered members via notifications table
+    await query(
+      `INSERT INTO notifications (member_id, type, title, body)
+       SELECT b.member_id, 'session_cancelled', $1, $2
+       FROM bookings b WHERE b.session_id=$3 AND b.status='confirmed'`,
+      [`Session Cancelled: ${rows[0].name}`,
+       reason || 'This session has been cancelled by the organiser.',
+       req.params.id]
+    ).catch(() => {});
+    res.json({ session: rows[0] });
+  } catch (err) { next(err); }
+});
+
+// ── PATCH /api/sessions/series/:name/cancel ───────────────────
+router.patch('/series/cancel', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { name, city_id, reason } = req.body;
+    const { rows } = await query(
+      `UPDATE sessions SET status='cancelled', cancellation_reason=$1, updated_at=NOW()
+       WHERE name=$2 AND city_id=$3 AND status='upcoming' RETURNING id`,
+      [reason || null, name, city_id]
+    );
+    res.json({ cancelled: rows.length, ids: rows.map(r => r.id) });
+  } catch (err) { next(err); }
+});

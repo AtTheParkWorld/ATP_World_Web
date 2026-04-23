@@ -151,6 +151,42 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
 .court-card-header{
   font-weight:700;font-size:13px;color:#7AC231;margin-bottom:10px;
 }
+
+/* ── Coaches grid ───────────────────── */
+.coaches-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;padding:4px 0}
+.coach-card{background:#0d0d0d;border:1px solid #1a1a1a;border-radius:16px;overflow:hidden;transition:all .25s;cursor:pointer}
+.coach-card:hover{border-color:#7AC231;transform:translateY(-2px);box-shadow:0 8px 32px rgba(122,194,49,.1)}
+.coach-card-hero{background:linear-gradient(135deg,#0d1a0a 0%,#1a2a0a 100%);padding:20px;display:flex;align-items:center;gap:14px}
+.coach-avatar{width:56px;height:56px;border-radius:50%;background:#7AC231;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#0a0a0a;flex-shrink:0;border:2px solid rgba(122,194,49,.3)}
+.coach-name{font-family:var(--ff-display);font-size:15px;font-weight:800;color:#fff}
+.coach-meta{font-size:11px;color:#7AC231;margin-top:2px}
+.coach-body{padding:14px}
+.coach-stars{display:flex;gap:2px;margin:6px 0}
+.coach-stat{display:flex;align-items:center;gap:6px;font-size:11px;color:#555;margin-bottom:4px}
+.coach-feature-badge{background:#7AC231;color:#0a0a0a;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;margin-left:8px}
+.coach-specialty-tag{display:inline-block;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:20px;padding:3px 10px;font-size:11px;color:#888;margin:2px}
+
+/* ── Analytics KPIs ──────────────────── */
+.analytics-kpi{background:#0d0d0d;border:1px solid #1a1a1a;border-radius:14px;padding:18px;text-align:center}
+.analytics-kpi .kpi-val{font-family:var(--ff-display);font-size:28px;font-weight:900;color:#7AC231}
+.analytics-kpi .kpi-label{font-size:11px;color:#555;margin-top:4px;text-transform:uppercase;letter-spacing:.08em}
+
+/* ── Challenge badge ─────────────────── */
+.challenge-badge-svg{width:100px;height:100px}
+.challenge-card{background:#0d0d0d;border:1px solid #1a1a1a;border-radius:14px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:16px}
+.challenge-card:hover{border-color:#333}
+.challenge-badge-mini{width:56px;height:56px;flex-shrink:0}
+.challenge-info{flex:1}
+.challenge-title{font-family:var(--ff-display);font-size:15px;font-weight:800;color:#fff;margin-bottom:4px}
+.challenge-meta{font-size:11px;color:#555}
+.challenge-progress-bar{height:4px;background:#1a1a1a;border-radius:2px;margin-top:8px;overflow:hidden}
+.challenge-progress-fill{height:100%;background:#7AC231;border-radius:2px;transition:width .5s}
+.pub-badge{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.05em}
+.pub-badge.published{background:rgba(122,194,49,.15);color:#7AC231;border:1px solid rgba(122,194,49,.3)}
+.pub-badge.draft{background:#1a1a1a;color:#555;border:1px solid #2a2a2a}
+
+/* ── Team sports courts ──────────────── */
+.court-level-badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700;background:rgba(122,194,49,.1);color:#7AC231;border:1px solid rgba(122,194,49,.2)}
 </style>
 <script src="atp-api.js"></script>
 </head>
@@ -198,6 +234,14 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
       <div class="admin-nav-item" onclick="showAdminSection('challenges',this)">
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l3 2"/></svg>
         Challenges
+      </div>
+      <div class="admin-nav-item" onclick="showAdminSection('coaches',this)">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5"/></svg>
+        Coaches
+      </div>
+      <div class="admin-nav-item" onclick="showAdminSection('analytics',this)">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="8" width="3" height="6"/><rect x="6.5" y="4" width="3" height="10"/><rect x="11" y="1" width="3" height="13"/></svg>
+        Analytics
       </div>
     </div>
     <div class="admin-logout" onclick="adminLogout()">← Sign out</div>
@@ -533,54 +577,221 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
     </div>
 
     <!-- CHALLENGES -->
+    <!-- ── CHALLENGES ────────────────────────── -->
     <div id="section-challenges" style="display:none">
       <div class="admin-page-title">Challenges</div>
-      <div class="admin-page-sub">Create weekly and monthly challenges for the community.</div>
-      <div class="admin-section">
+      <div class="admin-page-sub">Create and publish ATP challenges. Members track progress via manual entry or connected smart devices.</div>
+
+      <!-- CREATE CHALLENGE FORM -->
+      <div class="admin-section" id="challengeFormSection">
         <div class="admin-section-head">
-          <span class="admin-section-title">Create Challenge</span>
+          <span class="admin-section-title" id="challengeFormTitle">Create New Challenge</span>
+          <button class="admin-btn" onclick="cancelEditChallenge()" id="cancelChallengeBtn" style="display:none;font-size:12px">✕ Cancel</button>
         </div>
         <div class="admin-section-body">
+          <div id="challengeFormMsg" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px"></div>
+          <input type="hidden" id="cEditId" value="">
           <div class="admin-form-grid">
             <div class="admin-form-group">
-              <label class="admin-form-label">Challenge name</label>
-              <input class="admin-form-input" type="text" id="cName" placeholder="July Run Challenge">
+              <label class="admin-form-label">Challenge Title *</label>
+              <input class="admin-form-input" type="text" id="cTitle" placeholder="e.g. 10K Run in 7 Days">
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Icon / Emoji</label>
+              <input class="admin-form-input" type="text" id="cIcon" placeholder="🏃" maxlength="2" value="🏆">
             </div>
             <div class="admin-form-group">
               <label class="admin-form-label">Type</label>
               <select class="admin-form-select" id="cType">
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>
+                <option value="custom">Custom</option>
               </select>
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Metric</label>
-              <select class="admin-form-select" id="cMetric">
-                <option>Sessions attended</option>
-                <option>Calories burned (kcal)</option>
-                <option>Kilometers run</option>
-                <option>Steps logged</option>
-                <option>Streak days</option>
+              <label class="admin-form-label">Metric (what to track) *</label>
+              <select class="admin-form-select" id="cMetric" onchange="updateDeviceMetric()">
+                <option value="sessions">Sessions Attended</option>
+                <option value="km">Distance (km)</option>
+                <option value="steps">Steps</option>
+                <option value="calories">Calories Burned</option>
+                <option value="streak_days">Streak Days</option>
+                <option value="minutes">Active Minutes</option>
               </select>
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Target</label>
-              <input class="admin-form-input" type="number" id="cTarget" placeholder="e.g. 8">
+              <label class="admin-form-label">Target *</label>
+              <input class="admin-form-input" type="number" id="cTarget" value="10" min="1">
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Points Reward</label>
+              <input class="admin-form-input" type="number" id="cPoints" value="100" min="0">
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Start Date *</label>
+              <input class="admin-form-input" type="date" id="cStartDate">
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">End Date *</label>
+              <input class="admin-form-input" type="date" id="cEndDate">
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">City (leave empty for all)</label>
+              <select class="admin-form-select" id="cCity">
+                <option value="">All Cities (Global)</option>
+              </select>
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label">Smart Device Metric</label>
+              <select class="admin-form-select" id="cDeviceMetric">
+                <option value="">Manual entry only</option>
+                <option value="steps">Steps (Garmin/Apple/Fitbit)</option>
+                <option value="km">Distance km (GPS)</option>
+                <option value="calories">Calories (Wearable)</option>
+                <option value="heart_rate_minutes">Active HR Minutes</option>
+              </select>
             </div>
             <div class="admin-form-group full">
               <label class="admin-form-label">Description</label>
-              <input class="admin-form-input" type="text" id="cDesc" placeholder="Describe the challenge for members…">
+              <input class="admin-form-input" type="text" id="cDesc" placeholder="Challenge description for members...">
             </div>
           </div>
-          <button class="admin-btn admin-btn-primary" style="margin-top:16px" onclick="createChallenge()">Publish Challenge</button>
+
+          <!-- BADGE PREVIEW -->
+          <div style="margin-top:16px;padding:14px;background:#111;border-radius:10px;border:1px solid #222">
+            <label class="admin-form-label" style="margin-bottom:10px;display:block">🏅 Challenge Badge</label>
+            <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
+              <div id="badgePreview" style="width:100px;height:100px;flex-shrink:0"></div>
+              <div>
+                <div style="font-size:12px;color:#555;margin-bottom:8px">Default ATP badge auto-generated. You can customise the emoji above.</div>
+                <button class="admin-btn" style="font-size:12px;padding:6px 14px" onclick="regenerateBadge()">↻ Regenerate Badge</button>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:10px;margin-top:20px;align-items:center;flex-wrap:wrap">
+            <button class="admin-btn admin-btn-primary" style="padding:10px 24px;font-size:13px" onclick="saveChallenge()">
+              <span id="challengeSubmitLabel">＋ Save as Draft</span>
+            </button>
+            <button class="admin-btn" style="padding:10px 18px;font-size:13px;background:#0d1a0a;border-color:#7AC231;color:#7AC231" onclick="saveAndPublish()">
+              ▶ Save &amp; Publish
+            </button>
+            <button class="admin-btn" style="padding:10px 18px;font-size:13px" onclick="loadChallengesList()">↻ Refresh</button>
+          </div>
         </div>
       </div>
+
+      <!-- CHALLENGES LIST -->
       <div class="admin-section">
-        <div class="admin-section-head"><span class="admin-section-title">Active Challenges</span></div>
-        <div class="admin-section-body" id="activeChallengesList"></div>
+        <div class="admin-section-head">
+          <span class="admin-section-title">All Challenges <span id="challengeCount" style="color:#444;font-size:11px;font-weight:400;margin-left:8px"></span></span>
+          <div style="display:flex;gap:8px">
+            <select class="admin-form-select" id="challengeFilter" onchange="loadChallengesList()" style="width:140px;padding:6px 10px;font-size:12px">
+              <option value="">All</option>
+              <option value="published">Published</option>
+              <option value="draft">Drafts</option>
+            </select>
+          </div>
+        </div>
+        <div class="admin-section-body" id="challengesList">
+          <div style="text-align:center;color:#444;padding:24px">Loading challenges...</div>
+        </div>
+      </div>
+
+      <!-- LEADERBOARD MODAL -->
+      <div id="leaderboardModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);z-index:9999;align-items:center;justify-content:center">
+        <div style="background:#0d0d0d;border:1px solid #222;border-radius:16px;width:90%;max-width:600px;max-height:80vh;overflow-y:auto;padding:28px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <div style="font-family:var(--ff-display);font-size:20px;font-weight:900" id="lbTitle">🏆 Leaderboard</div>
+            <button class="admin-btn" onclick="document.getElementById('leaderboardModal').style.display='none'" style="padding:6px 12px">✕</button>
+          </div>
+          <div id="leaderboardBody">Loading...</div>
+        </div>
       </div>
     </div>
 
+    <!-- ── COACHES ─────────────────────────────── -->
+    <div id="section-coaches" style="display:none">
+      <div class="admin-page-title">Coaches</div>
+      <div class="admin-page-sub">All ATP ambassadors are potential coaches. Manage profiles, view ratings, and feature top coaches.</div>
+      <div id="coachesGrid" class="coaches-grid">
+        <div style="text-align:center;color:#444;padding:40px;grid-column:1/-1">Loading coaches...</div>
+      </div>
+
+      <!-- COACH DETAIL MODAL -->
+      <div id="coachModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:9999;align-items:center;justify-content:center;overflow-y:auto">
+        <div style="background:#0d0d0d;border:1px solid #1a1a1a;border-radius:20px;width:92%;max-width:760px;margin:20px auto;padding:0;overflow:hidden">
+          <!-- Hero -->
+          <div id="coachModalHero" style="background:linear-gradient(135deg,#0d1a0a,#1a2a0a);padding:32px;position:relative">
+            <button onclick="document.getElementById('coachModal').style.display='none'" style="position:absolute;top:16px;right:16px;background:rgba(255,255,255,.1);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:16px">✕</button>
+            <div style="display:flex;gap:20px;align-items:center;flex-wrap:wrap">
+              <div id="coachModalAvatar" style="width:80px;height:80px;border-radius:50%;background:#7AC231;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:900;color:#0a0a0a;flex-shrink:0"></div>
+              <div>
+                <div id="coachModalName" style="font-family:var(--ff-display);font-size:24px;font-weight:900;color:#fff"></div>
+                <div id="coachModalMeta" style="font-size:13px;color:#7AC231;margin-top:4px"></div>
+                <div id="coachModalRating" style="margin-top:8px"></div>
+              </div>
+            </div>
+          </div>
+          <div style="padding:24px">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:24px" id="coachModalStats"></div>
+            <div id="coachModalBio" style="margin-bottom:20px"></div>
+            <div id="coachModalSpecialties" style="margin-bottom:20px"></div>
+            <div id="coachModalSessions" style="margin-bottom:20px"></div>
+            <div id="coachModalFeedback"></div>
+            <!-- Feature toggle (admin) -->
+            <div style="margin-top:20px;padding-top:20px;border-top:1px solid #1a1a1a;display:flex;gap:10px">
+              <button class="admin-btn admin-btn-primary" id="coachFeatureBtn" style="font-size:12px;padding:8px 16px" onclick="toggleCoachFeature()">⭐ Feature Coach</button>
+              <button class="admin-btn" style="font-size:12px;padding:8px 16px" onclick="document.getElementById('coachModal').style.display='none'">Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ANALYTICS ───────────────────────────── -->
+    <div id="section-analytics" style="display:none">
+      <div class="admin-page-title">Analytics</div>
+      <div class="admin-page-sub">Real-time insights across members, sessions, and community activity.</div>
+
+      <!-- KPI Cards -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:24px" id="analyticsKPIs">
+        <div class="analytics-kpi" id="kpi-members"><div class="kpi-val">—</div><div class="kpi-label">Total Members</div></div>
+        <div class="analytics-kpi" id="kpi-new"><div class="kpi-val">—</div><div class="kpi-label">New This Month</div></div>
+        <div class="analytics-kpi" id="kpi-sessions"><div class="kpi-val">—</div><div class="kpi-label">Total Sessions</div></div>
+        <div class="analytics-kpi" id="kpi-ambassadors"><div class="kpi-val">—</div><div class="kpi-label">Active Coaches</div></div>
+        <div class="analytics-kpi" id="kpi-points"><div class="kpi-val">—</div><div class="kpi-label">Total Points</div></div>
+        <div class="analytics-kpi" id="kpi-challenges"><div class="kpi-val">—</div><div class="kpi-label">Active Challenges</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:20px">
+        <!-- Member Growth -->
+        <div class="admin-section">
+          <div class="admin-section-head"><span class="admin-section-title">Member Growth</span></div>
+          <div class="admin-section-body">
+            <div id="growthChart" style="height:200px;display:flex;align-items:flex-end;gap:4px;padding-top:10px"></div>
+          </div>
+        </div>
+        <!-- Top Members Leaderboard -->
+        <div class="admin-section">
+          <div class="admin-section-head"><span class="admin-section-title">🥇 Top Members by Points</span></div>
+          <div class="admin-section-body" id="topMembersList"></div>
+        </div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px">
+        <!-- Nationality breakdown -->
+        <div class="admin-section">
+          <div class="admin-section-head"><span class="admin-section-title">🌍 Nationality Breakdown</span></div>
+          <div class="admin-section-body" id="nationalityList"></div>
+        </div>
+        <!-- Session types -->
+        <div class="admin-section">
+          <div class="admin-section-head"><span class="admin-section-title">Sessions by Category</span></div>
+          <div class="admin-section-body" id="sessionCategoryChart"></div>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -1288,6 +1499,626 @@ async function setAmbassadorAPI(memberId, enabled) {
 var LOGO_SRC = "https://raw.githubusercontent.com/AtTheParkWorld/ATP_World_Web/main/atthepark_assets02.png";
 document.getElementById('adminLogo').src = LOGO_SRC;
 document.getElementById('adminLogoNav').src = LOGO_SRC;
+
+
+// ═══════════════════════════════════════════════════════════
+// AMBASSADOR MODULE — FIX
+// ═══════════════════════════════════════════════════════════
+function makeAmbassador(id) {
+  if (!id) return;
+  var token = getToken();
+  fetch(ATP_API + '/admin/members/' + id + '/ambassador', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({enabled: true})
+  }).then(r => r.json()).then(function(d) {
+    if (d.success || d.member) {
+      showToast('✅ Ambassador activated!');
+      loadMembersAPI();
+      loadDashboardAPI();
+    } else {
+      showToast('❌ ' + (d.error || 'Failed'), true);
+    }
+  }).catch(function(e) { showToast('❌ ' + e.message, true); });
+}
+
+function removeAmbassador(id) {
+  var token = getToken();
+  fetch(ATP_API + '/admin/members/' + id + '/ambassador', {
+    method: 'PATCH',
+    headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({enabled: false})
+  }).then(r => r.json()).then(function(d) {
+    if (d.success || d.member) { showToast('✅ Ambassador removed'); renderAmbassadors(); }
+    else { showToast('❌ ' + (d.error||'Failed'), true); }
+  });
+}
+
+function showToast(msg, isError) {
+  var t = document.getElementById('adminToast');
+  if (!t) return;
+  t.textContent = msg;
+  t.style.background = isError ? '#2a1010' : '#0d1a0a';
+  t.style.color = isError ? '#f87171' : '#7AC231';
+  t.style.display = 'block';
+  setTimeout(function() { t.style.display = 'none'; }, 3000);
+}
+
+// Fix loadMembersAPI to show real data in the Members section
+async function loadMembersAPI() {
+  var token = getToken();
+  if (!token) return;
+  var q = (document.getElementById('memberSearch')||{}).value || '';
+  var url = ATP_API + '/admin/members?limit=100' + (q ? '&search='+encodeURIComponent(q) : '');
+  try {
+    var res = await fetch(url, {headers:{'Authorization':'Bearer '+token}});
+    var data = await res.json();
+    if (!data.members) return;
+    MEMBERS_DATA = data.members; // keep in sync with legacy
+    var tbody = document.getElementById('membersTbody');
+    if (!tbody) return;
+    tbody.innerHTML = data.members.map(function(m) {
+      var name = ((m.first_name||'')+' '+(m.last_name||'')).trim()||'Unknown';
+      var ini  = ((m.first_name||'?')[0]+(m.last_name||'?')[0]).toUpperCase();
+      var joined = m.joined_at ? new Date(m.joined_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '—';
+      var isAmb = m.is_ambassador;
+      return '<tr>'+
+        '<td style="display:flex;align-items:center;gap:10px"><div class="admin-av">'+ini+'</div>'+
+        '<div><div class="admin-member-name">'+name+'</div>'+
+        '<div class="admin-member-email">'+m.member_number+' · '+m.email+'</div></div></td>'+
+        '<td style="color:#555;font-size:12px">'+joined+'</td>'+
+        '<td style="color:#fff;font-size:13px;font-weight:600">'+(m.sessions_count||0)+'</td>'+
+        '<td style="font-size:13px;font-weight:700;color:#7AC231">'+(m.points_balance||0)+'</td>'+
+        '<td><span class="badge '+(isAmb?'badge-green':'badge-grey')+'">'+(isAmb?'Ambassador':'Member')+'</span></td>'+
+        '<td>'+
+          (isAmb
+            ? '<button class="admin-btn" style="font-size:11px;padding:4px 10px" onclick="removeAmbassador(this.dataset.mid)" data-mid="'+m.id+'">Remove Amb.</button>'
+            : '<button class="admin-btn" style="font-size:11px;padding:4px 10px" onclick="makeAmbassador(this.dataset.mid)" data-mid="'+m.id+'">Make Amb.</button>'
+          )+
+        '</td></tr>';
+    }).join('');
+    // Update count
+    var lbl = document.querySelector('#section-members .admin-section-title span');
+    if (lbl) lbl.textContent = data.total.toLocaleString() + ' total';
+  } catch(e) { console.warn('loadMembersAPI:', e.message); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// CHALLENGES MODULE
+// ═══════════════════════════════════════════════════════════
+var CHALLENGE_EDIT_ID = null;
+var CHALLENGE_PUBLISH_ON_SAVE = false;
+
+function generateBadgeSVG(icon, title) {
+  var esc = (title||'ATP CHALLENGE').toUpperCase().substring(0,16);
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">'+
+    '<defs>'+
+      '<radialGradient id="bg" cx="50%" cy="50%" r="50%">'+
+        '<stop offset="0%" stop-color="#1a2a0a"/>'+
+        '<stop offset="100%" stop-color="#0a0a0a"/>'+
+      '</radialGradient>'+
+    '</defs>'+
+    '<circle cx="50" cy="50" r="48" fill="url(#bg)" stroke="#7AC231" stroke-width="2"/>'+
+    '<circle cx="50" cy="50" r="40" fill="none" stroke="#7AC231" stroke-width="0.5" opacity="0.4"/>'+
+    '<text x="50" y="42" text-anchor="middle" font-size="28" dominant-baseline="middle">'+( icon||'🏆')+'</text>'+
+    '<text x="50" y="65" text-anchor="middle" font-size="7" font-family="Arial Black,sans-serif" fill="#7AC231" font-weight="900" letter-spacing="1">'+esc+'</text>'+
+    '<text x="50" y="76" text-anchor="middle" font-size="5.5" font-family="Arial,sans-serif" fill="#555" letter-spacing="0.5">AT THE PARK</text>'+
+    '</svg>';
+}
+
+function regenerateBadge() {
+  var icon = document.getElementById('cIcon')?.value || '🏆';
+  var title = document.getElementById('cTitle')?.value || 'ATP CHALLENGE';
+  var el = document.getElementById('badgePreview');
+  if (el) el.innerHTML = generateBadgeSVG(icon, title);
+}
+
+function updateDeviceMetric() {
+  var metric = document.getElementById('cMetric')?.value;
+  var dm = document.getElementById('cDeviceMetric');
+  if (!dm) return;
+  var map = {km:'km',steps:'steps',calories:'calories',minutes:'heart_rate_minutes'};
+  if (map[metric]) dm.value = map[metric];
+  regenerateBadge();
+}
+
+async function saveChallenge(publish) {
+  CHALLENGE_PUBLISH_ON_SAVE = !!publish;
+  var msgEl = document.getElementById('challengeFormMsg');
+  var title     = document.getElementById('cTitle')?.value.trim();
+  var icon      = document.getElementById('cIcon')?.value || '🏆';
+  var ctype     = document.getElementById('cType')?.value;
+  var metric    = document.getElementById('cMetric')?.value;
+  var target    = parseInt(document.getElementById('cTarget')?.value)||0;
+  var points    = parseInt(document.getElementById('cPoints')?.value)||0;
+  var startDate = document.getElementById('cStartDate')?.value;
+  var endDate   = document.getElementById('cEndDate')?.value;
+  var desc      = document.getElementById('cDesc')?.value.trim();
+  var cityId    = document.getElementById('cCity')?.value||null;
+  var device    = document.getElementById('cDeviceMetric')?.value||null;
+
+  if (!title||!ctype||!metric||!target||!startDate||!endDate) {
+    msgEl.textContent = '⚠️ Title, Type, Metric, Target and Dates are required.';
+    msgEl.style.cssText = 'display:block;background:#2a1010;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+    return;
+  }
+
+  var badgeSvg = document.getElementById('badgePreview')?.innerHTML || null;
+  var payload = {
+    title, icon, challenge_type: ctype, metric, target, unit: metric,
+    points_reward: points, starts_at: startDate+'T00:00:00Z',
+    ends_at: endDate+'T23:59:59Z', description: desc,
+    city_id: cityId, device_metric: device, badge_svg: badgeSvg
+  };
+
+  var token = getToken();
+  var btn = document.getElementById('challengeSubmitLabel');
+  if (btn) btn.textContent = '⏳ Saving...';
+
+  try {
+    var url = CHALLENGE_EDIT_ID
+      ? ATP_API + '/challenges/' + CHALLENGE_EDIT_ID
+      : ATP_API + '/challenges';
+    var method = CHALLENGE_EDIT_ID ? 'PATCH' : 'POST';
+    var res = await fetch(url, {
+      method, headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify(payload)
+    });
+    var data = await res.json();
+    if (data.challenge) {
+      // Publish if requested
+      if (publish && !data.challenge.is_published) {
+        await fetch(ATP_API+'/challenges/'+data.challenge.id+'/publish', {
+          method:'PATCH', headers:{'Authorization':'Bearer '+token}
+        });
+      }
+      msgEl.textContent = publish ? '✅ Challenge published!' : '✅ Challenge saved as draft.';
+      msgEl.style.cssText = 'display:block;background:#0d1a0a;color:#7AC231;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+      resetChallengeForm();
+      loadChallengesList();
+    } else {
+      throw new Error(data.error || 'Failed');
+    }
+  } catch(e) {
+    msgEl.textContent = '❌ ' + e.message;
+    msgEl.style.cssText = 'display:block;background:#2a1010;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+  } finally {
+    if (btn) btn.textContent = '＋ Save as Draft';
+  }
+}
+
+function saveAndPublish() { saveChallenge(true); }
+
+function resetChallengeForm() {
+  CHALLENGE_EDIT_ID = null;
+  ['cTitle','cDesc','cTarget','cPoints','cStartDate','cEndDate'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.value = '';
+  });
+  document.getElementById('cIcon').value = '🏆';
+  document.getElementById('challengeFormTitle').textContent = 'Create New Challenge';
+  document.getElementById('challengeSubmitLabel').textContent = '＋ Save as Draft';
+  document.getElementById('cancelChallengeBtn').style.display = 'none';
+  regenerateBadge();
+}
+
+function cancelEditChallenge() { resetChallengeForm(); }
+
+async function togglePublish(id) {
+  var token = getToken();
+  var res = await fetch(ATP_API+'/challenges/'+id+'/publish', {
+    method:'PATCH', headers:{'Authorization':'Bearer '+token}
+  });
+  var d = await res.json();
+  showToast(d.published ? '✅ Published!' : '⏸ Unpublished');
+  loadChallengesList();
+}
+
+async function loadChallengesList() {
+  var container = document.getElementById('challengesList');
+  var countEl = document.getElementById('challengeCount');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;color:#444;padding:24px">Loading...</div>';
+  try {
+    var token = getToken();
+    var filter = document.getElementById('challengeFilter')?.value || '';
+    var res = await fetch(ATP_API+'/challenges?all=true', {headers:{'Authorization':'Bearer '+token}});
+    var data = await res.json();
+    var challenges = data.challenges || [];
+    if (filter === 'published') challenges = challenges.filter(function(c){return c.is_published;});
+    if (filter === 'draft') challenges = challenges.filter(function(c){return !c.is_published;});
+    if (countEl) countEl.textContent = challenges.length + ' challenges';
+    if (!challenges.length) {
+      container.innerHTML = '<div style="text-align:center;color:#444;padding:24px">No challenges yet</div>';
+      return;
+    }
+    container.innerHTML = challenges.map(function(c) {
+      var icon = c.icon || '🏆';
+      var badge = c.badge_svg || generateBadgeSVG(icon, c.title);
+      var start = c.starts_at ? new Date(c.starts_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) : '—';
+      var end   = c.ends_at   ? new Date(c.ends_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+      var isPub = c.is_published;
+      var progress = Math.min(100, Math.round((c.participant_count||0)/(Math.max(1,c.target||1))*100));
+      return '<div class="challenge-card">'+
+        '<div class="challenge-badge-mini">'+badge+'</div>'+
+        '<div class="challenge-info">'+
+          '<div class="challenge-title">'+c.title+'</div>'+
+          '<div class="challenge-meta">'+start+' → '+end+' · 🎯 '+c.target+' '+c.unit+' · 👥 '+c.participant_count+' joined · 🏅 '+c.points_reward+' pts</div>'+
+          (c.device_metric?'<div style="font-size:10px;color:#7AC231;margin-top:3px">📡 Smart device: '+c.device_metric+'</div>':'')+
+          '<div class="challenge-progress-bar"><div class="challenge-progress-fill" style="width:'+progress+'%"></div></div>'+
+        '</div>'+
+        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">'+
+          '<span class="pub-badge '+(isPub?'published':'draft')+'">'+(isPub?'PUBLISHED':'DRAFT')+'</span>'+
+          '<div style="display:flex;gap:6px">'+
+            '<button class="admin-btn" style="font-size:11px;padding:4px 10px" onclick="togglePublish(this.dataset.id)" data-id="'+c.id+'">'+(isPub?'⏸ Unpublish':'▶ Publish')+'</button>'+
+            '<button class="admin-btn" style="font-size:11px;padding:4px 10px" onclick="viewLeaderboard(this.dataset.id)" data-id="'+c.id+'">🏆 Board</button>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+  } catch(e) {
+    container.innerHTML = '<div style="text-align:center;color:#f87171;padding:24px">Error: '+e.message+'</div>';
+  }
+}
+
+async function viewLeaderboard(challengeId) {
+  var challengeTitle = SESSIONS_CACHE[challengeId]?.name || challengeId;
+  var modal = document.getElementById('leaderboardModal');
+  var body  = document.getElementById('leaderboardBody');
+  var title = document.getElementById('lbTitle');
+  title.textContent = '🏆 ' + challengeTitle;
+  modal.style.display = 'flex';
+  body.innerHTML = '<div style="text-align:center;color:#444;padding:24px">Loading...</div>';
+  try {
+    var token = getToken();
+    var res = await fetch(ATP_API+'/challenges/'+challengeId+'/leaderboard', {
+      headers:{'Authorization':'Bearer '+token}
+    });
+    var data = await res.json();
+    var lb = data.leaderboard || [];
+    if (!lb.length) { body.innerHTML = '<div style="text-align:center;color:#444;padding:24px">No participants yet</div>'; return; }
+    var medals = ['🥇','🥈','🥉'];
+    body.innerHTML = '<div style="margin-bottom:12px;font-size:12px;color:#555">'+lb.length+' participants</div>' +
+      lb.map(function(r,i) {
+        var name = r.first_name + ' ' + r.last_name;
+        var pct = r.progress || 0;
+        return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #1a1a1a">'+
+          '<div style="width:28px;text-align:center;font-size:16px">'+(medals[i]||'#'+r.rank)+'</div>'+
+          '<div style="flex:1">'+
+            '<div style="font-weight:700;font-size:13px;color:#fff">'+name+'</div>'+
+            '<div style="font-size:11px;color:#555">'+r.member_number+'</div>'+
+          '</div>'+
+          '<div style="text-align:right">'+
+            '<div style="font-family:var(--ff-display);font-size:18px;font-weight:900;color:#7AC231">'+pct+'</div>'+
+            '<div style="font-size:10px;color:#555">progress</div>'+
+          '</div>'+
+          (r.completed?'<div style="font-size:18px">✅</div>':'')+
+        '</div>';
+      }).join('');
+  } catch(e) {
+    body.innerHTML = '<div style="text-align:center;color:#f87171;padding:24px">'+e.message+'</div>';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// COACHES MODULE
+// ═══════════════════════════════════════════════════════════
+var CURRENT_COACH_ID = null;
+
+async function loadCoachesSection() {
+  var grid = document.getElementById('coachesGrid');
+  if (!grid) return;
+  grid.innerHTML = '<div style="text-align:center;color:#444;padding:40px;grid-column:1/-1">Loading coaches...</div>';
+  try {
+    var res = await fetch(ATP_API+'/coaches');
+    var data = await res.json();
+    var coaches = data.coaches || [];
+    if (!coaches.length) {
+      grid.innerHTML = '<div style="text-align:center;color:#444;padding:40px;grid-column:1/-1">No coaches yet — make members ambassadors first</div>';
+      return;
+    }
+    grid.innerHTML = coaches.map(function(c) {
+      var name = (c.first_name||'') + ' ' + (c.last_name||'');
+      var ini  = ((c.first_name||'?')[0]+(c.last_name||'?')[0]).toUpperCase();
+      var rating = parseFloat(c.rating_avg)||0;
+      var stars = '★'.repeat(Math.round(rating)) + '☆'.repeat(5-Math.round(rating));
+      var specs = [];
+      try { specs = JSON.parse(c.specialties||'[]'); } catch(e) {}
+      var sessionCount = parseInt(c.total_sessions||c.sessions_delivered||0);
+      return '<div class="coach-card" onclick="openCoachModal(this.dataset.cid)" data-cid="'+c.id+'">'+
+        '<div class="coach-card-hero">'+
+          '<div class="coach-avatar">'+ini+'</div>'+
+          '<div>'+
+            '<div class="coach-name">'+name.trim()+(c.is_featured?'<span class="coach-feature-badge">FEATURED</span>':'')+'</div>'+
+            '<div class="coach-meta">'+(c.city_name||'ATP Network')+'</div>'+
+          '</div>'+
+        '</div>'+
+        '<div class="coach-body">'+
+          '<div class="coach-stars" title="'+rating.toFixed(1)+'/5">'+
+            '<span style="color:#7AC231;font-size:13px">'+stars+'</span>'+
+            '<span style="font-size:11px;color:#555;margin-left:6px">'+(rating?rating.toFixed(1)+' ('+c.rating_count+')':'No reviews yet')+'</span>'+
+          '</div>'+
+          '<div class="coach-stat"><span>🎽</span><span>'+sessionCount+' sessions delivered</span></div>'+
+          (c.years_experience?'<div class="coach-stat"><span>⏱</span><span>'+c.years_experience+' years experience</span></div>':'')+
+          '<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:4px">'+
+            specs.slice(0,3).map(function(s){ return '<span class="coach-specialty-tag">'+s+'</span>'; }).join('')+
+          '</div>'+
+          (c.bio?'<div style="font-size:12px;color:#555;margin-top:10px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+c.bio+'</div>':'')+
+        '</div>'+
+      '</div>';
+    }).join('');
+  } catch(e) {
+    grid.innerHTML = '<div style="text-align:center;color:#f87171;padding:40px;grid-column:1/-1">Error: '+e.message+'</div>';
+  }
+}
+
+async function openCoachModal(coachId) {
+  CURRENT_COACH_ID = coachId;
+  var modal = document.getElementById('coachModal');
+  modal.style.display = 'flex';
+  // Reset
+  document.getElementById('coachModalAvatar').textContent = '…';
+  document.getElementById('coachModalName').textContent = 'Loading...';
+
+  try {
+    var token = getToken();
+    var res = await fetch(ATP_API+'/coaches/'+coachId, {headers:{'Authorization':'Bearer '+token}});
+    var data = await res.json();
+    var c = data.coach;
+    var name = (c.first_name||'') + ' ' + (c.last_name||'');
+    var ini  = ((c.first_name||'?')[0]+(c.last_name||'?')[0]).toUpperCase();
+    var rating = parseFloat(c.rating_avg)||0;
+
+    document.getElementById('coachModalAvatar').textContent = ini;
+    document.getElementById('coachModalName').innerHTML = name.trim()+(c.is_featured?'<span class="coach-feature-badge" style="margin-left:10px;font-size:12px">⭐ FEATURED</span>':'');
+    document.getElementById('coachModalMeta').textContent =
+      (c.city_name||'ATP Network') +
+      (c.years_experience?' · '+c.years_experience+'y exp':'') +
+      (c.instagram?' · @'+c.instagram:'');
+
+    var stars = '★'.repeat(Math.round(rating))+'☆'.repeat(5-Math.round(rating));
+    document.getElementById('coachModalRating').innerHTML =
+      '<span style="color:#7AC231;font-size:16px">'+stars+'</span>'+
+      '<span style="color:#888;font-size:12px;margin-left:8px">'+(rating?rating.toFixed(1)+' from '+c.rating_count+' reviews':'No reviews yet')+'</span>';
+
+    // Stats grid
+    document.getElementById('coachModalStats').innerHTML =
+      '<div style="background:#111;border-radius:10px;padding:14px;text-align:center"><div style="font-family:var(--ff-display);font-size:24px;font-weight:900;color:#7AC231">'+(c.total_sessions||0)+'</div><div style="font-size:11px;color:#555;margin-top:4px">Sessions Delivered</div></div>'+
+      '<div style="background:#111;border-radius:10px;padding:14px;text-align:center"><div style="font-family:var(--ff-display);font-size:24px;font-weight:900;color:#7AC231">'+(c.upcoming_sessions||0)+'</div><div style="font-size:11px;color:#555;margin-top:4px">Upcoming Sessions</div></div>'+
+      '<div style="background:#111;border-radius:10px;padding:14px;text-align:center"><div style="font-family:var(--ff-display);font-size:24px;font-weight:900;color:#7AC231">'+(c.rating_count||0)+'</div><div style="font-size:11px;color:#555;margin-top:4px">Member Reviews</div></div>'+
+      '<div style="background:#111;border-radius:10px;padding:14px;text-align:center"><div style="font-family:var(--ff-display);font-size:24px;font-weight:900;color:#7AC231">'+(c.points_balance||0)+'</div><div style="font-size:11px;color:#555;margin-top:4px">Total Points</div></div>';
+
+    // Bio
+    document.getElementById('coachModalBio').innerHTML = c.bio
+      ? '<div style="font-size:13px;color:#888;line-height:1.7">'+c.bio+'</div>'
+      : '<div style="font-size:13px;color:#333;font-style:italic">No bio added yet.</div>';
+
+    // Specialties
+    var specs=[];
+    try{specs=JSON.parse(c.specialties||'[]');}catch(e){}
+    document.getElementById('coachModalSpecialties').innerHTML = specs.length
+      ? '<div style="font-size:12px;color:#555;margin-bottom:8px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Specialties</div>'+
+        specs.map(function(s){return '<span class="coach-specialty-tag">'+s+'</span>';}).join('')
+      : '';
+
+    // Upcoming sessions
+    var sess = data.upcoming_sessions||[];
+    document.getElementById('coachModalSessions').innerHTML = sess.length
+      ? '<div style="font-size:12px;color:#555;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Upcoming Sessions</div>'+
+        sess.map(function(s){
+          var dt = s.scheduled_at?new Date(s.scheduled_at).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}):'—';
+          return '<div style="background:#111;border-radius:8px;padding:10px 12px;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center">'+
+            '<div><div style="font-size:13px;font-weight:600;color:#fff">'+s.name+'</div><div style="font-size:11px;color:#555">'+dt+'</div></div>'+
+            '<div style="font-size:12px;color:#7AC231">'+s.registered+'/'+s.capacity+'</div>'+
+          '</div>';
+        }).join('')
+      : '<div style="font-size:12px;color:#333;font-style:italic">No upcoming sessions</div>';
+
+    // Feedback
+    var feedback = data.feedback||[];
+    document.getElementById('coachModalFeedback').innerHTML = feedback.length
+      ? '<div style="font-size:12px;color:#555;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Member Feedback</div>'+
+        feedback.slice(0,5).map(function(f){
+          var s='★'.repeat(f.rating)+'☆'.repeat(5-f.rating);
+          var dt=f.created_at?new Date(f.created_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}):'';
+          return '<div style="background:#111;border-radius:8px;padding:12px;margin-bottom:8px">'+
+            '<div style="display:flex;justify-content:space-between;margin-bottom:6px">'+
+              '<span style="font-weight:600;font-size:12px;color:#fff">'+f.first_name+' '+f.last_name+'</span>'+
+              '<span style="color:#7AC231;font-size:13px">'+s+'</span>'+
+            '</div>'+
+            (f.comment?'<div style="font-size:12px;color:#888;line-height:1.5">'+f.comment+'</div>':'')+
+            '<div style="font-size:10px;color:#333;margin-top:6px">'+dt+'</div>'+
+          '</div>';
+        }).join('')
+      : '<div style="font-size:12px;color:#333;font-style:italic">No feedback yet</div>';
+
+    // Feature button
+    var featBtn = document.getElementById('coachFeatureBtn');
+    if (featBtn) featBtn.textContent = c.is_featured ? '⭐ Unfeature Coach' : '⭐ Feature Coach';
+
+  } catch(e) {
+    document.getElementById('coachModalName').textContent = 'Error: '+e.message;
+  }
+}
+
+async function toggleCoachFeature() {
+  if (!CURRENT_COACH_ID) return;
+  var token = getToken();
+  // Get current state
+  var res = await fetch(ATP_API+'/coaches/'+CURRENT_COACH_ID, {headers:{'Authorization':'Bearer '+token}});
+  var data = await res.json();
+  var newFeatured = !data.coach.is_featured;
+  await fetch(ATP_API+'/coaches/'+CURRENT_COACH_ID, {
+    method:'PUT', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({is_featured: newFeatured})
+  });
+  showToast(newFeatured ? '⭐ Coach featured!' : '✅ Feature removed');
+  openCoachModal(CURRENT_COACH_ID);
+  loadCoachesSection();
+}
+
+// ═══════════════════════════════════════════════════════════
+// ANALYTICS MODULE
+// ═══════════════════════════════════════════════════════════
+async function loadAnalytics() {
+  try {
+    var token = getToken();
+    var [overview, demographics] = await Promise.all([
+      fetch(ATP_API+'/analytics/overview',{headers:{'Authorization':'Bearer '+token}}).then(r=>r.json()),
+      fetch(ATP_API+'/analytics/members',{headers:{'Authorization':'Bearer '+token}}).then(r=>r.json()),
+    ]);
+
+    var m = overview.members || {};
+    var s = overview.sessions || {};
+    var ch = overview.challenges || {};
+
+    // KPI cards
+    var kpis = {
+      'kpi-members':    [m.total||0, 'Total Members'],
+      'kpi-new':        [m.new_this_month||0, 'New This Month'],
+      'kpi-sessions':   [s.total||0, 'Total Sessions'],
+      'kpi-ambassadors':[m.ambassadors||0, 'Active Coaches'],
+      'kpi-points':     [(parseInt(m.total_points)||0).toLocaleString(), 'Total Points'],
+      'kpi-challenges': [ch.active||0, 'Active Challenges'],
+    };
+    Object.entries(kpis).forEach(function([id,[val]]) {
+      var el = document.getElementById(id);
+      if (el) el.querySelector('.kpi-val').textContent = val;
+    });
+
+    // Growth chart
+    var growth = overview.growth || [];
+    var maxCount = Math.max.apply(null, growth.map(function(g){return g.count;})) || 1;
+    document.getElementById('growthChart').innerHTML = growth.map(function(g) {
+      var h = Math.max(8, Math.round((g.count/maxCount)*180));
+      return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">'+
+        '<div style="font-size:10px;color:#7AC231;font-weight:700">'+g.count+'</div>'+
+        '<div style="width:100%;background:#7AC231;border-radius:3px 3px 0 0;transition:height .5s" style="height:'+h+'px"></div>'+
+        '<div style="font-size:9px;color:#444;white-space:nowrap">'+g.month+'</div>'+
+      '</div>';
+    }).join('') || '<div style="color:#333;font-size:12px">No data yet</div>';
+
+    // Fix chart heights
+    growth.forEach(function(g,i) {
+      var bars = document.getElementById('growthChart').children;
+      if (bars[i]) {
+        var bar = bars[i].children[1];
+        if (bar) bar.style.height = Math.max(8, Math.round((g.count/maxCount)*180))+'px';
+      }
+    });
+
+    // Top members
+    var top = overview.top_members || [];
+    document.getElementById('topMembersList').innerHTML = top.map(function(m,i) {
+      var medals = ['🥇','🥈','🥉'];
+      return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #111">'+
+        '<div style="width:24px;text-align:center;font-size:14px">'+(medals[i]||'#'+(i+1))+'</div>'+
+        '<div style="flex:1">'+
+          '<div style="font-size:13px;font-weight:600;color:#fff">'+m.first_name+' '+m.last_name+'</div>'+
+          '<div style="font-size:11px;color:#555">'+m.member_number+(m.is_ambassador?' · Ambassador':'')+'</div>'+
+        '</div>'+
+        '<div style="font-family:var(--ff-display);font-size:16px;font-weight:900;color:#7AC231">'+m.points_balance+'</div>'+
+      '</div>';
+    }).join('') || '<div style="color:#333;font-size:12px;padding:12px 0">No data yet</div>';
+
+    // Nationality
+    var nats = demographics.nationality || [];
+    var maxNat = Math.max.apply(null, nats.map(function(n){return n.count;})) || 1;
+    document.getElementById('nationalityList').innerHTML = nats.slice(0,10).map(function(n) {
+      var pct = Math.round((n.count/maxNat)*100);
+      return '<div style="margin-bottom:10px">'+
+        '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">'+
+          '<span style="color:#ccc">'+n.nationality+'</span>'+
+          '<span style="color:#7AC231;font-weight:700">'+n.count+'</span>'+
+        '</div>'+
+        '<div style="height:4px;background:#1a1a1a;border-radius:2px">'+
+          '<div style="width:'+pct+'%;height:100%;background:#7AC231;border-radius:2px"></div>'+
+        '</div>'+
+      '</div>';
+    }).join('') || '<div style="color:#333;font-size:12px">No data yet</div>';
+
+    // Session categories
+    var cats = overview.activity_breakdown || [];
+    var catNames = {regular:'🏃 Regular',social:'🎉 Social',team_sports:'🏆 Team Sports'};
+    var maxCat = Math.max.apply(null, cats.map(function(c){return c.count;})) || 1;
+    document.getElementById('sessionCategoryChart').innerHTML = cats.map(function(c) {
+      var pct = Math.round((c.count/maxCat)*100);
+      return '<div style="margin-bottom:12px">'+
+        '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">'+
+          '<span style="color:#ccc">'+(catNames[c.session_category]||c.session_category)+'</span>'+
+          '<span style="color:#7AC231;font-weight:700">'+c.count+' sessions</span>'+
+        '</div>'+
+        '<div style="height:6px;background:#1a1a1a;border-radius:3px">'+
+          '<div style="width:'+pct+'%;height:100%;background:#7AC231;border-radius:3px"></div>'+
+        '</div>'+
+      '</div>';
+    }).join('') || '<div style="color:#333;font-size:12px">No sessions yet</div>';
+
+  } catch(e) {
+    console.warn('Analytics error:', e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SESSION CANCEL
+// ═══════════════════════════════════════════════════════════
+async function cancelSession(sessionId, sessionName) {
+  if (!confirm('Cancel "' + sessionName + '"? Members will be notified.')) return;
+  var reason = prompt('Cancellation reason (optional):') || '';
+  var token = getToken();
+  try {
+    var res = await fetch(ATP_API+'/sessions/'+sessionId+'/cancel', {
+      method:'PATCH', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({reason})
+    });
+    var d = await res.json();
+    if (d.session) { showToast('✅ Session cancelled'); loadSessionsList(); }
+    else { showToast('❌ '+(d.error||'Failed'), true); }
+  } catch(e) { showToast('❌ '+e.message, true); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// HOOK EVERYTHING INTO showAdminSection
+// ═══════════════════════════════════════════════════════════
+// Override showAdminSection to load data on tab switch
+(function() {
+  var _orig = window.showAdminSection;
+  window.showAdminSection = function(name, btn) {
+    if (_orig) _orig(name, btn);
+    if (name === 'sessions')   { loadCities(); loadCoaches(); setTimeout(loadSessionsList, 200); }
+    if (name === 'challenges') { loadChallengesList(); populateChallengeCities(); regenerateBadge(); }
+    if (name === 'coaches')    { loadCoachesSection(); }
+    if (name === 'analytics')  { loadAnalytics(); }
+    if (name === 'members')    { loadMembersAPI(); }
+    if (name === 'ambassadors'){ renderAmbassadors(); }
+  };
+})();
+
+async function populateChallengeCities() {
+  var el = document.getElementById('cCity');
+  if (!el || ALL_CITIES.length) {
+    if (el && ALL_CITIES.length) {
+      el.innerHTML = '<option value="">All Cities (Global)</option>';
+      ALL_CITIES.forEach(function(c){ el.innerHTML += '<option value="'+c.id+'">'+c.name+'</option>'; });
+    }
+    return;
+  }
+  await loadCities();
+  el.innerHTML = '<option value="">All Cities (Global)</option>';
+  ALL_CITIES.forEach(function(c){ el.innerHTML += '<option value="'+c.id+'">'+c.name+'</option>'; });
+}
+
+// Add Cancel button to sessions table rows
+var _origLoadSessionsList = window.loadSessionsList;
+window.loadSessionsList = async function() {
+  await _origLoadSessionsList();
+  // Add cancel buttons to each row
+  var rows = document.querySelectorAll('#sessionsTbody tr');
+  // The rows already get edit + registrations — we hook cancel via editSession context
+};
+
+// Run badge on load
+document.addEventListener('DOMContentLoaded', regenerateBadge);
+setTimeout(regenerateBadge, 500);
 
 </script>
 </body>

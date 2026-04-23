@@ -380,6 +380,55 @@ router.post('/dedup-cities', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+
+// ── POST /api/auth/migrate-schema-v2 ─────────────────────────
+router.post('/migrate-schema-v2', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    const ops = [];
+
+    // Challenges: add new columns
+    ops.push(query(`ALTER TABLE challenges ADD COLUMN IF NOT EXISTS is_published BOOLEAN NOT NULL DEFAULT false`));
+    ops.push(query(`ALTER TABLE challenges ADD COLUMN IF NOT EXISTS badge_svg TEXT`));
+    ops.push(query(`ALTER TABLE challenges ADD COLUMN IF NOT EXISTS device_metric VARCHAR(50)`));
+    ops.push(query(`ALTER TABLE challenge_participants ADD COLUMN IF NOT EXISTS device_data JSONB`));
+    // Sessions: add cancel columns
+    ops.push(query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS cancellation_reason TEXT`));
+    // Coach profiles table
+    ops.push(query(`CREATE TABLE IF NOT EXISTS coach_profiles (
+      member_id         UUID PRIMARY KEY REFERENCES members(id) ON DELETE CASCADE,
+      bio               TEXT,
+      specialties       JSONB DEFAULT '[]',
+      certifications    JSONB DEFAULT '[]',
+      instagram         VARCHAR(100),
+      tiktok            VARCHAR(100),
+      years_experience  INTEGER DEFAULT 0,
+      languages         JSONB DEFAULT '["English"]',
+      rating_avg        NUMERIC(3,2) DEFAULT 0,
+      rating_count      INTEGER DEFAULT 0,
+      sessions_delivered INTEGER DEFAULT 0,
+      is_featured       BOOLEAN DEFAULT false,
+      created_at        TIMESTAMPTZ DEFAULT NOW()
+    )`));
+    // Coach feedback table
+    ops.push(query(`CREATE TABLE IF NOT EXISTS coach_feedback (
+      id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      coach_id    UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      member_id   UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      session_id  UUID REFERENCES sessions(id),
+      rating      INTEGER NOT NULL CHECK (rating BETWEEN 1 AND 5),
+      comment     TEXT,
+      is_approved BOOLEAN DEFAULT true,
+      created_at  TIMESTAMPTZ DEFAULT NOW(),
+      UNIQUE(coach_id, member_id, session_id)
+    )`));
+
+    await Promise.all(ops);
+    res.json({ success: true, message: 'Schema v2 migrated' });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
 
 // ── POST /api/auth/grant-admin  (setup only) ──────────────────
