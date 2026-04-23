@@ -1087,27 +1087,35 @@ function filterMembers(q) {
 }
 
 // ── AMBASSADORS ───────────────────────────────────────────────
-function renderAmbassadors() {
-  var ambs = MEMBERS_DATA.filter(function(m){return m.ambassador;});
-  document.getElementById('ambassadorTbody').innerHTML = ambs.map(function(m) {
-    var isOn = m.ambassadorActive !== false;
-    return '<tr>'+
-      '<td style="display:flex;align-items:center"><div class="admin-av" style="background:rgba(255,196,0,.15);color:#ffc400">'+m.name[0]+'</div><div><div class="admin-member-name">'+m.name+'</div><div class="admin-member-email">'+m.id+'</div></div></td>'+
-      '<td style="color:#555;font-size:12px">'+m.joined+'</td>'+
-      '<td style="color:#7AC231;font-weight:700">'+Math.floor(m.sessions/8)+' sessions</td>'+
-      '<td>'+
-        '<div class="toggle-wrap">'+
-          '<label class="toggle">'+
-            '<input type="checkbox" '+(isOn?'checked':'')+' onchange="toggleAmbassador('+m.id+',this.checked)">'+
-            '<span class="toggle-slider"></span>'+
-          '</label>'+
-          '<span class="toggle-label">'+(isOn?'Active':'Inactive')+'</span>'+
-        '</div>'+
-      '</td>'+
-      '<td><button class="admin-btn admin-btn-danger" onclick="revokeAmbassador('+m.id+')">Revoke</button></td>'+
-    '</tr>';
-  }).join('');
+async function loadAmbassadorsAPI() { return renderAmbassadors(); }
+async function renderAmbassadors() {
+  var tbody = document.getElementById('ambassadorTbody');
+  if (!tbody) return;
+  tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#444;padding:20px">Loading…</td></tr>';
+  try {
+    var data = await apiGet('/admin/members?is_ambassador=true&limit=200');
+    var ambs = data.members || [];
+    if (!ambs.length) {
+      tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#444;padding:20px">No ambassadors yet — go to Members and activate some</td></tr>';
+      return;
+    }
+    tbody.innerHTML = ambs.map(function(m) {
+      var name = ((m.first_name||'')+' '+(m.last_name||'')).trim();
+      var ini = ((m.first_name||'?')[0]+(m.last_name||'?')[0]).toUpperCase();
+      var joined = m.joined_at ? new Date(m.joined_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '—';
+      return '<tr>'+
+        '<td style="display:flex;align-items:center;gap:10px"><div class="admin-av" style="background:rgba(255,196,0,.15);color:#ffc400">'+ini+'</div><div><div class="admin-member-name">'+name+'</div><div class="admin-member-email">'+m.member_number+' · '+m.email+'</div></div></td>'+
+        '<td style="color:#555;font-size:12px">'+joined+'</td>'+
+        '<td style="color:#7AC231;font-weight:700">'+(m.sessions_count||0)+' sessions</td>'+
+        '<td><span class="badge badge-green">Active</span></td>'+
+        '<td><button class="admin-btn admin-btn-danger" onclick="removeAmbassador(this.dataset.mid)" data-mid="'+m.id+'" style="font-size:11px;padding:4px 10px">Revoke</button></td>'+
+      '</tr>';
+    }).join('');
+  } catch(e) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#f87171;padding:20px">Error: '+e.message+'</td></tr>';
+  }
 }
+
 
 function toggleAmbassador(id, enabled) {
   var m = MEMBERS_DATA.find(function(x){return x.id===id;});
