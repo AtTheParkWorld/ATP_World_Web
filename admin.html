@@ -657,16 +657,25 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
             </div>
           </div>
 
-          <!-- BADGE PREVIEW -->
+          <!-- BADGE PREVIEW + UPLOAD -->
           <div style="margin-top:16px;padding:14px;background:#111;border-radius:10px;border:1px solid #222">
             <label class="admin-form-label" style="margin-bottom:10px;display:block">🏅 Challenge Badge</label>
             <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
-              <div id="badgePreview" style="width:100px;height:100px;flex-shrink:0"></div>
-              <div>
-                <div style="font-size:12px;color:#555;margin-bottom:8px">Default ATP badge auto-generated. You can customise the emoji above.</div>
-                <button class="admin-btn" style="font-size:12px;padding:6px 14px" onclick="regenerateBadge()">↻ Regenerate Badge</button>
+              <div id="badgePreview" style="width:100px;height:100px;flex-shrink:0;background:#0a0a0a;border-radius:50%;overflow:hidden"></div>
+              <div style="flex:1;min-width:220px">
+                <div style="font-size:12px;color:#888;margin-bottom:10px">Upload your own badge image (PNG/JPEG), or use auto-generated ATP badge.</div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <label class="admin-btn" style="font-size:12px;padding:6px 14px;cursor:pointer">
+                    📁 Upload Image
+                    <input type="file" id="badgeUpload" accept="image/png,image/jpeg,image/jpg" onchange="handleBadgeUpload(event)" style="display:none">
+                  </label>
+                  <button class="admin-btn" style="font-size:12px;padding:6px 14px" onclick="regenerateBadge()">↻ Use Auto Badge</button>
+                  <button class="admin-btn" style="font-size:12px;padding:6px 14px;color:#f87171" onclick="clearBadgeUpload()" id="clearBadgeBtn" style="display:none">✕ Clear</button>
+                </div>
+                <div id="badgeUploadInfo" style="font-size:11px;color:#555;margin-top:8px"></div>
               </div>
             </div>
+            <input type="hidden" id="cBadgeImage" value="">
           </div>
 
           <div style="display:flex;gap:10px;margin-top:20px;align-items:center;flex-wrap:wrap">
@@ -1507,8 +1516,11 @@ async function loadSessionsList() {
       var sportIcons = {padel:'🎾', football:'⚽', volleyball:'🏐', badminton:'🏸', basketball:'🏀'};
       var sportBadge = '';
       if (cat === 'team_sports' && s.sport_type) {
-        sportBadge = '<div style="font-size:11px;color:#7AC231;margin-top:3px">'+(sportIcons[s.sport_type]||'🏆')+' '+s.sport_type.charAt(0).toUpperCase()+s.sport_type.slice(1);
-        if (s.courts && s.courts.length) sportBadge += ' · '+s.courts.length+' court'+(s.courts.length>1?'s':'');
+        var courtsArr = s.courts;
+        if (typeof courtsArr === 'string') { try { courtsArr = JSON.parse(courtsArr); } catch(e){ courtsArr = []; } }
+        var courtCount = Array.isArray(courtsArr) ? courtsArr.length : 0;
+        sportBadge = '<div style="font-size:11px;color:#7AC231;margin-top:3px;font-weight:600">'+(sportIcons[s.sport_type]||'🏆')+' '+s.sport_type.charAt(0).toUpperCase()+s.sport_type.slice(1);
+        if (courtCount) sportBadge += ' · '+courtCount+' court'+(courtCount>1?'s':'');
         sportBadge += '</div>';
       }
       var statusBadge = s.status === 'completed'
@@ -1558,7 +1570,9 @@ async function viewRegistrations(sessionId) {
       return;
     }
     var courtsSummary = '';
-    if (s.session_category === 'team_sports' && s.courts && s.courts.length) {
+    var courtsArr = s ? s.courts : null;
+    if (typeof courtsArr === 'string') { try { courtsArr = JSON.parse(courtsArr); } catch(e) { courtsArr = []; } }
+    if (s && s.session_category === 'team_sports' && Array.isArray(courtsArr) && courtsArr.length) {
       var grouped = {};
       regs.forEach(function(r){
         var court = r.court_name || 'Unassigned';
@@ -1566,7 +1580,7 @@ async function viewRegistrations(sessionId) {
         grouped[court]++;
       });
       courtsSummary = '<div style="background:#111;border-radius:10px;padding:12px;margin-bottom:14px;display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">';
-      s.courts.forEach(function(ct){
+      courtsArr.forEach(function(ct){
         var count = grouped[ct.name] || 0;
         var pct = Math.round((count/(ct.max_players||4))*100);
         courtsSummary += '<div style="padding:10px;background:#1a1a1a;border-radius:8px;border-left:3px solid #7AC231">'+
@@ -1625,10 +1639,9 @@ function makeAmbassador(id) {
     headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
     body: JSON.stringify({enabled: true})
   }).then(r => r.json()).then(function(d) {
-    if (d.success || d.member) {
+    if (d.success || d.member || d.message) {
       showToast('✅ Ambassador activated!');
-      loadMembersAPI();
-      loadDashboardAPI();
+      setTimeout(function(){ loadMembersAPI(); renderAmbassadors && renderAmbassadors(); loadCoaches && loadCoaches(); }, 300);
     } else {
       showToast('❌ ' + (d.error || 'Failed'), true);
     }
@@ -1642,8 +1655,12 @@ function removeAmbassador(id) {
     headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
     body: JSON.stringify({enabled: false})
   }).then(r => r.json()).then(function(d) {
-    if (d.success || d.member) { showToast('✅ Ambassador removed'); renderAmbassadors(); }
-    else { showToast('❌ ' + (d.error||'Failed'), true); }
+    if (d.success || d.member || d.message) {
+      showToast('✅ Ambassador removed');
+      setTimeout(function(){ loadMembersAPI(); renderAmbassadors && renderAmbassadors(); }, 300);
+    } else {
+      showToast('❌ ' + (d.error||'Failed'), true);
+    }
   });
 }
 
@@ -1703,20 +1720,62 @@ var CHALLENGE_EDIT_ID = null;
 var CHALLENGE_PUBLISH_ON_SAVE = false;
 
 function generateBadgeSVG(icon, title) {
-  var esc = (title||'ATP CHALLENGE').toUpperCase().substring(0,16);
-  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">'+
+  // Clean, balanced badge with no text overlap
+  // Uses unique IDs to avoid clashes when multiple badges render on same page
+  var uid = 'b' + Math.random().toString(36).substr(2,8);
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" style="width:100%;height:100%;display:block">'+
     '<defs>'+
-      '<radialGradient id="bg" cx="50%" cy="50%" r="50%">'+
-        '<stop offset="0%" stop-color="#1a2a0a"/>'+
-        '<stop offset="100%" stop-color="#0a0a0a"/>'+
+      '<radialGradient id="bg'+uid+'" cx="50%" cy="45%" r="60%">'+
+        '<stop offset="0%" stop-color="#1f3310"/>'+
+        '<stop offset="100%" stop-color="#050505"/>'+
       '</radialGradient>'+
+      '<linearGradient id="ring'+uid+'" x1="0%" y1="0%" x2="100%" y2="100%">'+
+        '<stop offset="0%" stop-color="#7AC231"/>'+
+        '<stop offset="100%" stop-color="#4a7a1d"/>'+
+      '</linearGradient>'+
     '</defs>'+
-    '<circle cx="50" cy="50" r="48" fill="url(#bg)" stroke="#7AC231" stroke-width="2"/>'+
-    '<circle cx="50" cy="50" r="40" fill="none" stroke="#7AC231" stroke-width="0.5" opacity="0.4"/>'+
-    '<text x="50" y="42" text-anchor="middle" font-size="28" dominant-baseline="middle">'+( icon||'🏆')+'</text>'+
-    '<text x="50" y="65" text-anchor="middle" font-size="7" font-family="Arial Black,sans-serif" fill="#7AC231" font-weight="900" letter-spacing="1">'+esc+'</text>'+
-    '<text x="50" y="76" text-anchor="middle" font-size="5.5" font-family="Arial,sans-serif" fill="#555" letter-spacing="0.5">AT THE PARK</text>'+
+    // Outer ring
+    '<circle cx="60" cy="60" r="58" fill="url(#bg'+uid+')" stroke="url(#ring'+uid+')" stroke-width="3"/>'+
+    // Decorative laurel dots around top
+    '<circle cx="60" cy="8" r="1.5" fill="#7AC231"/>'+
+    '<circle cx="40" cy="12" r="1" fill="#7AC231" opacity="0.6"/>'+
+    '<circle cx="80" cy="12" r="1" fill="#7AC231" opacity="0.6"/>'+
+    // Icon - centered vertically, plenty of space
+    '<text x="60" y="62" text-anchor="middle" font-size="42" dominant-baseline="central">'+(icon||'🏆')+'</text>'+
+    // Ribbon at bottom
+    '<rect x="12" y="90" width="96" height="18" fill="#7AC231" rx="2"/>'+
+    '<text x="60" y="100" text-anchor="middle" font-size="7" font-family="Arial Black,Impact,sans-serif" fill="#0a0a0a" font-weight="900" letter-spacing="1.5">ATP CHALLENGE</text>'+
     '</svg>';
+}
+
+
+
+function handleBadgeUpload(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    alert('File too large — max 2MB'); return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    document.getElementById('cBadgeImage').value = dataUrl;
+    document.getElementById('badgePreview').innerHTML =
+      '<img src="'+dataUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+    document.getElementById('badgeUploadInfo').textContent = '✅ Using uploaded image: ' + file.name;
+    var clr = document.getElementById('clearBadgeBtn');
+    if (clr) clr.style.display = 'inline-block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearBadgeUpload() {
+  document.getElementById('cBadgeImage').value = '';
+  document.getElementById('badgeUpload').value = '';
+  document.getElementById('badgeUploadInfo').textContent = '';
+  var clr = document.getElementById('clearBadgeBtn');
+  if (clr) clr.style.display = 'none';
+  regenerateBadge();
 }
 
 function regenerateBadge() {
@@ -1756,12 +1815,15 @@ async function saveChallenge(publish) {
     return;
   }
 
-  var badgeSvg = document.getElementById('badgePreview')?.innerHTML || null;
+  var uploadedBadge = document.getElementById('cBadgeImage')?.value;
+  var badgeSvg = uploadedBadge || document.getElementById('badgePreview')?.innerHTML || null;
   var payload = {
     title, icon, challenge_type: ctype, metric, target, unit: metric,
     points_reward: points, starts_at: startDate+'T00:00:00Z',
     ends_at: endDate+'T23:59:59Z', description: desc,
-    city_id: cityId, device_metric: device, badge_svg: badgeSvg
+    city_id: cityId, device_metric: device,
+    badge_svg: badgeSvg,
+    badge_image: uploadedBadge || null
   };
 
   var token = getToken();
