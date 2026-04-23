@@ -9,8 +9,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
     const { rows } = await query(
       `SELECT m.id, m.first_name, m.last_name, m.member_number, m.email,
               m.phone, m.sports_preferences, m.padel_level, m.points_balance,
-              m.joined_at, m.profile_pic_url,
-              cp.bio, cp.specialties, cp.certifications, cp.instagram,
+              m.joined_at, cp.bio, cp.specialties, cp.certifications, cp.instagram,
               cp.years_experience, cp.rating_avg, cp.rating_count,
               cp.sessions_delivered, cp.languages, cp.is_featured,
               ci.name AS city_name,
@@ -32,7 +31,6 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
     const { rows } = await query(
       `SELECT m.id, m.first_name, m.last_name, m.member_number, m.email,
               m.phone, m.sports_preferences, m.padel_level, m.points_balance, m.joined_at,
-              m.profile_pic_url,
               cp.bio, cp.specialties, cp.certifications, cp.instagram, cp.tiktok,
               cp.years_experience, cp.rating_avg, cp.rating_count,
               cp.sessions_delivered, cp.languages, cp.is_featured,
