@@ -2325,10 +2325,61 @@ async function toggleCoachFeature() {
 // ANALYTICS MODULE
 // ═══════════════════════════════════════════════════════════
 
+async function loadDashboardAPI() {
+  // Alias - some code calls this by name; delegate to loadDashboardWidgets
+  return loadDashboardWidgets();
+}
+
 async function loadDashboardWidgets() {
   try {
     var token = getToken();
     var data = await fetch(ATP_API+'/analytics/overview',{headers:{'Authorization':'Bearer '+token}}).then(r=>r.json());
+
+    // ── KPI CARDS (top of dashboard) ──
+    var m = data.members || {};
+    var s = data.sessions || {};
+    var statMembers = document.getElementById('stat-members');
+    var statSessions = document.getElementById('stat-sessions');
+    var statAmbs = document.getElementById('stat-ambassadors');
+    var statAtt = document.getElementById('stat-attendance');
+    if (statMembers)  statMembers.textContent  = (parseInt(m.total)||0).toLocaleString();
+    if (statSessions) statSessions.textContent = (parseInt(s.this_month)||0).toLocaleString();
+    if (statAmbs)     statAmbs.textContent     = (parseInt(m.ambassadors)||0).toLocaleString();
+    // attendance - mock for now (need real data from sessions/attendance)
+    if (statAtt && s.completed > 0) statAtt.textContent = '—';
+
+    // ── RECENT SESSIONS ATTENDANCE ──
+    // Fetch recent completed sessions with checkin counts
+    try {
+      var recent = await fetch(ATP_API+'/sessions?status=completed&limit=3', {headers:{'Authorization':'Bearer '+token}}).then(r=>r.json());
+      var recentList = recent.sessions || [];
+      var container = document.querySelector('.admin-section-body');
+      if (recentList.length) {
+        // Find the "Recent Sessions Attendance" section body
+        var sections = document.querySelectorAll('.admin-section');
+        sections.forEach(function(sec) {
+          var title = sec.querySelector('.admin-section-title');
+          if (title && title.textContent.includes('Recent Sessions Attendance')) {
+            var body = sec.querySelector('.admin-section-body');
+            if (body) {
+              body.innerHTML = recentList.map(function(ss) {
+                var dt = ss.scheduled_at ? new Date(ss.scheduled_at).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short'}) : '—';
+                var att = parseInt(ss.checkins_count)||0;
+                var cap = parseInt(ss.capacity)||1;
+                var pct = Math.min(100, Math.round((att/cap)*100));
+                return '<div style="margin-bottom:14px">'+
+                  '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
+                    '<div><div style="font-weight:700;font-size:14px">'+ss.name+' · '+dt+'</div><div style="font-size:11px;color:#555">'+(ss.location||'')+'</div></div>'+
+                    '<div style="text-align:right"><div style="font-family:var(--ff-display);font-size:18px;font-weight:900;color:#7AC231">'+att+'/'+cap+'</div><div style="font-size:10px;color:#555">checked in</div></div>'+
+                  '</div>'+
+                  '<div style="height:6px;background:#1a1a1a;border-radius:3px"><div style="width:'+pct+'%;height:100%;background:#7AC231;border-radius:3px"></div></div>'+
+                '</div>';
+              }).join('');
+            }
+          }
+        });
+      }
+    } catch(e) { /* swallow */ }
 
     // Growth chart
     var growth = data.growth || [];
