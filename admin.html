@@ -978,7 +978,7 @@ document.getElementById('adminPass').addEventListener('keydown', function(e){
 // ── NAVIGATION ────────────────────────────────────────────────
 function showAdminSection(name, btn) {
   if (name === 'sessions') { loadCities(); loadCoaches(); setTimeout(loadSessionsList, 300); }
-  ['dashboard','members','ambassadors','sessions','challenges'].forEach(function(s){
+  ['dashboard','members','ambassadors','sessions','challenges','coaches','analytics'].forEach(function(s){
     document.getElementById('section-'+s).style.display = 'none';
   });
   document.getElementById('section-'+name).style.display = 'block';
