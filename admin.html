@@ -2297,6 +2297,65 @@ async function submitCoachFeedback() {
   }
 }
 
+
+function openCoachEditor() {
+  var c = window._editingCoach;
+  if (!c) { alert('No coach loaded'); return; }
+  document.getElementById('coachEditorTitle').textContent = 'Edit Profile — ' + c.first_name + ' ' + c.last_name;
+  document.getElementById('ceBio').value = c.bio || '';
+  document.getElementById('ceYears').value = c.years_experience || '';
+  document.getElementById('ceInsta').value = c.instagram || '';
+  document.getElementById('ceTiktok').value = c.tiktok || '';
+  var parseArr = function(v){ try{ return Array.isArray(v)?v:JSON.parse(v||'[]'); }catch(e){ return []; } };
+  document.getElementById('ceLangs').value = parseArr(c.languages).join(', ');
+  document.getElementById('ceSpecs').value = parseArr(c.specialties).join(', ');
+  document.getElementById('ceCerts').value = parseArr(c.certifications).join(', ');
+  // Hide coach modal, show editor
+  document.getElementById('coachModal').style.display = 'none';
+  document.getElementById('coachEditorModal').style.display = 'flex';
+}
+
+async function saveCoachProfile() {
+  var c = window._editingCoach;
+  if (!c) return;
+  var msgEl = document.getElementById('coachEditorMsg');
+  var splitCsv = function(s) { return (s||'').split(',').map(function(x){return x.trim();}).filter(Boolean); };
+  var payload = {
+    bio: document.getElementById('ceBio').value.trim(),
+    years_experience: parseInt(document.getElementById('ceYears').value) || 0,
+    instagram: document.getElementById('ceInsta').value.trim().replace(/^@/,''),
+    tiktok: document.getElementById('ceTiktok').value.trim().replace(/^@/,''),
+    languages: splitCsv(document.getElementById('ceLangs').value),
+    specialties: splitCsv(document.getElementById('ceSpecs').value),
+    certifications: splitCsv(document.getElementById('ceCerts').value),
+    is_featured: !!c.is_featured
+  };
+  try {
+    var token = getToken();
+    var res = await fetch(ATP_API + '/coaches/' + c.id, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify(payload)
+    });
+    var d = await res.json();
+    if (d.success) {
+      msgEl.textContent = '✅ Profile saved!';
+      msgEl.style.cssText = 'display:block;background:#0d1a0a;color:#7AC231;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px';
+      setTimeout(function() {
+        document.getElementById('coachEditorModal').style.display = 'none';
+        loadCoachesSection();
+        openCoachModal(c.id);
+      }, 900);
+    } else {
+      throw new Error(d.error || 'Failed to save');
+    }
+  } catch(e) {
+    msgEl.textContent = '❌ ' + e.message;
+    msgEl.style.cssText = 'display:block;background:#2a1010;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px';
+  }
+}
+
+
 function copyCoachProfileLink() {
   var url = window.location.origin + '/coach?id=' + CURRENT_COACH_ID;
   navigator.clipboard.writeText(url).then(function() {
