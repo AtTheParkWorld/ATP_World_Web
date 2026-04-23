@@ -204,9 +204,9 @@ router.patch('/members/:id/ambassador', async (req, res, next) => {
       `UPDATE members SET
          is_ambassador=$1,
          ambassador_activated_at=CASE WHEN $1=true THEN NOW() ELSE NULL END,
-         ambassador_activated_by=CASE WHEN $1=true THEN $2 ELSE NULL END
-       WHERE id=$3`,
-      [enabled, req.member.id, req.params.id]
+         ambassador_activated_by=CASE WHEN $1=true THEN $2::uuid ELSE NULL END
+       WHERE id=$3::uuid`,
+      [enabled, req.member?.id || null, req.params.id]
     );
 
     // Create notification for member
