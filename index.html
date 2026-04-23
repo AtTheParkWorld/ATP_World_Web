@@ -1546,5 +1546,36 @@ window.handleGoogleSignIn = async function(response) {
 };
 
 </script>
+
+<script>
+// CMS Content Fetcher — hydrates data-cms-* elements from API on page load
+(async function() {
+  try {
+    const res = await fetch('/api/cms/index');
+    const data = await res.json();
+    const content = data.content || {};
+    // Hydrate all elements with data-cms-section + data-cms-key
+    document.querySelectorAll('[data-cms-section][data-cms-key]').forEach(el => {
+      const section = el.dataset.cmsSection;
+      const key = el.dataset.cmsKey;
+      if (content[section] && content[section][key] != null) {
+        const val = content[section][key];
+        if (el.tagName === 'IMG' || el.tagName === 'VIDEO' || el.tagName === 'SOURCE') {
+          el.src = val;
+        } else if (el.dataset.cmsMode === 'attr') {
+          el.setAttribute(el.dataset.cmsAttr || 'href', val);
+        } else {
+          // Preserve line breaks for multiline content
+          el.textContent = String(val);
+          if (String(val).includes('\n')) {
+            el.innerHTML = String(val).split('\n').map(l => '<span class="cms-line">' + l + '</span>').join('');
+          }
+        }
+      }
+    });
+  } catch(e) { console.warn('CMS fetch failed:', e); }
+})();
+</script>
+
 </body>
 </html>

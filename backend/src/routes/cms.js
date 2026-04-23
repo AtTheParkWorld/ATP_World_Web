@@ -78,4 +78,48 @@ router.put('/bulk', authenticate, requireAdmin, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+
+// POST /api/cms/upload — Upload image/video as base64 data URL for inline storage
+// For larger files, production should use S3/Cloudflare R2. Base64 works for <5MB images/short videos.
+router.post('/upload', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { data_url, filename, kind } = req.body;
+    if (!data_url || !data_url.startsWith('data:')) {
+      return res.status(400).json({ error: 'data_url (base64) required' });
+    }
+    // Extract size approximation (base64 is ~33% larger than binary)
+    const sizeBytes = Math.round((data_url.length - data_url.indexOf(',')) * 0.75);
+    if (sizeBytes > 10 * 1024 * 1024) {
+      return res.status(413).json({ error: 'File too large (max 10MB)' });
+    }
+    // Persist as a media asset entry for reuse
+    const { rows } = await query(
+      `INSERT INTO cms_content (page, section, key, value_url, updated_by)
+       VALUES ('_media', $1, $2, $3, $4)
+       ON CONFLICT (page, section, key) DO UPDATE SET value_url=$3, updated_by=$4, updated_at=NOW()
+       RETURNING id`,
+      [kind || 'image', filename || ('upload_' + Date.now()), data_url, req.member.id]
+    );
+    res.json({
+      success: true,
+      url: data_url,
+      id: rows[0].id,
+      size_kb: Math.round(sizeBytes / 1024)
+    });
+  } catch (err) { next(err); }
+});
+
+// GET /api/cms/media/list — list all uploaded media
+router.get('/media/list', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, section AS kind, key AS filename, value_url AS url, updated_at
+       FROM cms_content WHERE page='_media'
+       ORDER BY updated_at DESC LIMIT 100`
+    );
+    res.json({ media: rows });
+  } catch (err) { next(err); }
+});
+
+
 module.exports = router;

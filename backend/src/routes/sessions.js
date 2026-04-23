@@ -18,12 +18,15 @@ router.get('/', optionalAuth, async (req, res, next) => {
       `SELECT s.id, s.name, s.description, s.scheduled_at, s.ends_at,
               s.location, s.location_maps_url, s.session_type, s.price,
               s.capacity, s.points_reward, s.status, s.is_live_enabled,
+              s.session_category, s.sport_type, s.courts, s.cancellation_reason,
+              s.city_id, s.coach_id,
               t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
               c.name AS city_name,
               m.first_name AS coach_first, m.last_name AS coach_last,
               m.avatar_url AS coach_avatar,
+              TRIM(CONCAT(m.first_name, ' ', m.last_name)) AS coach_name,
               (SELECT COUNT(*) FROM bookings b
-               WHERE b.session_id=s.id AND b.status='confirmed') AS bookings_count,
+               WHERE b.session_id=s.id AND b.status IN ('confirmed','attended')) AS registrations_count,
               (SELECT COUNT(*) FROM waiting_list wl WHERE wl.session_id=s.id) AS waitlist_count
        FROM sessions s
        LEFT JOIN tribes t ON t.id = s.tribe_id
@@ -46,9 +49,8 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
               t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
               c.name AS city_name,
               m.first_name AS coach_first, m.last_name AS coach_last,
-              m.avatar_url AS coach_avatar,
-              (SELECT COUNT(*) FROM bookings b
-               WHERE b.session_id=s.id AND b.status='confirmed') AS bookings_count,
+                            (SELECT COUNT(*) FROM bookings b
+               WHERE b.session_id=s.id AND b.status IN ('confirmed','attended')) AS registrations_count,
               (SELECT COUNT(*) FROM bookings b
                WHERE b.session_id=s.id AND b.status='attended') AS attended_count,
               (SELECT COUNT(*) FROM waiting_list wl WHERE wl.session_id=s.id) AS waitlist_count,
