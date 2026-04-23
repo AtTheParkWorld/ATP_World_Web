@@ -1117,6 +1117,50 @@ async function renderAmbassadors() {
 }
 
 
+
+function showAddAmbassador() {
+  var form = document.getElementById('addAmbForm');
+  if (form) { form.style.display = 'block'; form.scrollIntoView({behavior:'smooth'}); }
+}
+
+async function addAmbassador() {
+  var input = document.getElementById('newAmbInput').value.trim();
+  if (!input) { showToast('⚠️ Please enter member ID or email', true); return; }
+  var token = getToken();
+  try {
+    // First find the member
+    var search = await fetch(ATP_API + '/admin/members?search=' + encodeURIComponent(input), {
+      headers:{'Authorization':'Bearer '+token}
+    }).then(r=>r.json());
+    if (!search.members || !search.members.length) {
+      showToast('❌ Member not found', true); return;
+    }
+    // Use first match
+    var member = search.members[0];
+    // Make them ambassador
+    var res = await fetch(ATP_API + '/admin/members/' + member.id + '/ambassador', {
+      method: 'PATCH',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({enabled: true})
+    }).then(r=>r.json());
+    if (res.message || res.success) {
+      showToast('✅ ' + member.first_name + ' is now an Ambassador!');
+      document.getElementById('newAmbInput').value = '';
+      document.getElementById('addAmbForm').style.display = 'none';
+      setTimeout(function() {
+        renderAmbassadors();
+        loadMembersAPI && loadMembersAPI();
+        loadCoachesSection && loadCoachesSection();
+      }, 300);
+    } else {
+      showToast('❌ ' + (res.error || 'Failed'), true);
+    }
+  } catch(e) {
+    showToast('❌ ' + e.message, true);
+  }
+}
+
+
 function toggleAmbassador(id, enabled) {
   var m = MEMBERS_DATA.find(function(x){return x.id===id;});
   if (m) m.ambassadorActive = enabled;
