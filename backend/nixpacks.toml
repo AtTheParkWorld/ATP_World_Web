@@ -1,3 +1,6 @@
+[phases.setup]
+cmds = ["echo 'Build $(date)'"]
+
 [phases.install]
 cmds = ["npm install"]
 
