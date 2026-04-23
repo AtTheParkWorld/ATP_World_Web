@@ -59,7 +59,6 @@ app.get('/health', (req, res) => {
 const path = require('path');
 app.use(express.static(path.join(__dirname, '../public')));
 app.get('/admin', (req, res) => {
-  // Inline admin HTML (bypasses file cache issues)
   const fs = require('fs');
   const adminPath = require('path').join(__dirname, '../public/admin.html');
   try {
@@ -69,6 +68,19 @@ app.get('/admin', (req, res) => {
     res.send(html);
   } catch(e) {
     res.status(500).send('Admin panel file not found: ' + e.message);
+  }
+});
+// Public coach profile page
+app.get('/coach', (req, res) => {
+  const fs = require('fs');
+  const coachPath = require('path').join(__dirname, '../public/coach.html');
+  try {
+    const html = fs.readFileSync(coachPath, 'utf8');
+    res.setHeader('Content-Type', 'text/html');
+    res.setHeader('Cache-Control', 'public, max-age=300');
+    res.send(html);
+  } catch(e) {
+    res.status(404).send('Coach profile page not found');
   }
 });
 app.get('/sessions', (req, res) => res.sendFile(path.join(__dirname, '../public/sessions.html')));
