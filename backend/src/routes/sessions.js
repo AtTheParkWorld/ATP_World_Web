@@ -41,6 +41,17 @@ router.get('/', optionalAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── GET /api/sessions/tribes ──────────────────────────────────
+// Public — used by admin form dropdown + session filters
+router.get('/tribes', async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, name, slug, description, color FROM tribes ORDER BY name`
+    );
+    res.json({ tribes: rows });
+  } catch (err) { next(err); }
+});
+
 // ── GET /api/sessions/:id ─────────────────────────────────────
 router.get('/:id', optionalAuth, async (req, res, next) => {
   try {
@@ -300,19 +311,19 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const {
-      name, city_id, description, coach_id, location, location_maps_url,
+      name, tribe_id, city_id, description, coach_id, location, location_maps_url,
       session_type, capacity, scheduled_at, duration_mins, points_reward,
       is_live_enabled, session_category, sport_type, courts
     } = req.body;
 
     const { rows } = await query(
       `UPDATE sessions SET
-        name=$1, city_id=$2, description=$3, coach_id=$4, location=$5,
-        location_maps_url=$6, session_type=$7, capacity=$8, scheduled_at=$9,
-        duration_mins=$10, points_reward=$11, is_live_enabled=$12,
-        session_category=$13, sport_type=$14, courts=$15, updated_at=NOW()
-       WHERE id=$16 RETURNING *`,
-      [name, city_id, description, coach_id, location, location_maps_url,
+        name=$1, tribe_id=$2, city_id=$3, description=$4, coach_id=$5, location=$6,
+        location_maps_url=$7, session_type=$8, capacity=$9, scheduled_at=$10,
+        duration_mins=$11, points_reward=$12, is_live_enabled=$13,
+        session_category=$14, sport_type=$15, courts=$16, updated_at=NOW()
+       WHERE id=$17 RETURNING *`,
+      [name, tribe_id || null, city_id, description, coach_id, location, location_maps_url,
        session_type, capacity, scheduled_at, duration_mins, points_reward,
        is_live_enabled, session_category, sport_type || null,
        courts ? JSON.stringify(courts) : null, id]

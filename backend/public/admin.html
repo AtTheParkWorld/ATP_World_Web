@@ -453,6 +453,12 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
               </select>
             </div>
             <div class="admin-form-group">
+              <label class="admin-form-label">Tribe</label>
+              <select class="admin-form-select" id="sTribe">
+                <option value="">No tribe</option>
+              </select>
+            </div>
+            <div class="admin-form-group">
               <label class="admin-form-label">Country *</label>
               <select class="admin-form-select" id="sCountry" onchange="filterCitiesByCountry()">
                 <option value="">Select Country</option>
@@ -1023,7 +1029,7 @@ function adminLogin() {
       loadDashboardAPI();
       loadMembersAPI();
       loadCities();
-      loadCoaches();
+      loadCoaches(); loadTribes();
       loadDashboardWidgets && loadDashboardWidgets();
     } else if (data.token && data.member && !data.member.is_admin) {
       errEl.textContent = 'Account found but does not have admin access.';
@@ -1053,7 +1059,7 @@ document.getElementById('adminPass').addEventListener('keydown', function(e){
 
 // ── NAVIGATION ────────────────────────────────────────────────
 function showAdminSection(name, btn) {
-  if (name === 'sessions') { loadCities(); loadCoaches(); setTimeout(loadSessionsList, 300); }
+  if (name === 'sessions') { loadCities(); loadCoaches(); loadTribes(); setTimeout(loadSessionsList, 300); }
   ['dashboard','members','ambassadors','sessions','challenges','coaches','analytics','content'].forEach(function(s){
     document.getElementById('section-'+s).style.display = 'none';
   });
@@ -1383,6 +1389,19 @@ async function loadCoaches() {
   } catch(e) { console.warn('Coaches load error:', e.message); }
 }
 
+async function loadTribes() {
+  try {
+    var res = await fetch(ATP_API + '/sessions/tribes');
+    var data = await res.json();
+    var tribeEl = document.getElementById('sTribe');
+    if (!tribeEl) return;
+    tribeEl.innerHTML = '<option value="">No tribe</option>';
+    (data.tribes || []).forEach(function(t){
+      tribeEl.innerHTML += '<option value="'+t.id+'">'+t.name+' Tribe</option>';
+    });
+  } catch(e) { console.warn('Tribes load error:', e.message); }
+}
+
 function updateSportLevels() {
   buildCourtsUI();
 }
@@ -1520,6 +1539,7 @@ async function createSession() {
   var maps      = document.getElementById('sMaps').value.trim();
   var live      = document.getElementById('sLiveEnabled').checked;
   var coach_id  = document.getElementById('sCoach').value || null;
+  var tribe_id  = document.getElementById('sTribe').value || null;
   var cat       = (document.querySelector('.session-cat-btn.active') || {}).dataset?.cat || 'regular';
   var sport     = document.getElementById('sSport').value || null;
 
@@ -1560,7 +1580,7 @@ async function createSession() {
   var scheduled_at = repeat_dates ? repeat_dates[0] : document.getElementById('sEditDate')?.value;
 
   var payload = {
-    name, city_id, description: desc, coach_id, location,
+    name, tribe_id, city_id, description: desc, coach_id, location,
     location_maps_url: maps, session_type: stype, capacity,
     scheduled_at, duration_mins: duration, points_reward: points,
     is_live_enabled: live, session_category: cat,
@@ -1634,6 +1654,7 @@ function editSession(s) {
   document.getElementById('sPoints').value = s.points_reward || 10;
   document.getElementById('sType').value = s.session_type || 'free';
   if (s.coach_id) document.getElementById('sCoach').value = s.coach_id;
+  if (s.tribe_id) document.getElementById('sTribe').value = s.tribe_id;
   // Set city + country
   var cityObj = ALL_CITIES.find(function(c){ return c.id === s.city_id; });
   if (cityObj) {
@@ -2735,7 +2756,7 @@ async function cancelSession(sessionId, sessionName) {
   var _orig = window.showAdminSection;
   window.showAdminSection = function(name, btn) {
     if (_orig) _orig(name, btn);
-    if (name === 'sessions')   { loadCities(); loadCoaches(); setTimeout(loadSessionsList, 200); }
+    if (name === 'sessions')   { loadCities(); loadCoaches(); loadTribes(); setTimeout(loadSessionsList, 200); }
     if (name === 'challenges') { loadChallengesList(); populateChallengeCities(); regenerateBadge(); }
     if (name === 'coaches')    { loadCoachesSection(); }
     if (name === 'analytics')  { loadAnalytics(); }
