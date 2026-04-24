@@ -36,15 +36,20 @@ router.post('/register', async (req, res, next) => {
   try {
     const { first_name, last_name, email, phone, password } = req.body;
 
-    if (!first_name || !last_name || !email || !phone) {
-      return res.status(400).json({ error: 'First name, last name, email and phone are required' });
+    if (!first_name || !last_name || !email) {
+      return res.status(400).json({ error: 'First name, last name and email are required' });
     }
 
-    // Duplicate check
-    const existing = await query(
-      'SELECT id FROM members WHERE LOWER(email)=LOWER($1) OR phone=$2',
-      [email, phone]
-    );
+    // Duplicate check — email always, phone only if provided
+    const existing = phone
+      ? await query(
+          'SELECT id FROM members WHERE LOWER(email)=LOWER($1) OR phone=$2',
+          [email, phone]
+        )
+      : await query(
+          'SELECT id FROM members WHERE LOWER(email)=LOWER($1)',
+          [email]
+        );
     if (existing.rows.length) {
       return res.status(409).json({
         error: 'An account with this email or phone already exists',
@@ -61,7 +66,7 @@ router.post('/register', async (req, res, next) => {
         (id, member_number, first_name, last_name, email, phone, password_hash)
        VALUES ($1,$2,$3,$4,$5,$6,$7)
        RETURNING id, member_number, first_name, last_name, email`,
-      [id, member_number, first_name, last_name, email, phone, password_hash]
+      [id, member_number, first_name, last_name, email, phone || null, password_hash]
     );
 
     const member = rows[0];
@@ -448,6 +453,16 @@ router.post('/migrate-coach-role', async (req, res, next) => {
     await query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS is_coach BOOLEAN NOT NULL DEFAULT false`);
     await query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS coach_activated_at TIMESTAMPTZ`);
     await query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS coach_activated_by UUID REFERENCES members(id)`);
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/migrate-phone-nullable ─────────────────────
+router.post('/migrate-phone-nullable', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    await query(`ALTER TABLE members ALTER COLUMN phone DROP NOT NULL`).catch(()=>{});
     res.json({ success: true });
   } catch (err) { next(err); }
 });
