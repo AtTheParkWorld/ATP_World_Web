@@ -339,7 +339,9 @@ nav.scrolled{background:rgba(10,10,10,.97);border-bottom-color:rgba(122,194,49,.
         <p class="page-hero-sub">7,000 people showing up every week. Share sessions, take on challenges, read the blog.</p>
       </div>
       <div class="page-hero-stats">
+        <!-- MOCK: no public GET /api/members/count endpoint (only admin-scoped) -->
         <div class="ph-stat"><div class="ph-stat-num">7,000+</div><div class="ph-stat-label">Members</div></div>
+        <!-- Cities count populated from GET /api/cities at runtime -->
         <div class="ph-stat"><div class="ph-stat-num">3</div><div class="ph-stat-label">Cities</div></div>
       </div>
     </div>
@@ -422,6 +424,7 @@ nav.scrolled{background:rgba(10,10,10,.97);border-bottom-color:rgba(122,194,49,.
       </div>
 
       <!-- ── BLOG ── -->
+      <!-- MOCK: no GET /api/blog endpoint yet -->
       <div class="comm-panel" id="tab-blog">
         <div class="blog-grid" id="blogGrid"></div>
       </div>
@@ -430,6 +433,7 @@ nav.scrolled{background:rgba(10,10,10,.97);border-bottom-color:rgba(122,194,49,.
 
     <!-- SIDEBAR -->
     <aside class="comm-sidebar">
+      <!-- MOCK: no GET /api/community/next-session endpoint yet — sessions.html has its own /sessions wiring -->
       <div class="sidebar-widget">
         <div class="sw-title">Next Session</div>
         <div class="sw-body">
@@ -702,28 +706,27 @@ function submitPost() {
 }
 
 function createPost(txt, media) {
-  // Try real API post first
-  if (window.ATP && window.ATP.isLoggedIn()) {
-    window.ATP.community.post({content: txt}).then(function(data) {
-      var me = window.ATP.getUser() || {};
-      var ini = me.firstName ? (me.firstName[0]+(me.lastName||'')[0]).toUpperCase() : 'Y';
-      POSTS.unshift({id:data.post ? data.post.id : Date.now(),av:ini,
-        author:(me.firstName||'You')+' '+(me.lastName||''),tribe:'Community',
-        time:'Just now',text:txt,media:media,likes:0,comments:[],friendAdded:true,realId:data.post&&data.post.id});
-      renderFeedFromPosts();
-    }).catch(function(){
-      POSTS.unshift({id:Date.now(),av:'Y',author:'You',tribe:'Community',time:'Just now',text:txt,media:media,likes:0,comments:[],friendAdded:true});
-      renderFeedFromPosts();
-    });
+  // Clear composer immediately
+  var postTextEl = document.getElementById("postText");
+  var previewEl  = document.getElementById("mediaPreview");
+  var btnEl      = document.getElementById("postBtn");
+  if (postTextEl) postTextEl.value = "";
+  mediaFiles = [];
+  if (previewEl) { previewEl.innerHTML = ""; previewEl.classList.remove("has-items"); }
+  if (btnEl) btnEl.disabled = true;
+
+  // Backend requires auth — guard
+  if (typeof isApiLoggedIn === 'function' && !isApiLoggedIn()) {
+    if (typeof openAuth === 'function') openAuth('login');
     return;
   }
-  POSTS.unshift({id:Date.now(),av:"FM",author:"You",tribe:"Stronger",time:"Just now",text:txt,media:media,likes:0,comments:[],friendAdded:true});
-  document.getElementById("postText").value = "";
-  mediaFiles = [];
-  document.getElementById("mediaPreview").innerHTML = "";
-  document.getElementById("mediaPreview").classList.remove("has-items");
-  document.getElementById("postBtn").disabled = true;
-  renderPosts();
+  // media from file reader is data URLs — send as an array of {type,src} entries
+  var mediaPayload = (media || []).map(function(m){ return { type: m.type, src: m.src }; });
+  apiPost('/community/posts', { content: txt, media: mediaPayload })
+    .then(function(){ loadFeed(); })
+    .catch(function(err){
+      alert('Could not post: ' + (err && err.message ? err.message : 'Please try again.'));
+    });
 }
 
 function renderPosts() {
@@ -830,16 +833,52 @@ function buildPostCard(post) {
 function likePost(id, btn) {
   var post = POSTS.find(function(p){return p.id===id;});
   if(!post) return;
+  if (typeof isApiLoggedIn === 'function' && !isApiLoggedIn()) {
+    if (typeof openAuth === 'function') openAuth('login');
+    return;
+  }
+  // Optimistic toggle
   post.liked = !post.liked;
   post.likes += post.liked ? 1 : -1;
   btn.classList.toggle("liked", post.liked);
   document.getElementById("likes-"+id).textContent = post.likes;
+  // Real request (posts use UUIDs from backend; skip for mock ids)
+  if (post.realId) {
+    apiPost('/community/posts/' + post.realId + '/like').catch(function(){
+      // Revert on failure
+      post.liked = !post.liked;
+      post.likes += post.liked ? 1 : -1;
+      btn.classList.toggle("liked", post.liked);
+      document.getElementById("likes-"+id).textContent = post.likes;
+    });
+  }
 }
 
 function toggleComments(id) {
   var el = document.getElementById("comments-"+id);
   el.style.display = el.style.display==="none" ? "block" : "none";
-  if(el.style.display==="block") el.querySelector(".comment-input").focus();
+  if(el.style.display==="block") {
+    el.querySelector(".comment-input").focus();
+    // Lazy-load comments from backend
+    var post = POSTS.find(function(p){return p.id===id;});
+    if (post && post.realId && !post.commentsLoaded) {
+      post.commentsLoaded = true;
+      apiGet('/community/posts/' + post.realId + '/comments').then(function(data){
+        post.comments = (data.comments || []).map(function(c){
+          return {
+            av: initials(c.first_name, c.last_name),
+            author: (c.first_name || '') + (c.last_name ? ' ' + c.last_name : ''),
+            text: c.content || '',
+            replies: [],
+            realId: c.id,
+          };
+        });
+        renderPosts();
+        var re = document.getElementById("comments-"+id);
+        if (re) re.style.display = 'block';
+      }).catch(function(){ /* keep empty */ });
+    }
+  }
 }
 
 function addComment(id) {
@@ -847,13 +886,38 @@ function addComment(id) {
   var txt = input.value.trim();
   if(!txt) return;
   var post = POSTS.find(function(p){return p.id===id;});
-  post.comments.push({av:"FM",author:"You",text:txt,replies:[]});
-  input.value = "";
-  renderPosts();
-  setTimeout(function(){
-    var el=document.getElementById("comments-"+id);
-    if(el) el.style.display="block";
-  },10);
+  if (!post) return;
+  if (typeof isApiLoggedIn === 'function' && !isApiLoggedIn()) {
+    if (typeof openAuth === 'function') openAuth('login');
+    return;
+  }
+  if (!post.realId) {
+    // Local-only post (shouldn't happen once wired), fall back
+    post.comments.push({av:"Y",author:"You",text:txt,replies:[]});
+    input.value = "";
+    renderPosts();
+    setTimeout(function(){ var el=document.getElementById("comments-"+id); if(el) el.style.display="block"; },10);
+    return;
+  }
+  apiPost('/community/posts/' + post.realId + '/comments', { content: txt })
+    .then(function(data){
+      var me = null;
+      try { me = JSON.parse(localStorage.getItem('atp:user') || 'null'); } catch(e){}
+      post.comments.push({
+        av: me ? initials(me.first_name, me.last_name) : 'Y',
+        author: me ? ((me.first_name || 'You') + (me.last_name ? ' ' + me.last_name : '')) : 'You',
+        text: txt,
+        replies: [],
+        realId: data.comment && data.comment.id,
+      });
+      post.commentsCount = (post.commentsCount || 0) + 1;
+      input.value = "";
+      renderPosts();
+      setTimeout(function(){ var el=document.getElementById("comments-"+id); if(el) el.style.display="block"; },10);
+    })
+    .catch(function(err){
+      alert('Could not post comment: ' + (err && err.message ? err.message : 'Please try again.'));
+    });
 }
 
 function likeComment(postId, ci, btn) { btn.textContent = btn.textContent==="Like" ? "Liked ✓" : "Like"; }
@@ -870,7 +934,19 @@ function replyComment(postId, ci, btn) {
 
 function sendFriendReq(id) {
   var btn = document.getElementById("freq-"+id);
-  if(btn) { btn.textContent="Sent ✓"; btn.classList.add("sent"); }
+  if (typeof isApiLoggedIn === 'function' && !isApiLoggedIn()) {
+    if (typeof openAuth === 'function') openAuth('login');
+    return;
+  }
+  var post = POSTS.find(function(p){return p.id===id;});
+  if (!post || !post.memberId) {
+    if (btn) { btn.textContent="Sent ✓"; btn.classList.add("sent"); }
+    return;
+  }
+  if (btn) { btn.textContent="Sending…"; btn.disabled = true; }
+  apiPost('/members/friends/request', { target_id: post.memberId })
+    .then(function(){ if (btn) { btn.textContent="Sent ✓"; btn.classList.add("sent"); btn.disabled = true; } })
+    .catch(function(){ if (btn) { btn.textContent="+ Friend"; btn.disabled = false; } });
 }
 
 function mediaScroll(id, dir) {
@@ -1030,9 +1106,25 @@ function renderChallenges() {
 function joinChallenge(id, btn) {
   var c = CHALLENGES.find(function(x){return x.id===id;});
   if(!c) return;
-  c.joined = !c.joined;
-  if(c.joined) c.participants++;
-  renderChallenges();
+  if (typeof isApiLoggedIn === 'function' && !isApiLoggedIn()) {
+    if (typeof openAuth === 'function') openAuth('login');
+    return;
+  }
+  if (c.joined) {
+    // Already joined — no leave endpoint; surface progress only
+    return;
+  }
+  if (btn) { btn.disabled = true; btn.textContent = 'Joining…'; }
+  apiPost('/challenges/' + c.id + '/join')
+    .then(function(){
+      c.joined = true;
+      c.participants = (c.participants || 0) + 1;
+      renderChallenges();
+    })
+    .catch(function(err){
+      if (btn) { btn.disabled = false; btn.textContent = 'Join Challenge'; }
+      alert('Could not join challenge: ' + (err && err.message ? err.message : 'Please try again.'));
+    });
 }
 
 function renderSidebarChallenges() {
@@ -1075,9 +1167,8 @@ function renderBlog() {
 }
 
 // ── INIT ─────────────────────────────────────────────────────
-renderPosts();
-renderLeaderboard();
-renderChallenges();
+// Feed, leaderboard and challenges are loaded from the backend
+// by the boot() block below. Blog stays mocked (no API yet).
 renderBlog();
 
 setTimeout(function(){
@@ -1335,125 +1426,276 @@ document.addEventListener('keydown', function(e){
 // ══════════════════════════════════════════════════════════════
 
 
-// ── ATP API INIT ─────────────────────────────────────────────
-(function() {
-  // Load real community feed
-  function loadRealFeed() {
-    if (!window.ATP) return;
-    window.ATP.community.feed().then(function(data) {
-      if (!data.posts || !data.posts.length) return;
-      // Map API posts to POSTS format and re-render
-      var me = window.ATP.getUser();
-      var apiPosts = data.posts.map(function(p) {
-        var ini = p.author_first ? (p.author_first[0]+(p.author_last||'')[0]).toUpperCase() : '?';
-        var dt = new Date(p.created_at);
-        var ago = getTimeAgo(dt);
-        return {
-          id:       p.id,
-          av:       ini,
-          author:   (p.author_first||'') + ' ' + (p.author_last||''),
-          tribe:    p.tribe_name || 'Community',
-          time:     ago,
-          text:     p.content || '',
-          media:    (p.media_urls||[]).map(function(u){return{type:'image',src:u};}),
-          likes:    parseInt(p.likes_count)||0,
-          comments: (p.recent_comments||[]).map(function(c){
-            return {av:(c.first_name||'?')[0].toUpperCase(), author:c.first_name+' '+(c.last_name||''), text:c.content, replies:[]};
-          }),
-          liked:    p.liked_by_me || false,
-          friendAdded: true,
-          realId:   p.id,
-        };
-      });
-      if (apiPosts.length > 0) {
-        POSTS = apiPosts;
-        renderFeedFromPosts();
-        console.log('✅ Community feed:', apiPosts.length, 'posts from DB');
+// ══════════════════════════════════════════════════════════════
+// ATP BACKEND WIRING — uses admin.html helper pattern
+// Base: https://atpworldweb-production.up.railway.app/api
+// Token:  localStorage.atp_token  (written on login — see above)
+// Also falls back to atp:jwt used by atp-api.js, so sessions
+// established through either path keep working.
+// ══════════════════════════════════════════════════════════════
+var ATP_API = 'https://atpworldweb-production.up.railway.app/api';
+function getApiToken() {
+  return localStorage.getItem('atp_token') || localStorage.getItem('atp:jwt') || '';
+}
+function isApiLoggedIn() { return !!getApiToken(); }
+function apiHeaders(extra) {
+  var h = {};
+  var t = getApiToken();
+  if (t) h['Authorization'] = 'Bearer ' + t;
+  if (extra) for (var k in extra) h[k] = extra[k];
+  return h;
+}
+function apiGet(path) {
+  return fetch(ATP_API + path, { headers: apiHeaders() })
+    .then(function(r) { if (!r.ok) throw new Error('HTTP '+r.status); return r.json(); });
+}
+function apiPost(path, body) {
+  return fetch(ATP_API + path, {
+    method: 'POST',
+    headers: apiHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(body || {})
+  }).then(function(r) { if (!r.ok) throw new Error('HTTP '+r.status); return r.json(); });
+}
+function apiPatch(path, body) {
+  return fetch(ATP_API + path, {
+    method: 'PATCH',
+    headers: apiHeaders({ 'Content-Type': 'application/json' }),
+    body: JSON.stringify(body || {})
+  }).then(function(r) { if (!r.ok) throw new Error('HTTP '+r.status); return r.json(); });
+}
+
+// ── Helpers ──────────────────────────────────────────────────
+function timeAgo(iso) {
+  var diff = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (diff < 60)     return 'Just now';
+  if (diff < 3600)   return Math.floor(diff/60) + 'm ago';
+  if (diff < 86400)  return Math.floor(diff/3600) + 'h ago';
+  if (diff < 604800) return Math.floor(diff/86400) + 'd ago';
+  return new Date(iso).toLocaleDateString();
+}
+function initials(first, last) {
+  return ((first||'?')[0] + ((last||'')[0]||'')).toUpperCase();
+}
+function escapeHtml(s) {
+  if (s == null) return '';
+  return String(s).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+// ── Composer guard ───────────────────────────────────────────
+function updateComposerGuard() {
+  var composer = document.querySelector('.post-composer');
+  if (!composer) return;
+  if (!isApiLoggedIn()) {
+    composer.innerHTML =
+      '<div style="padding:22px 20px;text-align:center">' +
+        '<div style="font-size:14px;color:var(--light);margin-bottom:12px">Log in to share sessions, like posts, and join challenges.</div>' +
+        '<button class="post-btn" onclick="openAuth(\'login\')">Log in to interact</button>' +
+      '</div>';
+  }
+}
+
+// ── FEED ─────────────────────────────────────────────────────
+function renderFeedLoading() {
+  document.getElementById('postsContainer').innerHTML =
+    '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Loading community feed…</div>';
+}
+function renderFeedEmpty() {
+  document.getElementById('postsContainer').innerHTML =
+    '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">No posts yet. Be the first to share!</div>';
+}
+function renderFeedError(msg) {
+  document.getElementById('postsContainer').innerHTML =
+    '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Could not load feed. '+escapeHtml(msg||'Please try again.')+'</div>';
+}
+
+function mapApiPost(p) {
+  var media = [];
+  if (Array.isArray(p.media)) {
+    media = p.media.map(function(m) {
+      if (typeof m === 'string') return { type: 'image', src: m };
+      return { type: (m.type || 'image'), src: (m.src || m.url || '') };
+    }).filter(function(m){ return m.src; });
+  }
+  return {
+    id:       p.id,
+    realId:   p.id,
+    av:       initials(p.first_name, p.last_name),
+    author:   (p.first_name || '') + (p.last_name ? ' ' + p.last_name : ''),
+    tribe:    p.tribe_name || 'Community',
+    time:     p.created_at ? timeAgo(p.created_at) : '',
+    text:     p.content || '',
+    media:    media,
+    likes:    parseInt(p.likes_count) || 0,
+    comments: [],  // loaded on demand via /comments
+    commentsCount: parseInt(p.comments_count) || 0,
+    liked:    !!p.liked_by_me,
+    friendAdded: true,
+    memberId: p.member_id,
+    commentsLoaded: false,
+  };
+}
+
+async function loadFeed() {
+  renderFeedLoading();
+  try {
+    var data = await apiGet('/community/feed?limit=20');
+    var apiPosts = (data.posts || []).map(mapApiPost);
+    POSTS = apiPosts;
+    if (!POSTS.length) { renderFeedEmpty(); return; }
+    renderPosts();
+  } catch (err) {
+    console.warn('Feed load failed:', err);
+    renderFeedError(err && err.message);
+  }
+}
+
+// Override buildPostCard so the collapsed comment icon reflects the
+// backend comments_count (the base renderer only shows post.comments.length,
+// which is 0 until the comment list is lazy-loaded on click).
+var _origBuildPostCard = buildPostCard;
+buildPostCard = function(post) {
+  var html = _origBuildPostCard(post);
+  if (post.commentsCount != null && post.comments.length === 0 && post.commentsCount > 0) {
+    // Replace ONLY the comment button's trailing "0" with the real count.
+    // The base template ends the comment <button> with "</svg>" then the count then "</button>".
+    var needle = 'toggleComments(' + post.id + ')';
+    var idx = html.indexOf(needle);
+    if (idx !== -1) {
+      var svgEnd = html.indexOf('</svg>', idx);
+      if (svgEnd !== -1) {
+        var closeBtn = html.indexOf('</button>', svgEnd);
+        if (closeBtn !== -1) {
+          html = html.substring(0, svgEnd + 6) + post.commentsCount + html.substring(closeBtn);
+        }
       }
-    }).catch(function(e){ console.warn('Feed API:', e); });
-  }
-
-  function getTimeAgo(dt) {
-    var diff = (Date.now() - dt.getTime()) / 1000;
-    if (diff < 60)   return 'Just now';
-    if (diff < 3600) return Math.floor(diff/60) + 'm ago';
-    if (diff < 86400) return Math.floor(diff/3600) + 'h ago';
-    return Math.floor(diff/86400) + 'd ago';
-  }
-
-  function renderFeedFromPosts() {
-    var feed = document.getElementById('feedList') || document.querySelector('#tab-feed .feed-list, #tab-feed [class*="feed"]');
-    if (!feed) { feed = document.querySelector('#tab-feed'); }
-    if (!feed) return;
-    var html = POSTS.map(function(p){ return buildPostCard(p); }).join('');
-    // Find the post composer and inject after it
-    var composer = feed.querySelector('.post-composer, .compose-wrap');
-    if (composer) {
-      var existingCards = feed.querySelectorAll('.post-card');
-      existingCards.forEach(function(c){ c.remove(); });
-      composer.insertAdjacentHTML('afterend', html);
-    } else {
-      feed.innerHTML = html;
     }
   }
+  return html;
+};
 
-  // Load real leaderboard
-  function loadRealLeaderboard(period) {
-    if (!window.ATP) return;
-    window.ATP.members.leaderboard(period).then(function(data) {
-      if (data.leaderboard) {
-        console.log('✅ Leaderboard loaded:', data.leaderboard.length, 'members');
-        // Trigger existing render if it exists
-        if (typeof renderLeaderboard === 'function') renderLeaderboard(data.leaderboard);
-      }
-    }).catch(function(){});
-  }
-
-  // Load real challenges from API
-  function loadRealChallenges() {
-    if (!window.ATP) return;
-    window.ATP.challenges.list().then(function(data) {
-      if (!data.challenges || !data.challenges.length) return;
-      CHALLENGES = data.challenges.map(function(c) {
-        return {
-          id: c.id, icon: c.icon || '🏆', title: c.name,
-          desc: c.description || '', type: c.challenge_type || 'monthly',
-          metric: c.metric_type || 'Sessions', target: c.target_value || 10,
-          unit: c.unit || 'sessions', participants: c.participants_count || 0,
-          joined: c.my_progress !== undefined, done: c.my_progress || 0,
-        };
-      });
-      renderChallenges();
-      console.log('✅ Challenges:', CHALLENGES.length, 'from DB');
-    }).catch(function(){});
-  }
-
-  if (!window.ATP) return;
-  loadRealFeed();
-  loadRealChallenges();
-  window.ATP.init().then(function(member) {
-    if (!member) return;
-    // Sync to legacy auth state
-    if (typeof atpUser !== 'undefined' && atpUser === null) {
-      atpUser = {
-        firstName: member.first_name, lastName: member.last_name,
-        email: member.email, avatar: member.avatar_url ||
-          (member.first_name[0] + (member.last_name||'X')[0]).toUpperCase(),
-        joinedAt: member.joined_at, memberId: member.id,
-        memberNumber: member.member_number,
-        ambassador: member.is_ambassador, admin: member.is_admin,
+// ── LEADERBOARD ──────────────────────────────────────────────
+async function loadLeaderboard() {
+  var body = document.getElementById('lbBody');
+  body.innerHTML = '<tr><td colspan="4" style="padding:30px;text-align:center;color:var(--muted);font-size:13px">Loading leaderboard…</td></tr>';
+  try {
+    // Backend supports mtd|ytd; 'all' falls back to same endpoint without date filter by using a long period
+    var period = currentPeriod === 'all' ? 'all' : currentPeriod;
+    var data = await apiGet('/members/leaderboard?period=' + encodeURIComponent(period));
+    var rows = (data.leaderboard || []);
+    if (!rows.length) {
+      body.innerHTML = '<tr><td colspan="4" style="padding:30px;text-align:center;color:var(--muted);font-size:13px">No ranking data yet.</td></tr>';
+      return;
+    }
+    var myId = null;
+    try {
+      var u = JSON.parse(localStorage.getItem('atp:user') || 'null');
+      myId = u && u.id;
+    } catch(e) {}
+    var mapped = rows.map(function(m) {
+      return {
+        init: initials(m.first_name, m.last_name),
+        name: (m.first_name || '') + (m.last_name ? ' ' + m.last_name : ''),
+        tribe: m.city_name || 'Community',
+        pts: parseInt(m.period_points) || 0,
+        chg: 0,
+        you: myId && m.id === myId,
       };
-      if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
+    });
+    _renderLeaderboardRows(mapped);
+  } catch (err) {
+    body.innerHTML = '<tr><td colspan="4" style="padding:30px;text-align:center;color:var(--muted);font-size:13px">Could not load leaderboard.</td></tr>';
+  }
+}
+
+// Replace the leaderboard renderer entrypoint
+renderLeaderboard = loadLeaderboard;
+
+// ── CHALLENGES ───────────────────────────────────────────────
+async function loadChallenges() {
+  var container = document.getElementById('challengesContainer');
+  container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Loading challenges…</div>';
+  try {
+    var data = await apiGet('/challenges');
+    var list = (data.challenges || []).map(function(c) {
+      return {
+        id:           c.id,
+        icon:         c.icon || '🏆',
+        title:        c.title,
+        desc:         c.description || '',
+        type:         c.challenge_type || 'monthly',
+        metric:       c.metric || 'Sessions',
+        target:       parseInt(c.target) || 0,
+        unit:         c.unit || (c.metric || 'units'),
+        participants: parseInt(c.participant_count) || 0,
+        joined:       !!c.joined,
+        done:         parseInt(c.my_progress) || 0,
+        pointsReward: parseInt(c.points_reward) || 0,
+      };
+    });
+    CHALLENGES = list;
+    if (!CHALLENGES.length) {
+      container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">No active challenges right now. Check back soon!</div>';
+      renderSidebarChallenges();
+      return;
     }
-    // Ambassador: show checkin link
-    if (member.is_ambassador && typeof checkAmbassadorRole === 'function') {
-      checkAmbassadorRole();
+    renderChallenges();
+  } catch (err) {
+    container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Could not load challenges.</div>';
+  }
+}
+
+// ── HERO CITIES COUNT ────────────────────────────────────────
+async function loadCitiesStat() {
+  try {
+    var data = await apiGet('/cities');
+    var cities = data.cities || [];
+    if (!cities.length) return;
+    var statEls = document.querySelectorAll('.page-hero-stats .ph-stat');
+    // second stat is cities
+    if (statEls.length >= 2) {
+      var numEl = statEls[1].querySelector('.ph-stat-num');
+      if (numEl) numEl.textContent = cities.length;
     }
-    // Store ambassador flag for checkin page
-    if (member.is_ambassador) {
-      localStorage.setItem('atp:ambassador', 'true');
-    }
-  }).catch(function() {});
+  } catch (err) { /* leave mock */ }
+}
+
+// ── INIT KICKOFF ─────────────────────────────────────────────
+(function boot() {
+  updateComposerGuard();
+  loadFeed();
+  loadChallenges();
+  loadLeaderboard();
+  loadCitiesStat();
+
+  // Sync atp-api.js session into legacy atpUser if available (keeps nav in sync)
+  if (window.ATP && typeof window.ATP.init === 'function') {
+    window.ATP.init().then(function(member) {
+      if (!member) return;
+      // Mirror token to admin-style key so apiPost/Get work uniformly
+      var jwt = localStorage.getItem('atp:jwt');
+      if (jwt && !localStorage.getItem('atp_token')) {
+        localStorage.setItem('atp_token', jwt);
+      }
+      if (typeof atpUser !== 'undefined' && atpUser === null) {
+        atpUser = {
+          firstName: member.first_name, lastName: member.last_name,
+          email: member.email,
+          avatar: member.avatar_url || initials(member.first_name, member.last_name),
+          joinedAt: member.joined_at, memberId: member.id,
+          memberNumber: member.member_number,
+          ambassador: member.is_ambassador, admin: member.is_admin,
+        };
+        if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
+      }
+      if (member.is_ambassador) {
+        localStorage.setItem('atp:ambassador', 'true');
+      }
+      // Re-render composer guard now that we know the user is logged in
+      updateComposerGuard();
+    }).catch(function(){});
+  }
 })();
 
 </script>

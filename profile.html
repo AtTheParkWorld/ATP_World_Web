@@ -467,6 +467,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
       </div>
 
       <!-- STREAK -->
+      <!-- MOCK: no GET /api/members/streak endpoint yet -->
       <div class="profile-panel" id="panel-streak">
         <div class="widget">
           <div class="widget-head"><span class="widget-title">My Streak</span></div>
@@ -491,6 +492,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
       </div>
 
       <!-- ACHIEVEMENTS -->
+      <!-- MOCK: no GET /api/achievements endpoint yet -->
       <div class="profile-panel" id="panel-achievements">
         <div class="widget">
           <div class="widget-head"><span class="widget-title">Achievements</span><span style="font-size:12px;color:var(--muted)">8 of 24 unlocked</span></div>
@@ -820,6 +822,21 @@ var LOGO_SRC = "https://raw.githubusercontent.com/AtTheParkWorld/ATP_World_Web/m
   imgs.forEach(function(img){if(img)img.src=LOGO_SRC;});
 })();
 
+// ── AUTH GATE ───────────────────────────────────────────────
+// Require login to view profile. No token → send back to index.
+(function(){
+  if (!localStorage.getItem('atp_token')) {
+    window.location.replace('index.html');
+  }
+})();
+
+// Handle 401 from any ATP API call (atp.js dispatches this event on 401)
+window.addEventListener('atp:logout', function(){
+  localStorage.removeItem('atp_token');
+  localStorage.removeItem('atp_member');
+  window.location.replace('index.html');
+});
+
 // ── NAV ─────────────────────────────────────────────────────
 var navEl=document.getElementById("nav");
 window.addEventListener("scroll",function(){navEl.classList.toggle("scrolled",window.scrollY>40);},{passive:true});
@@ -1074,8 +1091,13 @@ function renderChallenges() {
 }
 
 function markAllRead() {
+  if (window.ATP && window.ATP.isLoggedIn() && window.ATP.notifications && window.ATP.notifications.readAll) {
+    window.ATP.notifications.readAll().catch(function(){});
+  }
   NOTIFS.forEach(function(n){n.unread=false;});
   renderNotifs();
+  var notifCount = document.getElementById('notifCount');
+  if (notifCount) { notifCount.textContent = '0'; notifCount.style.display = 'none'; }
 }
 
 function acceptFriend(i,btn){
@@ -1098,11 +1120,78 @@ function togglePill(btn){btn.classList.toggle("sel");}
 function setPadel(btn){document.querySelectorAll(".padel-btn").forEach(function(b){b.classList.remove("sel");});btn.classList.add("sel");}
 
 function saveProfile(){
-  var n=document.getElementById("fFirstName").value+" "+document.getElementById("fLastName").value;
-  document.getElementById("profileName").textContent=n;
-  document.getElementById("avatarInitials").textContent=(n[0]+(n.split(" ")[1]||"")[0]||"").toUpperCase();
-  showMessage("Profile saved ✓");
-  showTab("overview");
+  if (!window.ATP || !window.ATP.isLoggedIn()) {
+    showMessage('Please log in first');
+    return;
+  }
+  // Gather form values
+  var firstName = document.getElementById('fFirstName').value.trim();
+  var lastName  = document.getElementById('fLastName').value.trim();
+  var dob       = document.getElementById('fDob').value || null;
+  var nationality = document.getElementById('fNationality').value.trim() || null;
+  var genderSel = document.getElementById('fGender');
+  var gender    = genderSel ? genderSel.value : null;
+  var phone     = document.getElementById('fMobile').value.trim() || null;
+  var topSize   = document.getElementById('fTopSize').value;
+  var botSize   = document.getElementById('fBotSize').value;
+  var pwd       = document.getElementById('fPwd').value;
+  var pwd2      = document.getElementById('fPwd2').value;
+
+  // Sport pills → sports_preferences array
+  var selectedSports = [];
+  document.querySelectorAll('#sportPills .sport-pill.sel').forEach(function(p){
+    selectedSports.push(p.textContent.trim());
+  });
+
+  // Padel level (lowercase single word)
+  var padelLevel = null;
+  var selectedPadel = document.querySelector('.padel-btn.sel');
+  if (selectedPadel) padelLevel = selectedPadel.textContent.trim().toLowerCase();
+
+  var payload = {
+    first_name:         firstName,
+    last_name:          lastName,
+    phone:              phone,
+    date_of_birth:      dob,
+    gender:             gender,
+    nationality:        nationality,
+    sports_preferences: selectedSports,
+    top_size:           topSize,
+    bottom_size:        botSize,
+    padel_level:        padelLevel,
+  };
+
+  // Password change (separate endpoint if user entered one)
+  var passwordPromise = Promise.resolve();
+  if (pwd || pwd2) {
+    if (pwd !== pwd2) { showMessage('Passwords do not match'); return; }
+    if (pwd.length < 8) { showMessage('Password must be at least 8 characters'); return; }
+    passwordPromise = fetch('https://atpworldweb-production.up.railway.app/api/auth/change-password', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + (localStorage.getItem('atp_token')||'') },
+      body: JSON.stringify({ new_password: pwd }),
+    }).then(function(r){ return r.json(); });
+  }
+
+  window.ATP.members.updateProfile(payload).then(function(res){
+    if (res && res.error) { showMessage('Error: ' + res.error); return; }
+    return passwordPromise.then(function(pwdRes){
+      if (pwdRes && pwdRes.error) { showMessage('Profile saved, password: ' + pwdRes.error); return; }
+      // Update header locally
+      var fullName = (firstName + ' ' + lastName).trim();
+      document.getElementById('profileName').textContent = fullName;
+      document.getElementById('avatarInitials').textContent = initialsOf(firstName, lastName);
+      // Clear password fields
+      document.getElementById('fPwd').value = '';
+      document.getElementById('fPwd2').value = '';
+      showMessage('Profile saved ✓');
+      // Refresh member data
+      window.ATP.auth.me().then(function(res){
+        var m = (res && res.member) ? res.member : res;
+        if (m && m.id) applyMemberToPage(m);
+      }).catch(function(){});
+    });
+  }).catch(function(){ showMessage('Connection error — please try again'); });
 }
 
 function showMessage(msg){
@@ -1180,57 +1269,317 @@ SESSIONS = getSessionsData();
 // ── INIT ────────────────────────────────────────────────────
 renderStreakGrid(document.getElementById("streakMiniGrid"),28);
 
-// Load real data from API
-function loadRealProfileData() {
-  if (!window.ATP || !window.ATP.isLoggedIn()) return;
-  var h = {'Authorization':'Bearer '+(localStorage.getItem('atp_token')||'')};
+// ── REAL MEMBER (loaded from /auth/me) ──────────────────────
+var CURRENT_MEMBER = null;
 
-  // Real member profile
-  window.ATP.members.profile().then(function(m) {
-    if (!m || m.error) return;
-    // Update name/avatar in header
-    var nameEl = document.querySelector('.profile-name, .member-name, h1.name');
-    if (nameEl) nameEl.textContent = m.first_name + ' ' + (m.last_name||'');
-    var numEl = document.querySelector('.member-number, .profile-id');
-    if (numEl) numEl.textContent = m.member_number || '';
-    var ptEl = document.querySelector('.points-balance, .wallet-balance');
-    if (ptEl) ptEl.textContent = (m.points_balance||0).toLocaleString();
-    console.log('✅ Profile loaded:', m.first_name, m.member_number);
+function formatDateShort(iso) {
+  if (!iso) return '';
+  try {
+    var d = new Date(iso);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+  } catch(e) { return ''; }
+}
+function initialsOf(first, last) {
+  var a = (first||'').trim(); var b = (last||'').trim();
+  return ((a[0]||'') + (b[0]||'')).toUpperCase() || 'M';
+}
+
+// Populate profile header + sidebar from /auth/me member object
+function applyMemberToPage(m) {
+  if (!m || m.error) return;
+  CURRENT_MEMBER = m;
+
+  var fullName = (m.first_name||'') + ' ' + (m.last_name||'');
+  fullName = fullName.trim() || 'ATP Member';
+
+  // Header — name
+  var nameEl = document.getElementById('profileName');
+  if (nameEl) nameEl.textContent = fullName;
+
+  // Avatar — image or initials
+  var avatarEl = document.getElementById('profileAvatar');
+  var initialsSpan = document.getElementById('avatarInitials');
+  if (initialsSpan) initialsSpan.textContent = initialsOf(m.first_name, m.last_name);
+  if (avatarEl && m.avatar_url) {
+    var existingImg = avatarEl.querySelector('img');
+    if (!existingImg) {
+      var img = document.createElement('img');
+      img.src = m.avatar_url;
+      img.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%';
+      avatarEl.insertBefore(img, avatarEl.firstChild);
+      if (initialsSpan) initialsSpan.style.display = 'none';
+    } else {
+      existingImg.src = m.avatar_url;
+    }
+  }
+
+  // Member badge (Free / Premium) + member number + joined year
+  var subBadge = document.getElementById('subBadge');
+  if (subBadge) {
+    var sub = (m.subscription_type || 'free').toLowerCase();
+    subBadge.textContent = sub === 'premium' ? 'Premium Member' : 'Free Member';
+    subBadge.className = 'member-badge' + (sub === 'premium' ? ' premium' : '');
+  }
+  var subName = document.getElementById('subName');
+  if (subName) subName.textContent = (m.subscription_type || 'Free').replace(/^./, function(c){ return c.toUpperCase(); });
+
+  var memberNumEl = document.querySelector('.profile-sub .member-num');
+  if (memberNumEl) {
+    var joinedYear = m.joined_at ? new Date(m.joined_at).getFullYear() : '—';
+    memberNumEl.textContent = '#' + (m.member_number || '—') + ' · Member since ' + joinedYear;
+  }
+
+  // Sidebar "Quick Stats"
+  var quickStats = document.querySelectorAll('.sub-card');
+  quickStats.forEach(function(card){
+    var label = card.querySelector('.sub-card-label');
+    if (!label || label.textContent.trim() !== 'Quick Stats') return;
+    var rows = card.querySelectorAll('div[style*="justify-content:space-between"]');
+    // Row order: Member since, Home city, Favourite tribe, Padel level
+    if (rows[0]) rows[0].querySelectorAll('span')[1].textContent = m.joined_at ? new Date(m.joined_at).getFullYear() : '—';
+    if (rows[1]) rows[1].querySelectorAll('span')[1].textContent = m.city_name || '—';
+    if (rows[2]) rows[2].querySelectorAll('span')[1].textContent = (m.tribe_name || '—');
+    if (rows[3]) rows[3].querySelectorAll('span')[1].textContent = (m.padel_level || '—').replace(/^./, function(c){ return c.toUpperCase(); });
+  });
+
+  // Stats bar — sessions count and points from member
+  var nums = document.querySelectorAll('.pstat-num');
+  if (nums[0]) nums[0].textContent = m.sessions_count || 0;
+  if (nums[2]) nums[2].textContent = (m.points_balance || 0).toLocaleString();
+  if (nums[3]) nums[3].textContent = m.referrals_count || 0;
+
+  // Wallet points
+  var walletPts = document.querySelector('.wallet-points');
+  if (walletPts) walletPts.textContent = (m.points_balance || 0).toLocaleString();
+
+  // Nav avatar (replace the login/signup buttons)
+  var actions = document.getElementById('navActions');
+  if (actions) {
+    actions.innerHTML =
+      '<div class="nav-user">' +
+        '<div class="nav-avatar" title="' + fullName + '">' + initialsOf(m.first_name, m.last_name) + '</div>' +
+        '<div>' +
+          '<div class="nav-user-name">' + (m.first_name||'') + '</div>' +
+          '<button class="nav-logout" onclick="logOut()">Log out</button>' +
+        '</div>' +
+      '</div>';
+  }
+
+  // Ambassador tab visibility
+  var ambTab = document.getElementById('ambassadorTab');
+  if (ambTab && m.is_ambassador) ambTab.style.display = 'block';
+
+  // Populate edit form
+  populateEditForm(m);
+}
+
+function populateEditForm(m) {
+  var set = function(id, val){ var el = document.getElementById(id); if (el) el.value = val == null ? '' : val; };
+  set('fFirstName',   m.first_name);
+  set('fLastName',    m.last_name);
+  set('fEmail',       m.email);
+  set('fMobile',      m.phone);
+  set('fNationality', m.nationality);
+  if (m.date_of_birth) {
+    try { set('fDob', new Date(m.date_of_birth).toISOString().slice(0,10)); } catch(e){}
+  }
+  var gSel = document.getElementById('fGender');
+  if (gSel && m.gender) {
+    for (var i=0; i<gSel.options.length; i++) {
+      if (gSel.options[i].text.toLowerCase() === String(m.gender).toLowerCase()) { gSel.selectedIndex = i; break; }
+    }
+  }
+  var topSel = document.getElementById('fTopSize');
+  if (topSel && m.top_size) {
+    for (var j=0; j<topSel.options.length; j++) { if (topSel.options[j].text === m.top_size) { topSel.selectedIndex = j; break; } }
+  }
+  var botSel = document.getElementById('fBotSize');
+  if (botSel && m.bottom_size) {
+    for (var k=0; k<botSel.options.length; k++) { if (botSel.options[k].text === m.bottom_size) { botSel.selectedIndex = k; break; } }
+  }
+  // Sport pills
+  var prefs = m.sports_preferences;
+  if (typeof prefs === 'string') { try { prefs = JSON.parse(prefs); } catch(e){ prefs = []; } }
+  if (Array.isArray(prefs)) {
+    var pills = document.querySelectorAll('#sportPills .sport-pill');
+    pills.forEach(function(p){
+      var name = p.textContent.trim();
+      if (prefs.indexOf(name) >= 0) p.classList.add('sel'); else p.classList.remove('sel');
+    });
+  }
+  // Padel level
+  if (m.padel_level) {
+    var want = String(m.padel_level).toLowerCase();
+    document.querySelectorAll('.padel-btn').forEach(function(b){
+      if (b.textContent.trim().toLowerCase() === want) b.classList.add('sel'); else b.classList.remove('sel');
+    });
+  }
+}
+
+// Bookings → renderSessions using the existing SESSIONS pipeline
+function loadBookings() {
+  return window.ATP.members.bookings().then(function(data) {
+    if (!data || !data.bookings) return;
+    var mapped = data.bookings.map(function(b) {
+      var dt = b.scheduled_at ? new Date(b.scheduled_at) : null;
+      var tribe = (b.tribe_name || 'stronger').toLowerCase();
+      return {
+        id:         b.id,
+        name:       b.session_name || 'Session',
+        tribe:      tribe,
+        day:        dt ? dt.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' }) : '—',
+        time:       dt ? dt.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : '',
+        loc:        b.city_name || '',
+        status:     b.status === 'attended' ? 'done' : (b.status === 'cancelled' ? 'cancelled' : 'upcoming'),
+        qr_token:   b.qr_token,
+        session_id: b.session_id,
+      };
+    });
+    SESSIONS = mapped;
+    var upcoming = mapped.filter(function(s){ return s.status === 'upcoming'; });
+    renderSessions(document.getElementById('upcomingSessions'), upcoming.slice(0,3));
+    renderSessions(document.getElementById('allSessions'), mapped);
   }).catch(function(){});
+}
 
-  // Real stats
-  window.ATP.members.stats().then(function(data) {
-    var s = data.stats || data;
+// Points transactions → wallet txns list
+function loadPoints() {
+  return window.ATP.members.pointsHistory().then(function(data) {
+    var txns = (data && data.transactions) || [];
+    if (!txns.length) return;
+    WALLET_TXNS = txns.map(function(t) {
+      var amt = Number(t.amount) || 0;
+      return {
+        icon:  amt >= 0 ? '🔥' : '🎽',
+        name:  t.description || t.reason || 'Transaction',
+        date:  formatDateShort(t.created_at),
+        amt:   (amt > 0 ? '+' : '') + amt,
+        earn:  amt >= 0,
+      };
+    });
+    renderWallet();
+  }).catch(function(){});
+}
+
+// Challenges → progress cards
+function loadChallenges() {
+  return window.ATP.challenges.list().then(function(data) {
+    var list = (data && data.challenges) || [];
+    if (!list.length) return;
+    CHALLENGES = list.map(function(c) {
+      var done = Number(c.my_progress || 0);
+      var total = Number(c.goal_value || c.target_value || 1);
+      return {
+        icon:   '🏆',
+        name:   c.name || c.title || 'Challenge',
+        sub:    c.description || '',
+        done:   done,
+        total:  total,
+        active: !!c.joined && done < total,
+      };
+    });
+    renderChallenges();
+    // Update challenges count in stats bar (6th pstat-num)
     var nums = document.querySelectorAll('.pstat-num');
-    if (nums[0]) nums[0].textContent = s.total_sessions || '0';
-    if (nums[1]) nums[1].textContent = s.current_streak || '0';
-    if (nums[2]) nums[2].textContent = (s.points_balance||s.current_balance||0).toLocaleString();
-    if (nums[3]) nums[3].textContent = s.total_referrals || '0';
-    if (nums[4]) nums[4].textContent = s.challenges_completed || '0';
-    console.log('✅ Stats loaded');
+    if (nums[5]) nums[5].textContent = CHALLENGES.filter(function(c){return c.active;}).length;
   }).catch(function(){});
+}
 
-  // Real upcoming bookings
-  window.ATP.members.bookings().then(function(data) {
-    var bookings = (data.bookings||[]).filter(function(b){ return b.status==='confirmed'; });
-    var container = document.getElementById('upcomingSessions');
-    if (container && bookings.length) {
-      container.innerHTML = bookings.slice(0,3).map(function(b) {
-        var d = new Date(b.scheduled_at||b.session_date);
-        var dateStr = d.toLocaleDateString('en-GB',{weekday:'short',month:'short',day:'numeric'});
-        return '<div class="session-card">' +
-          '<div class="session-day">' + dateStr + '</div>' +
-          '<div class="session-name">' + (b.session_name||b.name||'Session') + '</div>' +
-          '<div class="session-loc">' + (b.location||'') + '</div>' +
-          '</div>';
-      }).join('');
-      console.log('✅ Bookings loaded:', bookings.length);
+// Notifications → notif list
+function loadNotifications() {
+  return window.ATP.notifications.list().then(function(data) {
+    var list = (data && data.notifications) || [];
+    if (!list.length) return;
+    NOTIFS = list.map(function(n) {
+      return {
+        unread: !n.read_at,
+        text:   (n.title ? '<strong>' + n.title + '</strong> ' : '') + (n.body || ''),
+        time:   formatDateShort(n.created_at),
+      };
+    });
+    renderNotifs();
+    // Notification badge count
+    var notifCount = document.getElementById('notifCount');
+    if (notifCount) {
+      var unread = (data.unread_count != null) ? data.unread_count : NOTIFS.filter(function(n){return n.unread;}).length;
+      notifCount.textContent = unread;
+      notifCount.style.display = unread > 0 ? 'inline-flex' : 'none';
     }
   }).catch(function(){});
+}
 
-  // Real points history
-  window.ATP.members.pointsHistory().then(function(data) {
-    console.log('✅ Points history loaded:', (data.history||[]).length, 'entries');
+// Tribe (referrals) → tribe list + referral stats
+function loadReferrals() {
+  return window.ATP.members.referrals().then(function(data) {
+    var refs = (data && data.referrals) || [];
+    if (!refs.length) return;
+    TRIBE = refs.map(function(r) {
+      return {
+        init:     initialsOf(r.first_name, r.last_name),
+        name:     (r.first_name || '') + ' ' + (r.last_name || ''),
+        joined:   formatDateShort(r.created_at),
+        sessions: r.sessions_count || 0,
+        active:   (r.sessions_count || 0) > 0,
+      };
+    });
+    var tribeEl = document.getElementById('tribeList');
+    if (tribeEl) renderTribe(tribeEl);
+
+    // Update referral stats
+    var refStats = document.querySelectorAll('.ref-stat .ref-stat-num');
+    if (refStats[0]) refStats[0].textContent = TRIBE.length;
+    var totalPts = refs.reduce(function(sum, r){ return sum + (Number(r.points_awarded)||0); }, 0);
+    if (refStats[1]) refStats[1].textContent = totalPts;
+    if (refStats[2]) refStats[2].textContent = TRIBE.filter(function(t){return t.active;}).length;
+  }).catch(function(){});
+}
+
+// Friends → friends list (only accepted, split pending for requests)
+function loadFriends() {
+  return window.ATP.members.friends().then(function(data) {
+    var friendships = (data && data.friendships) || [];
+    if (!friendships.length) return;
+    var myId = CURRENT_MEMBER && CURRENT_MEMBER.id;
+    var accepted = friendships.filter(function(f){ return f.status === 'accepted'; });
+    var pending  = friendships.filter(function(f){ return f.status === 'pending' && f.requester_id !== myId; });
+    FRIENDS = accepted.map(function(f){
+      return {
+        init: initialsOf(f.first_name, f.last_name),
+        name: (f.first_name||'') + ' ' + (f.last_name||''),
+        meta: 'Friends since ' + formatDateShort(f.created_at),
+      };
+    });
+    FRIENDS_REQUESTS = pending.map(function(f){
+      return {
+        init: initialsOf(f.first_name, f.last_name),
+        name: (f.first_name||'') + ' ' + (f.last_name||''),
+        meta: 'Wants to connect',
+      };
+    });
+    renderFriends();
+  }).catch(function(){});
+}
+
+// Initial load: /auth/me first, then all sections in parallel
+function loadRealProfileData() {
+  if (!window.ATP || !window.ATP.isLoggedIn()) return;
+  window.ATP.auth.me().then(function(res) {
+    var m = (res && res.member) ? res.member : res;
+    if (!m || m.error || !m.id) {
+      // Token invalid → clear + redirect
+      localStorage.removeItem('atp_token');
+      localStorage.removeItem('atp_member');
+      window.location.replace('index.html');
+      return;
+    }
+    applyMemberToPage(m);
+    loadBookings();
+    loadPoints();
+    loadChallenges();
+    loadNotifications();
+    loadReferrals();
+    loadFriends();
   }).catch(function(){});
 }
 
@@ -1455,13 +1804,16 @@ function renderAuthNav(user) {
 
 // ── Log out ──────────────────────────────────────────────────
 function logOut() {
-  authClearUser();
-  var actions = document.querySelector('.nav-actions');
-  if(actions) {
-    actions.innerHTML =
-      '<button class="btn-ghost" onclick="openAuth(\'login\')">Log in</button>' +
-      '<button class="btn-primary" onclick="openAuth(\'signup\')">Join free →</button>';
+  // Clear legacy auth-modal state
+  try { authClearUser(); } catch(e){}
+  // Clear real JWT + cached member
+  localStorage.removeItem('atp_token');
+  localStorage.removeItem('atp_member');
+  // Best-effort server logout (fire and forget)
+  if (window.ATP && window.ATP.auth && window.ATP.auth.logout) {
+    try { window.ATP.auth.logout(); } catch(e){}
   }
+  window.location.replace('index.html');
 }
 
 // ── Guard: require auth before booking ───────────────────────
