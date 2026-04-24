@@ -18,7 +18,7 @@ router.get('/feed', optionalAuth, async (req, res, next) => {
               t.name AS tribe_name
        FROM posts p
        JOIN members m ON m.id = p.member_id
-       LEFT JOIN tribes t ON t.name = ANY(m.sports_preferences::text[])
+       LEFT JOIN tribes t ON t.name = (m.sports_preferences->>0)
        WHERE p.is_deleted = false ${beforeClause}
        ORDER BY p.created_at DESC
        LIMIT $1`,

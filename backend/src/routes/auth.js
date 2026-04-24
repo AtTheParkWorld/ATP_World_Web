@@ -265,7 +265,7 @@ router.get('/me', authenticate, async (req, res, next) => {
               (SELECT COUNT(*) FROM referrals r WHERE r.referrer_id=m.id) AS referrals_count
        FROM members m
        LEFT JOIN cities c ON c.id = m.city_id
-       LEFT JOIN tribes t ON t.name = ANY(m.sports_preferences::text[])
+       LEFT JOIN tribes t ON t.name = (m.sports_preferences->>0)
        WHERE m.id = $1`,
       [req.member.id]
     );
