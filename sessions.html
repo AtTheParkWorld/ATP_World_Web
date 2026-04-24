@@ -1350,9 +1350,9 @@ function formatSessionTime(scheduledAt) {
   return h12 + ':' + (m<10?'0':'')+m + ' ' + ampm;
 }
 function normalizeTribe(slug) {
-  if (!slug) return 'faster';
+  if (!slug) return '';
   var s = String(slug).toLowerCase();
-  return TRIBE_SLUGS[s] ? s : 'faster';
+  return TRIBE_SLUGS[s] ? s : '';
 }
 
 // Keep a shared store of API sessions so filters + calendar + modal stay in sync
@@ -1387,7 +1387,7 @@ function renderSessionsGrid(sessions) {
     var time    = formatSessionTime(s.scheduled_at);
     var dayTime = dayName + ' · ' + time;
     var tribe   = normalizeTribe(s.tribe_slug);
-    var tribeLabel = s.tribe_name ? String(s.tribe_name).toUpperCase() : (tribe.toUpperCase() + ' TRIBE');
+    var tribeLabel = s.tribe_name ? String(s.tribe_name).toUpperCase() : (tribe ? tribe.toUpperCase() + ' TRIBE' : 'ATP SESSION');
     var coach   = s.coach_name && s.coach_name.trim() ? s.coach_name.trim() : 'ATP Coach';
     var loc     = s.location || s.city_name || 'TBC';
     var desc    = s.description || '';
