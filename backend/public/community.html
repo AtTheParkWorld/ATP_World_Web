@@ -317,8 +317,7 @@ nav.scrolled{background:rgba(10,10,10,.97);border-bottom-color:rgba(122,194,49,.
       <li><a href="index.html">Home</a></li>
       <li><a href="sessions.html">Sessions</a></li>
       <li><a href="community.html" class="active">Community</a></li>
-      <li><a href="profile.html">Profile</a></li>
-      <li><a href="store.html">Store</a></li>
+            <li><a href="store.html">Store</a></li>
       <li><a href="index.html#partners">Partners</a></li>
       <li><a href="index.html#story">About</a></li>
     </ul>
@@ -1383,13 +1382,11 @@ function renderAuthNav(user) {
   var actions = document.querySelector('.nav-actions');
   if(!actions) return;
   actions.innerHTML =
-    '<div class="nav-user">' +
+    '<a href="profile.html" class="nav-user" title="My profile" style="text-decoration:none;color:inherit">' +
       '<div class="nav-avatar" title="' + user.firstName + ' ' + user.lastName + '">' + user.avatar + '</div>' +
-      '<div>' +
-        '<div class="nav-user-name">' + user.firstName + '</div>' +
-        '<button class="nav-logout" onclick="logOut()">Log out</button>' +
-      '</div>' +
-    '</div>';
+      '<div class="nav-user-name">' + user.firstName + '</div>' +
+    '</a>' +
+    '<button class="nav-logout" onclick="logOut()">Log out</button>';
 }
 
 // ── Log out ──────────────────────────────────────────────────
