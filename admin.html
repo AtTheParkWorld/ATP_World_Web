@@ -1018,7 +1018,7 @@ function adminLogin() {
       localStorage.setItem('atp_token', data.token);
       document.getElementById('loginScreen').style.display = 'none';
       document.getElementById('adminWrap').style.display = 'block';
-      var LOGO = 'https://raw.githubusercontent.com/AtTheParkWorld/ATP_World_Web/main/500x500_no_background.png';
+      var LOGO = '/atp-logo-transparent.png';
       document.querySelectorAll('#adminLogo,#adminLogoNav').forEach(function(img) { img.src = LOGO; img.style.filter = 'none'; });
       loadDashboardAPI();
       loadMembersAPI();
@@ -1804,7 +1804,7 @@ async function setAmbassadorAPI(memberId, enabled) {
 </script>
 
 <script>
-var LOGO_SRC = "https://raw.githubusercontent.com/AtTheParkWorld/ATP_World_Web/main/500x500_no_background.png";
+var LOGO_SRC = "/atp-logo-transparent.png";
 document.getElementById('adminLogo').src = LOGO_SRC;
 document.getElementById('adminLogoNav').src = LOGO_SRC;
 
