@@ -1,0 +1,170 @@
+/**
+ * ATP World — API Client SDK
+ * Injected into every page. Provides window.ATP global.
+ */
+(function() {
+  'use strict';
+
+  var BASE = 'https://atpworldweb-production.up.railway.app/api';
+
+  /* ── Helpers ─────────────────────────────────────────────── */
+  function token()  { return localStorage.getItem('atp_token') || ''; }
+  function user()   { try { return JSON.parse(localStorage.getItem('atp_member') || 'null'); } catch(e) { return null; } }
+  function setUser(m) { localStorage.setItem('atp_member', JSON.stringify(m)); }
+  function clearUser() { localStorage.removeItem('atp_token'); localStorage.removeItem('atp_member'); }
+
+  function headers(extra) {
+    var h = { 'Content-Type': 'application/json' };
+    if (token()) h['Authorization'] = 'Bearer ' + token();
+    return Object.assign(h, extra || {});
+  }
+
+  function req(method, path, body) {
+    var opts = { method: method, headers: headers() };
+    if (body) opts.body = JSON.stringify(body);
+    return fetch(BASE + path, opts).then(function(r) {
+      if (r.status === 401) { clearUser(); window.dispatchEvent(new Event('atp:logout')); }
+      return r.json();
+    });
+  }
+
+  var get  = function(p)    { return req('GET',    p); };
+  var post = function(p, b) { return req('POST',   p, b); };
+  var patch= function(p, b) { return req('PATCH',  p, b); };
+  var del  = function(p)    { return req('DELETE', p); };
+
+  /* ── Auth ────────────────────────────────────────────────── */
+  var auth = {
+    login: function(email, password) {
+      return post('/auth/login', { email: email, password: password }).then(function(d) {
+        if (d.token) {
+          localStorage.setItem('atp_token', d.token);
+          setUser(d.member);
+          window.dispatchEvent(new CustomEvent('atp:login', { detail: d.member }));
+        }
+        return d;
+      });
+    },
+    register: function(data) {
+      return post('/auth/register', data).then(function(d) {
+        if (d.token) { localStorage.setItem('atp_token', d.token); setUser(d.member); }
+        return d;
+      });
+    },
+    me: function() { return get('/auth/me'); },
+    logout: function() {
+      return post('/auth/logout').finally(function() {
+        clearUser();
+        window.dispatchEvent(new Event('atp:logout'));
+      });
+    },
+    isLoggedIn: function() { return !!token(); },
+    getUser: function() { return user(); }
+  };
+
+  /* ── Members ─────────────────────────────────────────────── */
+  var members = {
+    profile: function()       { return get('/members/profile'); },
+    updateProfile: function(d){ return patch('/members/profile', d); },
+    stats: function()         { return get('/members/stats'); },
+    bookings: function()      { return get('/members/bookings'); },
+    pointsHistory: function() { return get('/members/points-history'); },
+    leaderboard: function(p)  { return get('/members/leaderboard' + (p ? '?period='+p : '')); },
+    friends: function()       { return get('/members/friends'); },
+    addFriend: function(id)   { return post('/members/friends/request', { memberId: id }); },
+    referrals: function()     { return get('/members/referrals'); },
+  };
+
+  /* ── Sessions ────────────────────────────────────────────── */
+  var sessions = {
+    list: function(params) {
+      var q = params ? '?' + Object.entries(params).map(function(kv){ return kv[0]+'='+encodeURIComponent(kv[1]); }).join('&') : '';
+      return get('/sessions' + q);
+    },
+    get: function(id)       { return get('/sessions/' + id); },
+    checkin: function(id)   { return post('/sessions/' + id + '/checkin'); },
+    complete: function(id)  { return patch('/sessions/' + id + '/complete'); },
+    attendance: function(id){ return get('/sessions/' + id + '/attendance'); },
+  };
+
+  /* ── Bookings ────────────────────────────────────────────── */
+  var bookings = {
+    book:     function(sessionId) { return post('/bookings', { session_id: sessionId }); },
+    cancel:   function(id)        { return del('/bookings/' + id); },
+    feedback: function(id, data)  { return post('/bookings/' + id + '/feedback', data); },
+    qr:       function(token)     { return get('/bookings/' + token + '/qr-data'); },
+  };
+
+  /* ── Community ───────────────────────────────────────────── */
+  var community = {
+    feed:       function(p)       { return get('/community/feed' + (p ? '?page='+p : '')); },
+    post:       function(data)    { return post('/community/posts', data); },
+    like:       function(id)      { return post('/community/posts/' + id + '/like'); },
+    comments:   function(id)      { return get('/community/posts/' + id + '/comments'); },
+    comment:    function(id, txt) { return post('/community/posts/' + id + '/comments', { content: txt }); },
+    deletePost: function(id)      { return del('/community/posts/' + id); },
+    messages:   function()        { return get('/community/messages'); },
+    thread:     function(mid)     { return get('/community/messages/' + mid); },
+    send:       function(mid, txt){ return post('/community/messages/' + mid, { content: txt }); },
+  };
+
+  /* ── Points ──────────────────────────────────────────────── */
+  var points = {
+    balance: function()       { return get('/points/balance'); },
+    redeem:  function(reward) { return post('/points/redeem', { reward: reward }); },
+  };
+
+  /* ── Challenges ──────────────────────────────────────────── */
+  var challenges = {
+    list:  function()         { return get('/challenges'); },
+    join:  function(id)       { return post('/challenges/' + id + '/join'); },
+    progress: function(id, n) { return patch('/challenges/' + id + '/progress', { increment: n }); },
+  };
+
+  /* ── Notifications ───────────────────────────────────────── */
+  var notifications = {
+    list:    function()   { return get('/notifications'); },
+    read:    function(id) { return patch('/notifications/' + id + '/read'); },
+    readAll: function()   { return patch('/notifications/read-all'); },
+  };
+
+  /* ── Admin ───────────────────────────────────────────────── */
+  var admin = {
+    dashboard:   function()        { return get('/admin/dashboard'); },
+    members:     function(params)  {
+      var q = params ? '?' + Object.entries(params).map(function(kv){ return kv[0]+'='+encodeURIComponent(kv[1]); }).join('&') : '';
+      return get('/admin/members' + q);
+    },
+    setAmbassador: function(id, v) { return patch('/admin/members/' + id + '/ambassador', { is_ambassador: v }); },
+    ban:           function(id, r) { return patch('/admin/members/' + id + '/ban', { reason: r }); },
+    reports:       function()      { return get('/admin/reports'); },
+    resolveReport: function(id)    { return patch('/admin/reports/' + id + '/resolve'); },
+  };
+
+  /* ── Init ────────────────────────────────────────────────── */
+  function init() {
+    if (!token()) return Promise.resolve(null);
+    return auth.me().then(function(m) {
+      if (m && m.id) { setUser(m); return m; }
+      clearUser(); return null;
+    }).catch(function() { return null; });
+  }
+
+  /* ── Expose ──────────────────────────────────────────────── */
+  window.ATP = {
+    init: init,
+    isLoggedIn: auth.isLoggedIn,
+    getUser: auth.getUser,
+    auth: auth,
+    members: members,
+    sessions: sessions,
+    bookings: bookings,
+    community: community,
+    points: points,
+    challenges: challenges,
+    notifications: notifications,
+    admin: admin,
+    BASE: BASE
+  };
+
+})();
