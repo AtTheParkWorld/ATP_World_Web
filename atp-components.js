@@ -105,7 +105,9 @@
     if (!btn) return;
     var action = btn.getAttribute('data-atp-action');
     if (action === 'login' || action === 'signup') {
+      // Prefer the page-local auth modal (richer UX), else fall back to shared
       if (typeof window.openAuth === 'function') window.openAuth(action);
+      else openAuthModal(action);
     } else if (action === 'logout') {
       if (typeof window.logOut === 'function') {
         window.logOut();
@@ -139,12 +141,224 @@
     }, 2800);
   }
 
+  /* ── Form validation helpers ───────────────────────────────────
+   * Standardised pattern: aria-invalid + .atp-form-error sibling.
+   * Pages call ATPComponents.fieldError(input, msg) instead of inline alerts.
+   * ──────────────────────────────────────────────────────────── */
+
+  function _errorEl(input) {
+    var host = input.closest('.atp-field') || input.parentElement;
+    if (!host) return null;
+    var err = host.querySelector('.atp-form-error');
+    if (!err) {
+      err = document.createElement('div');
+      err.className = 'atp-form-error';
+      err.setAttribute('aria-live', 'polite');
+      host.appendChild(err);
+    }
+    return err;
+  }
+
+  function fieldError(input, message) {
+    if (typeof input === 'string') input = document.getElementById(input);
+    if (!input) return;
+    input.setAttribute('aria-invalid', 'true');
+    var err = _errorEl(input);
+    if (err) err.textContent = String(message || 'Required');
+  }
+
+  function fieldClear(input) {
+    if (typeof input === 'string') input = document.getElementById(input);
+    if (!input) return;
+    input.removeAttribute('aria-invalid');
+    var host = input.closest('.atp-field') || input.parentElement;
+    var err = host && host.querySelector('.atp-form-error');
+    if (err) err.textContent = '';
+  }
+
+  function clearForm(formOrSelector) {
+    var form = typeof formOrSelector === 'string'
+      ? document.querySelector(formOrSelector)
+      : formOrSelector;
+    if (!form) return;
+    Array.prototype.forEach.call(
+      form.querySelectorAll('[aria-invalid="true"]'),
+      function(el) { el.removeAttribute('aria-invalid'); }
+    );
+    Array.prototype.forEach.call(
+      form.querySelectorAll('.atp-form-error'),
+      function(el) { el.textContent = ''; }
+    );
+  }
+
+  /* ── Auth-modal lazy mounter ───────────────────────────────────
+   * Opt-in: pages can call ATPComponents.openAuthModal('login'|'signup').
+   * Builds a single modal on first call, reuses thereafter. Talks to
+   * window.ATP for the actual register/login + dispatches atp:login on
+   * success so the shared nav + any listeners re-render.
+   * ──────────────────────────────────────────────────────────── */
+
+  var _authBuilt = false;
+  function ensureAuthModal() {
+    if (_authBuilt) return document.getElementById('atp-auth-modal');
+    var wrap = document.createElement('div');
+    wrap.id = 'atp-auth-modal';
+    wrap.setAttribute('role', 'dialog');
+    wrap.setAttribute('aria-modal', 'true');
+    wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(10px);z-index:' +
+      (getComputedStyle(document.documentElement).getPropertyValue('--atp-z-modal') || 500) +
+      ';display:none;align-items:center;justify-content:center;padding:20px';
+    wrap.innerHTML =
+      '<div style="background:#0d0d0d;border:1px solid var(--atp-line-strong);border-radius:var(--atp-radius-lg);padding:32px;max-width:420px;width:100%;position:relative">' +
+        '<button type="button" data-atp-action="auth-close" aria-label="Close" style="position:absolute;top:14px;right:14px;background:none;border:none;color:var(--atp-fg-muted);font-size:24px;cursor:pointer;line-height:1">×</button>' +
+        '<h2 id="atp-auth-title" style="margin:0 0 8px;font-size:var(--atp-text-2xl)">Join free</h2>' +
+        '<p id="atp-auth-sub" style="margin:0 0 22px;color:var(--atp-fg-muted);font-size:var(--atp-text-base)">Become an ATP member to book sessions.</p>' +
+        '<div id="atp-auth-banner" class="atp-form-error" style="margin-bottom:14px;display:none"></div>' +
+        '<form id="atp-auth-form" novalidate>' +
+          '<div id="atp-auth-signup-fields">' +
+            '<div class="atp-field" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">' +
+              '<input class="atp-input" id="atpaFirst" placeholder="First name" autocomplete="given-name">' +
+              '<input class="atp-input" id="atpaLast"  placeholder="Last name"  autocomplete="family-name">' +
+            '</div>' +
+          '</div>' +
+          '<div class="atp-field" style="margin-bottom:12px">' +
+            '<input class="atp-input" id="atpaEmail" type="email" placeholder="you@email.com" autocomplete="email">' +
+          '</div>' +
+          '<div class="atp-field" style="margin-bottom:18px">' +
+            '<input class="atp-input" id="atpaPass" type="password" placeholder="Password (min 8)" autocomplete="current-password">' +
+          '</div>' +
+          '<button type="submit" class="atp-btn atp-btn--primary atp-btn--lg" id="atpaSubmit" style="width:100%">Join free</button>' +
+        '</form>' +
+        '<div style="margin-top:16px;text-align:center;font-size:var(--atp-text-sm);color:var(--atp-fg-muted)">' +
+          '<span id="atp-auth-switch-text">Already a member?</span> ' +
+          '<button type="button" data-atp-action="auth-toggle" style="background:none;border:none;color:var(--atp-green);cursor:pointer;font-weight:600;padding:0">Log in</button>' +
+        '</div>' +
+      '</div>';
+    document.body.appendChild(wrap);
+
+    // Close on backdrop click
+    wrap.addEventListener('click', function(e) {
+      if (e.target === wrap) closeAuthModal();
+    });
+    // Submit handler
+    wrap.querySelector('#atp-auth-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      submitAuth();
+    });
+
+    _authBuilt = true;
+    return wrap;
+  }
+
+  var _authMode = 'signup';
+  function openAuthModal(mode) {
+    _authMode = mode === 'login' ? 'login' : 'signup';
+    var modal = ensureAuthModal();
+    document.getElementById('atp-auth-title').textContent = _authMode === 'login' ? 'Log in' : 'Join free';
+    document.getElementById('atp-auth-sub').textContent =
+      _authMode === 'login' ? 'Welcome back. Enter your email and password.' : 'Become an ATP member to book sessions.';
+    document.getElementById('atp-auth-signup-fields').style.display = _authMode === 'login' ? 'none' : 'block';
+    document.getElementById('atp-auth-switch-text').textContent =
+      _authMode === 'login' ? 'New to ATP?' : 'Already a member?';
+    document.querySelector('[data-atp-action="auth-toggle"]').textContent =
+      _authMode === 'login' ? 'Join free' : 'Log in';
+    document.getElementById('atpaSubmit').textContent = _authMode === 'login' ? 'Log in' : 'Join free';
+    var banner = document.getElementById('atp-auth-banner');
+    banner.style.display = 'none';
+    banner.textContent = '';
+    clearForm('#atp-auth-form');
+    modal.style.display = 'flex';
+    setTimeout(function() {
+      var firstField = _authMode === 'login'
+        ? document.getElementById('atpaEmail')
+        : document.getElementById('atpaFirst');
+      firstField && firstField.focus();
+    }, 50);
+  }
+
+  function closeAuthModal() {
+    var m = document.getElementById('atp-auth-modal');
+    if (m) m.style.display = 'none';
+  }
+
+  function _showBanner(msg) {
+    var b = document.getElementById('atp-auth-banner');
+    b.textContent = msg;
+    b.style.display = 'block';
+  }
+
+  function submitAuth() {
+    if (!window.ATP || !window.ATP.auth) {
+      _showBanner('API client not loaded.');
+      return;
+    }
+    clearForm('#atp-auth-form');
+
+    var email = document.getElementById('atpaEmail').value.trim();
+    var pass  = document.getElementById('atpaPass').value;
+
+    var ok = true;
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      fieldError('atpaEmail', 'Enter a valid email.');
+      ok = false;
+    }
+    if (!pass || pass.length < 8) {
+      fieldError('atpaPass', _authMode === 'login' ? 'Enter your password.' : 'At least 8 characters.');
+      ok = false;
+    }
+
+    var first, last;
+    if (_authMode === 'signup') {
+      first = document.getElementById('atpaFirst').value.trim();
+      last  = document.getElementById('atpaLast').value.trim();
+      if (!first) { fieldError('atpaFirst', 'Required'); ok = false; }
+      if (!last)  { fieldError('atpaLast',  'Required'); ok = false; }
+    }
+    if (!ok) return;
+
+    var submit = document.getElementById('atpaSubmit');
+    submit.disabled = true;
+    submit.textContent = _authMode === 'login' ? 'Logging in…' : 'Creating account…';
+
+    var promise = _authMode === 'login'
+      ? window.ATP.auth.login(email, pass)
+      : window.ATP.auth.register({ first_name: first, last_name: last, email: email, password: pass });
+
+    promise.then(function(data) {
+      submit.disabled = false;
+      submit.textContent = _authMode === 'login' ? 'Log in' : 'Join free';
+      if (data.error || !data.token) {
+        _showBanner(data.error || 'Something went wrong. Please try again.');
+        return;
+      }
+      toast(_authMode === 'login' ? 'Welcome back!' : 'Welcome to ATP!', 'success');
+      closeAuthModal();
+      // atp.js already dispatched atp:login
+    }).catch(function() {
+      submit.disabled = false;
+      submit.textContent = _authMode === 'login' ? 'Log in' : 'Join free';
+      _showBanner('Connection error. Please check your internet.');
+    });
+  }
+
   /* ── Boot ──────────────────────────────────────────────────── */
   function boot() {
     mountNav();
     document.addEventListener('click', handleNavClick);
+    document.addEventListener('click', handleAuthAction);
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeAuthModal();
+    });
     window.addEventListener('atp:login',  rerenderAuth);
     window.addEventListener('atp:logout', rerenderAuth);
+  }
+
+  function handleAuthAction(e) {
+    var btn = e.target.closest('[data-atp-action]');
+    if (!btn) return;
+    var act = btn.getAttribute('data-atp-action');
+    if (act === 'auth-close') closeAuthModal();
+    else if (act === 'auth-toggle') openAuthModal(_authMode === 'login' ? 'signup' : 'login');
   }
 
   if (document.readyState === 'loading') {
@@ -158,5 +372,10 @@
     mountNav: mountNav,
     rerenderAuth: rerenderAuth,
     toast: toast,
+    fieldError: fieldError,
+    fieldClear: fieldClear,
+    clearForm: clearForm,
+    openAuthModal: openAuthModal,
+    closeAuthModal: closeAuthModal,
   };
 })();
