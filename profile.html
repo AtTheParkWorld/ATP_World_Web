@@ -972,7 +972,23 @@ function renderStreakGrid(el, days) {
   el.innerHTML = html;
 }
 
+function _atpEmpty(icon, title, desc, ctaHtml) {
+  return '<div class="atp-empty">' +
+    '<div class="atp-empty__icon">' + icon + '</div>' +
+    '<h3 class="atp-empty__title">' + title + '</h3>' +
+    '<p class="atp-empty__desc">' + desc + '</p>' +
+    (ctaHtml || '') +
+  '</div>';
+}
+
 function renderSessions(el, sessions) {
+  if (!el) return;
+  if (!sessions || !sessions.length) {
+    el.innerHTML = _atpEmpty('📅', 'No sessions yet',
+      'Book your first free session — head to the line-up and pick one near you.',
+      '<a href="sessions.html" class="atp-btn atp-btn--primary atp-empty__cta">Browse sessions</a>');
+    return;
+  }
   el.innerHTML = sessions.map(function(s,i){
     var qrBtn = (s.qr_token || s.qrData) ? "<button class='session-qr-btn' onclick='showSessionQR(\'"+encodeURIComponent(s.qr_token ? JSON.stringify({token:s.qr_token,session:s.name}) : s.qrData)+"\',\'"+s.id+"\')'>"+
       "<svg width=\'12\' height=\'12\' viewBox=\'0 0 16 16\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.8\'><rect x=\'1\' y=\'1\' width=\'6\' height=\'6\' rx=\'1\'/><rect x=\'9\' y=\'1\' width=\'6\' height=\'6\' rx=\'1\'/><rect x=\'1\' y=\'9\' width=\'6\' height=\'6\' rx=\'1\'/><rect x=\'9\' y=\'9\' width=\'6\' height=\'6\' rx=\'1\'/></svg>"+
@@ -1002,6 +1018,13 @@ function renderAchievements(el, list) {
 }
 
 function renderTribe(el) {
+  if (!el) return;
+  if (!TRIBE || !TRIBE.length) {
+    el.innerHTML = _atpEmpty('🌱', 'Build your tribe',
+      'Invite friends with your referral link — earn points when they attend their first session.',
+      '<button class="atp-btn atp-btn--primary atp-empty__cta" onclick="copyReferralLink && copyReferralLink()">Copy referral link</button>');
+    return;
+  }
   el.innerHTML = TRIBE.map(function(m){
     return "<div class='tribe-member-row'>"+
       "<div class='tribe-av'>"+m.init+"</div>"+
@@ -1017,27 +1040,44 @@ function renderTribe(el) {
 function renderFriends() {
   var reqEl = document.getElementById("friendRequests");
   var lstEl = document.getElementById("friendsList");
-  reqEl.innerHTML = FRIENDS_REQUESTS.map(function(f,i){
-    return "<div class='friend-row'>"+
-      "<div class='friend-av'>"+f.init+"</div>"+
-      "<div class='friend-info'><div class='friend-name'>"+f.name+"</div><div class='friend-meta'>"+f.meta+"</div></div>"+
-      "<div class='friend-actions'>"+
-        "<button class='friend-btn accept' onclick='acceptFriend("+i+",this)'>Accept</button>"+
-        "<button class='friend-btn' onclick='declineFriend("+i+")'>Decline</button>"+
-      "</div>"+
-    "</div>";
-  }).join("");
-  lstEl.innerHTML = FRIENDS.map(function(f){
-    return "<div class='friend-row'>"+
-      "<div class='friend-av'>"+f.init+"</div>"+
-      "<div class='friend-info'><div class='friend-name'>"+f.name+"</div><div class='friend-meta'>"+f.meta+"</div></div>"+
-      "<a href='sessions.html' class='friend-btn' style='text-decoration:none'>Train together</a>"+
-    "</div>";
-  }).join("");
+  if (reqEl) {
+    reqEl.innerHTML = (FRIENDS_REQUESTS && FRIENDS_REQUESTS.length)
+      ? FRIENDS_REQUESTS.map(function(f,i){
+          return "<div class='friend-row'>"+
+            "<div class='friend-av'>"+f.init+"</div>"+
+            "<div class='friend-info'><div class='friend-name'>"+f.name+"</div><div class='friend-meta'>"+f.meta+"</div></div>"+
+            "<div class='friend-actions'>"+
+              "<button class='friend-btn accept' onclick='acceptFriend("+i+",this)'>Accept</button>"+
+              "<button class='friend-btn' onclick='declineFriend("+i+")'>Decline</button>"+
+            "</div>"+
+          "</div>";
+        }).join("")
+      : '<div style="padding:14px 0;color:var(--atp-fg-dim);font-size:13px;text-align:center">No pending requests</div>';
+  }
+  if (lstEl) {
+    lstEl.innerHTML = (FRIENDS && FRIENDS.length)
+      ? FRIENDS.map(function(f){
+          return "<div class='friend-row'>"+
+            "<div class='friend-av'>"+f.init+"</div>"+
+            "<div class='friend-info'><div class='friend-name'>"+f.name+"</div><div class='friend-meta'>"+f.meta+"</div></div>"+
+            "<a href='sessions.html' class='friend-btn' style='text-decoration:none'>Train together</a>"+
+          "</div>";
+        }).join("")
+      : _atpEmpty('🤝', 'No friends yet',
+          'Connect with other ATP members and motivate each other.',
+          '<a href="community.html" class="atp-btn atp-btn--primary atp-empty__cta">Browse the community</a>');
+  }
 }
 
 function renderNotifs() {
-  document.getElementById("notifList").innerHTML = NOTIFS.map(function(n){
+  var el = document.getElementById("notifList");
+  if (!el) return;
+  if (!NOTIFS || !NOTIFS.length) {
+    el.innerHTML = _atpEmpty('🔕', 'You\'re all caught up',
+      'New notifications about your bookings, challenges, and tribe will appear here.', '');
+    return;
+  }
+  el.innerHTML = NOTIFS.map(function(n){
     return "<div class='notif-row "+(n.unread?"unread":"")+"'>"+
       "<div class='notif-dot-wrap'><div class='notif-dot' style='"+(n.unread?"":"background:transparent;border:1px solid rgba(255,255,255,.1)")+"'></div></div>"+
       "<div class='notif-text'>"+n.text+"</div>"+
@@ -1047,7 +1087,15 @@ function renderNotifs() {
 }
 
 function renderWallet() {
-  document.getElementById("walletTxns").innerHTML = WALLET_TXNS.map(function(t){
+  var el = document.getElementById("walletTxns");
+  if (!el) return;
+  if (!WALLET_TXNS || !WALLET_TXNS.length) {
+    el.innerHTML = _atpEmpty('💰', 'No transactions yet',
+      'Earn points by attending sessions, completing challenges, or referring friends.',
+      '<a href="sessions.html" class="atp-btn atp-btn--primary atp-empty__cta">Find a session</a>');
+    return;
+  }
+  el.innerHTML = WALLET_TXNS.map(function(t){
     return "<div class='wallet-txn'>"+
       "<div class='wallet-txn-left'>"+
         "<div class='wallet-txn-icon'>"+t.icon+"</div>"+
@@ -1059,7 +1107,15 @@ function renderWallet() {
 }
 
 function renderChallenges() {
-  document.getElementById("challengesList").innerHTML = CHALLENGES.map(function(c){
+  var el = document.getElementById("challengesList");
+  if (!el) return;
+  if (!CHALLENGES || !CHALLENGES.length) {
+    el.innerHTML = _atpEmpty('🏆', 'No active challenges',
+      'Join a community challenge to push your training and earn extra rewards.',
+      '<a href="community.html" class="atp-btn atp-btn--primary atp-empty__cta">See challenges</a>');
+    return;
+  }
+  el.innerHTML = CHALLENGES.map(function(c){
     var pct = Math.round((c.done/c.total)*100);
     return "<div class='challenge-card "+(c.active?"active-c":"")+"'>"+
       "<div class='challenge-header'>"+
@@ -1430,7 +1486,6 @@ function loadBookings() {
 function loadPoints() {
   return window.ATP.members.pointsHistory().then(function(data) {
     var txns = (data && data.transactions) || [];
-    if (!txns.length) return;
     WALLET_TXNS = txns.map(function(t) {
       var amt = Number(t.amount) || 0;
       return {
@@ -1449,7 +1504,6 @@ function loadPoints() {
 function loadChallenges() {
   return window.ATP.challenges.list().then(function(data) {
     var list = (data && data.challenges) || [];
-    if (!list.length) return;
     CHALLENGES = list.map(function(c) {
       var done = Number(c.my_progress || 0);
       var total = Number(c.goal_value || c.target_value || 1);
@@ -1473,7 +1527,6 @@ function loadChallenges() {
 function loadNotifications() {
   return window.ATP.notifications.list().then(function(data) {
     var list = (data && data.notifications) || [];
-    if (!list.length) return;
     NOTIFS = list.map(function(n) {
       return {
         unread: !n.read_at,
@@ -1496,7 +1549,6 @@ function loadNotifications() {
 function loadReferrals() {
   return window.ATP.members.referrals().then(function(data) {
     var refs = (data && data.referrals) || [];
-    if (!refs.length) return;
     TRIBE = refs.map(function(r) {
       return {
         init:     initialsOf(r.first_name, r.last_name),
@@ -1522,7 +1574,6 @@ function loadReferrals() {
 function loadFriends() {
   return window.ATP.members.friends().then(function(data) {
     var friendships = (data && data.friendships) || [];
-    if (!friendships.length) return;
     var myId = CURRENT_MEMBER && CURRENT_MEMBER.id;
     var accepted = friendships.filter(function(f){ return f.status === 'accepted'; });
     var pending  = friendships.filter(function(f){ return f.status === 'pending' && f.requester_id !== myId; });
