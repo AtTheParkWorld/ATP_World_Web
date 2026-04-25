@@ -348,19 +348,25 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       </div>
     </div>
     <div class="sessions-grid" id="sessionsGrid">
-      <div class="empty-state" id="loadingState">
-        <h3>Loading sessions…</h3>
-        <p style="margin-bottom:0">Fetching this week's line-up.</p>
+      <div class="empty-state" id="loadingState" style="display:flex;flex-direction:column;align-items:center;gap:14px">
+        <div class="atp-spinner atp-spinner--lg" aria-hidden="true"></div>
+        <p style="margin:0;color:var(--atp-fg-muted)">Loading this week's line-up…</p>
       </div>
       <div class="empty-state" id="errorState" style="display:none">
-        <h3>Couldn't load sessions</h3>
-        <p style="margin-bottom:20px" id="errorStateMsg">Please check your connection and try again.</p>
-        <button class="btn-primary" onclick="loadSessions()">Retry</button>
+        <div class="atp-empty">
+          <div class="atp-empty__icon">⚠️</div>
+          <h3 class="atp-empty__title">Couldn't load sessions</h3>
+          <p class="atp-empty__desc" id="errorStateMsg">Please check your connection and try again.</p>
+          <button class="atp-btn atp-btn--primary atp-empty__cta" onclick="loadSessions()">Retry</button>
+        </div>
       </div>
       <div class="empty-state" id="emptyState" style="display:none">
-        <h3>No sessions found</h3>
-        <p style="margin-bottom:20px">Try a different day or tribe filter.</p>
-        <button class="btn-primary" onclick="resetFilters()">Show all sessions</button>
+        <div class="atp-empty">
+          <div class="atp-empty__icon">🔍</div>
+          <h3 class="atp-empty__title">No sessions match your filters</h3>
+          <p class="atp-empty__desc">Try a different tribe, day, or clear filters to see everything.</p>
+          <button class="atp-btn atp-btn--primary atp-empty__cta" onclick="resetFilters()">Show all sessions</button>
+        </div>
       </div>
     </div>
   </div>

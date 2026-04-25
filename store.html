@@ -490,7 +490,7 @@ window.ATP_NAV_EXTRAS = ['<button class="cart-icon-btn" onclick="openCart()" ari
 <div class="cart-panel" id="cartPanel" role="dialog" aria-label="Cart">
   <div class="cart-top"><h3>Your Cart</h3><button class="cart-x" onclick="closeCart()">×</button></div>
   <div class="cart-body" id="cartBody">
-    <div class="cart-empty-msg">Your cart is empty.<br>Add some gear and show up in style. 🎽</div>
+    <div class="atp-empty"><div class="atp-empty__icon">🛒</div><h3 class="atp-empty__title">Your cart is empty</h3><p class="atp-empty__desc">Browse the gear and show up in style — every drop ships fast across UAE.</p><button class="atp-btn atp-btn--primary atp-empty__cta" onclick="closeCart()">Browse the store</button></div>
   </div>
   <div class="cart-foot" id="cartFoot" style="display:none">
     <div class="cart-total-row"><span class="cart-total-label">Subtotal</span><span class="cart-total-amt" id="cartTotalEl">AED 0</span></div>
@@ -1184,7 +1184,7 @@ function refreshCart() {
   var foot = document.getElementById("cartFoot");
 
   if (!cartItems.length) {
-    body.innerHTML = '<div class="cart-empty-msg">Your cart is empty.<br>Add some gear and show up in style. 🎽</div>';
+    body.innerHTML = '<div class="atp-empty"><div class="atp-empty__icon">🛒</div><h3 class="atp-empty__title">Your cart is empty</h3><p class="atp-empty__desc">Browse the gear and show up in style — every drop ships fast across UAE.</p><button class="atp-btn atp-btn--primary atp-empty__cta" onclick="closeCart()">Browse the store</button></div>';
     foot.style.display = "none";
   } else {
     body.innerHTML = cartItems.map(function(item, i) {
