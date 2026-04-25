@@ -337,3 +337,87 @@ textarea:focus-visible,
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: translateY(0); }
 }
+
+/* ────────────────────────────────────────────────────────────────
+ * MICRO-INTERACTIONS (legacy class polish)
+ * Audit asked for "smooth transitions on buttons, card hover, modal
+ * open/close — adds polish with ~2 lines of CSS per component."
+ * Targets the legacy class names that exist across pages so these
+ * upgrades apply WITHOUT page edits.
+ * ──────────────────────────────────────────────────────────── */
+
+/* Buttons */
+.btn-primary, .btn-ghost, .btn-dark, .admin-btn,
+button.cart-icon-btn, button.day-btn, button.filter-tab,
+button.view-btn, button.modal-submit, button.auth-submit,
+button.session-qr-btn, button.friend-btn, button.profile-cta {
+  transition:
+    background-color var(--atp-dur) var(--atp-ease),
+    border-color var(--atp-dur) var(--atp-ease),
+    color var(--atp-dur) var(--atp-ease),
+    transform var(--atp-dur-fast) var(--atp-ease),
+    box-shadow var(--atp-dur) var(--atp-ease);
+}
+.btn-primary:hover, .btn-dark:hover, .admin-btn-primary:hover {
+  box-shadow: var(--atp-shadow-glow);
+}
+.btn-primary:active, .btn-ghost:active, .btn-dark:active,
+.admin-btn:active, button.cart-icon-btn:active {
+  transform: translateY(1px);
+}
+
+/* Cards */
+.session-card, .coach-card, .product-card, .challenge-card,
+.session-row, .friend-row, .notif-row, .wallet-txn,
+.tribe-member-row, .post-card {
+  transition:
+    border-color var(--atp-dur) var(--atp-ease),
+    transform var(--atp-dur) var(--atp-ease),
+    box-shadow var(--atp-dur) var(--atp-ease);
+}
+
+/* Modal */
+.modal-overlay, .auth-overlay {
+  transition: opacity var(--atp-dur-slow) var(--atp-ease) !important;
+}
+.modal-overlay .modal, .auth-overlay .auth-modal {
+  transition: transform var(--atp-dur-slow) var(--atp-ease) !important;
+}
+
+/* Inputs */
+.admin-form-input, .admin-form-select, input.atp-form-input {
+  transition: border-color var(--atp-dur) var(--atp-ease),
+              background-color var(--atp-dur) var(--atp-ease);
+}
+.admin-form-input:hover, .admin-form-select:hover {
+  border-color: var(--atp-green-line);
+}
+
+/* Nav links */
+.nav-links a {
+  transition: color var(--atp-dur) var(--atp-ease);
+  position: relative;
+}
+.nav-links a.active::after,
+.nav-links a:hover::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -6px;
+  height: 2px;
+  background: var(--atp-green);
+  border-radius: 1px;
+  transform-origin: left;
+  animation: atp-underline var(--atp-dur) var(--atp-ease);
+}
+@keyframes atp-underline {
+  from { transform: scaleX(0); }
+  to   { transform: scaleX(1); }
+}
+
+/* Avatar hover (the nav-user link) */
+.nav-user:hover .nav-avatar {
+  border-color: var(--atp-green) !important;
+  transform: scale(1.05);
+  transition: border-color var(--atp-dur) var(--atp-ease),
+              transform var(--atp-dur) var(--atp-ease);
+}
