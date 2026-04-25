@@ -346,6 +346,7 @@
     mountNav();
     document.addEventListener('click', handleNavClick);
     document.addEventListener('click', handleAuthAction);
+    document.addEventListener('click', handleAtpCall);
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') closeAuthModal();
     });
@@ -359,6 +360,29 @@
     var act = btn.getAttribute('data-atp-action');
     if (act === 'auth-close') closeAuthModal();
     else if (act === 'auth-toggle') openAuthModal(_authMode === 'login' ? 'signup' : 'login');
+  }
+
+  /* ── Generic [data-atp-call] delegator ─────────────────────────
+   * Migration path off inline onclick handlers. Markup:
+   *   <button data-atp-call="loadSessions">Retry</button>
+   * The delegator looks up window[funcName] and calls it with
+   * (event, button). Args can be passed via data-arg-* attributes:
+   *   <button data-atp-call="toggleCoach" data-arg-id="abc" data-arg-on="true">
+   * The handler receives event + button + dataset, so it can read
+   * btn.dataset.argId etc. Avoids inline onclick (CSP-safe) without
+   * a per-page event-binding boilerplate.
+   * ──────────────────────────────────────────────────────────── */
+  function handleAtpCall(e) {
+    var btn = e.target.closest('[data-atp-call]');
+    if (!btn) return;
+    var fnName = btn.getAttribute('data-atp-call');
+    var fn = window[fnName];
+    if (typeof fn !== 'function') {
+      console.warn('[ATP] data-atp-call="' + fnName + '" — function not found on window');
+      return;
+    }
+    e.preventDefault();
+    fn.call(btn, e, btn);
   }
 
   if (document.readyState === 'loading') {

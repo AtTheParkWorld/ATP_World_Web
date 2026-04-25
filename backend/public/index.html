@@ -592,7 +592,7 @@ a.product-card:hover{transform:translateY(-4px)}
         </div>
       </div>
 
-      <button class="read-more-btn" id="readMoreBtn" onclick="toggleStory()" aria-expanded="false" aria-controls="storyExpanded">
+      <button class="read-more-btn" id="readMoreBtn" data-atp-call="toggleStory" aria-expanded="false" aria-controls="storyExpanded">
         <span class="rmb-text">Read the full story</span>
         <span class="rmb-icon">
           <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 6l4 4 4-4"/></svg>
@@ -1078,7 +1078,7 @@ function toggleStory(){
 <!-- ══ AUTH MODAL ══════════════════════════════════════════ -->
 <div class="auth-overlay" id="authOverlay" role="dialog" aria-modal="true" aria-label="Sign in or join">
   <div class="auth-modal" id="authModal">
-    <button class="auth-close" onclick="closeAuth()" aria-label="Close">×</button>
+    <button class="auth-close" data-atp-call="closeAuth" aria-label="Close">×</button>
 
     <div class="auth-modal-top">
       <img class="auth-modal-logo" id="authLogo" alt="At The Park" style="height:28px;width:auto;display:block;margin-bottom:18px;">
@@ -1092,11 +1092,11 @@ function toggleStory(){
 
       <!-- SOCIAL -->
       <div id="authSocialPanel">
-        <button class="auth-social-btn google" onclick="authWithGoogle()">
+        <button class="auth-social-btn google" data-atp-call="authWithGoogle">
           <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/><path d="M3.964 10.707A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
           Continue with Google
         </button>
-        <button class="auth-social-btn apple" onclick="authWithApple()">
+        <button class="auth-social-btn apple" data-atp-call="authWithApple">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><path d="M13.23 9.26c-.02-2.01 1.64-2.98 1.71-3.03-.93-1.36-2.38-1.55-2.9-1.57-1.24-.13-2.42.73-3.05.73-.63 0-1.6-.71-2.63-.69-1.35.02-2.6.79-3.29 2-.4.69-.99 2.97-.07 5.58.65 1.89 1.67 2.99 2.47 3.04.8.05 1.4-.52 2.62-.52 1.22 0 1.78.52 2.62.5.83-.01 1.73-1.04 2.37-2.95.02-.01.08-.03.08-.03-.01 0-2.03-.78-2.05-3.06z"/><path d="M11.37 3.19c.63-.77 1.05-1.83.94-2.9-.9.04-2 .61-2.65 1.37-.58.67-1.09 1.74-.95 2.77 1 .08 2.03-.51 2.66-1.24z"/></svg>
           Continue with Apple
         </button>
@@ -1124,12 +1124,12 @@ function toggleStory(){
           <label for="authPassword">Password</label>
           <input type="password" id="authPassword" placeholder="Min. 8 characters" autocomplete="new-password">
         </div>
-        <button class="auth-submit" id="authSubmitBtn" onclick="submitSignup()">
+        <button class="auth-submit" id="authSubmitBtn" data-atp-call="submitSignup">
           Become a member — it's free 🎉
         </button>
         <div class="auth-toggle">
           Already a member?
-          <button onclick="switchToLogin()">Log in</button>
+          <button data-atp-call="switchToLogin">Log in</button>
         </div>
       </div>
 
@@ -1143,12 +1143,12 @@ function toggleStory(){
           <label for="loginPassword">Password</label>
           <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password">
         </div>
-        <button class="auth-submit" id="loginSubmitBtn" onclick="submitLogin()">
+        <button class="auth-submit" id="loginSubmitBtn" data-atp-call="submitLogin">
           Log in →
         </button>
         <div class="auth-toggle">
           Not a member yet?
-          <button onclick="switchToSignup()">Join free</button>
+          <button data-atp-call="switchToSignup">Join free</button>
         </div>
       </div>
 
@@ -1403,7 +1403,7 @@ function renderAuthNav(user) {
       '<div class="nav-avatar" title="' + user.firstName + ' ' + user.lastName + '">' + user.avatar + '</div>' +
       '<div class="nav-user-name">' + user.firstName + '</div>' +
     '</a>' +
-    '<button class="nav-logout" onclick="logOut()">Log out</button>';
+    '<button class="nav-logout" data-atp-call="logOut">Log out</button>';
 }
 
 // ── Log out ──────────────────────────────────────────────────

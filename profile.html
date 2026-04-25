@@ -355,7 +355,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
   <!-- HERO -->
   <div class="profile-hero">
     <div class="profile-avatar-wrap">
-      <div class="profile-avatar" id="profileAvatar" onclick="triggerAvatarUpload()">
+      <div class="profile-avatar" id="profileAvatar" data-atp-call="triggerAvatarUpload">
         <span id="avatarInitials">FM</span>
         <div class="avatar-upload">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -499,7 +499,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
             <div class="referral-hero" style="margin-bottom:16px">
               <div style="font-size:13px;color:var(--muted)">Your referral link</div>
               <div class="referral-code" id="refCode">ATP-FM001</div>
-              <button class="referral-copy-btn" onclick="copyReferral()">
+              <button class="referral-copy-btn" data-atp-call="copyReferral">
                 <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="9" height="9" rx="1"/><path d="M3 12H2a1 1 0 01-1-1V2a1 1 0 011-1h9a1 1 0 011 1v1"/></svg>
                 Copy referral link
               </button>
@@ -543,7 +543,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
       <!-- NOTIFICATIONS -->
       <div class="profile-panel" id="panel-notifications">
         <div class="widget">
-          <div class="widget-head"><span class="widget-title">Notifications</span><span class="widget-action" onclick="markAllRead()">Mark all read</span></div>
+          <div class="widget-head"><span class="widget-title">Notifications</span><span class="widget-action" data-atp-call="markAllRead">Mark all read</span></div>
           <div class="widget-body" id="notifList"></div>
         </div>
       </div>
@@ -611,7 +611,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
               <div class="form-group"><label class="form-label">Confirm password</label><input class="form-input" type="password" placeholder="Confirm new password" id="fPwd2"></div>
             </div>
 
-            <button class="form-save-btn" onclick="saveProfile()">Save changes</button>
+            <button class="form-save-btn" data-atp-call="saveProfile">Save changes</button>
           </div>
         </div>
       </div>
@@ -689,7 +689,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
       <div class="sub-card">
         <div class="sub-card-label">Referral Link</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6">Share ATP. Every referral earns <strong style="color:var(--green)">50 points</strong>.</div>
-        <div style="background:var(--dark3);border-radius:var(--radius);padding:11px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" onclick="copyReferral()">
+        <div style="background:var(--dark3);border-radius:var(--radius);padding:11px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" data-atp-call="copyReferral">
           <span style="font-size:12px;color:var(--light);font-family:monospace">atthepark.world/ref/fm001</span>
           <span style="font-size:11px;font-weight:700;color:var(--green)" id="copyText">Copy</span>
         </div>
@@ -712,7 +712,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
 <!-- ══ AUTH MODAL ══════════════════════════════════════════ -->
 <div class="auth-overlay" id="authOverlay" role="dialog" aria-modal="true" aria-label="Sign in or join">
   <div class="auth-modal" id="authModal">
-    <button class="auth-close" onclick="closeAuth()" aria-label="Close">×</button>
+    <button class="auth-close" data-atp-call="closeAuth" aria-label="Close">×</button>
 
     <div class="auth-modal-top">
       <img class="auth-modal-logo" id="authLogo" alt="At The Park">
@@ -726,11 +726,11 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
 
       <!-- SOCIAL -->
       <div id="authSocialPanel">
-        <button class="auth-social-btn google" onclick="authWithGoogle()">
+        <button class="auth-social-btn google" data-atp-call="authWithGoogle">
           <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/><path d="M3.964 10.707A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
           Continue with Google
         </button>
-        <button class="auth-social-btn apple" onclick="authWithApple()">
+        <button class="auth-social-btn apple" data-atp-call="authWithApple">
           <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><path d="M13.23 9.26c-.02-2.01 1.64-2.98 1.71-3.03-.93-1.36-2.38-1.55-2.9-1.57-1.24-.13-2.42.73-3.05.73-.63 0-1.6-.71-2.63-.69-1.35.02-2.6.79-3.29 2-.4.69-.99 2.97-.07 5.58.65 1.89 1.67 2.99 2.47 3.04.8.05 1.4-.52 2.62-.52 1.22 0 1.78.52 2.62.5.83-.01 1.73-1.04 2.37-2.95.02-.01.08-.03.08-.03-.01 0-2.03-.78-2.05-3.06z"/><path d="M11.37 3.19c.63-.77 1.05-1.83.94-2.9-.9.04-2 .61-2.65 1.37-.58.67-1.09 1.74-.95 2.77 1 .08 2.03-.51 2.66-1.24z"/></svg>
           Continue with Apple
         </button>
@@ -758,12 +758,12 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
           <label for="authPassword">Password</label>
           <input type="password" id="authPassword" placeholder="Min. 8 characters" autocomplete="new-password">
         </div>
-        <button class="auth-submit" id="authSubmitBtn" onclick="submitSignup()">
+        <button class="auth-submit" id="authSubmitBtn" data-atp-call="submitSignup">
           Become a member — it's free 🎉
         </button>
         <div class="auth-toggle">
           Already a member?
-          <button onclick="switchToLogin()">Log in</button>
+          <button data-atp-call="switchToLogin">Log in</button>
         </div>
       </div>
 
@@ -777,12 +777,12 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
           <label for="loginPassword">Password</label>
           <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password">
         </div>
-        <button class="auth-submit" id="loginSubmitBtn" onclick="submitLogin()">
+        <button class="auth-submit" id="loginSubmitBtn" data-atp-call="submitLogin">
           Log in →
         </button>
         <div class="auth-toggle">
           Not a member yet?
-          <button onclick="switchToSignup()">Join free</button>
+          <button data-atp-call="switchToSignup">Join free</button>
         </div>
       </div>
 
@@ -1400,7 +1400,7 @@ function applyMemberToPage(m) {
         '<div class="nav-avatar" title="' + fullName + '">' + initialsOf(m.first_name, m.last_name) + '</div>' +
         '<div>' +
           '<div class="nav-user-name">' + (m.first_name||'') + '</div>' +
-          '<button class="nav-logout" onclick="logOut()">Log out</button>' +
+          '<button class="nav-logout" data-atp-call="logOut">Log out</button>' +
         '</div>' +
       '</div>';
   }
@@ -1831,7 +1831,7 @@ function renderAuthNav(user) {
       '<div class="nav-avatar" title="' + user.firstName + ' ' + user.lastName + '">' + user.avatar + '</div>' +
       '<div>' +
         '<div class="nav-user-name">' + user.firstName + '</div>' +
-        '<button class="nav-logout" onclick="logOut()">Log out</button>' +
+        '<button class="nav-logout" data-atp-call="logOut">Log out</button>' +
       '</div>' +
     '</div>';
 }
@@ -1878,18 +1878,18 @@ document.addEventListener('keydown', function(e){
 <!-- QR MODAL (for viewing saved booking QR codes) -->
 <div class="qr-modal-overlay" id="qrModalOverlay" onclick="if(event.target===this)closeQRModal()">
   <div class="qr-modal" style="position:relative">
-    <button class="qr-modal-close" onclick="closeQRModal()">×</button>
+    <button class="qr-modal-close" data-atp-call="closeQRModal">×</button>
     <h3>Check-in QR</h3>
     <p class="qr-modal-sub">Show this to the ambassador at the session</p>
     <div class="qr-modal-canvas"><div id="profileQREl"></div></div>
     <div class="qr-modal-id" id="profileQRId"></div>
     <div class="qr-modal-session" id="profileQRSession"></div>
     <div class="qr-modal-actions">
-      <button class="qr-modal-btn" onclick="saveProfileQR()">
+      <button class="qr-modal-btn" data-atp-call="saveProfileQR">
         <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 13h12"/></svg>
         Save
       </button>
-      <button class="qr-modal-btn primary" onclick="closeQRModal()">Close</button>
+      <button class="qr-modal-btn primary" data-atp-call="closeQRModal">Close</button>
     </div>
   </div>
 </div>

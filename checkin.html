@@ -198,15 +198,15 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
           <div class="ci-result-detail" id="resultDetail"></div>
           <div class="ci-result-label" id="resultLabel"></div>
           <div class="ci-result-actions">
-            <button class="ci-result-btn primary" onclick="dismissResult()">Next Scan</button>
-            <button class="ci-result-btn ghost" onclick="undoCheckin()">Undo</button>
+            <button class="ci-result-btn primary" data-atp-call="dismissResult">Next Scan</button>
+            <button class="ci-result-btn ghost" data-atp-call="undoCheckin">Undo</button>
           </div>
         </div>
       </div>
 
       <div class="ci-camera-status" id="cameraStatus">Camera off</div>
 
-      <button class="ci-start-btn" id="startBtn" onclick="toggleCamera()">
+      <button class="ci-start-btn" id="startBtn" data-atp-call="toggleCamera">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
         Start Scanner
       </button>
@@ -216,7 +216,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
         <div class="ci-manual-label">or enter member ID manually</div>
         <div class="ci-manual-row">
           <input class="ci-manual-input" id="manualId" type="text" placeholder="ATP-FM12345" onkeydown="if(event.key==='Enter')manualCheckin()">
-          <button class="ci-manual-btn" onclick="manualCheckin()">Check in</button>
+          <button class="ci-manual-btn" data-atp-call="manualCheckin">Check in</button>
         </div>
       </div>
     </div>

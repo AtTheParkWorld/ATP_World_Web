@@ -221,7 +221,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
     <div class="admin-login-sub">At The Park · Internal Access Only</div>
     <input class="admin-login-input" type="text" id="adminUser" placeholder="Username" onkeydown="if(event.key==='Enter')document.getElementById('adminPass').focus()">
     <input class="admin-login-input" type="password" id="adminPass" placeholder="Password" onkeydown="if(event.key==='Enter')adminLogin()">
-    <button class="admin-login-btn" onclick="adminLogin()">Sign in</button>
+    <button class="admin-login-btn" data-atp-call="adminLogin">Sign in</button>
     <div class="admin-login-err" id="loginErr">Invalid credentials</div>
   </div>
 </div>
@@ -269,7 +269,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
         Analytics
       </div>
     </div>
-    <div class="admin-logout" onclick="adminLogout()">← Sign out</div>
+    <div class="admin-logout" data-atp-call="adminLogout">← Sign out</div>
   </nav>
 
   <!-- MAIN CONTENT -->
@@ -371,7 +371,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
       <div class="admin-section">
         <div class="admin-section-head">
           <span class="admin-section-title">Ambassador Management</span>
-          <button class="admin-btn admin-btn-primary" onclick="showAddAmbassador()">+ Add Ambassador</button>
+          <button class="admin-btn admin-btn-primary" data-atp-call="showAddAmbassador">+ Add Ambassador</button>
         </div>
         <div class="admin-section-body" style="padding:0">
           <table class="admin-table" id="ambassadorTable">
@@ -399,7 +399,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
               <input class="admin-form-input" type="text" placeholder="e.g. Lead Ambassador Dubai">
             </div>
           </div>
-          <button class="admin-btn admin-btn-primary" style="margin-top:16px" onclick="addAmbassador()">Activate Ambassador Access</button>
+          <button class="admin-btn admin-btn-primary" style="margin-top:16px" data-atp-call="addAmbassador">Activate Ambassador Access</button>
         </div>
       </div>
     </div>
@@ -413,7 +413,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
       <div class="admin-section" id="sessionFormSection">
         <div class="admin-section-head">
           <span class="admin-section-title" id="sessionFormTitle">Create New Session</span>
-          <button class="admin-btn" onclick="cancelEditSession()" id="cancelEditBtn" style="display:none;font-size:12px">✕ Cancel Edit</button>
+          <button class="admin-btn" data-atp-call="cancelEditSession" id="cancelEditBtn" style="display:none;font-size:12px">✕ Cancel Edit</button>
         </div>
         <div class="admin-section-body">
           <div id="sessionFormMsg" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px"></div>
@@ -560,7 +560,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
             <label class="admin-form-label" style="display:flex;align-items:center;gap:12px;cursor:pointer">
               <div style="position:relative;width:44px;height:24px">
                 <input type="checkbox" id="sLiveEnabled" style="opacity:0;width:0;height:0;position:absolute">
-                <span id="sLiveToggle" onclick="toggleLive()" style="position:absolute;top:0;left:0;right:0;bottom:0;background:#1a1a1a;border:1px solid #333;border-radius:12px;cursor:pointer;transition:background .2s">
+                <span id="sLiveToggle" data-atp-call="toggleLive" style="position:absolute;top:0;left:0;right:0;bottom:0;background:#1a1a1a;border:1px solid #333;border-radius:12px;cursor:pointer;transition:background .2s">
                   <span id="sLiveKnob" style="position:absolute;top:2px;left:2px;width:18px;height:18px;background:#444;border-radius:50%;transition:all .2s"></span>
                 </span>
               </div>
@@ -569,10 +569,10 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
           </div>
 
           <div style="display:flex;gap:10px;margin-top:20px;align-items:center">
-            <button class="admin-btn admin-btn-primary" style="padding:10px 24px;font-size:13px" onclick="createSession()">
+            <button class="admin-btn admin-btn-primary" style="padding:10px 24px;font-size:13px" data-atp-call="createSession">
               <span id="sessionSubmitLabel">＋ Create Session</span>
             </button>
-            <button class="admin-btn" style="padding:10px 18px;font-size:13px" onclick="loadSessionsList()">↻ Refresh</button>
+            <button class="admin-btn" style="padding:10px 18px;font-size:13px" data-atp-call="loadSessionsList">↻ Refresh</button>
           </div>
         </div>
       </div>
@@ -582,7 +582,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
         <div style="background:#111;border:1px solid #222;border-radius:14px;width:90%;max-width:700px;max-height:80vh;overflow-y:auto;padding:24px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">
             <div style="font-family:var(--ff-display);font-size:18px;font-weight:900" id="regModalTitle">Registrations</div>
-            <button class="admin-btn" onclick="closeRegistrations()" style="padding:6px 12px">✕ Close</button>
+            <button class="admin-btn" data-atp-call="closeRegistrations" style="padding:6px 12px">✕ Close</button>
           </div>
           <div id="regModalBody">Loading...</div>
         </div>
@@ -633,7 +633,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
       <div class="admin-section" id="challengeFormSection">
         <div class="admin-section-head">
           <span class="admin-section-title" id="challengeFormTitle">Create New Challenge</span>
-          <button class="admin-btn" onclick="cancelEditChallenge()" id="cancelChallengeBtn" style="display:none;font-size:12px">✕ Cancel</button>
+          <button class="admin-btn" data-atp-call="cancelEditChallenge" id="cancelChallengeBtn" style="display:none;font-size:12px">✕ Cancel</button>
         </div>
         <div class="admin-section-body">
           <div id="challengeFormMsg" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px"></div>
@@ -716,8 +716,8 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
                     📁 Upload Image
                     <input type="file" id="badgeUpload" accept="image/png,image/jpeg,image/jpg" onchange="handleBadgeUpload(event)" style="display:none">
                   </label>
-                  <button class="admin-btn" style="font-size:12px;padding:6px 14px" onclick="regenerateBadge()">↻ Use Auto Badge</button>
-                  <button class="admin-btn" style="font-size:12px;padding:6px 14px;color:#f87171" onclick="clearBadgeUpload()" id="clearBadgeBtn" style="display:none">✕ Clear</button>
+                  <button class="admin-btn" style="font-size:12px;padding:6px 14px" data-atp-call="regenerateBadge">↻ Use Auto Badge</button>
+                  <button class="admin-btn" style="font-size:12px;padding:6px 14px;color:#f87171" data-atp-call="clearBadgeUpload" id="clearBadgeBtn" style="display:none">✕ Clear</button>
                 </div>
                 <div id="badgeUploadInfo" style="font-size:11px;color:#555;margin-top:8px"></div>
               </div>
@@ -726,13 +726,13 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
           </div>
 
           <div style="display:flex;gap:10px;margin-top:20px;align-items:center;flex-wrap:wrap">
-            <button class="admin-btn admin-btn-primary" style="padding:10px 24px;font-size:13px" onclick="saveChallenge()">
+            <button class="admin-btn admin-btn-primary" style="padding:10px 24px;font-size:13px" data-atp-call="saveChallenge">
               <span id="challengeSubmitLabel">＋ Save as Draft</span>
             </button>
-            <button class="admin-btn" style="padding:10px 18px;font-size:13px;background:#0d1a0a;border-color:#7AC231;color:#7AC231" onclick="saveAndPublish()">
+            <button class="admin-btn" style="padding:10px 18px;font-size:13px;background:#0d1a0a;border-color:#7AC231;color:#7AC231" data-atp-call="saveAndPublish">
               ▶ Save &amp; Publish
             </button>
-            <button class="admin-btn" style="padding:10px 18px;font-size:13px" onclick="loadChallengesList()">↻ Refresh</button>
+            <button class="admin-btn" style="padding:10px 18px;font-size:13px" data-atp-call="loadChallengesList">↻ Refresh</button>
           </div>
         </div>
       </div>
@@ -836,7 +836,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
               </div>
               <textarea id="feedbackComment" class="admin-form-input" rows="3" placeholder="How was your session? What did you enjoy most?" style="width:100%;font-family:inherit;resize:vertical"></textarea>
               <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
-                <button class="admin-btn admin-btn-primary" style="font-size:12px;padding:8px 20px" onclick="submitCoachFeedback()">Submit Feedback</button>
+                <button class="admin-btn admin-btn-primary" style="font-size:12px;padding:8px 20px" data-atp-call="submitCoachFeedback">Submit Feedback</button>
                 <span id="feedbackMsg" style="font-size:12px"></span>
               </div>
             </div>
@@ -846,9 +846,9 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
 
             <!-- Admin Actions -->
             <div style="padding-top:20px;border-top:1px solid #1a1a1a;display:flex;gap:10px;flex-wrap:wrap">
-              <button class="admin-btn admin-btn-primary" id="coachFeatureBtn" style="font-size:12px;padding:8px 16px" onclick="toggleCoachFeature()">⭐ Feature</button>
-              <button class="admin-btn" style="font-size:12px;padding:8px 16px" onclick="openCoachEditor()">✏️ Edit Profile</button>
-              <button class="admin-btn" style="font-size:12px;padding:8px 16px" onclick="copyCoachProfileLink()">🔗 Copy Profile Link</button>
+              <button class="admin-btn admin-btn-primary" id="coachFeatureBtn" style="font-size:12px;padding:8px 16px" data-atp-call="toggleCoachFeature">⭐ Feature</button>
+              <button class="admin-btn" style="font-size:12px;padding:8px 16px" data-atp-call="openCoachEditor">✏️ Edit Profile</button>
+              <button class="admin-btn" style="font-size:12px;padding:8px 16px" data-atp-call="copyCoachProfileLink">🔗 Copy Profile Link</button>
               <button class="admin-btn" style="font-size:12px;padding:8px 16px;margin-left:auto" onclick="document.getElementById('coachModal').style.display='none'">Close</button>
             </div>
           </div>
@@ -898,7 +898,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
           </div>
         </div>
         <div style="display:flex;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid #1a1a1a">
-          <button class="admin-btn admin-btn-primary" style="padding:10px 20px;font-size:13px" onclick="saveCoachProfile()">✓ Save Profile</button>
+          <button class="admin-btn admin-btn-primary" style="padding:10px 20px;font-size:13px" data-atp-call="saveCoachProfile">✓ Save Profile</button>
           <button class="admin-btn" style="padding:10px 20px;font-size:13px" onclick="document.getElementById('coachEditorModal').style.display='none'">Cancel</button>
         </div>
       </div>
@@ -2990,8 +2990,8 @@ function renderCmsEditor() {
 
   // Save bar
   html += '<div style="position:sticky;bottom:0;background:#0a0a0a;padding:16px 0;border-top:1px solid #1a1a1a;display:flex;gap:10px;align-items:center;z-index:10">';
-  html += '<button class="admin-btn admin-btn-primary" style="padding:12px 28px;font-size:13px;font-weight:800" onclick="saveCmsContent()">✓ Save All Changes</button>';
-  html += '<button class="admin-btn" style="padding:12px 20px;font-size:13px" onclick="loadContentEditor()">↻ Revert</button>';
+  html += '<button class="admin-btn admin-btn-primary" style="padding:12px 28px;font-size:13px;font-weight:800" data-atp-call="saveCmsContent">✓ Save All Changes</button>';
+  html += '<button class="admin-btn" style="padding:12px 20px;font-size:13px" data-atp-call="loadContentEditor">↻ Revert</button>';
   html += '<a href="/' + (page === 'index' ? '' : page + '.html') + '" target="_blank" class="admin-btn" style="padding:12px 20px;font-size:13px;text-decoration:none">🔗 Preview Live Page</a>';
   html += '<span id="cmsSaveMsg" style="margin-left:16px;font-size:12px"></span>';
   html += '</div>';
