@@ -1483,12 +1483,26 @@ function renderFeedLoading() {
     '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Loading community feed…</div>';
 }
 function renderFeedEmpty() {
+  var loggedIn = !!(window.ATP && window.ATP.isLoggedIn && window.ATP.isLoggedIn());
+  var cta = loggedIn
+    ? '<button class="atp-btn atp-btn--primary atp-empty__cta" onclick="document.getElementById(\'postContent\')?.focus()">Write the first post</button>'
+    : '<button class="atp-btn atp-btn--primary atp-empty__cta" onclick="window.openAuth && openAuth(\'signup\')">Join free to post</button>';
   document.getElementById('postsContainer').innerHTML =
-    '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">No posts yet. Be the first to share!</div>';
+    '<div class="atp-empty">' +
+      '<div class="atp-empty__icon">💬</div>' +
+      '<h3 class="atp-empty__title">No posts yet</h3>' +
+      '<p class="atp-empty__desc">Share a workout, a milestone, or a session you loved — kick off the conversation.</p>' +
+      cta +
+    '</div>';
 }
 function renderFeedError(msg) {
   document.getElementById('postsContainer').innerHTML =
-    '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Could not load feed. '+escapeHtml(msg||'Please try again.')+'</div>';
+    '<div class="atp-empty">' +
+      '<div class="atp-empty__icon">⚠️</div>' +
+      '<h3 class="atp-empty__title">Couldn\'t load the feed</h3>' +
+      '<p class="atp-empty__desc">'+escapeHtml(msg||'Please check your connection and try again.')+'</p>' +
+      '<button class="atp-btn atp-btn--primary atp-empty__cta" onclick="loadFeed && loadFeed()">Retry</button>' +
+    '</div>';
 }
 
 function mapApiPost(p) {

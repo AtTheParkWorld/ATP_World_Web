@@ -1888,6 +1888,9 @@ async function toggleCoach(id, enable) {
 }
 
 function showToast(msg, isError) {
+  if (window.ATPComponents && window.ATPComponents.toast) {
+    return window.ATPComponents.toast(msg, isError ? 'danger' : 'success');
+  }
   var t = document.getElementById('adminToast');
   if (!t) return;
   t.textContent = msg;
@@ -3147,5 +3150,6 @@ function copyMediaUrl(url) {
 }
 
 </script>
+<script src="/atp-components.js"></script>
 </body>
 </html>
