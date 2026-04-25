@@ -311,24 +311,7 @@ nav.scrolled{background:rgba(10,10,10,.97);border-bottom-color:rgba(122,194,49,.
 </head>
 <body>
 
-<nav id="nav">
-  <div class="nav-inner">
-    <a href="index.html" class="nav-logo"><img id="nav-logo-img" alt="At The Park" style="height:32px;width:auto;display:block;"></a>
-    <ul class="nav-links">
-      <li><a href="index.html">Home</a></li>
-      <li><a href="sessions.html">Sessions</a></li>
-      <li><a href="community.html" class="active">Community</a></li>
-            <li><a href="store.html">Store</a></li>
-      <li><a href="index.html#partners">Partners</a></li>
-      <li><a href="index.html#story">About</a></li>
-    </ul>
-    <div class="nav-actions" id="navActions">
-      <button class="btn-ghost" onclick="openAuth('login')">Log in</button>
-      <button class="btn-primary" onclick="openAuth('signup')">Join free →</button>
-    </div>
-    <div class="hamburger"><span></span><span></span><span></span></div>
-  </div>
-</nav>
+<div id="atp-nav-host" data-active="community"></div>
 
 <main>
   <section class="page-hero">
@@ -1697,5 +1680,6 @@ async function loadCitiesStat() {
 })();
 
 </script>
+<script src="/atp-components.js"></script>
 </body>
 </html>

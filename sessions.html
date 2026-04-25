@@ -293,26 +293,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 </head>
 <body>
 
-<nav id="nav">
-  <div class="nav-inner">
-    <a href="index.html" class="nav-logo" aria-label="At The Park">
-      <img id="nav-logo-img" alt="At The Park" style="height:32px;width:auto;display:block;">
-    </a>
-    <ul class="nav-links">
-      <li><a href="index.html">Home</a></li>
-      <li><a href="sessions.html" class="active">Sessions</a></li>
-      <li><a href="community.html">Community</a></li>
-            <li><a href="store.html">Store</a></li>
-      <li><a href="index.html#partners">Partners</a></li>
-      <li><a href="index.html#story">About</a></li>
-    </ul>
-    <div class="nav-actions">
-      <button class="btn-ghost" onclick="openAuth('login')">Log in</button>
-      <button class="btn-primary" onclick="openAuth('signup')">Join free →</button>
-    </div>
-    <div class="hamburger"><span></span><span></span><span></span></div>
-  </div>
-</nav>
+<div id="atp-nav-host" data-active="sessions"></div>
 
 <main>
   <section class="page-hero">
@@ -1504,5 +1485,6 @@ async function loadSessions() {
 })();
 
 </script>
+<script src="/atp-components.js"></script>
 </body>
 </html>
