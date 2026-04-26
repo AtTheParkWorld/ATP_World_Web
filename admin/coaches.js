@@ -1,0 +1,341 @@
+/* ════════════════════════════════════════════════════════════════
+ * ATP Admin — Coaches: grid, modal, profile editor, feedback, feature toggle
+ * Extracted from admin/main.js (Phase 3a module split).
+ * Loaded as classic <script src> from admin.html in dependency order.
+ * ════════════════════════════════════════════════════════════════ */
+
+// ═══════════════════════════════════════════════════════════
+// COACHES MODULE
+// ═══════════════════════════════════════════════════════════
+var CURRENT_COACH_ID = null;
+
+async function loadCoachesSection() {
+  var grid = document.getElementById('coachesGrid');
+  if (!grid) return;
+  grid.innerHTML = '<div style="text-align:center;color:#444;padding:40px;grid-column:1/-1">Loading coaches...</div>';
+  try {
+    var res = await fetch(ATP_API+'/coaches');
+    var data = await res.json();
+    var coaches = data.coaches || [];
+    if (!coaches.length) {
+      grid.innerHTML = '<div style="text-align:center;color:#444;padding:40px;grid-column:1/-1">No coaches yet — make members ambassadors first</div>';
+      return;
+    }
+    grid.innerHTML = coaches.map(function(c) {
+      var name = (c.first_name||'') + ' ' + (c.last_name||'');
+      var ini  = ((c.first_name||'?')[0]+(c.last_name||'?')[0]).toUpperCase();
+      var rating = parseFloat(c.rating_avg)||0;
+      var stars = '★'.repeat(Math.round(rating)) + '☆'.repeat(5-Math.round(rating));
+      var specs = [];
+      if (Array.isArray(c.specialties)) { specs = c.specialties; }
+      else { try { specs = JSON.parse(c.specialties||'[]'); } catch(e) {} }
+      var sessionCount = parseInt(c.total_sessions||c.sessions_delivered||0);
+      return '<div class="coach-card" onclick="openCoachModal(this.dataset.cid)" data-cid="'+c.id+'">'+
+        '<div class="coach-card-hero">'+
+          '<div class="coach-avatar">'+ini+'</div>'+
+          '<div>'+
+            '<div class="coach-name">'+name.trim()+(c.is_featured?'<span class="coach-feature-badge">FEATURED</span>':'')+'</div>'+
+            '<div class="coach-meta">'+(c.city_name||'ATP Network')+'</div>'+
+          '</div>'+
+        '</div>'+
+        '<div class="coach-body">'+
+          '<div class="coach-stars" title="'+rating.toFixed(1)+'/5">'+
+            '<span style="color:#7AC231;font-size:13px">'+stars+'</span>'+
+            '<span style="font-size:11px;color:#555;margin-left:6px">'+(rating?rating.toFixed(1)+' ('+c.rating_count+')':'No reviews yet')+'</span>'+
+          '</div>'+
+          '<div class="coach-stat"><span>🎽</span><span>'+sessionCount+' sessions delivered</span></div>'+
+          (c.years_experience?'<div class="coach-stat"><span>⏱</span><span>'+c.years_experience+' years experience</span></div>':'')+
+          '<div style="margin-top:10px;display:flex;flex-wrap:wrap;gap:4px">'+
+            specs.slice(0,3).map(function(s){ return '<span class="coach-specialty-tag">'+s+'</span>'; }).join('')+
+          '</div>'+
+          (c.bio?'<div style="font-size:12px;color:#555;margin-top:10px;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+c.bio+'</div>':'')+
+        '</div>'+
+      '</div>';
+    }).join('');
+  } catch(e) {
+    grid.innerHTML = '<div style="text-align:center;color:#f87171;padding:40px;grid-column:1/-1">Error: '+e.message+'</div>';
+  }
+}
+
+async function openCoachModal(coachId) {
+  CURRENT_COACH_ID = coachId;
+  var modal = document.getElementById('coachModal');
+  modal.style.display = 'flex';
+  document.getElementById('coachModalAvatar').textContent = '…';
+  document.getElementById('coachModalName').textContent = 'Loading...';
+  window._feedbackRating = 0;
+
+  try {
+    var token = getToken();
+    var res = await fetch(ATP_API+'/coaches/'+coachId, {headers:{'Authorization':'Bearer '+token}});
+    var data = await res.json();
+    var c = data.coach;
+    window._editingCoach = c;
+    var name = (c.first_name||'') + ' ' + (c.last_name||'');
+    var ini  = ((c.first_name||'?')[0]+(c.last_name||'?')[0]).toUpperCase();
+    var rating = parseFloat(c.rating_avg)||0;
+
+    // Featured ribbon
+    document.getElementById('coachFeaturedRibbon').style.display = c.is_featured ? 'block' : 'none';
+
+    // Avatar
+    document.getElementById('coachModalAvatar').textContent = ini;
+
+    // Name + meta
+    document.getElementById('coachModalName').textContent = name.trim();
+    var metaParts = [];
+    if (c.city_name) metaParts.push('📍 '+c.city_name);
+    if (c.years_experience) metaParts.push('⏱ '+c.years_experience+' year'+(c.years_experience>1?'s':'')+' experience');
+    document.getElementById('coachModalMeta').innerHTML = metaParts.join(' · ');
+
+    // Rating with stars
+    var stars = '';
+    for (var i = 1; i <= 5; i++) {
+      stars += '<span style="color:'+(i<=rating?'#FFD700':'rgba(255,255,255,.2)')+';font-size:18px">★</span>';
+    }
+    document.getElementById('coachModalRating').innerHTML =
+      stars +
+      '<span style="color:rgba(255,255,255,.85);font-size:13px;margin-left:10px;font-weight:600">'+
+        (rating ? rating.toFixed(1)+' / 5' : 'New Coach') +
+      '</span>' +
+      (c.rating_count ? '<span style="color:rgba(255,255,255,.5);font-size:12px;margin-left:6px">('+c.rating_count+' review'+(c.rating_count>1?'s':'')+')</span>' : '');
+
+    // Social links
+    var socialHTML = '';
+    if (c.instagram) socialHTML += '<a href="https://instagram.com/'+c.instagram+'" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.3);color:#fff;padding:6px 12px;border-radius:20px;font-size:12px;text-decoration:none;border:1px solid rgba(255,255,255,.15)">📷 @'+c.instagram+'</a>';
+    if (c.tiktok) socialHTML += '<a href="https://tiktok.com/@'+c.tiktok+'" target="_blank" style="display:inline-flex;align-items:center;gap:6px;background:rgba(0,0,0,.3);color:#fff;padding:6px 12px;border-radius:20px;font-size:12px;text-decoration:none;border:1px solid rgba(255,255,255,.15)">🎵 @'+c.tiktok+'</a>';
+    document.getElementById('coachSocialRow').innerHTML = socialHTML;
+
+    // Stats strip - 4 metrics
+    var statsHTML = [
+      {val: c.total_sessions||0, label: 'Sessions<br>Delivered'},
+      {val: c.upcoming_sessions||0, label: 'Upcoming<br>Sessions'},
+      {val: c.rating_count||0, label: 'Member<br>Reviews'},
+      {val: (c.points_balance||0).toLocaleString(), label: 'Total<br>Points'},
+    ].map(function(s, i) {
+      var borderR = i < 3 ? 'border-right:1px solid #1a1a1a' : '';
+      return '<div style="padding:20px 12px;text-align:center;'+borderR+'">'+
+        '<div style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:#7AC231;line-height:1">'+s.val+'</div>'+
+        '<div style="font-size:10px;color:#555;margin-top:6px;text-transform:uppercase;letter-spacing:.08em;line-height:1.3">'+s.label+'</div>'+
+      '</div>';
+    }).join('');
+    document.getElementById('coachModalStats').innerHTML = statsHTML;
+
+    // Bio
+    document.getElementById('coachModalBio').innerHTML = c.bio
+      ? '<div style="font-size:12px;color:#555;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">About the Coach</div>' +
+        '<div style="font-size:14px;color:#ccc;line-height:1.7">'+c.bio+'</div>'
+      : '<div style="font-size:13px;color:#333;font-style:italic;padding:20px;text-align:center;background:#111;border-radius:10px">No bio added yet. Admin can add one via Edit Profile.</div>';
+
+    // Specialties — handle both array and string responses from API
+    var specs = [];
+    if (Array.isArray(c.specialties)) { specs = c.specialties; }
+    else { try { specs = JSON.parse(c.specialties||'[]'); } catch(e) {} }
+    document.getElementById('coachModalSpecialties').innerHTML = specs.length
+      ? '<div style="font-size:12px;color:#555;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">🎯 Specialties</div>' +
+        specs.map(function(s){ return '<span style="display:inline-block;background:rgba(122,194,49,.12);color:#7AC231;border:1px solid rgba(122,194,49,.3);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;margin:3px 3px 3px 0">'+s+'</span>'; }).join('')
+      : '';
+
+    // Certifications — handle both array and string responses
+    var certs = [];
+    if (Array.isArray(c.certifications)) { certs = c.certifications; }
+    else { try { certs = JSON.parse(c.certifications||'[]'); } catch(e) {} }
+    document.getElementById('coachModalCertifications').innerHTML = certs.length
+      ? '<div style="font-size:12px;color:#555;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">🏆 Certifications</div>' +
+        certs.map(function(s){ return '<div style="display:flex;align-items:center;gap:8px;background:#111;border:1px solid #1a1a1a;border-radius:8px;padding:8px 12px;margin-bottom:6px"><span style="color:#7AC231;font-size:14px">✓</span><span style="font-size:12px;color:#ccc">'+s+'</span></div>'; }).join('')
+      : '';
+
+    // Languages — handle both array and string responses
+    var langs = [];
+    if (Array.isArray(c.languages)) { langs = c.languages; }
+    else { try { langs = JSON.parse(c.languages||'[]'); } catch(e) {} }
+    document.getElementById('coachModalLangs').innerHTML = langs.length
+      ? '<div style="font-size:12px;color:#555;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">🌐 Languages</div>' +
+        '<div>' + langs.map(function(l){ return '<span style="display:inline-block;background:#111;border:1px solid #1a1a1a;border-radius:6px;padding:4px 12px;font-size:12px;color:#ccc;margin:2px 4px 2px 0">'+l+'</span>'; }).join('') + '</div>'
+      : '';
+
+    // Upcoming sessions
+    var sess = data.upcoming_sessions||[];
+    document.getElementById('coachModalSessions').innerHTML = sess.length
+      ? '<div style="font-size:12px;color:#555;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">📅 Upcoming Sessions</div>' +
+        sess.map(function(s) {
+          var dt = s.scheduled_at ? new Date(s.scheduled_at).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
+          return '<div style="background:#0f0f0f;border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid #1a1a1a">' +
+            '<div><div style="font-size:13px;font-weight:700;color:#fff">'+s.name+'</div><div style="font-size:11px;color:#666;margin-top:3px">'+dt+'</div></div>' +
+            '<div style="text-align:right"><div style="font-size:13px;font-weight:800;color:#7AC231">'+s.registered+' / '+s.capacity+'</div><div style="font-size:10px;color:#555">booked</div></div>' +
+          '</div>';
+        }).join('')
+      : '';
+
+    // Feedback display (below form)
+    var feedback = data.feedback||[];
+    document.getElementById('coachModalFeedback').innerHTML = feedback.length
+      ? '<div style="font-size:12px;color:#555;margin-bottom:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">💬 Member Reviews</div>' +
+        feedback.slice(0,10).map(function(f) {
+          var st = '';
+          for (var i=1;i<=5;i++) st += '<span style="color:'+(i<=f.rating?'#FFD700':'#333')+'">★</span>';
+          var dt = f.created_at ? new Date(f.created_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '';
+          var initials = ((f.first_name||'?')[0]+(f.last_name||'?')[0]).toUpperCase();
+          return '<div style="background:#0f0f0f;border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid #1a1a1a">' +
+            '<div style="display:flex;justify-content:space-between;margin-bottom:8px;align-items:center">' +
+              '<div style="display:flex;align-items:center;gap:8px">' +
+                '<div style="width:32px;height:32px;border-radius:50%;background:#1a2a0a;color:#7AC231;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800">'+initials+'</div>' +
+                '<div><div style="font-weight:700;font-size:12px;color:#fff">'+f.first_name+' '+f.last_name+'</div><div style="font-size:10px;color:#555">'+dt+'</div></div>' +
+              '</div>' +
+              '<div style="font-size:14px">'+st+'</div>' +
+            '</div>' +
+            (f.comment ? '<div style="font-size:13px;color:#aaa;line-height:1.6;margin-top:8px">'+f.comment+'</div>' : '') +
+          '</div>';
+        }).join('')
+      : '<div style="font-size:12px;color:#333;font-style:italic;padding:16px;text-align:center;background:#0f0f0f;border-radius:8px">No reviews yet. Be the first to leave feedback!</div>';
+
+    // Feature button label
+    var featBtn = document.getElementById('coachFeatureBtn');
+    if (featBtn) featBtn.textContent = c.is_featured ? '⭐ Unfeature' : '⭐ Feature';
+
+    // Wire up the feedback stars interaction
+    setupFeedbackStars();
+
+  } catch(e) {
+    document.getElementById('coachModalName').textContent = 'Error: '+e.message;
+  }
+}
+
+function setupFeedbackStars() {
+  document.querySelectorAll('.fb-star').forEach(function(el) {
+    el.onmouseenter = function() {
+      var v = parseInt(this.dataset.v);
+      document.querySelectorAll('.fb-star').forEach(function(s) {
+        s.style.color = parseInt(s.dataset.v) <= v ? '#FFD700' : '#333';
+      });
+    };
+    el.onclick = function() {
+      var v = parseInt(this.dataset.v);
+      window._feedbackRating = v;
+      document.getElementById('feedbackRatingLabel').textContent = v + ' / 5';
+    };
+  });
+  var row = document.getElementById('feedbackStars');
+  if (row) row.onmouseleave = function() {
+    var v = window._feedbackRating || 0;
+    document.querySelectorAll('.fb-star').forEach(function(s) {
+      s.style.color = parseInt(s.dataset.v) <= v ? '#FFD700' : '#333';
+    });
+  };
+}
+
+async function submitCoachFeedback() {
+  var msg = document.getElementById('feedbackMsg');
+  var rating = window._feedbackRating || 0;
+  var comment = document.getElementById('feedbackComment').value.trim();
+  if (!rating) {
+    msg.textContent = '⚠️ Please select a rating';
+    msg.style.color = '#f87171';
+    return;
+  }
+  try {
+    var token = getToken();
+    var res = await fetch(ATP_API+'/coaches/'+CURRENT_COACH_ID+'/feedback', {
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify({rating, comment})
+    });
+    var d = await res.json();
+    if (d.success) {
+      msg.textContent = '✅ Thank you for your feedback!';
+      msg.style.color = '#7AC231';
+      document.getElementById('feedbackComment').value = '';
+      window._feedbackRating = 0;
+      setTimeout(function() { openCoachModal(CURRENT_COACH_ID); }, 1200);
+    } else {
+      msg.textContent = '❌ ' + (d.error || 'Failed');
+      msg.style.color = '#f87171';
+    }
+  } catch(e) {
+    msg.textContent = '❌ ' + e.message;
+    msg.style.color = '#f87171';
+  }
+}
+
+
+function openCoachEditor() {
+  var c = window._editingCoach;
+  if (!c) { alert('No coach loaded'); return; }
+  document.getElementById('coachEditorTitle').textContent = 'Edit Profile — ' + c.first_name + ' ' + c.last_name;
+  document.getElementById('ceBio').value = c.bio || '';
+  document.getElementById('ceYears').value = c.years_experience || '';
+  document.getElementById('ceInsta').value = c.instagram || '';
+  document.getElementById('ceTiktok').value = c.tiktok || '';
+  var parseArr = function(v){ try{ return Array.isArray(v)?v:JSON.parse(v||'[]'); }catch(e){ return []; } };
+  document.getElementById('ceLangs').value = parseArr(c.languages).join(', ');
+  document.getElementById('ceSpecs').value = parseArr(c.specialties).join(', ');
+  document.getElementById('ceCerts').value = parseArr(c.certifications).join(', ');
+  // Hide coach modal, show editor
+  document.getElementById('coachModal').style.display = 'none';
+  document.getElementById('coachEditorModal').style.display = 'flex';
+}
+
+async function saveCoachProfile() {
+  var c = window._editingCoach;
+  if (!c) return;
+  var msgEl = document.getElementById('coachEditorMsg');
+  var splitCsv = function(s) { return (s||'').split(',').map(function(x){return x.trim();}).filter(Boolean); };
+  var payload = {
+    bio: document.getElementById('ceBio').value.trim(),
+    years_experience: parseInt(document.getElementById('ceYears').value) || 0,
+    instagram: document.getElementById('ceInsta').value.trim().replace(/^@/,''),
+    tiktok: document.getElementById('ceTiktok').value.trim().replace(/^@/,''),
+    languages: splitCsv(document.getElementById('ceLangs').value),
+    specialties: splitCsv(document.getElementById('ceSpecs').value),
+    certifications: splitCsv(document.getElementById('ceCerts').value),
+    is_featured: !!c.is_featured
+  };
+  try {
+    var token = getToken();
+    var res = await fetch(ATP_API + '/coaches/' + c.id, {
+      method: 'PUT',
+      headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify(payload)
+    });
+    var d = await res.json();
+    if (d.success) {
+      msgEl.textContent = '✅ Profile saved!';
+      msgEl.style.cssText = 'display:block;background:#0d1a0a;color:#7AC231;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px';
+      setTimeout(function() {
+        document.getElementById('coachEditorModal').style.display = 'none';
+        loadCoachesSection();
+        openCoachModal(c.id);
+      }, 900);
+    } else {
+      throw new Error(d.error || 'Failed to save');
+    }
+  } catch(e) {
+    msgEl.textContent = '❌ ' + e.message;
+    msgEl.style.cssText = 'display:block;background:#2a1010;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px';
+  }
+}
+
+
+function copyCoachProfileLink() {
+  var url = window.location.origin + '/coach?id=' + CURRENT_COACH_ID;
+  navigator.clipboard.writeText(url).then(function() {
+    showToast('🔗 Profile link copied!');
+  });
+}
+
+
+async function toggleCoachFeature() {
+  if (!CURRENT_COACH_ID) return;
+  var token = getToken();
+  // Get current state
+  var res = await fetch(ATP_API+'/coaches/'+CURRENT_COACH_ID, {headers:{'Authorization':'Bearer '+token}});
+  var data = await res.json();
+  var newFeatured = !data.coach.is_featured;
+  await fetch(ATP_API+'/coaches/'+CURRENT_COACH_ID, {
+    method:'PUT', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+    body: JSON.stringify({is_featured: newFeatured})
+  });
+  showToast(newFeatured ? '⭐ Coach featured!' : '✅ Feature removed');
+  openCoachModal(CURRENT_COACH_ID);
+  loadCoachesSection();
+}
+

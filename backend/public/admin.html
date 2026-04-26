@@ -791,9 +791,18 @@
 
 <!-- TOAST -->
 <div class="admin-toast" id="adminToast"></div>
-<script src="/admin/main.js"></script>
-
-<!-- (second inline script block extracted into /admin/main.js above) -->
+<!-- Admin modules — load order matters: core defines globals + showAdminSection
+     hook in init.js wires the per-section loaders, so init.js must come last. -->
+<script src="/admin/core.js"></script>
+<script src="/admin/members.js"></script>
+<script src="/admin/ambassadors.js"></script>
+<script src="/admin/sessions.js"></script>
+<script src="/admin/showtoast.js"></script>
+<script src="/admin/challenges.js"></script>
+<script src="/admin/coaches.js"></script>
+<script src="/admin/analytics.js"></script>
+<script src="/admin/cms.js"></script>
+<script src="/admin/init.js"></script>
 <script src="/atp-components.js"></script>
 </body>
 </html>

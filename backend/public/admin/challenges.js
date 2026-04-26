@@ -1,0 +1,267 @@
+/* ════════════════════════════════════════════════════════════════
+ * ATP Admin — Challenges: badge generator, save/publish, leaderboard
+ * Extracted from admin/main.js (Phase 3a module split).
+ * Loaded as classic <script src> from admin.html in dependency order.
+ * ════════════════════════════════════════════════════════════════ */
+
+// ═══════════════════════════════════════════════════════════
+// CHALLENGES MODULE
+// ═══════════════════════════════════════════════════════════
+var CHALLENGE_EDIT_ID = null;
+var CHALLENGE_PUBLISH_ON_SAVE = false;
+
+function generateBadgeSVG(icon, title) {
+  // Clean, balanced badge with no text overlap
+  // Uses unique IDs to avoid clashes when multiple badges render on same page
+  var uid = 'b' + Math.random().toString(36).substr(2,8);
+  return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" style="width:100%;height:100%;display:block">'+
+    '<defs>'+
+      '<radialGradient id="bg'+uid+'" cx="50%" cy="45%" r="60%">'+
+        '<stop offset="0%" stop-color="#1f3310"/>'+
+        '<stop offset="100%" stop-color="#050505"/>'+
+      '</radialGradient>'+
+      '<linearGradient id="ring'+uid+'" x1="0%" y1="0%" x2="100%" y2="100%">'+
+        '<stop offset="0%" stop-color="#7AC231"/>'+
+        '<stop offset="100%" stop-color="#4a7a1d"/>'+
+      '</linearGradient>'+
+    '</defs>'+
+    // Outer ring
+    '<circle cx="60" cy="60" r="58" fill="url(#bg'+uid+')" stroke="url(#ring'+uid+')" stroke-width="3"/>'+
+    // Decorative laurel dots around top
+    '<circle cx="60" cy="8" r="1.5" fill="#7AC231"/>'+
+    '<circle cx="40" cy="12" r="1" fill="#7AC231" opacity="0.6"/>'+
+    '<circle cx="80" cy="12" r="1" fill="#7AC231" opacity="0.6"/>'+
+    // Icon - centered vertically, plenty of space
+    '<text x="60" y="62" text-anchor="middle" font-size="42" dominant-baseline="central">'+(icon||'🏆')+'</text>'+
+    // Ribbon at bottom
+    '<rect x="12" y="90" width="96" height="18" fill="#7AC231" rx="2"/>'+
+    '<text x="60" y="100" text-anchor="middle" font-size="7" font-family="Arial Black,Impact,sans-serif" fill="#0a0a0a" font-weight="900" letter-spacing="1.5">ATP CHALLENGE</text>'+
+    '</svg>';
+}
+
+
+
+function handleBadgeUpload(event) {
+  var file = event.target.files[0];
+  if (!file) return;
+  if (file.size > 2 * 1024 * 1024) {
+    alert('File too large — max 2MB'); return;
+  }
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    var dataUrl = e.target.result;
+    document.getElementById('cBadgeImage').value = dataUrl;
+    document.getElementById('badgePreview').innerHTML =
+      '<img src="'+dataUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+    document.getElementById('badgeUploadInfo').textContent = '✅ Using uploaded image: ' + file.name;
+    var clr = document.getElementById('clearBadgeBtn');
+    if (clr) clr.style.display = 'inline-block';
+  };
+  reader.readAsDataURL(file);
+}
+
+function clearBadgeUpload() {
+  document.getElementById('cBadgeImage').value = '';
+  document.getElementById('badgeUpload').value = '';
+  document.getElementById('badgeUploadInfo').textContent = '';
+  var clr = document.getElementById('clearBadgeBtn');
+  if (clr) clr.style.display = 'none';
+  regenerateBadge();
+}
+
+function regenerateBadge() {
+  var icon = document.getElementById('cIcon')?.value || '🏆';
+  var title = document.getElementById('cTitle')?.value || 'ATP CHALLENGE';
+  var el = document.getElementById('badgePreview');
+  if (el) el.innerHTML = generateBadgeSVG(icon, title);
+}
+
+function updateDeviceMetric() {
+  var metric = document.getElementById('cMetric')?.value;
+  var dm = document.getElementById('cDeviceMetric');
+  if (!dm) return;
+  var map = {km:'km',steps:'steps',calories:'calories',minutes:'heart_rate_minutes'};
+  if (map[metric]) dm.value = map[metric];
+  regenerateBadge();
+}
+
+async function saveChallenge(publish) {
+  CHALLENGE_PUBLISH_ON_SAVE = !!publish;
+  var msgEl = document.getElementById('challengeFormMsg');
+  var title     = document.getElementById('cTitle')?.value.trim();
+  var icon      = document.getElementById('cIcon')?.value || '🏆';
+  var ctype     = document.getElementById('cType')?.value;
+  var metric    = document.getElementById('cMetric')?.value;
+  var target    = parseInt(document.getElementById('cTarget')?.value)||0;
+  var points    = parseInt(document.getElementById('cPoints')?.value)||0;
+  var startDate = document.getElementById('cStartDate')?.value;
+  var endDate   = document.getElementById('cEndDate')?.value;
+  var desc      = document.getElementById('cDesc')?.value.trim();
+  var cityId    = document.getElementById('cCity')?.value||null;
+  var device    = document.getElementById('cDeviceMetric')?.value||null;
+
+  if (!title||!ctype||!metric||!target||!startDate||!endDate) {
+    msgEl.textContent = '⚠️ Title, Type, Metric, Target and Dates are required.';
+    msgEl.style.cssText = 'display:block;background:#2a1010;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+    return;
+  }
+
+  var uploadedBadge = document.getElementById('cBadgeImage')?.value;
+  var badgeSvg = uploadedBadge || document.getElementById('badgePreview')?.innerHTML || null;
+  var payload = {
+    title, icon, challenge_type: ctype, metric, target, unit: metric,
+    points_reward: points, starts_at: startDate+'T00:00:00Z',
+    ends_at: endDate+'T23:59:59Z', description: desc,
+    city_id: cityId, device_metric: device,
+    badge_svg: badgeSvg,
+    badge_image: uploadedBadge || null
+  };
+
+  var token = getToken();
+  var btn = document.getElementById('challengeSubmitLabel');
+  if (btn) btn.textContent = '⏳ Saving...';
+
+  try {
+    var url = CHALLENGE_EDIT_ID
+      ? ATP_API + '/challenges/' + CHALLENGE_EDIT_ID
+      : ATP_API + '/challenges';
+    var method = CHALLENGE_EDIT_ID ? 'PATCH' : 'POST';
+    var res = await fetch(url, {
+      method, headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify(payload)
+    });
+    var data = await res.json();
+    if (data.challenge) {
+      // Publish if requested
+      if (publish && !data.challenge.is_published) {
+        await fetch(ATP_API+'/challenges/'+data.challenge.id+'/publish', {
+          method:'PATCH', headers:{'Authorization':'Bearer '+token}
+        });
+      }
+      msgEl.textContent = publish ? '✅ Challenge published!' : '✅ Challenge saved as draft.';
+      msgEl.style.cssText = 'display:block;background:#0d1a0a;color:#7AC231;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+      resetChallengeForm();
+      loadChallengesList();
+    } else {
+      throw new Error(data.error || 'Failed');
+    }
+  } catch(e) {
+    msgEl.textContent = '❌ ' + e.message;
+    msgEl.style.cssText = 'display:block;background:#2a1010;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+  } finally {
+    if (btn) btn.textContent = '＋ Save as Draft';
+  }
+}
+
+function saveAndPublish() { saveChallenge(true); }
+
+function resetChallengeForm() {
+  CHALLENGE_EDIT_ID = null;
+  ['cTitle','cDesc','cTarget','cPoints','cStartDate','cEndDate'].forEach(function(id){
+    var el = document.getElementById(id); if(el) el.value = '';
+  });
+  document.getElementById('cIcon').value = '🏆';
+  document.getElementById('challengeFormTitle').textContent = 'Create New Challenge';
+  document.getElementById('challengeSubmitLabel').textContent = '＋ Save as Draft';
+  document.getElementById('cancelChallengeBtn').style.display = 'none';
+  regenerateBadge();
+}
+
+function cancelEditChallenge() { resetChallengeForm(); }
+
+async function togglePublish(id) {
+  var token = getToken();
+  var res = await fetch(ATP_API+'/challenges/'+id+'/publish', {
+    method:'PATCH', headers:{'Authorization':'Bearer '+token}
+  });
+  var d = await res.json();
+  showToast(d.published ? '✅ Published!' : '⏸ Unpublished');
+  loadChallengesList();
+}
+
+async function loadChallengesList() {
+  var container = document.getElementById('challengesList');
+  var countEl = document.getElementById('challengeCount');
+  if (!container) return;
+  container.innerHTML = '<div style="text-align:center;color:#444;padding:24px">Loading...</div>';
+  try {
+    var token = getToken();
+    var filter = document.getElementById('challengeFilter')?.value || '';
+    var res = await fetch(ATP_API+'/challenges?all=true', {headers:{'Authorization':'Bearer '+token}});
+    var data = await res.json();
+    var challenges = data.challenges || [];
+    if (filter === 'published') challenges = challenges.filter(function(c){return c.is_published;});
+    if (filter === 'draft') challenges = challenges.filter(function(c){return !c.is_published;});
+    if (countEl) countEl.textContent = challenges.length + ' challenges';
+    if (!challenges.length) {
+      container.innerHTML = '<div style="text-align:center;color:#444;padding:24px">No challenges yet</div>';
+      return;
+    }
+    container.innerHTML = challenges.map(function(c) {
+      var icon = c.icon || '🏆';
+      var badge = c.badge_svg || generateBadgeSVG(icon, c.title);
+      var start = c.starts_at ? new Date(c.starts_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) : '—';
+      var end   = c.ends_at   ? new Date(c.ends_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—';
+      var isPub = c.is_published;
+      var progress = Math.min(100, Math.round((c.participant_count||0)/(Math.max(1,c.target||1))*100));
+      return '<div class="challenge-card">'+
+        '<div class="challenge-badge-mini">'+badge+'</div>'+
+        '<div class="challenge-info">'+
+          '<div class="challenge-title">'+c.title+'</div>'+
+          '<div class="challenge-meta">'+start+' → '+end+' · 🎯 '+c.target+' '+c.unit+' · 👥 '+c.participant_count+' joined · 🏅 '+c.points_reward+' pts</div>'+
+          (c.device_metric?'<div style="font-size:10px;color:#7AC231;margin-top:3px">📡 Smart device: '+c.device_metric+'</div>':'')+
+          '<div class="challenge-progress-bar"><div class="challenge-progress-fill" style="width:'+progress+'%"></div></div>'+
+        '</div>'+
+        '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">'+
+          '<span class="pub-badge '+(isPub?'published':'draft')+'">'+(isPub?'PUBLISHED':'DRAFT')+'</span>'+
+          '<div style="display:flex;gap:6px">'+
+            '<button class="admin-btn" style="font-size:11px;padding:4px 10px" onclick="togglePublish(this.dataset.id)" data-id="'+c.id+'">'+(isPub?'⏸ Unpublish':'▶ Publish')+'</button>'+
+            '<button class="admin-btn" style="font-size:11px;padding:4px 10px" onclick="viewLeaderboard(this.dataset.id)" data-id="'+c.id+'">🏆 Board</button>'+
+          '</div>'+
+        '</div>'+
+      '</div>';
+    }).join('');
+  } catch(e) {
+    container.innerHTML = '<div style="text-align:center;color:#f87171;padding:24px">Error: '+e.message+'</div>';
+  }
+}
+
+async function viewLeaderboard(challengeId) {
+  var challengeTitle = SESSIONS_CACHE[challengeId]?.name || challengeId;
+  var modal = document.getElementById('leaderboardModal');
+  var body  = document.getElementById('leaderboardBody');
+  var title = document.getElementById('lbTitle');
+  title.textContent = '🏆 ' + challengeTitle;
+  modal.style.display = 'flex';
+  body.innerHTML = '<div style="text-align:center;color:#444;padding:24px">Loading...</div>';
+  try {
+    var token = getToken();
+    var res = await fetch(ATP_API+'/challenges/'+challengeId+'/leaderboard', {
+      headers:{'Authorization':'Bearer '+token}
+    });
+    var data = await res.json();
+    var lb = data.leaderboard || [];
+    if (!lb.length) { body.innerHTML = '<div style="text-align:center;color:#444;padding:24px">No participants yet</div>'; return; }
+    var medals = ['🥇','🥈','🥉'];
+    body.innerHTML = '<div style="margin-bottom:12px;font-size:12px;color:#555">'+lb.length+' participants</div>' +
+      lb.map(function(r,i) {
+        var name = r.first_name + ' ' + r.last_name;
+        var pct = r.progress || 0;
+        return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #1a1a1a">'+
+          '<div style="width:28px;text-align:center;font-size:16px">'+(medals[i]||'#'+r.rank)+'</div>'+
+          '<div style="flex:1">'+
+            '<div style="font-weight:700;font-size:13px;color:#fff">'+name+'</div>'+
+            '<div style="font-size:11px;color:#555">'+r.member_number+'</div>'+
+          '</div>'+
+          '<div style="text-align:right">'+
+            '<div style="font-family:var(--ff-display);font-size:18px;font-weight:900;color:#7AC231">'+pct+'</div>'+
+            '<div style="font-size:10px;color:#555">progress</div>'+
+          '</div>'+
+          (r.completed?'<div style="font-size:18px">✅</div>':'')+
+        '</div>';
+      }).join('');
+  } catch(e) {
+    body.innerHTML = '<div style="text-align:center;color:#f87171;padding:24px">'+e.message+'</div>';
+  }
+}
+
