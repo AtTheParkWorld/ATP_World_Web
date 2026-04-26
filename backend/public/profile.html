@@ -1592,16 +1592,10 @@ function validEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 
 // ── Nav render ───────────────────────────────────────────────
 function renderAuthNav(user) {
-  var actions = document.querySelector('.nav-actions');
-  if(!actions) return;
-  actions.innerHTML =
-    '<div class="nav-user">' +
-      '<div class="nav-avatar" title="' + user.firstName + ' ' + user.lastName + '">' + user.avatar + '</div>' +
-      '<div>' +
-        '<div class="nav-user-name">' + user.firstName + '</div>' +
-        '<button class="nav-logout" data-atp-call="logOut">Log out</button>' +
-      '</div>' +
-    '</div>';
+  // Delegate to ATPComponents — keeps the shared markup as single source of truth.
+  if (window.ATPComponents && window.ATPComponents.rerenderAuth) {
+    window.ATPComponents.rerenderAuth();
+  }
 }
 
 // ── Log out ──────────────────────────────────────────────────

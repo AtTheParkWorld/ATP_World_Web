@@ -882,14 +882,11 @@ function validEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
 
 // ── Nav render ───────────────────────────────────────────────
 function renderAuthNav(user) {
-  var actions = document.querySelector('.nav-actions');
-  if(!actions) return;
-  actions.innerHTML =
-    '<a href="profile.html" class="nav-user" title="My profile" style="text-decoration:none;color:inherit">' +
-      '<div class="nav-avatar" title="' + user.firstName + ' ' + user.lastName + '">' + user.avatar + '</div>' +
-      '<div class="nav-user-name">' + user.firstName + '</div>' +
-    '</a>' +
-    '<button class="nav-logout" data-atp-call="logOut">Log out</button>';
+  // Delegate to ATPComponents — preserves window.ATP_NAV_EXTRAS (e.g. store cart button)
+  // and keeps the shared markup as the single source of truth.
+  if (window.ATPComponents && window.ATPComponents.rerenderAuth) {
+    window.ATPComponents.rerenderAuth();
+  }
 }
 
 // ── Log out ──────────────────────────────────────────────────
