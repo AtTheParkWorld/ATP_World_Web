@@ -381,8 +381,16 @@
       console.warn('[ATP] data-atp-call="' + fnName + '" — function not found on window');
       return;
     }
+    // Parse args from data-args='["foo", 42]' if present
+    var args = [];
+    var rawArgs = btn.getAttribute('data-args');
+    if (rawArgs) {
+      try { args = JSON.parse(rawArgs); }
+      catch (err) { console.warn('[ATP] bad data-args:', rawArgs, err); }
+    }
     e.preventDefault();
-    fn.call(btn, e, btn);
+    // Pass btn as the final arg so handlers that took (..., this) still work
+    fn.apply(btn, args.concat(btn));
   }
 
   if (document.readyState === 'loading') {

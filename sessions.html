@@ -313,11 +313,11 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 
   <div class="filter-bar">
     <div class="filter-inner">
-      <button class="filter-tab active" onclick="filterTribe('all',this)">All Sessions</button>
+      <button class="filter-tab active" data-atp-call="filterTribe" data-args='["all"]'>All Sessions</button>
       <div class="filter-sep"></div>
-      <button class="filter-tab" onclick="filterTribe('better',this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="3" r="1.5"/><path d="M4 8c0-2 1.5-3.5 4-3.5s4 1.5 4 3.5"/><path d="M2 10c1.5-1 3.5-1.5 6-1.5s4.5.5 6 1.5"/><line x1="8" y1="8" x2="8" y2="14"/></svg> Better Tribe</button>
-      <button class="filter-tab" onclick="filterTribe('faster',this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="2.5" r="1.5"/><path d="M7 5l1.5 3L6 11"/><path d="M9 8l3-1"/><path d="M6 11l-2 3"/><path d="M6 11l3 3"/></svg> Faster Tribe</button>
-      <button class="filter-tab" onclick="filterTribe('stronger',this)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 8c0-2.5 1.5-4 4-4s4 1.5 4 4c0 2.5-1.5 4-4 4"/><path d="M2 12c.5-1.5 2-2.5 4-3"/><path d="M14 12c-.5-1.5-2-2.5-4-3"/></svg> Stronger Tribe</button>
+      <button class="filter-tab" data-atp-call="filterTribe" data-args='["better"]'><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="3" r="1.5"/><path d="M4 8c0-2 1.5-3.5 4-3.5s4 1.5 4 3.5"/><path d="M2 10c1.5-1 3.5-1.5 6-1.5s4.5.5 6 1.5"/><line x1="8" y1="8" x2="8" y2="14"/></svg> Better Tribe</button>
+      <button class="filter-tab" data-atp-call="filterTribe" data-args='["faster"]'><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="2.5" r="1.5"/><path d="M7 5l1.5 3L6 11"/><path d="M9 8l3-1"/><path d="M6 11l-2 3"/><path d="M6 11l3 3"/></svg> Faster Tribe</button>
+      <button class="filter-tab" data-atp-call="filterTribe" data-args='["stronger"]'><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 8c0-2.5 1.5-4 4-4s4 1.5 4 4c0 2.5-1.5 4-4 4"/><path d="M2 12c.5-1.5 2-2.5 4-3"/><path d="M14 12c-.5-1.5-2-2.5-4-3"/></svg> Stronger Tribe</button>
     </div>
   </div>
 
@@ -326,25 +326,25 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <p class="sessions-count"><strong id="sessionCount">12</strong> sessions this week</p>
         <div class="view-toggle">
-          <button class="view-btn active" id="listViewBtn" onclick="setView('list')">
+          <button class="view-btn active" id="listViewBtn" data-atp-call="setView" data-args='["list"]'>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/></svg>
             List
           </button>
-          <button class="view-btn" id="calViewBtn" onclick="setView('calendar')">
+          <button class="view-btn" id="calViewBtn" data-atp-call="setView" data-args='["calendar"]'>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="12" height="11" rx="2"/><line x1="5" y1="1" x2="5" y2="5"/><line x1="11" y1="1" x2="11" y2="5"/><line x1="2" y1="7" x2="14" y2="7"/></svg>
             Calendar
           </button>
         </div>
       </div>
       <div class="day-filters">
-        <button class="day-btn active" onclick="filterDay('all',this)">All days</button>
-        <button class="day-btn" onclick="filterDay('Monday',this)">Mon</button>
-        <button class="day-btn" onclick="filterDay('Tuesday',this)">Tue</button>
-        <button class="day-btn" onclick="filterDay('Wednesday',this)">Wed</button>
-        <button class="day-btn" onclick="filterDay('Thursday',this)">Thu</button>
-        <button class="day-btn" onclick="filterDay('Friday',this)">Fri</button>
-        <button class="day-btn" onclick="filterDay('Saturday',this)">Sat</button>
-        <button class="day-btn" onclick="filterDay('Sunday',this)">Sun</button>
+        <button class="day-btn active" data-atp-call="filterDay" data-args='["all"]'>All days</button>
+        <button class="day-btn" data-atp-call="filterDay" data-args='["Monday"]'>Mon</button>
+        <button class="day-btn" data-atp-call="filterDay" data-args='["Tuesday"]'>Tue</button>
+        <button class="day-btn" data-atp-call="filterDay" data-args='["Wednesday"]'>Wed</button>
+        <button class="day-btn" data-atp-call="filterDay" data-args='["Thursday"]'>Thu</button>
+        <button class="day-btn" data-atp-call="filterDay" data-args='["Friday"]'>Fri</button>
+        <button class="day-btn" data-atp-call="filterDay" data-args='["Saturday"]'>Sat</button>
+        <button class="day-btn" data-atp-call="filterDay" data-args='["Sunday"]'>Sun</button>
       </div>
     </div>
     <div class="sessions-grid" id="sessionsGrid">

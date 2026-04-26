@@ -1202,7 +1202,7 @@ function refreshCart() {
             '<button class="qty-btn" onclick="changeQty(' + i + ',+1)">+</button>' +
           '</div>' +
         '</div>' +
-        '<button class="remove-btn" onclick="removeItem(' + i + ')" aria-label="Remove">×</button>' +
+        '<button class="remove-btn" data-atp-call="removeItem" data-args='[" + i + "]' aria-label="Remove">×</button>' +
       '</div>';
     }).join("");
     document.getElementById("cartTotalEl").textContent = "AED " + total.toFixed(0);

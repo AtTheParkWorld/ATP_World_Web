@@ -349,7 +349,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
 
   <!-- COVER -->
   <div class="profile-cover">
-    <button class="profile-cover-edit" onclick="showTab('edit')">Edit cover</button>
+    <button class="profile-cover-edit" data-atp-call="showTab" data-args='["edit"]'>Edit cover</button>
   </div>
 
   <!-- HERO -->
@@ -375,12 +375,12 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
         </div>
       </div>
       <div class="profile-actions">
-        <button class="pf-btn" onclick="showTab('notifications')">
+        <button class="pf-btn" data-atp-call="showTab" data-args='["notifications"]'>
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1a5 5 0 015 5v3l1.5 2.5H1.5L3 9V6a5 5 0 015-5z"/><path d="M6.5 13.5a1.5 1.5 0 003 0"/></svg>
           <span id="notifCount" style="display:none;background:var(--green);color:#fff;width:18px;height:18px;border-radius:50%;font-size:10px;display:inline-flex;align-items:center;justify-content:center">3</span>
         </button>
-        <button class="pf-btn" onclick="showTab('friends')">Friend requests <span style="background:rgba(122,194,49,.15);color:var(--green);padding:1px 7px;border-radius:10px;font-size:11px;margin-left:2px">2</span></button>
-        <button class="pf-btn primary" onclick="showTab('edit')">
+        <button class="pf-btn" data-atp-call="showTab" data-args='["friends"]'>Friend requests <span style="background:rgba(122,194,49,.15);color:var(--green);padding:1px 7px;border-radius:10px;font-size:11px;margin-left:2px">2</span></button>
+        <button class="pf-btn primary" data-atp-call="showTab" data-args='["edit"]'>
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 2l3 3-9 9H2v-3l9-9z"/></svg>
           Edit Profile
         </button>
@@ -401,17 +401,17 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
   <!-- TABS -->
   <div class="profile-tabs-wrap">
     <div class="profile-tabs" id="profileTabs">
-      <button class="ptab active" data-tab="overview" onclick="showTab('overview',this)">Overview</button>
-      <button class="ptab" data-tab="sessions" onclick="showTab('sessions',this)">Sessions</button>
-      <button class="ptab" data-tab="streak" onclick="showTab('streak',this)">My Streak</button>
-      <button class="ptab" data-tab="achievements" onclick="showTab('achievements',this)">Achievements</button>
-      <button class="ptab" data-tab="challenges" onclick="showTab('challenges',this)">Challenges</button>
-      <button class="ptab" data-tab="tribe" onclick="showTab('tribe',this)">My Tribe</button>
-      <button class="ptab" data-tab="wallet" onclick="showTab('wallet',this)">Wallet</button>
-      <button class="ptab" data-tab="friends" onclick="showTab('friends',this)">Friends</button>
-      <button class="ptab" data-tab="notifications" onclick="showTab('notifications',this)">Notifications</button>
-      <button class="ptab" data-tab="edit" onclick="showTab('edit',this)">Edit Profile</button>
-      <button class="ptab" id="ambassadorTab" data-tab="ambassador" onclick="showTab('ambassador',this)" style="display:none">Ambassador</button>
+      <button class="ptab active" data-tab="overview" data-atp-call="showTab" data-args='["overview"]'>Overview</button>
+      <button class="ptab" data-tab="sessions" data-atp-call="showTab" data-args='["sessions"]'>Sessions</button>
+      <button class="ptab" data-tab="streak" data-atp-call="showTab" data-args='["streak"]'>My Streak</button>
+      <button class="ptab" data-tab="achievements" data-atp-call="showTab" data-args='["achievements"]'>Achievements</button>
+      <button class="ptab" data-tab="challenges" data-atp-call="showTab" data-args='["challenges"]'>Challenges</button>
+      <button class="ptab" data-tab="tribe" data-atp-call="showTab" data-args='["tribe"]'>My Tribe</button>
+      <button class="ptab" data-tab="wallet" data-atp-call="showTab" data-args='["wallet"]'>Wallet</button>
+      <button class="ptab" data-tab="friends" data-atp-call="showTab" data-args='["friends"]'>Friends</button>
+      <button class="ptab" data-tab="notifications" data-atp-call="showTab" data-args='["notifications"]'>Notifications</button>
+      <button class="ptab" data-tab="edit" data-atp-call="showTab" data-args='["edit"]'>Edit Profile</button>
+      <button class="ptab" id="ambassadorTab" data-tab="ambassador" data-atp-call="showTab" data-args='["ambassador"]' style="display:none">Ambassador</button>
     </div>
   </div>
 
@@ -422,7 +422,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
       <!-- OVERVIEW -->
       <div class="profile-panel active" id="panel-overview">
         <div class="widget">
-          <div class="widget-head"><span class="widget-title">🔥 Current Streak</span><span class="widget-action" onclick="showTab('streak')">Full view →</span></div>
+          <div class="widget-head"><span class="widget-title">🔥 Current Streak</span><span class="widget-action" data-atp-call="showTab" data-args='["streak"]'>Full view →</span></div>
           <div class="widget-body">
             <div class="streak-hero">
               <div class="streak-fire-big">🔥</div>
@@ -436,7 +436,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
           <div class="widget-body" id="upcomingSessions"></div>
         </div>
         <div class="widget">
-          <div class="widget-head"><span class="widget-title">🏆 Recent Achievements</span><span class="widget-action" onclick="showTab('achievements')">All →</span></div>
+          <div class="widget-head"><span class="widget-title">🏆 Recent Achievements</span><span class="widget-action" data-atp-call="showTab" data-args='["achievements"]'>All →</span></div>
           <div class="widget-body"><div class="achievement-grid" id="achieveMini"></div></div>
         </div>
       </div>
