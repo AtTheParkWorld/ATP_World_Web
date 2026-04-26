@@ -14,12 +14,29 @@
   // Switch to your Railway URL when backend is live:
   // const API_BASE = 'https://atp-backend.railway.app/api';
   const API_BASE = window.ATP_API_BASE || 'https://atpworldweb-production.up.railway.app/api';
-  const TOKEN_KEY = 'atp:jwt';
-  const USER_KEY  = 'atp:user';
+  // Reconciled with atp.js — both files now use the same key. The legacy
+  // atp:jwt / atp:user keys are still read for backward compatibility and
+  // migrated into atp_token / atp_member on first load.
+  const TOKEN_KEY        = 'atp_token';
+  const USER_KEY         = 'atp_member';
+  const LEGACY_TOKEN_KEY = 'atp:jwt';
+  const LEGACY_USER_KEY  = 'atp:user';
+
+  // One-time migration of legacy keys to canonical names
+  (function migrate() {
+    var legacyTok = localStorage.getItem(LEGACY_TOKEN_KEY);
+    if (legacyTok && !localStorage.getItem(TOKEN_KEY)) {
+      localStorage.setItem(TOKEN_KEY, legacyTok);
+    }
+    var legacyUser = localStorage.getItem(LEGACY_USER_KEY);
+    if (legacyUser && !localStorage.getItem(USER_KEY)) {
+      localStorage.setItem(USER_KEY, legacyUser);
+    }
+  })();
 
   // ── TOKEN MANAGEMENT ────────────────────────────────────────
   function getToken() {
-    return localStorage.getItem(TOKEN_KEY);
+    return localStorage.getItem(TOKEN_KEY) || localStorage.getItem(LEGACY_TOKEN_KEY);
   }
   function setToken(token) {
     localStorage.setItem(TOKEN_KEY, token);
@@ -27,6 +44,8 @@
   function clearToken() {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+    localStorage.removeItem(LEGACY_USER_KEY);
   }
   function getUser() {
     try { return JSON.parse(localStorage.getItem(USER_KEY)); } catch(e) { return null; }
