@@ -737,8 +737,7 @@ window.addEventListener('atp:logout', function(){
 });
 
 // ── NAV ─────────────────────────────────────────────────────
-var navEl=document.getElementById("nav");
-window.addEventListener("scroll",function(){navEl.classList.toggle("scrolled",window.scrollY>40);},{passive:true});
+window.addEventListener("scroll", function(){ var n = document.getElementById("nav"); if (n) n.classList.toggle("scrolled", window.scrollY > 40); }, {passive:true});
 
 // ── TAB SYSTEM ───────────────────────────────────────────────
 function showTab(name, btn) {

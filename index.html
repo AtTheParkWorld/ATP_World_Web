@@ -877,8 +877,8 @@ var LOGO_SRC = "/atp-logo-transparent.png";
 
 
 // Nav scroll
-var nav = document.getElementById("nav");
-window.addEventListener("scroll", function(){ nav.classList.toggle("scrolled", window.scrollY > 40); }, {passive:true});
+// Nav scroll — lazy-resolve since the nav is mounted async by atp-components.js
+window.addEventListener("scroll", function(){ var n = document.getElementById("nav"); if (n) n.classList.toggle("scrolled", window.scrollY > 40); }, {passive:true});
 
 // Scroll reveal
 var obs = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("visible"); obs.unobserve(e.target); } }); }, {threshold:0.1, rootMargin:"0px 0px -40px 0px"});

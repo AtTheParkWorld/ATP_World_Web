@@ -495,8 +495,8 @@ var LOGO_SRC = "/atp-logo-transparent.png";
 
 document.getElementById("nav-logo-img").src = LOGO_SRC;
 if(document.getElementById("footer-logo-img")) document.getElementById("footer-logo-img").src = LOGO_SRC;
-var nav = document.getElementById("nav");
-window.addEventListener("scroll", function(){ nav.classList.toggle("scrolled", window.scrollY > 40); }, {passive:true});
+// Nav scroll — lazy-resolve since the nav is mounted async by atp-components.js
+window.addEventListener("scroll", function(){ var n = document.getElementById("nav"); if (n) n.classList.toggle("scrolled", window.scrollY > 40); }, {passive:true});
 var obs = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ e.target.classList.add("visible"); obs.unobserve(e.target); } }); }, {threshold:0.1,rootMargin:"0px 0px -40px 0px"});
 document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
 </script>

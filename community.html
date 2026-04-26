@@ -459,8 +459,7 @@ var LOGO_SRC = "/atp-logo-transparent.png";
   var imgs=[document.getElementById("nav-logo-img"),document.getElementById("authLogo")];
   imgs.forEach(function(img){if(img)img.src=LOGO_SRC;});
 })();
-var navEl=document.getElementById("nav");
-window.addEventListener("scroll",function(){navEl.classList.toggle("scrolled",window.scrollY>40);},{passive:true});
+window.addEventListener("scroll", function(){ var n = document.getElementById("nav"); if (n) n.classList.toggle("scrolled", window.scrollY > 40); }, {passive:true});
 var revObs=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add("visible");revObs.unobserve(e.target);}});},{threshold:0.08});
 document.querySelectorAll(".reveal").forEach(function(el){revObs.observe(el);});
 
