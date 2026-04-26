@@ -1076,92 +1076,9 @@ function toggleStory(){
 </script>
 
 <!-- ══ AUTH MODAL ══════════════════════════════════════════ -->
-<div class="auth-overlay" id="authOverlay" role="dialog" aria-modal="true" aria-label="Sign in or join">
-  <div class="auth-modal" id="authModal">
-    <button class="auth-close" data-atp-call="closeAuth" aria-label="Close">×</button>
-
-    <div class="auth-modal-top">
-      <img class="auth-modal-logo" id="authLogo" alt="At The Park" style="height:28px;width:auto;display:block;margin-bottom:18px;">
-      <h2 class="auth-modal-title" id="authTitle">Join free</h2>
-      <p class="auth-modal-sub" id="authSub">Become an ATP member to book sessions, track your streak and connect with 7,000+ members.</p>
-    </div>
-
-    <div class="auth-modal-body">
-      <!-- ERROR -->
-      <div class="auth-error" id="authError"></div>
-
-      <!-- SOCIAL -->
-      <div id="authSocialPanel">
-        <button class="auth-social-btn google" data-atp-call="authWithGoogle">
-          <svg width="18" height="18" viewBox="0 0 18 18"><path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z" fill="#4285F4"/><path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 009 18z" fill="#34A853"/><path d="M3.964 10.707A5.41 5.41 0 013.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 000 9c0 1.452.348 2.827.957 4.039l3.007-2.332z" fill="#FBBC05"/><path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 00.957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z" fill="#EA4335"/></svg>
-          Continue with Google
-        </button>
-        <button class="auth-social-btn apple" data-atp-call="authWithApple">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><path d="M13.23 9.26c-.02-2.01 1.64-2.98 1.71-3.03-.93-1.36-2.38-1.55-2.9-1.57-1.24-.13-2.42.73-3.05.73-.63 0-1.6-.71-2.63-.69-1.35.02-2.6.79-3.29 2-.4.69-.99 2.97-.07 5.58.65 1.89 1.67 2.99 2.47 3.04.8.05 1.4-.52 2.62-.52 1.22 0 1.78.52 2.62.5.83-.01 1.73-1.04 2.37-2.95.02-.01.08-.03.08-.03-.01 0-2.03-.78-2.05-3.06z"/><path d="M11.37 3.19c.63-.77 1.05-1.83.94-2.9-.9.04-2 .61-2.65 1.37-.58.67-1.09 1.74-.95 2.77 1 .08 2.03-.51 2.66-1.24z"/></svg>
-          Continue with Apple
-        </button>
-
-        <div class="auth-divider">or use email</div>
-      </div>
-
-      <!-- EMAIL FORM (signup) -->
-      <div id="authSignupForm">
-        <div class="auth-field-row">
-          <div class="auth-field">
-            <label for="authFirstName">First name</label>
-            <input type="text" id="authFirstName" placeholder="Fredy" autocomplete="given-name">
-          </div>
-          <div class="auth-field">
-            <label for="authLastName">Last name</label>
-            <input type="text" id="authLastName" placeholder="Martins" autocomplete="family-name">
-          </div>
-        </div>
-        <div class="auth-field">
-          <label for="authEmail">Email address</label>
-          <input type="email" id="authEmail" placeholder="you@email.com" autocomplete="email">
-        </div>
-        <div class="auth-field">
-          <label for="authPassword">Password</label>
-          <input type="password" id="authPassword" placeholder="Min. 8 characters" autocomplete="new-password">
-        </div>
-        <button class="auth-submit" id="authSubmitBtn" data-atp-call="submitSignup">
-          Become a member — it's free 🎉
-        </button>
-        <div class="auth-toggle">
-          Already a member?
-          <button data-atp-call="switchToLogin">Log in</button>
-        </div>
-      </div>
-
-      <!-- EMAIL FORM (login) -->
-      <div id="authLoginForm" style="display:none">
-        <div class="auth-field">
-          <label for="loginEmail">Email address</label>
-          <input type="email" id="loginEmail" placeholder="you@email.com" autocomplete="email">
-        </div>
-        <div class="auth-field">
-          <label for="loginPassword">Password</label>
-          <input type="password" id="loginPassword" placeholder="Your password" autocomplete="current-password">
-        </div>
-        <button class="auth-submit" id="loginSubmitBtn" data-atp-call="submitLogin">
-          Log in →
-        </button>
-        <div class="auth-toggle">
-          Not a member yet?
-          <button data-atp-call="switchToSignup">Join free</button>
-        </div>
-      </div>
-
-      <!-- SUCCESS -->
-      <div id="authSuccessPanel" style="display:none" class="auth-success">
-        <div class="auth-success-icon">🎉</div>
-        <h3 class="auth-success-title" id="authSuccessTitle">Welcome!</h3>
-        <p class="auth-success-sub" id="authSuccessSub"></p>
-      </div>
-    </div>
-  </div>
-</div>
-<!-- ════════════════════════════════════════════════════════ -->
+<!-- Per-page auth modal removed — Log in/Join free now route to
+ATPComponents.openAuthModal. Post-auth callback (e.g. Join the community)
+is wired via the atp:login event below. -->
 
 <script>
 
@@ -1190,209 +1107,33 @@ function authClearUser() {
   try { localStorage.removeItem(ATP_USER_KEY); } catch(e){}
 }
 
-// ── Modal open/close ─────────────────────────────────────────
+// ── Auth modal — delegates to shared ATPComponents.openAuthModal ──
 function openAuth(mode) {
-  if(atpUser) return; // already signed in
-  mode = mode || 'signup';
-  if(mode === 'login') { switchToLogin(); } else { switchToSignup(); }
-  document.getElementById('authError').classList.remove('show');
-  document.getElementById('authSuccessPanel').style.display = 'none';
-  document.getElementById('authSignupForm').style.display = '';
-  document.getElementById('authLoginForm').style.display  = 'none';
-  document.getElementById('authSocialPanel').style.display = '';
-  document.getElementById('authOverlay').classList.add('open');
-  document.body.style.overflow = 'hidden';
-
-  // Set logo
-  var logo = document.getElementById('authLogo');
-  if(logo && typeof LOGO_SRC !== 'undefined') logo.src = LOGO_SRC;
-
-  // Focus first input
-  setTimeout(function(){
-    var first = document.getElementById(mode === 'login' ? 'loginEmail' : 'authFirstName');
-    if(first) first.focus();
-  }, 300);
+  if (atpUser) return; // already signed in
+  if (window.ATPComponents && window.ATPComponents.openAuthModal) {
+    window.ATPComponents.openAuthModal(mode || 'signup');
+  }
 }
 function closeAuth() {
-  document.getElementById('authOverlay').classList.remove('open');
-  document.body.style.overflow = '';
-  // If a booking was waiting, resume it
-  if(atpUser && typeof pendingSession !== 'undefined' && pendingSession) {
-    var s = pendingSession; pendingSession = null;
-    openModal(s.name,s.tribe,s.dayTime,s.coach,s.loc,s.desc,s.day,s.time);
+  if (window.ATPComponents && window.ATPComponents.closeAuthModal) {
+    window.ATPComponents.closeAuthModal();
   }
 }
-
-function switchToLogin() {
-  document.getElementById('authTitle').textContent = 'Welcome back';
-  document.getElementById('authSub').textContent   = 'Log in to your ATP account to book sessions.';
-  document.getElementById('authSignupForm').style.display = 'none';
-  document.getElementById('authLoginForm').style.display  = '';
-  document.getElementById('authSuccessPanel').style.display = 'none';
-  document.getElementById('authError').classList.remove('show');
-}
-function switchToSignup() {
-  document.getElementById('authTitle').textContent = 'Join free';
-  document.getElementById('authSub').textContent   = 'Become an ATP member to book sessions, track your streak and connect with 7,000+ members.';
-  document.getElementById('authSignupForm').style.display = '';
-  document.getElementById('authLoginForm').style.display  = 'none';
-  document.getElementById('authSuccessPanel').style.display = 'none';
-  document.getElementById('authError').classList.remove('show');
-}
-
-// ── Validation helpers ───────────────────────────────────────
+// Post-auth callback (e.g. requireAuth(callback) for "Join the community")
+window.addEventListener('atp:login', function() {
+  try { authLoadUser(); } catch(e){}
+  if (typeof pendingAuthCallback !== 'undefined' && pendingAuthCallback) {
+    var cb = pendingAuthCallback; pendingAuthCallback = null;
+    setTimeout(cb, 200);
+  }
+});
 function validEmail(e){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
-function showAuthError(msg){
-  var el = document.getElementById('authError');
-  el.textContent = msg; el.classList.add('show');
-}
+// switchToLogin / switchToSignup / showAuthError removed — owned by shared modal.
 
-// ── Email signup ─────────────────────────────────────────────
-function submitSignup() {
-  var firstName = document.getElementById('authFirstName').value.trim();
-  var lastName  = document.getElementById('authLastName').value.trim();
-  var email     = document.getElementById('authEmail').value.trim();
-  var password  = document.getElementById('authPassword').value;
-
-  // Clear errors
-  ['authFirstName','authLastName','authEmail','authPassword'].forEach(function(id){
-    document.getElementById(id).classList.remove('err');
-  });
-  document.getElementById('authError').classList.remove('show');
-
-  var ok = true;
-  if(!firstName){ document.getElementById('authFirstName').classList.add('err'); ok=false; }
-  if(!lastName) { document.getElementById('authLastName').classList.add('err');  ok=false; }
-  if(!validEmail(email)){ document.getElementById('authEmail').classList.add('err'); ok=false; }
-  if(password.length < 8){ document.getElementById('authPassword').classList.add('err'); ok=false; }
-  if(!ok){ showAuthError('Please fill in all fields correctly.'); return; }
-
-  var btn = document.getElementById('authSubmitBtn');
-  btn.disabled = true; btn.textContent = 'Creating your account...';
-
-  // ── REAL API signup ──────────────────────────────────────
-  var phone = document.getElementById('authPhone') ? document.getElementById('authPhone').value.trim() : '';
-
-  window.ATP.auth.register({
-    first_name: firstName,
-    last_name:  lastName,
-    email:      email,
-    phone:      phone || null,
-    password:   password
-  }).then(function(data) {
-    btn.disabled = false;
-    btn.textContent = 'Join free →';
-    if (data.error || data.token === undefined) {
-      showAuthError(data.error || 'Sign up failed. Please try again.');
-      return;
-    }
-    // Success — ATP SDK already saved token
-    var user = {
-      firstName:    data.member.first_name,
-      lastName:     data.member.last_name,
-      email:        data.member.email,
-      memberId:     data.member.id,
-      memberNumber: data.member.member_number,
-      joinedAt:     data.member.joined_at,
-      avatar:       (data.member.first_name[0] + (data.member.last_name||'X')[0]).toUpperCase(),
-      points:       0,
-      ambassador:   false,
-      admin:        false,
-    };
-    authSaveUser(user);
-    onAuthSuccess(user, 'signup');
-  }).catch(function(err) {
-    btn.disabled = false;
-    btn.textContent = 'Join free →';
-    showAuthError('Connection error. Please check your internet and try again.');
-  });
-}
-
-// ── Email login ──────────────────────────────────────────────
-function submitLogin() {
-  var email    = document.getElementById('loginEmail').value.trim();
-  var password = document.getElementById('loginPassword').value;
-
-  ['loginEmail','loginPassword'].forEach(function(id){
-    document.getElementById(id).classList.remove('err');
-  });
-  document.getElementById('authError').classList.remove('show');
-
-  var ok = true;
-  if(!validEmail(email)){ document.getElementById('loginEmail').classList.add('err'); ok=false; }
-  if(!password){ document.getElementById('loginPassword').classList.add('err'); ok=false; }
-  if(!ok){ showAuthError('Please enter your email and password.'); return; }
-
-  var btn = document.getElementById('loginSubmitBtn');
-  btn.disabled = true; btn.textContent = 'Logging in...';
-
-  // ── REAL API login ───────────────────────────────────────
-  window.ATP.auth.login(email, password).then(function(data) {
-    btn.disabled = false;
-    btn.textContent = 'Log in →';
-    if (data.error || !data.token) {
-      showAuthError(data.error || 'Invalid email or password.');
-      document.getElementById('loginEmail').classList.add('err');
-      document.getElementById('loginPassword').classList.add('err');
-      return;
-    }
-    var m = data.member;
-    var user = {
-      firstName:    m.first_name,
-      lastName:     m.last_name,
-      email:        m.email,
-      memberId:     m.id,
-      memberNumber: m.member_number,
-      joinedAt:     m.joined_at,
-      avatar:       m.avatar_url || (m.first_name[0] + (m.last_name||'X')[0]).toUpperCase(),
-      points:       m.points_balance || 0,
-      ambassador:   m.is_ambassador,
-      admin:        m.is_admin,
-    };
-    authSaveUser(user);
-    onAuthSuccess(user, 'login');
-  }).catch(function() {
-    btn.disabled = false;
-    btn.textContent = 'Log in →';
-    showAuthError('Connection error. Please try again.');
-  });
-}
-
-// ── Social auth (mock — replace with real OAuth) ─────────────
-function authWithGoogle() {
-  // Google OAuth — opens popup, then exchanges token with backend
-  showAuthError('Google sign-in coming soon. Please use email sign-up for now.');
-}
-function authWithApple() {
-  // Apple OAuth — coming soon
-  showAuthError('Apple sign-in coming soon. Please use email sign-up for now.');
-}
-
-// ── Post-auth ────────────────────────────────────────────────
-function onAuthSuccess(user, method) {
-  // Update member counter
-  if(method === 'signup' && typeof window.atpAddMember === 'function') {
-    window.atpAddMember(1);
-  }
-
-  // Show success screen
-  document.getElementById('authSignupForm').style.display = 'none';
-  document.getElementById('authLoginForm').style.display  = 'none';
-  document.getElementById('authSocialPanel').style.display = 'none';
-  document.getElementById('authSuccessPanel').style.display = 'block';
-  document.getElementById('authSuccessTitle').textContent =
-    method === 'login' ? 'Welcome back, ' + user.firstName + '!' : 'Welcome, ' + user.firstName + '!';
-  document.getElementById('authSuccessSub').innerHTML =
-    method === 'login'
-      ? 'You\'re logged in. Go book a session! 💪'
-      : 'You are now an ATP member. <strong>' + user.email + '</strong> registered.<br><br>Go book your first free session — the community is waiting. 💪';
-
-  // Update nav
-  renderAuthNav(user);
-
-  // Auto close after 1.8s then resume any pending booking
-  setTimeout(function(){ closeAuth(); }, 1800);
-}
+// submitSignup / submitLogin / authWithGoogle / authWithApple / onAuthSuccess
+// removed — shared modal owns all auth flows. window.atpAddMember (member
+// counter) is also fired from the shared component path via the atp:login
+// listener above when needed.
 
 // ── Nav render ───────────────────────────────────────────────
 function renderAuthNav(user) {
@@ -1430,13 +1171,8 @@ var pendingAuthCallback = null;
 authLoadUser();
 if(atpUser) renderAuthNav(atpUser);
 
-// Close on overlay click
-document.getElementById('authOverlay').addEventListener('click', function(e){
-  if(e.target === this) closeAuth();
-});
-document.addEventListener('keydown', function(e){
-  if(e.key === 'Escape') closeAuth();
-});
+// Auth overlay + Escape handlers owned by ATPComponents. Removed legacy
+// listeners that referenced the now-deleted #authOverlay element.
 // ══════════════════════════════════════════════════════════════
 
 
