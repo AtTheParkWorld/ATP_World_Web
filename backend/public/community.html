@@ -1479,8 +1479,24 @@ function updateComposerGuard() {
 
 // ── FEED ─────────────────────────────────────────────────────
 function renderFeedLoading() {
-  document.getElementById('postsContainer').innerHTML =
-    '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Loading community feed…</div>';
+  // Skeleton placeholders — three faux post cards while the API responds
+  var skeleton = '';
+  for (var i = 0; i < 3; i++) {
+    skeleton +=
+      '<div style="background:var(--atp-bg-1);border:1px solid var(--atp-line);border-radius:var(--atp-radius-lg);padding:16px;margin-bottom:14px">' +
+        '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
+          '<div class="atp-skeleton atp-skeleton--avatar"></div>' +
+          '<div style="flex:1">' +
+            '<div class="atp-skeleton" style="width:35%;height:12px;margin-bottom:6px"></div>' +
+            '<div class="atp-skeleton" style="width:22%;height:10px"></div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="atp-skeleton atp-skeleton--text" style="width:90%"></div>' +
+        '<div class="atp-skeleton atp-skeleton--text" style="width:75%"></div>' +
+        '<div class="atp-skeleton atp-skeleton--text" style="width:55%"></div>' +
+      '</div>';
+  }
+  document.getElementById('postsContainer').innerHTML = skeleton;
 }
 function renderFeedEmpty() {
   var loggedIn = !!(window.ATP && window.ATP.isLoggedIn && window.ATP.isLoggedIn());
@@ -1573,7 +1589,7 @@ buildPostCard = function(post) {
 // ── LEADERBOARD ──────────────────────────────────────────────
 async function loadLeaderboard() {
   var body = document.getElementById('lbBody');
-  body.innerHTML = '<tr><td colspan="4" style="padding:30px;text-align:center;color:var(--muted);font-size:13px">Loading leaderboard…</td></tr>';
+  body.innerHTML = '<tr><td colspan="4" style="padding:30px;text-align:center"><div class="atp-spinner" aria-label="Loading leaderboard"></div></td></tr>';
   try {
     // Backend supports mtd|ytd; 'all' falls back to same endpoint without date filter by using a long period
     var period = currentPeriod === 'all' ? 'all' : currentPeriod;
@@ -1610,7 +1626,7 @@ renderLeaderboard = loadLeaderboard;
 // ── CHALLENGES ───────────────────────────────────────────────
 async function loadChallenges() {
   var container = document.getElementById('challengesContainer');
-  container.innerHTML = '<div style="padding:40px;text-align:center;color:var(--muted);font-size:13px">Loading challenges…</div>';
+  container.innerHTML = '<div style="padding:40px;text-align:center"><div class="atp-spinner" aria-label="Loading challenges"></div></div>';
   try {
     var data = await apiGet('/challenges');
     var list = (data.challenges || []).map(function(c) {
