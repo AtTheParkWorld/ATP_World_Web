@@ -52,7 +52,9 @@
             (extrasHtml || '') +
             authMarkup() +
           '</div>' +
-          '<div class="hamburger"><span></span><span></span><span></span></div>' +
+          '<button type="button" class="hamburger" aria-label="Open menu" aria-expanded="false">' +
+            '<span></span><span></span><span></span>' +
+          '</button>' +
         '</div>' +
       '</nav>'
     );
@@ -341,14 +343,48 @@
     });
   }
 
+  /* ── Mobile hamburger toggle ───────────────────────────────── */
+  function handleHamburger(e) {
+    var ham = e.target.closest('.hamburger');
+    var nav = document.getElementById('nav');
+    if (ham && nav) {
+      var open = nav.classList.toggle('mobile-open');
+      ham.setAttribute('aria-expanded', String(open));
+      ham.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      return;
+    }
+    // Click on a nav link closes the drawer
+    if (nav && nav.classList.contains('mobile-open') && e.target.closest('.nav-links a')) {
+      nav.classList.remove('mobile-open');
+      var h = nav.querySelector('.hamburger');
+      if (h) { h.setAttribute('aria-expanded', 'false'); h.setAttribute('aria-label', 'Open menu'); }
+      return;
+    }
+    // Click outside the nav closes the drawer
+    if (nav && nav.classList.contains('mobile-open') && !e.target.closest('#nav')) {
+      nav.classList.remove('mobile-open');
+      var h2 = nav.querySelector('.hamburger');
+      if (h2) { h2.setAttribute('aria-expanded', 'false'); h2.setAttribute('aria-label', 'Open menu'); }
+    }
+  }
+
   /* ── Boot ──────────────────────────────────────────────────── */
   function boot() {
     mountNav();
     document.addEventListener('click', handleNavClick);
     document.addEventListener('click', handleAuthAction);
     document.addEventListener('click', handleAtpCall);
+    document.addEventListener('click', handleHamburger);
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') closeAuthModal();
+      if (e.key === 'Escape') {
+        closeAuthModal();
+        var nav = document.getElementById('nav');
+        if (nav && nav.classList.contains('mobile-open')) {
+          nav.classList.remove('mobile-open');
+          var h = nav.querySelector('.hamburger');
+          if (h) { h.setAttribute('aria-expanded', 'false'); h.setAttribute('aria-label', 'Open menu'); }
+        }
+      }
     });
     window.addEventListener('atp:login',  rerenderAuth);
     window.addEventListener('atp:logout', rerenderAuth);

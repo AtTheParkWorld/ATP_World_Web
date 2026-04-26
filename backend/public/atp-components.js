@@ -52,7 +52,9 @@
             (extrasHtml || '') +
             authMarkup() +
           '</div>' +
-          '<div class="hamburger"><span></span><span></span><span></span></div>' +
+          '<button type="button" class="hamburger" aria-label="Open menu" aria-expanded="false">' +
+            '<span></span><span></span><span></span>' +
+          '</button>' +
         '</div>' +
       '</nav>'
     );
@@ -341,13 +343,48 @@
     });
   }
 
+  /* ── Mobile hamburger toggle ───────────────────────────────── */
+  function handleHamburger(e) {
+    var ham = e.target.closest('.hamburger');
+    var nav = document.getElementById('nav');
+    if (ham && nav) {
+      var open = nav.classList.toggle('mobile-open');
+      ham.setAttribute('aria-expanded', String(open));
+      ham.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      return;
+    }
+    // Click on a nav link closes the drawer
+    if (nav && nav.classList.contains('mobile-open') && e.target.closest('.nav-links a')) {
+      nav.classList.remove('mobile-open');
+      var h = nav.querySelector('.hamburger');
+      if (h) { h.setAttribute('aria-expanded', 'false'); h.setAttribute('aria-label', 'Open menu'); }
+      return;
+    }
+    // Click outside the nav closes the drawer
+    if (nav && nav.classList.contains('mobile-open') && !e.target.closest('#nav')) {
+      nav.classList.remove('mobile-open');
+      var h2 = nav.querySelector('.hamburger');
+      if (h2) { h2.setAttribute('aria-expanded', 'false'); h2.setAttribute('aria-label', 'Open menu'); }
+    }
+  }
+
   /* ── Boot ──────────────────────────────────────────────────── */
   function boot() {
     mountNav();
     document.addEventListener('click', handleNavClick);
     document.addEventListener('click', handleAuthAction);
+    document.addEventListener('click', handleAtpCall);
+    document.addEventListener('click', handleHamburger);
     document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') closeAuthModal();
+      if (e.key === 'Escape') {
+        closeAuthModal();
+        var nav = document.getElementById('nav');
+        if (nav && nav.classList.contains('mobile-open')) {
+          nav.classList.remove('mobile-open');
+          var h = nav.querySelector('.hamburger');
+          if (h) { h.setAttribute('aria-expanded', 'false'); h.setAttribute('aria-label', 'Open menu'); }
+        }
+      }
     });
     window.addEventListener('atp:login',  rerenderAuth);
     window.addEventListener('atp:logout', rerenderAuth);
@@ -359,6 +396,37 @@
     var act = btn.getAttribute('data-atp-action');
     if (act === 'auth-close') closeAuthModal();
     else if (act === 'auth-toggle') openAuthModal(_authMode === 'login' ? 'signup' : 'login');
+  }
+
+  /* ── Generic [data-atp-call] delegator ─────────────────────────
+   * Migration path off inline onclick handlers. Markup:
+   *   <button data-atp-call="loadSessions">Retry</button>
+   * The delegator looks up window[funcName] and calls it with
+   * (event, button). Args can be passed via data-arg-* attributes:
+   *   <button data-atp-call="toggleCoach" data-arg-id="abc" data-arg-on="true">
+   * The handler receives event + button + dataset, so it can read
+   * btn.dataset.argId etc. Avoids inline onclick (CSP-safe) without
+   * a per-page event-binding boilerplate.
+   * ──────────────────────────────────────────────────────────── */
+  function handleAtpCall(e) {
+    var btn = e.target.closest('[data-atp-call]');
+    if (!btn) return;
+    var fnName = btn.getAttribute('data-atp-call');
+    var fn = window[fnName];
+    if (typeof fn !== 'function') {
+      console.warn('[ATP] data-atp-call="' + fnName + '" — function not found on window');
+      return;
+    }
+    // Parse args from data-args='["foo", 42]' if present
+    var args = [];
+    var rawArgs = btn.getAttribute('data-args');
+    if (rawArgs) {
+      try { args = JSON.parse(rawArgs); }
+      catch (err) { console.warn('[ATP] bad data-args:', rawArgs, err); }
+    }
+    e.preventDefault();
+    // Pass btn as the final arg so handlers that took (..., this) still work
+    fn.apply(btn, args.concat(btn));
   }
 
   if (document.readyState === 'loading') {

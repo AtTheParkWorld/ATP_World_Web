@@ -421,3 +421,61 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
   transition: border-color var(--atp-dur) var(--atp-ease),
               transform var(--atp-dur) var(--atp-ease);
 }
+
+/* ────────────────────────────────────────────────────────────────
+ * MOBILE NAV DRAWER
+ * The hamburger appeared on mobile but did nothing — every page's
+ * legacy CSS hid .nav-links and showed .hamburger but the toggle JS
+ * was never wired. Now atp-components.js toggles #nav.mobile-open;
+ * this stylesheet provides the drawer panel.
+ * ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 900px) {
+  .hamburger {
+    background: transparent;
+    border: none;
+    padding: 6px;
+    cursor: pointer;
+    z-index: 2;
+  }
+  #nav.mobile-open .nav-links {
+    display: flex !important;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    flex-direction: column;
+    gap: 0;
+    background: var(--atp-bg-1);
+    padding: 8px 24px 16px;
+    border-top: 1px solid var(--atp-line);
+    border-bottom: 1px solid var(--atp-line);
+    box-shadow: var(--atp-shadow-2);
+    animation: atp-fade-in var(--atp-dur) var(--atp-ease);
+  }
+  #nav.mobile-open .nav-links li {
+    width: 100%;
+    border-bottom: 1px solid var(--atp-line);
+  }
+  #nav.mobile-open .nav-links li:last-child { border-bottom: none; }
+  #nav.mobile-open .nav-links a {
+    display: block;
+    padding: 14px 0;
+    font-size: var(--atp-text-md);
+    color: var(--atp-fg);
+  }
+  #nav.mobile-open .nav-links a.active { color: var(--atp-green); }
+
+  /* Hamburger → X morph when open */
+  #nav.mobile-open .hamburger span:nth-child(1) {
+    transform: translateY(7px) rotate(45deg);
+  }
+  #nav.mobile-open .hamburger span:nth-child(2) { opacity: 0; }
+  #nav.mobile-open .hamburger span:nth-child(3) {
+    transform: translateY(-7px) rotate(-45deg);
+  }
+  .hamburger span {
+    transition: transform var(--atp-dur) var(--atp-ease),
+                opacity var(--atp-dur-fast) var(--atp-ease);
+  }
+}
