@@ -90,10 +90,47 @@ def main() -> None:
         css_in += len(raw)
         css_out += len(mini)
 
+    # ── Bundles ─────────────────────────────────────────────────
+    # Concatenate the minified pieces into single bundle files so
+    # browsers fetch one resource per logical group instead of N.
+    # Order matters: dependencies before consumers.
+    print('\nBundles:')
+
+    # Public site shared bundle (atp + components, in load order)
+    public_parts = ['atp.min.js', 'atp-api.min.js', 'atp-components.min.js']
+    public_bundle = ''
+    for src in public_parts:
+        p = ROOT / src
+        if p.exists():
+            public_bundle += '/* ===== ' + src + ' ===== */\n' + p.read_text() + '\n'
+    write_both('atp.bundle.min.js', public_bundle)
+    print(f'  atp.bundle.min.js              {humanise(len(public_bundle)):>7s}  ({len(public_parts)} sources)')
+
+    # Admin bundle (all modules, in dependency order from admin.html)
+    admin_parts = [
+        'admin/core.min.js',
+        'admin/members.min.js',
+        'admin/ambassadors.min.js',
+        'admin/sessions.min.js',
+        'admin/showtoast.min.js',
+        'admin/challenges.min.js',
+        'admin/coaches.min.js',
+        'admin/analytics.min.js',
+        'admin/cms.min.js',
+        'admin/init.min.js',
+    ]
+    admin_bundle = ''
+    for src in admin_parts:
+        p = ROOT / src
+        if p.exists():
+            admin_bundle += '/* ===== ' + src + ' ===== */\n' + p.read_text() + '\n'
+    write_both('admin/bundle.min.js', admin_bundle)
+    print(f'  admin/bundle.min.js            {humanise(len(admin_bundle)):>7s}  ({len(admin_parts)} sources)')
+
     total_in = js_in + css_in
     total_out = js_out + css_out
     saved = total_in - total_out
-    print(f'\nTotal: {humanise(total_in)} → {humanise(total_out)} '
+    print(f'\nTotal source: {humanise(total_in)} → minified {humanise(total_out)} '
           f'(saved {humanise(saved)}, {saved*100//max(1,total_in)}%) '
           f'in {(time.time()-t0)*1000:.0f}ms')
 

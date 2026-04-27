@@ -4,7 +4,7 @@
 <head>
   <link rel="stylesheet" href="/atp.min.css">
   <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
-  <script src="atp.min.js"></script>
+  <script src="/atp.bundle.min.js"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -14,7 +14,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/admin/admin.min.css">
-<script src="atp-api.min.js"></script>
 </head>
 <body>
 
@@ -794,16 +793,15 @@
 <div class="admin-toast" id="adminToast"></div>
 <!-- Admin modules — load order matters: core defines globals + showAdminSection
      hook in init.js wires the per-section loaders, so init.js must come last. -->
-<script src="/admin/core.min.js"></script>
-<script src="/admin/members.min.js"></script>
-<script src="/admin/ambassadors.min.js"></script>
-<script src="/admin/sessions.min.js"></script>
-<script src="/admin/showtoast.min.js"></script>
-<script src="/admin/challenges.min.js"></script>
-<script src="/admin/coaches.min.js"></script>
-<script src="/admin/analytics.min.js"></script>
-<script src="/admin/cms.min.js"></script>
-<script src="/admin/init.min.js"></script>
-<script src="/atp-components.min.js"></script>
+<script src="/admin/bundle.min.js"></script>
+
+
+
+
+
+
+
+
+
 </body>
 </html>
