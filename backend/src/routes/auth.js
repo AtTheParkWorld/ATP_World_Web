@@ -467,6 +467,58 @@ router.post('/migrate-phone-nullable', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-indexes ────────────────────────────
+// Adds the high-leverage btree indexes the audit (3.3) called out.
+// Each is idempotent (IF NOT EXISTS) and uses CONCURRENTLY where the
+// table might be busy. Runs in a single endpoint so it's one click to
+// upgrade an existing prod database.
+router.post('/migrate-indexes', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    const indexes = [
+      // Hot lookup paths
+      `CREATE INDEX IF NOT EXISTS idx_members_email_lower    ON members (LOWER(email))`,
+      `CREATE INDEX IF NOT EXISTS idx_members_member_number  ON members (member_number)`,
+      `CREATE INDEX IF NOT EXISTS idx_members_city_id        ON members (city_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_members_is_ambassador  ON members (is_ambassador) WHERE is_ambassador = true`,
+      `CREATE INDEX IF NOT EXISTS idx_members_is_coach       ON members (is_coach) WHERE is_coach = true`,
+      // Sessions discovery
+      `CREATE INDEX IF NOT EXISTS idx_sessions_scheduled_at  ON sessions (scheduled_at)`,
+      `CREATE INDEX IF NOT EXISTS idx_sessions_city_id       ON sessions (city_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_sessions_status        ON sessions (status)`,
+      `CREATE INDEX IF NOT EXISTS idx_sessions_coach_id      ON sessions (coach_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_sessions_tribe_id      ON sessions (tribe_id)`,
+      // Bookings join + my-bookings query
+      `CREATE INDEX IF NOT EXISTS idx_bookings_member_id     ON bookings (member_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_bookings_session_id    ON bookings (session_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_bookings_status        ON bookings (status)`,
+      // Challenges + participants
+      `CREATE INDEX IF NOT EXISTS idx_chal_participants_chal ON challenge_participants (challenge_id)`,
+      `CREATE INDEX IF NOT EXISTS idx_chal_participants_mem  ON challenge_participants (member_id)`,
+      // Posts feed by created_at DESC
+      `CREATE INDEX IF NOT EXISTS idx_posts_created_at       ON posts (created_at DESC) WHERE is_deleted = false`,
+      `CREATE INDEX IF NOT EXISTS idx_posts_member_id        ON posts (member_id)`,
+      // Notifications inbox
+      `CREATE INDEX IF NOT EXISTS idx_notifications_member   ON notifications (member_id, created_at DESC)`,
+      // Points ledger by member
+      `CREATE INDEX IF NOT EXISTS idx_points_ledger_member   ON points_ledger (member_id, created_at DESC)`,
+      // Auth tokens by hash (magic link verify)
+      `CREATE INDEX IF NOT EXISTS idx_auth_tokens_hash       ON auth_tokens (token_hash)`,
+    ];
+    const results = [];
+    for (const sql of indexes) {
+      try {
+        await query(sql);
+        results.push({ ok: true, sql: sql.split(' ').slice(0, 6).join(' ') });
+      } catch (e) {
+        results.push({ ok: false, sql: sql.split(' ').slice(0, 6).join(' '), err: e.message });
+      }
+    }
+    res.json({ success: true, applied: results.filter(r => r.ok).length, results });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
 
 // ── POST /api/auth/grant-admin  (setup only) ──────────────────
