@@ -26,7 +26,7 @@
     { key: 'about',     label: 'About',     href: 'index.html#story' },
   ];
 
-  var LOGO_SRC = '/atp-logo-transparent.png';
+  var LOGO_SRC = '/atp-logo-transparent.webp';
 
   /* ── HTML helpers ──────────────────────────────────────────── */
   function escapeHtml(str) {

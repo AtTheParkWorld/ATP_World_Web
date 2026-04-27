@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <link rel="stylesheet" href="/atp.css">
+  <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
   <script src="atp.js"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -509,7 +510,7 @@ window.ATP_NAV_EXTRAS = ['<button class="cart-icon-btn" data-atp-call="openCart"
     <div class="pdp-gallery">
       <div class="pdp-main-img" id="pdpMainImg">
         <button class="pdp-close" data-atp-call="closePDP">×</button>
-        <img id="pdpMainImgEl" src="" alt="">
+        <img loading="lazy" decoding="async" id="pdpMainImgEl" src="" alt="">
       </div>
       <div class="pdp-thumbs" id="pdpThumbs"></div>
     </div>
@@ -533,7 +534,7 @@ window.ATP_NAV_EXTRAS = ['<button class="cart-icon-btn" data-atp-call="openCart"
   <div class="footer-inner">
     <div class="footer-top">
       <div>
-        <img id="footer-logo-img" alt="At The Park" style="height:26px;width:auto;display:block;margin-bottom:12px;">
+        <img loading="lazy" decoding="async" id="footer-logo-img" alt="At The Park" style="height:26px;width:auto;display:block;margin-bottom:12px;">
         <p class="footer-tagline">Free fitness for everyone. . Est. 2015.</p>
         <div class="footer-socials">
           <a class="social-btn" href="https://www.instagram.com/atthepark_uae" target="_blank" rel="noopener">ig</a>
@@ -571,7 +572,7 @@ ATPComponents.openAuthModal. No post-auth flow on the store page (Shopify
 checkout doesn't require an ATP login). -->
 
 <script>
-var LOGO_SRC = "/atp-logo-transparent.png";
+var LOGO_SRC = "/atp-logo-transparent.webp";
 (function(){
   var n=document.getElementById("nav-logo-img"),
       f=document.getElementById("footer-logo-img"),
@@ -893,7 +894,7 @@ function renderGrid(products) {
           '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M8 13.5S1.5 9.5 1.5 5.5a3 3 0 015-2.2A3 3 0 0114.5 5.5c0 4-6.5 8-6.5 8z"/></svg>' +
         '</button>' +
         (img0 ? '<img class="img-primary" src="' + img0 + '" alt="' + imgAlt + '" loading="lazy">' : '<div class="product-img-ph">🎽</div>') +
-        (img1 ? '<img class="img-secondary" src="' + img1 + '" alt="' + imgAlt + ' alternate view">' : '') +
+        (img1 ? '<img loading="lazy" decoding="async" class="img-secondary" src="' + img1 + '" alt="' + imgAlt + ' alternate view">' : '') +
         dotsHtml +
         (inStock ?
           '<div class="quick-add-panel">' +
@@ -999,7 +1000,7 @@ function openPDP(product) {
   imgs.forEach(function(img, i) {
     var div = document.createElement("div");
     div.className = "pdp-thumb" + (i===0?" active":"");
-    div.innerHTML = '<img src="' + img.url + '" alt="' + img.alt + ' view ' + (i+1) + '">';
+    div.innerHTML = '<img loading="lazy" decoding="async" src="' + img.url + '" alt="' + img.alt + ' view ' + (i+1) + '">';
     div.addEventListener("click", function() {
       mainImg.style.opacity = "0";
       setTimeout(function(){ mainImg.src = img.url; mainImg.alt = img.alt; mainImg.style.opacity = "1"; }, 150);
@@ -1105,7 +1106,7 @@ function refreshCart() {
     body.innerHTML = cartItems.map(function(item, i) {
       return '<div class="cart-line">' +
         '<div class="cart-line-img">' +
-          (item.imgUrl ? '<img src="' + item.imgUrl + '" alt="' + item.title + '">' : '') +
+          (item.imgUrl ? '<img loading="lazy" decoding="async" src="' + item.imgUrl + '" alt="' + item.title + '">' : '') +
         '</div>' +
         '<div class="cart-line-info">' +
           '<div class="cart-line-name">' + item.title + '</div>' +

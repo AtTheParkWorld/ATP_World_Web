@@ -3,6 +3,7 @@
 <html lang="en">
 <head>
   <link rel="stylesheet" href="/atp.css">
+  <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
   <script src="atp.js"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -20,7 +21,7 @@
 <!-- LOGIN SCREEN -->
 <div class="admin-login" id="loginScreen">
   <div class="admin-login-box">
-    <img class="admin-login-logo" id="adminLogo" src="" alt="ATP">
+    <img loading="lazy" decoding="async" class="admin-login-logo" id="adminLogo" src="" alt="ATP">
     <div class="admin-login-title">Admin Panel</div>
     <div class="admin-login-sub">At The Park · Internal Access Only</div>
     <input class="admin-login-input" type="text" id="adminUser" placeholder="Username" onkeydown="if(event.key==='Enter')document.getElementById('adminPass').focus()" aria-label="Username">
@@ -36,7 +37,7 @@
   <!-- SIDEBAR -->
   <nav class="admin-sidebar">
     <div class="admin-logo-wrap">
-      <img class="admin-logo" id="adminLogoNav" src="" alt="ATP">
+      <img loading="lazy" decoding="async" class="admin-logo" id="adminLogoNav" src="" alt="ATP">
       <div class="admin-version">Admin Panel v1.0</div>
     </div>
     <div class="admin-nav">

@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <link rel="stylesheet" href="/atp.css">
+  <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
   <script src="atp.js"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -461,7 +462,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
   <div class="footer-inner">
     <div class="footer-top">
       <div>
-        <img id="footer-logo-img" alt="At The Park" style="height:26px;width:auto;display:block;margin-bottom:14px;">
+        <img loading="lazy" decoding="async" id="footer-logo-img" alt="At The Park" style="height:26px;width:auto;display:block;margin-bottom:14px;">
         <p class="footer-tagline">Changing the world's fitness — one free session at a time. Dubai · Al Ain · Muscat. Est. 2015.</p>
         <div class="footer-socials">
           <a class="social-btn" href="https://www.instagram.com/atthepark_uae" target="_blank" rel="noopener" aria-label="Instagram">ig</a>
@@ -482,7 +483,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 </footer>
 
 <script>
-var LOGO_SRC = "/atp-logo-transparent.png";
+var LOGO_SRC = "/atp-logo-transparent.webp";
 (function() {
   var imgs = [
     document.getElementById("nav-logo-img"),

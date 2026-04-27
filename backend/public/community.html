@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <link rel="stylesheet" href="/atp.css">
+  <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
   <script src="atp.js"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -454,7 +455,7 @@ fires atp:login on success. -->
 
 
 <script>
-var LOGO_SRC = "/atp-logo-transparent.png";
+var LOGO_SRC = "/atp-logo-transparent.webp";
 (function(){
   var imgs=[document.getElementById("nav-logo-img"),document.getElementById("authLogo")];
   imgs.forEach(function(img){if(img)img.src=LOGO_SRC;});
@@ -564,7 +565,7 @@ function addMediaPreview(src, type, idx) {
   div.className = "media-thumb";
   div.dataset.idx = idx;
   if(type==="image") {
-    div.innerHTML = '<img src="'+src+'" alt="preview"><button class="media-thumb-rm" onclick="removeMedia('+idx+')">×</button>';
+    div.innerHTML = '<img loading="lazy" decoding="async" src="'+src+'" alt="preview"><button class="media-thumb-rm" onclick="removeMedia('+idx+')">×</button>';
   } else {
     div.innerHTML = '<video src="'+src+'" muted></video><button class="media-thumb-rm" onclick="removeMedia('+idx+')">×</button>';
   }

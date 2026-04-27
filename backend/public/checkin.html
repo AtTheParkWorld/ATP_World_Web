@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <link rel="stylesheet" href="/atp.css">
+  <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
   <script src="atp.js"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
@@ -147,7 +148,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
 <!-- HEADER -->
 <header class="ci-header">
   <div class="ci-logo">
-    <img src="" id="ciLogo" alt="ATP">
+    <img loading="lazy" decoding="async" src="" id="ciLogo" alt="ATP">
     <span class="ci-badge">⭐ Ambassador</span>
   </div>
   <div class="ci-header-right">
@@ -242,7 +243,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
 <div class="ci-toast" id="ciToast"></div>
 
 <script>
-var LOGO_SRC = "/atp-logo-transparent.png";
+var LOGO_SRC = "/atp-logo-transparent.webp";
 document.getElementById('ciLogo').src = LOGO_SRC;
 
 // ── SESSION DATA ──────────────────────────────────────────────
