@@ -558,8 +558,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
               <div class="form-group"><label class="form-label">First name</label><input class="form-input" type="text" value="Frederico" id="fFirstName"></div>
               <div class="form-group"><label class="form-label">Last name</label><input class="form-input" type="text" value="Martins" id="fLastName"></div>
               <div class="form-group"><label class="form-label">Date of birth</label><input class="form-input" type="date" id="fDob"></div>
-              <div class="form-group"><label class="form-label">Nationality</label><input class="form-input" type="text" placeholder="e.g. Brazilian" id="fNationality"></div>
-              <div class="form-group"><label class="form-label">Gender</label>
+              <div class="form-group"><label class="form-label">Nationality</label><input class="form-input" type="text" placeholder="e.g. Brazilian" id="fNationality" aria-label="e.g. Brazilian"></div>
+              <div class="form-group"><label class="form-label" for="fGender">Gender</label>
                 <select class="form-select" id="fGender"><option>Male</option><option>Female</option><option>Non-binary</option><option>Prefer not to say</option></select>
               </div>
             </div>
@@ -567,7 +567,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
             <div class="form-section-title">Contact</div>
             <div class="form-grid">
               <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" value="fredericmartins21@me.com" id="fEmail"></div>
-              <div class="form-group"><label class="form-label">Mobile</label><input class="form-input" type="tel" placeholder="+971 50 000 0000" id="fMobile"></div>
+              <div class="form-group"><label class="form-label">Mobile</label><input class="form-input" type="tel" placeholder="+971 50 000 0000" id="fMobile" aria-label="+971 50 000 0000"></div>
             </div>
 
             <div class="form-section-title">Sports & Interests</div>
@@ -597,18 +597,18 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
 
             <div class="form-section-title">Sizing</div>
             <div class="form-grid">
-              <div class="form-group"><label class="form-label">Top size</label>
+              <div class="form-group"><label class="form-label" for="fTopSize">Top size</label>
                 <select class="form-select" id="fTopSize"><option>XS</option><option>S</option><option selected>M</option><option>L</option><option>XL</option><option>XXL</option></select>
               </div>
-              <div class="form-group"><label class="form-label">Bottom size</label>
+              <div class="form-group"><label class="form-label" for="fBotSize">Bottom size</label>
                 <select class="form-select" id="fBotSize"><option>XS</option><option>S</option><option selected>M</option><option>L</option><option>XL</option><option>XXL</option></select>
               </div>
             </div>
 
             <div class="form-section-title">Security</div>
             <div class="form-grid">
-              <div class="form-group"><label class="form-label">New password</label><input class="form-input" type="password" placeholder="Enter new password" id="fPwd"></div>
-              <div class="form-group"><label class="form-label">Confirm password</label><input class="form-input" type="password" placeholder="Confirm new password" id="fPwd2"></div>
+              <div class="form-group"><label class="form-label">New password</label><input class="form-input" type="password" placeholder="Enter new password" id="fPwd" aria-label="Enter new password"></div>
+              <div class="form-group"><label class="form-label">Confirm password</label><input class="form-input" type="password" placeholder="Confirm new password" id="fPwd2" aria-label="Confirm new password"></div>
             </div>
 
             <button class="form-save-btn" data-atp-call="saveProfile">Save changes</button>

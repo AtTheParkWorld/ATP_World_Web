@@ -397,15 +397,15 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       <div class="modal-meta" id="modalMeta"></div>
       <div class="form-group">
         <label for="bookName">Your name</label>
-        <input type="text" id="bookName" placeholder="Fredy Martins" autocomplete="name">
+        <input type="text" id="bookName" placeholder="Fredy Martins" autocomplete="name" aria-label="Fredy Martins">
       </div>
       <div class="form-group">
         <label for="bookEmail">Email address</label>
-        <input type="email" id="bookEmail" placeholder="you@email.com" autocomplete="email">
+        <input type="email" id="bookEmail" placeholder="you@email.com" autocomplete="email" aria-label="you@email.com">
       </div>
       <div class="form-group">
         <label for="bookPhone">WhatsApp number (optional)</label>
-        <input type="tel" id="bookPhone" placeholder="+971 50 000 0000" autocomplete="tel">
+        <input type="tel" id="bookPhone" placeholder="+971 50 000 0000" autocomplete="tel" aria-label="+971 50 000 0000">
       </div>
       <div class="auth-error" id="bookError" style="display:none;margin-bottom:10px"></div>
       <button class="modal-submit" id="modalSubmit" data-mode="book" data-atp-call="submitBooking">Book my free spot →</button>

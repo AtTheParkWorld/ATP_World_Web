@@ -719,7 +719,7 @@ function buildPostCard(post) {
     '<div class="post-comments" id="comments-'+post.id+'" style="display:'+(showComments?'block':'none')+'">'+
       commentsHtml+
       '<div class="comment-input-wrap">'+
-        '<input class="comment-input" id="cinput-'+post.id+'" type="text" placeholder="Write a comment…" onkeydown="if(event.key==\'Enter\')addComment('+post.id+')">'+
+        '<input class="comment-input" id="cinput-'+post.id+'" type="text" placeholder="Write a comment…" onkeydown="if(event.key==\'Enter\')addComment('+post.id+')" aria-label="Write a comment…">'+
         '<button class="comment-send" onclick="addComment('+post.id+')">'+
           '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 8l12-6-5 12-2-5-5-1z"/></svg>'+
         '</button>'+

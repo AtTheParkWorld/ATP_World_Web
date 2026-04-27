@@ -215,7 +215,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
       <div class="ci-manual">
         <div class="ci-manual-label">or enter member ID manually</div>
         <div class="ci-manual-row">
-          <input class="ci-manual-input" id="manualId" type="text" placeholder="ATP-FM12345" onkeydown="if(event.key==='Enter')manualCheckin()">
+          <input class="ci-manual-input" id="manualId" type="text" placeholder="ATP-FM12345" onkeydown="if(event.key==='Enter')manualCheckin()" aria-label="ATP-FM12345">
           <button class="ci-manual-btn" data-atp-call="manualCheckin">Check in</button>
         </div>
       </div>
@@ -226,7 +226,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
   <div class="ci-list-side">
     <div class="ci-list-header">
       <div class="ci-list-title">Attendance</div>
-      <input class="ci-list-search" id="listSearch" type="search" placeholder="Search members…" oninput="filterList()">
+      <input class="ci-list-search" id="listSearch" type="search" placeholder="Search members…" oninput="filterList()" aria-label="Search members…">
     </div>
     <div class="ci-list-stats">
       <div class="ci-stat"><div class="ci-stat-num" id="statChecked">0</div><div class="ci-stat-label">Checked in</div></div>

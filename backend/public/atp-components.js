@@ -253,8 +253,43 @@
   }
 
   var _authMode = 'signup';
+  var _authReturnFocus = null;   // element that opened the modal (focus is restored on close)
+  var _authTrapHandler = null;   // bound keydown handler for focus trap
+
+  function _focusables(root) {
+    return Array.prototype.slice.call(root.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]):not([type=hidden]),' +
+      ' select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    )).filter(function(el) {
+      return el.offsetParent !== null; // visible
+    });
+  }
+
+  function _installFocusTrap(modal) {
+    _authTrapHandler = function(e) {
+      if (e.key !== 'Tab') return;
+      var f = _focusables(modal);
+      if (!f.length) return;
+      var first = f[0], last = f[f.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault(); last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault(); first.focus();
+      }
+    };
+    document.addEventListener('keydown', _authTrapHandler);
+  }
+
+  function _removeFocusTrap() {
+    if (_authTrapHandler) {
+      document.removeEventListener('keydown', _authTrapHandler);
+      _authTrapHandler = null;
+    }
+  }
+
   function openAuthModal(mode) {
     _authMode = mode === 'login' ? 'login' : 'signup';
+    _authReturnFocus = document.activeElement; // remember opener so we can restore focus on close
     var modal = ensureAuthModal();
     document.getElementById('atp-auth-title').textContent = _authMode === 'login' ? 'Log in' : 'Join free';
     document.getElementById('atp-auth-sub').textContent =
@@ -270,6 +305,8 @@
     banner.textContent = '';
     clearForm('#atp-auth-form');
     modal.style.display = 'flex';
+    document.body.style.overflow = 'hidden'; // lock background scroll
+    _installFocusTrap(modal);
     setTimeout(function() {
       var firstField = _authMode === 'login'
         ? document.getElementById('atpaEmail')
@@ -280,7 +317,15 @@
 
   function closeAuthModal() {
     var m = document.getElementById('atp-auth-modal');
-    if (m) m.style.display = 'none';
+    if (!m || m.style.display === 'none') return;
+    m.style.display = 'none';
+    document.body.style.overflow = '';
+    _removeFocusTrap();
+    // Restore focus to whatever opened the modal — keyboard users land back where they were
+    if (_authReturnFocus && typeof _authReturnFocus.focus === 'function') {
+      try { _authReturnFocus.focus(); } catch(e) {}
+    }
+    _authReturnFocus = null;
   }
 
   function _showBanner(msg) {

@@ -23,8 +23,8 @@
     <img class="admin-login-logo" id="adminLogo" src="" alt="ATP">
     <div class="admin-login-title">Admin Panel</div>
     <div class="admin-login-sub">At The Park · Internal Access Only</div>
-    <input class="admin-login-input" type="text" id="adminUser" placeholder="Username" onkeydown="if(event.key==='Enter')document.getElementById('adminPass').focus()">
-    <input class="admin-login-input" type="password" id="adminPass" placeholder="Password" onkeydown="if(event.key==='Enter')adminLogin()">
+    <input class="admin-login-input" type="text" id="adminUser" placeholder="Username" onkeydown="if(event.key==='Enter')document.getElementById('adminPass').focus()" aria-label="Username">
+    <input class="admin-login-input" type="password" id="adminPass" placeholder="Password" onkeydown="if(event.key==='Enter')adminLogin()" aria-label="Password">
     <button class="admin-login-btn" data-atp-call="adminLogin">Sign in</button>
     <div class="admin-login-err" id="loginErr">Invalid credentials</div>
   </div>
@@ -155,7 +155,7 @@
       <div class="admin-section">
         <div class="admin-section-head">
           <span class="admin-section-title">All Members <span style="color:#444;font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;margin-left:8px">7,024 total</span></span>
-          <input type="search" id="memberSearch" placeholder="Search name, email, or ID…" style="background:#111;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:7px 14px;color:#fff;font-size:12px;font-family:var(--ff-body);width:240px" oninput="filterMembers(this.value)">
+          <input type="search" id="memberSearch" placeholder="Search name, email, or ID…" style="background:#111;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:7px 14px;color:#fff;font-size:12px;font-family:var(--ff-body);width:240px" oninput="filterMembers(this.value)" aria-label="Search name, email, or ID…">
         </div>
         <div class="admin-section-body" style="padding:0">
           <table class="admin-table" id="membersTable">
@@ -195,12 +195,12 @@
         <div class="admin-section-body">
           <div class="admin-form-grid">
             <div class="admin-form-group">
-              <label class="admin-form-label">Member ID or Email</label>
-              <input class="admin-form-input" type="text" id="newAmbInput" placeholder="ATP-XX0000 or email@address.com">
+              <label class="admin-form-label" for="newAmbInput">Member ID or Email</label>
+              <input class="admin-form-input" type="text" id="newAmbInput" placeholder="ATP-XX0000 or email@address.com" aria-label="ATP-XX0000 or email@address.com">
             </div>
             <div class="admin-form-group">
               <label class="admin-form-label">Role Note (optional)</label>
-              <input class="admin-form-input" type="text" placeholder="e.g. Lead Ambassador Dubai">
+              <input class="admin-form-input" type="text" placeholder="e.g. Lead Ambassador Dubai" aria-label="e.g. Lead Ambassador Dubai">
             </div>
           </div>
           <button class="admin-btn admin-btn-primary" style="margin-top:16px" data-atp-call="addAmbassador">Activate Ambassador Access</button>
@@ -248,23 +248,23 @@
           <!-- COMMON FIELDS -->
           <div class="admin-form-grid">
             <div class="admin-form-group">
-              <label class="admin-form-label">Session Name *</label>
-              <input class="admin-form-input" type="text" id="sName" placeholder="e.g. Morning Run">
+              <label class="admin-form-label" for="sName">Session Name *</label>
+              <input class="admin-form-input" type="text" id="sName" placeholder="e.g. Morning Run" aria-label="e.g. Morning Run">
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Coach</label>
+              <label class="admin-form-label" for="sCoach">Coach</label>
               <select class="admin-form-select" id="sCoach">
                 <option value="">Loading coaches...</option>
               </select>
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Tribe</label>
+              <label class="admin-form-label" for="sTribe">Tribe</label>
               <select class="admin-form-select" id="sTribe">
                 <option value="">No tribe</option>
               </select>
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Country *</label>
+              <label class="admin-form-label" for="sCountry">Country *</label>
               <select class="admin-form-select" id="sCountry" onchange="filterCitiesByCountry()">
                 <option value="">Select Country</option>
                 <option value="UAE">🇦🇪 UAE</option>
@@ -276,41 +276,41 @@
               </select>
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">City *</label>
+              <label class="admin-form-label" for="sCity">City *</label>
               <select class="admin-form-select" id="sCity">
                 <option value="">Select country first</option>
               </select>
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Location / Venue *</label>
-              <input class="admin-form-input" type="text" id="sLoc" placeholder="e.g. Safa Park, Gate 1">
+              <label class="admin-form-label" for="sLoc">Location / Venue *</label>
+              <input class="admin-form-input" type="text" id="sLoc" placeholder="e.g. Safa Park, Gate 1" aria-label="e.g. Safa Park, Gate 1">
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Google Maps URL</label>
-              <input class="admin-form-input" type="text" id="sMaps" placeholder="https://maps.google.com/...">
+              <label class="admin-form-label" for="sMaps">Google Maps URL</label>
+              <input class="admin-form-input" type="text" id="sMaps" placeholder="https://maps.google.com/..." aria-label="https://maps.google.com/...">
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Duration (mins)</label>
+              <label class="admin-form-label" for="sDuration">Duration (mins)</label>
               <input class="admin-form-input" type="number" id="sDuration" value="60" min="15" max="240">
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Capacity (total)</label>
+              <label class="admin-form-label" for="sCap">Capacity (total)</label>
               <input class="admin-form-input" type="number" id="sCap" value="30" min="1" max="500">
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Points Reward</label>
+              <label class="admin-form-label" for="sPoints">Points Reward</label>
               <input class="admin-form-input" type="number" id="sPoints" value="10" min="0">
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Paid / Free</label>
+              <label class="admin-form-label" for="sType">Paid / Free</label>
               <select class="admin-form-select" id="sType">
                 <option value="free">Free</option>
                 <option value="paid">Paid</option>
               </select>
             </div>
             <div class="admin-form-group full">
-              <label class="admin-form-label">Description</label>
-              <input class="admin-form-input" type="text" id="sDesc" placeholder="Brief session description (optional)">
+              <label class="admin-form-label" for="sDesc">Description</label>
+              <input class="admin-form-input" type="text" id="sDesc" placeholder="Brief session description (optional)" aria-label="Brief session description (optional)">
             </div>
           </div>
 
@@ -341,7 +341,7 @@
             <label class="admin-form-label" style="margin-bottom:12px;display:block">🏆 Team Sports Settings</label>
             <div style="display:flex;gap:12px;margin-bottom:16px;flex-wrap:wrap">
               <div class="admin-form-group" style="flex:1;min-width:180px">
-                <label class="admin-form-label">Sport *</label>
+                <label class="admin-form-label" for="sSport">Sport *</label>
                 <select class="admin-form-select" id="sSport" onchange="updateSportLevels()">
                   <option value="">Select Sport</option>
                   <option value="padel">🎾 Padel Tennis</option>
@@ -352,7 +352,7 @@
                 </select>
               </div>
               <div class="admin-form-group" style="flex:1;min-width:160px">
-                <label class="admin-form-label">Number of Courts</label>
+                <label class="admin-form-label" for="sNumCourts">Number of Courts</label>
                 <input class="admin-form-input" type="number" id="sNumCourts" value="1" min="1" max="20" onchange="buildCourtsUI()">
               </div>
             </div>
@@ -411,7 +411,7 @@
               <option value="completed">Completed</option>
               <option value="">All</option>
             </select>
-            <input class="admin-form-input" type="text" id="filterSearch" placeholder="Search..." onkeyup="loadSessionsList()" style="width:150px;padding:6px 10px;font-size:12px">
+            <input class="admin-form-input" type="text" id="filterSearch" placeholder="Search..." onkeyup="loadSessionsList()" style="width:150px;padding:6px 10px;font-size:12px" aria-label="Search...">
           </div>
         </div>
         <div class="admin-section-body">
@@ -444,15 +444,15 @@
           <input type="hidden" id="cEditId" value="">
           <div class="admin-form-grid">
             <div class="admin-form-group">
-              <label class="admin-form-label">Challenge Title *</label>
-              <input class="admin-form-input" type="text" id="cTitle" placeholder="e.g. 10K Run in 7 Days">
+              <label class="admin-form-label" for="cTitle">Challenge Title *</label>
+              <input class="admin-form-input" type="text" id="cTitle" placeholder="e.g. 10K Run in 7 Days" aria-label="e.g. 10K Run in 7 Days">
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Icon / Emoji</label>
-              <input class="admin-form-input" type="text" id="cIcon" placeholder="🏃" maxlength="2" value="🏆">
+              <label class="admin-form-label" for="cIcon">Icon / Emoji</label>
+              <input class="admin-form-input" type="text" id="cIcon" placeholder="🏃" maxlength="2" value="🏆" aria-label="🏃">
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Type</label>
+              <label class="admin-form-label" for="cType">Type</label>
               <select class="admin-form-select" id="cType">
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>
@@ -460,7 +460,7 @@
               </select>
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Metric (what to track) *</label>
+              <label class="admin-form-label" for="cMetric">Metric (what to track) *</label>
               <select class="admin-form-select" id="cMetric" onchange="updateDeviceMetric()">
                 <option value="sessions">Sessions Attended</option>
                 <option value="km">Distance (km)</option>
@@ -471,29 +471,29 @@
               </select>
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Target *</label>
+              <label class="admin-form-label" for="cTarget">Target *</label>
               <input class="admin-form-input" type="number" id="cTarget" value="10" min="1">
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Points Reward</label>
+              <label class="admin-form-label" for="cPoints">Points Reward</label>
               <input class="admin-form-input" type="number" id="cPoints" value="100" min="0">
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Start Date *</label>
+              <label class="admin-form-label" for="cStartDate">Start Date *</label>
               <input class="admin-form-input" type="date" id="cStartDate">
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">End Date *</label>
+              <label class="admin-form-label" for="cEndDate">End Date *</label>
               <input class="admin-form-input" type="date" id="cEndDate">
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">City (leave empty for all)</label>
+              <label class="admin-form-label" for="cCity">City (leave empty for all)</label>
               <select class="admin-form-select" id="cCity">
                 <option value="">All Cities (Global)</option>
               </select>
             </div>
             <div class="admin-form-group">
-              <label class="admin-form-label">Smart Device Metric</label>
+              <label class="admin-form-label" for="cDeviceMetric">Smart Device Metric</label>
               <select class="admin-form-select" id="cDeviceMetric">
                 <option value="">Manual entry only</option>
                 <option value="steps">Steps (Garmin/Apple/Fitbit)</option>
@@ -503,8 +503,8 @@
               </select>
             </div>
             <div class="admin-form-group full">
-              <label class="admin-form-label">Description</label>
-              <input class="admin-form-input" type="text" id="cDesc" placeholder="Challenge description for members...">
+              <label class="admin-form-label" for="cDesc">Description</label>
+              <input class="admin-form-input" type="text" id="cDesc" placeholder="Challenge description for members..." aria-label="Challenge description for members...">
             </div>
           </div>
 
@@ -672,33 +672,33 @@
         </div>
         <div id="coachEditorMsg" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px"></div>
         <div class="admin-form-group" style="margin-bottom:14px">
-          <label class="admin-form-label">Bio (tell the community who you are)</label>
+          <label class="admin-form-label" for="ceBio">Bio (tell the community who you are)</label>
           <textarea class="admin-form-input" id="ceBio" rows="4" placeholder="Certified padel coach with 8 years experience helping players from Beginner to Pro. Based in Dubai Marina, I specialize in..." style="resize:vertical;min-height:80px;font-family:inherit"></textarea>
         </div>
         <div class="admin-form-grid">
           <div class="admin-form-group">
-            <label class="admin-form-label">Years Experience</label>
-            <input class="admin-form-input" type="number" id="ceYears" min="0" max="60" placeholder="5">
+            <label class="admin-form-label" for="ceYears">Years Experience</label>
+            <input class="admin-form-input" type="number" id="ceYears" min="0" max="60" placeholder="5" aria-label="5">
           </div>
           <div class="admin-form-group">
-            <label class="admin-form-label">Instagram (without @)</label>
-            <input class="admin-form-input" type="text" id="ceInsta" placeholder="yourhandle">
+            <label class="admin-form-label" for="ceInsta">Instagram (without @)</label>
+            <input class="admin-form-input" type="text" id="ceInsta" placeholder="yourhandle" aria-label="yourhandle">
           </div>
           <div class="admin-form-group">
-            <label class="admin-form-label">TikTok (without @)</label>
-            <input class="admin-form-input" type="text" id="ceTiktok" placeholder="yourhandle">
+            <label class="admin-form-label" for="ceTiktok">TikTok (without @)</label>
+            <input class="admin-form-input" type="text" id="ceTiktok" placeholder="yourhandle" aria-label="yourhandle">
           </div>
           <div class="admin-form-group">
-            <label class="admin-form-label">Languages (comma-separated)</label>
-            <input class="admin-form-input" type="text" id="ceLangs" placeholder="English, Arabic, French">
+            <label class="admin-form-label" for="ceLangs">Languages (comma-separated)</label>
+            <input class="admin-form-input" type="text" id="ceLangs" placeholder="English, Arabic, French" aria-label="English, Arabic, French">
           </div>
           <div class="admin-form-group full">
-            <label class="admin-form-label">Specialties (comma-separated)</label>
-            <input class="admin-form-input" type="text" id="ceSpecs" placeholder="Padel Level B, HIIT, Beginners, Kids Coaching">
+            <label class="admin-form-label" for="ceSpecs">Specialties (comma-separated)</label>
+            <input class="admin-form-input" type="text" id="ceSpecs" placeholder="Padel Level B, HIIT, Beginners, Kids Coaching" aria-label="Padel Level B, HIIT, Beginners, Kids Coaching">
           </div>
           <div class="admin-form-group full">
-            <label class="admin-form-label">Certifications (comma-separated)</label>
-            <input class="admin-form-input" type="text" id="ceCerts" placeholder="NASM-CPT, FIP Padel Level 2, ACE Certified">
+            <label class="admin-form-label" for="ceCerts">Certifications (comma-separated)</label>
+            <input class="admin-form-input" type="text" id="ceCerts" placeholder="NASM-CPT, FIP Padel Level 2, ACE Certified" aria-label="NASM-CPT, FIP Padel Level 2, ACE Certified">
           </div>
         </div>
         <div style="display:flex;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid #1a1a1a">
