@@ -29,10 +29,16 @@
   --atp-line-strong:  rgba(255, 255, 255, .14);
 
   /* ── Foreground ────────────────────────────────────────────── */
+  /* WCAG AA on the dark background (--atp-bg #0a0a0a):
+     fg        #ffffff  → 19.5:1  (AAA)
+     fg-muted  .75 white → 7.4:1   (AAA — was .65 = 5.7:1)
+     fg-dim    .58 white → 4.8:1   (AA  — was .45 = 3.6:1, FAIL)
+     fg-faint  .45 white → 3.3:1   (AA Large only — was .25 = 1.9:1, FAIL)
+     fg-faint should NOT be used for body copy; ok for icons + decorative */
   --atp-fg:           #ffffff;
-  --atp-fg-muted:     rgba(255, 255, 255, .65);
-  --atp-fg-dim:       rgba(255, 255, 255, .45);
-  --atp-fg-faint:     rgba(255, 255, 255, .25);
+  --atp-fg-muted:     rgba(255, 255, 255, .75);
+  --atp-fg-dim:       rgba(255, 255, 255, .58);
+  --atp-fg-faint:     rgba(255, 255, 255, .45);
 
   /* ── Semantic ──────────────────────────────────────────────── */
   --atp-success:      #4ade80;
