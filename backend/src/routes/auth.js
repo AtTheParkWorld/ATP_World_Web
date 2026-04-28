@@ -519,6 +519,46 @@ router.post('/migrate-indexes', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-streaks ────────────────────────────
+// Theme 3 / feedback #10 — adds streak tracking + admin notifications.
+router.post('/migrate-streaks', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    const ops = [];
+    // Per-member streak record (one row per member, upserted on every check-in)
+    ops.push(query(`CREATE TABLE IF NOT EXISTS member_streaks (
+      member_id          UUID PRIMARY KEY REFERENCES members(id) ON DELETE CASCADE,
+      current_streak     INT NOT NULL DEFAULT 0,
+      longest_streak     INT NOT NULL DEFAULT 0,
+      last_check_in_at   TIMESTAMPTZ,
+      total_check_ins    INT NOT NULL DEFAULT 0,
+      first_check_in_at  TIMESTAMPTZ,
+      updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`));
+    // Snapshot streak count on the booking so points awarder can apply the
+    // 2× multiplier deterministically when the session is later completed.
+    ops.push(query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS streak_at_checkin INT`));
+    // Admin notification inbox (#10.7 + future use)
+    ops.push(query(`CREATE TABLE IF NOT EXISTS admin_notifications (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      type            VARCHAR(64) NOT NULL,
+      title           TEXT NOT NULL,
+      body            TEXT,
+      target_member_id UUID REFERENCES members(id) ON DELETE SET NULL,
+      metadata        JSONB,
+      is_read         BOOLEAN NOT NULL DEFAULT false,
+      read_by         UUID REFERENCES members(id) ON DELETE SET NULL,
+      read_at         TIMESTAMPTZ,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_admin_notif_unread ON admin_notifications (is_read, created_at DESC)`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_admin_notif_type   ON admin_notifications (type, created_at DESC)`));
+    await Promise.all(ops);
+    res.json({ success: true, message: 'Streak + admin notifications schema ready' });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-audit-log ──────────────────────────
 // Adds audit_log table (audit 3.2) + VARCHAR length caps on free-text
 // member fields (audit 3.3). Idempotent.

@@ -1,6 +1,17 @@
 const router = require('express').Router();
 const { query } = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const streak = require('../services/streak');
+
+// ── GET /api/members/me/streak ────────────────────────────────
+// Theme 3 / feedback #10 — current + longest streak, weekly average,
+// and whether 2× points are currently active.
+router.get('/me/streak', authenticate, async (req, res, next) => {
+  try {
+    const summary = await streak.getStreakSummary(req.member.id);
+    res.json({ streak: summary });
+  } catch (err) { next(err); }
+});
 
 // ── GET /api/members/profile ──────────────────────────────────
 router.get('/profile', authenticate, async (req, res, next) => {

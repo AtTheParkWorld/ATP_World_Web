@@ -110,6 +110,42 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
 .streak-day.today{background:var(--green);box-shadow:0 0 0 2px rgba(122,194,49,.4);color:#fff}
 .streak-day.missed{background:rgba(239,68,68,.15);color:rgba(239,68,68,.6)}
 
+/* Streak progression bar (Theme 3 / #10.5, 10.6) */
+.streak-progress-track{
+  position:relative;
+  height:18px;
+  background:linear-gradient(90deg,rgba(255,255,255,.06) 0%,rgba(255,255,255,.06) 49%,rgba(255,196,0,.10) 50%,rgba(255,196,0,.10) 100%);
+  border-radius:999px;
+  overflow:visible;
+  border:1px solid rgba(255,255,255,.08);
+}
+.streak-progress-fill{
+  position:absolute;left:0;top:0;height:100%;
+  background:linear-gradient(90deg,#7AC231 0%,#a8e055 60%,#ffc400 80%,#ff8a00 100%);
+  border-radius:999px;
+  transition:width 1.4s cubic-bezier(.4,0,.2,1);
+  box-shadow:0 0 16px rgba(122,194,49,.55);
+  animation:streak-pulse 2.4s ease-in-out infinite;
+}
+@keyframes streak-pulse{
+  0%,100%{box-shadow:0 0 12px rgba(122,194,49,.45);}
+  50%    {box-shadow:0 0 24px rgba(255,196,0,.55);}
+}
+.streak-progress-marker{
+  position:absolute;top:50%;width:2px;height:26px;background:rgba(255,196,0,.7);
+  transform:translate(-1px,-50%);
+  pointer-events:auto;
+}
+.streak-progress-marker .marker-flag{
+  position:absolute;left:50%;top:-22px;transform:translateX(-50%);
+  font-size:14px;
+}
+.streak-tick-row{
+  position:absolute;left:0;right:0;top:24px;display:flex;justify-content:space-between;
+  font-size:9px;font-weight:600;color:var(--muted);letter-spacing:.04em;
+}
+.streak-tick-row span{flex:1;text-align:center}
+
 /* ── SESSIONS ── */
 .session-row{display:flex;align-items:center;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05)}
 .session-row:last-child{border-bottom:none}
@@ -552,23 +588,50 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
       <!-- MOCK: no GET /api/members/streak endpoint yet -->
       <div class="profile-panel" id="panel-streak">
         <div class="widget">
-          <div class="widget-head"><span class="widget-title">My Streak</span></div>
+          <div class="widget-head">
+            <span class="widget-title">My Streak</span>
+            <span id="streakDoubleBadge" style="display:none;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 12px;border-radius:20px;background:rgba(255,196,0,.15);border:1px solid rgba(255,196,0,.4);color:#ffc400">⚡ 2× points active</span>
+          </div>
           <div class="widget-body">
-            <div class="streak-hero" style="margin-bottom:24px">
-              <div class="streak-fire-big">🔥</div>
+            <!-- HERO BIG NUMBER -->
+            <div class="streak-hero" style="margin-bottom:18px">
+              <div class="streak-fire-big" id="streakFire">🔥</div>
               <div>
-                <div class="streak-num-big">14</div>
-                <div class="streak-days">days in a row</div>
-                <div style="font-size:12px;color:var(--muted);margin-top:4px">Personal best: <strong style="color:var(--white)">32 days</strong></div>
+                <div class="streak-num-big" id="streakCurrent">0</div>
+                <div class="streak-days" id="streakDaysLabel">days in a row</div>
+                <div style="font-size:12px;color:var(--muted);margin-top:4px" id="streakBestLabel">Personal best: <strong style="color:var(--white)">0</strong> days</div>
+                <div style="font-size:13px;color:var(--green);margin-top:6px;font-weight:600" id="streakInspire">Get checked in by an Ambassador to start your streak.</div>
               </div>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,.06);border-radius:var(--radius);overflow:hidden;margin-bottom:24px">
-              <div style="background:var(--dark3);padding:16px;text-align:center"><div style="font-family:var(--ff-display);font-size:24px;font-weight:900;color:var(--green)">127</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Total Sessions</div></div>
-              <div style="background:var(--dark3);padding:16px;text-align:center"><div style="font-family:var(--ff-display);font-size:24px;font-weight:900;color:var(--green)">32</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Best Streak</div></div>
-              <div style="background:var(--dark3);padding:16px;text-align:center"><div style="font-family:var(--ff-display);font-size:24px;font-weight:900;color:var(--green)">4.2</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Avg / Week</div></div>
+
+            <!-- ANIMATED PROGRESSION BAR (#10.5, 10.6) -->
+            <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
+              <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Progression</span>
+              <span style="font-size:11px;color:var(--muted)" id="streakNextLabel">Next milestone: 7 days → 2× points</span>
             </div>
-            <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:12px">Last 28 Days</div>
-            <div class="streak-grid" id="streakFullGrid" style="grid-template-columns:repeat(7,1fr)"></div>
+            <div class="streak-progress-track">
+              <div class="streak-progress-fill" id="streakProgressFill" style="width:0%"></div>
+              <div class="streak-progress-marker" style="left:calc(7/14 * 100%)" title="2× points unlocks at day 8">
+                <span class="marker-flag">⚡</span>
+              </div>
+              <div class="streak-tick-row">
+                <span>1</span><span>2</span><span>3</span><span>4</span>
+                <span>5</span><span>6</span><span>7</span><span>8</span>
+                <span>9</span><span>10</span><span>11</span><span>12</span>
+                <span>13</span><span>14+</span>
+              </div>
+            </div>
+
+            <!-- QUICK STATS (#10.8 keeps weekly average) -->
+            <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,.06);border-radius:var(--radius);overflow:hidden;margin-top:24px">
+              <div style="background:var(--dark3);padding:16px;text-align:center"><div style="font-family:var(--ff-display);font-size:24px;font-weight:900;color:var(--green)" id="streakTotalCheckIns">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Total Check-ins</div></div>
+              <div style="background:var(--dark3);padding:16px;text-align:center"><div style="font-family:var(--ff-display);font-size:24px;font-weight:900;color:var(--green)" id="streakLongest">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Best Streak</div></div>
+              <div style="background:var(--dark3);padding:16px;text-align:center"><div style="font-family:var(--ff-display);font-size:24px;font-weight:900;color:var(--green)" id="streakWeeklyAvg">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Avg / Week</div></div>
+            </div>
+
+            <div style="margin-top:18px;padding:14px 16px;background:rgba(122,194,49,.06);border:1px solid rgba(122,194,49,.18);border-radius:var(--radius);font-size:13px;color:#bbb;line-height:1.6">
+              <strong style="color:var(--green)">How it works.</strong> Days 1–7 earn standard points per session. Day 8 onwards earns <strong style="color:var(--green)">double points</strong>. Miss a day and the streak resets. You only count if an ATP Ambassador scans you in at the session.
+            </div>
           </div>
         </div>
       </div>
@@ -2199,11 +2262,90 @@ function loadRealProfileData() {
     loadNotifications();
     loadReferrals();
     loadFriends();
+    loadStreak();
   }).catch(function(){});
 }
 
+// ── Streak panel loader (Theme 3) ───────────────────────────
+// Pulls /api/members/me/streak and renders the progression bar +
+// inspirational copy. Recomputes weekly avg server-side.
+function loadStreak() {
+  if (!window.ATP || !window.ATP.isLoggedIn()) return;
+  fetch('/api/members/me/streak', {
+    headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('atp_token')||'') }
+  })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(data){
+      if (!data || !data.streak) return;
+      renderStreak(data.streak);
+    })
+    .catch(function(){});
+}
+
+function renderStreak(s) {
+  var current = s.current || 0;
+  var longest = s.longest || 0;
+  var setText = function(id, v){ var el = document.getElementById(id); if (el) el.textContent = v; };
+  setText('streakCurrent', current);
+  setText('statStreak',    current); // also reflect in the hero stats bar
+  setText('streakLongest', longest);
+  setText('streakTotalCheckIns', s.total_check_ins || 0);
+  setText('streakWeeklyAvg', (s.weekly_avg_sessions || 0).toFixed
+    ? s.weekly_avg_sessions.toFixed(1)
+    : s.weekly_avg_sessions || 0);
+  setText('streakBestLabel', '');
+  var bestEl = document.getElementById('streakBestLabel');
+  if (bestEl) bestEl.innerHTML = 'Personal best: <strong style="color:var(--white)">' + longest + '</strong> day' + (longest === 1 ? '' : 's');
+  setText('streakDaysLabel', current === 1 ? 'day in a row' : 'days in a row');
+
+  // Animated progression: scale 0–14 days, anything ≥14 maxes the bar.
+  var pctRaw = Math.min(current, 14) / 14;
+  var fill = document.getElementById('streakProgressFill');
+  if (fill) {
+    // start at 0 then animate up so the user sees the fill happen
+    fill.style.width = '0%';
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){ fill.style.width = (pctRaw * 100) + '%'; });
+    });
+  }
+
+  // Double-points badge (#10.3)
+  var dbBadge = document.getElementById('streakDoubleBadge');
+  if (dbBadge) dbBadge.style.display = s.double_points_active ? 'inline-flex' : 'none';
+
+  // Next milestone copy
+  var nextLbl = document.getElementById('streakNextLabel');
+  if (nextLbl) {
+    if (current === 0) nextLbl.textContent = 'Next milestone: 7 days → admin notification + 1 day from 2× points';
+    else if (current < 7) nextLbl.textContent = 'Next milestone: ' + (7 - current) + ' more day' + (7 - current === 1 ? '' : 's') + ' to admin shout-out';
+    else if (current < 8) nextLbl.textContent = 'One more day to unlock 2× points!';
+    else nextLbl.textContent = '⚡ 2× points zone — keep going for your longest streak';
+  }
+
+  // Inspirational copy
+  var inspire = document.getElementById('streakInspire');
+  if (inspire) {
+    if (current === 0)      inspire.textContent = 'Get checked in by an Ambassador to start your streak.';
+    else if (current < 3)   inspire.textContent = 'Just getting started — keep going!';
+    else if (current < 7)   inspire.textContent = 'You\u2019re building the habit. Show up tomorrow.';
+    else if (current < 8)   inspire.textContent = '🔥 Seven days! One more for 2× points.';
+    else if (current < 14)  inspire.textContent = '⚡ 2× points active. You\u2019re on fire.';
+    else if (current < 30)  inspire.textContent = '🏆 Two weeks straight. The team noticed.';
+    else                    inspire.textContent = '🚀 Beyond the streak — you ARE the community.';
+  }
+
+  // Fire emoji intensity
+  var fire = document.getElementById('streakFire');
+  if (fire) {
+    if      (current >= 30) fire.textContent = '🚀';
+    else if (current >= 14) fire.textContent = '🏆';
+    else if (current >= 8)  fire.textContent = '⚡';
+    else if (current >= 1)  fire.textContent = '🔥';
+    else                    fire.textContent = '💤';
+  }
+}
+
 loadRealProfileData();
-renderStreakGrid(document.getElementById("streakFullGrid"),28);
 renderSessions(document.getElementById("upcomingSessions"),SESSIONS.slice(0,3));
 renderSessions(document.getElementById("allSessions"),SESSIONS);
 renderAchievements(document.getElementById("achieveMini"),ACHIEVEMENTS.slice(0,6));

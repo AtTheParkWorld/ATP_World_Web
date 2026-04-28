@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const { query, transaction } = require('../db');
 const { authenticate, requireAdmin, requireAmbassador, optionalAuth } = require('../middleware/auth');
+const streak = require('../services/streak');
 
 // ── GET /api/sessions ─────────────────────────────────────────
 router.get('/', optionalAuth, async (req, res, next) => {
@@ -243,12 +244,23 @@ router.post('/:id/checkin', authenticate, requireAmbassador, async (req, res, ne
       return res.status(400).json({ error: 'Booking was cancelled', code: 'BOOKING_CANCELLED' });
     }
 
+    // Update streak first so we can snapshot it on the booking
+    let streakNow = 0;
+    try {
+      const r = await streak.recordCheckin(booking.member_id, new Date());
+      streakNow = r.current;
+    } catch (e) {
+      // Streak failure must not block check-in
+      console.warn('[streak] recordCheckin failed:', e.message);
+    }
+
     await query(
       `UPDATE bookings
        SET status='attended', checked_in_at=NOW(),
-           checked_in_by=$1, check_in_method=$2
-       WHERE id=$3`,
-      [req.member.id, method, booking.id]
+           checked_in_by=$1, check_in_method=$2,
+           streak_at_checkin=$3
+       WHERE id=$4`,
+      [req.member.id, method, streakNow || null, booking.id]
     );
 
     res.json({
@@ -258,27 +270,40 @@ router.post('/:id/checkin', authenticate, requireAmbassador, async (req, res, ne
         last_name:  booking.last_name,
         member_number: booking.member_number,
       },
-      checked_in_at: new Date().toISOString(),
+      checked_in_at:    new Date().toISOString(),
+      streak:           streakNow,
+      double_points:    streakNow >= streak.POINTS_DOUBLE_THRESHOLD,
     });
   } catch (err) { next(err); }
 });
 
 // ── HELPER: award points after session complete ───────────────
+// Honours the 2× streak multiplier (#10.3): if the booking's
+// streak_at_checkin was ≥8 at the moment of check-in, the member earns
+// double the session's points_reward. The streak snapshot lives on the
+// booking row so the multiplier is deterministic regardless of when
+// "complete session" is fired.
 async function awardSessionPoints(sessionId) {
   const { rows: session } = await query(
-    'SELECT id, points_reward FROM sessions WHERE id=$1',
+    'SELECT id, points_reward, name FROM sessions WHERE id=$1',
     [sessionId]
   );
   if (!session.length) return;
-  const pts = session[0].points_reward;
+  const basePts = session[0].points_reward;
+  const sessionName = session[0].name;
 
   const { rows: bookings } = await query(
-    `SELECT b.id, b.member_id FROM bookings b
+    `SELECT b.id, b.member_id, b.streak_at_checkin FROM bookings b
      WHERE b.session_id=$1 AND b.status='attended' AND b.points_awarded=0`,
     [sessionId]
   );
 
   for (const booking of bookings) {
+    const mult = (booking.streak_at_checkin >= 8) ? 2 : 1;
+    const pts  = basePts * mult;
+    const description = mult === 2
+      ? `2× streak bonus — ${sessionName}`
+      : `Session attendance — ${sessionName}`;
     await transaction(async (client) => {
       const { rows: m } = await client.query(
         'SELECT points_balance FROM members WHERE id=$1 FOR UPDATE',
@@ -290,8 +315,8 @@ async function awardSessionPoints(sessionId) {
       await client.query(
         `INSERT INTO points_ledger
           (member_id, amount, balance, reason, reference_id, description, expires_at)
-         VALUES ($1,$2,$3,'session_checkin',$4,'Session attendance points',$5)`,
-        [booking.member_id, pts, newBalance, sessionId, expiresAt]
+         VALUES ($1,$2,$3,'session_checkin',$4,$5,$6)`,
+        [booking.member_id, pts, newBalance, sessionId, description, expiresAt]
       );
       await client.query(
         'UPDATE members SET points_balance=$1, last_active_at=NOW() WHERE id=$2',
