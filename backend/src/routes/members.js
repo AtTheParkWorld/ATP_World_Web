@@ -157,12 +157,22 @@ router.get('/points-history', authenticate, async (req, res, next) => {
 });
 
 // ── GET /api/members/referrals ────────────────────────────────
+// Theme 4 — returns extra fields needed by the profile tribe table:
+//   subscription_type    — drives the Free / Premium badge (#23)
+//   last_session_at      — drives "Last attended" + 30-day Active rule (#22, #21)
+//   sessions_count       — total attended sessions
 router.get('/referrals', authenticate, async (req, res, next) => {
   try {
     const { rows } = await query(
       `SELECT r.id, r.created_at, r.points_awarded,
+              m.id AS member_id,
               m.first_name, m.last_name, m.avatar_url,
-              (SELECT COUNT(*) FROM bookings b WHERE b.member_id=m.id AND b.status='attended') AS sessions_count
+              m.subscription_type,
+              m.last_session_at,
+              (SELECT COUNT(*) FROM bookings b WHERE b.member_id=m.id AND b.status='attended') AS sessions_count,
+              (SELECT COALESCE(SUM(p.amount),0) FROM points_ledger p
+               WHERE p.member_id=$1 AND p.reference_id=m.id
+                 AND p.reason IN ('referral_signup','tribe_checkin','tribe_premium_renewal')) AS points_from_member
        FROM referrals r
        JOIN members m ON m.id = r.referred_id
        WHERE r.referrer_id = $1

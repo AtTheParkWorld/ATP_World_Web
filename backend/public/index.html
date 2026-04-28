@@ -1214,9 +1214,13 @@ window._atpInjectAuth = async function(isSignup, firstName, lastName, email, pho
   try {
     var member;
     if (isSignup) {
+      // Theme 4 / #19 — pull ?ref=<member_number> from URL and persist on
+      // the new account. UNIQUE(referred_id) makes this immutable.
+      var referralCode = new URLSearchParams(location.search).get('ref') || null;
       member = await window.ATP.auth.register({
         first_name: firstName, last_name: lastName,
-        email: email, phone: phone
+        email: email, phone: phone,
+        referral_code: referralCode,
       });
     } else if (!password) {
       // Magic link not yet implemented — fall through to password login

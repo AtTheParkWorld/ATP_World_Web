@@ -966,7 +966,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
         <div class="sub-card-label">Referral Link</div>
         <div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6">Share ATP. Every referral earns <strong style="color:var(--green)">50 points</strong>.</div>
         <div style="background:var(--dark3);border-radius:var(--radius);padding:11px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" data-atp-call="copyReferral">
-          <span style="font-size:12px;color:var(--light);font-family:monospace">atthepark.world/ref/fm001</span>
+          <span style="font-size:12px;color:var(--light);font-family:monospace" id="referralLinkText">Loading…</span>
           <span style="font-size:11px;font-weight:700;color:var(--green)" id="copyText">Copy</span>
         </div>
       </div>
@@ -1350,9 +1350,20 @@ function declineFriend(i){
 }
 
 function copyReferral(){
-  navigator.clipboard && navigator.clipboard.writeText("https://atthepark.world/ref/fm001");
-  var el=document.getElementById("copyText");
-  if(el){el.textContent="Copied!";setTimeout(function(){el.textContent="Copy";},2000);}
+  // Use the member's actual member_number — anyone signing up with this URL
+  // will be locked into the inviter's tribe (#19, immutable per UNIQUE
+  // constraint on referrals.referred_id).
+  var memberNumber = (CURRENT_MEMBER && CURRENT_MEMBER.member_number) || '';
+  if (!memberNumber) {
+    if (window.ATPComponents) ATPComponents.toast('Referral link not ready yet — try again in a moment.', 'warning');
+    return;
+  }
+  // Live host so the link is shareable from any device.
+  var url = location.origin + '/?ref=' + encodeURIComponent(memberNumber);
+  if (navigator.clipboard) navigator.clipboard.writeText(url).catch(function(){});
+  var el = document.getElementById('copyText');
+  if (el) { el.textContent = 'Copied!'; setTimeout(function(){ el.textContent = 'Copy'; }, 2000); }
+  if (window.ATPComponents) ATPComponents.toast('Link copied: ' + url, 'success');
 }
 
 // Activities multi-select — toggle individual pill
@@ -1728,6 +1739,12 @@ function applyMemberToPage(m) {
   populateCountriesDatalist();
   bindCompletionRecompute();
   updateProfileCompletion();
+
+  // Fill the referral-link box with the member's real member_number (#19).
+  var refTxt = document.getElementById('referralLinkText');
+  if (refTxt && m.member_number) {
+    refTxt.textContent = location.host + '/?ref=' + m.member_number;
+  }
 }
 
 // Recompute the bar whenever any edit-form field changes — input/change/click cover all the inputs.

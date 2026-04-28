@@ -1,7 +1,8 @@
 const router = require('express').Router();
 const { query, transaction } = require('../db');
 const { authenticate, requireAdmin, requireAmbassador, optionalAuth } = require('../middleware/auth');
-const streak = require('../services/streak');
+const streak    = require('../services/streak');
+const referrals = require('../services/referrals');
 
 // ── GET /api/sessions ─────────────────────────────────────────
 router.get('/', optionalAuth, async (req, res, next) => {
@@ -262,6 +263,18 @@ router.post('/:id/checkin', authenticate, requireAmbassador, async (req, res, ne
        WHERE id=$4`,
       [req.member.id, method, streakNow || null, booking.id]
     );
+
+    // Maintain members.last_session_at — drives the 30-day inactivity rule (#21).
+    await query(
+      'UPDATE members SET last_session_at = NOW() WHERE id = $1',
+      [booking.member_id]
+    ).catch(function(e){ console.warn('[checkin] last_session_at update:', e.message); });
+
+    // Theme 4 / #24 — reward the referrer (if any) for this check-in.
+    // 1 pt for free members, 2 pts for premium. Fire-and-forget so a
+    // referral failure never fails the check-in for the ambassador.
+    referrals.rewardReferrerForCheckin(booking.member_id, req.params.id)
+      .catch(function(){});
 
     res.json({
       success: true,

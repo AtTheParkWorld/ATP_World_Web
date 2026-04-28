@@ -5,6 +5,7 @@ const crypto   = require('crypto');
 const { v4: uuidv4 } = require('uuid');
 const { query, transaction } = require('../db');
 const emailService = require('../services/email');
+const referrals    = require('../services/referrals');
 const { authenticate } = require('../middleware/auth');
 
 // ── HELPERS ───────────────────────────────────────────────────
@@ -34,7 +35,8 @@ async function getMemberByEmail(email) {
 // ── POST /api/auth/register ───────────────────────────────────
 router.post('/register', async (req, res, next) => {
   try {
-    const { first_name, last_name, email, phone, password } = req.body;
+    const { first_name, last_name, email, phone, password,
+            referrer_id, referral_code } = req.body;
 
     if (!first_name || !last_name || !email) {
       return res.status(400).json({ error: 'First name, last name and email are required' });
@@ -71,6 +73,17 @@ router.post('/register', async (req, res, next) => {
 
     const member = rows[0];
     const token  = generateJWT(member.id);
+
+    // Theme 4 / #19 — record referral relationship + award referrer's signup
+    // bonus. Both `referrer_id` (uuid) and `referral_code` (member_number)
+    // are accepted; the latter is friendlier for human-shareable links.
+    if (referrer_id || referral_code) {
+      referrals.recordSignupReferral({
+        referrerId:    referrer_id || null,
+        referralCode:  referral_code || null,
+        newMemberId:   member.id,
+      }).catch(function(){ /* fire-and-forget */ });
+    }
 
     // Send welcome email
     await emailService.sendWelcome(member);
@@ -516,6 +529,58 @@ router.post('/migrate-indexes', async (req, res, next) => {
       }
     }
     res.json({ success: true, applied: results.filter(r => r.ok).length, results });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/migrate-referral-economy ───────────────────
+// Theme 4 / feedback #19, #21, #24, #25, #26, #27 — referral mechanics.
+router.post('/migrate-referral-economy', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    const ops = [];
+    // Admin-tunable system-wide config (k/v with type discriminator).
+    // Centralises values like points-per-tribe-checkin so admin can edit
+    // without a deploy.
+    ops.push(query(`CREATE TABLE IF NOT EXISTS system_config (
+      key         VARCHAR(80) PRIMARY KEY,
+      value       JSONB NOT NULL,
+      label       TEXT,
+      description TEXT,
+      updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_by  UUID REFERENCES members(id) ON DELETE SET NULL
+    )`));
+    // Seed default values if missing
+    const seed = [
+      ['referral_signup_points',          '50',  'Referral sign-up bonus',     'Points awarded to the referrer when their invitee creates an account.'],
+      ['tribe_checkin_points_free',       '1',   'Tribe check-in (free)',      'Points awarded to the referrer each time their invitee (free member) gets checked in at a session.'],
+      ['tribe_checkin_points_premium',    '2',   'Tribe check-in (premium)',   'Points awarded to the referrer each time their invitee (premium member) gets checked in at a session.'],
+      ['premium_renewal_referrer_points', '200', 'Premium renewal referrer bonus', 'Points awarded to a premium referrer when their invitee renews a premium subscription.'],
+      ['inactivity_days',                 '30',  'Inactivity threshold (days)',  'Number of days without a check-in before a member is marked inactive.'],
+      ['streak_double_threshold',         '8',   'Streak 2× points threshold (days)', 'Streak length at which point payouts double.'],
+    ];
+    for (const [k, v, lbl, desc] of seed) {
+      ops.push(query(
+        `INSERT INTO system_config (key, value, label, description) VALUES ($1, $2::jsonb, $3, $4)
+         ON CONFLICT (key) DO NOTHING`,
+        [k, v, lbl, desc]
+      ));
+    }
+    // Track each member's last attended session for the 30-day inactivity rule.
+    // Maintained by the check-in flow + a one-time backfill below.
+    ops.push(query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS last_session_at TIMESTAMPTZ`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_members_last_session ON members (last_session_at DESC)`));
+    // One-time backfill — newest attended booking per member.
+    ops.push(query(`UPDATE members m
+      SET last_session_at = sub.last_at
+      FROM (
+        SELECT b.member_id, MAX(b.checked_in_at) AS last_at
+        FROM bookings b WHERE b.status='attended'
+        GROUP BY b.member_id
+      ) sub
+      WHERE m.id = sub.member_id AND m.last_session_at IS NULL`));
+    await Promise.all(ops);
+    res.json({ success: true, message: 'Referral economy schema + system_config seeded' });
   } catch (err) { next(err); }
 });
 

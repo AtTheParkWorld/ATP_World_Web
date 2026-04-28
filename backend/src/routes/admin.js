@@ -369,4 +369,77 @@ router.post('/members/import', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── GET /api/admin/referrals (Theme 4 / #26) ──────────────────
+// Aggregate referral monitoring. Shows top referrers + recent signups +
+// total points distributed via the referral economy.
+router.get('/referrals', async (req, res, next) => {
+  try {
+    const [topReferrers, recentSignups, totals] = await Promise.all([
+      query(`SELECT
+              r.referrer_id AS member_id,
+              m.first_name, m.last_name, m.member_number, m.email,
+              COUNT(*) AS total_referrals,
+              COUNT(*) FILTER (
+                WHERE rm.last_session_at >= NOW() - INTERVAL '30 days'
+              ) AS active_referrals,
+              COALESCE(SUM(rm.points_balance), 0) AS referred_points_balance
+            FROM referrals r
+            JOIN members m  ON m.id  = r.referrer_id
+            JOIN members rm ON rm.id = r.referred_id
+            GROUP BY r.referrer_id, m.first_name, m.last_name, m.member_number, m.email
+            ORDER BY total_referrals DESC
+            LIMIT 50`),
+      query(`SELECT r.created_at,
+                    rm.first_name AS referred_first, rm.last_name AS referred_last, rm.member_number AS referred_num,
+                    m.first_name  AS referrer_first, m.last_name  AS referrer_last, m.member_number  AS referrer_num
+             FROM referrals r
+             JOIN members rm ON rm.id = r.referred_id
+             JOIN members m  ON m.id  = r.referrer_id
+             ORDER BY r.created_at DESC
+             LIMIT 30`),
+      query(`SELECT
+              COUNT(*) AS total_referrals,
+              COALESCE(SUM(amount), 0) FILTER (WHERE reason='referral_signup')        AS pts_signup,
+              COALESCE(SUM(amount), 0) FILTER (WHERE reason='tribe_checkin')          AS pts_checkin,
+              COALESCE(SUM(amount), 0) FILTER (WHERE reason='tribe_premium_renewal')  AS pts_renewal
+            FROM referrals r
+            FULL OUTER JOIN points_ledger pl
+              ON pl.reason IN ('referral_signup','tribe_checkin','tribe_premium_renewal')`),
+    ]);
+    res.json({
+      top_referrers:  topReferrers.rows,
+      recent_signups: recentSignups.rows,
+      totals:         totals.rows[0] || {},
+    });
+  } catch (err) { next(err); }
+});
+
+// ── GET / PATCH /api/admin/system-config (Theme 4 / #27) ──────
+router.get('/system-config', async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT key, value, label, description, updated_at
+       FROM system_config ORDER BY key`
+    );
+    res.json({ config: rows });
+  } catch (err) { next(err); }
+});
+
+router.patch('/system-config/:key', async (req, res, next) => {
+  try {
+    const { value } = req.body;
+    if (value === undefined) return res.status(400).json({ error: 'value required' });
+    const { rows } = await query(
+      `UPDATE system_config
+         SET value=$1::jsonb, updated_at=NOW(), updated_by=$2
+       WHERE key=$3
+       RETURNING key, value, label, description, updated_at`,
+      [JSON.stringify(value), req.member.id, req.params.key]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Config key not found' });
+    audit.log(req, 'system_config.updated', 'config', null, { key: req.params.key, value });
+    res.json({ success: true, config: rows[0] });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
