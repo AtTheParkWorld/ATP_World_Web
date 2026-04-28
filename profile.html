@@ -338,6 +338,51 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
 .ambassador-scan-btn{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;padding:11px 22px;border-radius:var(--radius);background:#ffc400;color:#000;border:none;cursor:pointer;transition:all .2s;text-decoration:none}
 .ambassador-scan-btn:hover{background:#e6b000;transform:translateY(-1px)}
 
+/* ── COACH BADGE + CARD (mirror of ambassador, brand green) ── */
+.coach-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 12px;border-radius:20px;background:linear-gradient(135deg,rgba(122,194,49,.18),rgba(122,194,49,.08));border:1px solid rgba(122,194,49,.4);color:var(--green)}
+.coach-card{background:linear-gradient(135deg,rgba(122,194,49,.06),rgba(122,194,49,.03));border:1px solid rgba(122,194,49,.22);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px}
+.coach-card-title{font-family:var(--ff-display);font-size:22px;font-weight:900;text-transform:uppercase;color:var(--green);margin-bottom:6px}
+.coach-card-desc{font-size:13px;color:#aaa;line-height:1.6;margin-bottom:16px}
+.coach-public-link{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;padding:11px 22px;border-radius:var(--radius);background:var(--green);color:#0a0a0a;border:none;cursor:pointer;text-decoration:none;transition:all .2s}
+.coach-public-link:hover{background:var(--green-dark);transform:translateY(-1px)}
+
+/* ── COACH PROFILE EDITOR ── */
+.coach-editor{background:var(--dark2);border:1px solid rgba(255,255,255,.07);border-radius:var(--radius-lg);padding:24px;margin-bottom:20px}
+.coach-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+.coach-editor label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.coach-editor input,.coach-editor textarea{width:100%;background:var(--dark3);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:10px 12px;color:var(--white);font-family:var(--ff-body);font-size:13px;transition:border-color .2s}
+.coach-editor input:focus,.coach-editor textarea:focus{outline:none;border-color:rgba(122,194,49,.4)}
+.coach-editor .full{grid-column:1/-1}
+.coach-editor .help{font-size:11px;color:var(--muted);margin-top:4px}
+.coach-feedback-list{display:flex;flex-direction:column;gap:10px}
+.coach-feedback-row{background:var(--dark2);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:14px 16px}
+.coach-feedback-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.coach-feedback-name{font-size:13px;font-weight:700;color:var(--white)}
+.coach-feedback-stars{font-size:13px;color:#ffc400}
+.coach-feedback-comment{font-size:13px;color:#aaa;line-height:1.6}
+.coach-feedback-time{font-size:11px;color:var(--muted)}
+
+/* ── ROLE BANNER (between hero and tabs) ── */
+.role-banner{max-width:1200px;margin:0 auto 16px;padding:0 40px}
+.role-banner-card{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 22px;border-radius:var(--radius-lg);background:linear-gradient(135deg,#0d1a0a,#0a0a0a);border:1px solid rgba(122,194,49,.2);flex-wrap:wrap}
+.role-banner-card.amber{background:linear-gradient(135deg,rgba(255,196,0,.05),#0a0a0a);border-color:rgba(255,196,0,.25)}
+.role-banner-card.member{background:linear-gradient(135deg,rgba(255,255,255,.03),#0a0a0a);border-color:rgba(255,255,255,.08)}
+.role-banner-text{display:flex;align-items:center;gap:14px;min-width:0}
+.role-banner-icon{width:42px;height:42px;border-radius:50%;background:rgba(122,194,49,.12);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.role-banner-card.amber .role-banner-icon{background:rgba(255,196,0,.12)}
+.role-banner-title{font-size:15px;font-weight:700;color:var(--white);margin-bottom:2px}
+.role-banner-sub{font-size:13px;color:#aaa}
+.role-banner-actions{display:flex;gap:8px;flex-wrap:wrap}
+
+/* ── FIRST-TIME ONBOARDING CARDS ── */
+.onboard-grid{max-width:1200px;margin:0 auto 24px;padding:0 40px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.onboard-card{background:var(--dark2);border:1px solid rgba(255,255,255,.07);border-radius:var(--radius-lg);padding:20px;display:flex;flex-direction:column;gap:8px;transition:border-color .2s,transform .2s;cursor:pointer;text-decoration:none;color:inherit}
+.onboard-card:hover{border-color:rgba(122,194,49,.4);transform:translateY(-2px)}
+.onboard-card-step{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green)}
+.onboard-card-title{font-family:var(--ff-display);font-size:18px;font-weight:900;text-transform:uppercase;color:var(--white);margin-top:4px}
+.onboard-card-desc{font-size:13px;color:#aaa;line-height:1.5;flex:1}
+.onboard-card-arrow{font-size:13px;font-weight:700;color:var(--green);margin-top:4px}
+@media(max-width:900px){.onboard-grid{grid-template-columns:1fr;padding:0 16px}.role-banner{padding:0 16px}}
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
@@ -372,6 +417,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
         <div class="profile-name" id="profileName">Frederico Martins</div>
         <div class="profile-sub">
           <span class="member-badge" id="subBadge">Free Member</span>
+          <span class="ambassador-badge" id="profileAmbBadge" style="display:none">⭐ Ambassador</span>
+          <span class="coach-badge"      id="profileCoachBadge" style="display:none">🎽 Coach</span>
           <span class="member-num">#ATP-00001 · Member since 2015</span>
         </div>
       </div>
@@ -387,6 +434,42 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
         </button>
       </div>
     </div>
+  </div>
+
+  <!-- ROLE BANNER — different content based on member's role tier -->
+  <div class="role-banner" id="roleBanner" style="display:none">
+    <div class="role-banner-card" id="roleBannerCard">
+      <div class="role-banner-text">
+        <div class="role-banner-icon" id="roleBannerIcon">🎽</div>
+        <div>
+          <div class="role-banner-title" id="roleBannerTitle">Welcome to ATP</div>
+          <div class="role-banner-sub" id="roleBannerSub">Build your profile to get the most out of the community.</div>
+        </div>
+      </div>
+      <div class="role-banner-actions" id="roleBannerActions"></div>
+    </div>
+  </div>
+
+  <!-- FIRST-TIME ONBOARDING CARDS — visible only when member has 0 sessions attended -->
+  <div class="onboard-grid" id="onboardGrid" style="display:none">
+    <a href="sessions.html" class="onboard-card">
+      <div class="onboard-card-step">Step 1 of 3</div>
+      <div class="onboard-card-title">Book your first session</div>
+      <div class="onboard-card-desc">Browse this week's free sessions across Dubai, Al Ain & Muscat — pick one near you.</div>
+      <div class="onboard-card-arrow">Browse sessions →</div>
+    </a>
+    <a class="onboard-card" data-atp-call="showTab" data-args='["edit"]'>
+      <div class="onboard-card-step">Step 2 of 3</div>
+      <div class="onboard-card-title">Complete your profile</div>
+      <div class="onboard-card-desc">Add your photo, city and tribe so coaches and members can find you.</div>
+      <div class="onboard-card-arrow">Edit profile →</div>
+    </a>
+    <a class="onboard-card" data-atp-call="copyReferral">
+      <div class="onboard-card-step">Step 3 of 3</div>
+      <div class="onboard-card-title">Invite a friend</div>
+      <div class="onboard-card-desc">Earn 50 points per referral when they show up to their first session.</div>
+      <div class="onboard-card-arrow">Copy your referral link →</div>
+    </a>
   </div>
 
   <!-- STATS BAR -->
@@ -412,7 +495,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
       <button class="ptab" data-tab="friends" data-atp-call="showTab" data-args='["friends"]'>Friends</button>
       <button class="ptab" data-tab="notifications" data-atp-call="showTab" data-args='["notifications"]'>Notifications</button>
       <button class="ptab" data-tab="edit" data-atp-call="showTab" data-args='["edit"]'>Edit Profile</button>
-      <button class="ptab" id="ambassadorTab" data-tab="ambassador" data-atp-call="showTab" data-args='["ambassador"]' style="display:none">Ambassador</button>
+      <button class="ptab" id="ambassadorTab" data-tab="ambassador" data-atp-call="showTab" data-args='["ambassador"]' style="display:none">⭐ Ambassador</button>
+      <button class="ptab" id="coachTab"      data-tab="coach"      data-atp-call="showTab" data-args='["coach"]'      style="display:none">🎽 Coach</button>
     </div>
   </div>
 
@@ -667,6 +751,87 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
                 <tr style="border-bottom:1px solid rgba(255,255,255,.04)"><td style="padding:10px 0;color:var(--white)">Gwen Gaje</td><td style="color:var(--muted)">Community Run</td><td style="text-align:right;color:var(--green);font-weight:700">7:07 PM</td></tr>
               </tbody>
             </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- COACH PANEL — visible only to is_coach=true members -->
+      <div class="profile-panel" id="panel-coach">
+        <div class="coach-card">
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+            <span class="coach-badge">🎽 Coach</span>
+            <span id="coachFeaturedFlag" style="display:none;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 10px;border-radius:20px;background:#7AC231;color:#0a0a0a">⭐ Featured</span>
+          </div>
+          <div class="coach-card-title">ATP Coach</div>
+          <div class="coach-card-desc">You're a Coach in the ATP community. Members can find you in the public Coaches directory, book your sessions, and leave feedback.</div>
+          <a class="coach-public-link" id="coachPublicLink" href="coach.html?id=" target="_blank" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M14 8a6 6 0 11-12 0 6 6 0 0112 0z"/><path d="M11 5l-3 3-3-3M8 8v5"/></svg>
+            View my public coach profile
+          </a>
+        </div>
+
+        <!-- COACH STATS -->
+        <div class="profile-stats-bar" style="grid-template-columns:repeat(4,1fr);margin-bottom:20px;padding:0">
+          <div class="pstat"><div class="pstat-num" id="coachStatSessions">0</div><div class="pstat-label">Sessions Coached</div></div>
+          <div class="pstat"><div class="pstat-num" id="coachStatStudents">0</div><div class="pstat-label">Total Students</div></div>
+          <div class="pstat"><div class="pstat-num" id="coachStatRating">—</div><div class="pstat-label">Avg Rating</div></div>
+          <div class="pstat"><div class="pstat-num" id="coachStatReviews">0</div><div class="pstat-label">Reviews</div></div>
+        </div>
+
+        <!-- PUBLIC PROFILE EDITOR -->
+        <div class="coach-editor">
+          <div class="widget-head" style="border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:14px;margin-bottom:14px">
+            <span class="widget-title">Public profile</span>
+            <button class="pf-btn primary" id="coachSaveBtn" data-atp-call="saveCoachProfileSelf">
+              Save changes
+            </button>
+          </div>
+          <div class="coach-editor-grid">
+            <div class="full">
+              <label for="coachBio">Bio</label>
+              <textarea id="coachBio" rows="4" placeholder="Certified padel coach with 8 years of experience helping players from beginner to pro. Based in Dubai Marina, I specialize in…"></textarea>
+              <div class="help">Shown at the top of your public coach card.</div>
+            </div>
+            <div>
+              <label for="coachSpecialties">Specialties</label>
+              <input id="coachSpecialties" type="text" placeholder="Padel, HIIT, Beginners, Kids Coaching">
+              <div class="help">Comma-separated.</div>
+            </div>
+            <div>
+              <label for="coachCertifications">Certifications</label>
+              <input id="coachCertifications" type="text" placeholder="LTA Level 3, NASM-CPT, Yoga Alliance RYT-200">
+              <div class="help">Comma-separated.</div>
+            </div>
+            <div>
+              <label for="coachLanguages">Languages</label>
+              <input id="coachLanguages" type="text" placeholder="English, Arabic, Portuguese">
+              <div class="help">Comma-separated.</div>
+            </div>
+            <div>
+              <label for="coachYears">Years of experience</label>
+              <input id="coachYears" type="number" min="0" max="80" placeholder="0">
+            </div>
+            <div>
+              <label for="coachInstagram">Instagram handle</label>
+              <input id="coachInstagram" type="text" placeholder="@yourhandle">
+            </div>
+            <div>
+              <label for="coachTiktok">TikTok handle</label>
+              <input id="coachTiktok" type="text" placeholder="@yourhandle">
+            </div>
+          </div>
+        </div>
+
+        <!-- RECENT FEEDBACK FROM MEMBERS -->
+        <div class="widget">
+          <div class="widget-head">
+            <span class="widget-title">Recent feedback</span>
+            <span style="font-size:12px;color:var(--muted)" id="coachFeedbackCount">—</span>
+          </div>
+          <div class="widget-body">
+            <div class="coach-feedback-list" id="coachFeedbackList">
+              <div style="padding:14px 0;color:var(--muted);font-size:13px;text-align:center">No reviews yet — keep coaching, the feedback will follow.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -1321,12 +1486,209 @@ function applyMemberToPage(m) {
       '</div>';
   }
 
-  // Ambassador tab visibility
-  var ambTab = document.getElementById('ambassadorTab');
-  if (ambTab && m.is_ambassador) ambTab.style.display = 'block';
+  // ── ROLE TIER (member / ambassador / coach) ─────────────────
+  // Preview override for stress-testing each role view from the same account:
+  //   /profile.html?preview=member|ambassador|coach
+  var previewMode = new URLSearchParams(location.search).get('preview');
+  var isAmb   = previewMode ? (previewMode === 'ambassador' || previewMode === 'coach') : !!m.is_ambassador;
+  var isCoach = previewMode ? (previewMode === 'coach') : !!m.is_coach;
+
+  // Hero badges
+  var ambBadge   = document.getElementById('profileAmbBadge');
+  var coachBadge = document.getElementById('profileCoachBadge');
+  if (ambBadge)   ambBadge.style.display   = isAmb   ? 'inline-flex' : 'none';
+  if (coachBadge) coachBadge.style.display = isCoach ? 'inline-flex' : 'none';
+
+  // Tab visibility
+  var ambTab   = document.getElementById('ambassadorTab');
+  var coachTab = document.getElementById('coachTab');
+  if (ambTab)   ambTab.style.display   = isAmb   ? 'block' : 'none';
+  if (coachTab) coachTab.style.display = isCoach ? 'block' : 'none';
+
+  // Role banner — first-class CTA for the upgrade journey
+  renderRoleBanner({ isAmb: isAmb, isCoach: isCoach, sessionsCount: m.sessions_count || 0 });
+
+  // First-time onboarding cards — only shown when member has 0 sessions attended
+  var onboardGrid = document.getElementById('onboardGrid');
+  if (onboardGrid) onboardGrid.style.display = ((m.sessions_count || 0) === 0 && !isAmb && !isCoach) ? 'grid' : 'none';
+
+  // If they're a coach: load coach profile + stats + feedback
+  if (isCoach) loadCoachProfileSelf(m.id);
 
   // Populate edit form
   populateEditForm(m);
+}
+
+// ── Role banner ─────────────────────────────────────────────
+// Renders the bar between hero and tabs based on role tier. Three states:
+//   member  — discovery prompt for ambassador application
+//   amb     — celebration + scanner CTA + nudge to coach
+//   coach   — celebration + public-profile link
+function renderRoleBanner(opts) {
+  var banner   = document.getElementById('roleBanner');
+  var card     = document.getElementById('roleBannerCard');
+  var icon     = document.getElementById('roleBannerIcon');
+  var title    = document.getElementById('roleBannerTitle');
+  var sub      = document.getElementById('roleBannerSub');
+  var actions  = document.getElementById('roleBannerActions');
+  if (!banner || !card) return;
+
+  banner.style.display = 'block';
+
+  if (opts.isCoach) {
+    card.className = 'role-banner-card';
+    icon.textContent  = '🎽';
+    title.textContent = 'Coach mode active';
+    sub.textContent   = 'Members can find you in the public Coaches directory and book your sessions.';
+    actions.innerHTML =
+      '<a class="pf-btn primary" data-atp-call="showTab" data-args=\'["coach"]\'>Manage coach profile</a>';
+  } else if (opts.isAmb) {
+    card.className = 'role-banner-card amber';
+    icon.textContent  = '⭐';
+    title.textContent = 'You\u2019re an ATP Ambassador';
+    sub.textContent   = 'Open the scanner to check members in at sessions, or apply to become a Coach.';
+    actions.innerHTML =
+      '<a class="pf-btn primary" href="checkin.html">Open scanner</a>' +
+      '<a class="pf-btn"         data-atp-call="showTab" data-args=\'["ambassador"]\'>View dashboard</a>';
+  } else {
+    // Plain member — encourage upgrade path
+    card.className = 'role-banner-card member';
+    icon.textContent  = '🌱';
+    title.textContent = (opts.sessionsCount === 0)
+      ? 'Welcome to ATP'
+      : 'Want to give back?';
+    sub.textContent   = (opts.sessionsCount === 0)
+      ? 'Book your first session, complete your profile, and earn points by inviting friends.'
+      : 'Active members can apply to become Ambassadors — check members in at sessions and earn extra points.';
+    actions.innerHTML = (opts.sessionsCount === 0)
+      ? '<a class="pf-btn primary" href="sessions.html">Browse sessions</a>'
+      : '<a class="pf-btn primary" href="mailto:hello@atthepark.world?subject=Apply%20to%20be%20an%20ATP%20Ambassador">Apply to be an Ambassador</a>';
+  }
+}
+
+// ── Coach profile (self) ────────────────────────────────────
+// Uses existing public coaches API: GET /api/coaches/:id (read), PUT
+// /api/coaches/:id (upsert — auth required, allowed for self).
+var COACH_API = 'https://atpworldweb-production.up.railway.app/api';
+function _coachAuth() {
+  var t = localStorage.getItem('atp_token') || '';
+  var h = { 'Content-Type': 'application/json' };
+  if (t) h.Authorization = 'Bearer ' + t;
+  return h;
+}
+var COACH_LOADED_FOR = null;
+function loadCoachProfileSelf(memberId) {
+  if (!memberId || COACH_LOADED_FOR === memberId) return;
+  COACH_LOADED_FOR = memberId;
+  // Update the "view public profile" link on the coach card
+  var link = document.getElementById('coachPublicLink');
+  if (link) link.href = 'coach.html?id=' + memberId;
+
+  fetch(COACH_API + '/coaches/' + memberId, { headers: _coachAuth() })
+    .then(function(r){ return r.ok ? r.json() : { coach: null }; })
+    .then(function(data) {
+      var c = data && data.coach;
+      if (c) {
+        var set = function(id, v){ var el = document.getElementById(id); if (el) el.value = v == null ? '' : v; };
+        set('coachBio', c.bio);
+        set('coachSpecialties',     joinJsonList(c.specialties));
+        set('coachCertifications',  joinJsonList(c.certifications));
+        set('coachLanguages',       joinJsonList(c.languages));
+        set('coachYears',           c.years_experience);
+        set('coachInstagram',       c.instagram);
+        set('coachTiktok',          c.tiktok);
+        // Stats + featured flag
+        var pf = document.getElementById('coachFeaturedFlag');
+        if (pf) pf.style.display = c.is_featured ? 'inline-block' : 'none';
+        var setNum = function(id, v){ var el = document.getElementById(id); if (el) el.textContent = v == null ? '—' : v; };
+        setNum('coachStatSessions', c.sessions_delivered || c.total_sessions || 0);
+        setNum('coachStatRating',   c.rating_avg ? Number(c.rating_avg).toFixed(1) : '—');
+        setNum('coachStatReviews',  c.rating_count || 0);
+      }
+      // Recent feedback
+      renderCoachFeedback(data && data.feedback);
+    })
+    .catch(function(err){
+      console.warn('[coach] load failed', err && err.message);
+    });
+}
+
+function joinJsonList(v) {
+  if (Array.isArray(v)) return v.join(', ');
+  if (typeof v === 'string') {
+    try { var p = JSON.parse(v); if (Array.isArray(p)) return p.join(', '); } catch(e){}
+    return v;
+  }
+  return '';
+}
+function splitToJsonList(s) {
+  if (!s) return [];
+  return String(s).split(',').map(function(x){return x.trim();}).filter(Boolean);
+}
+
+function renderCoachFeedback(rows) {
+  var list = document.getElementById('coachFeedbackList');
+  var count = document.getElementById('coachFeedbackCount');
+  if (!list) return;
+  if (!rows || !rows.length) {
+    list.innerHTML = '<div style="padding:14px 0;color:var(--muted);font-size:13px;text-align:center">No reviews yet — keep coaching, the feedback will follow.</div>';
+    if (count) count.textContent = '0';
+    return;
+  }
+  if (count) count.textContent = rows.length + ' review' + (rows.length === 1 ? '' : 's');
+  list.innerHTML = rows.map(function(r) {
+    var name  = ((r.first_name||'') + ' ' + (r.last_name||'')).trim() || 'ATP Member';
+    var stars = '★'.repeat(r.rating || 0) + '☆'.repeat(Math.max(0, 5 - (r.rating || 0)));
+    var when  = r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB', { month:'short', year:'numeric' }) : '';
+    return ''
+      + '<div class="coach-feedback-row">'
+      +   '<div class="coach-feedback-head">'
+      +     '<span class="coach-feedback-name">' + escapeHtml(name) + '</span>'
+      +     '<span class="coach-feedback-stars">' + stars + '</span>'
+      +   '</div>'
+      +   (r.comment ? '<div class="coach-feedback-comment">' + escapeHtml(r.comment) + '</div>' : '')
+      +   '<div class="coach-feedback-time">' + escapeHtml(when) + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+function saveCoachProfileSelf() {
+  if (!CURRENT_MEMBER || !CURRENT_MEMBER.id) return;
+  var btn = document.getElementById('coachSaveBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  var body = {
+    bio:              document.getElementById('coachBio').value.trim(),
+    specialties:      splitToJsonList(document.getElementById('coachSpecialties').value),
+    certifications:   splitToJsonList(document.getElementById('coachCertifications').value),
+    languages:        splitToJsonList(document.getElementById('coachLanguages').value),
+    years_experience: parseInt(document.getElementById('coachYears').value, 10) || 0,
+    instagram:        document.getElementById('coachInstagram').value.trim(),
+    tiktok:           document.getElementById('coachTiktok').value.trim(),
+  };
+  fetch(COACH_API + '/coaches/' + CURRENT_MEMBER.id, {
+    method: 'PUT',
+    headers: _coachAuth(),
+    body: JSON.stringify(body),
+  }).then(function(r){ return r.json(); })
+    .then(function(d){
+      if (btn) { btn.disabled = false; btn.textContent = 'Save changes'; }
+      if (d && d.success) {
+        if (window.ATPComponents) ATPComponents.toast('Coach profile saved', 'success');
+      } else {
+        if (window.ATPComponents) ATPComponents.toast(d.error || 'Save failed', 'danger');
+      }
+    })
+    .catch(function(){
+      if (btn) { btn.disabled = false; btn.textContent = 'Save changes'; }
+      if (window.ATPComponents) ATPComponents.toast('Connection error', 'danger');
+    });
+}
+
+// Helper used by coach feedback renderer (escapes HTML)
+function escapeHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+    return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c];
+  });
 }
 
 function populateEditForm(m) {
