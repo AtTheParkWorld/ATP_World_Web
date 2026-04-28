@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const { query, transaction } = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const audit = require('../services/audit');
 
 // All admin routes require authentication + admin role
 router.use(authenticate, requireAdmin);
@@ -198,36 +199,44 @@ router.get('/members', async (req, res, next) => {
 });
 
 // ── PATCH /api/admin/members/:id/ambassador ───────────────────
+// Wrapped in a transaction so the role flip + member notification land
+// atomically — partial state (role flipped but no notification) was
+// possible before. Audit-logged.
 router.patch('/members/:id/ambassador', async (req, res, next) => {
   try {
     const { enabled } = req.body;
-    await query(
-      `UPDATE members SET
-         is_ambassador=$1,
-         ambassador_activated_at=CASE WHEN $1=true THEN NOW() ELSE NULL END,
-         ambassador_activated_by=CASE WHEN $1=true THEN $2::uuid ELSE NULL END,
-         is_coach=CASE WHEN $1=false THEN false ELSE is_coach END,
-         coach_activated_at=CASE WHEN $1=false THEN NULL ELSE coach_activated_at END,
-         coach_activated_by=CASE WHEN $1=false THEN NULL ELSE coach_activated_by END
-       WHERE id=$3::uuid`,
-      [enabled, req.member?.id || null, req.params.id]
-    );
-
-    // Create notification for member
-    if (enabled) {
-      await query(
-        `INSERT INTO notifications (member_id, type, title, body)
-         VALUES ($1,'ambassador_activated','⭐ You are now an ATP Ambassador!',
-         'Your ambassador access has been activated. Head to your profile to start checking in members.')`,
-        [req.params.id]
+    await transaction(async (client) => {
+      await client.query(
+        `UPDATE members SET
+           is_ambassador=$1,
+           ambassador_activated_at=CASE WHEN $1=true THEN NOW() ELSE NULL END,
+           ambassador_activated_by=CASE WHEN $1=true THEN $2::uuid ELSE NULL END,
+           is_coach=CASE WHEN $1=false THEN false ELSE is_coach END,
+           coach_activated_at=CASE WHEN $1=false THEN NULL ELSE coach_activated_at END,
+           coach_activated_by=CASE WHEN $1=false THEN NULL ELSE coach_activated_by END
+         WHERE id=$3::uuid`,
+        [enabled, req.member?.id || null, req.params.id]
       );
-    }
+      if (enabled) {
+        await client.query(
+          `INSERT INTO notifications (member_id, type, title, body)
+           VALUES ($1,'ambassador_activated','⭐ You are now an ATP Ambassador!',
+           'Your ambassador access has been activated. Head to your profile to start checking in members.')`,
+          [req.params.id]
+        );
+      }
+    });
 
+    audit.log(req,
+      enabled ? 'member.ambassador.granted' : 'member.ambassador.revoked',
+      'member', req.params.id);
     res.json({ message: `Ambassador ${enabled ? 'activated' : 'deactivated'}` });
   } catch (err) { next(err); }
 });
 
 // ── PATCH /api/admin/members/:id/coach ────────────────────────
+// Transaction-wrapped + audit-logged. Same partial-state risk as the
+// ambassador endpoint.
 router.patch('/members/:id/coach', async (req, res, next) => {
   try {
     const { enabled } = req.body;
@@ -236,23 +245,27 @@ router.patch('/members/:id/coach', async (req, res, next) => {
     if (enabled && !check[0].is_ambassador) {
       return res.status(400).json({ error: 'Member must be an Ambassador before being assigned as Coach' });
     }
-    await query(
-      `UPDATE members SET is_coach=$1,
-         coach_activated_at=CASE WHEN $1=true THEN NOW() ELSE NULL END,
-         coach_activated_by=CASE WHEN $1=true THEN $2::uuid ELSE NULL END
-       WHERE id=$3::uuid`,
-      [enabled, req.member?.id || null, req.params.id]
-    );
+    await transaction(async (client) => {
+      await client.query(
+        `UPDATE members SET is_coach=$1,
+           coach_activated_at=CASE WHEN $1=true THEN NOW() ELSE NULL END,
+           coach_activated_by=CASE WHEN $1=true THEN $2::uuid ELSE NULL END
+         WHERE id=$3::uuid`,
+        [enabled, req.member?.id || null, req.params.id]
+      );
+      if (enabled) {
+        await client.query(
+          `INSERT INTO notifications (member_id, type, title, body)
+           VALUES ($1,'coach_activated','🎽 You are now an ATP Coach!',
+           'You have been assigned as a Coach. Your profile is now public in the Coaches directory.')`,
+          [req.params.id]
+        );
+      }
+    });
 
-    if (enabled) {
-      await query(
-        `INSERT INTO notifications (member_id, type, title, body)
-         VALUES ($1,'coach_activated','🎽 You are now an ATP Coach!',
-         'You have been assigned as a Coach. Your profile is now public in the Coaches directory.')`,
-        [req.params.id]
-      ).catch(() => {});
-    }
-
+    audit.log(req,
+      enabled ? 'member.coach.granted' : 'member.coach.revoked',
+      'member', req.params.id);
     res.json({ message: `Coach ${enabled ? 'activated' : 'deactivated'}`, is_coach: enabled });
   } catch (err) { next(err); }
 });
@@ -267,6 +280,9 @@ router.patch('/members/:id/ban', async (req, res, next) => {
        WHERE id=$3`,
       [banned, reason || null, req.params.id]
     );
+    audit.log(req,
+      banned ? 'member.banned' : 'member.unbanned',
+      'member', req.params.id, { reason: reason || null });
     res.json({ message: `Member ${banned ? 'banned' : 'unbanned'}` });
   } catch (err) { next(err); }
 });

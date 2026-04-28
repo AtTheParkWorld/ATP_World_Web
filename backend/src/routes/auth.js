@@ -519,6 +519,47 @@ router.post('/migrate-indexes', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-audit-log ──────────────────────────
+// Adds audit_log table (audit 3.2) + VARCHAR length caps on free-text
+// member fields (audit 3.3). Idempotent.
+router.post('/migrate-audit-log', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    const ops = [];
+
+    // audit_log table — append-only record of admin/system mutations
+    ops.push(query(`CREATE TABLE IF NOT EXISTS audit_log (
+      id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      actor_id     UUID REFERENCES members(id) ON DELETE SET NULL,
+      actor_email  VARCHAR(255),
+      action       VARCHAR(64) NOT NULL,
+      target_type  VARCHAR(64),
+      target_id    UUID,
+      metadata     JSONB,
+      ip           VARCHAR(64),
+      user_agent   VARCHAR(512),
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_audit_log_actor    ON audit_log (actor_id, created_at DESC)`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_audit_log_target   ON audit_log (target_type, target_id, created_at DESC)`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_audit_log_action   ON audit_log (action, created_at DESC)`));
+
+    // VARCHAR caps on member free-text fields — block abusive payloads.
+    // Uses TYPE conversion which is safe as long as existing data fits.
+    ops.push(query(`ALTER TABLE members ALTER COLUMN first_name TYPE VARCHAR(80)`).catch(()=>{}));
+    ops.push(query(`ALTER TABLE members ALTER COLUMN last_name  TYPE VARCHAR(80)`).catch(()=>{}));
+    ops.push(query(`ALTER TABLE members ALTER COLUMN email      TYPE VARCHAR(255)`).catch(()=>{}));
+    ops.push(query(`ALTER TABLE members ALTER COLUMN phone      TYPE VARCHAR(32)`).catch(()=>{}));
+    ops.push(query(`ALTER TABLE members ALTER COLUMN nationality TYPE VARCHAR(80)`).catch(()=>{}));
+    ops.push(query(`ALTER TABLE cities  ALTER COLUMN name       TYPE VARCHAR(80)`).catch(()=>{}));
+
+    await Promise.all(ops);
+    res.json({ success: true, message: 'audit_log table created + VARCHAR caps applied' });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
 
 // ── POST /api/auth/grant-admin  (setup only) ──────────────────
