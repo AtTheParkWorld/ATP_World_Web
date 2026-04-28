@@ -22,10 +22,13 @@ app.use(helmet({
       // Allow inline scripts/handlers + the CDNs we currently use
       "script-src": ["'self'", "'unsafe-inline'", "'unsafe-eval'",
                      "https://cdnjs.cloudflare.com",
+                     "https://unpkg.com",                    // Swagger UI on /api/docs
                      "https://accounts.google.com",
                      "https://appleid.cdn-apple.com"],
       "script-src-attr": ["'unsafe-inline'"],   // permits remaining onclick=
-      "style-src":  ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      "style-src":  ["'self'", "'unsafe-inline'",
+                     "https://fonts.googleapis.com",
+                     "https://unpkg.com"],
       "font-src":   ["'self'", "https://fonts.gstatic.com", "data:"],
       "img-src":    ["'self'", "data:", "https://raw.githubusercontent.com",
                      "https://cdn.shopify.com",
@@ -98,6 +101,41 @@ app.get('/health', (req, res) => {
     version: '1.0.0',
     time:    new Date().toISOString(),
   });
+});
+
+// ── API DOCS (audit 3.1) ──────────────────────────────────────
+// Serves the hand-written OpenAPI YAML + a Swagger UI page that loads
+// it via the public CDN. No npm dependency needed; if the CDN is ever
+// blocked, raw spec is still readable at /api/openapi.yaml.
+app.get('/api/openapi.yaml', (req, res) => {
+  res.setHeader('Content-Type', 'application/yaml; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=300');
+  res.sendFile(require('path').join(__dirname, '../openapi.yaml'));
+});
+app.get('/api/docs', (req, res) => {
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>ATP API Reference</title>
+  <link rel="stylesheet" href="https://unpkg.com/swagger-ui-dist@5/swagger-ui.css">
+  <style>body { margin: 0; background: #fafafa; } .topbar { display: none; }</style>
+</head>
+<body>
+  <div id="swagger"></div>
+  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js"></script>
+  <script>
+    SwaggerUIBundle({
+      url: '/api/openapi.yaml',
+      dom_id: '#swagger',
+      deepLinking: true,
+      docExpansion: 'list',
+      tryItOutEnabled: true,
+    });
+  </script>
+</body>
+</html>`);
 });
 
 // ── ROUTES ────────────────────────────────────────────────────

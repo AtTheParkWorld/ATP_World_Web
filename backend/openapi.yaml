@@ -1,0 +1,390 @@
+openapi: 3.0.3
+info:
+  title: ATP — At The Park API
+  description: |
+    REST API powering the At The Park fitness community site (UAE + Oman).
+    All write endpoints require a JWT bearer token unless noted.
+
+    Production base URL: `https://atpworldweb-production.up.railway.app/api`
+    Versioned alias:     `https://atpworldweb-production.up.railway.app/api/v1`
+  version: "1.0"
+  contact:
+    name: ATP team
+    url:  https://atpworldweb-production.up.railway.app
+servers:
+  - url: https://atpworldweb-production.up.railway.app/api
+    description: Production
+  - url: https://atpworldweb-production.up.railway.app/api/v1
+    description: Production (versioned)
+
+components:
+  securitySchemes:
+    bearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    Member:
+      type: object
+      properties:
+        id:             { type: string, format: uuid }
+        member_number:  { type: string, example: "ATP-12345" }
+        first_name:     { type: string, maxLength: 80 }
+        last_name:      { type: string, maxLength: 80 }
+        email:          { type: string, format: email }
+        phone:          { type: string, nullable: true }
+        is_ambassador:  { type: boolean }
+        is_coach:       { type: boolean }
+        is_admin:       { type: boolean }
+        points_balance: { type: integer }
+        joined_at:      { type: string, format: date-time }
+    Session:
+      type: object
+      properties:
+        id:               { type: string, format: uuid }
+        name:             { type: string }
+        description:      { type: string, nullable: true }
+        scheduled_at:     { type: string, format: date-time }
+        location:         { type: string }
+        capacity:         { type: integer }
+        session_type:     { type: string, enum: [free, paid] }
+        price:            { type: number }
+        status:           { type: string, enum: [upcoming, completed, cancelled] }
+        city_id:          { type: string, format: uuid }
+        coach_id:         { type: string, format: uuid, nullable: true }
+        tribe_id:         { type: string, format: uuid, nullable: true }
+        registrations_count: { type: integer }
+    Booking:
+      type: object
+      properties:
+        id:           { type: string, format: uuid }
+        member_id:    { type: string, format: uuid }
+        session_id:   { type: string, format: uuid }
+        status:       { type: string, enum: [confirmed, attended, cancelled, no_show] }
+        qr_token:     { type: string, nullable: true }
+        registered_at: { type: string, format: date-time }
+    Tribe:
+      type: object
+      properties:
+        id:    { type: string, format: uuid }
+        name:  { type: string, example: "Better" }
+        slug:  { type: string, enum: [better, faster, stronger] }
+        color: { type: string, example: "#4ade80" }
+    Error:
+      type: object
+      properties:
+        error: { type: string }
+        code:  { type: string, nullable: true }
+
+security:
+  - bearer: []
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Create a new member account
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [first_name, last_name, email]
+              properties:
+                first_name: { type: string, maxLength: 80 }
+                last_name:  { type: string, maxLength: 80 }
+                email:      { type: string, format: email }
+                phone:      { type: string, nullable: true }
+                password:   { type: string, minLength: 8, nullable: true }
+      responses:
+        '201':
+          description: Account created, JWT issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:  { type: string }
+                  member: { $ref: '#/components/schemas/Member' }
+        '409':
+          description: Email or phone already registered
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Email + password login
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:    { type: string, format: email }
+                password: { type: string }
+      responses:
+        '200':
+          description: JWT issued
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  token:  { type: string }
+                  member: { $ref: '#/components/schemas/Member' }
+        '401':
+          description: Invalid credentials
+          content: { application/json: { schema: { $ref: '#/components/schemas/Error' } } }
+
+  /auth/magic-link:
+    post:
+      tags: [Auth]
+      summary: Email a one-time login link
+      security: []
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [email], properties: { email: { type: string } } } } }
+      responses:
+        '200': { description: Magic link sent }
+
+  /auth/me:
+    get:
+      tags: [Auth]
+      summary: Get the authenticated member's full profile
+      responses:
+        '200':
+          description: Current member
+          content: { application/json: { schema: { type: object, properties: { member: { $ref: '#/components/schemas/Member' } } } } }
+        '401': { description: No / invalid JWT }
+
+  /auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout (client must discard the JWT)
+      responses: { '200': { description: OK } }
+
+  /sessions:
+    get:
+      tags: [Sessions]
+      summary: List sessions
+      security: []
+      parameters:
+        - { in: query, name: status,  schema: { type: string, enum: [upcoming, completed, cancelled], default: upcoming } }
+        - { in: query, name: city_id, schema: { type: string, format: uuid } }
+        - { in: query, name: tribe,   schema: { type: string } }
+        - { in: query, name: limit,   schema: { type: integer, default: 20 } }
+        - { in: query, name: offset,  schema: { type: integer, default: 0 } }
+      responses:
+        '200':
+          description: List of sessions
+          content: { application/json: { schema: { type: object, properties: { sessions: { type: array, items: { $ref: '#/components/schemas/Session' } } } } } }
+    post:
+      tags: [Sessions]
+      summary: Admin — create a session (or recurring series)
+      responses:
+        '201': { description: Created }
+        '403': { description: Admin only }
+
+  /sessions/{id}:
+    get:
+      tags: [Sessions]
+      summary: Single session detail (with myBooking if authed)
+      security: []
+      parameters: [{ in: path, name: id, required: true, schema: { type: string, format: uuid } }]
+      responses:
+        '200': { description: OK }
+        '404': { description: Not found }
+
+  /sessions/tribes:
+    get:
+      tags: [Sessions]
+      summary: List the tribes (Better / Faster / Stronger)
+      security: []
+      responses:
+        '200':
+          description: Tribes
+          content: { application/json: { schema: { type: object, properties: { tribes: { type: array, items: { $ref: '#/components/schemas/Tribe' } } } } } }
+
+  /bookings:
+    post:
+      tags: [Bookings]
+      summary: Book a session
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, required: [session_id], properties: { session_id: { type: string, format: uuid } } } } }
+      responses:
+        '201': { description: Booked, returns booking + QR token }
+        '202': { description: Joined waitlist (capacity full) }
+        '409': { description: Already booked }
+
+  /bookings/{id}:
+    delete:
+      tags: [Bookings]
+      summary: Cancel a booking
+      parameters: [{ in: path, name: id, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Cancelled } }
+
+  /community/feed:
+    get:
+      tags: [Community]
+      summary: Get the post feed
+      security: []
+      parameters:
+        - { in: query, name: limit,  schema: { type: integer, default: 20 } }
+        - { in: query, name: before, schema: { type: string, format: date-time } }
+      responses: { '200': { description: Posts } }
+
+  /community/posts:
+    post:
+      tags: [Community]
+      summary: Create a post
+      requestBody:
+        required: true
+        content: { application/json: { schema: { type: object, properties: { content: { type: string }, media: { type: array } } } } }
+      responses: { '201': { description: Created } }
+
+  /community/posts/{id}/like:
+    post:
+      tags: [Community]
+      summary: Like (toggle) a post
+      parameters: [{ in: path, name: id, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Toggled } }
+
+  /community/posts/{id}/comments:
+    get:
+      tags: [Community]
+      summary: List comments on a post
+      security: []
+      parameters: [{ in: path, name: id, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Comments } }
+    post:
+      tags: [Community]
+      summary: Comment on a post
+      parameters: [{ in: path, name: id, required: true, schema: { type: string, format: uuid } }]
+      requestBody: { content: { application/json: { schema: { type: object, properties: { content: { type: string } } } } } }
+      responses: { '201': { description: Created } }
+
+  /coaches:
+    get:
+      tags: [Coaches]
+      summary: Public coach directory
+      security: []
+      responses: { '200': { description: Coaches list } }
+
+  /coaches/{id}:
+    get:
+      tags: [Coaches]
+      summary: Public coach profile
+      security: []
+      parameters: [{ in: path, name: id, required: true, schema: { type: string, format: uuid } }]
+      responses:
+        '200': { description: Coach profile + recent feedback }
+        '404': { description: Not a coach }
+
+  /challenges:
+    get:
+      tags: [Challenges]
+      summary: List active challenges
+      security: []
+      responses: { '200': { description: Challenges } }
+
+  /challenges/{id}/join:
+    post:
+      tags: [Challenges]
+      summary: Join a challenge
+      parameters: [{ in: path, name: id, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Joined } }
+
+  /members/profile:
+    patch:
+      tags: [Members]
+      summary: Update own member profile
+      requestBody: { content: { application/json: { schema: { $ref: '#/components/schemas/Member' } } } }
+      responses: { '200': { description: Updated } }
+
+  /members/bookings:
+    get:
+      tags: [Members]
+      summary: Authed member's bookings
+      responses: { '200': { description: Bookings } }
+
+  /members/leaderboard:
+    get:
+      tags: [Members]
+      summary: Points leaderboard
+      security: []
+      parameters: [{ in: query, name: period, schema: { type: string, enum: [mtd, ytd, all] } }]
+      responses: { '200': { description: Top members } }
+
+  /notifications:
+    get:
+      tags: [Notifications]
+      summary: List notifications for the authed member
+      responses: { '200': { description: Notifications + unread_count } }
+
+  /notifications/read-all:
+    patch:
+      tags: [Notifications]
+      summary: Mark all notifications read
+      responses: { '200': { description: Updated } }
+
+  /admin/dashboard:
+    get:
+      tags: [Admin]
+      summary: Admin dashboard summary stats
+      responses: { '200': { description: KPI bundle } }
+
+  /admin/members:
+    get:
+      tags: [Admin]
+      summary: Admin member directory
+      parameters:
+        - { in: query, name: search,         schema: { type: string } }
+        - { in: query, name: city_id,        schema: { type: string, format: uuid } }
+        - { in: query, name: is_ambassador,  schema: { type: string, enum: [true, false] } }
+        - { in: query, name: is_coach,       schema: { type: string, enum: [true, false] } }
+        - { in: query, name: limit,          schema: { type: integer, default: 50 } }
+      responses: { '200': { description: Paged members } }
+
+  /admin/members/{id}/ambassador:
+    patch:
+      tags: [Admin]
+      summary: Grant or revoke ambassador role (audit-logged, transactional)
+      parameters: [{ in: path, name: id, required: true, schema: { type: string, format: uuid } }]
+      requestBody: { content: { application/json: { schema: { type: object, properties: { enabled: { type: boolean } } } } } }
+      responses: { '200': { description: Toggled } }
+
+  /admin/members/{id}/coach:
+    patch:
+      tags: [Admin]
+      summary: Grant or revoke coach role (member must be ambassador first; audit-logged, transactional)
+      parameters: [{ in: path, name: id, required: true, schema: { type: string, format: uuid } }]
+      requestBody: { content: { application/json: { schema: { type: object, properties: { enabled: { type: boolean } } } } } }
+      responses:
+        '200': { description: Toggled }
+        '400': { description: Member is not an ambassador }
+        '404': { description: Member not found }
+
+  /admin/members/{id}/ban:
+    patch:
+      tags: [Admin]
+      summary: Ban or unban a member (audit-logged)
+      parameters: [{ in: path, name: id, required: true, schema: { type: string, format: uuid } }]
+      requestBody: { content: { application/json: { schema: { type: object, properties: { banned: { type: boolean }, reason: { type: string } } } } } }
+      responses: { '200': { description: Updated } }
+
+tags:
+  - { name: Auth,         description: Sign up, log in, JWT lifecycle }
+  - { name: Sessions,     description: Public session listing + admin CRUD }
+  - { name: Bookings,     description: Booking + waitlist + QR check-in }
+  - { name: Community,    description: Feed, comments, likes }
+  - { name: Coaches,      description: Public coach directory }
+  - { name: Challenges,   description: Community challenges + leaderboard }
+  - { name: Members,      description: Authed member self-service }
+  - { name: Notifications, description: In-app notifications }
+  - { name: Admin,        description: Admin-only management endpoints (audit-logged) }
