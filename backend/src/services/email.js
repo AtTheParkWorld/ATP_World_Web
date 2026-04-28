@@ -216,6 +216,17 @@ async function sendSessionReminder(member, session) {
   await send(member.email, `Reminder: ${session.name} in 10 hours`, html);
 }
 
+// ── Generic raw send (used by ambassador application + future free-form) ─
+async function sendRaw({ to, subject, html, replyTo }) {
+  if (!process.env.SENDGRID_API_KEY) {
+    console.warn('[email] SENDGRID_API_KEY missing — would have sent to', to, 'subject:', subject);
+    return;
+  }
+  const msg = { to, from: FROM, subject, html };
+  if (replyTo) msg.replyTo = replyTo;
+  await sgMail.send(msg);
+}
+
 module.exports = {
   sendWelcome,
   sendMagicLink,
@@ -224,4 +235,5 @@ module.exports = {
   sendStreakReminder,
   sendPointsExpiryWarning,
   sendSessionReminder,
+  sendRaw,
 };

@@ -395,7 +395,8 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
 
   <!-- COVER -->
   <div class="profile-cover">
-    <button class="profile-cover-edit" data-atp-call="showTab" data-args='["edit"]'>Edit cover</button>
+    <!-- Edit-cover stub removed (not yet a real feature) -->
+
   </div>
 
   <!-- HERO -->
@@ -432,6 +433,19 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 2l3 3-9 9H2v-3l9-9z"/></svg>
           Edit Profile
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- PROFILE COMPLETION BAR (#8) — recalculates as the member fills the edit form -->
+  <div style="max-width:1200px;margin:0 auto 14px;padding:0 40px">
+    <div style="background:var(--dark2);border:1px solid rgba(255,255,255,.07);border-radius:var(--radius-lg);padding:14px 18px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Profile completion</span>
+        <span id="completionLabel" style="font-size:12px;color:var(--light);font-weight:600">0% complete</span>
+      </div>
+      <div style="height:6px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden">
+        <div id="completionBar" style="height:100%;width:0;background:linear-gradient(90deg,var(--green),#a8e055);border-radius:6px;transition:width .6s cubic-bezier(.4,0,.2,1)"></div>
       </div>
     </div>
   </div>
@@ -643,41 +657,74 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
               <div class="form-group"><label class="form-label">First name</label><input class="form-input" type="text" value="Frederico" id="fFirstName"></div>
               <div class="form-group"><label class="form-label">Last name</label><input class="form-input" type="text" value="Martins" id="fLastName"></div>
               <div class="form-group"><label class="form-label">Date of birth</label><input class="form-input" type="date" id="fDob"></div>
-              <div class="form-group"><label class="form-label">Nationality</label><input class="form-input" type="text" placeholder="e.g. Brazilian" id="fNationality" aria-label="e.g. Brazilian"></div>
+              <div class="form-group">
+                <label class="form-label" for="fNationality">Nationality</label>
+                <input class="form-input" type="text" list="countriesList" placeholder="Start typing your country…" id="fNationality" autocomplete="country-name">
+                <datalist id="countriesList"></datalist>
+              </div>
               <div class="form-group"><label class="form-label" for="fGender">Gender</label>
-                <select class="form-select" id="fGender"><option>Male</option><option>Female</option><option>Non-binary</option><option>Prefer not to say</option></select>
+                <select class="form-select" id="fGender">
+                  <option value="">Select…</option>
+                  <option>Male</option><option>Female</option><option>Non-binary</option><option>Prefer not to say</option>
+                </select>
               </div>
             </div>
 
             <div class="form-section-title">Contact</div>
             <div class="form-grid">
-              <div class="form-group"><label class="form-label">Email</label><input class="form-input" type="email" value="fredericmartins21@me.com" id="fEmail"></div>
-              <div class="form-group"><label class="form-label">Mobile</label><input class="form-input" type="tel" placeholder="+971 50 000 0000" id="fMobile" aria-label="+971 50 000 0000"></div>
+              <div class="form-group"><label class="form-label" for="fEmail">Email</label><input class="form-input" type="email" id="fEmail"></div>
+              <div class="form-group"><label class="form-label" for="fMobile">Mobile</label><input class="form-input" type="tel" placeholder="+971 50 000 0000" id="fMobile" aria-label="Mobile number"></div>
             </div>
 
-            <div class="form-section-title">Sports & Interests</div>
+            <div class="form-section-title">Home base</div>
+            <div class="form-grid">
+              <div class="form-group"><label class="form-label" for="fCity">Home city</label>
+                <select class="form-select" id="fCity">
+                  <option value="">Select your home city…</option>
+                </select>
+              </div>
+              <div class="form-group"><label class="form-label" for="fTribe">Favourite tribe</label>
+                <select class="form-select" id="fTribe">
+                  <option value="">No preference</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="form-section-title">Favourite Activities</div>
             <div class="form-group full">
-              <label class="form-label">Favourite sports</label>
+              <label class="form-label" for="fActivitiesSearch">Pick everything you love — used for personalised session and notification recommendations</label>
               <div class="sport-pills" id="sportPills">
-                <button class="sport-pill sel" onclick="togglePill(this)">Running</button>
-                <button class="sport-pill sel" onclick="togglePill(this)">Yoga</button>
-                <button class="sport-pill" onclick="togglePill(this)">Cycling</button>
-                <button class="sport-pill sel" onclick="togglePill(this)">Bootcamp</button>
-                <button class="sport-pill" onclick="togglePill(this)">Swimming</button>
-                <button class="sport-pill" onclick="togglePill(this)">Kickboxing</button>
-                <button class="sport-pill" onclick="togglePill(this)">Pilates</button>
-                <button class="sport-pill" onclick="togglePill(this)">Padel</button>
-                <button class="sport-pill" onclick="togglePill(this)">CrossTraining</button>
-                <button class="sport-pill" onclick="togglePill(this)">Sound Healing</button>
+                <!-- Populated from /api/activities in JS; falls back to the seed list below if the endpoint isn't available yet -->
+                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Running">Running</button>
+                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Yoga">Yoga</button>
+                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Cycling">Cycling</button>
+                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Bootcamp">Bootcamp</button>
+                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Swimming">Swimming</button>
+                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Kickboxing">Kickboxing</button>
+                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Pilates">Pilates</button>
+                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Padel">Padel</button>
+                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Volleyball">Volleyball</button>
+                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="CrossTraining">CrossTraining</button>
+                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Sound Healing">Sound Healing</button>
               </div>
             </div>
 
             <div class="form-section-title">Padel Level</div>
             <div class="padel-row">
-              <button class="padel-btn" onclick="setPadel(this)">Beginner</button>
-              <button class="padel-btn sel" onclick="setPadel(this)">Intermediate</button>
-              <button class="padel-btn" onclick="setPadel(this)">Advanced</button>
-              <button class="padel-btn" onclick="setPadel(this)">Professional</button>
+              <button class="padel-btn" type="button" data-atp-call="setPadel" data-padel="Level D-">Level D-</button>
+              <button class="padel-btn" type="button" data-atp-call="setPadel" data-padel="Level D+">Level D+</button>
+              <button class="padel-btn" type="button" data-atp-call="setPadel" data-padel="Level C-">Level C-</button>
+              <button class="padel-btn" type="button" data-atp-call="setPadel" data-padel="Level C+">Level C+</button>
+              <button class="padel-btn" type="button" data-atp-call="setPadel" data-padel="Level B-">Level B-</button>
+              <button class="padel-btn" type="button" data-atp-call="setPadel" data-padel="Level B">Level B</button>
+              <button class="padel-btn" type="button" data-atp-call="setPadel" data-padel="Professional">Professional</button>
+            </div>
+
+            <div class="form-section-title">Volleyball Level</div>
+            <div class="padel-row">
+              <button class="padel-btn" type="button" data-atp-call="setVolley" data-volley="Beginner">Beginner</button>
+              <button class="padel-btn" type="button" data-atp-call="setVolley" data-volley="Intermediate">Intermediate</button>
+              <button class="padel-btn" type="button" data-atp-call="setVolley" data-volley="Advanced">Advanced</button>
             </div>
 
             <div class="form-section-title">Sizing</div>
@@ -1107,13 +1154,22 @@ function renderTribe(el) {
     return;
   }
   el.innerHTML = TRIBE.map(function(m){
-    return "<div class='tribe-member-row'>"+
-      "<div class='tribe-av'>"+m.init+"</div>"+
-      "<div class='tribe-info'>"+
-        "<div class='tribe-mname'>"+m.name+"</div>"+
-        "<div class='tribe-msub'>Joined "+m.joined+" · "+m.sessions+" sessions</div>"+
-      "</div>"+
-      "<span class='tribe-badge'>"+(m.active?"Active":"Inactive")+"</span>"+
+    var activeBadge = m.active
+      ? '<span class="tribe-badge" style="background:rgba(122,194,49,.14);color:var(--green);border:1px solid rgba(122,194,49,.35)">Active</span>'
+      : '<span class="tribe-badge" style="background:rgba(239,68,68,.12);color:#ef4444;border:1px solid rgba(239,68,68,.35)">Inactive</span>';
+    var typeBadge = (m.subscription_type === 'premium')
+      ? '<span class="tribe-badge" style="background:rgba(255,196,0,.14);color:#ffc400;border:1px solid rgba(255,196,0,.35);margin-left:6px">Premium</span>'
+      : '<span class="tribe-badge" style="background:rgba(122,194,49,.10);color:var(--green);border:1px solid rgba(122,194,49,.25);margin-left:6px">Free</span>';
+    var lastAttended = m.last_session_at
+      ? 'Last attended ' + new Date(m.last_session_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
+      : 'Hasn\u2019t attended yet';
+    return "<div class='tribe-member-row'>" +
+      "<div class='tribe-av'>" + m.init + "</div>" +
+      "<div class='tribe-info'>" +
+        "<div class='tribe-mname'>" + m.name + "</div>" +
+        "<div class='tribe-msub'>Joined " + m.joined + " \u00b7 " + m.sessions + " sessions \u00b7 " + lastAttended + "</div>" +
+      "</div>" +
+      "<div style='display:flex;align-items:center'>" + activeBadge + typeBadge + "</div>" +
     "</div>";
   }).join("");
 }
@@ -1236,8 +1292,81 @@ function copyReferral(){
   if(el){el.textContent="Copied!";setTimeout(function(){el.textContent="Copy";},2000);}
 }
 
-function togglePill(btn){btn.classList.toggle("sel");}
-function setPadel(btn){document.querySelectorAll(".padel-btn").forEach(function(b){b.classList.remove("sel");});btn.classList.add("sel");}
+// Activities multi-select — toggle individual pill
+function togglePill(e, btn){
+  if (btn) btn.classList.toggle("sel");
+  else if (e && e.target) (e.target.closest('.sport-pill') || {}).classList?.toggle("sel");
+  updateProfileCompletion();
+}
+// Padel + Volleyball single-select within their group (data-padel / data-volley)
+function setPadel(e, btn){
+  document.querySelectorAll('.padel-btn[data-padel]').forEach(function(b){ b.classList.remove("sel"); });
+  if (btn && btn.dataset && btn.dataset.padel) btn.classList.add("sel");
+  updateProfileCompletion();
+}
+function setVolley(e, btn){
+  document.querySelectorAll('.padel-btn[data-volley]').forEach(function(b){ b.classList.remove("sel"); });
+  if (btn && btn.dataset && btn.dataset.volley) btn.classList.add("sel");
+  updateProfileCompletion();
+}
+
+// ── Country list (searchable via <datalist>) ────────────────
+// Populated once on page load. Common UAE/Oman options pinned to the top.
+var ATP_COUNTRIES = [
+  // Pinned (most common members)
+  'United Arab Emirates','Oman','Saudi Arabia','Bahrain','Qatar','Kuwait',
+  // The rest, alphabetical
+  'Afghanistan','Albania','Algeria','Andorra','Angola','Argentina','Armenia','Australia','Austria','Azerbaijan',
+  'Bangladesh','Belarus','Belgium','Bhutan','Bolivia','Bosnia and Herzegovina','Botswana','Brazil','Brunei','Bulgaria',
+  'Cambodia','Cameroon','Canada','Chile','China','Colombia','Costa Rica','Croatia','Cuba','Cyprus','Czech Republic',
+  'Denmark','Dominican Republic','Ecuador','Egypt','El Salvador','Estonia','Ethiopia','Fiji','Finland','France',
+  'Gabon','Georgia','Germany','Ghana','Greece','Guatemala','Honduras','Hungary','Iceland','India','Indonesia','Iran',
+  'Iraq','Ireland','Israel','Italy','Ivory Coast','Jamaica','Japan','Jordan','Kazakhstan','Kenya','Kyrgyzstan',
+  'Laos','Latvia','Lebanon','Libya','Liechtenstein','Lithuania','Luxembourg','Madagascar','Malaysia','Maldives',
+  'Mali','Malta','Mauritius','Mexico','Moldova','Monaco','Mongolia','Montenegro','Morocco','Mozambique','Namibia',
+  'Nepal','Netherlands','New Zealand','Nicaragua','Nigeria','North Macedonia','Norway','Pakistan','Palestine',
+  'Panama','Paraguay','Peru','Philippines','Poland','Portugal','Romania','Russia','Rwanda','Senegal','Serbia',
+  'Singapore','Slovakia','Slovenia','South Africa','South Korea','Spain','Sri Lanka','Sudan','Sweden','Switzerland',
+  'Syria','Taiwan','Tajikistan','Tanzania','Thailand','Tunisia','Turkey','Turkmenistan','Uganda','Ukraine',
+  'United Kingdom','United States','Uruguay','Uzbekistan','Venezuela','Vietnam','Yemen','Zambia','Zimbabwe',
+];
+function populateCountriesDatalist() {
+  var dl = document.getElementById('countriesList');
+  if (!dl || dl.dataset.populated) return;
+  dl.innerHTML = ATP_COUNTRIES.map(function(c){ return '<option value="' + c + '">'; }).join('');
+  dl.dataset.populated = '1';
+}
+
+// ── Profile completion bar ───────────────────────────────────
+// Counts the canonical fields a member should fill out and renders a
+// 0-100% bar. Recalculates whenever any input on the edit form changes.
+var COMPLETION_FIELDS = [
+  { test: function(){ return val('fFirstName'); }, label: 'First name' },
+  { test: function(){ return val('fLastName'); },  label: 'Last name' },
+  { test: function(){ return val('fEmail'); },     label: 'Email' },
+  { test: function(){ return val('fMobile'); },    label: 'Mobile' },
+  { test: function(){ return val('fDob'); },       label: 'Date of birth' },
+  { test: function(){ return val('fNationality'); }, label: 'Nationality' },
+  { test: function(){ return val('fGender'); },    label: 'Gender' },
+  { test: function(){ return val('fCity'); },      label: 'Home city' },
+  { test: function(){ return val('fTribe'); },     label: 'Favourite tribe' },
+  { test: function(){ return document.querySelectorAll('#sportPills .sport-pill.sel').length > 0; }, label: 'Activities' },
+  { test: function(){ return !!document.querySelector('.padel-btn[data-padel].sel'); },              label: 'Padel level' },
+  { test: function(){ return !!document.querySelector('.padel-btn[data-volley].sel'); },             label: 'Volleyball level' },
+  { test: function(){ return val('fTopSize'); },   label: 'Top size' },
+  { test: function(){ return val('fBotSize'); },   label: 'Bottom size' },
+  { test: function(){ return CURRENT_MEMBER && CURRENT_MEMBER.avatar_url; },                         label: 'Profile photo' },
+];
+function val(id){ var el = document.getElementById(id); return el ? !!String(el.value || '').trim() : false; }
+function updateProfileCompletion() {
+  var hits = 0;
+  COMPLETION_FIELDS.forEach(function(f){ try { if (f.test()) hits++; } catch(e){} });
+  var pct = Math.round(hits * 100 / COMPLETION_FIELDS.length);
+  var bar = document.getElementById('completionBar');
+  var lbl = document.getElementById('completionLabel');
+  if (bar) bar.style.width = pct + '%';
+  if (lbl) lbl.textContent = pct + '% complete · ' + hits + ' of ' + COMPLETION_FIELDS.length + ' fields';
+}
 
 function saveProfile(){
   if (!window.ATP || !window.ATP.isLoggedIn()) {
@@ -1257,16 +1386,24 @@ function saveProfile(){
   var pwd       = document.getElementById('fPwd').value;
   var pwd2      = document.getElementById('fPwd2').value;
 
-  // Sport pills → sports_preferences array
+  // Activities (formerly "Favourite sports") → sports_preferences array
+  // Reads the data-activity attribute so renames don't break the DB value.
   var selectedSports = [];
   document.querySelectorAll('#sportPills .sport-pill.sel').forEach(function(p){
-    selectedSports.push(p.textContent.trim());
+    selectedSports.push(p.dataset.activity || p.textContent.trim());
   });
 
-  // Padel level (lowercase single word)
+  // Padel + Volleyball levels (data-attribute carries the canonical value)
   var padelLevel = null;
-  var selectedPadel = document.querySelector('.padel-btn.sel');
-  if (selectedPadel) padelLevel = selectedPadel.textContent.trim().toLowerCase();
+  var selectedPadel = document.querySelector('.padel-btn[data-padel].sel');
+  if (selectedPadel) padelLevel = selectedPadel.dataset.padel;
+  var volleyLevel = null;
+  var selectedVolley = document.querySelector('.padel-btn[data-volley].sel');
+  if (selectedVolley) volleyLevel = selectedVolley.dataset.volley;
+
+  // Home city + favourite tribe come from new selects
+  var cityId  = (document.getElementById('fCity')  || {}).value || null;
+  var tribeId = (document.getElementById('fTribe') || {}).value || null;
 
   var payload = {
     first_name:         firstName,
@@ -1279,6 +1416,9 @@ function saveProfile(){
     top_size:           topSize,
     bottom_size:        botSize,
     padel_level:        padelLevel,
+    volleyball_level:   volleyLevel,   // new — backend column needed
+    city_id:            cityId,
+    tribe_id:           tribeId,        // new — backend column needed
   };
 
   // Password change (separate endpoint if user entered one)
@@ -1446,8 +1586,12 @@ function applyMemberToPage(m) {
 
   var memberNumEl = document.querySelector('.profile-sub .member-num');
   if (memberNumEl) {
-    var joinedYear = m.joined_at ? new Date(m.joined_at).getFullYear() : '—';
-    memberNumEl.textContent = '#' + (m.member_number || '—') + ' · Member since ' + joinedYear;
+    var joinedFull = '—';
+    if (m.joined_at) {
+      var d = new Date(m.joined_at);
+      joinedFull = d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+    }
+    memberNumEl.textContent = '#' + (m.member_number || '—') + ' · Member since ' + joinedFull;
   }
 
   // Sidebar "Quick Stats"
@@ -1517,6 +1661,22 @@ function applyMemberToPage(m) {
 
   // Populate edit form
   populateEditForm(m);
+  // Activate countries datalist + bind completion-bar listeners on first paint
+  populateCountriesDatalist();
+  bindCompletionRecompute();
+  updateProfileCompletion();
+}
+
+// Recompute the bar whenever any edit-form field changes — input/change/click cover all the inputs.
+var COMPLETION_BOUND = false;
+function bindCompletionRecompute() {
+  if (COMPLETION_BOUND) return;
+  COMPLETION_BOUND = true;
+  var panel = document.getElementById('panel-edit');
+  if (!panel) return;
+  ['input','change','click'].forEach(function(evt){
+    panel.addEventListener(evt, function(){ updateProfileCompletion(); }, true);
+  });
 }
 
 // ── Role banner ─────────────────────────────────────────────
@@ -1562,8 +1722,110 @@ function renderRoleBanner(opts) {
       : 'Active members can apply to become Ambassadors — check members in at sessions and earn extra points.';
     actions.innerHTML = (opts.sessionsCount === 0)
       ? '<a class="pf-btn primary" href="sessions.html">Browse sessions</a>'
-      : '<a class="pf-btn primary" href="mailto:hello@atthepark.world?subject=Apply%20to%20be%20an%20ATP%20Ambassador">Apply to be an Ambassador</a>';
+      : '<button class="pf-btn primary" data-atp-call="openAmbassadorApply">Apply to be an Ambassador</button>';
   }
+}
+
+// ── Apply-to-Ambassador modal (#2) ───────────────────────────
+// Opens a modal with name/surname/nationality/gender prefilled from the
+// member's profile, plus free-text fields. POSTs to /api/applications/ambassador
+// (backend route TBD — endpoint emails general@atthepark.world).
+function openAmbassadorApply() {
+  var existing = document.getElementById('ambApplyOverlay');
+  if (existing) { existing.style.display = 'flex'; return prefillAmbApply(); }
+  var wrap = document.createElement('div');
+  wrap.id = 'ambApplyOverlay';
+  wrap.setAttribute('role', 'dialog');
+  wrap.setAttribute('aria-modal', 'true');
+  wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(10px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px';
+  wrap.innerHTML =
+    '<div style="background:#0d0d0d;border:1px solid var(--atp-line-strong,rgba(255,255,255,.14));border-radius:16px;padding:28px;max-width:520px;width:100%;position:relative;max-height:90vh;overflow-y:auto">' +
+      '<button type="button" data-atp-call="closeAmbassadorApply" aria-label="Close" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#888;font-size:28px;cursor:pointer;line-height:1">×</button>' +
+      '<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px"><span style="font-size:24px">⭐</span><h2 style="font-family:var(--ff-display);font-size:28px;font-weight:900;text-transform:uppercase;margin:0">Apply to be an Ambassador</h2></div>' +
+      '<p style="margin:0 0 18px;color:#aaa;font-size:13px;line-height:1.6">Ambassadors check members in at sessions, run the community, and earn extra points. Tell us where you can help.</p>' +
+      '<div id="ambApplyMsg" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px"></div>' +
+      '<form id="ambApplyForm" novalidate>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
+          '<div><label style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;display:block;margin-bottom:4px" for="ambaFirst">First name *</label><input id="ambaFirst" required style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px"></div>' +
+          '<div><label style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;display:block;margin-bottom:4px" for="ambaLast">Last name *</label><input id="ambaLast" required style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px"></div>' +
+        '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
+          '<div><label style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;display:block;margin-bottom:4px" for="ambaNat">Nationality</label><input id="ambaNat" list="countriesList" style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px"></div>' +
+          '<div><label style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;display:block;margin-bottom:4px" for="ambaGender">Gender</label><select id="ambaGender" style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px"><option value="">Select…</option><option>Male</option><option>Female</option><option>Non-binary</option><option>Prefer not to say</option></select></div>' +
+        '</div>' +
+        '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;display:block;margin-bottom:4px" for="ambaSessions">Which sessions can you support? *</label><input id="ambaSessions" required placeholder="e.g. Morning Run Dubai Marina, HIIT Kite Beach" style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px"></div>' +
+        '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;display:block;margin-bottom:4px" for="ambaArea">Which area / city can you cover? *</label><input id="ambaArea" required placeholder="e.g. Dubai Marina, Al Ain, Muscat" style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px"></div>' +
+        '<div style="margin-bottom:18px"><label style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;display:block;margin-bottom:4px" for="ambaWhy">Why do you want to be an ATP Ambassador? *</label><textarea id="ambaWhy" required rows="4" placeholder="Tell us about your motivation, availability, fitness background…" style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;resize:vertical;min-height:90px;font-family:inherit"></textarea></div>' +
+        '<button type="submit" id="ambaSubmit" style="width:100%;padding:13px;background:#7AC231;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer">Submit application</button>' +
+      '</form>' +
+    '</div>';
+  document.body.appendChild(wrap);
+  wrap.addEventListener('click', function(e){ if (e.target === wrap) closeAmbassadorApply(); });
+  wrap.querySelector('#ambApplyForm').addEventListener('submit', function(e){ e.preventDefault(); submitAmbassadorApply(); });
+  populateCountriesDatalist();
+  prefillAmbApply();
+}
+function prefillAmbApply() {
+  var m = CURRENT_MEMBER || {};
+  var setVal = function(id, v){ var el = document.getElementById(id); if (el && !el.value) el.value = v || ''; };
+  setVal('ambaFirst', m.first_name);
+  setVal('ambaLast',  m.last_name);
+  setVal('ambaNat',   m.nationality);
+  var g = document.getElementById('ambaGender');
+  if (g && m.gender && !g.value) {
+    for (var i=0;i<g.options.length;i++) if (g.options[i].text.toLowerCase() === String(m.gender).toLowerCase()) { g.selectedIndex = i; break; }
+  }
+}
+function closeAmbassadorApply() {
+  var w = document.getElementById('ambApplyOverlay'); if (w) w.style.display = 'none';
+}
+function submitAmbassadorApply() {
+  var btn = document.getElementById('ambaSubmit'); var msg = document.getElementById('ambApplyMsg');
+  if (msg) { msg.style.display = 'none'; msg.textContent = ''; }
+  var body = {
+    first_name:  document.getElementById('ambaFirst').value.trim(),
+    last_name:   document.getElementById('ambaLast').value.trim(),
+    nationality: document.getElementById('ambaNat').value.trim(),
+    gender:      document.getElementById('ambaGender').value,
+    sessions:    document.getElementById('ambaSessions').value.trim(),
+    area:        document.getElementById('ambaArea').value.trim(),
+    why:         document.getElementById('ambaWhy').value.trim(),
+    member_id:   (CURRENT_MEMBER && CURRENT_MEMBER.id) || null,
+    email:       (CURRENT_MEMBER && CURRENT_MEMBER.email) || null,
+  };
+  if (!body.first_name || !body.last_name || !body.sessions || !body.area || !body.why) {
+    if (msg) { msg.style.display = 'block'; msg.style.cssText += 'background:rgba(239,68,68,.12);color:#ef4444;border:1px solid rgba(239,68,68,.3)'; msg.textContent = 'Please fill in all required fields.'; }
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Sending…';
+  // Backend route /api/applications/ambassador is TBD. For now we attempt the
+  // POST and fall back to a mailto: link if it 404s.
+  fetch('/api/applications/ambassador', {
+    method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify(body),
+  }).then(function(r){
+    if (!r.ok) throw new Error('Endpoint not deployed yet');
+    return r.json();
+  }).then(function(){
+    btn.disabled = false; btn.textContent = 'Submit application';
+    if (msg) { msg.style.display='block'; msg.style.cssText += 'background:rgba(122,194,49,.12);color:#7AC231;border:1px solid rgba(122,194,49,.3)'; msg.textContent = '✅ Application sent! We\u2019ll be in touch shortly.'; }
+    setTimeout(closeAmbassadorApply, 1800);
+  }).catch(function(){
+    btn.disabled = false; btn.textContent = 'Submit application';
+    // Fallback: open mailto: with the form contents pre-filled.
+    var subject = 'Ambassador Application — ' + body.first_name + ' ' + body.last_name;
+    var body_text =
+      'First name: ' + body.first_name + '\n' +
+      'Last name: '  + body.last_name + '\n' +
+      'Nationality: '+ body.nationality + '\n' +
+      'Gender: '     + body.gender + '\n' +
+      'Member ID: '  + (body.member_id || '—') + '\n' +
+      'Member email: '+ (body.email || '—') + '\n\n' +
+      'Sessions I can support:\n' + body.sessions + '\n\n' +
+      'Area I can cover:\n' + body.area + '\n\n' +
+      'Why I want to be an ATP Ambassador:\n' + body.why;
+    window.location.href = 'mailto:general@atthepark.world?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(body_text);
+    if (msg) { msg.style.display='block'; msg.style.cssText += 'background:rgba(255,196,0,.12);color:#ffc400;border:1px solid rgba(255,196,0,.3)'; msg.textContent = 'Opened your email app — please send the prefilled message.'; }
+  });
 }
 
 // ── Coach profile (self) ────────────────────────────────────
@@ -1715,22 +1977,53 @@ function populateEditForm(m) {
   if (botSel && m.bottom_size) {
     for (var k=0; k<botSel.options.length; k++) { if (botSel.options[k].text === m.bottom_size) { botSel.selectedIndex = k; break; } }
   }
-  // Sport pills
+  // Activity pills (multi-select) — match by data-activity attribute
   var prefs = m.sports_preferences;
   if (typeof prefs === 'string') { try { prefs = JSON.parse(prefs); } catch(e){ prefs = []; } }
   if (Array.isArray(prefs)) {
-    var pills = document.querySelectorAll('#sportPills .sport-pill');
-    pills.forEach(function(p){
-      var name = p.textContent.trim();
-      if (prefs.indexOf(name) >= 0) p.classList.add('sel'); else p.classList.remove('sel');
+    document.querySelectorAll('#sportPills .sport-pill').forEach(function(p){
+      var key = p.dataset.activity || p.textContent.trim();
+      if (prefs.indexOf(key) >= 0) p.classList.add('sel'); else p.classList.remove('sel');
     });
   }
-  // Padel level
+  // Padel level — match by data-padel
   if (m.padel_level) {
-    var want = String(m.padel_level).toLowerCase();
-    document.querySelectorAll('.padel-btn').forEach(function(b){
-      if (b.textContent.trim().toLowerCase() === want) b.classList.add('sel'); else b.classList.remove('sel');
+    document.querySelectorAll('.padel-btn[data-padel]').forEach(function(b){
+      b.classList.toggle('sel', b.dataset.padel === m.padel_level);
     });
+  }
+  // Volleyball level — match by data-volley
+  if (m.volleyball_level) {
+    document.querySelectorAll('.padel-btn[data-volley]').forEach(function(b){
+      b.classList.toggle('sel', b.dataset.volley === m.volleyball_level);
+    });
+  }
+  // Home city select
+  var citySel = document.getElementById('fCity');
+  if (citySel) {
+    if (m.city_id && !citySel.querySelector('option[value="' + m.city_id + '"]')) {
+      var opt = document.createElement('option');
+      opt.value = m.city_id; opt.textContent = m.city_name || 'Current city';
+      citySel.appendChild(opt);
+    }
+    if (m.city_id) citySel.value = m.city_id;
+    // Lazy-load the full cities list (uses /api/cities — already public)
+    fetch('/api/cities').then(function(r){ return r.json(); }).then(function(data){
+      var cities = (data && data.cities) || [];
+      var current = citySel.value;
+      citySel.innerHTML = '<option value="">Select your home city…</option>' +
+        cities.map(function(c){ return '<option value="' + c.id + '"' + (c.id === current ? ' selected' : '') + '>' + c.name + (c.country ? ', ' + c.country : '') + '</option>'; }).join('');
+    }).catch(function(){});
+  }
+  // Favourite tribe select
+  var tribeSel = document.getElementById('fTribe');
+  if (tribeSel) {
+    fetch('/api/sessions/tribes').then(function(r){ return r.json(); }).then(function(data){
+      var tribes = (data && data.tribes) || [];
+      var current = m.tribe_id || '';
+      tribeSel.innerHTML = '<option value="">No preference</option>' +
+        tribes.map(function(t){ return '<option value="' + t.id + '"' + (t.id === current ? ' selected' : '') + '>' + t.name + ' Tribe</option>'; }).join('');
+    }).catch(function(){});
   }
 }
 
@@ -1766,9 +2059,17 @@ function loadPoints() {
     var txns = (data && data.transactions) || [];
     WALLET_TXNS = txns.map(function(t) {
       var amt = Number(t.amount) || 0;
+      // Show the actual session name when the transaction came from attending
+      // a session — backend should include t.session_name when reason='attendance'.
+      var label;
+      if (t.session_name && (t.reason === 'attendance' || t.reason === 'session_attended')) {
+        label = 'Attended: ' + t.session_name;
+      } else {
+        label = t.description || t.reason || 'Transaction';
+      }
       return {
         icon:  amt >= 0 ? '🔥' : '🎽',
-        name:  t.description || t.reason || 'Transaction',
+        name:  label,
         date:  formatDateShort(t.created_at),
         amt:   (amt > 0 ? '+' : '') + amt,
         earn:  amt >= 0,
@@ -1828,12 +2129,18 @@ function loadReferrals() {
   return window.ATP.members.referrals().then(function(data) {
     var refs = (data && data.referrals) || [];
     TRIBE = refs.map(function(r) {
+      // 30-day inactivity rule (#21): inactive if no attendance in last 30 days
+      var DAYS = 30 * 24 * 60 * 60 * 1000;
+      var lastAt = r.last_session_at ? new Date(r.last_session_at).getTime() : 0;
+      var isActive = lastAt && (Date.now() - lastAt) < DAYS;
       return {
-        init:     initialsOf(r.first_name, r.last_name),
-        name:     (r.first_name || '') + ' ' + (r.last_name || ''),
-        joined:   formatDateShort(r.created_at),
-        sessions: r.sessions_count || 0,
-        active:   (r.sessions_count || 0) > 0,
+        init:              initialsOf(r.first_name, r.last_name),
+        name:              ((r.first_name || '') + ' ' + (r.last_name || '')).trim(),
+        joined:            formatDateShort(r.created_at),
+        sessions:          r.sessions_count || 0,
+        active:            isActive,
+        last_session_at:   r.last_session_at || null,
+        subscription_type: r.subscription_type || 'free',
       };
     });
     var tribeEl = document.getElementById('tribeList');

@@ -194,6 +194,7 @@ const ROUTES = [
   ['coaches',      require('./routes/coaches')],
   ['analytics',    require('./routes/analytics')],
   ['migrate',      require('./routes/migrate')],
+  ['applications', require('./routes/applications')],
 ];
 for (const [prefix, router] of ROUTES) {
   app.use('/api/'    + prefix, router);
