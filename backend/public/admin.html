@@ -512,6 +512,56 @@
             </div>
           </div>
 
+          <!-- PRIZE + ENTRY (Theme 6 / #14, #15, #17) -->
+          <div style="margin-top:16px;padding:14px;background:#111;border-radius:10px;border:1px solid #222">
+            <label class="admin-form-label" style="margin-bottom:12px;display:block">🎁 Prize & Entry</label>
+            <div class="admin-form-grid">
+              <div class="admin-form-group">
+                <label class="admin-form-label" for="cEntryCost">Entry cost (ATP points, 0 = free)</label>
+                <input class="admin-form-input" type="number" id="cEntryCost" value="0" min="0">
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label" for="cPrizeType">Prize type</label>
+                <select class="admin-form-select" id="cPrizeType" onchange="updatePrizeFields()">
+                  <option value="none">None</option>
+                  <option value="points" selected>ATP Points</option>
+                  <option value="product">Physical Product</option>
+                  <option value="badge">Unique Badge</option>
+                </select>
+              </div>
+              <div class="admin-form-group">
+                <label class="admin-form-label" for="cWinnerSlots">Winner slots</label>
+                <select class="admin-form-select" id="cWinnerSlots" onchange="updatePrizeFields()">
+                  <option value="1">1st place only</option>
+                  <option value="2">1st + 2nd</option>
+                  <option value="3">1st + 2nd + 3rd</option>
+                </select>
+              </div>
+            </div>
+            <!-- Points slot prizes (#17) -->
+            <div id="prizePointsBlock" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-top:12px">
+              <div class="admin-form-group"><label class="admin-form-label" for="cPrize1st">🥇 1st place points</label><input class="admin-form-input" type="number" id="cPrize1st" value="500" min="0"></div>
+              <div class="admin-form-group"><label class="admin-form-label" for="cPrize2nd">🥈 2nd place points</label><input class="admin-form-input" type="number" id="cPrize2nd" value="200" min="0"></div>
+              <div class="admin-form-group"><label class="admin-form-label" for="cPrize3rd">🥉 3rd place points</label><input class="admin-form-input" type="number" id="cPrize3rd" value="100" min="0"></div>
+            </div>
+            <!-- Product prize -->
+            <div id="prizeProductBlock" style="display:none;margin-top:12px">
+              <div class="admin-form-grid">
+                <div class="admin-form-group"><label class="admin-form-label" for="cPrizeProductName">Product name</label><input class="admin-form-input" type="text" id="cPrizeProductName" placeholder="e.g. Garmin Forerunner 165"></div>
+                <div class="admin-form-group"><label class="admin-form-label" for="cPrizeProductImage">Product image URL</label><input class="admin-form-input" type="url" id="cPrizeProductImage" placeholder="https://…"></div>
+              </div>
+            </div>
+            <!-- Badge prize -->
+            <div id="prizeBadgeBlock" style="display:none;margin-top:12px">
+              <div class="admin-form-group">
+                <label class="admin-form-label" for="cPrizeBadgeId">Badge to award (must exist as an Achievement)</label>
+                <select class="admin-form-select" id="cPrizeBadgeId">
+                  <option value="">— Pick from active achievements —</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
           <!-- BADGE PREVIEW + UPLOAD -->
           <div style="margin-top:16px;padding:14px;background:#111;border-radius:10px;border:1px solid #222">
             <label class="admin-form-label" style="margin-bottom:10px;display:block">🏅 Challenge Badge</label>

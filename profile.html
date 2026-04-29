@@ -1364,17 +1364,99 @@ function renderChallenges() {
     return;
   }
   el.innerHTML = CHALLENGES.map(function(c){
-    var pct = Math.round((c.done/c.total)*100);
-    return "<div class='challenge-card "+(c.active?"active-c":"")+"'>"+
-      "<div class='challenge-header'>"+
-        "<div class='challenge-icon'>"+c.icon+"</div>"+
-        "<div><div class='challenge-name'>"+c.name+"</div><div class='challenge-sub'>"+c.sub+"</div></div>"+
-        (c.done===c.total?"<span class='member-badge' style='margin-left:auto'>✓ Done</span>":"")+
-      "</div>"+
-      "<div class='challenge-progress-wrap'><div class='challenge-progress-bar' style='width:"+pct+"%'></div></div>"+
-      "<div class='challenge-footer'><span class='challenge-done'>"+c.done+"/"+c.total+" sessions</span><span class='challenge-total'>"+pct+"% complete</span></div>"+
+    var pct = c.total > 0 ? Math.round((c.done/c.total)*100) : 0;
+    // Days remaining (#13)
+    var daysLeftHtml = '';
+    if (c.endsAt) {
+      var ms = new Date(c.endsAt).getTime() - Date.now();
+      var days = Math.max(0, Math.ceil(ms / 86400000));
+      var color = days <= 3 ? '#ef4444' : days <= 7 ? '#ffc400' : 'var(--green)';
+      daysLeftHtml = '<span style="font-size:11px;font-weight:700;color:' + color + ';margin-left:8px">' +
+                     (days === 0 ? '⏰ Last day' : days + ' day' + (days===1?'':'s') + ' left') + '</span>';
+    }
+    // Prize info (#14)
+    var prizeHtml = '';
+    if (c.prizeType === 'points' && c.prize1st) {
+      var slots = c.winnerSlots || 1;
+      var lines = [];
+      lines.push('🥇 ' + c.prize1st + ' pts');
+      if (slots >= 2 && c.prize2nd) lines.push('🥈 ' + c.prize2nd + ' pts');
+      if (slots >= 3 && c.prize3rd) lines.push('🥉 ' + c.prize3rd + ' pts');
+      prizeHtml = '<div style="font-size:11px;color:var(--green);margin-top:6px">Prize: ' + lines.join(' · ') + '</div>';
+    } else if (c.prizeType === 'product' && c.prizeProductName) {
+      prizeHtml = '<div style="font-size:11px;color:var(--green);margin-top:6px">🎁 Prize: ' + c.prizeProductName + '</div>';
+    } else if (c.prizeType === 'badge') {
+      prizeHtml = '<div style="font-size:11px;color:var(--green);margin-top:6px">🏅 Prize: Unique badge</div>';
+    }
+    var entryHtml = '';
+    if (c.entryCost > 0) {
+      entryHtml = '<span style="font-size:11px;color:var(--muted);margin-left:8px">Entry: ' + c.entryCost + ' pts</span>';
+    }
+    var leaderboardBtn = c.id
+      ? '<button class="member-badge" style="margin-left:auto;font-size:11px;background:transparent;border:1px solid rgba(255,255,255,.15);cursor:pointer" data-atp-call="openChallengeLeaderboard" data-args=\'["' + c.id + '"]\'>View leaderboard →</button>'
+      : '';
+    return "<div class='challenge-card " + (c.active ? "active-c" : "") + "'>" +
+      "<div class='challenge-header'>" +
+        "<div class='challenge-icon'>" + (c.icon || '🏆') + "</div>" +
+        "<div style='flex:1'>" +
+          "<div class='challenge-name'>" + c.name + daysLeftHtml + entryHtml + "</div>" +
+          "<div class='challenge-sub'>" + (c.sub || '') + "</div>" +
+          prizeHtml +
+        "</div>" +
+        (c.done === c.total ? "<span class='member-badge' style='margin-left:auto'>✓ Done</span>" : leaderboardBtn) +
+      "</div>" +
+      "<div class='challenge-progress-wrap'><div class='challenge-progress-bar' style='width:" + pct + "%'></div></div>" +
+      "<div class='challenge-footer'><span class='challenge-done'>" + c.done + "/" + c.total + "</span><span class='challenge-total'>" + pct + "% complete</span></div>" +
     "</div>";
   }).join("");
+}
+
+// Leaderboard modal (#13) — pulls /api/challenges/:id/leaderboard
+function openChallengeLeaderboard(e, btn) {
+  var id = (btn && btn.getAttribute('data-args') || '').replace(/[\[\]"]/g, '');
+  var existing = document.getElementById('chalLbOverlay');
+  if (existing) existing.remove();
+  var wrap = document.createElement('div');
+  wrap.id = 'chalLbOverlay';
+  wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px';
+  wrap.innerHTML =
+    '<div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:28px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;position:relative">' +
+      '<button type="button" onclick="document.getElementById(\'chalLbOverlay\').remove()" style="position:absolute;top:12px;right:14px;background:none;border:none;color:#888;font-size:28px;cursor:pointer">×</button>' +
+      '<h2 style="font-family:var(--ff-display);font-size:24px;margin:0 0 18px">🏆 Challenge Leaderboard</h2>' +
+      '<div id="chalLbBody" style="text-align:center;padding:40px 0;color:#666">Loading…</div>' +
+    '</div>';
+  wrap.addEventListener('click', function(ev){ if (ev.target === wrap) wrap.remove(); });
+  document.body.appendChild(wrap);
+  fetch('/api/challenges/' + id + '/leaderboard', {
+    headers: { 'Authorization': 'Bearer ' + (localStorage.atp_token || '') }
+  }).then(function(r){ return r.json(); }).then(function(data){
+    var rows = (data && data.leaderboard) || [];
+    var body = document.getElementById('chalLbBody');
+    if (!body) return;
+    if (!rows.length) {
+      body.innerHTML = '<div style="color:#666;padding:30px 0">No participants yet — be the first!</div>';
+      return;
+    }
+    body.innerHTML =
+      '<table style="width:100%;border-collapse:collapse;text-align:left">' +
+      '<thead><tr style="font-size:11px;color:#666;border-bottom:1px solid #1a1a1a">' +
+        '<th style="padding:10px 6px;width:40px">Rank</th><th style="padding:10px 6px">Member</th>' +
+        '<th style="padding:10px 6px;text-align:right">Progress</th>' +
+      '</tr></thead><tbody>' +
+      rows.map(function(r, i){
+        var medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '#' + (r.rank || (i+1));
+        var name = ((r.first_name||'') + ' ' + (r.last_name||'')).trim();
+        return '<tr style="border-bottom:1px solid #111;font-size:13px">' +
+          '<td style="padding:10px 6px;font-size:18px">' + medal + '</td>' +
+          '<td style="padding:10px 6px;color:#fff">' + name + (r.completed ? ' <span style="color:var(--green);font-size:10px">✓</span>' : '') + '</td>' +
+          '<td style="padding:10px 6px;text-align:right;color:var(--green);font-weight:700">' + (r.progress || 0) + '</td>' +
+        '</tr>';
+      }).join('') +
+      '</tbody></table>';
+  }).catch(function(){
+    var body = document.getElementById('chalLbBody');
+    if (body) body.innerHTML = '<div style="color:#ef4444">Failed to load leaderboard.</div>';
+  });
 }
 
 function markAllRead() {
@@ -2217,14 +2299,24 @@ function loadChallenges() {
     var list = (data && data.challenges) || [];
     CHALLENGES = list.map(function(c) {
       var done = Number(c.my_progress || 0);
-      var total = Number(c.goal_value || c.target_value || 1);
+      var total = Number(c.target || c.goal_value || c.target_value || 1);
       return {
-        icon:   '🏆',
-        name:   c.name || c.title || 'Challenge',
-        sub:    c.description || '',
-        done:   done,
-        total:  total,
-        active: !!c.joined && done < total,
+        id:                c.id,
+        icon:              c.icon || '🏆',
+        name:              c.name || c.title || 'Challenge',
+        sub:               c.description || '',
+        done:              done,
+        total:             total,
+        active:            !!c.joined && done < total,
+        endsAt:            c.ends_at,
+        // Theme 6 prize + entry fields
+        prizeType:         c.prize_type,
+        prize1st:          c.prize_1st_points,
+        prize2nd:          c.prize_2nd_points,
+        prize3rd:          c.prize_3rd_points,
+        winnerSlots:       c.winner_slots,
+        prizeProductName:  c.prize_product_name,
+        entryCost:         c.entry_cost_points,
       };
     });
     renderChallenges();

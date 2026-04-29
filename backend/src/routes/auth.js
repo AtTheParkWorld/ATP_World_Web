@@ -532,6 +532,60 @@ router.post('/migrate-indexes', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-challenges-prize ───────────────────
+// Theme 6 / feedback #14, #15, #16, #17, #18 — challenges prize +
+// entry-cost + cancel/refund mechanics.
+router.post('/migrate-challenges-prize', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    const ops = [];
+
+    // Challenge config additions
+    ops.push(query(`ALTER TABLE challenges
+      ADD COLUMN IF NOT EXISTS status                  VARCHAR(20) NOT NULL DEFAULT 'active',
+      ADD COLUMN IF NOT EXISTS entry_cost_points       INT NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS prize_type              VARCHAR(20) NOT NULL DEFAULT 'points',
+      ADD COLUMN IF NOT EXISTS prize_badge_id          UUID,
+      ADD COLUMN IF NOT EXISTS prize_product_name      TEXT,
+      ADD COLUMN IF NOT EXISTS prize_product_image_url TEXT,
+      ADD COLUMN IF NOT EXISTS winner_slots            INT NOT NULL DEFAULT 1,
+      ADD COLUMN IF NOT EXISTS prize_1st_points        INT NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS prize_2nd_points        INT NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS prize_3rd_points        INT NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS closed_at               TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS closed_by               UUID REFERENCES members(id) ON DELETE SET NULL,
+      ADD COLUMN IF NOT EXISTS cancelled_at            TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS cancelled_by            UUID REFERENCES members(id) ON DELETE SET NULL`));
+    // Constrain winner_slots to 1–3
+    ops.push(query(`ALTER TABLE challenges DROP CONSTRAINT IF EXISTS challenges_winner_slots_check`));
+    ops.push(query(`ALTER TABLE challenges ADD CONSTRAINT challenges_winner_slots_check
+                    CHECK (winner_slots IN (1, 2, 3))`));
+    // Index on status for "show me active challenges only" lookups
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_challenges_status ON challenges (status, ends_at)`));
+    // Optional FK to achievements for badge prizes (skip if achievements table not yet migrated)
+    ops.push(query(`DO $$ BEGIN
+      IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='achievements') THEN
+        BEGIN
+          ALTER TABLE challenges ADD CONSTRAINT challenges_prize_badge_fk
+            FOREIGN KEY (prize_badge_id) REFERENCES achievements(id) ON DELETE SET NULL;
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END;
+      END IF;
+    END $$`));
+
+    // Participant ledger additions — track what was charged and what was awarded
+    ops.push(query(`ALTER TABLE challenge_participants
+      ADD COLUMN IF NOT EXISTS entry_paid_points     INT NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS prize_points_awarded  INT NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS final_rank            INT,
+      ADD COLUMN IF NOT EXISTS refunded_at           TIMESTAMPTZ`));
+
+    await Promise.all(ops);
+    res.json({ success: true, message: 'Challenge prize/entry/cancel schema ready' });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-achievements ───────────────────────
 // Theme 5c / feedback #12 — admin-managed achievements + badges with
 // automatic awarding for streak/session milestones.

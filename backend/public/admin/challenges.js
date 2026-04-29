@@ -108,13 +108,34 @@ async function saveChallenge(publish) {
 
   var uploadedBadge = document.getElementById('cBadgeImage')?.value;
   var badgeSvg = uploadedBadge || document.getElementById('badgePreview')?.innerHTML || null;
+  // Theme 6 — prize + entry fields
+  var entryCost     = parseInt(document.getElementById('cEntryCost')?.value) || 0;
+  var prizeType     = document.getElementById('cPrizeType')?.value || 'points';
+  var winnerSlots   = parseInt(document.getElementById('cWinnerSlots')?.value) || 1;
+  var prize1st      = parseInt(document.getElementById('cPrize1st')?.value) || 0;
+  var prize2nd      = parseInt(document.getElementById('cPrize2nd')?.value) || 0;
+  var prize3rd      = parseInt(document.getElementById('cPrize3rd')?.value) || 0;
+  var prizeProductName  = document.getElementById('cPrizeProductName')?.value.trim() || null;
+  var prizeProductImage = document.getElementById('cPrizeProductImage')?.value.trim() || null;
+  var prizeBadgeId      = document.getElementById('cPrizeBadgeId')?.value || null;
+
   var payload = {
     title, icon, challenge_type: ctype, metric, target, unit: metric,
     points_reward: points, starts_at: startDate+'T00:00:00Z',
     ends_at: endDate+'T23:59:59Z', description: desc,
     city_id: cityId, device_metric: device,
     badge_svg: badgeSvg,
-    badge_image: uploadedBadge || null
+    badge_image: uploadedBadge || null,
+    // prize block
+    entry_cost_points: entryCost,
+    prize_type: prizeType,
+    winner_slots: winnerSlots,
+    prize_1st_points: prizeType === 'points' ? prize1st : 0,
+    prize_2nd_points: prizeType === 'points' && winnerSlots >= 2 ? prize2nd : 0,
+    prize_3rd_points: prizeType === 'points' && winnerSlots >= 3 ? prize3rd : 0,
+    prize_product_name:      prizeType === 'product' ? prizeProductName  : null,
+    prize_product_image_url: prizeType === 'product' ? prizeProductImage : null,
+    prize_badge_id:          prizeType === 'badge'   ? prizeBadgeId      : null,
   };
 
   var token = getToken();
@@ -203,20 +224,42 @@ async function loadChallengesList() {
       var start = c.starts_at ? new Date(c.starts_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short'}) : '—';
       var end   = c.ends_at   ? new Date(c.ends_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'}) : '—';
       var isPub = c.is_published;
+      var status = c.status || 'active';
       var progress = Math.min(100, Math.round((c.participant_count||0)/(Math.max(1,c.target||1))*100));
+      // Theme 6 — status badge + close/cancel buttons
+      var statusBadge = (status === 'closed')
+        ? '<span class="pub-badge" style="background:rgba(96,165,250,.15);color:#60a5fa">✓ CLOSED</span>'
+        : (status === 'cancelled')
+          ? '<span class="pub-badge" style="background:rgba(239,68,68,.15);color:#ef4444">✕ CANCELLED</span>'
+          : '<span class="pub-badge '+(isPub?'published':'draft')+'">'+(isPub?'PUBLISHED':'DRAFT')+'</span>';
+      // Prize summary line
+      var prizeLine = '';
+      if (c.prize_type === 'points' && c.prize_1st_points) {
+        prizeLine = '🥇 '+c.prize_1st_points+' pts';
+        if (c.winner_slots >= 2) prizeLine += ' · 🥈 '+(c.prize_2nd_points||0)+' pts';
+        if (c.winner_slots >= 3) prizeLine += ' · 🥉 '+(c.prize_3rd_points||0)+' pts';
+      } else if (c.prize_type === 'product' && c.prize_product_name) {
+        prizeLine = '🎁 '+c.prize_product_name;
+      } else if (c.prize_type === 'badge') {
+        prizeLine = '🏅 Unique badge';
+      }
+      var entryLine = (c.entry_cost_points > 0) ? ' · Entry: '+c.entry_cost_points+' pts' : ' · Free entry';
       return '<div class="challenge-card">'+
         '<div class="challenge-badge-mini">'+badge+'</div>'+
         '<div class="challenge-info">'+
           '<div class="challenge-title">'+c.title+'</div>'+
-          '<div class="challenge-meta">'+start+' → '+end+' · 🎯 '+c.target+' '+c.unit+' · 👥 '+c.participant_count+' joined · 🏅 '+c.points_reward+' pts</div>'+
+          '<div class="challenge-meta">'+start+' → '+end+' · 🎯 '+c.target+' '+c.unit+' · 👥 '+c.participant_count+' joined' + entryLine + '</div>'+
+          (prizeLine ? '<div style="font-size:11px;color:#7AC231;margin-top:3px">Prize: '+prizeLine+'</div>' : '')+
           (c.device_metric?'<div style="font-size:10px;color:#7AC231;margin-top:3px">📡 Smart device: '+c.device_metric+'</div>':'')+
           '<div class="challenge-progress-bar"><div class="challenge-progress-fill" style="width:'+progress+'%"></div></div>'+
         '</div>'+
         '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">'+
-          '<span class="pub-badge '+(isPub?'published':'draft')+'">'+(isPub?'PUBLISHED':'DRAFT')+'</span>'+
-          '<div style="display:flex;gap:6px">'+
-            '<button class="admin-btn" style="font-size:11px;padding:4px 10px" onclick="togglePublish(this.dataset.id)" data-id="'+c.id+'">'+(isPub?'⏸ Unpublish':'▶ Publish')+'</button>'+
+          statusBadge +
+          '<div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">'+
+            ((status === 'active') ? '<button class="admin-btn" style="font-size:11px;padding:4px 10px" onclick="togglePublish(this.dataset.id)" data-id="'+c.id+'">'+(isPub?'⏸ Unpublish':'▶ Publish')+'</button>' : '')+
             '<button class="admin-btn" style="font-size:11px;padding:4px 10px" onclick="viewLeaderboard(this.dataset.id)" data-id="'+c.id+'">🏆 Board</button>'+
+            ((status === 'active') ? '<button class="admin-btn" style="font-size:11px;padding:4px 10px;background:rgba(96,165,250,.12);border-color:rgba(96,165,250,.4);color:#60a5fa" onclick="closeChallenge(this.dataset.id, this.dataset.t)" data-id="'+c.id+'" data-t="'+(c.title||'').replace(/"/g,'&quot;')+'">✓ Close</button>' : '')+
+            ((status === 'active') ? '<button class="admin-btn admin-btn-danger" style="font-size:11px;padding:4px 10px" onclick="cancelChallenge(this.dataset.id, this.dataset.t)" data-id="'+c.id+'" data-t="'+(c.title||'').replace(/"/g,'&quot;')+'">✕ Cancel</button>' : '')+
           '</div>'+
         '</div>'+
       '</div>';
@@ -265,3 +308,81 @@ async function viewLeaderboard(challengeId) {
   }
 }
 
+
+// ─────────────────────────────────────────────────────────────
+// Theme 6 — prize/entry UI helpers + close + cancel
+// ─────────────────────────────────────────────────────────────
+
+// Toggle prize-type-specific blocks based on the dropdown
+function updatePrizeFields() {
+  var type  = document.getElementById('cPrizeType').value;
+  var slots = parseInt(document.getElementById('cWinnerSlots').value) || 1;
+  var ptsBlock = document.getElementById('prizePointsBlock');
+  var prodBlock = document.getElementById('prizeProductBlock');
+  var badgeBlock = document.getElementById('prizeBadgeBlock');
+  ptsBlock.style.display   = (type === 'points') ? 'grid' : 'none';
+  prodBlock.style.display  = (type === 'product') ? 'block' : 'none';
+  badgeBlock.style.display = (type === 'badge') ? 'block' : 'none';
+  // Show only the slot inputs that match winner_slots
+  var p2 = document.getElementById('cPrize2nd');
+  var p3 = document.getElementById('cPrize3rd');
+  if (p2) p2.parentElement.style.opacity = (slots >= 2) ? '1' : '.35';
+  if (p3) p3.parentElement.style.opacity = (slots >= 3) ? '1' : '.35';
+  if (p2) p2.disabled = (slots < 2);
+  if (p3) p3.disabled = (slots < 3);
+  // Populate badge dropdown when needed
+  if (type === 'badge') populateChallengeBadgeOptions();
+}
+
+async function populateChallengeBadgeOptions() {
+  var sel = document.getElementById('cPrizeBadgeId');
+  if (!sel || sel.dataset.populated) return;
+  try {
+    var res = await fetch(ATP_API + '/achievements/admin', {
+      headers: { 'Authorization': 'Bearer ' + getToken() }
+    });
+    var data = await res.json();
+    var list = (data && data.achievements) || [];
+    sel.innerHTML = '<option value="">— Pick a badge —</option>' +
+      list.filter(function(a){ return a.is_active; }).map(function(a){
+        return '<option value="' + a.id + '">' + (a.icon || '🏆') + ' ' + a.name + '</option>';
+      }).join('');
+    sel.dataset.populated = '1';
+  } catch (e) { /* silent */ }
+}
+
+// Admin closes the challenge → distributes prizes
+async function closeChallenge(id, title) {
+  if (!confirm('Close "' + (title || 'this challenge') + '" now? Top participants will receive their prizes.')) return;
+  try {
+    var res = await fetch(ATP_API + '/challenges/' + id + '/close', {
+      method: 'PATCH',
+      headers: { 'Authorization': 'Bearer ' + getToken() }
+    });
+    var d = await res.json();
+    if (d.success) {
+      showToast('🏆 Closed — ' + (d.winners || []).length + ' winner(s) awarded');
+      loadChallengesList();
+    } else {
+      showToast('❌ ' + (d.error || 'Failed to close'), true);
+    }
+  } catch (e) { showToast('❌ ' + e.message, true); }
+}
+
+// Admin cancels → refunds entry fees
+async function cancelChallenge(id, title) {
+  if (!confirm('Cancel "' + (title || 'this challenge') + '"? All entry fees will be refunded to participants. This cannot be undone.')) return;
+  try {
+    var res = await fetch(ATP_API + '/challenges/' + id + '/cancel', {
+      method: 'PATCH',
+      headers: { 'Authorization': 'Bearer ' + getToken() }
+    });
+    var d = await res.json();
+    if (d.success) {
+      showToast('↩️ Cancelled — ' + (d.refunded_count || 0) + ' refund(s) issued');
+      loadChallengesList();
+    } else {
+      showToast('❌ ' + (d.error || 'Failed to cancel'), true);
+    }
+  } catch (e) { showToast('❌ ' + e.message, true); }
+}
