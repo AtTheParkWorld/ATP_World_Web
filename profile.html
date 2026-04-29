@@ -1179,21 +1179,85 @@ function renderSessions(el, sessions) {
     return;
   }
   el.innerHTML = sessions.map(function(s,i){
-    var qrBtn = (s.qr_token || s.qrData) ? "<button class='session-qr-btn' onclick='showSessionQR(\'"+encodeURIComponent(s.qr_token ? JSON.stringify({token:s.qr_token,session:s.name}) : s.qrData)+"\',\'"+s.id+"\')'>"+
-      "<svg width=\'12\' height=\'12\' viewBox=\'0 0 16 16\' fill=\'none\' stroke=\'currentColor\' stroke-width=\'1.8\'><rect x=\'1\' y=\'1\' width=\'6\' height=\'6\' rx=\'1\'/><rect x=\'9\' y=\'1\' width=\'6\' height=\'6\' rx=\'1\'/><rect x=\'1\' y=\'9\' width=\'6\' height=\'6\' rx=\'1\'/><rect x=\'9\' y=\'9\' width=\'6\' height=\'6\' rx=\'1\'/></svg>"+
-      " QR</button>" : "";
-    return "<div class='session-row'>"+
-      "<div class='session-dot "+s.tribe+"'></div>"+
-      "<div class='session-info'>"+
-        "<div class='session-name'>"+s.name+"</div>"+
-        "<div class='session-meta'>"+s.day+" · "+s.time+" · "+s.loc+"</div>"+
-      "</div>"+
-      "<div style='display:flex;align-items:center;gap:8px'>"+
-        qrBtn+
-        "<span class='session-status "+s.status+"'>"+(s.status==="upcoming"?"Upcoming":"Done")+"</span>"+
-      "</div>"+
+    // Whole row is clickable → opens detail modal with map + QR + meta.
+    // We snapshot the booking onto window so the modal can read it without
+    // re-fetching. Index-based key keeps it terse.
+    window.__atpBookingsCache = window.__atpBookingsCache || {};
+    window.__atpBookingsCache[s.id] = s;
+    return "<div class='session-row' style='cursor:pointer' onclick=\"openSessionDetailModal('" + s.id + "')\" title='View details'>" +
+      "<div class='session-dot " + s.tribe + "'></div>" +
+      "<div class='session-info'>" +
+        "<div class='session-name'>" + s.name + "</div>" +
+        "<div class='session-meta'>" + s.day + " \u00b7 " + s.time + " \u00b7 " + (s.loc || s.location || '') + "</div>" +
+      "</div>" +
+      "<div style='display:flex;align-items:center;gap:8px'>" +
+        "<span class='session-status " + s.status + "'>" + (s.status === 'upcoming' ? 'Upcoming' : (s.status === 'done' ? 'Done' : 'Cancelled')) + "</span>" +
+        "<span style='color:var(--muted);font-size:18px'>›</span>" +
+      "</div>" +
     "</div>";
   }).join("");
+}
+
+// Theme 7 / #11 — detail modal with embedded Google Maps + QR code
+function openSessionDetailModal(bookingId) {
+  var s = (window.__atpBookingsCache || {})[bookingId];
+  if (!s) return;
+  var existing = document.getElementById('sessionDetailOverlay');
+  if (existing) existing.remove();
+  // Build a maps embed src — prefer the admin-supplied location_maps_url
+  // (already a maps.google.com URL); fall back to a search by location text.
+  var mapSrc = '';
+  if (s.location_maps_url) {
+    // If it's a maps.google.com link, drop it into the /embed format.
+    // The "/maps?q=" param works for any location string.
+    mapSrc = 'https://maps.google.com/maps?q=' + encodeURIComponent(s.location || '') +
+             '&output=embed';
+  } else if (s.location) {
+    mapSrc = 'https://maps.google.com/maps?q=' + encodeURIComponent(s.location) + '&output=embed';
+  }
+  var qrSection = '';
+  if (s.qr_token && s.status === 'upcoming') {
+    qrSection =
+      '<div style="margin-top:18px;padding:18px;background:#0d1a0a;border:1px solid rgba(122,194,49,.25);border-radius:12px;text-align:center">' +
+        '<div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-bottom:10px">Your check-in QR</div>' +
+        '<div id="sessionQrCanvas" style="background:#fff;display:inline-block;padding:12px;border-radius:10px"></div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:10px">Show this to an Ambassador at the session.</div>' +
+      '</div>';
+  }
+  var dirBtn = (s.location || s.location_maps_url)
+    ? '<a href="' + (s.location_maps_url || ('https://maps.google.com/?q=' + encodeURIComponent(s.location))) + '" target="_blank" rel="noopener" class="atp-btn atp-btn--ghost" style="text-decoration:none">↗ Open in Google Maps</a>'
+    : '';
+  var wrap = document.createElement('div');
+  wrap.id = 'sessionDetailOverlay';
+  wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px';
+  wrap.innerHTML =
+    '<div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:0;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;position:relative">' +
+      '<button type="button" onclick="document.getElementById(\'sessionDetailOverlay\').remove()" style="position:absolute;top:12px;right:14px;background:rgba(0,0,0,.5);border:none;color:#fff;font-size:22px;cursor:pointer;width:32px;height:32px;border-radius:50%;z-index:2">×</button>' +
+      (mapSrc ? '<iframe src="' + mapSrc + '" style="width:100%;height:240px;border:0;display:block;border-radius:16px 16px 0 0" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>' : '') +
+      '<div style="padding:24px">' +
+        '<div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-bottom:6px">' + (s.tribe || '').toUpperCase() + (s.tribe ? ' TRIBE' : '') + '</div>' +
+        '<h2 style="font-family:var(--ff-display);font-size:28px;font-weight:900;margin:0 0 12px;text-transform:uppercase">' + (s.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</h2>' +
+        '<div style="font-size:14px;color:var(--light);margin-bottom:6px">📅 ' + s.day + ' \u00b7 ' + s.time + (s.duration_mins ? ' \u00b7 ' + s.duration_mins + ' min' : '') + '</div>' +
+        '<div style="font-size:14px;color:var(--light);margin-bottom:16px">📍 ' + ((s.location || s.loc || '—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')) + '</div>' +
+        (s.description ? '<p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px">' + s.description.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</p>' : '') +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' + dirBtn + '</div>' +
+        qrSection +
+      '</div>' +
+    '</div>';
+  wrap.addEventListener('click', function(ev){ if (ev.target === wrap) wrap.remove(); });
+  document.body.appendChild(wrap);
+
+  // Render the QR via qrcodejs (already loaded for the legacy showSessionQR)
+  if (s.qr_token && s.status === 'upcoming' && window.QRCode) {
+    var canvas = document.getElementById('sessionQrCanvas');
+    if (canvas) {
+      new QRCode(canvas, {
+        text: JSON.stringify({ token: s.qr_token, session: s.name }),
+        width:  180, height: 180,
+        colorDark: '#000', colorLight: '#fff',
+      });
+    }
+  }
 }
 
 function renderAchievements(el, list) {
@@ -1305,16 +1369,117 @@ function renderFriends() {
   if (lstEl) {
     lstEl.innerHTML = (FRIENDS && FRIENDS.length)
       ? FRIENDS.map(function(f){
+          // Theme 7 / #32 — Train together opens a modal that pulls the
+          // friend's upcoming sessions; fall back to /sessions if we have
+          // no friend_id (older accepted rows pre-Theme 7).
+          var safeName = (f.name || '').replace(/'/g, "\\'");
+          var btn = f.id
+            ? "<button type='button' class='friend-btn' onclick=\"openFriendSessionsModal('" + f.id + "','" + safeName + "')\">Train together</button>"
+            : "<a href='sessions.html' class='friend-btn' style='text-decoration:none'>Train together</a>";
           return "<div class='friend-row'>"+
             "<div class='friend-av'>"+f.init+"</div>"+
             "<div class='friend-info'><div class='friend-name'>"+f.name+"</div><div class='friend-meta'>"+f.meta+"</div></div>"+
-            "<a href='sessions.html' class='friend-btn' style='text-decoration:none'>Train together</a>"+
+            btn+
           "</div>";
         }).join("")
       : _atpEmpty('🤝', 'No friends yet',
           'Connect with other ATP members and motivate each other.',
           '<a href="community.html" class="atp-btn atp-btn--primary atp-empty__cta">Browse the community</a>');
   }
+}
+
+// Theme 7 / #32 — "Train together" modal
+// Pulls the friend's upcoming confirmed bookings (gated server-side by
+// friendship status) and renders one card per session with a "Book same"
+// button. Capacity is computed from registrations_count vs capacity.
+function openFriendSessionsModal(memberId, friendName) {
+  var existing = document.getElementById('friendSessionsOverlay');
+  if (existing) existing.remove();
+  var wrap = document.createElement('div');
+  wrap.id = 'friendSessionsOverlay';
+  wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px';
+  wrap.innerHTML =
+    '<div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:24px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;position:relative">' +
+      '<button type="button" onclick="document.getElementById(\'friendSessionsOverlay\').remove()" style="position:absolute;top:12px;right:14px;background:rgba(0,0,0,.5);border:none;color:#fff;font-size:22px;cursor:pointer;width:32px;height:32px;border-radius:50%">×</button>' +
+      '<div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-bottom:6px">Train together</div>' +
+      '<h2 style="font-family:var(--ff-display);font-size:24px;font-weight:900;margin:0 0 6px;text-transform:uppercase">' + (friendName || 'Friend').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</h2>' +
+      '<div style="font-size:13px;color:var(--muted);margin-bottom:18px">Their upcoming sessions \u2014 join one to train side-by-side.</div>' +
+      '<div id="friendSessionsList" style="display:flex;flex-direction:column;gap:10px"><div style="padding:30px;text-align:center;color:var(--muted);font-size:13px">Loading\u2026</div></div>' +
+    '</div>';
+  wrap.addEventListener('click', function(ev){ if (ev.target === wrap) wrap.remove(); });
+  document.body.appendChild(wrap);
+
+  fetch('/api/members/' + memberId + '/upcoming-bookings', {
+    headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('atp_token')||'') }
+  })
+    .then(function(r){ return r.json().then(function(b){ return { ok:r.ok, body:b }; }); })
+    .then(function(res){
+      var listEl = document.getElementById('friendSessionsList');
+      if (!listEl) return;
+      if (!res.ok) {
+        listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">' +
+          ((res.body && res.body.error) || 'Could not load sessions.') + '</div>';
+        return;
+      }
+      var upcoming = (res.body && res.body.upcoming) || [];
+      if (!upcoming.length) {
+        listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">No upcoming sessions.</div>';
+        return;
+      }
+      // Cache so the click handler can read by id without re-querying.
+      window.__atpFriendSessionsCache = {};
+      listEl.innerHTML = upcoming.map(function(s){
+        window.__atpFriendSessionsCache[s.session_id] = s;
+        var when = '';
+        try {
+          var dt = new Date(s.scheduled_at);
+          when = dt.toLocaleDateString(undefined, { weekday:'short', month:'short', day:'numeric' }) +
+                 ' \u00b7 ' + dt.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' });
+        } catch(e) { when = s.scheduled_at || ''; }
+        var spotsLeft = (Number(s.capacity)||0) - (Number(s.registrations_count)||0);
+        var canBook = spotsLeft > 0;
+        var btn = canBook
+          ? '<button type="button" class="atp-btn atp-btn--primary" style="font-size:12px;padding:8px 14px" onclick="bookFriendSession(\'' + s.session_id + '\', this)">Book same</button>'
+          : '<span style="font-size:11px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.06em">Full</span>';
+        return '<div style="display:flex;align-items:center;gap:12px;padding:12px;background:#161616;border:1px solid rgba(255,255,255,.08);border-radius:10px">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:14px;font-weight:700;color:var(--light);margin-bottom:3px">' + (s.session_name||'Session').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>' +
+            '<div style="font-size:12px;color:var(--muted)">' + when +
+              (s.tribe_name ? ' \u00b7 ' + s.tribe_name : '') +
+              (s.location ? ' \u00b7 ' + s.location.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') : '') +
+            '</div>' +
+            '<div style="font-size:11px;color:' + (canBook ? 'var(--green)' : 'var(--muted)') + ';margin-top:4px;font-weight:600">' +
+              (canBook ? (spotsLeft + ' of ' + s.capacity + ' spots left') : 'Session full') +
+            '</div>' +
+          '</div>' +
+          btn +
+        '</div>';
+      }).join('');
+    })
+    .catch(function(){
+      var listEl = document.getElementById('friendSessionsList');
+      if (listEl) listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">Network error \u2014 please try again.</div>';
+    });
+}
+
+// Book the same session as a friend (Theme 7 / #32). Hits the existing
+// bookings.book() endpoint which handles capacity / dup detection server-side.
+function bookFriendSession(sessionId, btnEl) {
+  if (!window.ATP || !window.ATP.bookings) return;
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Booking\u2026'; }
+  window.ATP.bookings.book(sessionId)
+    .then(function(){
+      if (btnEl) { btnEl.textContent = 'Booked \u2713'; btnEl.style.background = 'var(--green)'; btnEl.style.borderColor = 'var(--green)'; }
+      if (window.showToast) showToast('You\u2019re booked \u2014 see you on the court.', 'success');
+      // Refresh the user's own bookings so the new one appears in their list.
+      if (typeof loadBookings === 'function') loadBookings();
+    })
+    .catch(function(err){
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Book same'; }
+      var msg = (err && err.message) || 'Could not book that session.';
+      if (window.showToast) showToast(msg, 'error');
+      else alert(msg);
+    });
 }
 
 function renderNotifs() {
@@ -2249,15 +2414,20 @@ function loadBookings() {
       var dt = b.scheduled_at ? new Date(b.scheduled_at) : null;
       var tribe = (b.tribe_name || 'stronger').toLowerCase();
       return {
-        id:         b.id,
-        name:       b.session_name || 'Session',
-        tribe:      tribe,
-        day:        dt ? dt.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' }) : '—',
-        time:       dt ? dt.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : '',
-        loc:        b.city_name || '',
-        status:     b.status === 'attended' ? 'done' : (b.status === 'cancelled' ? 'cancelled' : 'upcoming'),
-        qr_token:   b.qr_token,
-        session_id: b.session_id,
+        id:                b.id,
+        name:              b.session_name || 'Session',
+        tribe:             tribe,
+        day:               dt ? dt.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' }) : '—',
+        time:              dt ? dt.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' }) : '',
+        loc:               b.city_name || '',
+        location:          b.location || '',
+        location_maps_url: b.location_maps_url || '',
+        scheduled_at:      b.scheduled_at,
+        description:       b.description || '',
+        duration_mins:     b.duration_mins,
+        status:            b.status === 'attended' ? 'done' : (b.status === 'cancelled' ? 'cancelled' : 'upcoming'),
+        qr_token:          b.qr_token,
+        session_id:        b.session_id,
       };
     });
     SESSIONS = mapped;
@@ -2388,8 +2558,12 @@ function loadFriends() {
     var pending  = friendships.filter(function(f){ return f.status === 'pending' && f.requester_id !== myId; });
     FRIENDS = accepted.map(function(f){
       return {
+        // friend_id is the OTHER member's id (already resolved by the
+        // /friends endpoint via CASE WHEN), not the friendship row id.
+        // Theme 7 / #32 needs it to fetch their upcoming-bookings.
+        id:   f.friend_id,
         init: initialsOf(f.first_name, f.last_name),
-        name: (f.first_name||'') + ' ' + (f.last_name||''),
+        name: ((f.first_name||'') + ' ' + (f.last_name||'')).trim(),
         meta: 'Friends since ' + formatDateShort(f.created_at),
       };
     });

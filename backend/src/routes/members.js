@@ -121,7 +121,9 @@ router.get('/bookings', authenticate, async (req, res, next) => {
       `SELECT b.id, b.status, b.qr_code, b.qr_token, b.checked_in_at,
               b.points_awarded, b.created_at,
               s.id AS session_id, s.name AS session_name,
-              s.scheduled_at, s.location, s.session_type,
+              s.scheduled_at, s.location, s.location_maps_url,
+              s.session_type, s.description,
+              s.duration_mins, s.capacity,
               t.name AS tribe_name, t.color AS tribe_color,
               c.name AS city_name
        FROM bookings b
@@ -134,6 +136,52 @@ router.get('/bookings', authenticate, async (req, res, next) => {
       [req.member.id]
     );
     res.json({ bookings: rows });
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/members/:id/upcoming-bookings (Theme 7 / #32) ─────
+// "Train together" — view a friend's upcoming sessions (after they
+// accept the friendship) so you can join the same one. Only returns
+// sessions in the future, no QR tokens / personal data.
+router.get('/:id/upcoming-bookings', authenticate, async (req, res, next) => {
+  try {
+    // Confirm the requester is friends with the target (in either
+    // direction) and the friendship is accepted. Friends-only gate
+    // protects against random members peeking at others' calendars.
+    const { rows: friendship } = await query(
+      `SELECT id FROM friendships
+       WHERE status='accepted'
+         AND ((requester_id=$1 AND addressee_id=$2)
+           OR (requester_id=$2 AND addressee_id=$1))
+       LIMIT 1`,
+      [req.member.id, req.params.id]
+    ).catch(() => ({ rows: [] }));
+
+    // If the friendships table doesn't exist or no relationship,
+    // require self-id only (members can always see their own).
+    const isSelf = (req.params.id === req.member.id);
+    if (!isSelf && (!friendship || !friendship.length)) {
+      return res.status(403).json({ error: 'You must be friends to see this member\u2019s sessions.' });
+    }
+
+    const { rows } = await query(
+      `SELECT s.id AS session_id, s.name AS session_name, s.scheduled_at,
+              s.location, s.location_maps_url, s.capacity,
+              t.name AS tribe_name, c.name AS city_name,
+              (SELECT COUNT(*) FROM bookings b2
+               WHERE b2.session_id=s.id AND b2.status IN ('confirmed','attended')) AS registrations_count
+       FROM bookings b
+       JOIN sessions s ON s.id = b.session_id
+       LEFT JOIN tribes t ON t.id = s.tribe_id
+       LEFT JOIN cities c ON c.id = s.city_id
+       WHERE b.member_id = $1
+         AND b.status = 'confirmed'
+         AND s.scheduled_at > NOW()
+       ORDER BY s.scheduled_at ASC
+       LIMIT 20`,
+      [req.params.id]
+    );
+    res.json({ upcoming: rows });
   } catch (err) { next(err); }
 });
 
