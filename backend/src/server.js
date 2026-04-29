@@ -68,12 +68,22 @@ app.use(cors({
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, max: 300,
   standardHeaders: 'draft-7', legacyHeaders: false,
+  // Stripe webhooks bypass — see writeLimiter for rationale.
+  skip: (req) => req.path === '/api/billing/webhook' || req.path === '/api/v1/billing/webhook',
   message: { error: 'Too many requests, please try again later.' },
 });
 const writeLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, max: 100,
   standardHeaders: 'draft-7', legacyHeaders: false,
-  skip: (req) => ['GET', 'HEAD', 'OPTIONS'].includes(req.method),
+  // Skip read-only methods + the Stripe webhook (Stripe bursts retries
+  // and a 429 would force their backoff cascade for hours). Signature
+  // verification on the webhook is the real security boundary, not rate
+  // limiting — anyone without our webhook secret can't forge events.
+  skip: (req) => {
+    if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return true;
+    if (req.path === '/api/billing/webhook' || req.path === '/api/v1/billing/webhook') return true;
+    return false;
+  },
   message: { error: 'Too many write operations, please slow down.' },
 });
 const authLimiter = rateLimit({
@@ -89,6 +99,19 @@ app.use('/api/auth/', authLimiter);
 // Body limits cut from 10mb → 1mb. Avatar/badge upload routes that
 // genuinely need larger payloads should override per-route. Anything
 // >1MB should go through a dedicated upload endpoint with multipart.
+// ── STRIPE WEBHOOK ───────────────────────────────────────────
+// MUST be mounted BEFORE express.json() — Stripe's signature
+// verification needs the raw, unparsed request body. Same router
+// also exports a regular Router for the rest of /api/billing/*
+// which IS json-parsed (those land below the json middleware).
+const billingRoutes = require('./routes/billing');
+app.post('/api/billing/webhook',
+  express.raw({ type: 'application/json' }),
+  billingRoutes.webhookHandler);
+app.post('/api/v1/billing/webhook',
+  express.raw({ type: 'application/json' }),
+  billingRoutes.webhookHandler);
+
 app.use(express.json({ limit: '1mb' }));
 app.use(express.urlencoded({ extended: true, limit: '256kb' }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
@@ -198,6 +221,7 @@ const ROUTES = [
   ['announcements', require('./routes/announcements')],
   ['activities',   require('./routes/activities')],
   ['achievements', require('./routes/achievements')],
+  ['billing',      billingRoutes],
 ];
 for (const [prefix, router] of ROUTES) {
   app.use('/api/'    + prefix, router);

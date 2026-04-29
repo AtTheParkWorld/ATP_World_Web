@@ -828,6 +828,88 @@ router.post('/migrate-streaks', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-billing ────────────────────────────
+// Theme 10 / feedback #36 — Stripe-backed premium subscriptions.
+//   subscription_plans  : admin-managed catalogue (mirrors Stripe Prices)
+//   subscriptions       : per-member subscription state (synced via webhook)
+//   members.stripe_customer_id : 1:1 link to Stripe Customer object
+// All idempotent.
+router.post('/migrate-billing', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    const ops = [];
+
+    // Stripe customer id on members. One-to-one with Stripe's Customer
+    // object. Created lazily on first checkout so we don't have to
+    // backfill every signup.
+    ops.push(query(`ALTER TABLE members
+      ADD COLUMN IF NOT EXISTS stripe_customer_id VARCHAR(64) UNIQUE,
+      ADD COLUMN IF NOT EXISTS subscription_status VARCHAR(40),
+      ADD COLUMN IF NOT EXISTS subscription_renews_at TIMESTAMPTZ`));
+
+    // Catalogue of subscription tiers. Admin defines locally; the
+    // stripe_price_id is created in Stripe (Dashboard or API) and
+    // pasted here. amount_cents/currency are display-only mirrors of
+    // the Stripe Price (Stripe is source of truth for actual billing).
+    ops.push(query(`CREATE TABLE IF NOT EXISTS subscription_plans (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      name            VARCHAR(120) NOT NULL,
+      tagline         TEXT,
+      description     TEXT,
+      stripe_price_id VARCHAR(64) UNIQUE,
+      currency        VARCHAR(8)   NOT NULL DEFAULT 'aed',
+      amount_cents    INT          NOT NULL DEFAULT 0,
+      interval        VARCHAR(16)  NOT NULL DEFAULT 'month', -- month | year
+      features        JSONB,
+      sort_order      INT          NOT NULL DEFAULT 100,
+      is_active       BOOLEAN      NOT NULL DEFAULT true,
+      created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+      updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    )`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_plans_active ON subscription_plans (is_active, sort_order)`));
+
+    // Per-member subscription record. Updated by the Stripe webhook on
+    // checkout.session.completed / customer.subscription.* events. We
+    // keep the raw stripe ids so we can re-sync if state ever drifts.
+    ops.push(query(`CREATE TABLE IF NOT EXISTS subscriptions (
+      id                       UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      member_id                UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      plan_id                  UUID REFERENCES subscription_plans(id) ON DELETE SET NULL,
+      stripe_subscription_id   VARCHAR(64) UNIQUE,
+      stripe_customer_id       VARCHAR(64),
+      stripe_price_id          VARCHAR(64),
+      status                   VARCHAR(40) NOT NULL DEFAULT 'incomplete',
+      current_period_start     TIMESTAMPTZ,
+      current_period_end       TIMESTAMPTZ,
+      cancel_at_period_end     BOOLEAN NOT NULL DEFAULT false,
+      cancelled_at             TIMESTAMPTZ,
+      created_at               TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at               TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_subs_member ON subscriptions (member_id, status)`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_subs_status ON subscriptions (status, current_period_end)`));
+
+    // Append-only log of webhook events for debugging + idempotency.
+    // Stripe redelivers on failure; the unique constraint on event_id
+    // makes processing safely retryable.
+    ops.push(query(`CREATE TABLE IF NOT EXISTS billing_events (
+      id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      event_id     VARCHAR(64) UNIQUE,
+      event_type   VARCHAR(80) NOT NULL,
+      object_id    VARCHAR(64),
+      payload      JSONB,
+      processed_at TIMESTAMPTZ,
+      error        TEXT,
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_billing_events_type ON billing_events (event_type, created_at DESC)`));
+
+    await Promise.all(ops);
+    res.json({ success: true, message: 'Billing schema ready (subscription_plans, subscriptions, billing_events, members.stripe_customer_id)' });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-audit-log ──────────────────────────
 // Adds audit_log table (audit 3.2) + VARCHAR length caps on free-text
 // member fields (audit 3.3). Idempotent.

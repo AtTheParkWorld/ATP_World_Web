@@ -1,6 +1,6 @@
 {
   "name": "atp-backend",
-  "version": "1.0.64",
+  "version": "1.0.65",
   "description": "At The Park \u2014 Backend API",
   "main": "src/server.js",
   "scripts": {
@@ -24,6 +24,7 @@
     "morgan": "^1.10.0",
     "nodemailer": "^6.9.7",
     "pg": "^8.11.3",
+    "stripe": "^14.25.0",
     "uuid": "^9.0.1"
   }
 }
