@@ -222,6 +222,7 @@ const ROUTES = [
   ['activities',   require('./routes/activities')],
   ['achievements', require('./routes/achievements')],
   ['billing',      billingRoutes],
+  ['countries',    require('./routes/countries')],
 ];
 for (const [prefix, router] of ROUTES) {
   app.use('/api/'    + prefix, router);

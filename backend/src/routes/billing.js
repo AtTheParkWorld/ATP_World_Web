@@ -28,17 +28,49 @@ const billing = require('../services/billing');
 const audit  = require('../services/audit');
 
 // ── GET /api/billing/plans ───────────────────────────────────────
-// Public — visible on the upgrade page before signup.
+// Public — visible on the upgrade page before signup. Theme 8: an
+// optional ?country_id= or ?country_code= filter narrows the result
+// to global plans + that country's plans. Without a filter all active
+// plans are returned (so an unauthenticated visitor still sees something).
 router.get('/plans', async (req, res, next) => {
   try {
-    const { rows } = await query(
-      `SELECT id, name, tagline, description, currency, amount_cents,
-              interval, features, sort_order, is_active,
-              CASE WHEN stripe_price_id IS NOT NULL THEN true ELSE false END AS purchasable
-       FROM subscription_plans
-       WHERE is_active = true
-       ORDER BY sort_order, amount_cents`
-    );
+    const { country_id, country_code } = req.query;
+    const params = [];
+    let where = 'WHERE p.is_active = true';
+    if (country_id) {
+      params.push(country_id);
+      where += ` AND (p.country_id IS NULL OR p.country_id = $${params.length})`;
+    } else if (country_code) {
+      params.push(String(country_code).toUpperCase());
+      where += ` AND (p.country_id IS NULL OR p.country_id = (SELECT id FROM countries WHERE code = $${params.length} LIMIT 1))`;
+    }
+    let rows;
+    try {
+      const result = await query(
+        `SELECT p.id, p.name, p.tagline, p.description, p.currency, p.amount_cents,
+                p.interval, p.features, p.sort_order, p.is_active,
+                p.country_id,
+                CASE WHEN p.stripe_price_id IS NOT NULL THEN true ELSE false END AS purchasable
+         FROM subscription_plans p
+         ${where}
+         ORDER BY p.sort_order, p.amount_cents`,
+        params
+      );
+      rows = result.rows;
+    } catch (e) {
+      // Fallback for pre-Theme-8 deploys missing the country_id column.
+      if (e.code === '42703' /* undefined_column */) {
+        const result = await query(
+          `SELECT id, name, tagline, description, currency, amount_cents,
+                  interval, features, sort_order, is_active,
+                  CASE WHEN stripe_price_id IS NOT NULL THEN true ELSE false END AS purchasable
+           FROM subscription_plans
+           WHERE is_active = true
+           ORDER BY sort_order, amount_cents`
+        );
+        rows = result.rows;
+      } else throw e;
+    }
     res.json({ plans: rows, stripe_configured: billing.isConfigured() });
   } catch (err) { next(err); }
 });
@@ -133,13 +165,31 @@ router.post('/portal', authenticate, async (req, res, next) => {
 // ── ADMIN: subscription plans CRUD (Theme 5d / #37) ──────────────
 router.get('/admin/plans', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const { rows } = await query(
-      `SELECT id, name, tagline, description, stripe_price_id, currency,
-              amount_cents, interval, features, sort_order, is_active,
-              created_at, updated_at
-         FROM subscription_plans
-        ORDER BY sort_order, created_at ASC`
-    );
+    let rows;
+    try {
+      const result = await query(
+        `SELECT p.id, p.name, p.tagline, p.description, p.stripe_price_id, p.currency,
+                p.amount_cents, p.interval, p.features, p.sort_order, p.is_active,
+                p.country_id, co.code AS country_code, co.name AS country_name,
+                p.created_at, p.updated_at
+           FROM subscription_plans p
+           LEFT JOIN countries co ON co.id = p.country_id
+          ORDER BY p.sort_order, p.created_at ASC`
+      );
+      rows = result.rows;
+    } catch (e) {
+      // Pre-Theme-8 fallback (missing country_id / countries table).
+      if (e.code === '42703' || e.code === '42P01') {
+        const result = await query(
+          `SELECT id, name, tagline, description, stripe_price_id, currency,
+                  amount_cents, interval, features, sort_order, is_active,
+                  created_at, updated_at
+             FROM subscription_plans
+            ORDER BY sort_order, created_at ASC`
+        );
+        rows = result.rows;
+      } else throw e;
+    }
     res.json({ plans: rows });
   } catch (err) { next(err); }
 });
@@ -149,15 +199,15 @@ router.post('/admin/plans', authenticate, requireAdmin, async (req, res, next) =
     const {
       name, tagline, description, stripe_price_id,
       currency, amount_cents, interval, features,
-      sort_order, is_active,
+      sort_order, is_active, country_id,
     } = req.body || {};
     if (!name || !name.trim()) return res.status(400).json({ error: 'name required' });
 
     const { rows } = await query(
       `INSERT INTO subscription_plans
          (name, tagline, description, stripe_price_id, currency, amount_cents,
-          interval, features, sort_order, is_active)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+          interval, features, sort_order, is_active, country_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        RETURNING *`,
       [name.trim(), tagline || null, description || null,
        stripe_price_id || null, (currency || 'aed').toLowerCase(),
@@ -165,7 +215,8 @@ router.post('/admin/plans', authenticate, requireAdmin, async (req, res, next) =
        (interval === 'year' ? 'year' : 'month'),
        features ? JSON.stringify(features) : null,
        parseInt(sort_order) || 100,
-       is_active !== false]
+       is_active !== false,
+       country_id || null]
     );
     audit.log(req, 'subscription_plan.create', 'subscription_plan', rows[0].id, { name: rows[0].name });
     res.status(201).json({ plan: rows[0] });
@@ -178,7 +229,8 @@ router.patch('/admin/plans/:id', authenticate, requireAdmin, async (req, res, ne
     const values = [];
     let i = 1;
     const allowed = ['name','tagline','description','stripe_price_id','currency',
-                     'amount_cents','interval','features','sort_order','is_active'];
+                     'amount_cents','interval','features','sort_order','is_active',
+                     'country_id'];
     for (const k of allowed) {
       if (k in (req.body || {})) {
         let v = req.body[k];

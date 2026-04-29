@@ -46,7 +46,7 @@ router.patch('/profile', authenticate, async (req, res, next) => {
   try {
     const allowed = [
       'first_name','last_name','phone','date_of_birth','gender',
-      'nationality','city_id','sports_preferences','top_size',
+      'nationality','city_id','country_id','sports_preferences','top_size',
       'bottom_size','padel_level',
     ];
     const updates = {};

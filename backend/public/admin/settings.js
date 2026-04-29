@@ -7,7 +7,7 @@
 
 // ── Sub-tab switcher ─────────────────────────────────────────
 function showSettingsTab(tab) {
-  ['announcements','activities','achievements','config','plans'].forEach(function(t){
+  ['announcements','activities','achievements','config','plans','countries'].forEach(function(t){
     var pane = document.getElementById('settings-pane-' + t);
     if (pane) pane.style.display = (t === tab) ? 'block' : 'none';
   });
@@ -21,6 +21,7 @@ function showSettingsTab(tab) {
   else if (tab === 'achievements') loadAchievementsAdmin();
   else if (tab === 'config')       loadSystemConfig();
   else if (tab === 'plans')        loadPlansAdmin();
+  else if (tab === 'countries')    loadCountriesAdmin();
 }
 
 function loadSettingsSection() {
@@ -529,8 +530,10 @@ function showPlanForm() {
   document.getElementById('planInterval').value     = 'month';
   document.getElementById('planSort').value         = 100;
   document.getElementById('planActive').checked     = true;
+  if (document.getElementById('planCountry')) document.getElementById('planCountry').value = '';
   document.getElementById('planFormTitle').textContent = 'New plan';
   document.getElementById('planFormWrap').style.display = 'block';
+  populatePlanCountryDropdown(); // refresh in case admin just added a country
 }
 
 function editPlan(id) {
@@ -551,6 +554,9 @@ function editPlan(id) {
   document.getElementById('planInterval').value       = p.interval || 'month';
   document.getElementById('planSort').value           = p.sort_order || 100;
   document.getElementById('planActive').checked       = !!p.is_active;
+  if (document.getElementById('planCountry')) {
+    populatePlanCountryDropdown(p.country_id || '');
+  }
   document.getElementById('planFormTitle').textContent = 'Edit plan';
   document.getElementById('planFormWrap').style.display = 'block';
 }
@@ -574,6 +580,7 @@ function savePlan() {
     features:        features.length ? features : null,
     sort_order:      parseInt(document.getElementById('planSort').value, 10) || 100,
     is_active:       document.getElementById('planActive').checked,
+    country_id:      (document.getElementById('planCountry') && document.getElementById('planCountry').value) || null,
   };
   if (!body.name) { showToast('Plan name required', true); return; }
 
@@ -605,4 +612,163 @@ function deactivatePlan(id) {
       loadPlansAdmin();
     })
     .catch(function(e){ showToast('❌ ' + e.message, true); });
+}
+
+// ════════════════════════════════════════════════════════════
+// COUNTRIES (Theme 8 / #28, #29)
+// ════════════════════════════════════════════════════════════
+// Map ISO country code → currency + symbol + ATP-points-per-unit override.
+// Drives the wallet display currency, the plan country filter, and
+// (eventually) per-country store inventory.
+
+var ATP_COUNTRIES_CACHE = [];
+
+function loadCountriesAdmin() {
+  fetch(ATP_API + '/countries/admin', { headers: { 'Authorization': 'Bearer ' + getToken() } })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      ATP_COUNTRIES_CACHE = (data && data.countries) || [];
+      renderCountriesAdmin(ATP_COUNTRIES_CACHE);
+    })
+    .catch(function(){ document.getElementById('countriesList').innerHTML =
+      '<div style="padding:14px;color:#f87171">Failed to load countries.</div>'; });
+}
+
+function renderCountriesAdmin(list) {
+  var el = document.getElementById('countriesList');
+  if (!el) return;
+  if (!list.length) {
+    el.innerHTML = '<div style="padding:18px;color:#666;text-align:center">No countries yet. Run the migrate-countries setup or click + New country.</div>';
+    return;
+  }
+  el.innerHTML =
+    '<table style="width:100%;border-collapse:collapse">' +
+      '<thead><tr style="font-size:11px;color:#666;text-align:left;border-bottom:1px solid #1a1a1a">' +
+        '<th style="padding:10px">Status</th>' +
+        '<th style="padding:10px">Code</th>' +
+        '<th style="padding:10px">Name</th>' +
+        '<th style="padding:10px">Currency</th>' +
+        '<th style="padding:10px">Symbol</th>' +
+        '<th style="padding:10px;text-align:right">pts / unit</th>' +
+        '<th style="padding:10px;text-align:right">Sort</th>' +
+        '<th style="padding:10px"></th>' +
+      '</tr></thead><tbody>' +
+      list.map(function(c){
+        var name = (c.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        var statusBadge = c.is_active
+          ? '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(122,194,49,.15);color:#7AC231">Active</span>'
+          : '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.06);color:#666">Off</span>';
+        var rate = (c.atp_per_unit != null && c.atp_per_unit !== '') ? c.atp_per_unit : '<span style="color:#666">global default</span>';
+        return '<tr style="border-bottom:1px solid #111;font-size:13px">' +
+          '<td style="padding:10px">' + statusBadge + '</td>' +
+          '<td style="padding:10px;color:#fff;font-family:monospace;font-weight:700">' + (c.code || '—') + '</td>' +
+          '<td style="padding:10px;color:#fff">' + name + '</td>' +
+          '<td style="padding:10px;color:#aaa;font-family:monospace">' + (c.currency_code || '—') + '</td>' +
+          '<td style="padding:10px;color:#aaa">' + (c.currency_symbol || '—') + '</td>' +
+          '<td style="padding:10px;text-align:right;color:#aaa">' + rate + '</td>' +
+          '<td style="padding:10px;text-align:right;color:#aaa">' + (c.sort_order || 0) + '</td>' +
+          '<td style="padding:10px;text-align:right;white-space:nowrap">' +
+            '<button class="admin-btn" style="font-size:11px;padding:5px 10px;margin-right:4px" data-atp-call="editCountry" data-args=\'["' + c.id + '"]\'>Edit</button>' +
+            '<button class="admin-btn admin-btn-danger" style="font-size:11px;padding:5px 10px" data-atp-call="deactivateCountry" data-args=\'["' + c.id + '"]\'>Deactivate</button>' +
+          '</td>' +
+        '</tr>';
+      }).join('') +
+    '</tbody></table>';
+}
+
+function showCountryForm() {
+  document.getElementById('countryEditId').value          = '';
+  document.getElementById('countryCode').value             = '';
+  document.getElementById('countryName').value             = '';
+  document.getElementById('countryCurrencyCode').value     = '';
+  document.getElementById('countryCurrencySymbol').value   = '';
+  document.getElementById('countryAtp').value              = '';
+  document.getElementById('countrySort').value             = 100;
+  document.getElementById('countryActive').checked         = true;
+  document.getElementById('countryFormTitle').textContent  = 'New country';
+  document.getElementById('countryFormWrap').style.display = 'block';
+}
+
+function editCountry(id) {
+  var c = ATP_COUNTRIES_CACHE.find(function(x){ return x.id === id; });
+  if (!c) return;
+  document.getElementById('countryEditId').value          = c.id;
+  document.getElementById('countryCode').value             = c.code || '';
+  document.getElementById('countryName').value             = c.name || '';
+  document.getElementById('countryCurrencyCode').value     = c.currency_code || '';
+  document.getElementById('countryCurrencySymbol').value   = c.currency_symbol || '';
+  document.getElementById('countryAtp').value              = (c.atp_per_unit != null) ? c.atp_per_unit : '';
+  document.getElementById('countrySort').value             = c.sort_order || 100;
+  document.getElementById('countryActive').checked         = !!c.is_active;
+  document.getElementById('countryFormTitle').textContent  = 'Edit country';
+  document.getElementById('countryFormWrap').style.display = 'block';
+}
+
+function cancelCountryForm() {
+  document.getElementById('countryFormWrap').style.display = 'none';
+}
+
+function saveCountry() {
+  var id = document.getElementById('countryEditId').value;
+  var atpRaw = document.getElementById('countryAtp').value;
+  var body = {
+    code:            (document.getElementById('countryCode').value || '').trim().toUpperCase(),
+    name:            (document.getElementById('countryName').value || '').trim(),
+    currency_code:   (document.getElementById('countryCurrencyCode').value || '').trim().toUpperCase(),
+    currency_symbol: (document.getElementById('countryCurrencySymbol').value || '').trim(),
+    atp_per_unit:    atpRaw === '' ? null : Math.max(1, parseInt(atpRaw, 10) || 1),
+    sort_order:      parseInt(document.getElementById('countrySort').value, 10) || 100,
+    is_active:       document.getElementById('countryActive').checked,
+  };
+  if (!body.code || !/^[A-Z]{2}$/.test(body.code)) { showToast('Code must be 2 letters (e.g. AE)', true); return; }
+  if (!body.name) { showToast('Name required', true); return; }
+  if (!body.currency_code) { showToast('Currency required', true); return; }
+  if (!body.currency_symbol) body.currency_symbol = body.currency_code;
+
+  var url = id ? (ATP_API + '/countries/' + id) : (ATP_API + '/countries');
+  var method = id ? 'PATCH' : 'POST';
+  fetch(url, {
+    method: method,
+    headers: { 'Content-Type':'application/json', 'Authorization': 'Bearer ' + getToken() },
+    body: JSON.stringify(body),
+  }).then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res && res.error) { showToast('❌ ' + res.error, true); return; }
+      showToast('✅ Country saved');
+      cancelCountryForm();
+      loadCountriesAdmin();
+    })
+    .catch(function(e){ showToast('❌ ' + e.message, true); });
+}
+
+function deactivateCountry(id) {
+  if (!confirm('Deactivate this country? Existing members keep their setting; the country just won\'t appear on signup or upgrade pages.')) return;
+  fetch(ATP_API + '/countries/' + id, {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer ' + getToken() },
+  }).then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res && res.error) { showToast('❌ ' + res.error, true); return; }
+      showToast('✅ Country deactivated');
+      loadCountriesAdmin();
+    })
+    .catch(function(e){ showToast('❌ ' + e.message, true); });
+}
+
+// Helper used by the Plans form to populate the Country dropdown. Pulls
+// the public list (active only). Always cheap — single GET, no auth.
+function populatePlanCountryDropdown(selectedId) {
+  var sel = document.getElementById('planCountry');
+  if (!sel) return;
+  fetch(ATP_API + '/countries')
+    .then(function(r){ return r.ok ? r.json() : { countries: [] }; })
+    .then(function(data){
+      var list = (data && data.countries) || [];
+      sel.innerHTML = '<option value="">🌍 Global (all countries)</option>' +
+        list.map(function(c){
+          return '<option value="' + c.id + '">' + (c.code || '??') + ' — ' + (c.name||'') + ' (' + (c.currency_code||'') + ')</option>';
+        }).join('');
+      if (selectedId) sel.value = selectedId;
+    })
+    .catch(function(){});
 }

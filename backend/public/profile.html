@@ -755,6 +755,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
 
             <div class="form-section-title">Home base</div>
             <div class="form-grid">
+              <!-- Theme 8 / #28, #29 — country drives the wallet currency
+                   and the subscription plan filter. Loaded from /api/countries. -->
+              <div class="form-group"><label class="form-label" for="fCountry">Country</label>
+                <select class="form-select" id="fCountry">
+                  <option value="">Select your country…</option>
+                </select>
+              </div>
               <div class="form-group"><label class="form-label" for="fCity">Home city</label>
                 <select class="form-select" id="fCity">
                   <option value="">Select your home city…</option>
@@ -1594,7 +1601,15 @@ function openPremiumPlansModal() {
   wrap.addEventListener('click', function(ev){ if (ev.target === wrap) wrap.remove(); });
   document.body.appendChild(wrap);
 
-  fetch('/api/billing/plans')
+  // Theme 8 — narrow to the member's country if known, otherwise show all
+  // active plans (signed-out / unset members still see something).
+  var planUrl = '/api/billing/plans';
+  if (CURRENT_MEMBER && CURRENT_MEMBER.country_id) {
+    planUrl += '?country_id=' + encodeURIComponent(CURRENT_MEMBER.country_id);
+  } else if (CURRENT_MEMBER && CURRENT_MEMBER.country_code) {
+    planUrl += '?country_code=' + encodeURIComponent(CURRENT_MEMBER.country_code);
+  }
+  fetch(planUrl)
     .then(function(r){ return r.json().then(function(b){ return { ok:r.ok, body:b }; }); })
     .then(function(res){
       var listEl = document.getElementById('premiumPlansList');
@@ -2019,9 +2034,10 @@ function saveProfile(){
   var selectedVolley = document.querySelector('.padel-btn[data-volley].sel');
   if (selectedVolley) volleyLevel = selectedVolley.dataset.volley;
 
-  // Home city + favourite tribe come from new selects
-  var cityId  = (document.getElementById('fCity')  || {}).value || null;
-  var tribeId = (document.getElementById('fTribe') || {}).value || null;
+  // Home city + favourite tribe + country come from new selects
+  var cityId    = (document.getElementById('fCity')    || {}).value || null;
+  var tribeId   = (document.getElementById('fTribe')   || {}).value || null;
+  var countryId = (document.getElementById('fCountry') || {}).value || null;
 
   var payload = {
     first_name:         firstName,
@@ -2037,6 +2053,7 @@ function saveProfile(){
     volleyball_level:   volleyLevel,   // new — backend column needed
     city_id:            cityId,
     tribe_id:           tribeId,        // new — backend column needed
+    country_id:         countryId,      // Theme 8 — drives wallet currency + plan filter
   };
 
   // Password change (separate endpoint if user entered one)
@@ -2648,6 +2665,19 @@ function populateEditForm(m) {
         cities.map(function(c){ return '<option value="' + c.id + '"' + (c.id === current ? ' selected' : '') + '>' + c.name + (c.country ? ', ' + c.country : '') + '</option>'; }).join('');
     }).catch(function(){});
   }
+  // Country select (Theme 8 / #28, #29). Falls back gracefully when
+  // /api/countries returns nothing — option list stays as-is.
+  var countrySel = document.getElementById('fCountry');
+  if (countrySel) {
+    fetch('/api/countries').then(function(r){ return r.ok ? r.json() : { countries: [] }; })
+      .then(function(data){
+        var list = (data && data.countries) || [];
+        if (!list.length) return;
+        var currentId = m.country_id || '';
+        countrySel.innerHTML = '<option value="">Select your country…</option>' +
+          list.map(function(c){ return '<option value="' + c.id + '"' + (c.id === currentId ? ' selected' : '') + '>' + (c.name || c.code) + ' (' + (c.currency_code || '') + ')</option>'; }).join('');
+      }).catch(function(){});
+  }
   // Favourite tribe select
   var tribeSel = document.getElementById('fTribe');
   if (tribeSel) {
@@ -2901,8 +2931,12 @@ function loadStoreCreditConfig() {
       var cfg = {};
       rows.forEach(function(r){ cfg[r.key] = (typeof r.value === 'string' ? r.value.replace(/^"|"$/g,'') : r.value); });
       var pts = (CURRENT_MEMBER && CURRENT_MEMBER.points_balance) || 0;
-      var perUnit  = Number(cfg.store_credit_atp_per_unit || 28);
-      var currency = cfg.store_credit_currency || 'AED';
+      // Theme 8 — prefer the member's country settings over the global
+      // system_config defaults. atp_per_unit is null when the country
+      // wants to use the global rate; currency_code falls back to AED.
+      var m = CURRENT_MEMBER || {};
+      var perUnit  = Number(m.country_atp_per_unit || cfg.store_credit_atp_per_unit || 28);
+      var currency = m.country_currency_code || cfg.store_credit_currency || 'AED';
       var credit   = perUnit > 0 ? Math.floor(pts / perUnit) : 0;
       var template = cfg.store_credit_redemption_label
         || '\u2248 {currency} {credit} store credit \u00b7 {points} pts = 10% off next order';

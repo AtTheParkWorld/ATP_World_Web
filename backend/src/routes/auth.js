@@ -273,17 +273,28 @@ router.post('/google', async (req, res, next) => {
 });
 
 // ── GET /api/auth/me ──────────────────────────────────────────
+// Theme 8 — eagerly joins the member's country (currency_code,
+// currency_symbol, atp_per_unit) so the wallet can render the right
+// currency without a second round-trip. The query handles a missing
+// countries table gracefully (LEFT JOIN, all fields null) so the
+// route doesn't break before migrate-countries has been run.
 router.get('/me', authenticate, async (req, res, next) => {
   try {
     const { rows } = await query(
       `SELECT m.*,
               c.name AS city_name,
               t.name AS tribe_name,
+              co.code            AS country_code,
+              co.name            AS country_name,
+              co.currency_code   AS country_currency_code,
+              co.currency_symbol AS country_currency_symbol,
+              co.atp_per_unit    AS country_atp_per_unit,
               (SELECT COUNT(*) FROM bookings b WHERE b.member_id=m.id AND b.status='attended') AS sessions_count,
               (SELECT COUNT(*) FROM referrals r WHERE r.referrer_id=m.id) AS referrals_count
        FROM members m
-       LEFT JOIN cities c ON c.id = m.city_id
-       LEFT JOIN tribes t ON t.name = (m.sports_preferences->>0)
+       LEFT JOIN cities c    ON c.id  = m.city_id
+       LEFT JOIN tribes t    ON t.name = (m.sports_preferences->>0)
+       LEFT JOIN countries co ON co.id = m.country_id
        WHERE m.id = $1`,
       [req.member.id]
     );
@@ -291,7 +302,32 @@ router.get('/me', authenticate, async (req, res, next) => {
     const member = rows[0];
     delete member.password_hash;
     res.json({ member });
-  } catch (err) { next(err); }
+  } catch (err) {
+    // If the countries column/table doesn't exist yet, fall back to the
+    // pre-Theme-8 query so older deploys keep working until the migration
+    // has been run.
+    if (err.code === '42P01' /* undefined_table */ || err.code === '42703' /* undefined_column */) {
+      try {
+        const { rows } = await query(
+          `SELECT m.*,
+                  c.name AS city_name,
+                  t.name AS tribe_name,
+                  (SELECT COUNT(*) FROM bookings b WHERE b.member_id=m.id AND b.status='attended') AS sessions_count,
+                  (SELECT COUNT(*) FROM referrals r WHERE r.referrer_id=m.id) AS referrals_count
+           FROM members m
+           LEFT JOIN cities c ON c.id = m.city_id
+           LEFT JOIN tribes t ON t.name = (m.sports_preferences->>0)
+           WHERE m.id = $1`,
+          [req.member.id]
+        );
+        if (!rows.length) return res.status(404).json({ error: 'Member not found' });
+        const member = rows[0];
+        delete member.password_hash;
+        return res.json({ member });
+      } catch (e) { return next(e); }
+    }
+    next(err);
+  }
 });
 
 // ── POST /api/auth/logout ─────────────────────────────────────
@@ -825,6 +861,77 @@ router.post('/migrate-streaks', async (req, res, next) => {
     ops.push(query(`CREATE INDEX IF NOT EXISTS idx_admin_notif_type   ON admin_notifications (type, created_at DESC)`));
     await Promise.all(ops);
     res.json({ success: true, message: 'Streak + admin notifications schema ready' });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/migrate-countries ──────────────────────────
+// Theme 8 / feedback #28, #29 — multi-country / multi-currency.
+// Adds a proper countries table (currency, symbol, atp-per-unit override)
+// and links cities, members, and subscription_plans to it. Existing free-
+// text cities.country and members.nationality remain untouched.
+//
+// Idempotent: re-runnable. Backfills cities.country_id from the existing
+// VARCHAR country column on first run only.
+router.post('/migrate-countries', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    const ops = [];
+
+    // Catalogue of countries the platform serves. atp_per_unit lets each
+    // country override the global store_credit_atp_per_unit so e.g. AED 1
+    // and OMR 1 don't redeem at the same rate.
+    ops.push(query(`CREATE TABLE IF NOT EXISTS countries (
+      id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      code               VARCHAR(2) UNIQUE NOT NULL,         -- ISO 3166-1 alpha-2
+      name               VARCHAR(120) NOT NULL,
+      currency_code      VARCHAR(8) NOT NULL,                -- ISO 4217 (AED, OMR, USD)
+      currency_symbol    VARCHAR(8) NOT NULL,
+      atp_per_unit       INT,                                -- override; null = use system_config default
+      is_active          BOOLEAN NOT NULL DEFAULT true,
+      sort_order         INT NOT NULL DEFAULT 100,
+      created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_countries_active ON countries (is_active, sort_order)`));
+
+    // Seed the two markets ATP currently serves. AED rate matches existing
+    // store_credit_atp_per_unit (28 pts = 1 AED). OMR is roughly 9.5x AED so
+    // 280 pts ≈ 1 OMR (admin can tune in the dashboard once live).
+    ops.push(query(`INSERT INTO countries (code, name, currency_code, currency_symbol, atp_per_unit, sort_order) VALUES
+      ('AE', 'United Arab Emirates', 'AED', 'AED', 28,  10),
+      ('OM', 'Oman',                 'OMR', 'OMR', 280, 20)
+      ON CONFLICT (code) DO NOTHING`));
+
+    // FK on cities, members, plans. nullable so existing rows keep working.
+    ops.push(query(`ALTER TABLE cities ADD COLUMN IF NOT EXISTS country_id UUID REFERENCES countries(id) ON DELETE SET NULL`));
+    ops.push(query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS country_id UUID REFERENCES countries(id) ON DELETE SET NULL`));
+    ops.push(query(`ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS country_id UUID REFERENCES countries(id) ON DELETE SET NULL`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_cities_country  ON cities (country_id)`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_members_country ON members (country_id)`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_plans_country   ON subscription_plans (country_id)`));
+
+    // Backfill cities.country_id from the existing VARCHAR — safe because
+    // ON CONFLICT keeps the new countries idempotent. Match heuristics
+    // are forgiving: 'UAE', 'United Arab Emirates', 'AE' all map to AE.
+    ops.push(query(`UPDATE cities c
+      SET country_id = co.id
+      FROM countries co
+      WHERE c.country_id IS NULL AND (
+        UPPER(TRIM(c.country)) = UPPER(co.code)
+        OR UPPER(TRIM(c.country)) = UPPER(co.name)
+        OR UPPER(TRIM(c.country)) = UPPER(co.currency_code)
+        OR (UPPER(TRIM(c.country)) IN ('UAE','U.A.E.','U.A.E','EMIRATES') AND co.code='AE')
+      )`));
+
+    // Backfill members.country_id from their city's country (if joined).
+    ops.push(query(`UPDATE members m
+      SET country_id = c.country_id
+      FROM cities c
+      WHERE m.city_id = c.id AND m.country_id IS NULL AND c.country_id IS NOT NULL`));
+
+    await Promise.all(ops);
+    res.json({ success: true, message: 'Countries schema ready (UAE + Oman seeded, cities/members/plans linked)' });
   } catch (err) { next(err); }
 });
 

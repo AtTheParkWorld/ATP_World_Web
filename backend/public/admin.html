@@ -858,6 +858,8 @@
                 style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">⚙️ System Config</button>
         <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["plans"]'
                 style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">💳 Plans</button>
+        <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["countries"]'
+                style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">🌍 Countries</button>
       </div>
 
       <!-- Announcements tab -->
@@ -975,11 +977,16 @@
               <div style="margin-bottom:10px"><label class="admin-form-label" for="planTagline">Tagline</label><input class="admin-form-input" type="text" id="planTagline" placeholder="e.g. Unlimited bookings + premium-only events"></div>
               <div style="margin-bottom:10px"><label class="admin-form-label" for="planDescription">Description (HTML allowed)</label><textarea class="admin-form-input" id="planDescription" rows="2" placeholder="Optional longer description shown on the upgrade page"></textarea></div>
               <div style="margin-bottom:10px"><label class="admin-form-label" for="planFeatures">Features (one per line)</label><textarea class="admin-form-input" id="planFeatures" rows="4" placeholder="Unlimited session bookings&#10;Premium-only sessions&#10;2× points on every check-in&#10;Priority Ambassador support" style="font-size:12px"></textarea></div>
-              <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+              <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px">
                 <div><label class="admin-form-label" for="planStripePriceId">Stripe price id *</label><input class="admin-form-input" type="text" id="planStripePriceId" placeholder="price_1Pxxxxxxxxxxx" style="font-family:monospace;font-size:12px"></div>
                 <div><label class="admin-form-label" for="planAmount">Amount (cents)</label><input class="admin-form-input" type="number" id="planAmount" value="0" min="0" placeholder="e.g. 4900"></div>
                 <div><label class="admin-form-label" for="planCurrency">Currency</label><input class="admin-form-input" type="text" id="planCurrency" value="aed" maxlength="3" style="text-transform:lowercase"></div>
                 <div><label class="admin-form-label" for="planInterval">Interval</label><select class="admin-form-select" id="planInterval"><option value="month">Monthly</option><option value="year">Yearly</option></select></div>
+              </div>
+              <div style="margin-bottom:14px">
+                <label class="admin-form-label" for="planCountry">Country (Theme 8)</label>
+                <select class="admin-form-select" id="planCountry"><option value="">🌍 Global (all countries)</option></select>
+                <div style="font-size:11px;color:#666;margin-top:4px">Members only see plans tagged for their country (or global). Tag per-country if you have separate Stripe Prices in AED vs OMR.</div>
               </div>
               <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#aaa;margin-bottom:14px"><input type="checkbox" id="planActive" checked> Active</label>
               <div style="display:flex;gap:8px">
@@ -988,6 +995,43 @@
               </div>
             </div>
             <div id="plansList"><div style="padding:14px;color:#555;text-align:center">Loading…</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Countries tab (Theme 8 / #28, #29) -->
+      <div class="settings-pane" id="settings-pane-countries" style="display:none">
+        <div class="admin-section">
+          <div class="admin-section-head">
+            <span class="admin-section-title">Countries &amp; currencies</span>
+            <button class="admin-btn admin-btn-primary" data-atp-call="showCountryForm" style="font-size:12px;padding:7px 14px">+ New country</button>
+          </div>
+          <div class="admin-section-body">
+            <div style="font-size:12px;color:#888;margin-bottom:16px;line-height:1.6">
+              Each country defines its currency + the points-to-currency rate used for store credit.
+              <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#7AC231">atp_per_unit</code> overrides the global config — leave blank to use the default
+              <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#7AC231">store_credit_atp_per_unit</code>.
+            </div>
+            <div id="countryFormWrap" style="display:none;background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:16px">
+              <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:12px" id="countryFormTitle">New country</div>
+              <input type="hidden" id="countryEditId" value="">
+              <div style="display:grid;grid-template-columns:80px 2fr;gap:10px;margin-bottom:10px">
+                <div><label class="admin-form-label" for="countryCode">Code *</label><input class="admin-form-input" type="text" id="countryCode" maxlength="2" placeholder="AE" style="text-transform:uppercase;font-family:monospace"></div>
+                <div><label class="admin-form-label" for="countryName">Name *</label><input class="admin-form-input" type="text" id="countryName" placeholder="United Arab Emirates"></div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr 100px;gap:10px;margin-bottom:14px">
+                <div><label class="admin-form-label" for="countryCurrencyCode">Currency *</label><input class="admin-form-input" type="text" id="countryCurrencyCode" maxlength="8" placeholder="AED" style="text-transform:uppercase"></div>
+                <div><label class="admin-form-label" for="countryCurrencySymbol">Symbol</label><input class="admin-form-input" type="text" id="countryCurrencySymbol" maxlength="8" placeholder="AED"></div>
+                <div><label class="admin-form-label" for="countryAtp">ATP per 1 unit</label><input class="admin-form-input" type="number" id="countryAtp" min="1" placeholder="28"></div>
+                <div><label class="admin-form-label" for="countrySort">Sort</label><input class="admin-form-input" type="number" id="countrySort" value="100" min="0"></div>
+              </div>
+              <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#aaa;margin-bottom:14px"><input type="checkbox" id="countryActive" checked> Active</label>
+              <div style="display:flex;gap:8px">
+                <button class="admin-btn admin-btn-primary" data-atp-call="saveCountry" style="font-size:12px">Save</button>
+                <button class="admin-btn" data-atp-call="cancelCountryForm" style="font-size:12px">Cancel</button>
+              </div>
+            </div>
+            <div id="countriesList"><div style="padding:14px;color:#555;text-align:center">Loading…</div></div>
           </div>
         </div>
       </div>
