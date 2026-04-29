@@ -1151,6 +1151,10 @@ var CHALLENGES = [
 
 // ── RENDER FUNCTIONS ─────────────────────────────────────────
 function renderStreakGrid(el, days) {
+  // Defensive: the streakMiniGrid element was removed during the Theme 3
+  // streak rebuild. Older boot lines still call this function — bail
+  // silently rather than crashing the whole page init.
+  if (!el) return;
   var html = "";
   var today = new Date();
   var days_arr = ["S","M","T","W","T","F","S"];
@@ -2141,7 +2145,9 @@ function checkAmbassadorRole() {
 SESSIONS = getSessionsData();
 
 // ── INIT ────────────────────────────────────────────────────
-renderStreakGrid(document.getElementById("streakMiniGrid"),28);
+// renderStreakGrid is now a no-op when target is missing (Theme 3
+// rebuild removed #streakMiniGrid; the new mini progression bar in
+// the Overview is driven by renderStreak() instead).
 
 // ── REAL MEMBER (loaded from /auth/me) ──────────────────────
 var CURRENT_MEMBER = null;
