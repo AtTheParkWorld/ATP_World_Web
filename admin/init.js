@@ -36,6 +36,7 @@ async function cancelSession(sessionId, sessionName) {
     if (name === 'analytics')  { loadAnalytics(); }
     if (name === 'members')    { loadMembersAPI(); }
     if (name === 'ambassadors'){ renderAmbassadors(); }
+    if (name === 'settings')   { loadSettingsSection(); }
   };
 })();
 

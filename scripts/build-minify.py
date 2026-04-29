@@ -39,6 +39,7 @@ JS_TARGETS = [
     'admin/coaches.js',
     'admin/analytics.js',
     'admin/cms.js',
+    'admin/settings.js',
     'admin/init.js',
 ]
 CSS_TARGETS = [
@@ -117,7 +118,8 @@ def main() -> None:
         'admin/coaches.min.js',
         'admin/analytics.min.js',
         'admin/cms.min.js',
-        'admin/init.min.js',
+        'admin/settings.min.js',
+        'admin/init.min.js',          # last so its hook into showAdminSection wraps everything else
     ]
     admin_bundle = ''
     for src in admin_parts:
