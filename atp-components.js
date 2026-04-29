@@ -388,68 +388,109 @@
     });
   }
 
-  /* ── Announcement ticker (Theme 5 / #34) ───────────────────── */
-  // Renders a thin sticky bar above the nav that pulls active
-  // announcements from /api/announcements. If the request fails or there
-  // are none, the bar is silently absent. Multiple announcements rotate.
+  /* ── Announcement ticker (Theme 5 / #34, #35) ──────────────────
+   * Continuous marquee. All active announcements concatenated into a
+   * single horizontal strip that scrolls right → left. The strip is
+   * duplicated end-to-end so the loop is seamless. Pauses on hover so
+   * users can actually read promo codes / event details.
+   * Sticky at top so it's visible across the whole page without being
+   * fixed in the viewport's middle (which would obscure content).
+   * ──────────────────────────────────────────────────────────── */
+
+  function ensureTickerStyles() {
+    if (document.getElementById('atp-ticker-styles')) return;
+    var st = document.createElement('style');
+    st.id = 'atp-ticker-styles';
+    st.textContent = [
+      '#atp-ticker-host{',
+      '  position:fixed;top:0;left:0;right:0;z-index:200;height:44px;display:none;',
+      '  background:linear-gradient(90deg,#0a0a0a 0%,#0d1a08 50%,#0a0a0a 100%);',
+      '  border-bottom:2px solid var(--atp-green,#7AC231);',
+      '  overflow:hidden;align-items:center;',
+      '  box-shadow:0 4px 16px rgba(0,0,0,.4);',
+      '}',
+      '#atp-ticker-host.atp-ticker-on{display:flex}',
+      '#atp-ticker-host::before,#atp-ticker-host::after{',
+      '  content:"";position:absolute;top:0;bottom:0;width:64px;z-index:2;pointer-events:none;',
+      '}',
+      '#atp-ticker-host::before{left:0;background:linear-gradient(90deg,#0a0a0a,transparent)}',
+      '#atp-ticker-host::after{right:0;background:linear-gradient(-90deg,#0a0a0a,transparent)}',
+      '.atp-ticker-track{display:flex;flex-shrink:0;align-items:center;gap:64px;',
+      '  animation:atp-ticker-scroll 60s linear infinite;padding-left:32px}',
+      '#atp-ticker-host:hover .atp-ticker-track{animation-play-state:paused}',
+      '.atp-ticker-item{display:inline-flex;align-items:center;gap:10px;',
+      '  font-size:14px;font-weight:600;letter-spacing:.02em;color:#fff;',
+      '  white-space:nowrap;flex-shrink:0}',
+      '.atp-ticker-item .badge{font-size:10px;font-weight:800;letter-spacing:.1em;',
+      '  text-transform:uppercase;padding:3px 9px;border-radius:20px;',
+      '  background:rgba(122,194,49,.18);color:var(--atp-green,#7AC231);',
+      '  border:1px solid rgba(122,194,49,.4)}',
+      '.atp-ticker-item.kind-promo .badge{background:rgba(255,196,0,.15);color:#ffc400;border-color:rgba(255,196,0,.4)}',
+      '.atp-ticker-item.kind-event .badge{background:rgba(96,165,250,.15);color:#60a5fa;border-color:rgba(96,165,250,.4)}',
+      '.atp-ticker-item a{color:#fff;text-decoration:none;border-bottom:1px dashed rgba(255,255,255,.3)}',
+      '.atp-ticker-item a:hover{border-bottom-color:var(--atp-green,#7AC231);color:var(--atp-green,#7AC231)}',
+      '.atp-ticker-sep{color:rgba(255,255,255,.25);font-weight:700;flex-shrink:0}',
+      '@keyframes atp-ticker-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}',
+      '@media (prefers-reduced-motion: reduce){',
+      '  .atp-ticker-track{animation-duration:240s}',  // still moves, but slowly
+      '}',
+    ].join('');
+    document.head.appendChild(st);
+  }
 
   function ensureTickerHost() {
     var host = document.getElementById('atp-ticker-host');
     if (!host) {
+      ensureTickerStyles();
       host = document.createElement('div');
       host.id = 'atp-ticker-host';
-      host.style.cssText =
-        'position:fixed;top:0;left:0;right:0;z-index:101;display:none;' +
-        'background:linear-gradient(90deg,var(--atp-green-soft),rgba(122,194,49,0.04),var(--atp-green-soft));' +
-        'border-bottom:1px solid var(--atp-green-line);' +
-        'padding:8px 16px;text-align:center;font-size:12px;color:var(--atp-fg);' +
-        'font-weight:600;letter-spacing:.02em;';
+      host.setAttribute('role', 'marquee');
+      host.setAttribute('aria-label', 'ATP announcements');
       document.body.insertBefore(host, document.body.firstChild);
-      // Push the rest of the page down when the ticker is shown
-      // (admin pages with their own layout aren't affected because we
-      // shift body's padding only when host is visible)
     }
     return host;
   }
 
-  var _tickerItems = [];
-  var _tickerIdx = 0;
-  var _tickerTimer = null;
-
-  function renderTickerItem() {
-    var host = document.getElementById('atp-ticker-host');
-    if (!host || !_tickerItems.length) return;
-    var item = _tickerItems[_tickerIdx % _tickerItems.length];
-    var emoji = (item.kind === 'event') ? '📣 ' : (item.kind === 'promo') ? '🎁 ' : 'ℹ️ ';
-    var msg = emoji + escapeHtml(item.message);
+  function tickerItemMarkup(item) {
+    var label = (item.kind === 'event') ? 'Event'
+              : (item.kind === 'promo') ? 'Promo'
+              : 'News';
+    var icon  = (item.kind === 'event') ? '📣'
+              : (item.kind === 'promo') ? '🎁'
+              : 'ℹ️';
+    var inner = '<span class="badge">' + icon + ' ' + label + '</span>' +
+                '<span>' + escapeHtml(item.message) + '</span>';
     if (item.link_url) {
-      host.innerHTML = '<a href="' + escapeHtml(item.link_url) +
-        '" style="color:var(--atp-fg);text-decoration:none">' + msg +
-        ' <span style="opacity:.7;margin-left:6px">→</span></a>';
-    } else {
-      host.innerHTML = msg;
+      inner += ' <a href="' + escapeHtml(item.link_url) + '">More →</a>';
     }
-    host.style.display = 'block';
-    document.body.style.paddingTop = host.offsetHeight + 'px';
+    return '<div class="atp-ticker-item kind-' + (item.kind || 'info') + '">' + inner + '</div>';
   }
+
+  function renderTickerStrip(items) {
+    if (!items.length) return '';
+    var sep = '<span class="atp-ticker-sep">•</span>';
+    var pieces = items.map(tickerItemMarkup).join(sep);
+    // Duplicate the strip end-to-end so the marquee loops without a gap
+    return '<div class="atp-ticker-track">' + pieces + sep + pieces + '</div>';
+  }
+
+  var _tickerItems = [];
 
   function loadTicker() {
     fetch('/api/announcements')
       .then(function(r){ return r.ok ? r.json() : { announcements: [] }; })
       .then(function(data){
         _tickerItems = (data && data.announcements) || [];
+        var host = document.getElementById('atp-ticker-host');
         if (!_tickerItems.length) {
-          var host = document.getElementById('atp-ticker-host');
-          if (host) { host.style.display = 'none'; document.body.style.paddingTop = ''; }
+          if (host) { host.classList.remove('atp-ticker-on'); document.body.style.paddingTop = ''; }
           return;
         }
-        ensureTickerHost();
-        _tickerIdx = 0;
-        renderTickerItem();
-        if (_tickerTimer) clearInterval(_tickerTimer);
-        if (_tickerItems.length > 1) {
-          _tickerTimer = setInterval(function(){ _tickerIdx++; renderTickerItem(); }, 8000);
-        }
+        host = ensureTickerHost();
+        host.innerHTML = renderTickerStrip(_tickerItems);
+        host.classList.add('atp-ticker-on');
+        // Push the page down by the ticker height so the nav doesn't tuck under it
+        document.body.style.paddingTop = host.offsetHeight + 'px';
       })
       .catch(function(){ /* silent fail — ticker is non-essential */ });
   }
