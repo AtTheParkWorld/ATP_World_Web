@@ -388,6 +388,72 @@
     });
   }
 
+  /* ── Announcement ticker (Theme 5 / #34) ───────────────────── */
+  // Renders a thin sticky bar above the nav that pulls active
+  // announcements from /api/announcements. If the request fails or there
+  // are none, the bar is silently absent. Multiple announcements rotate.
+
+  function ensureTickerHost() {
+    var host = document.getElementById('atp-ticker-host');
+    if (!host) {
+      host = document.createElement('div');
+      host.id = 'atp-ticker-host';
+      host.style.cssText =
+        'position:fixed;top:0;left:0;right:0;z-index:101;display:none;' +
+        'background:linear-gradient(90deg,var(--atp-green-soft),rgba(122,194,49,0.04),var(--atp-green-soft));' +
+        'border-bottom:1px solid var(--atp-green-line);' +
+        'padding:8px 16px;text-align:center;font-size:12px;color:var(--atp-fg);' +
+        'font-weight:600;letter-spacing:.02em;';
+      document.body.insertBefore(host, document.body.firstChild);
+      // Push the rest of the page down when the ticker is shown
+      // (admin pages with their own layout aren't affected because we
+      // shift body's padding only when host is visible)
+    }
+    return host;
+  }
+
+  var _tickerItems = [];
+  var _tickerIdx = 0;
+  var _tickerTimer = null;
+
+  function renderTickerItem() {
+    var host = document.getElementById('atp-ticker-host');
+    if (!host || !_tickerItems.length) return;
+    var item = _tickerItems[_tickerIdx % _tickerItems.length];
+    var emoji = (item.kind === 'event') ? '📣 ' : (item.kind === 'promo') ? '🎁 ' : 'ℹ️ ';
+    var msg = emoji + escapeHtml(item.message);
+    if (item.link_url) {
+      host.innerHTML = '<a href="' + escapeHtml(item.link_url) +
+        '" style="color:var(--atp-fg);text-decoration:none">' + msg +
+        ' <span style="opacity:.7;margin-left:6px">→</span></a>';
+    } else {
+      host.innerHTML = msg;
+    }
+    host.style.display = 'block';
+    document.body.style.paddingTop = host.offsetHeight + 'px';
+  }
+
+  function loadTicker() {
+    fetch('/api/announcements')
+      .then(function(r){ return r.ok ? r.json() : { announcements: [] }; })
+      .then(function(data){
+        _tickerItems = (data && data.announcements) || [];
+        if (!_tickerItems.length) {
+          var host = document.getElementById('atp-ticker-host');
+          if (host) { host.style.display = 'none'; document.body.style.paddingTop = ''; }
+          return;
+        }
+        ensureTickerHost();
+        _tickerIdx = 0;
+        renderTickerItem();
+        if (_tickerTimer) clearInterval(_tickerTimer);
+        if (_tickerItems.length > 1) {
+          _tickerTimer = setInterval(function(){ _tickerIdx++; renderTickerItem(); }, 8000);
+        }
+      })
+      .catch(function(){ /* silent fail — ticker is non-essential */ });
+  }
+
   /* ── Mobile hamburger toggle ───────────────────────────────── */
   function handleHamburger(e) {
     var ham = e.target.closest('.hamburger');
@@ -416,6 +482,7 @@
   /* ── Boot ──────────────────────────────────────────────────── */
   function boot() {
     mountNav();
+    loadTicker();
     document.addEventListener('click', handleNavClick);
     document.addEventListener('click', handleAuthAction);
     document.addEventListener('click', handleAtpCall);
@@ -490,5 +557,6 @@
     clearForm: clearForm,
     openAuthModal: openAuthModal,
     closeAuthModal: closeAuthModal,
+    loadTicker: loadTicker,         // also re-runnable after admin saves an announcement
   };
 })();

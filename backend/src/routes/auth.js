@@ -532,6 +532,84 @@ router.post('/migrate-indexes', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-admin-crud ─────────────────────────
+// Theme 5 / feedback #9 (admin), #31, #34, #35 — schema for the
+// announcements ticker, activities catalogue, store-credit config.
+router.post('/migrate-admin-crud', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    const ops = [];
+
+    // Announcement ticker (#34, #35) — short message above the nav,
+    // optional link, optional time window. Multiple rows can be active
+    // and rotate; admin controls priority.
+    ops.push(query(`CREATE TABLE IF NOT EXISTS announcements (
+      id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      message      TEXT NOT NULL,
+      link_url     TEXT,
+      kind         VARCHAR(24) NOT NULL DEFAULT 'info',
+      is_active    BOOLEAN NOT NULL DEFAULT true,
+      priority     INT NOT NULL DEFAULT 0,
+      starts_at    TIMESTAMPTZ,
+      ends_at      TIMESTAMPTZ,
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      created_by   UUID REFERENCES members(id) ON DELETE SET NULL
+    )`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_announcements_active
+                    ON announcements (is_active, priority DESC, starts_at) WHERE is_active = true`));
+
+    // Activities catalogue (#9 admin) — admin can add/remove. Members
+    // pick from this list when editing favourites; future push notifs
+    // can target by activity.
+    ops.push(query(`CREATE TABLE IF NOT EXISTS activities (
+      id           UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      name         VARCHAR(80) NOT NULL UNIQUE,
+      slug         VARCHAR(80) NOT NULL UNIQUE,
+      icon         VARCHAR(8),
+      sort_order   INT NOT NULL DEFAULT 100,
+      is_active    BOOLEAN NOT NULL DEFAULT true,
+      created_at   TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`));
+    // Seed defaults from current frontend pills so we don't break the page
+    // before admin actually adds anything.
+    const seedActivities = [
+      ['Running','running','🏃',10],['Yoga','yoga','🧘',20],['Cycling','cycling','🚴',30],
+      ['Bootcamp','bootcamp','💪',40],['Swimming','swimming','🏊',50],['Kickboxing','kickboxing','🥊',60],
+      ['Pilates','pilates','🤸',70],['Padel','padel','🎾',80],['Volleyball','volleyball','🏐',90],
+      ['CrossTraining','crosstraining','⚙️',100],['Sound Healing','sound-healing','🎵',110],
+    ];
+    for (const [n,s,i,o] of seedActivities) {
+      ops.push(query(
+        `INSERT INTO activities (name, slug, icon, sort_order)
+         VALUES ($1,$2,$3,$4) ON CONFLICT (slug) DO NOTHING`,
+        [n,s,i,o]
+      ));
+    }
+
+    // Store credit config (#31) — extend the existing system_config table
+    // (created in Theme 4) with three more keys. Currency is configurable
+    // per Theme 8/29 but seeded as AED for the UAE first market.
+    const creditKeys = [
+      ['store_credit_currency',          '"AED"', 'Store credit currency',          'Wallet display currency. Will be overridden once multi-country is live.'],
+      ['store_credit_atp_per_unit',      '28',    'ATP points per 1 unit currency', 'How many ATP points equal 1 unit of currency. e.g. 28 means 28 pts = AED 1.'],
+      ['store_credit_redemption_label',  '"≈ {currency} {credit} store credit · {points} pts = 10% off next order"',
+                                                  'Wallet redemption tagline',
+                                                  'Customisable line under the wallet balance. Tokens: {points}, {credit}, {currency}.'],
+    ];
+    for (const [k, v, lbl, desc] of creditKeys) {
+      ops.push(query(
+        `INSERT INTO system_config (key, value, label, description) VALUES ($1, $2::jsonb, $3, $4)
+         ON CONFLICT (key) DO NOTHING`,
+        [k, v, lbl, desc]
+      ));
+    }
+
+    await Promise.all(ops);
+    res.json({ success: true, message: 'announcements + activities + store credit config ready' });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-referral-economy ───────────────────
 // Theme 4 / feedback #19, #21, #24, #25, #26, #27 — referral mechanics.
 router.post('/migrate-referral-economy', async (req, res, next) => {

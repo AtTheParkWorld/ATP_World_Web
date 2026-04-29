@@ -755,20 +755,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
 
             <div class="form-section-title">Favourite Activities</div>
             <div class="form-group full">
-              <label class="form-label" for="fActivitiesSearch">Pick everything you love — used for personalised session and notification recommendations</label>
+              <label class="form-label">Pick everything you love — used for personalised session and notification recommendations</label>
               <div class="sport-pills" id="sportPills">
-                <!-- Populated from /api/activities in JS; falls back to the seed list below if the endpoint isn't available yet -->
-                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Running">Running</button>
-                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Yoga">Yoga</button>
-                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Cycling">Cycling</button>
-                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Bootcamp">Bootcamp</button>
-                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Swimming">Swimming</button>
-                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Kickboxing">Kickboxing</button>
-                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Pilates">Pilates</button>
-                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Padel">Padel</button>
-                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Volleyball">Volleyball</button>
-                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="CrossTraining">CrossTraining</button>
-                <button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="Sound Healing">Sound Healing</button>
+                <!-- Populated from /api/activities on page load; admin manages the catalogue -->
+                <span style="font-size:12px;color:var(--muted)">Loading activities…</span>
               </div>
             </div>
 
@@ -1738,6 +1728,10 @@ function applyMemberToPage(m) {
   // Activate countries datalist + bind completion-bar listeners on first paint
   populateCountriesDatalist();
   bindCompletionRecompute();
+  // Load activities catalogue from API (admin-managed)
+  loadActivitiesCatalogue();
+  // Pull store-credit config so the wallet line uses the admin-set ratio
+  loadStoreCreditConfig();
   updateProfileCompletion();
 
   // Fill the referral-link box with the member's real member_number (#19).
@@ -2281,6 +2275,66 @@ function loadRealProfileData() {
     loadFriends();
     loadStreak();
   }).catch(function(){});
+}
+
+// ── Activities catalogue (Theme 5 / #9 admin) ───────────────
+// Pulls the admin-managed list and renders the multi-select pills.
+// Re-applies the member's existing sports_preferences after render.
+function loadActivitiesCatalogue() {
+  fetch('/api/activities')
+    .then(function(r){ return r.ok ? r.json() : { activities: [] }; })
+    .then(function(data){
+      var list = (data && data.activities) || [];
+      var host = document.getElementById('sportPills');
+      if (!host) return;
+      if (!list.length) {
+        host.innerHTML = '<span style="font-size:12px;color:var(--muted)">No activities configured. Ask the admin to add some.</span>';
+        return;
+      }
+      host.innerHTML = list.map(function(a){
+        var icon = a.icon ? (a.icon + ' ') : '';
+        var name = (a.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        return '<button class="sport-pill" type="button" data-atp-call="togglePill" data-activity="' + name + '">' + icon + name + '</button>';
+      }).join('');
+      // Re-apply selected state from CURRENT_MEMBER.sports_preferences
+      var prefs = CURRENT_MEMBER && CURRENT_MEMBER.sports_preferences;
+      if (typeof prefs === 'string') { try { prefs = JSON.parse(prefs); } catch(e){ prefs = []; } }
+      if (Array.isArray(prefs)) {
+        document.querySelectorAll('#sportPills .sport-pill').forEach(function(p){
+          if (prefs.indexOf(p.dataset.activity) >= 0) p.classList.add('sel');
+        });
+      }
+      updateProfileCompletion();
+    })
+    .catch(function(){});
+}
+
+// ── Store-credit config (Theme 5 / #31) ─────────────────────
+// Pulls admin-tunable currency + ratio + tagline from system_config and
+// rewrites the wallet hero so 1 ATP = X currency is editable live.
+function loadStoreCreditConfig() {
+  fetch('/api/admin/system-config', {
+    headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('atp_token')||'') }
+  })
+    .then(function(r){ return r.ok ? r.json() : { config: [] }; })
+    .then(function(data){
+      var rows = (data && data.config) || [];
+      var cfg = {};
+      rows.forEach(function(r){ cfg[r.key] = (typeof r.value === 'string' ? r.value.replace(/^"|"$/g,'') : r.value); });
+      var pts = (CURRENT_MEMBER && CURRENT_MEMBER.points_balance) || 0;
+      var perUnit  = Number(cfg.store_credit_atp_per_unit || 28);
+      var currency = cfg.store_credit_currency || 'AED';
+      var credit   = perUnit > 0 ? Math.floor(pts / perUnit) : 0;
+      var template = cfg.store_credit_redemption_label
+        || '\u2248 {currency} {credit} store credit \u00b7 {points} pts = 10% off next order';
+      var line = String(template)
+        .replace('{currency}', currency)
+        .replace('{credit}',   credit.toLocaleString())
+        .replace('{points}',   pts.toLocaleString());
+      var equiv = document.querySelector('.wallet-equiv');
+      if (equiv) equiv.textContent = line;
+    })
+    .catch(function(){});
 }
 
 // ── Streak panel loader (Theme 3) ───────────────────────────
