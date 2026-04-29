@@ -556,6 +556,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
 
       <!-- OVERVIEW -->
       <div class="profile-panel active" id="panel-overview">
+        <!-- Mini premium banner — only shows for free members. Same renderer
+             as the wallet card but in compact mode so it's not too pushy. -->
+        <div id="premiumBanner" style="margin-bottom:16px"></div>
         <div class="widget">
           <div class="widget-head"><span class="widget-title">🔥 Current Streak</span><span class="widget-action" data-atp-call="showTab" data-args='["streak"]'>Full view →</span></div>
           <div class="widget-body">
@@ -686,6 +689,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
 
       <!-- WALLET -->
       <div class="profile-panel" id="panel-wallet">
+        <!-- Premium upgrade / management card (Theme 10 / #36) -->
+        <!-- Rendered by renderPremiumCard() based on subscription_type -->
+        <div id="premiumCard" style="margin-bottom:16px"></div>
         <div class="wallet-hero">
           <div class="wallet-label">ATP Points Balance</div>
           <div class="wallet-points">280</div>
@@ -1482,6 +1488,245 @@ function bookFriendSession(sessionId, btnEl) {
     });
 }
 
+// ──────────────────────────────────────────────────────────────────
+// Theme 10 / #36 — Premium subscription card + Stripe Checkout flow
+// ──────────────────────────────────────────────────────────────────
+// renderPremiumCard reads CURRENT_MEMBER and renders into two slots:
+//   #premiumCard   — full card in the Wallet panel
+//   #premiumBanner — compact banner at the top of Overview (free-only)
+// The card morphs based on subscription_type:
+//   free    → "Upgrade to Premium" with benefits + CTA → opens plans modal
+//   premium → status card with renewal date + "Manage subscription" → Customer Portal
+
+function _atpPremiumBenefits() {
+  // The default benefits if no plan-level features are loaded yet. Keep
+  // these aligned with the actual product perks (sessions, points, etc.)
+  return [
+    'Unlimited session bookings — no weekly cap',
+    'Premium-only sessions and special events',
+    '2× points on every check-in (Theme 3)',
+    'Priority Ambassador support + early access to new tribes',
+  ];
+}
+
+function renderPremiumCard() {
+  var m = CURRENT_MEMBER || {};
+  var isPremium = (m.subscription_type || '').toLowerCase() === 'premium';
+  var walletEl  = document.getElementById('premiumCard');
+  var bannerEl  = document.getElementById('premiumBanner');
+
+  if (isPremium) {
+    if (walletEl) walletEl.innerHTML = _renderManageCard(m);
+    // Premium members don't need a banner on overview.
+    if (bannerEl) bannerEl.innerHTML = '';
+    return;
+  }
+  // Free member — render upgrade card in both slots.
+  if (walletEl) walletEl.innerHTML = _renderUpgradeCard(false);
+  if (bannerEl) bannerEl.innerHTML = _renderUpgradeCard(true);
+}
+
+function _renderUpgradeCard(compact) {
+  var benefits = _atpPremiumBenefits();
+  var bullets = benefits.map(function(b){
+    return '<li style="padding:4px 0;color:rgba(255,255,255,.85);font-size:13px;display:flex;gap:8px;align-items:flex-start"><span style="color:var(--green);font-weight:700">✓</span><span>' + b + '</span></li>';
+  }).join('');
+  var heading = compact ? 'Unlock Premium' : 'Upgrade to ATP Premium';
+  var sub     = compact
+    ? 'More sessions, more points, more perks.'
+    : 'Get unlimited bookings, premium-only sessions, and 2× points on every check-in.';
+  var listMarkup = compact
+    ? ''
+    : '<ul style="list-style:none;padding:0;margin:14px 0 18px">' + bullets + '</ul>';
+  return '<div style="background:linear-gradient(135deg,#0f2a08,#0a1a06);border:1px solid rgba(122,194,49,.3);border-radius:14px;padding:' + (compact ? '18px' : '24px') + ';position:relative;overflow:hidden">' +
+    '<div style="position:absolute;top:-20px;right:-12px;font-family:var(--ff-display);font-size:90px;font-weight:900;color:rgba(122,194,49,.06);line-height:1;pointer-events:none;user-select:none">PRO</div>' +
+    '<div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(122,194,49,.85);margin-bottom:6px">⭐ Premium</div>' +
+    '<div style="font-family:var(--ff-display);font-size:' + (compact ? '20px' : '26px') + ';font-weight:900;color:var(--white);margin-bottom:6px;text-transform:uppercase">' + heading + '</div>' +
+    '<div style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:' + (compact ? '12' : '4') + 'px">' + sub + '</div>' +
+    listMarkup +
+    '<button type="button" class="atp-btn atp-btn--primary" data-atp-call="openPremiumPlansModal" style="font-size:13px;padding:10px 20px">See plans →</button>' +
+  '</div>';
+}
+
+function _renderManageCard(m) {
+  var renewsLine = '';
+  if (m.subscription_renews_at) {
+    try {
+      var dt = new Date(m.subscription_renews_at);
+      renewsLine = 'Renews ' + dt.toLocaleDateString(undefined, { day:'numeric', month:'short', year:'numeric' });
+    } catch(e) { renewsLine = ''; }
+  }
+  var statusLabel = m.subscription_status || 'active';
+  var statusColor = (statusLabel === 'past_due') ? '#f59e0b' : 'var(--green)';
+  return '<div style="background:linear-gradient(135deg,#0f2a08,#0a1a06);border:1px solid rgba(122,194,49,.4);border-radius:14px;padding:22px;position:relative;overflow:hidden">' +
+    '<div style="position:absolute;top:-18px;right:-10px;font-family:var(--ff-display);font-size:80px;font-weight:900;color:rgba(122,194,49,.07);line-height:1;pointer-events:none;user-select:none">PRO</div>' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px">' +
+      '<div>' +
+        '<div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(122,194,49,.85);margin-bottom:6px">⭐ Premium Member</div>' +
+        '<div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--white);text-transform:uppercase">You\u2019re in.</div>' +
+        '<div style="font-size:12px;color:' + statusColor + ';margin-top:4px;text-transform:capitalize">Status: ' + statusLabel.replace(/_/g, ' ') + '</div>' +
+        (renewsLine ? '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + renewsLine + '</div>' : '') +
+      '</div>' +
+      '<button type="button" class="atp-btn atp-btn--ghost" data-atp-call="openCustomerPortal" style="font-size:12px;padding:8px 14px;white-space:nowrap">Manage</button>' +
+    '</div>' +
+  '</div>';
+}
+
+// Plans modal — fetches /api/billing/plans, lists each, click subscribes.
+function openPremiumPlansModal() {
+  var existing = document.getElementById('premiumPlansOverlay');
+  if (existing) existing.remove();
+  var wrap = document.createElement('div');
+  wrap.id = 'premiumPlansOverlay';
+  wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px';
+  wrap.innerHTML =
+    '<div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:28px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;position:relative">' +
+      '<button type="button" onclick="document.getElementById(\'premiumPlansOverlay\').remove()" style="position:absolute;top:12px;right:14px;background:rgba(0,0,0,.5);border:none;color:#fff;font-size:22px;cursor:pointer;width:32px;height:32px;border-radius:50%">×</button>' +
+      '<div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:6px">⭐ Premium plans</div>' +
+      '<h2 style="font-family:var(--ff-display);font-size:24px;font-weight:900;margin:0 0 6px;text-transform:uppercase">Pick your plan</h2>' +
+      '<div style="font-size:13px;color:var(--muted);margin-bottom:20px">Cancel anytime — billed securely by Stripe.</div>' +
+      '<div id="premiumPlansList"><div style="padding:30px;text-align:center;color:var(--muted);font-size:13px">Loading\u2026</div></div>' +
+    '</div>';
+  wrap.addEventListener('click', function(ev){ if (ev.target === wrap) wrap.remove(); });
+  document.body.appendChild(wrap);
+
+  fetch('/api/billing/plans')
+    .then(function(r){ return r.json().then(function(b){ return { ok:r.ok, body:b }; }); })
+    .then(function(res){
+      var listEl = document.getElementById('premiumPlansList');
+      if (!listEl) return;
+      var plans = (res.body && res.body.plans) || [];
+      // Filter to only purchasable (Stripe-connected) plans — admin sees
+      // unconnected ones in the dashboard but members shouldn't.
+      plans = plans.filter(function(p){ return p.purchasable; });
+      if (!plans.length) {
+        listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">No plans are available right now. Check back soon!</div>';
+        return;
+      }
+      if (res.body && res.body.stripe_configured === false) {
+        listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">Premium isn\u2019t live yet \u2014 we\u2019re finalising the launch.</div>';
+        return;
+      }
+      listEl.innerHTML = plans.map(function(p){
+        var amt = p.amount_cents
+          ? (p.currency || 'aed').toUpperCase() + ' ' + (p.amount_cents/100).toFixed(0)
+          : '—';
+        var cycle = p.interval === 'year' ? 'year' : 'month';
+        var feats = '';
+        if (p.features) {
+          var arr = Array.isArray(p.features) ? p.features : (function(){
+            try { return JSON.parse(p.features); } catch(e) { return []; }
+          })();
+          feats = '<ul style="list-style:none;padding:0;margin:10px 0 0">' +
+            arr.map(function(b){ return '<li style="padding:3px 0;font-size:12px;color:rgba(255,255,255,.75);display:flex;gap:6px"><span style="color:var(--green)">✓</span><span>' + (b||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</span></li>'; }).join('') +
+          '</ul>';
+        }
+        var safeName = (p.name || 'Plan').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        var safeTagline = p.tagline ? '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + p.tagline.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>' : '';
+        return '<div style="background:#161616;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:18px;margin-bottom:12px">' +
+          '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px">' +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="font-family:var(--ff-display);font-size:16px;font-weight:800;color:var(--white);text-transform:uppercase">' + safeName + '</div>' +
+              safeTagline +
+            '</div>' +
+            '<div style="text-align:right;flex-shrink:0">' +
+              '<div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--green);line-height:1">' + amt + '</div>' +
+              '<div style="font-size:11px;color:var(--muted);margin-top:2px">/ ' + cycle + '</div>' +
+            '</div>' +
+          '</div>' +
+          feats +
+          '<button type="button" class="atp-btn atp-btn--primary" style="margin-top:14px;width:100%;font-size:13px;padding:11px" onclick="startCheckout(\'' + p.id + '\', this)">Subscribe</button>' +
+        '</div>';
+      }).join('');
+    })
+    .catch(function(){
+      var listEl = document.getElementById('premiumPlansList');
+      if (listEl) listEl.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">Couldn\u2019t load plans \u2014 please try again.</div>';
+    });
+}
+
+// Hand off to Stripe Checkout. Server creates a Checkout Session and
+// returns the hosted-checkout URL we redirect the browser to.
+function startCheckout(planId, btnEl) {
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Redirecting…'; }
+  fetch('/api/billing/checkout', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + (localStorage.getItem('atp_token')||''),
+    },
+    body: JSON.stringify({ plan_id: planId }),
+  })
+    .then(function(r){ return r.json().then(function(b){ return { ok:r.ok, body:b }; }); })
+    .then(function(res){
+      if (!res.ok || !res.body || !res.body.url) {
+        var msg = (res.body && res.body.error) || 'Could not start checkout.';
+        if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Subscribe'; }
+        alert(msg);
+        return;
+      }
+      window.location.href = res.body.url;
+    })
+    .catch(function(){
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Subscribe'; }
+      alert('Network error — please try again.');
+    });
+}
+
+// Open the Stripe Customer Portal for cancel / update payment / invoices.
+function openCustomerPortal(_ev, btnEl) {
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Loading…'; }
+  fetch('/api/billing/portal', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + (localStorage.getItem('atp_token')||''),
+    },
+    body: JSON.stringify({}),
+  })
+    .then(function(r){ return r.json().then(function(b){ return { ok:r.ok, body:b }; }); })
+    .then(function(res){
+      if (!res.ok || !res.body || !res.body.url) {
+        var msg = (res.body && res.body.error) || 'Could not open portal.';
+        if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Manage'; }
+        alert(msg);
+        return;
+      }
+      window.location.href = res.body.url;
+    })
+    .catch(function(){
+      if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Manage'; }
+      alert('Network error — please try again.');
+    });
+}
+
+// Show a confirmation banner if the user just returned from Stripe.
+// Stripe Checkout redirects back with ?upgrade=success or ?upgrade=cancel.
+// The webhook is what actually flips subscription_type — but we can show
+// the user feedback immediately and re-fetch /auth/me a moment later.
+function _atpHandleStripeReturn() {
+  var qs = new URLSearchParams(window.location.search);
+  var flag = qs.get('upgrade');
+  if (!flag) return;
+  if (flag === 'success') {
+    alert('🎉 Welcome to ATP Premium! Your subscription is being activated — refresh in a few seconds if it hasn\'t shown up yet.');
+    // Webhook is async; poll /auth/me twice over the next 6 sec to pick up
+    // the new subscription_type without forcing the user to refresh.
+    setTimeout(function(){
+      if (window.ATP && window.ATP.auth && window.ATP.auth.me) {
+        window.ATP.auth.me().then(function(res){
+          var m = (res && res.member) ? res.member : res;
+          if (m && m.id) { applyMemberToPage(m); renderPremiumCard(); }
+        }).catch(function(){});
+      }
+    }, 3000);
+  } else if (flag === 'cancel') {
+    // No-op — they backed out. Just clean the URL.
+  }
+  // Strip the param so a refresh doesn't re-trigger the toast.
+  history.replaceState({}, '', window.location.pathname);
+}
+
 function renderNotifs() {
   var el = document.getElementById("notifList");
   if (!el) return;
@@ -1952,6 +2197,9 @@ function applyMemberToPage(m) {
   }
   var subName = document.getElementById('subName');
   if (subName) subName.textContent = (m.subscription_type || 'Free').replace(/^./, function(c){ return c.toUpperCase(); });
+
+  // Theme 10 / #36 — render premium card now that subscription_type is known
+  try { renderPremiumCard(); } catch(e) { console.warn('renderPremiumCard failed', e); }
 
   var memberNumEl = document.querySelector('.profile-sub .member-num');
   if (memberNumEl) {
@@ -2752,6 +3000,8 @@ function renderStreak(s) {
 }
 
 loadRealProfileData();
+// Theme 10 / #36 — show post-checkout confirmation if Stripe redirected here
+try { _atpHandleStripeReturn(); } catch(e) { console.warn('stripe return handler', e); }
 renderSessions(document.getElementById("upcomingSessions"),SESSIONS.slice(0,3));
 renderSessions(document.getElementById("allSessions"),SESSIONS);
 renderAchievements(document.getElementById("achieveMini"),ACHIEVEMENTS.slice(0,6));
