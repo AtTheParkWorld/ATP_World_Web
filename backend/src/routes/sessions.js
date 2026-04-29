@@ -1,8 +1,9 @@
 const router = require('express').Router();
 const { query, transaction } = require('../db');
 const { authenticate, requireAdmin, requireAmbassador, optionalAuth } = require('../middleware/auth');
-const streak    = require('../services/streak');
-const referrals = require('../services/referrals');
+const streak       = require('../services/streak');
+const referrals    = require('../services/referrals');
+const achievements = require('../services/achievements');
 
 // ── GET /api/sessions ─────────────────────────────────────────
 router.get('/', optionalAuth, async (req, res, next) => {
@@ -275,6 +276,10 @@ router.post('/:id/checkin', authenticate, requireAmbassador, async (req, res, ne
     // referral failure never fails the check-in for the ambassador.
     referrals.rewardReferrerForCheckin(booking.member_id, req.params.id)
       .catch(function(){});
+
+    // Theme 5c / #12 — evaluate achievements (session-count + streak
+    // milestones) for this member. Idempotent + fire-and-forget.
+    achievements.checkAndAward(booking.member_id).catch(function(){});
 
     res.json({
       success: true,

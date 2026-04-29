@@ -7,7 +7,7 @@
 
 // ── Sub-tab switcher ─────────────────────────────────────────
 function showSettingsTab(tab) {
-  ['announcements','activities','config'].forEach(function(t){
+  ['announcements','activities','achievements','config'].forEach(function(t){
     var pane = document.getElementById('settings-pane-' + t);
     if (pane) pane.style.display = (t === tab) ? 'block' : 'none';
   });
@@ -17,8 +17,9 @@ function showSettingsTab(tab) {
     b.style.color = match ? '#fff' : '#888';
   });
   if (tab === 'announcements') loadAnnouncementsAdmin();
-  else if (tab === 'activities') loadActivitiesAdmin();
-  else if (tab === 'config') loadSystemConfig();
+  else if (tab === 'activities')   loadActivitiesAdmin();
+  else if (tab === 'achievements') loadAchievementsAdmin();
+  else if (tab === 'config')       loadSystemConfig();
 }
 
 function loadSettingsSection() {
@@ -250,6 +251,155 @@ function deleteActivity(e, btn) {
     headers: { 'Authorization': 'Bearer ' + getToken() },
   }).then(function(r){ return r.json(); })
     .then(function(){ showToast('✅ Activity deactivated'); loadActivitiesAdmin(); })
+    .catch(function(e){ showToast('❌ ' + e.message, true); });
+}
+
+// ════════════════════════════════════════════════════════════
+// ACHIEVEMENTS (#12)
+// ════════════════════════════════════════════════════════════
+
+function loadAchievementsAdmin() {
+  fetch(ATP_API + '/achievements/admin', { headers: { 'Authorization': 'Bearer ' + getToken() } })
+    .then(function(r){ return r.json(); })
+    .then(function(data){ renderAchievementsAdmin((data && data.achievements) || []); })
+    .catch(function(){ document.getElementById('achievementsList').innerHTML =
+      '<div style="padding:14px;color:#f87171">Failed to load achievements.</div>'; });
+}
+
+function renderAchievementsAdmin(list) {
+  var el = document.getElementById('achievementsList');
+  if (!el) return;
+  if (!list.length) { el.innerHTML = '<div style="padding:18px;color:#666;text-align:center">No achievements yet.</div>'; return; }
+  el.innerHTML =
+    '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px">' +
+      list.map(function(a){
+        var name = (a.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        var desc = (a.description || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        var op = a.is_active ? '1' : '.45';
+        var border = a.is_active ? 'rgba(122,194,49,.3)' : 'rgba(255,255,255,.08)';
+        var iconHtml = a.badge_image_url
+          ? '<img src="' + a.badge_image_url + '" style="width:48px;height:48px;object-fit:contain;display:block;margin-bottom:10px">'
+          : '<div style="font-size:36px;margin-bottom:8px">' + (a.icon || '🏅') + '</div>';
+        var trigger = (a.criteria_type === 'manual')
+          ? 'Manual'
+          : a.criteria_type + ' ≥ ' + (a.criteria_value || 0);
+        return '<div style="background:#0d0d0d;border:1px solid ' + border + ';border-radius:10px;padding:14px;opacity:' + op + '">' +
+          iconHtml +
+          '<div style="font-size:13px;font-weight:700;margin-bottom:2px">' + name + '</div>' +
+          '<div style="font-size:11px;color:#888;margin-bottom:8px;line-height:1.5">' + desc + '</div>' +
+          '<div style="display:flex;gap:8px;font-size:10px;color:#aaa;margin-bottom:10px">' +
+            '<span>+' + (a.points_reward || 0) + ' pts</span>' +
+            '<span>·</span>' +
+            '<span>' + trigger + '</span>' +
+            '<span>·</span>' +
+            '<span>' + (a.unlocked_count || 0) + ' unlocked</span>' +
+          '</div>' +
+          '<div style="display:flex;gap:6px">' +
+            '<button class="admin-btn" style="font-size:11px;padding:5px 10px;flex:1" data-atp-call="editAchievement" data-args=\'["' + a.id + '"]\'>Edit</button>' +
+            '<button class="admin-btn" style="font-size:11px;padding:5px 10px" data-atp-call="awardAchievementPrompt" data-args=\'["' + a.id + '"]\' title="Manually award to a member">+👤</button>' +
+            '<button class="admin-btn admin-btn-danger" style="font-size:11px;padding:5px 10px" data-atp-call="deleteAchievement" data-args=\'["' + a.id + '"]\'>×</button>' +
+          '</div>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+}
+
+function showAchievementForm() {
+  document.getElementById('achievementFormWrap').style.display = 'block';
+  document.getElementById('achievementFormTitle').textContent = 'New achievement';
+  ['achEditId','achName','achDesc','achIcon','achBadge'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
+  document.getElementById('achCriteriaType').value = 'manual';
+  document.getElementById('achCriteriaValue').value = '0';
+  document.getElementById('achPoints').value = '0';
+  document.getElementById('achSort').value = '100';
+  document.getElementById('achActive').checked = true;
+  document.getElementById('achName').focus();
+}
+function cancelAchievementForm() {
+  document.getElementById('achievementFormWrap').style.display = 'none';
+}
+function editAchievement(e, btn) {
+  var id = (btn && btn.getAttribute('data-args') || '').replace(/[\[\]"]/g, '');
+  fetch(ATP_API + '/achievements/admin', { headers: { 'Authorization': 'Bearer ' + getToken() } })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var a = ((data && data.achievements) || []).find(function(x){ return x.id === id; });
+      if (!a) { showToast('Achievement not found', true); return; }
+      document.getElementById('achievementFormWrap').style.display = 'block';
+      document.getElementById('achievementFormTitle').textContent = 'Edit achievement';
+      document.getElementById('achEditId').value       = id;
+      document.getElementById('achName').value         = a.name || '';
+      document.getElementById('achDesc').value         = a.description || '';
+      document.getElementById('achIcon').value         = a.icon || '';
+      document.getElementById('achBadge').value        = a.badge_image_url || '';
+      document.getElementById('achCriteriaType').value = a.criteria_type || 'manual';
+      document.getElementById('achCriteriaValue').value = a.criteria_value || 0;
+      document.getElementById('achPoints').value       = a.points_reward || 0;
+      document.getElementById('achSort').value         = a.sort_order || 100;
+      document.getElementById('achActive').checked     = !!a.is_active;
+    });
+}
+function saveAchievement() {
+  var id = document.getElementById('achEditId').value;
+  var body = {
+    name:            document.getElementById('achName').value.trim(),
+    description:     document.getElementById('achDesc').value.trim() || null,
+    icon:            document.getElementById('achIcon').value.trim() || null,
+    badge_image_url: document.getElementById('achBadge').value.trim() || null,
+    criteria_type:   document.getElementById('achCriteriaType').value,
+    criteria_value:  Number(document.getElementById('achCriteriaValue').value) || null,
+    points_reward:   Number(document.getElementById('achPoints').value) || 0,
+    sort_order:      Number(document.getElementById('achSort').value) || 100,
+    is_active:       document.getElementById('achActive').checked,
+  };
+  if (!body.name) { showToast('Name required', true); return; }
+  var url    = id ? (ATP_API + '/achievements/admin/' + id) : (ATP_API + '/achievements/admin');
+  var method = id ? 'PATCH' : 'POST';
+  fetch(url, {
+    method: method,
+    headers: { 'Content-Type':'application/json', 'Authorization': 'Bearer ' + getToken() },
+    body: JSON.stringify(body),
+  }).then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res && res.error) { showToast('❌ ' + res.error, true); return; }
+      showToast(id ? '✅ Achievement updated' : '✅ Achievement created');
+      cancelAchievementForm();
+      loadAchievementsAdmin();
+    })
+    .catch(function(e){ showToast('❌ ' + e.message, true); });
+}
+function deleteAchievement(e, btn) {
+  if (!confirm('Deactivate this achievement? Existing unlocks are preserved.')) return;
+  var id = (btn && btn.getAttribute('data-args') || '').replace(/[\[\]"]/g, '');
+  fetch(ATP_API + '/achievements/admin/' + id, {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer ' + getToken() },
+  }).then(function(r){ return r.json(); })
+    .then(function(){ showToast('✅ Achievement deactivated'); loadAchievementsAdmin(); })
+    .catch(function(e){ showToast('❌ ' + e.message, true); });
+}
+function awardAchievementPrompt(e, btn) {
+  var id = (btn && btn.getAttribute('data-args') || '').replace(/[\[\]"]/g, '');
+  var memberInput = prompt('Member ID, member number, or email to award this achievement to:');
+  if (!memberInput) return;
+  // Search the member by any of the three identifiers
+  fetch(ATP_API + '/admin/members?search=' + encodeURIComponent(memberInput.trim()) + '&limit=1', {
+    headers: { 'Authorization': 'Bearer ' + getToken() },
+  }).then(function(r){ return r.json(); })
+    .then(function(data){
+      var m = (data && data.members && data.members[0]);
+      if (!m) { showToast('Member not found', true); return; }
+      if (!confirm('Award to ' + m.first_name + ' ' + m.last_name + '?')) return;
+      return fetch(ATP_API + '/achievements/admin/award', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Authorization': 'Bearer ' + getToken() },
+        body: JSON.stringify({ member_id: m.id, achievement_id: id }),
+      }).then(function(r){ return r.json(); }).then(function(res){
+        if (res && res.error) { showToast('❌ ' + res.error, true); return; }
+        showToast(res.awarded ? ('✅ Awarded to ' + m.first_name) : 'Already had it');
+        loadAchievementsAdmin();
+      });
+    })
     .catch(function(e){ showToast('❌ ' + e.message, true); });
 }
 

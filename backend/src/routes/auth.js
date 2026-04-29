@@ -532,6 +532,78 @@ router.post('/migrate-indexes', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-achievements ───────────────────────
+// Theme 5c / feedback #12 — admin-managed achievements + badges with
+// automatic awarding for streak/session milestones.
+router.post('/migrate-achievements', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    const ops = [];
+
+    // Catalogue of achievements an admin defines.
+    // criteria_type drives auto-award:
+    //   'sessions'  → unlocked when total_check_ins >= criteria_value
+    //   'streak'    → unlocked when current_streak >= criteria_value
+    //   'referrals' → unlocked when active referrals >= criteria_value
+    //   'manual'    → admin awards explicitly
+    ops.push(query(`CREATE TABLE IF NOT EXISTS achievements (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      name            VARCHAR(120) NOT NULL,
+      description     TEXT,
+      icon            VARCHAR(8),
+      badge_image_url TEXT,
+      points_reward   INT NOT NULL DEFAULT 0,
+      criteria_type   VARCHAR(40) NOT NULL DEFAULT 'manual',
+      criteria_value  INT,
+      sort_order      INT NOT NULL DEFAULT 100,
+      is_active       BOOLEAN NOT NULL DEFAULT true,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      created_by      UUID REFERENCES members(id) ON DELETE SET NULL
+    )`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_achievements_active ON achievements (is_active, sort_order)`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_achievements_type   ON achievements (criteria_type, criteria_value)`));
+
+    // Per-member unlock record (idempotent — UNIQUE prevents double-award).
+    ops.push(query(`CREATE TABLE IF NOT EXISTS member_achievements (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      member_id       UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      achievement_id  UUID NOT NULL REFERENCES achievements(id) ON DELETE CASCADE,
+      unlocked_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      points_credited INT NOT NULL DEFAULT 0,
+      awarded_by      UUID REFERENCES members(id) ON DELETE SET NULL,
+      UNIQUE (member_id, achievement_id)
+    )`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_member_ach_member  ON member_achievements (member_id, unlocked_at DESC)`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_member_ach_ach     ON member_achievements (achievement_id)`));
+
+    // Seed a starter set so the system isn't empty on first deploy.
+    // Admin can edit/delete any of these via the Settings panel.
+    const seedAch = [
+      ['First Step',           'Attended your first ATP session.',                 '🌱', 10,  'sessions',  1,   10],
+      ['Tenacious Ten',        'Completed 10 sessions.',                           '💪', 50,  'sessions',  10,  20],
+      ['Half Century',         'Completed 50 sessions.',                           '🏆', 200, 'sessions',  50,  30],
+      ['Century Club',         'Completed 100 sessions.',                          '🥇', 500, 'sessions',  100, 40],
+      ['Week Streak',          '7 consecutive days of check-ins.',                 '🔥', 50,  'streak',    7,   50],
+      ['Two-Week Streak',      '14 consecutive days of check-ins.',                '⚡', 150, 'streak',    14,  60],
+      ['Monthly Marathon',     '30 consecutive days of check-ins.',                '🏅', 500, 'streak',    30,  70],
+      ['Tribe Builder',        'Brought 5 active members into your tribe.',        '🌳', 100, 'referrals', 5,   80],
+      ['Tribe Master',         'Brought 10 active members into your tribe.',       '👑', 300, 'referrals', 10,  90],
+    ];
+    for (const a of seedAch) {
+      ops.push(query(
+        `INSERT INTO achievements (name, description, icon, points_reward, criteria_type, criteria_value, sort_order)
+         VALUES ($1,$2,$3,$4,$5,$6,$7)
+         ON CONFLICT DO NOTHING`,
+        a
+      ));
+    }
+
+    await Promise.all(ops);
+    res.json({ success: true, message: 'achievements + member_achievements ready (with seed catalogue)' });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-admin-crud ─────────────────────────
 // Theme 5 / feedback #9 (admin), #31, #34, #35 — schema for the
 // announcements ticker, activities catalogue, store-credit config.

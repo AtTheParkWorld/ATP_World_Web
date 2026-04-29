@@ -802,6 +802,8 @@
                 style="background:none;border:none;border-bottom:2px solid #7AC231;color:#fff;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">📣 Announcements</button>
         <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["activities"]'
                 style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">🏃 Activities</button>
+        <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["achievements"]'
+                style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">🏆 Achievements</button>
         <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["config"]'
                 style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">⚙️ System Config</button>
       </div>
@@ -861,6 +863,41 @@
               </div>
             </div>
             <div id="activitiesList"><div style="padding:14px;color:#555;text-align:center">Loading…</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Achievements tab -->
+      <div class="settings-pane" id="settings-pane-achievements" style="display:none">
+        <div class="admin-section">
+          <div class="admin-section-head">
+            <span class="admin-section-title">Achievements</span>
+            <button class="admin-btn admin-btn-primary" data-atp-call="showAchievementForm" style="font-size:12px;padding:7px 14px">+ New achievement</button>
+          </div>
+          <div class="admin-section-body">
+            <div style="font-size:12px;color:#888;margin-bottom:16px">Catalogue of badges members can unlock. Auto-award triggers fire on session count, streak length, and active referrals. <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#7AC231">manual</code> achievements have to be granted from the table below.</div>
+            <div id="achievementFormWrap" style="display:none;background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:16px">
+              <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:12px" id="achievementFormTitle">New achievement</div>
+              <input type="hidden" id="achEditId" value="">
+              <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">
+                <div><label class="admin-form-label" for="achName">Name *</label><input class="admin-form-input" type="text" id="achName" placeholder="e.g. Marathon Master"></div>
+                <div><label class="admin-form-label" for="achIcon">Icon (emoji)</label><input class="admin-form-input" type="text" id="achIcon" placeholder="🏆" maxlength="4"></div>
+              </div>
+              <div style="margin-bottom:10px"><label class="admin-form-label" for="achDesc">Description</label><input class="admin-form-input" type="text" id="achDesc" placeholder="What does the member need to do?"></div>
+              <div style="margin-bottom:10px"><label class="admin-form-label" for="achBadge">Badge image URL (optional)</label><input class="admin-form-input" type="url" id="achBadge" placeholder="https://… preferred PNG/SVG, displayed at 48px"></div>
+              <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+                <div><label class="admin-form-label" for="achCriteriaType">Trigger</label><select class="admin-form-select" id="achCriteriaType"><option value="manual">Manual award only</option><option value="sessions">Sessions attended</option><option value="streak">Current streak (days)</option><option value="referrals">Active referrals</option></select></div>
+                <div><label class="admin-form-label" for="achCriteriaValue">Threshold</label><input class="admin-form-input" type="number" id="achCriteriaValue" value="0" min="0"></div>
+                <div><label class="admin-form-label" for="achPoints">Points reward</label><input class="admin-form-input" type="number" id="achPoints" value="0" min="0"></div>
+                <div><label class="admin-form-label" for="achSort">Sort</label><input class="admin-form-input" type="number" id="achSort" value="100" min="0"></div>
+              </div>
+              <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#aaa;margin-bottom:14px"><input type="checkbox" id="achActive" checked> Active</label>
+              <div style="display:flex;gap:8px">
+                <button class="admin-btn admin-btn-primary" data-atp-call="saveAchievement" style="font-size:12px">Save</button>
+                <button class="admin-btn" data-atp-call="cancelAchievementForm" style="font-size:12px">Cancel</button>
+              </div>
+            </div>
+            <div id="achievementsList"><div style="padding:14px;color:#555;text-align:center">Loading…</div></div>
           </div>
         </div>
       </div>

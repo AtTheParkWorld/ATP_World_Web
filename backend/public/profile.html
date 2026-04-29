@@ -1197,13 +1197,63 @@ function renderSessions(el, sessions) {
 }
 
 function renderAchievements(el, list) {
+  if (!el) return;
+  if (!list || !list.length) {
+    el.innerHTML = '<div style="grid-column:1/-1;padding:30px;text-align:center;color:var(--muted);font-size:13px">No achievements available yet.</div>';
+    return;
+  }
   el.innerHTML = list.map(function(a){
-    return "<div class='achievement "+(a.unlocked?"unlocked":"locked")+"'>"+
-      "<div class='ach-icon'>"+a.icon+"</div>"+
-      "<div class='ach-name'>"+a.name+"</div>"+
-      "<div class='ach-desc'>"+a.desc+"</div>"+
+    var unlocked = !!a.unlocked;
+    var iconHtml = a.badge_image_url
+      ? '<img src="' + a.badge_image_url + '" alt="" style="width:48px;height:48px;object-fit:contain;display:block;margin:0 auto">'
+      : '<div class="ach-icon">' + (a.icon || '🏅') + '</div>';
+    var ptsBadge = (a.points_reward > 0)
+      ? '<div style="font-size:10px;font-weight:700;color:var(--green);margin-top:4px">+' + a.points_reward + ' pts</div>'
+      : '';
+    // Locked items get a progress strip if criteria is auto-evaluated
+    var progressBar = '';
+    if (!unlocked && a.criteria_type && a.criteria_type !== 'manual' && a.criteria_value) {
+      var pct = a.progress_pct || 0;
+      progressBar =
+        '<div style="margin-top:8px;height:4px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden">' +
+          '<div style="height:100%;width:' + pct + '%;background:var(--green);transition:width .8s ease"></div>' +
+        '</div>' +
+        '<div style="font-size:10px;color:var(--muted);margin-top:4px">' + (a.progress || 0) + ' / ' + a.criteria_value + '</div>';
+    }
+    var desc = (a.description || a.desc || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return "<div class='achievement " + (unlocked ? "unlocked" : "locked") + "'>" +
+      iconHtml +
+      "<div class='ach-name'>" + (a.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + "</div>" +
+      "<div class='ach-desc'>" + desc + "</div>" +
+      ptsBadge +
+      progressBar +
     "</div>";
   }).join("");
+}
+
+// Load achievements from /api/achievements/me — replaces the mock ACHIEVEMENTS array
+function loadAchievements() {
+  if (!window.ATP || !window.ATP.isLoggedIn()) return;
+  fetch('/api/achievements/me', {
+    headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('atp_token')||'') }
+  })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(data){
+      if (!data || !data.achievements) return;
+      ACHIEVEMENTS = data.achievements;
+      renderAchievements(document.getElementById("allAchievements"), ACHIEVEMENTS);
+      // Update the recent-achievements widget on Overview tab too
+      var recent = ACHIEVEMENTS.filter(function(a){return a.unlocked;}).slice(0,4);
+      var recentEl = document.getElementById('recentAchievements');
+      if (recentEl) renderAchievements(recentEl, recent.length ? recent : ACHIEVEMENTS.slice(0,4));
+      // Update header counter "8 of 24 unlocked"
+      var counter = document.querySelector('#panel-achievements .widget-head span:last-child');
+      if (counter) counter.textContent = (data.unlocked_count || 0) + ' of ' + ACHIEVEMENTS.length + ' unlocked';
+      // Update the stats-bar achievements number too (4th child)
+      var stats = document.querySelectorAll('.pstat-num');
+      if (stats[4]) stats[4].textContent = data.unlocked_count || 0;
+    })
+    .catch(function(){});
 }
 
 function renderTribe(el) {
@@ -2282,6 +2332,7 @@ function loadRealProfileData() {
     loadReferrals();
     loadFriends();
     loadStreak();
+    loadAchievements();
   }).catch(function(){});
 }
 
