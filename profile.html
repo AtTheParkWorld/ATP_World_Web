@@ -559,11 +559,19 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
         <div class="widget">
           <div class="widget-head"><span class="widget-title">🔥 Current Streak</span><span class="widget-action" data-atp-call="showTab" data-args='["streak"]'>Full view →</span></div>
           <div class="widget-body">
+            <!-- Mini version of the streak progression bar — populated by renderStreak() so this stays in sync with the My Streak tab -->
             <div class="streak-hero">
-              <div class="streak-fire-big">🔥</div>
-              <div><div class="streak-num-big">14</div><div class="streak-days">days in a row · Best: 32 days</div></div>
+              <div class="streak-fire-big" id="streakFireMini">💤</div>
+              <div>
+                <div class="streak-num-big" id="streakCurrentMini">0</div>
+                <div class="streak-days" id="streakDaysLabelMini">days in a row · Best: 0 days</div>
+              </div>
             </div>
-            <div class="streak-grid" id="streakMiniGrid"></div>
+            <div style="margin-top:14px">
+              <div class="streak-progress-track" style="height:10px">
+                <div class="streak-progress-fill" id="streakProgressFillMini" style="width:0%"></div>
+              </div>
+            </div>
           </div>
         </div>
         <div class="widget">
@@ -2373,10 +2381,20 @@ function renderStreak(s) {
   var pctRaw = Math.min(current, 14) / 14;
   var fill = document.getElementById('streakProgressFill');
   if (fill) {
-    // start at 0 then animate up so the user sees the fill happen
     fill.style.width = '0%';
     requestAnimationFrame(function(){
       requestAnimationFrame(function(){ fill.style.width = (pctRaw * 100) + '%'; });
+    });
+  }
+  // Mirror onto the Overview tab's mini widget so both stay in sync
+  setText('streakCurrentMini', current);
+  var miniLbl = document.getElementById('streakDaysLabelMini');
+  if (miniLbl) miniLbl.textContent = (current === 1 ? 'day in a row' : 'days in a row') + ' · Best: ' + longest + ' day' + (longest === 1 ? '' : 's');
+  var fillMini = document.getElementById('streakProgressFillMini');
+  if (fillMini) {
+    fillMini.style.width = '0%';
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){ fillMini.style.width = (pctRaw * 100) + '%'; });
     });
   }
 
@@ -2405,15 +2423,15 @@ function renderStreak(s) {
     else                    inspire.textContent = '🚀 Beyond the streak — you ARE the community.';
   }
 
-  // Fire emoji intensity
-  var fire = document.getElementById('streakFire');
-  if (fire) {
-    if      (current >= 30) fire.textContent = '🚀';
-    else if (current >= 14) fire.textContent = '🏆';
-    else if (current >= 8)  fire.textContent = '⚡';
-    else if (current >= 1)  fire.textContent = '🔥';
-    else                    fire.textContent = '💤';
-  }
+  // Fire emoji intensity (applied to both the full and mini widgets)
+  var fireEmoji = (current >= 30) ? '🚀'
+                : (current >= 14) ? '🏆'
+                : (current >= 8)  ? '⚡'
+                : (current >= 1)  ? '🔥'
+                                  : '💤';
+  ['streakFire','streakFireMini'].forEach(function(id){
+    var el = document.getElementById(id); if (el) el.textContent = fireEmoji;
+  });
 }
 
 loadRealProfileData();
