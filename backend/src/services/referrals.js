@@ -55,17 +55,29 @@ async function awardPoints(client, memberId, amount, reason, refId, description)
 /**
  * On registration. Persists the referral relationship (immutable per
  * UNIQUE(referred_id) constraint — #19) and awards the signup bonus.
- * Pass either an explicit referrerId or a referral_code (member_number)
- * which we'll resolve.
+ * Pass either an explicit referrerId or a referralCode — accepts both
+ * the friendly per-member code (members.referral_code, e.g. "fredy-a7k")
+ * AND the legacy member_number (e.g. "ATP-00001") so old shared links
+ * keep working.
  */
 async function recordSignupReferral({ referrerId, referralCode, newMemberId }) {
   if (!newMemberId) return null;
   let resolvedReferrer = referrerId;
   if (!resolvedReferrer && referralCode) {
+    // Try the new friendly code first, then fall back to member_number.
     const { rows } = await query(
-      'SELECT id FROM members WHERE LOWER(member_number)=LOWER($1) LIMIT 1',
+      `SELECT id FROM members
+        WHERE LOWER(referral_code) = LOWER($1)
+           OR LOWER(member_number) = LOWER($1)
+        LIMIT 1`,
       [referralCode]
-    );
+    ).catch(async (e) => {
+      // Pre-migration fallback: referral_code column doesn't exist yet.
+      if (e.code === '42703') {
+        return query('SELECT id FROM members WHERE LOWER(member_number)=LOWER($1) LIMIT 1', [referralCode]);
+      }
+      throw e;
+    });
     if (rows.length) resolvedReferrer = rows[0].id;
   }
   if (!resolvedReferrer) return null;
@@ -155,8 +167,90 @@ async function rewardReferrerForPremiumRenewal(memberId) {
   }
 }
 
+/**
+ * Friendly per-member referral code.
+ *
+ * Format: `firstname-XXX` (lowercase, dash, 3 alphanumeric chars).
+ * Examples:  fredy-a7k   mary-b2p   omar-x9k
+ *
+ * - Strips diacritics + any non-letter so "Mohammed Al-Sayed" → "mohammed-…".
+ * - Falls back to "atp" if first_name is empty/missing.
+ * - Caps the name at 12 chars so the code stays short ("alexandros" → "alexandros-x9k").
+ * - 3-char base32 suffix (no I/O/0/1 to avoid OCR/typo confusion). 32^3 = 32k
+ *   combos per name. Loops with a fresh suffix on UNIQUE violations.
+ */
+const _SUFFIX_ALPHA = 'abcdefghjkmnpqrstuvwxyz23456789'; // 31 chars; no i/l/o/0/1
+function _suffix() {
+  let s = '';
+  for (let i = 0; i < 3; i++) s += _SUFFIX_ALPHA[Math.floor(Math.random() * _SUFFIX_ALPHA.length)];
+  return s;
+}
+function _slugifyName(name) {
+  if (!name) return 'atp';
+  // Decompose accents so "José" → "jose"; drop anything that isn't a-z.
+  const cleaned = String(name)
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[^a-z]/g, '');
+  return (cleaned || 'atp').slice(0, 12);
+}
+
+async function generateUniqueReferralCode(firstName) {
+  const base = _slugifyName(firstName);
+  // Up to 8 retries — collision after that means we got incredibly unlucky
+  // or the name is over-saturated. Falls through to a longer suffix.
+  for (let attempt = 0; attempt < 8; attempt++) {
+    const code = base + '-' + _suffix();
+    const { rows } = await query(
+      'SELECT 1 FROM members WHERE LOWER(referral_code) = LOWER($1) LIMIT 1',
+      [code]
+    );
+    if (!rows.length) return code;
+  }
+  // Last resort — 5 chars instead of 3 makes a collision astronomically unlikely.
+  return base + '-' + _suffix() + _suffix().slice(0, 2);
+}
+
+/**
+ * Lazily ensure a member has a referral code. Called from /auth/me + the
+ * registration path so legacy members get one on first read after deploy
+ * even before the bulk migration runs. Failure is swallowed — the route
+ * keeps working; we just won't have a code yet.
+ */
+async function ensureReferralCode(memberId, firstName) {
+  if (!memberId) return null;
+  try {
+    const { rows } = await query('SELECT referral_code FROM members WHERE id=$1', [memberId]);
+    if (rows.length && rows[0].referral_code) return rows[0].referral_code;
+    const code = await generateUniqueReferralCode(firstName);
+    await query(
+      'UPDATE members SET referral_code=$1 WHERE id=$2 AND referral_code IS NULL',
+      [code, memberId]
+    );
+    // Re-read in case another request raced us — UNIQUE handles the race
+    // and we just take whichever code won.
+    const { rows: re } = await query('SELECT referral_code FROM members WHERE id=$1', [memberId]);
+    return (re[0] && re[0].referral_code) || code;
+  } catch (e) {
+    if (e.code === '42703') return null; // pre-migration; column doesn't exist yet
+    if (e.code === '23505') {
+      // Suffix collision after the SELECT but before the UPDATE — retry once.
+      try {
+        const code = await generateUniqueReferralCode(firstName);
+        await query('UPDATE members SET referral_code=$1 WHERE id=$2 AND referral_code IS NULL', [code, memberId]);
+        return code;
+      } catch (e2) { console.warn('[referrals] ensureReferralCode retry failed', e2.message); return null; }
+    }
+    console.warn('[referrals] ensureReferralCode failed', e.message);
+    return null;
+  }
+}
+
 module.exports = {
   recordSignupReferral,
+  generateUniqueReferralCode,
+  ensureReferralCode,
   rewardReferrerForCheckin,
   rewardReferrerForPremiumRenewal,
   getConfig,

@@ -75,8 +75,8 @@ router.post('/register', async (req, res, next) => {
     const token  = generateJWT(member.id);
 
     // Theme 4 / #19 — record referral relationship + award referrer's signup
-    // bonus. Both `referrer_id` (uuid) and `referral_code` (member_number)
-    // are accepted; the latter is friendlier for human-shareable links.
+    // bonus. Both `referrer_id` (uuid) and `referral_code` (friendly code
+    // OR legacy member_number) are accepted.
     if (referrer_id || referral_code) {
       referrals.recordSignupReferral({
         referrerId:    referrer_id || null,
@@ -84,6 +84,13 @@ router.post('/register', async (req, res, next) => {
         newMemberId:   member.id,
       }).catch(function(){ /* fire-and-forget */ });
     }
+
+    // Generate the new friendly referral code (firstname-XXX) for this
+    // member so they have something shareable from day one. Best-effort —
+    // failure here doesn't block registration.
+    referrals.ensureReferralCode(member.id, member.first_name)
+      .then(function(code){ if (code) member.referral_code = code; })
+      .catch(function(){});
 
     // Send welcome email
     await emailService.sendWelcome(member);
@@ -301,6 +308,13 @@ router.get('/me', authenticate, async (req, res, next) => {
     if (!rows.length) return res.status(404).json({ error: 'Member not found' });
     const member = rows[0];
     delete member.password_hash;
+    // Lazy-backfill the friendly referral_code so members who registered
+    // before the migration shipped get one on their next page load. The
+    // helper is idempotent + swallows column-missing errors.
+    if (!member.referral_code) {
+      const code = await referrals.ensureReferralCode(member.id, member.first_name);
+      if (code) member.referral_code = code;
+    }
     res.json({ member });
   } catch (err) {
     // If the countries column/table doesn't exist yet, fall back to the
@@ -861,6 +875,40 @@ router.post('/migrate-streaks', async (req, res, next) => {
     ops.push(query(`CREATE INDEX IF NOT EXISTS idx_admin_notif_type   ON admin_notifications (type, created_at DESC)`));
     await Promise.all(ops);
     res.json({ success: true, message: 'Streak + admin notifications schema ready' });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/migrate-referral-codes ─────────────────────
+// Adds members.referral_code column + backfills every existing member
+// with a friendly per-member code (firstname-XXX). Idempotent — re-run
+// is a no-op for members who already have a code.
+router.post('/migrate-referral-codes', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    // 1. Add the column + unique index. Nullable on creation so we can
+    //    backfill in a second pass without violating constraints.
+    await query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS referral_code VARCHAR(40)`);
+    await query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_members_referral_code ON members (LOWER(referral_code)) WHERE referral_code IS NOT NULL`);
+
+    // 2. Backfill anyone without a code. Use the helper so the algorithm
+    //    matches what's used at signup + lazily on /auth/me.
+    const { rows: pending } = await query(
+      `SELECT id, first_name FROM members WHERE referral_code IS NULL`
+    );
+    let assigned = 0;
+    for (const m of pending) {
+      const code = await referrals.ensureReferralCode(m.id, m.first_name);
+      if (code) assigned++;
+    }
+
+    res.json({
+      success: true,
+      message: `Referral codes ready (${pending.length} members backfilled, ${assigned} assigned)`,
+      backfilled: assigned,
+      members_scanned: pending.length,
+    });
   } catch (err) { next(err); }
 });
 
