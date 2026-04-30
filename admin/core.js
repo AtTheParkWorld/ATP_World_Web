@@ -83,10 +83,17 @@ document.getElementById('adminPass').addEventListener('keydown', function(e){
 // ── NAVIGATION ────────────────────────────────────────────────
 function showAdminSection(name, btn) {
   if (name === 'sessions') { loadCities(); loadCoaches(); loadTribes(); setTimeout(loadSessionsList, 300); }
-  ['dashboard','members','ambassadors','sessions','challenges','coaches','analytics','content'].forEach(function(s){
-    document.getElementById('section-'+s).style.display = 'none';
+  // List MUST include every section id used in admin.html. Missing one
+  // means that section never gets hidden, so navigating away leaves it
+  // visible underneath the new section. 'settings' was added in Theme
+  // 5b and was missing from this list — fixed here.
+  ['dashboard','members','ambassadors','sessions','challenges','coaches','analytics','content','settings'].forEach(function(s){
+    var el = document.getElementById('section-'+s);
+    if (el) el.style.display = 'none';
   });
-  document.getElementById('section-'+name).style.display = 'block';
+  var target = document.getElementById('section-'+name);
+  if (target) target.style.display = 'block';
+  else { console.warn('[admin] unknown section:', name); return; }
   document.querySelectorAll('.admin-nav-item').forEach(function(b){b.classList.remove('active');});
   if (btn) btn.classList.add('active');
   else {
