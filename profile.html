@@ -1736,9 +1736,11 @@ function openCustomerPortal(_ev, btnEl) {
 // the user feedback immediately and re-fetch /auth/me a moment later.
 function _atpHandleStripeReturn() {
   var qs = new URLSearchParams(window.location.search);
-  var flag = qs.get('upgrade');
-  if (!flag) return;
-  if (flag === 'success') {
+  var upgradeFlag = qs.get('upgrade');     // premium subscription return
+  var bookingFlag = qs.get('booking');     // paid-session return (Theme 11)
+  if (!upgradeFlag && !bookingFlag) return;
+
+  if (upgradeFlag === 'success') {
     alert('🎉 Welcome to ATP Premium! Your subscription is being activated — refresh in a few seconds if it hasn\'t shown up yet.');
     // Webhook is async; poll /auth/me twice over the next 6 sec to pick up
     // the new subscription_type without forcing the user to refresh.
@@ -1750,10 +1752,23 @@ function _atpHandleStripeReturn() {
         }).catch(function(){});
       }
     }, 3000);
-  } else if (flag === 'cancel') {
-    // No-op — they backed out. Just clean the URL.
   }
-  // Strip the param so a refresh doesn't re-trigger the toast.
+
+  if (bookingFlag === 'success') {
+    alert('✅ Payment received — your booking is being confirmed. It\u2019ll appear in your sessions in a few seconds.');
+    // The Stripe webhook flips the booking from pending_payment →
+    // confirmed asynchronously. Re-fetch the bookings list a few times
+    // over the next 8 seconds so the new session lands without the
+    // member needing to refresh manually.
+    var attempts = 0;
+    var refresh = function(){
+      attempts++;
+      if (typeof loadBookings === 'function') loadBookings().catch(function(){});
+      if (attempts < 4) setTimeout(refresh, 2500);
+    };
+    setTimeout(refresh, 1500);
+  }
+  // Strip the params so a refresh doesn't re-trigger the toast.
   history.replaceState({}, '', window.location.pathname);
 }
 

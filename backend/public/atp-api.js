@@ -158,6 +158,14 @@
     getFriends:    ()     => get('/members/friends'),
     getLeaderboard:(period, cityId) => get(`/members/leaderboard?period=${period||'mtd'}${cityId?'&city_id='+cityId:''}`),
 
+    // Short-name aliases — profile.html and a couple of older callers
+    // use these without the `get` prefix. Keeping both so we don't break
+    // anything that might still call the older form.
+    bookings:      ()     => get('/members/bookings'),
+    pointsHistory: (page) => get(`/members/points-history?page=${page||1}`),
+    referrals:     ()     => get('/members/referrals'),
+    friends:       ()     => get('/members/friends'),
+
     updateProfile: (data) => patch('/members/profile', data),
     updateAvatar:  (url)  => patch('/members/avatar', { avatar_url: url }),
 
