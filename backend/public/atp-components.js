@@ -538,9 +538,22 @@
   }
 
   /* ── Boot ──────────────────────────────────────────────────── */
+  // Ticker is intentionally limited to the member profile page (per
+  // founder request). Other pages still get the boot/nav logic but
+  // skip loadTicker() entirely so the marquee never mounts and the
+  // body class never gets added — keeps the rest of the app clean.
+  function _tickerAllowedHere() {
+    var p = (window.location.pathname || '').toLowerCase();
+    if (p === '/profile.html' || p === '/profile' || p === '/profile/') return true;
+    // Page can opt-in explicitly by setting window.ATP_TICKER = true
+    // before atp-components loads (future-proofing for new surfaces
+    // like /coach or a logged-in dashboard).
+    return !!window.ATP_TICKER;
+  }
+
   function boot() {
     mountNav();
-    loadTicker();
+    if (_tickerAllowedHere()) loadTicker();
     document.addEventListener('click', handleNavClick);
     document.addEventListener('click', handleAuthAction);
     document.addEventListener('click', handleAtpCall);
