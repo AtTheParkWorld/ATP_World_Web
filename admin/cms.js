@@ -295,16 +295,23 @@ async function handleCmsUpload(event) {
       });
       var d = await res.json();
       if (d.success) {
-        msg.textContent = '✅ Uploaded (' + d.size_kb + ' KB)';
+        msg.textContent = '✅ Uploaded (' + d.size_kb + ' KB) — added to Media Library';
         msg.style.color = '#7AC231';
-        // Set the URL in the target field
+        // Set the URL in the target field if we were called from a CMS
+        // editor field. Standalone Library uploads have no target.
         if (_uploadTargetFieldId) {
           var target = document.getElementById(_uploadTargetFieldId);
           if (target) target.value = d.url;
         }
         setTimeout(function() {
           document.getElementById('mediaUploadModal').style.display = 'none';
-          renderCmsEditor(); // re-render to show preview
+          // Refresh whichever view we're on. Library view → re-list;
+          // CMS editor view → re-render so the preview shows the new URL.
+          if (CMS_CURRENT_PAGE === '_media') {
+            loadMediaLibrary();
+          } else {
+            renderCmsEditor();
+          }
         }, 800);
       } else {
         throw new Error(d.error || 'Upload failed');
@@ -317,6 +324,23 @@ async function handleCmsUpload(event) {
   reader.readAsDataURL(file);
 }
 
+// Standalone upload button shown at the top of the Media Library tab.
+// Same modal as field-level uploads but with `_uploadTargetFieldId = null`
+// so the URL isn't auto-pasted anywhere — files just land in the library
+// and admin can copy the URL to use elsewhere.
+function _libraryUploadHeader() {
+  return '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:12px;padding:16px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
+    '<div style="flex:1;min-width:200px">' +
+      '<div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:4px">📤 Upload to library</div>' +
+      '<div style="font-size:11px;color:#888;line-height:1.5">Drop images or videos here \u2014 they\u2019ll appear below and can be reused on any page. Max <strong>10&nbsp;MB</strong>. Recommended: hero 1920×1080, card 800×600, square 600×600, video MP4 &lt;10&nbsp;MB.</div>' +
+    '</div>' +
+    '<div style="display:flex;gap:8px">' +
+      '<button class="admin-btn admin-btn-primary" style="font-size:12px;padding:9px 16px" onclick="openCmsUpload(null,\'image\')">📁 Image</button>' +
+      '<button class="admin-btn" style="font-size:12px;padding:9px 16px" onclick="openCmsUpload(null,\'video\')">🎥 Video</button>' +
+    '</div>' +
+  '</div>';
+}
+
 async function loadMediaLibrary() {
   var body = document.getElementById('cmsEditorBody');
   try {
@@ -326,14 +350,16 @@ async function loadMediaLibrary() {
     }).then(r => r.json());
     var media = data.media || [];
     if (!media.length) {
-      body.innerHTML = '<div style="text-align:center;color:#555;padding:60px">' +
+      body.innerHTML = _libraryUploadHeader() +
+        '<div style="text-align:center;color:#555;padding:60px">' +
         '<div style="font-size:48px;margin-bottom:12px;opacity:.3">🖼</div>' +
         '<div style="font-size:14px">No media uploaded yet.</div>' +
-        '<div style="font-size:12px;color:#444;margin-top:6px">Upload images or videos from any editor field to see them here.</div>' +
+        '<div style="font-size:12px;color:#444;margin-top:6px">Use the upload buttons above to add images or videos.</div>' +
       '</div>';
       return;
     }
-    body.innerHTML = '<div style="font-size:12px;color:#888;margin-bottom:14px">' + media.length + ' files</div>' +
+    body.innerHTML = _libraryUploadHeader() +
+      '<div style="font-size:12px;color:#888;margin-bottom:14px">' + media.length + ' files</div>' +
       '<div class="cms-media-grid">' +
       media.map(function(m) {
         var isVideo = m.kind === 'video';
