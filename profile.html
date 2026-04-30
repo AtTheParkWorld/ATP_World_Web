@@ -1789,6 +1789,12 @@ function loadStoreBestSellers() {
     '  } }' +
     '} }';
 
+  // 8s hard timeout — Shopify Storefront has been observed to hang
+  // intermittently when behind certain network paths. We'd rather hide
+  // the widget than leave a permanent skeleton.
+  var ctrl = new AbortController();
+  var hangTimer = setTimeout(function(){ ctrl.abort(); }, 8000);
+
   fetch('https://' + ATP_SHOPIFY_DOMAIN + '/api/2025-01/graphql.json', {
     method: 'POST',
     headers: {
@@ -1797,7 +1803,9 @@ function loadStoreBestSellers() {
       'Accept': 'application/json',
     },
     body: JSON.stringify({ query: gql }),
+    signal: ctrl.signal,
   })
+    .finally(function(){ clearTimeout(hangTimer); })
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(data){
       var edges = data && data.data && data.data.products && data.data.products.edges || [];
