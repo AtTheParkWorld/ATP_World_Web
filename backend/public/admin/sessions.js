@@ -286,6 +286,13 @@ async function createSession() {
   var capacity  = parseInt(document.getElementById('sCap').value) || 30;
   var points    = parseInt(document.getElementById('sPoints').value) || 10;
   var stype     = document.getElementById('sType').value;
+  // Paid-session pricing — admin can set EITHER points OR currency OR
+  // both. Backend determines payment options shown to the member.
+  var price_currency_str = (document.getElementById('sPrice') || {}).value;
+  var price_points_str   = (document.getElementById('sPricePoints') || {}).value;
+  var price_currency = price_currency_str ? Number(price_currency_str) : 0;
+  var price_points   = price_points_str ? parseInt(price_points_str, 10) : 0;
+  var currency_code  = (document.getElementById('sCurrency') || {}).value || 'AED';
   var desc      = document.getElementById('sDesc').value.trim();
   var maps      = document.getElementById('sMaps').value.trim();
   var live      = document.getElementById('sLiveEnabled').checked;
@@ -336,6 +343,10 @@ async function createSession() {
     scheduled_at, duration_mins: duration, points_reward: points,
     is_live_enabled: live, session_category: cat,
     sport_type: sport, courts,
+    // Paid-session pricing (Theme 11)
+    price:          price_currency || 0,
+    price_points:   price_points || 0,
+    currency_code:  currency_code || 'AED',
     repeat_dates: repeat_dates && repeat_dates.length > 1 ? repeat_dates : null,
   };
 
@@ -384,6 +395,9 @@ function resetSessionForm() {
   document.getElementById('sCountry').value = '';
   document.getElementById('sStartDate').value = '';
   document.getElementById('sEndDate').value = '';
+  if (document.getElementById('sPrice'))       document.getElementById('sPrice').value = '';
+  if (document.getElementById('sPricePoints')) document.getElementById('sPricePoints').value = '';
+  if (document.getElementById('sCurrency'))    document.getElementById('sCurrency').value = 'AED';
   document.querySelectorAll('.day-check-btn input').forEach(function(cb){ cb.checked = false; });
   document.getElementById('dayTimesContainer').innerHTML = '';
   selectCategory('regular');
@@ -404,6 +418,11 @@ function editSession(s) {
   document.getElementById('sCap').value = s.capacity || 30;
   document.getElementById('sPoints').value = s.points_reward || 10;
   document.getElementById('sType').value = s.session_type || 'free';
+  // Paid-session pricing — load existing values; the form fields are
+  // optional in the markup so editing legacy sessions still works.
+  if (document.getElementById('sPrice'))       document.getElementById('sPrice').value       = (s.price != null && s.price !== '0' && s.price !== 0) ? Number(s.price).toFixed(2) : '';
+  if (document.getElementById('sPricePoints')) document.getElementById('sPricePoints').value = s.price_points || '';
+  if (document.getElementById('sCurrency'))    document.getElementById('sCurrency').value    = s.currency_code || 'AED';
   if (s.coach_id) document.getElementById('sCoach').value = s.coach_id;
   if (s.tribe_id) document.getElementById('sTribe').value = s.tribe_id;
   // Set city + country

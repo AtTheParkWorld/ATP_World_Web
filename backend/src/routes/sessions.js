@@ -17,29 +17,64 @@ router.get('/', optionalAuth, async (req, res, next) => {
     if (city_id)  { where.push(`s.city_id = $${idx++}`);       params.push(city_id); }
     if (tribe)    { where.push(`t.slug = $${idx++}`);           params.push(tribe); }
 
-    const { rows } = await query(
-      `SELECT s.id, s.name, s.description, s.scheduled_at, s.ends_at,
-              s.location, s.location_maps_url, s.session_type, s.price,
-              s.capacity, s.points_reward, s.status, s.is_live_enabled,
-              s.session_category, s.sport_type, s.courts, s.cancellation_reason,
-              s.city_id, s.coach_id,
-              t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
-              c.name AS city_name,
-              m.first_name AS coach_first, m.last_name AS coach_last,
-              m.avatar_url AS coach_avatar,
-              TRIM(CONCAT(m.first_name, ' ', m.last_name)) AS coach_name,
-              (SELECT COUNT(*) FROM bookings b
-               WHERE b.session_id=s.id AND b.status IN ('confirmed','attended')) AS registrations_count,
-              (SELECT COUNT(*) FROM waiting_list wl WHERE wl.session_id=s.id) AS waitlist_count
-       FROM sessions s
-       LEFT JOIN tribes t ON t.id = s.tribe_id
-       LEFT JOIN cities c ON c.id = s.city_id
-       LEFT JOIN members m ON m.id = s.coach_id
-       WHERE ${where.join(' AND ')}
-       ORDER BY s.scheduled_at ASC
-       LIMIT $${idx} OFFSET $${idx + 1}`,
-      [...params, limit, offset]
-    );
+    // Theme 11 — return price_points + currency_code so the booking
+    // modal can render the payment options. Falls back to the legacy
+    // column set if migrate-paid-sessions hasn't run yet.
+    let rows;
+    try {
+      const r = await query(
+        `SELECT s.id, s.name, s.description, s.scheduled_at, s.ends_at,
+                s.location, s.location_maps_url, s.session_type, s.price,
+                s.price_points, s.currency_code,
+                s.capacity, s.points_reward, s.status, s.is_live_enabled,
+                s.session_category, s.sport_type, s.courts, s.cancellation_reason,
+                s.city_id, s.coach_id,
+                t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
+                c.name AS city_name,
+                m.first_name AS coach_first, m.last_name AS coach_last,
+                m.avatar_url AS coach_avatar,
+                TRIM(CONCAT(m.first_name, ' ', m.last_name)) AS coach_name,
+                (SELECT COUNT(*) FROM bookings b
+                 WHERE b.session_id=s.id AND b.status IN ('confirmed','attended')) AS registrations_count,
+                (SELECT COUNT(*) FROM waiting_list wl WHERE wl.session_id=s.id) AS waitlist_count
+         FROM sessions s
+         LEFT JOIN tribes t ON t.id = s.tribe_id
+         LEFT JOIN cities c ON c.id = s.city_id
+         LEFT JOIN members m ON m.id = s.coach_id
+         WHERE ${where.join(' AND ')}
+         ORDER BY s.scheduled_at ASC
+         LIMIT $${idx} OFFSET $${idx + 1}`,
+        [...params, limit, offset]
+      );
+      rows = r.rows;
+    } catch (e) {
+      if (e.code !== '42703') throw e;
+      const r = await query(
+        `SELECT s.id, s.name, s.description, s.scheduled_at, s.ends_at,
+                s.location, s.location_maps_url, s.session_type, s.price,
+                0 AS price_points, NULL AS currency_code,
+                s.capacity, s.points_reward, s.status, s.is_live_enabled,
+                s.session_category, s.sport_type, s.courts, s.cancellation_reason,
+                s.city_id, s.coach_id,
+                t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
+                c.name AS city_name,
+                m.first_name AS coach_first, m.last_name AS coach_last,
+                m.avatar_url AS coach_avatar,
+                TRIM(CONCAT(m.first_name, ' ', m.last_name)) AS coach_name,
+                (SELECT COUNT(*) FROM bookings b
+                 WHERE b.session_id=s.id AND b.status IN ('confirmed','attended')) AS registrations_count,
+                (SELECT COUNT(*) FROM waiting_list wl WHERE wl.session_id=s.id) AS waitlist_count
+         FROM sessions s
+         LEFT JOIN tribes t ON t.id = s.tribe_id
+         LEFT JOIN cities c ON c.id = s.city_id
+         LEFT JOIN members m ON m.id = s.coach_id
+         WHERE ${where.join(' AND ')}
+         ORDER BY s.scheduled_at ASC
+         LIMIT $${idx} OFFSET $${idx + 1}`,
+        [...params, limit, offset]
+      );
+      rows = r.rows;
+    }
     res.json({ sessions: rows });
   } catch (err) { next(err); }
 });
@@ -113,6 +148,10 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
       session_category = 'regular',  // regular, social, team_sports
       sport_type,                    // padel, football, volleyball, badminton
       courts,                        // JSONB array for team sports
+      // Paid-session pricing (Theme 11). price already exists; price_points
+      // and currency_code are new — both optional, default to 0/AED.
+      price_points = 0,
+      currency_code = 'AED',
     } = req.body;
 
     if (!name || !city_id || !scheduled_at || !location) {
@@ -126,20 +165,46 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
     const created = await transaction(async (client) => {
       const sessions = [];
       for (const date of dates) {
-        const { rows } = await client.query(
-          `INSERT INTO sessions
-            (name, tribe_id, city_id, description, coach_id, location,
-             location_maps_url, session_type, price, capacity, scheduled_at,
-             duration_mins, points_reward, is_live_enabled, is_recurring,
-             session_category, sport_type, courts, created_by)
-           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
-           RETURNING *`,
-          [name, tribe_id, city_id, description, coach_id, location,
-           location_maps_url, session_type, price, capacity, date,
-           duration_mins, points_reward, is_live_enabled,
-           dates.length > 1, session_category, sport_type || null,
-           courts ? JSON.stringify(courts) : null, req.member.id]
-        );
+        // Try the full INSERT first (with price_points/currency_code).
+        // Falls back to the legacy column set if migrate-paid-sessions
+        // hasn't been run yet, so the route doesn't break before deploy.
+        let result;
+        try {
+          result = await client.query(
+            `INSERT INTO sessions
+              (name, tribe_id, city_id, description, coach_id, location,
+               location_maps_url, session_type, price, price_points, currency_code,
+               capacity, scheduled_at, duration_mins, points_reward, is_live_enabled, is_recurring,
+               session_category, sport_type, courts, created_by)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)
+             RETURNING *`,
+            [name, tribe_id, city_id, description, coach_id, location,
+             location_maps_url, session_type, price,
+             Math.max(0, parseInt(price_points) || 0),
+             (currency_code || 'AED').toUpperCase(),
+             capacity, date,
+             duration_mins, points_reward, is_live_enabled,
+             dates.length > 1, session_category, sport_type || null,
+             courts ? JSON.stringify(courts) : null, req.member.id]
+          );
+        } catch (e) {
+          if (e.code !== '42703') throw e;
+          result = await client.query(
+            `INSERT INTO sessions
+              (name, tribe_id, city_id, description, coach_id, location,
+               location_maps_url, session_type, price, capacity, scheduled_at,
+               duration_mins, points_reward, is_live_enabled, is_recurring,
+               session_category, sport_type, courts, created_by)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19)
+             RETURNING *`,
+            [name, tribe_id, city_id, description, coach_id, location,
+             location_maps_url, session_type, price, capacity, date,
+             duration_mins, points_reward, is_live_enabled,
+             dates.length > 1, session_category, sport_type || null,
+             courts ? JSON.stringify(courts) : null, req.member.id]
+          );
+        }
+        const { rows } = result;
         sessions.push(rows[0]);
       }
       return sessions;
@@ -356,21 +421,50 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
     const {
       name, tribe_id, city_id, description, coach_id, location, location_maps_url,
       session_type, capacity, scheduled_at, duration_mins, points_reward,
-      is_live_enabled, session_category, sport_type, courts
+      is_live_enabled, session_category, sport_type, courts,
+      // Paid-session pricing (Theme 11)
+      price = 0, price_points = 0, currency_code = 'AED',
     } = req.body;
 
-    const { rows } = await query(
-      `UPDATE sessions SET
-        name=$1, tribe_id=$2, city_id=$3, description=$4, coach_id=$5, location=$6,
-        location_maps_url=$7, session_type=$8, capacity=$9, scheduled_at=$10,
-        duration_mins=$11, points_reward=$12, is_live_enabled=$13,
-        session_category=$14, sport_type=$15, courts=$16, updated_at=NOW()
-       WHERE id=$17 RETURNING *`,
-      [name, tribe_id || null, city_id, description, coach_id, location, location_maps_url,
-       session_type, capacity, scheduled_at, duration_mins, points_reward,
-       is_live_enabled, session_category, sport_type || null,
-       courts ? JSON.stringify(courts) : null, id]
-    );
+    let rows;
+    try {
+      const r = await query(
+        `UPDATE sessions SET
+          name=$1, tribe_id=$2, city_id=$3, description=$4, coach_id=$5, location=$6,
+          location_maps_url=$7, session_type=$8, capacity=$9, scheduled_at=$10,
+          duration_mins=$11, points_reward=$12, is_live_enabled=$13,
+          session_category=$14, sport_type=$15, courts=$16,
+          price=$17, price_points=$18, currency_code=$19,
+          updated_at=NOW()
+         WHERE id=$20 RETURNING *`,
+        [name, tribe_id || null, city_id, description, coach_id, location, location_maps_url,
+         session_type, capacity, scheduled_at, duration_mins, points_reward,
+         is_live_enabled, session_category, sport_type || null,
+         courts ? JSON.stringify(courts) : null,
+         Number(price) || 0,
+         Math.max(0, parseInt(price_points) || 0),
+         (currency_code || 'AED').toUpperCase(),
+         id]
+      );
+      rows = r.rows;
+    } catch (e) {
+      if (e.code !== '42703') throw e;
+      // Pre-migration fallback (price_points / currency_code missing).
+      const r = await query(
+        `UPDATE sessions SET
+          name=$1, tribe_id=$2, city_id=$3, description=$4, coach_id=$5, location=$6,
+          location_maps_url=$7, session_type=$8, capacity=$9, scheduled_at=$10,
+          duration_mins=$11, points_reward=$12, is_live_enabled=$13,
+          session_category=$14, sport_type=$15, courts=$16, price=$17,
+          updated_at=NOW()
+         WHERE id=$18 RETURNING *`,
+        [name, tribe_id || null, city_id, description, coach_id, location, location_maps_url,
+         session_type, capacity, scheduled_at, duration_mins, points_reward,
+         is_live_enabled, session_category, sport_type || null,
+         courts ? JSON.stringify(courts) : null, Number(price) || 0, id]
+      );
+      rows = r.rows;
+    }
     if (!rows.length) return res.status(404).json({ error: 'Session not found' });
     res.json({ session: rows[0] });
   } catch (err) { next(err); }

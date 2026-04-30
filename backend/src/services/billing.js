@@ -210,6 +210,78 @@ async function recordEvent(event) {
   }
 }
 
+// Confirms a one-time session booking after Stripe Checkout completes.
+// metadata.type === 'session_booking' tells us this isn't a subscription.
+// We flip the booking from pending_payment → confirmed, attach payment
+// details, generate a QR token, and send the confirmation email.
+async function _confirmSessionBooking(checkoutSession) {
+  const meta = checkoutSession.metadata || {};
+  const bookingId = meta.booking_id || checkoutSession.client_reference_id;
+  if (!bookingId) {
+    console.warn('[billing] session_booking webhook arrived without booking_id', checkoutSession.id);
+    return;
+  }
+  const crypto = require('crypto');
+  const emailService = require('./email');
+
+  const { rows } = await query(
+    `SELECT b.id, b.status, b.member_id, b.session_id,
+            s.name AS session_name, s.scheduled_at, s.location,
+            m.member_number, m.first_name, m.last_name, m.email
+     FROM bookings b
+     JOIN sessions s ON s.id = b.session_id
+     JOIN members m  ON m.id = b.member_id
+     WHERE b.id = $1`,
+    [bookingId]
+  );
+  if (!rows.length) {
+    console.warn('[billing] session_booking for unknown booking', bookingId);
+    return;
+  }
+  const b = rows[0];
+  if (b.status === 'confirmed') return; // already processed (Stripe redelivery)
+
+  const qrToken = crypto.randomBytes(16).toString('hex');
+  const qrData = JSON.stringify({
+    id:      b.member_number,
+    name:    `${b.first_name} ${b.last_name}`,
+    email:   b.email,
+    session: b.session_name,
+    dayTime: new Date(b.scheduled_at).toLocaleString('en-AE', {
+      weekday: 'short', day: 'numeric', month: 'short',
+      hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Dubai',
+    }),
+    loc:     b.location,
+    booked:  new Date().toISOString(),
+    token:   qrToken,
+  });
+
+  const amount   = (checkoutSession.amount_total || 0) / 100;
+  const currency = (checkoutSession.currency || 'aed').toUpperCase();
+
+  await query(
+    `UPDATE bookings
+        SET status='confirmed',
+            qr_code=$1, qr_token=$2,
+            payment_method='stripe',
+            payment_amount=$3, payment_currency=$4,
+            stripe_session_id=$5,
+            paid_at=NOW(),
+            cancelled_at=NULL
+      WHERE id=$6`,
+    [qrData, qrToken, amount, currency, checkoutSession.id, b.id]
+  );
+
+  // Best-effort email — don't fail the webhook if email is down.
+  try {
+    await emailService.sendBookingConfirmation(
+      { id: b.member_id, member_number: b.member_number, first_name: b.first_name, last_name: b.last_name, email: b.email },
+      { name: b.session_name, scheduled_at: b.scheduled_at, location: b.location },
+      qrData, qrToken
+    );
+  } catch (e) { console.warn('[billing] booking confirmation email failed', e.message); }
+}
+
 // Top-level webhook event router. Pulls the full subscription object
 // from Stripe (so we always have current state, not just the diff that
 // triggered the event) and pushes it through syncSubscription.
@@ -217,9 +289,15 @@ async function handleWebhookEvent(event) {
   switch (event.type) {
     case 'checkout.session.completed': {
       const session = event.data.object;
+      // Two flows share this event type:
+      //   • subscription mode → premium membership (Theme 10)
+      //   • payment mode + metadata.type='session_booking' → one-time
+      //     paid-session purchase (Paid Sessions feature)
       if (session.mode === 'subscription' && session.subscription) {
         const sub = await stripe().subscriptions.retrieve(session.subscription);
         await syncSubscription(sub);
+      } else if (session.mode === 'payment' && session.metadata && session.metadata.type === 'session_booking') {
+        await _confirmSessionBooking(session);
       }
       break;
     }

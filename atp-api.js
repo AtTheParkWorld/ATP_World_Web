@@ -184,6 +184,9 @@
     cancel:        (id)        => del(`/bookings/${id}`),
     getQRData:     (token)     => get(`/bookings/${token}/qr-data`),
     submitFeedback:(id, rating, comment) => post(`/bookings/${id}/feedback`, { rating, comment }),
+    // Theme 11 — paid sessions: redeem with wallet points OR Stripe Checkout
+    payWithPoints: (id)        => post(`/bookings/${id}/pay-with-points`, {}),
+    checkout:      (id, opts={}) => post(`/bookings/${id}/checkout`, opts),
   };
 
   // ── POINTS ───────────────────────────────────────────────────

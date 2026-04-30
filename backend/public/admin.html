@@ -316,6 +316,31 @@
               <label class="admin-form-label" for="sDesc">Description</label>
               <input class="admin-form-input" type="text" id="sDesc" placeholder="Brief session description (optional)" aria-label="Brief session description (optional)">
             </div>
+
+            <!-- Paid-session pricing — set EITHER currency price OR points price OR both.
+                 Members will pick at booking time (Stripe checkout / wallet redemption).
+                 Leave both at 0 for a free session. -->
+            <div class="admin-form-group full" style="margin-top:8px;padding:14px;background:#0d1a0a;border-radius:10px;border:1px solid #1f3a0d">
+              <div style="font-family:var(--ff-display);font-size:13px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:8px">💰 Paid Session Pricing (optional)</div>
+              <div style="font-size:11px;color:#888;margin-bottom:12px;line-height:1.6">
+                Set <strong>currency price</strong> for Stripe payment, <strong>points price</strong> for wallet redemption, or both. Members choose at checkout.
+                Leave both at 0 for a free session.
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 110px 1fr;gap:10px">
+                <div>
+                  <label class="admin-form-label" for="sPrice">Currency price (Stripe)</label>
+                  <input class="admin-form-input" type="number" id="sPrice" placeholder="0.00" step="0.01" min="0">
+                </div>
+                <div>
+                  <label class="admin-form-label" for="sCurrency">Currency</label>
+                  <input class="admin-form-input" type="text" id="sCurrency" value="AED" maxlength="3" style="text-transform:uppercase">
+                </div>
+                <div>
+                  <label class="admin-form-label" for="sPricePoints">Points price (Wallet)</label>
+                  <input class="admin-form-input" type="number" id="sPricePoints" placeholder="0" min="0" step="1">
+                </div>
+              </div>
+            </div>
           </div>
 
           <!-- SCHEDULE: DAYS + TIME -->

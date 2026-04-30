@@ -704,6 +704,14 @@ async function submitBooking() {
       loadSessions();
       return;
     }
+    // Theme 11 — paid session: returns pending_payment + payment_options
+    if (result && result.status === 'pending_payment') {
+      btn.disabled = false;
+      btn.textContent = 'Book my spot →';
+      closeModal();
+      openPaymentChooserModal(result.booking, result.payment_options, name, email);
+      return;
+    }
     // Real booking created — pass qr data + token to confirmation
     var qrToken = result && result.qrToken ? result.qrToken : (result && result.booking ? result.booking.qr_token : null);
     var qrData  = result && result.qrData  ? result.qrData  : null;
@@ -724,6 +732,121 @@ async function submitBooking() {
       errEl.style.display = 'block';
       errEl.classList.add('show');
     }
+  }
+}
+
+// Theme 11 — Paid session payment chooser modal. Renders two choices
+// when both are available; collapses to a single button when only one
+// payment method is set on the session. Pay-with-points hits the
+// debit endpoint and shows the QR confirmation; Stripe Checkout
+// redirects to the hosted page (webhook confirms the booking).
+function openPaymentChooserModal(booking, opts, memberName, memberEmail) {
+  var existing = document.getElementById('paymentChooserOverlay');
+  if (existing) existing.remove();
+
+  var ccy   = opts.currency_code || 'AED';
+  var price = Number(opts.currency_price || 0);
+  var pts   = parseInt(opts.points_price || 0, 10) || 0;
+  var bal   = parseInt(opts.points_balance || 0, 10) || 0;
+  var canAffordPts = !!opts.can_afford_points;
+
+  var pointsBtn = '';
+  if (opts.accepts_points) {
+    var disabled = canAffordPts ? '' : 'disabled';
+    var subline  = canAffordPts
+      ? ('You have ' + bal.toLocaleString() + ' points')
+      : ('You need ' + (pts - bal).toLocaleString() + ' more points');
+    pointsBtn =
+      '<button type="button" id="payPointsBtn" ' + disabled + ' style="' +
+        'display:flex;align-items:center;justify-content:space-between;width:100%;gap:14px;' +
+        'padding:18px 20px;border-radius:12px;border:1px solid ' + (canAffordPts ? 'rgba(122,194,49,.4)' : 'rgba(255,255,255,.08)') + ';' +
+        'background:' + (canAffordPts ? 'linear-gradient(135deg,#0f2a08,#0a1a06)' : '#161616') + ';' +
+        'color:#fff;cursor:' + (canAffordPts ? 'pointer' : 'not-allowed') + ';opacity:' + (canAffordPts ? '1' : '.5') + ';' +
+        'text-align:left;margin-bottom:12px;font-family:inherit">' +
+        '<div>' +
+          '<div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#7AC231;margin-bottom:4px">⚡ Pay with points</div>' +
+          '<div style="font-family:var(--ff-display);font-size:22px;font-weight:900">' + pts.toLocaleString() + ' pts</div>' +
+          '<div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px">' + subline + '</div>' +
+        '</div>' +
+        '<span style="font-size:22px;color:#7AC231">›</span>' +
+      '</button>';
+  }
+
+  var stripeBtn = '';
+  if (opts.accepts_stripe) {
+    stripeBtn =
+      '<button type="button" id="payStripeBtn" style="' +
+        'display:flex;align-items:center;justify-content:space-between;width:100%;gap:14px;' +
+        'padding:18px 20px;border-radius:12px;border:1px solid rgba(255,255,255,.08);' +
+        'background:#161616;color:#fff;cursor:pointer;text-align:left;font-family:inherit">' +
+        '<div>' +
+          '<div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:4px">💳 Pay with card</div>' +
+          '<div style="font-family:var(--ff-display);font-size:22px;font-weight:900">' + ccy + ' ' + price.toFixed(2) + '</div>' +
+          '<div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px">Secure checkout via Stripe</div>' +
+        '</div>' +
+        '<span style="font-size:22px;color:rgba(255,255,255,.4)">›</span>' +
+      '</button>';
+  }
+
+  var wrap = document.createElement('div');
+  wrap.id = 'paymentChooserOverlay';
+  wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(8px);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px';
+  wrap.innerHTML =
+    '<div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:28px;max-width:480px;width:100%;max-height:90vh;overflow-y:auto;position:relative">' +
+      '<button type="button" onclick="document.getElementById(\'paymentChooserOverlay\').remove()" style="position:absolute;top:12px;right:14px;background:rgba(0,0,0,.5);border:none;color:#fff;font-size:22px;cursor:pointer;width:32px;height:32px;border-radius:50%">×</button>' +
+      '<div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#7AC231;margin-bottom:6px">Choose payment</div>' +
+      '<h2 style="font-family:var(--ff-display);font-size:24px;font-weight:900;margin:0 0 6px;text-transform:uppercase">Almost there</h2>' +
+      '<div style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:22px">Your spot for <strong style="color:#fff">' + (activeSession ? activeSession.name : 'this session') + '</strong> is being held. Pick how you\u2019d like to pay.</div>' +
+      pointsBtn +
+      stripeBtn +
+      '<div id="payErr" style="display:none;margin-top:14px;padding:10px 12px;background:#2a1010;color:#f87171;border-radius:8px;font-size:12px"></div>' +
+    '</div>';
+  wrap.addEventListener('click', function(ev){ if (ev.target === wrap) wrap.remove(); });
+  document.body.appendChild(wrap);
+
+  var errEl = function(){ return document.getElementById('payErr'); };
+  function showErr(msg) { var e = errEl(); if (!e) return; e.textContent = msg; e.style.display = 'block'; }
+
+  var ptsBtn = document.getElementById('payPointsBtn');
+  if (ptsBtn && canAffordPts) {
+    ptsBtn.addEventListener('click', function(){
+      ptsBtn.disabled = true;
+      ptsBtn.style.opacity = '.6';
+      window.ATP.bookings.payWithPoints(booking.id)
+        .then(function(res){
+          document.getElementById('paymentChooserOverlay').remove();
+          showConfirmation(memberName, memberEmail, res && res.qrData, res && res.qrToken);
+          loadSessions();
+        })
+        .catch(function(err){
+          ptsBtn.disabled = false;
+          ptsBtn.style.opacity = '1';
+          var msg = (err && err.data && err.data.error) || (err && err.message) || 'Could not redeem points.';
+          showErr(msg);
+        });
+    });
+  }
+
+  var strBtn = document.getElementById('payStripeBtn');
+  if (strBtn) {
+    strBtn.addEventListener('click', function(){
+      strBtn.disabled = true;
+      strBtn.style.opacity = '.6';
+      window.ATP.bookings.checkout(booking.id, {
+        success_url: location.origin + '/profile.html?booking=success',
+        cancel_url:  location.origin + '/sessions.html?booking=cancel',
+      })
+        .then(function(res){
+          if (res && res.url) { window.location.href = res.url; return; }
+          throw new Error('Checkout did not return a URL');
+        })
+        .catch(function(err){
+          strBtn.disabled = false;
+          strBtn.style.opacity = '1';
+          var msg = (err && err.data && err.data.error) || (err && err.message) || 'Could not start checkout.';
+          showErr(msg);
+        });
+    });
   }
 }
 
@@ -1136,7 +1259,22 @@ function renderSessionsGrid(sessions) {
     var loc     = s.location || s.city_name || 'TBC';
     var desc    = s.description || '';
     var cityTag = s.city_name ? ' • ' + s.city_name : '';
-    var priceTag = (s.session_type === 'paid' && s.price) ? ('AED ' + s.price) : 'Free';
+    // Theme 11 — paid sessions can have currency price, points price, or
+    // both. Show whichever the admin set; if both, show "AED X · Y pts"
+    // so members know up front. Free sessions stay labelled Free.
+    var hasCurrency = Number(s.price || 0) > 0;
+    var hasPoints   = parseInt(s.price_points || 0, 10) > 0;
+    var ccy = (s.currency_code || 'AED').toUpperCase();
+    var priceTag;
+    if (hasCurrency && hasPoints) {
+      priceTag = ccy + ' ' + Number(s.price).toFixed(0) + ' · ' + parseInt(s.price_points, 10).toLocaleString() + ' pts';
+    } else if (hasCurrency) {
+      priceTag = ccy + ' ' + Number(s.price).toFixed(0);
+    } else if (hasPoints) {
+      priceTag = parseInt(s.price_points, 10).toLocaleString() + ' pts';
+    } else {
+      priceTag = 'Free';
+    }
 
     var article = document.createElement('article');
     article.className = 'session-card reveal visible';

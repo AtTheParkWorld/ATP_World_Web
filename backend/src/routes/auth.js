@@ -878,6 +878,45 @@ router.post('/migrate-streaks', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-paid-sessions ──────────────────────
+// Adds the schema needed for paid sessions:
+//   sessions.price_points          — cost in ATP points (0 = not redeemable)
+//   sessions.currency_code         — ISO 4217 (AED, OMR, USD…)
+//   bookings.payment_method        — 'points' | 'stripe' | NULL (free)
+//   bookings.payment_amount        — currency amount (numeric) if paid by Stripe
+//   bookings.payment_currency      — currency code if paid by Stripe
+//   bookings.points_paid           — points debited if paid by points
+//   bookings.stripe_session_id     — Stripe Checkout Session id (for refunds)
+//   bookings.paid_at               — timestamp of payment confirmation
+// All idempotent.
+router.post('/migrate-paid-sessions', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    const ops = [];
+    ops.push(query(`ALTER TABLE sessions
+      ADD COLUMN IF NOT EXISTS price_points  INT NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS currency_code VARCHAR(8)`));
+
+    ops.push(query(`ALTER TABLE bookings
+      ADD COLUMN IF NOT EXISTS payment_method     VARCHAR(20),
+      ADD COLUMN IF NOT EXISTS payment_amount     NUMERIC(10,2),
+      ADD COLUMN IF NOT EXISTS payment_currency   VARCHAR(8),
+      ADD COLUMN IF NOT EXISTS points_paid        INT,
+      ADD COLUMN IF NOT EXISTS stripe_session_id  VARCHAR(64),
+      ADD COLUMN IF NOT EXISTS paid_at            TIMESTAMPTZ`));
+
+    // 'pending_payment' is a new bookings.status value; the column is
+    // VARCHAR(20) without a CHECK constraint so no schema change needed.
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_bookings_pending_payment
+                    ON bookings (status, created_at) WHERE status = 'pending_payment'`));
+
+    await Promise.all(ops);
+    res.json({ success: true, message: 'Paid sessions schema ready (sessions.price_points/currency_code, bookings payment columns)' });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-referral-codes ─────────────────────
 // Adds members.referral_code column + backfills every existing member
 // with a friendly per-member code (firstname-XXX). Idempotent — re-run
