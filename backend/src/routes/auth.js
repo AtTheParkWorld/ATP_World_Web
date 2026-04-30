@@ -904,8 +904,23 @@ router.post('/migrate-paid-sessions', async (req, res, next) => {
       ADD COLUMN IF NOT EXISTS payment_amount     NUMERIC(10,2),
       ADD COLUMN IF NOT EXISTS payment_currency   VARCHAR(8),
       ADD COLUMN IF NOT EXISTS points_paid        INT,
-      ADD COLUMN IF NOT EXISTS stripe_session_id  VARCHAR(64),
+      ADD COLUMN IF NOT EXISTS stripe_session_id  TEXT,
       ADD COLUMN IF NOT EXISTS paid_at            TIMESTAMPTZ`));
+
+    // Earlier deploys created stripe_session_id as VARCHAR(64). Real Stripe
+    // Checkout session ids are 70-90+ chars, so the legacy width overflows
+    // with "value too long for type character varying(64)". Widen to TEXT
+    // here (idempotent — TYPE TEXT on a TEXT column is a no-op). Also widen
+    // the related Stripe-id columns we control elsewhere so they survive
+    // any future Stripe id-length changes.
+    ops.push(query(`ALTER TABLE bookings           ALTER COLUMN stripe_session_id      TYPE TEXT`).catch(()=>{}));
+    ops.push(query(`ALTER TABLE members            ALTER COLUMN stripe_customer_id     TYPE TEXT`).catch(()=>{}));
+    ops.push(query(`ALTER TABLE subscriptions      ALTER COLUMN stripe_subscription_id TYPE TEXT`).catch(()=>{}));
+    ops.push(query(`ALTER TABLE subscriptions      ALTER COLUMN stripe_customer_id     TYPE TEXT`).catch(()=>{}));
+    ops.push(query(`ALTER TABLE subscriptions      ALTER COLUMN stripe_price_id        TYPE TEXT`).catch(()=>{}));
+    ops.push(query(`ALTER TABLE subscription_plans ALTER COLUMN stripe_price_id        TYPE TEXT`).catch(()=>{}));
+    ops.push(query(`ALTER TABLE billing_events     ALTER COLUMN event_id               TYPE TEXT`).catch(()=>{}));
+    ops.push(query(`ALTER TABLE billing_events     ALTER COLUMN object_id              TYPE TEXT`).catch(()=>{}));
 
     // pending_payment bookings don't have a QR until payment is
     // confirmed (points debited or Stripe webhook lands). The legacy
