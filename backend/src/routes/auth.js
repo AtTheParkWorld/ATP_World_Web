@@ -907,6 +907,14 @@ router.post('/migrate-paid-sessions', async (req, res, next) => {
       ADD COLUMN IF NOT EXISTS stripe_session_id  VARCHAR(64),
       ADD COLUMN IF NOT EXISTS paid_at            TIMESTAMPTZ`));
 
+    // pending_payment bookings don't have a QR until payment is
+    // confirmed (points debited or Stripe webhook lands). The legacy
+    // schema marks qr_code/qr_token NOT NULL — drop those so we can
+    // create the placeholder booking. Idempotent: ALTER … DROP NOT NULL
+    // is a no-op when the column is already nullable.
+    ops.push(query(`ALTER TABLE bookings ALTER COLUMN qr_code  DROP NOT NULL`));
+    ops.push(query(`ALTER TABLE bookings ALTER COLUMN qr_token DROP NOT NULL`));
+
     // 'pending_payment' is a new bookings.status value; the column is
     // VARCHAR(20) without a CHECK constraint so no schema change needed.
     ops.push(query(`CREATE INDEX IF NOT EXISTS idx_bookings_pending_payment
