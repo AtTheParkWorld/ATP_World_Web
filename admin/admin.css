@@ -167,9 +167,16 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
 .challenge-badge-svg{width:100px;height:100px}
 .challenge-card{background:#0d0d0d;border:1px solid #1a1a1a;border-radius:14px;padding:16px;margin-bottom:12px;display:flex;align-items:center;gap:16px}
 .challenge-card:hover{border-color:#333}
-.challenge-badge-mini{width:56px;height:56px;flex-shrink:0}
-.challenge-info{flex:1}
-.challenge-title{font-family:var(--ff-display);font-size:15px;font-weight:800;color:#fff;margin-bottom:4px}
+/* Badge container — overflow hidden so the inner SVG (auth-rendered at 100×100)
+   doesn't bleed under the title text on the right. The svg itself is forced
+   to 100% so it fits the container regardless of source dimensions. */
+.challenge-badge-mini{width:56px;height:56px;flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center}
+.challenge-badge-mini svg,
+.challenge-badge-mini img{width:100%;height:100%;display:block;object-fit:contain}
+/* min-width:0 lets a flex child shrink properly so the long title can
+   ellipsis instead of pushing past the card and overlapping the badge. */
+.challenge-info{flex:1;min-width:0}
+.challenge-title{font-family:var(--ff-display);font-size:15px;font-weight:800;color:#fff;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .challenge-meta{font-size:11px;color:#555}
 .challenge-progress-bar{height:4px;background:#1a1a1a;border-radius:2px;margin-top:8px;overflow:hidden}
 .challenge-progress-fill{height:100%;background:#7AC231;border-radius:2px;transition:width .5s}
