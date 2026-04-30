@@ -405,10 +405,20 @@ router.delete('/:id', authenticate, async (req, res, next) => {
           'UPDATE members SET points_balance=$1 WHERE id=$2',
           [newBalance, booking.member_id]
         );
-        await client.query(
-          'UPDATE bookings SET refunded_at=NOW() WHERE id=$1',
-          [booking.id]
-        ).catch(function(){ /* refunded_at column may not exist on older deploys */ });
+        // refunded_at is added by migrate-challenges-prize / paid-sessions —
+        // wrap in a SAVEPOINT so the column-missing case doesn't poison
+        // the surrounding transaction. A bare .catch() swallows the JS
+        // exception but Postgres has already aborted the transaction at
+        // that point, which then trips "current transaction is aborted,
+        // commands ignored until end of transaction block" on commit.
+        await client.query('SAVEPOINT mark_refunded');
+        try {
+          await client.query('UPDATE bookings SET refunded_at=NOW() WHERE id=$1', [booking.id]);
+          await client.query('RELEASE SAVEPOINT mark_refunded');
+        } catch (e) {
+          if (e.code !== '42703') throw e; // bubble anything other than column-missing
+          await client.query('ROLLBACK TO SAVEPOINT mark_refunded');
+        }
       }
     });
 

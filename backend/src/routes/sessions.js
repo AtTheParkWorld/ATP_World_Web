@@ -167,7 +167,10 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
       for (const date of dates) {
         // Try the full INSERT first (with price_points/currency_code).
         // Falls back to the legacy column set if migrate-paid-sessions
-        // hasn't been run yet, so the route doesn't break before deploy.
+        // hasn't been run yet. Wrapped in SAVEPOINT so the column-missing
+        // error doesn't poison the surrounding transaction (bare try/catch
+        // would leave Postgres in an aborted state and break commit).
+        await client.query('SAVEPOINT ins_paid');
         let result;
         try {
           result = await client.query(
@@ -187,8 +190,10 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
              dates.length > 1, session_category, sport_type || null,
              courts ? JSON.stringify(courts) : null, req.member.id]
           );
+          await client.query('RELEASE SAVEPOINT ins_paid');
         } catch (e) {
           if (e.code !== '42703') throw e;
+          await client.query('ROLLBACK TO SAVEPOINT ins_paid');
           result = await client.query(
             `INSERT INTO sessions
               (name, tribe_id, city_id, description, coach_id, location,
