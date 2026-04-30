@@ -402,21 +402,29 @@
     var st = document.createElement('style');
     st.id = 'atp-ticker-styles';
     st.textContent = [
+      // Ticker sits BELOW the nav (nav is fixed at top:0, height var(--nav-h)
+      // which defaults to 68px). z-index keeps it above page content but
+      // below modals (which use z-index 500+).
       '#atp-ticker-host{',
-      '  position:fixed;top:0;left:0;right:0;z-index:200;height:44px;display:none;',
+      '  position:fixed;top:var(--nav-h,68px);left:0;right:0;z-index:90;height:44px;display:none;',
       '  background:linear-gradient(90deg,#0a0a0a 0%,#0d1a08 50%,#0a0a0a 100%);',
       '  border-bottom:2px solid var(--atp-green,#7AC231);',
       '  overflow:hidden;align-items:center;',
       '  box-shadow:0 4px 16px rgba(0,0,0,.4);',
       '}',
       '#atp-ticker-host.atp-ticker-on{display:flex}',
+      // When the ticker is on, push body content down by the ticker height
+      // so it doesn\'t hide the first 44px under the marquee. Each page\'s
+      // wrap already accounts for var(--nav-h); this stacks on top of that.
+      'body.atp-ticker-active{padding-top:44px}',
       '#atp-ticker-host::before,#atp-ticker-host::after{',
       '  content:"";position:absolute;top:0;bottom:0;width:64px;z-index:2;pointer-events:none;',
       '}',
       '#atp-ticker-host::before{left:0;background:linear-gradient(90deg,#0a0a0a,transparent)}',
       '#atp-ticker-host::after{right:0;background:linear-gradient(-90deg,#0a0a0a,transparent)}',
+      // 40s = ~33% faster than the previous 60s. Hover still pauses.
       '.atp-ticker-track{display:flex;flex-shrink:0;align-items:center;gap:64px;',
-      '  animation:atp-ticker-scroll 60s linear infinite;padding-left:32px}',
+      '  animation:atp-ticker-scroll 40s linear infinite;padding-left:32px}',
       '#atp-ticker-host:hover .atp-ticker-track{animation-play-state:paused}',
       '.atp-ticker-item{display:inline-flex;align-items:center;gap:10px;',
       '  font-size:14px;font-weight:600;letter-spacing:.02em;color:#fff;',
@@ -483,14 +491,23 @@
         _tickerItems = (data && data.announcements) || [];
         var host = document.getElementById('atp-ticker-host');
         if (!_tickerItems.length) {
-          if (host) { host.classList.remove('atp-ticker-on'); document.body.style.paddingTop = ''; }
+          // No active announcements → hide ticker + restore default body padding.
+          if (host) host.classList.remove('atp-ticker-on');
+          document.body.classList.remove('atp-ticker-active');
+          document.body.style.paddingTop = '';
           return;
         }
         host = ensureTickerHost();
         host.innerHTML = renderTickerStrip(_tickerItems);
         host.classList.add('atp-ticker-on');
-        // Push the page down by the ticker height so the nav doesn't tuck under it
-        document.body.style.paddingTop = host.offsetHeight + 'px';
+        // Theme: ticker now sits BELOW the nav (top: var(--nav-h)). The
+        // body.atp-ticker-active class adds 44px padding so existing
+        // page wraps (which already account for nav height) get pushed
+        // down further, leaving room for the ticker without overlap.
+        document.body.classList.add('atp-ticker-active');
+        // Clear any inline style left over from previous "stick on top"
+        // implementation — the new approach uses a CSS class instead.
+        document.body.style.paddingTop = '';
       })
       .catch(function(){ /* silent fail — ticker is non-essential */ });
   }
