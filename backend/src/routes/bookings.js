@@ -144,18 +144,26 @@ router.post('/', authenticate, async (req, res, next) => {
     const member = mRows[0];
 
     // Paid session — create a pending booking and return payment options.
+    // Note: bookings.qr_code is NOT NULL and qr_token is NOT NULL UNIQUE
+    // in the legacy schema. Pending bookings don't have a real QR yet
+    // (it's generated on payment confirmation), so we insert a
+    // placeholder JSON marker + a fresh random token to satisfy the
+    // constraints. Both get overwritten by pay-with-points / Stripe
+    // webhook with the real values.
     if (pricing.is_paid) {
+      const placeholderToken = 'pend_' + crypto.randomBytes(12).toString('hex');
+      const placeholderQr    = JSON.stringify({ pending: true, session: session.name });
       const { rows } = await query(
-        `INSERT INTO bookings (member_id, session_id, status)
-         VALUES ($1,$2,'pending_payment')
+        `INSERT INTO bookings (member_id, session_id, qr_code, qr_token, status)
+         VALUES ($1,$2,$3,$4,'pending_payment')
          ON CONFLICT (member_id, session_id)
            DO UPDATE SET status='pending_payment', cancelled_at=NULL,
-                         qr_code=NULL, qr_token=NULL,
+                         qr_code=EXCLUDED.qr_code, qr_token=EXCLUDED.qr_token,
                          payment_method=NULL, payment_amount=NULL,
                          payment_currency=NULL, points_paid=NULL,
                          stripe_session_id=NULL, paid_at=NULL
          RETURNING *`,
-        [req.member.id, session_id]
+        [req.member.id, session_id, placeholderQr, placeholderToken]
       );
       return res.status(202).json({
         booking: rows[0],
