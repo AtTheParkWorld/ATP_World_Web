@@ -494,25 +494,127 @@ router.get('/:id/registrations', authenticate, async (req, res, next) => {
 
 
 // ── PATCH /api/sessions/:id/cancel ────────────────────────────
+// Admin cancels a whole session. Default behaviour (Theme 11.2):
+// every confirmed booking is auto-refunded — points returned to wallet,
+// Stripe payments refunded — because this is ATP cancelling, not the
+// member, so the 12h cutoff doesn't apply (force_refund=true). Pass
+// ?refund=skip to keep the cancellation but skip refunds (rare case).
 router.patch('/:id/cancel', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { reason } = req.body;
+    const skipRefund = (String(req.query.refund || '').toLowerCase() === 'skip');
+
     const { rows } = await query(
       `UPDATE sessions SET status='cancelled', cancellation_reason=$1, updated_at=NOW()
        WHERE id=$2 RETURNING *`,
       [reason || null, req.params.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Session not found' });
+
+    // Pull every booking that paid for this session (points or Stripe,
+    // confirmed status) and process refunds individually so a single
+    // Stripe failure doesn't block the others.
+    let refundResults = [];
+    if (!skipRefund) {
+      const { rows: bks } = await query(
+        `SELECT * FROM bookings
+         WHERE session_id=$1
+           AND status IN ('confirmed','pending_payment')
+           AND (refunded_at IS NULL OR refunded_at = refunded_at)`,
+        [req.params.id]
+      ).catch(() => ({ rows: [] }));
+
+      // Lazy-require to avoid a circular import at module load.
+      const { _cancelAndMaybeRefund } = require('./bookings.js');
+      // _cancelAndMaybeRefund isn't exported — use a direct re-implementation
+      // here by calling the admin-cancel endpoint logic via internal helper.
+      // Cleaner: just do the same DB ops inline.
+      const billing = require('../services/billing');
+      const { transaction } = require('../db');
+
+      for (const b of bks) {
+        // Augment with session.scheduled_at + session_type so the helper
+        // can compute the 12h delta. Inline mirror of bookings.js helper.
+        let stripeRefund = null, stripeErr = null;
+        if (b.payment_method === 'stripe' && !b.refunded_at) {
+          try { stripeRefund = await billing.refundStripeBooking(b); }
+          catch (e) { stripeErr = e.message; console.warn('[sessions/cancel] Stripe refund failed', b.id, e.message); }
+        }
+        await transaction(async (client) => {
+          await client.query(
+            `UPDATE bookings SET status='cancelled', cancelled_at=NOW(), cancelled_by_admin=true WHERE id=$1`,
+            [b.id]
+          ).catch(async function(e){
+            if (e.code !== '42703') throw e;
+            await client.query(`UPDATE bookings SET status='cancelled', cancelled_at=NOW() WHERE id=$1`, [b.id]);
+          });
+          if (b.payment_method === 'points' && b.points_paid > 0 && !b.refunded_at) {
+            const { rows: m } = await client.query('SELECT points_balance FROM members WHERE id=$1 FOR UPDATE', [b.member_id]);
+            const refund = parseInt(b.points_paid, 10) || 0;
+            const newBalance = (m[0]?.points_balance || 0) + refund;
+            await client.query(
+              `INSERT INTO points_ledger (member_id, amount, balance, reason, reference_id, description)
+               VALUES ($1, $2, $3, 'session_refund', $4, $5)`,
+              [b.member_id, refund, newBalance, b.session_id, 'Refund (session cancelled)']
+            );
+            await client.query('UPDATE members SET points_balance=$1 WHERE id=$2', [newBalance, b.member_id]);
+            await client.query('SAVEPOINT rf');
+            try {
+              await client.query(`UPDATE bookings SET refunded_at=NOW(), refund_method='points', refunded_points=$1 WHERE id=$2`, [refund, b.id]);
+              await client.query('RELEASE SAVEPOINT rf');
+            } catch (e) {
+              if (e.code !== '42703') throw e;
+              await client.query('ROLLBACK TO SAVEPOINT rf');
+              await client.query('UPDATE bookings SET refunded_at=NOW() WHERE id=$1', [b.id]).catch(() => {});
+            }
+          }
+          if (stripeRefund && stripeRefund.id) {
+            await client.query('SAVEPOINT rs');
+            try {
+              await client.query(
+                `UPDATE bookings SET refunded_at=NOW(), refund_method='stripe',
+                                     stripe_refund_id=$1, refunded_amount=$2, refunded_currency=$3
+                 WHERE id=$4`,
+                [stripeRefund.id,
+                 stripeRefund.amount != null ? Number(stripeRefund.amount)/100 : b.payment_amount,
+                 (stripeRefund.currency || b.payment_currency || 'AED').toUpperCase(),
+                 b.id]
+              );
+              await client.query('RELEASE SAVEPOINT rs');
+            } catch (e) {
+              if (e.code !== '42703') throw e;
+              await client.query('ROLLBACK TO SAVEPOINT rs');
+              await client.query('UPDATE bookings SET refunded_at=NOW() WHERE id=$1', [b.id]).catch(() => {});
+            }
+          }
+        });
+        refundResults.push({
+          booking_id: b.id,
+          method: b.payment_method,
+          refunded_points: b.payment_method === 'points' ? (parseInt(b.points_paid, 10) || 0) : 0,
+          refunded_amount: stripeRefund ? (stripeRefund.amount != null ? Number(stripeRefund.amount)/100 : b.payment_amount) : 0,
+          stripe_refund_id: stripeRefund && stripeRefund.id || null,
+          stripe_error: stripeErr,
+        });
+      }
+    }
+
     // Notify registered members via notifications table
     await query(
       `INSERT INTO notifications (member_id, type, title, body)
        SELECT b.member_id, 'session_cancelled', $1, $2
-       FROM bookings b WHERE b.session_id=$3 AND b.status='confirmed'`,
+       FROM bookings b WHERE b.session_id=$3 AND b.status IN ('confirmed','cancelled')
+                          AND b.cancelled_at >= NOW() - INTERVAL '5 minutes'`,
       [`Session Cancelled: ${rows[0].name}`,
-       reason || 'This session has been cancelled by the organiser.',
+       reason || 'This session has been cancelled by the organiser. Any payment has been refunded.',
        req.params.id]
     ).catch(() => {});
-    res.json({ session: rows[0] });
+
+    res.json({
+      session: rows[0],
+      refunds: refundResults,
+      refunds_skipped: skipRefund,
+    });
   } catch (err) { next(err); }
 });
 

@@ -259,18 +259,39 @@ async function _confirmSessionBooking(checkoutSession) {
   const amount   = (checkoutSession.amount_total || 0) / 100;
   const currency = (checkoutSession.currency || 'aed').toUpperCase();
 
-  await query(
-    `UPDATE bookings
-        SET status='confirmed',
-            qr_code=$1, qr_token=$2,
-            payment_method='stripe',
-            payment_amount=$3, payment_currency=$4,
-            stripe_session_id=$5,
-            paid_at=NOW(),
-            cancelled_at=NULL
-      WHERE id=$6`,
-    [qrData, qrToken, amount, currency, checkoutSession.id, b.id]
-  );
+  // Persist the payment_intent_id (needed for refunds) — column may
+  // not exist on pre-Theme-11.2 deploys, so wrap in a try.
+  const paymentIntent = checkoutSession.payment_intent || null;
+  try {
+    await query(
+      `UPDATE bookings
+          SET status='confirmed',
+              qr_code=$1, qr_token=$2,
+              payment_method='stripe',
+              payment_amount=$3, payment_currency=$4,
+              stripe_session_id=$5,
+              stripe_payment_intent_id=$6,
+              paid_at=NOW(),
+              cancelled_at=NULL
+        WHERE id=$7`,
+      [qrData, qrToken, amount, currency, checkoutSession.id, paymentIntent, b.id]
+    );
+  } catch (e) {
+    if (e.code !== '42703') throw e;
+    // Pre-migration fallback (no stripe_payment_intent_id column yet).
+    await query(
+      `UPDATE bookings
+          SET status='confirmed',
+              qr_code=$1, qr_token=$2,
+              payment_method='stripe',
+              payment_amount=$3, payment_currency=$4,
+              stripe_session_id=$5,
+              paid_at=NOW(),
+              cancelled_at=NULL
+        WHERE id=$6`,
+      [qrData, qrToken, amount, currency, checkoutSession.id, b.id]
+    );
+  }
 
   // Best-effort email — don't fail the webhook if email is down.
   try {
@@ -326,6 +347,46 @@ async function handleWebhookEvent(event) {
   }
 }
 
+// ── Refunds ──────────────────────────────────────────────────────
+// Issues a Stripe refund for a one-time session-booking payment. We
+// look up the payment_intent off the original Checkout Session if we
+// don't have it stored locally (older bookings), then call
+// stripe.refunds.create. Idempotent on the booking row — repeated
+// calls won't double-refund (we check stripe_refund_id first).
+async function refundStripeBooking(booking) {
+  if (booking.stripe_refund_id) {
+    return { id: booking.stripe_refund_id, already_refunded: true };
+  }
+  if (!booking.stripe_session_id) {
+    const e = new Error('No Stripe session id on booking — cannot refund automatically.');
+    e.code = 'NO_STRIPE_SESSION';
+    throw e;
+  }
+  const s = stripe();
+  let paymentIntentId = booking.stripe_payment_intent_id;
+  if (!paymentIntentId) {
+    // Older bookings paid before we started persisting the payment_intent.
+    // Hydrate it from the Checkout Session.
+    const checkout = await s.checkout.sessions.retrieve(booking.stripe_session_id);
+    paymentIntentId = checkout && checkout.payment_intent;
+    if (!paymentIntentId) {
+      const e = new Error('Checkout session has no payment_intent — refund unavailable.');
+      e.code = 'NO_PAYMENT_INTENT';
+      throw e;
+    }
+  }
+  const refund = await s.refunds.create({
+    payment_intent: paymentIntentId,
+    metadata: {
+      booking_id: booking.id,
+      member_id:  booking.member_id,
+      session_id: booking.session_id,
+      reason:     'booking_cancellation',
+    },
+  });
+  return refund;
+}
+
 function constructWebhookEvent(rawBody, signatureHeader) {
   const secret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!secret) {
@@ -341,6 +402,7 @@ module.exports = {
   ensureCustomer,
   createCheckoutSession,
   createPortalSession,
+  refundStripeBooking,
   constructWebhookEvent,
   handleWebhookEvent,
   recordEvent,

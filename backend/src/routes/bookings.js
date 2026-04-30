@@ -356,10 +356,12 @@ router.post('/:id/checkout', authenticate, async (req, res, next) => {
 });
 
 // ── DELETE /api/bookings/:id — Cancel booking ─────────────────
-// Pending-payment bookings (no money/points moved yet) cancel cleanly.
-// Confirmed paid-by-points bookings refund the points to the member's
-// wallet. Stripe-paid bookings need a manual refund via the Stripe
-// dashboard for now (could automate later via stripe.refunds.create).
+// Cancellation rule (Theme 11.2): cancellations are always allowed,
+// but refunds are only issued if the cancel happens MORE than 12 hours
+// before the session start. Within 12h the member forfeits the
+// payment (points or currency). Same rule applies to admin-initiated
+// cancels via /:id/admin-cancel — admins can override with
+// ?force_refund=1 for the "ATP cancelled the session" case.
 router.delete('/:id', authenticate, async (req, res, next) => {
   try {
     const { rows } = await query(
@@ -374,74 +376,212 @@ router.delete('/:id', authenticate, async (req, res, next) => {
     if (booking.status === 'attended') {
       return res.status(400).json({ error: 'Cannot cancel a session you already attended' });
     }
+    if (booking.status === 'cancelled') {
+      return res.status(400).json({ error: 'Booking is already cancelled' });
+    }
 
-    // Paid session: check 12h window — but skip for pending_payment
-    // bookings (no money has changed hands yet).
-    if (booking.session_type === 'paid' && booking.status !== 'pending_payment') {
-      const hoursToSession = (new Date(booking.scheduled_at) - new Date()) / 3600000;
-      if (hoursToSession < 12) {
-        return res.status(400).json({
-          error: 'Paid sessions cannot be cancelled within 12 hours of start time',
-          code: 'CANCELLATION_WINDOW_EXPIRED',
-        });
+    const result = await _cancelAndMaybeRefund(booking, { byAdmin: false, forceRefund: false });
+    await notifyWaitlist(booking.session_id);
+    res.json(result.response);
+  } catch (err) { next(err); }
+});
+
+// ── PATCH /api/bookings/:id/admin-cancel ──────────────────────
+// Admin-initiated cancel for a single member booking. Same 12h rule
+// by default; pass ?force_refund=1 to ignore the cutoff (e.g. when ATP
+// cancels the session itself, the member shouldn't lose their money).
+router.patch('/:id/admin-cancel', authenticate, async (req, res, next) => {
+  try {
+    if (!req.member.is_admin) return res.status(403).json({ error: 'Admin only' });
+    const { rows } = await query(
+      `SELECT b.*, s.scheduled_at, s.session_type
+       FROM bookings b JOIN sessions s ON s.id=b.session_id
+       WHERE b.id=$1`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Booking not found' });
+    const booking = rows[0];
+    if (booking.status === 'attended') return res.status(400).json({ error: 'Cannot cancel an attended booking' });
+    if (booking.status === 'cancelled') return res.status(400).json({ error: 'Already cancelled' });
+
+    const force = String(req.query.force_refund || req.body?.force_refund || '').toLowerCase();
+    const forceRefund = force === '1' || force === 'true' || force === 'yes';
+
+    const result = await _cancelAndMaybeRefund(booking, { byAdmin: true, forceRefund });
+    await notifyWaitlist(booking.session_id);
+    res.json(result.response);
+  } catch (err) { next(err); }
+});
+
+// Shared cancel + (optional) refund flow. Returns:
+//   { response: { message, refund_status, refund_method, refunded_points,
+//                 refunded_amount, refunded_currency, within_12h, forced } }
+async function _cancelAndMaybeRefund(booking, { byAdmin, forceRefund }) {
+  const hoursToSession = (new Date(booking.scheduled_at) - new Date()) / 3600000;
+  const within12h = hoursToSession < 12;
+  // Pending-payment bookings = no money moved yet, so refund is a no-op
+  // regardless of timing.
+  const isPending = booking.status === 'pending_payment';
+  // Refund only if we're outside the 12h window OR the admin overrides.
+  const shouldRefund = !isPending && (!within12h || forceRefund);
+
+  let stripeRefund = null;
+  let stripeRefundError = null;
+
+  // For Stripe-paid bookings, fire the refund BEFORE the DB transaction
+  // so we can record the result. If Stripe fails we still cancel the
+  // booking — the admin can retry the refund manually from the Stripe
+  // dashboard.
+  if (shouldRefund && booking.payment_method === 'stripe' && !booking.refunded_at) {
+    try {
+      const billing = require('../services/billing');
+      stripeRefund = await billing.refundStripeBooking(booking);
+    } catch (e) {
+      stripeRefundError = e.message || String(e);
+      console.warn('[bookings] Stripe refund failed for booking', booking.id, stripeRefundError);
+    }
+  }
+
+  await transaction(async (client) => {
+    await client.query(
+      `UPDATE bookings
+          SET status='cancelled', cancelled_at=NOW(),
+              cancelled_by_admin = $2
+        WHERE id=$1`,
+      [booking.id, !!byAdmin]
+    ).catch(async function(e){
+      // Pre-migration fallback (cancelled_by_admin column missing).
+      if (e.code !== '42703') throw e;
+      await client.query(
+        `UPDATE bookings SET status='cancelled', cancelled_at=NOW() WHERE id=$1`,
+        [booking.id]
+      );
+    });
+
+    // Points refund — atomic ledger entry + balance update.
+    if (shouldRefund && booking.payment_method === 'points' && booking.points_paid > 0 && !booking.refunded_at) {
+      const { rows: m } = await client.query(
+        'SELECT points_balance FROM members WHERE id=$1 FOR UPDATE',
+        [booking.member_id]
+      );
+      const refund = parseInt(booking.points_paid, 10) || 0;
+      const newBalance = (m[0]?.points_balance || 0) + refund;
+      await client.query(
+        `INSERT INTO points_ledger
+           (member_id, amount, balance, reason, reference_id, description)
+         VALUES ($1, $2, $3, 'session_refund', $4, $5)`,
+        [booking.member_id, refund, newBalance, booking.session_id,
+         byAdmin ? 'Refund (admin cancel)' : 'Refund (member cancel)']
+      );
+      await client.query(
+        'UPDATE members SET points_balance=$1 WHERE id=$2',
+        [newBalance, booking.member_id]
+      );
+      // Mark refund details — wrap in SAVEPOINT in case columns are
+      // missing on pre-migration deploys.
+      await client.query('SAVEPOINT refund_pts');
+      try {
+        await client.query(
+          `UPDATE bookings
+              SET refunded_at=NOW(),
+                  refund_method='points',
+                  refunded_points=$1
+            WHERE id=$2`,
+          [refund, booking.id]
+        );
+        await client.query('RELEASE SAVEPOINT refund_pts');
+      } catch (e) {
+        if (e.code !== '42703') throw e;
+        await client.query('ROLLBACK TO SAVEPOINT refund_pts');
+        // Older schemas only have refunded_at.
+        await client.query('SAVEPOINT refund_pts2');
+        try {
+          await client.query('UPDATE bookings SET refunded_at=NOW() WHERE id=$1', [booking.id]);
+          await client.query('RELEASE SAVEPOINT refund_pts2');
+        } catch (e2) {
+          if (e2.code !== '42703') throw e2;
+          await client.query('ROLLBACK TO SAVEPOINT refund_pts2');
+        }
       }
     }
 
-    // Atomically cancel + refund points (if paid by points + not already refunded).
-    await transaction(async (client) => {
-      await client.query(
-        `UPDATE bookings SET status='cancelled', cancelled_at=NOW()
-          WHERE id=$1`,
-        [booking.id]
-      );
-
-      if (booking.payment_method === 'points' && booking.points_paid > 0 && !booking.refunded_at) {
-        const { rows: m } = await client.query(
-          'SELECT points_balance FROM members WHERE id=$1 FOR UPDATE',
-          [booking.member_id]
-        );
-        const refund = parseInt(booking.points_paid, 10) || 0;
-        const newBalance = (m[0]?.points_balance || 0) + refund;
+    // Stripe refund — record details if the API call above succeeded.
+    if (stripeRefund && stripeRefund.id) {
+      await client.query('SAVEPOINT refund_str');
+      try {
         await client.query(
-          `INSERT INTO points_ledger
-             (member_id, amount, balance, reason, reference_id, description)
-           VALUES ($1, $2, $3, 'session_refund', $4, $5)`,
-          [booking.member_id, refund, newBalance, booking.session_id,
-           'Refund: cancelled session booking']
+          `UPDATE bookings
+              SET refunded_at=NOW(),
+                  refund_method='stripe',
+                  stripe_refund_id=$1,
+                  refunded_amount=$2,
+                  refunded_currency=$3
+            WHERE id=$4`,
+          [stripeRefund.id,
+           stripeRefund.amount != null ? (Number(stripeRefund.amount) / 100) : booking.payment_amount,
+           (stripeRefund.currency || booking.payment_currency || 'AED').toUpperCase(),
+           booking.id]
         );
-        await client.query(
-          'UPDATE members SET points_balance=$1 WHERE id=$2',
-          [newBalance, booking.member_id]
-        );
-        // refunded_at is added by migrate-challenges-prize / paid-sessions —
-        // wrap in a SAVEPOINT so the column-missing case doesn't poison
-        // the surrounding transaction. A bare .catch() swallows the JS
-        // exception but Postgres has already aborted the transaction at
-        // that point, which then trips "current transaction is aborted,
-        // commands ignored until end of transaction block" on commit.
-        await client.query('SAVEPOINT mark_refunded');
+        await client.query('RELEASE SAVEPOINT refund_str');
+      } catch (e) {
+        if (e.code !== '42703') throw e;
+        await client.query('ROLLBACK TO SAVEPOINT refund_str');
+        await client.query('SAVEPOINT refund_str2');
         try {
           await client.query('UPDATE bookings SET refunded_at=NOW() WHERE id=$1', [booking.id]);
-          await client.query('RELEASE SAVEPOINT mark_refunded');
-        } catch (e) {
-          if (e.code !== '42703') throw e; // bubble anything other than column-missing
-          await client.query('ROLLBACK TO SAVEPOINT mark_refunded');
+          await client.query('RELEASE SAVEPOINT refund_str2');
+        } catch (e2) {
+          if (e2.code !== '42703') throw e2;
+          await client.query('ROLLBACK TO SAVEPOINT refund_str2');
         }
       }
-    });
+    }
+  });
 
-    await notifyWaitlist(booking.session_id);
+  // Build a clear response.
+  const refundedPoints = (shouldRefund && booking.payment_method === 'points')
+    ? (parseInt(booking.points_paid, 10) || 0) : 0;
+  const refundedAmount = (shouldRefund && booking.payment_method === 'stripe' && stripeRefund && stripeRefund.id)
+    ? (stripeRefund.amount != null ? Number(stripeRefund.amount) / 100 : booking.payment_amount)
+    : 0;
 
-    const refundedPoints = (booking.payment_method === 'points' && !booking.refunded_at)
-      ? (parseInt(booking.points_paid, 10) || 0) : 0;
-    res.json({
-      message: refundedPoints > 0
-        ? `Booking cancelled and ${refundedPoints} points refunded to your wallet.`
-        : 'Booking cancelled',
-      refunded_points: refundedPoints,
-    });
-  } catch (err) { next(err); }
-});
+  let message;
+  let refund_status = 'none';
+
+  if (isPending) {
+    message = 'Booking cancelled.';
+  } else if (!shouldRefund) {
+    message = within12h
+      ? 'Booking cancelled. Refunds are only available more than 12 hours before the session — no refund issued.'
+      : 'Booking cancelled.';
+    refund_status = within12h ? 'forfeited_outside_window' : 'not_paid';
+  } else if (refundedPoints > 0) {
+    message = `Booking cancelled and ${refundedPoints} points refunded to your wallet.`;
+    refund_status = 'refunded';
+  } else if (refundedAmount > 0) {
+    message = `Booking cancelled and ${(booking.payment_currency || 'AED').toUpperCase()} ${refundedAmount.toFixed(2)} refunded to your card. Funds appear in 5–10 business days.`;
+    refund_status = 'refunded';
+  } else if (booking.payment_method === 'stripe' && stripeRefundError) {
+    message = 'Booking cancelled. We couldn\u2019t process the automatic refund — our team will reach out shortly.';
+    refund_status = 'failed';
+  } else {
+    message = 'Booking cancelled.';
+  }
+
+  return {
+    response: {
+      message,
+      refund_status,
+      refund_method:    refundedPoints > 0 ? 'points' : (refundedAmount > 0 ? 'stripe' : null),
+      refunded_points:  refundedPoints,
+      refunded_amount:  refundedAmount,
+      refunded_currency:(booking.payment_currency || 'AED').toUpperCase(),
+      within_12h:       within12h,
+      forced:           !!forceRefund,
+      stripe_refund_error: stripeRefundError,
+    },
+  };
+}
 
 // ── GET /api/bookings/:token/qr-data ─────────────────────────
 router.get('/:token/qr-data', authenticate, async (req, res, next) => {

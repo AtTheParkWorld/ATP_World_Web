@@ -1255,6 +1255,21 @@ function openSessionDetailModal(bookingId) {
   var dirBtn = (s.location || s.location_maps_url)
     ? '<a href="' + (s.location_maps_url || ('https://maps.google.com/?q=' + encodeURIComponent(s.location))) + '" target="_blank" rel="noopener" class="atp-btn atp-btn--ghost" style="text-decoration:none">↗ Open in Google Maps</a>'
     : '';
+  // Theme 11.2 — show a Cancel button on upcoming bookings, with the
+  // 12h refund cutoff surfaced clearly in the label so members aren't
+  // surprised. Falls through to a confirm prompt that hits
+  // DELETE /api/bookings/:id.
+  var cancelBtn = '';
+  if (s.status === 'upcoming') {
+    var hoursToSession = s.scheduled_at
+      ? (new Date(s.scheduled_at) - new Date()) / 3600000
+      : 999;
+    var within12h = hoursToSession < 12;
+    var label = within12h
+      ? 'Cancel (no refund — within 12h)'
+      : 'Cancel & refund';
+    cancelBtn = '<button type="button" onclick="cancelBookingFromModal(\'' + bookingId + '\', ' + (within12h ? 'true' : 'false') + ')" style="background:transparent;border:1px solid rgba(248,113,113,.4);color:#f87171;padding:10px 18px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit">' + label + '</button>';
+  }
   var wrap = document.createElement('div');
   wrap.id = 'sessionDetailOverlay';
   wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(8px);z-index:500;display:flex;align-items:center;justify-content:center;padding:20px';
@@ -1268,7 +1283,7 @@ function openSessionDetailModal(bookingId) {
         '<div style="font-size:14px;color:var(--light);margin-bottom:6px">📅 ' + s.day + ' \u00b7 ' + s.time + (s.duration_mins ? ' \u00b7 ' + s.duration_mins + ' min' : '') + '</div>' +
         '<div style="font-size:14px;color:var(--light);margin-bottom:16px">📍 ' + ((s.location || s.loc || '—').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')) + '</div>' +
         (s.description ? '<p style="font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:16px">' + s.description.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</p>' : '') +
-        '<div style="display:flex;gap:8px;flex-wrap:wrap">' + dirBtn + '</div>' +
+        '<div style="display:flex;gap:8px;flex-wrap:wrap">' + dirBtn + cancelBtn + '</div>' +
         qrSection +
       '</div>' +
     '</div>';
@@ -1286,6 +1301,31 @@ function openSessionDetailModal(bookingId) {
       });
     }
   }
+}
+
+// Theme 11.2 — Cancel handler invoked from the session detail modal.
+// 12h cutoff is enforced server-side; client just shows a friendlier
+// confirm message and surfaces the refund result when the response lands.
+function cancelBookingFromModal(bookingId, within12h) {
+  var msg = within12h
+    ? 'You\u2019re inside the 12-hour cancellation window — your spot will be cancelled but no refund will be issued. Continue?'
+    : 'Cancel this booking? Any payment (points or card) will be refunded automatically.';
+  if (!confirm(msg)) return;
+  if (!window.ATP || !window.ATP.bookings || !window.ATP.bookings.cancel) return;
+  window.ATP.bookings.cancel(bookingId)
+    .then(function(res){
+      var detail = '';
+      if (res && res.refunded_points)  detail = '\n\n' + res.refunded_points + ' points refunded to your wallet.';
+      else if (res && res.refunded_amount) detail = '\n\n' + res.refunded_currency + ' ' + Number(res.refunded_amount).toFixed(2) + ' refunded to your card (5\u201310 business days).';
+      else if (res && res.refund_status === 'forfeited_outside_window') detail = '\n\nNo refund — cancelled within 12 hours of session start.';
+      alert((res && res.message ? res.message : 'Booking cancelled.') + detail);
+      var ov = document.getElementById('sessionDetailOverlay'); if (ov) ov.remove();
+      if (typeof loadBookings === 'function') loadBookings();
+    })
+    .catch(function(err){
+      var emsg = (err && err.data && err.data.error) || (err && err.message) || 'Could not cancel.';
+      alert('\u26a0\ufe0f ' + emsg);
+    });
 }
 
 function renderAchievements(el, list) {

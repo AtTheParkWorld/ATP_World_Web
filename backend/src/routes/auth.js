@@ -905,7 +905,15 @@ router.post('/migrate-paid-sessions', async (req, res, next) => {
       ADD COLUMN IF NOT EXISTS payment_currency   VARCHAR(8),
       ADD COLUMN IF NOT EXISTS points_paid        INT,
       ADD COLUMN IF NOT EXISTS stripe_session_id  TEXT,
-      ADD COLUMN IF NOT EXISTS paid_at            TIMESTAMPTZ`));
+      ADD COLUMN IF NOT EXISTS stripe_payment_intent_id TEXT,
+      ADD COLUMN IF NOT EXISTS paid_at            TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS refunded_at        TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS refunded_amount    NUMERIC(10,2),
+      ADD COLUMN IF NOT EXISTS refunded_currency  VARCHAR(8),
+      ADD COLUMN IF NOT EXISTS refunded_points    INT,
+      ADD COLUMN IF NOT EXISTS refund_method      VARCHAR(20),
+      ADD COLUMN IF NOT EXISTS stripe_refund_id   TEXT,
+      ADD COLUMN IF NOT EXISTS cancelled_by_admin BOOLEAN NOT NULL DEFAULT false`));
 
     // Earlier deploys created stripe_session_id as VARCHAR(64). Real Stripe
     // Checkout session ids are 70-90+ chars, so the legacy width overflows
