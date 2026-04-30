@@ -698,15 +698,9 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
           <div class="wallet-pts-label">points</div>
           <div class="wallet-equiv">≈ AED 10 store credit · 280 pts = 10% off next order</div>
         </div>
-        <!-- Theme 9 / #33 — Shopify best-sellers. Lazy-loaded by
-             loadStoreBestSellers() the first time the Wallet tab is shown. -->
-        <div class="widget" id="storeBestSellersWrap" style="display:none;margin-top:20px">
-          <div class="widget-head">
-            <span class="widget-title">🛒 Best Sellers</span>
-            <span class="widget-action" onclick="window.location='store.html'">Shop all →</span>
-          </div>
-          <div class="widget-body" id="storeBestSellers"></div>
-        </div>
+        <!-- Theme 9 / #33 — Best-seller widget moved to the sidebar
+             (#bestSellerCard) per founder request. Wallet panel keeps
+             only the points + history widgets. -->
         <div class="widget" style="margin-top:20px">
           <div class="widget-head"><span class="widget-title">Transaction History</span></div>
           <div class="widget-body" id="walletTxns"></div>
@@ -991,14 +985,13 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
         </div>
       </div>
 
-      <div class="sub-card">
-        <div class="sub-card-label">Quick Stats</div>
-        <div style="display:flex;flex-direction:column;gap:10px">
-          <div style="display:flex;justify-content:space-between"><span style="font-size:13px;color:var(--muted)">Member since</span><span style="font-size:13px;font-weight:600;color:var(--white)">2015</span></div>
-          <div style="display:flex;justify-content:space-between"><span style="font-size:13px;color:var(--muted)">Home city</span><span style="font-size:13px;font-weight:600;color:var(--white)">Dubai</span></div>
-          <div style="display:flex;justify-content:space-between"><span style="font-size:13px;color:var(--muted)">Favourite tribe</span><span style="font-size:13px;font-weight:600;color:var(--green)">Stronger</span></div>
-          <div style="display:flex;justify-content:space-between"><span style="font-size:13px;color:var(--muted)">Padel level</span><span style="font-size:13px;font-weight:600;color:var(--white)">Intermediate</span></div>
-        </div>
+      <!-- Theme 9 / #33 — Featured best-seller from Shopify, replaces
+           the old static Quick Stats card. Lazy-loaded by
+           loadStoreBestSellers() with a hard 8s timeout; on failure
+           the card hides itself silently. -->
+      <div class="sub-card" id="bestSellerCard" style="display:none">
+        <div class="sub-card-label">🛒 Best Seller</div>
+        <div id="bestSellerBody"><div style="padding:14px 0;color:var(--muted);font-size:13px;text-align:center">Loading…</div></div>
       </div>
     </aside>
   </div>
@@ -1046,8 +1039,6 @@ function showTab(name, btn) {
     var t = document.querySelector('[data-tab="'+name+'"]');
     if(t) t.classList.add("active");
   }
-  // Theme 9 / #33 — lazy-load Shopify best-sellers when the Wallet tab is opened
-  if (name === 'wallet') { try { loadStoreBestSellers(); } catch(e) {} }
   window.scrollTo({top:document.querySelector(".profile-tabs-wrap").offsetTop - 80, behavior:"smooth"});
 }
 
@@ -1758,30 +1749,30 @@ function _atpHandleStripeReturn() {
 }
 
 // ──────────────────────────────────────────────────────────────────
-// Theme 9 / #33 — Shopify best-sellers widget on the Wallet tab.
+// Theme 9 / #33 — Featured best-seller in the profile sidebar.
 // ──────────────────────────────────────────────────────────────────
-// Storefront API token is public-by-design — same pattern as store.html.
-// Pulls 3 best-selling products and renders compact cards. Caches the
-// result in window so flipping tabs doesn't refetch.
+// Replaces the legacy "Quick Stats" sub-card. Pulls the single best-
+// selling product from Shopify (Storefront API, public token) and
+// renders a square hero image + title + price + a green "Support Now"
+// CTA that deep-links to the product on /store.html. On any failure
+// (network, no products, timeout) the card hides itself so the sidebar
+// stays clean.
 var ATP_SHOPIFY_TOKEN  = '31a1a5554b7f2fdaf2aa4dc44e13a127';
 var ATP_SHOPIFY_DOMAIN = 'atp-store-7903.myshopify.com';
 var __atpBestSellersLoaded = false;
 
 function loadStoreBestSellers() {
-  // Run once per page-load. Subsequent tab opens are a no-op.
   if (__atpBestSellersLoaded) return;
-  var wrap = document.getElementById('storeBestSellersWrap');
-  var body = document.getElementById('storeBestSellers');
-  if (!wrap || !body) return;
+  var card = document.getElementById('bestSellerCard');
+  var body = document.getElementById('bestSellerBody');
+  if (!card || !body) return;
   __atpBestSellersLoaded = true;
 
-  // Show the widget skeleton while we fetch — keeps layout stable so
-  // the wallet doesn't jump when the response lands.
-  wrap.style.display = 'block';
-  body.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">Loading best sellers\u2026</div>';
+  // Skeleton — same height as final card so the sidebar doesn't reflow.
+  card.style.display = 'block';
 
   var gql =
-    '{ products(first: 3, sortKey: BEST_SELLING) {' +
+    '{ products(first: 1, sortKey: BEST_SELLING) {' +
     '  edges { node {' +
     '    id title handle' +
     '    priceRange { minVariantPrice { amount currencyCode } }' +
@@ -1789,9 +1780,8 @@ function loadStoreBestSellers() {
     '  } }' +
     '} }';
 
-  // 8s hard timeout — Shopify Storefront has been observed to hang
-  // intermittently when behind certain network paths. We'd rather hide
-  // the widget than leave a permanent skeleton.
+  // 8s hard timeout — Shopify Storefront has hung in some network
+  // paths. We'd rather collapse the card than leave a permanent skeleton.
   var ctrl = new AbortController();
   var hangTimer = setTimeout(function(){ ctrl.abort(); }, 8000);
 
@@ -1809,38 +1799,37 @@ function loadStoreBestSellers() {
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(data){
       var edges = data && data.data && data.data.products && data.data.products.edges || [];
-      if (!edges.length) {
-        // Hide the whole widget rather than showing an empty state — store
-        // hasn't published anything to Headless yet.
-        wrap.style.display = 'none';
-        return;
-      }
+      if (!edges.length) { card.style.display = 'none'; return; }
+      var p = edges[0].node;
+      var img = p.images && p.images.edges && p.images.edges[0] && p.images.edges[0].node;
+      var imgUrl = img && img.url || '';
+      var alt    = img && img.altText || p.title;
+      var price  = p.priceRange && p.priceRange.minVariantPrice;
+      var amount = price ? Number(price.amount).toFixed(0) : '';
+      var ccy    = price && price.currencyCode || '';
+      var safeTitle = (p.title || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      var safeHandle = encodeURIComponent(p.handle || p.id || '');
+      // Single column hero layout that fits the sidebar's width nicely.
+      // The whole card is wrapped in an anchor so a click anywhere lands
+      // on the store; the explicit Support Now button is the conversion
+      // point.
       body.innerHTML =
-        '<div style="display:grid;grid-template-columns:repeat(auto-fit, minmax(150px, 1fr));gap:12px">' +
-        edges.map(function(e){
-          var p = e.node;
-          var img = p.images && p.images.edges && p.images.edges[0] && p.images.edges[0].node;
-          var imgUrl = img && img.url || '';
-          var alt    = img && img.altText || p.title;
-          var price  = p.priceRange && p.priceRange.minVariantPrice;
-          var amount = price ? Number(price.amount).toFixed(0) : '';
-          var ccy    = price && price.currencyCode || '';
-          var safeTitle = (p.title || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-          return '<a href="store.html#' + (p.handle || p.id) + '" style="text-decoration:none;color:inherit;display:block;background:#161616;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:10px;transition:border-color .2s" onmouseover="this.style.borderColor=\'rgba(122,194,49,.4)\'" onmouseout="this.style.borderColor=\'rgba(255,255,255,.08)\'">' +
-            (imgUrl ? '<div style="aspect-ratio:1;background:#0d0d0d;border-radius:8px;overflow:hidden;margin-bottom:8px"><img src="' + imgUrl + '" alt="' + alt.replace(/"/g, '&quot;') + '" style="width:100%;height:100%;object-fit:cover" loading="lazy"></div>'
-                    : '<div style="aspect-ratio:1;background:#0d0d0d;border-radius:8px;margin-bottom:8px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:24px">🛒</div>') +
-            '<div style="font-size:13px;font-weight:600;color:var(--white);line-height:1.3;margin-bottom:4px">' + safeTitle + '</div>' +
-            (amount ? '<div style="font-size:13px;font-weight:700;color:var(--green)">' + ccy + ' ' + amount + '</div>' : '') +
-          '</a>';
-        }).join('') +
-        '</div>';
+        '<a href="store.html#' + safeHandle + '" style="text-decoration:none;color:inherit;display:block">' +
+          (imgUrl
+            ? '<div style="aspect-ratio:1;background:#0d0d0d;border-radius:10px;overflow:hidden;margin-bottom:12px;border:1px solid rgba(255,255,255,.06)"><img src="' + imgUrl + '" alt="' + alt.replace(/"/g, '&quot;') + '" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy"></div>'
+            : '<div style="aspect-ratio:1;background:#0d0d0d;border-radius:10px;margin-bottom:12px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:34px">🛒</div>') +
+          '<div style="font-size:14px;font-weight:700;color:var(--white);line-height:1.3;margin-bottom:6px">' + safeTitle + '</div>' +
+          (amount
+            ? '<div style="font-size:18px;font-weight:800;color:var(--green);font-family:var(--ff-display);margin-bottom:14px">' + ccy + ' ' + amount + '</div>'
+            : '<div style="margin-bottom:14px"></div>') +
+        '</a>' +
+        // The Support Now CTA — full-width, bright green, hard-to-miss.
+        '<a href="store.html#' + safeHandle + '" class="atp-btn atp-btn--primary" style="display:block;text-align:center;text-decoration:none;font-size:13px;padding:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase">Support Now \u2192</a>';
     })
     .catch(function(err){
       console.warn('[best-sellers] fetch failed', err && err.message);
-      // Fail silently — hiding the widget is better than showing a broken
-      // skeleton if Shopify is down or the headless channel is paused.
-      wrap.style.display = 'none';
-      __atpBestSellersLoaded = false; // allow retry on next tab open
+      card.style.display = 'none';
+      __atpBestSellersLoaded = false; // retry next time profile loads
     });
 }
 
@@ -3140,6 +3129,10 @@ function renderStreak(s) {
 loadRealProfileData();
 // Theme 10 / #36 — show post-checkout confirmation if Stripe redirected here
 try { _atpHandleStripeReturn(); } catch(e) { console.warn('stripe return handler', e); }
+// Theme 9 / #33 — populate the sidebar best-seller card on boot. The
+// card stays hidden until Shopify responds (8s timeout) so the sidebar
+// doesn't show an empty box if the store is unreachable.
+try { loadStoreBestSellers(); } catch(e) { console.warn('best-sellers init', e); }
 renderSessions(document.getElementById("upcomingSessions"),SESSIONS.slice(0,3));
 renderSessions(document.getElementById("allSessions"),SESSIONS);
 renderAchievements(document.getElementById("achieveMini"),ACHIEVEMENTS.slice(0,6));
