@@ -982,6 +982,31 @@ router.post('/migrate-referral-codes', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-newsletter ─────────────────────────
+// Audit 4.2 — newsletter capture. Idempotent.
+router.post('/migrate-newsletter', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    await query(`CREATE TABLE IF NOT EXISTS newsletter_subscribers (
+      id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      email               VARCHAR(255) UNIQUE NOT NULL,
+      source              VARCHAR(64),
+      subscribed_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      last_subscribed_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      unsubscribed_at     TIMESTAMPTZ
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_newsletter_active
+                  ON newsletter_subscribers (subscribed_at DESC)
+                  WHERE unsubscribed_at IS NULL`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_newsletter_email_lower
+                  ON newsletter_subscribers (LOWER(email))`);
+
+    res.json({ success: true, message: 'Newsletter schema ready (newsletter_subscribers).' });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-countries ──────────────────────────
 // Theme 8 / feedback #28, #29 — multi-country / multi-currency.
 // Adds a proper countries table (currency, symbol, atp-per-unit override)

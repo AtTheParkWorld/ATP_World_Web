@@ -254,6 +254,8 @@ const ROUTES = [
   ['achievements', require('./routes/achievements')],
   ['billing',      billingRoutes],
   ['countries',    require('./routes/countries')],
+  ['stats',        require('./routes/stats')],
+  ['newsletter',   require('./routes/newsletter')],
 ];
 for (const [prefix, router] of ROUTES) {
   app.use('/api/'    + prefix, router);

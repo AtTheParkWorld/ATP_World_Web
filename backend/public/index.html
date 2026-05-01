@@ -512,10 +512,14 @@ a.product-card:hover{transform:translateY(-4px)}
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M6.5 6l4 2-4 2V6z" fill="currentColor" stroke="none"/></svg>
       </button>
     </div>
+    <!-- Hero stats (Audit 4.2) — live numbers from /api/stats/public.
+         data-stat="X" elements get hydrated by atp-stats.js on page load.
+         The static numbers below are sane fallbacks if the API is
+         unavailable so visitors never see "0" or skeleton text. -->
     <div class="hero-stats">
-      <div class="stat"><div class="stat-num" data-count="19">19</div><div class="stat-label">Activity types</div></div>
-      <div class="stat"><div class="stat-num" data-count="21">21</div><div class="stat-label">Expert coaches</div></div>
-      <div class="stat"><div class="stat-num" data-count="7">7</div><div class="stat-label">Days a week</div></div>
+      <div class="stat"><div class="stat-num" data-stat="members_count" data-suffix="+">7,000+</div><div class="stat-label">Members</div></div>
+      <div class="stat"><div class="stat-num" data-stat="activities_count">19</div><div class="stat-label">Activities</div></div>
+      <div class="stat"><div class="stat-num" data-stat="cities_count">3</div><div class="stat-label">Cities</div></div>
       <div class="stat"><div class="stat-num">AED 0</div><div class="stat-label">Cost to you</div></div>
     </div>
   </div>
@@ -796,9 +800,9 @@ a.product-card:hover{transform:translateY(-4px)}
         <p class="pitch-body">We're not a media channel. We're not a billboard. We're something far more valuable — <strong>a trusted community</strong> that people show up to, week after week, because it genuinely changed their lives.</p>
         <p class="pitch-body">When your brand stands alongside At The Park, you're not interrupting people's day. You're <strong>part of the reason they showed up.</strong> That's a different kind of brand relationship — one built on shared values, not ad spend.</p>
         <div class="pitch-stats">
-          <div class="pitch-stat"><div class="pitch-stat-num">7,000+</div><div class="pitch-stat-label">Registered members</div></div>
-          <div class="pitch-stat"><div class="pitch-stat-num">7</div><div class="pitch-stat-label">Sessions per week</div></div>
-          <div class="pitch-stat"><div class="pitch-stat-num">3</div><div class="pitch-stat-label">Cities: Dubai, Al Ain & Muscat</div></div>
+          <div class="pitch-stat"><div class="pitch-stat-num" data-stat="members_count" data-suffix="+">7,000+</div><div class="pitch-stat-label">Registered members</div></div>
+          <div class="pitch-stat"><div class="pitch-stat-num" data-stat="sessions_this_month">30+</div><div class="pitch-stat-label">Sessions in last 30 days</div></div>
+          <div class="pitch-stat"><div class="pitch-stat-num" data-stat="cities_count">3</div><div class="pitch-stat-label">Cities: Dubai, Al Ain & Muscat</div></div>
           <div class="pitch-stat"><div class="pitch-stat-num">AED 0</div><div class="pitch-stat-label">Cost to members</div></div>
         </div>
         <p class="pitch-why">Our audience is <strong>health-conscious, loyal, and active</strong> — exactly the people sport, wellness, nutrition, hospitality, and lifestyle brands want to reach. Because everything we do is free, the community trusts us completely. That trust extends to the brands we choose to work with.</p>
@@ -857,6 +861,26 @@ a.product-card:hover{transform:translateY(-4px)}
         </div>
       </div>
     </div>
+    <!-- Newsletter signup (Audit 4.2) — captures emails for content
+         marketing / weekly digest. Posts to /api/newsletter/subscribe;
+         the route upserts so resubscribes are no-ops. -->
+    <div style="background:rgba(122,194,49,.05);border:1px solid rgba(122,194,49,.18);border-radius:14px;padding:24px 28px;margin:32px 0;display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+      <div style="flex:1;min-width:240px">
+        <h4 style="font-family:var(--ff-display);font-size:18px;font-weight:900;text-transform:uppercase;color:var(--white);margin-bottom:6px">📬 Stay in the loop</h4>
+        <p style="font-size:13px;color:var(--muted);line-height:1.5;margin:0">Weekly drops on new sessions, member stories, and community events. No spam — unsubscribe in one click.</p>
+      </div>
+      <form id="atp-newsletter-form" style="display:flex;gap:8px;flex-wrap:wrap;flex:1;min-width:280px;justify-content:flex-end">
+        <input type="email" id="atp-newsletter-email" required placeholder="your@email.com"
+               style="flex:1;min-width:200px;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px 14px;color:#fff;font-size:14px;font-family:inherit"
+               aria-label="Email address">
+        <button type="submit" id="atp-newsletter-btn"
+                style="background:var(--green);color:#0a0a0a;border:none;border-radius:8px;padding:12px 20px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;transition:opacity .2s">
+          Subscribe
+        </button>
+      </form>
+      <div id="atp-newsletter-msg" style="flex-basis:100%;font-size:12px;color:var(--muted);min-height:0"></div>
+    </div>
+
     <div class="footer-bottom">
       <p class="footer-copy">© 2026 At The Park. All rights reserved. Dubai, United Arab Emirates.</p>
       <nav class="footer-legal"><a href="index.html">Privacy</a><a href="index.html">Terms</a><a href="mailto:general@atthepark.world">Refunds</a></nav>
@@ -1294,6 +1318,70 @@ window.handleGoogleSignIn = async function(response) {
 })();
 </script>
 
+<!-- Audit 4.2 — public stats hydration + newsletter signup -->
+<script>
+(function _atpHydrateStats() {
+  // Pull /api/stats/public (cached server-side for 60s) and overwrite
+  // every [data-stat] element with the live count. The HTML ships
+  // with sane fallbacks (7,000+ / 19 / 3) so a slow / failed fetch
+  // never leaves the page showing nothing.
+  function format(n) {
+    if (typeof n !== 'number' || isNaN(n)) return '';
+    if (n >= 1000) return n.toLocaleString();
+    return String(n);
+  }
+  fetch('/api/stats/public', { cache: 'no-cache' })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(data){
+      if (!data) return;
+      document.querySelectorAll('[data-stat]').forEach(function(el){
+        var key = el.getAttribute('data-stat');
+        var suf = el.getAttribute('data-suffix') || '';
+        if (data[key] != null) el.textContent = format(data[key]) + suf;
+      });
+    })
+    .catch(function(){ /* fallbacks already in DOM */ });
+})();
+
+(function _atpNewsletter() {
+  var form = document.getElementById('atp-newsletter-form');
+  var email = document.getElementById('atp-newsletter-email');
+  var btn  = document.getElementById('atp-newsletter-btn');
+  var msg  = document.getElementById('atp-newsletter-msg');
+  if (!form || !email || !btn || !msg) return;
+  form.addEventListener('submit', function(ev){
+    ev.preventDefault();
+    var addr = (email.value || '').trim();
+    if (!addr) { msg.textContent = 'Please enter your email.'; msg.style.color = '#f87171'; return; }
+    btn.disabled = true;
+    var orig = btn.textContent;
+    btn.textContent = 'Subscribing…';
+    msg.textContent = '';
+    fetch('/api/newsletter/subscribe', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: addr, source: 'homepage_footer' }),
+    })
+      .then(function(r){ return r.json().then(function(b){ return { ok:r.ok, body:b }; }); })
+      .then(function(res){
+        btn.disabled = false; btn.textContent = orig;
+        if (res.ok) {
+          msg.style.color = '#7AC231';
+          msg.textContent = '✅ ' + (res.body && res.body.message || 'You\'re on the list.');
+          email.value = '';
+        } else {
+          msg.style.color = '#f87171';
+          msg.textContent = '❌ ' + ((res.body && res.body.error) || 'Could not subscribe — please try again.');
+        }
+      })
+      .catch(function(){
+        btn.disabled = false; btn.textContent = orig;
+        msg.style.color = '#f87171';
+        msg.textContent = '❌ Network error — please try again.';
+      });
+  });
+})();
+</script>
 
 </body>
 </html>

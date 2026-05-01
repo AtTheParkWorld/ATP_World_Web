@@ -610,6 +610,36 @@ router.patch('/:id/cancel', authenticate, requireAdmin, async (req, res, next) =
        req.params.id]
     ).catch(() => {});
 
+    // Audit 4.2 — actually deliver email so members find out before
+    // they show up at the venue. Best-effort, fire-and-forget; the
+    // notifications row above is the source of truth in-app.
+    try {
+      const emailService = require('../services/email');
+      const { rows: affected } = await query(
+        `SELECT m.id, m.first_name, m.email
+           FROM bookings b
+           JOIN members m ON m.id = b.member_id
+          WHERE b.session_id = $1
+            AND b.cancelled_at >= NOW() - INTERVAL '5 minutes'
+            AND m.email IS NOT NULL`,
+        [req.params.id]
+      );
+      const session = rows[0];
+      // Map refunds to a refund object keyed by booking id so we can
+      // tailor each email's "we credited X back" line. refundResults
+      // is empty when ?refund=skip is used.
+      const refundByBooking = {};
+      for (const r of refundResults) refundByBooking[r.booking_id] = r;
+      // Don't await the loop — just kick them off in parallel.
+      Promise.all(affected.map((m) => emailService.sendSessionCancellation(
+        { id: m.id, first_name: m.first_name, email: m.email },
+        { name: session.name, scheduled_at: session.scheduled_at, cancellation_reason: reason || null },
+        refundByBooking[m.id] || null
+      ).catch(function(e){ console.warn('[email] cancellation send failed for', m.email, e.message); }))).catch(() => {});
+    } catch (e) {
+      console.warn('[sessions/cancel] email notify failed:', e.message);
+    }
+
     res.json({
       session: rows[0],
       refunds: refundResults,

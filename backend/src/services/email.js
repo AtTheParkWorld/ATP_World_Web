@@ -227,6 +227,42 @@ async function sendRaw({ to, subject, html, replyTo }) {
   await sgMail.send(msg);
 }
 
+// ── SESSION CANCELLATION (Audit 4.2) ──────────────────────────
+// Notifies a single member that their booked session was cancelled,
+// with refund context (points returned / Stripe refund / forfeited).
+// Called by the session-cancel + booking-cancel paths on top of the
+// in-app notifications row.
+async function sendSessionCancellation(member, session, refund) {
+  const dt = session.scheduled_at ? new Date(session.scheduled_at) : null;
+  const when = dt ? dt.toLocaleString('en-GB', { weekday:'long', day:'2-digit', month:'long', hour:'2-digit', minute:'2-digit' }) : 'TBD';
+  const refundLine = refund && refund.refunded_points
+    ? `<p>We\u2019ve credited <strong>${refund.refunded_points} points</strong> back to your wallet.</p>`
+    : refund && refund.refunded_amount
+      ? `<p>A refund of <strong>${refund.refunded_currency || 'AED'} ${Number(refund.refunded_amount).toFixed(2)}</strong> has been issued to your card. Funds appear in 5\u201310 business days.</p>`
+      : refund && refund.within_12h
+        ? '<p style="color:#aaa">As your booking was inside the 12-hour window, no refund applies.</p>'
+        : '';
+  const reasonLine = session.cancellation_reason
+    ? `<p style="background:#1a1a1a;padding:14px 18px;border-radius:8px;border-left:3px solid #7AC231"><strong>Why:</strong> ${escapeHtml(session.cancellation_reason)}</p>`
+    : '';
+  const html = baseTemplate(
+    `<h1>Session cancelled</h1>
+     <p>Hi ${escapeHtml(member.first_name || 'there')},</p>
+     <p>Your booking for <strong>${escapeHtml(session.name || 'Session')}</strong> on ${when} has been cancelled.</p>
+     ${reasonLine}
+     ${refundLine}
+     <p>You can browse upcoming sessions and rebook anytime.</p>
+     <a href="https://atpworldweb-production.up.railway.app/sessions.html" class="btn">Browse sessions</a>`
+  );
+  await send(member.email, `Cancelled: ${session.name || 'Your ATP session'}`, html);
+}
+
+function escapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
 module.exports = {
   sendWelcome,
   sendMagicLink,
@@ -235,5 +271,6 @@ module.exports = {
   sendStreakReminder,
   sendPointsExpiryWarning,
   sendSessionReminder,
+  sendSessionCancellation,
   sendRaw,
 };
