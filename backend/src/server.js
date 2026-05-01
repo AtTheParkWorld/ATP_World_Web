@@ -245,15 +245,20 @@ app.use((err, req, res, next) => {
 });
 
 // ── START ─────────────────────────────────────────────────────
+// Only bind a port when this file is run directly (`node src/server.js`).
+// When imported by tests (Supertest/Vitest do `require('../src/server')`)
+// we just want the configured Express app, not a live listening server.
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`
-  ╔══════════════════════════════════════╗
-  ║  AT THE PARK — API Server            ║
-  ║  Running on port ${PORT}               ║
-  ║  Environment: ${process.env.NODE_ENV || 'development'}           ║
-  ╚══════════════════════════════════════╝
-  `);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`
+    ╔══════════════════════════════════════╗
+    ║  AT THE PARK — API Server            ║
+    ║  Running on port ${PORT}               ║
+    ║  Environment: ${process.env.NODE_ENV || 'development'}           ║
+    ╚══════════════════════════════════════╝
+    `);
+  });
+}
 
 module.exports = app;
