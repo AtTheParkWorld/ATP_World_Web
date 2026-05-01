@@ -1,0 +1,111 @@
+# ATP — Continuous Integration
+#
+# Audit 3.4 / 3.5: every PR + push to main runs the test suite. PRs
+# that fail tests are blocked from merging via branch protection
+# (configure that separately in GitHub repo settings → Branches).
+#
+# The job spins up an ephemeral Postgres 16 container so the DB-backed
+# integration tests can run end-to-end. Cheap because GitHub Actions
+# reuses the runner across jobs in the same workflow.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel an in-progress run if a new commit is pushed to the same PR /
+# branch — saves CI minutes when iterating quickly.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Test (Node ${{ matrix.node }} + Postgres 16)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    strategy:
+      fail-fast: false
+      matrix:
+        node: ['20']
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: atp
+          POSTGRES_PASSWORD: atp
+          POSTGRES_DB: atp_test
+        ports:
+          - 5432:5432
+        # Wait until Postgres is actually accepting connections before
+        # the test job starts running.
+        options: >-
+          --health-cmd "pg_isready -U atp"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    env:
+      NODE_ENV: test
+      JWT_SECRET: ci-jwt-secret-not-used-anywhere-real
+      ADMIN_SETUP_KEY: ci-setup-key-not-used-anywhere-real
+      DATABASE_URL: postgresql://atp:atp@127.0.0.1:5432/atp_test
+      TEST_DATABASE_URL: postgresql://atp:atp@127.0.0.1:5432/atp_test
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node ${{ matrix.node }}
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - name: Install backend deps
+        working-directory: backend
+        run: npm ci || npm install
+
+      - name: Run tests
+        working-directory: backend
+        run: npm test
+
+  # Static checks — runs in parallel with tests so failure surfaces fast.
+  static:
+    name: Lint + sanity checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Verify package.json parses
+        working-directory: backend
+        run: node -e "JSON.parse(require('fs').readFileSync('package.json'))" && echo "package.json is valid JSON"
+
+      - name: Verify server.js + every route file is parseable
+        working-directory: backend
+        run: |
+          set -e
+          for f in src/server.js src/routes/*.js src/services/*.js src/middleware/*.js; do
+            node --check "$f"
+          done
+          echo "All backend JS files parse cleanly."
+
+      - name: Check for committed secrets in .env
+        run: |
+          if [ -f backend/.env ]; then
+            echo "::error::backend/.env should never be committed."
+            exit 1
+          fi
+          echo "No backend/.env committed. ✓"
