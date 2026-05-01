@@ -123,22 +123,33 @@ Production is on Railway with auto-deploy from `main`. Each push:
 Bump `version` in `package.json` on each meaningful change so the
 deploy log gives a clear diff between what's live and what just shipped.
 
-### Recommended next steps (Audit 3.5)
+### Audit 3.5 status
 
-Infrastructure tasks the audit calls out — not in-codebase but should
-land soon:
+Done in code:
 
-- [ ] **Staging environment.** Duplicate the Railway service and point
-      it at a Neon dev branch. Test schema migrations there before
-      running them against production.
-- [ ] **Sentry error tracking.** Sign up at sentry.io, create a Node
-      project, paste the DSN into `SENTRY_DSN`. Wire `Sentry.init()`
-      into `src/server.js` (~5 lines).
+- [x] **Sentry error tracking** — wired conditionally in `src/server.js`.
+      To activate: sign up at sentry.io, create a Node project, paste
+      the DSN into `SENTRY_DSN` env var on Railway. The init no-ops
+      cleanly when the DSN is empty, so the code is safe to ship.
+- [x] **Branch protection on `main`** — `test` + `static` checks are
+      required before merge. Enabled via `gh api` against
+      `/repos/.../branches/main/protection`. Strict mode on (PRs must
+      be up-to-date with main before merging).
+
+Still requires you (one-time, ~10 min total):
+
+- [ ] **CI workflow file.** GitHub blocks workflow file creation via
+      OAuth tokens without `workflow` scope. Create it via the web UI
+      from `docs/ci-workflow.yml.template` (see "Continuous integration"
+      above for steps). The branch protection rule is already pointing
+      at the `test` + `static` checks this workflow defines, so the
+      moment the file lands the protection becomes effective.
+- [ ] **Staging environment.** Duplicate the Railway service and
+      point it at a Neon dev branch. Test schema migrations there
+      before running them against production.
 - [ ] **UptimeRobot.** Free monitor on
       `https://atpworldweb-production.up.railway.app/health`. Configure
       SMS / email / Slack alerts on downtime.
-- [ ] **Branch protection.** GitHub repo settings → enforce CI checks
-      before merging into `main`.
 
 ---
 

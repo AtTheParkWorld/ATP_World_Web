@@ -1,10 +1,41 @@
 // ATP-VERSION: 20260423-060755
+require('dotenv').config();
+
+// ── SENTRY (Audit 3.5) ────────────────────────────────────────
+// Initialised BEFORE express so `Sentry.setupExpressErrorHandler()`
+// has the request handler ready to wrap. No-ops cleanly when
+// SENTRY_DSN is empty (default in dev) so we never accidentally
+// ship local stack traces upstream.
+let Sentry = null;
+if (process.env.SENTRY_DSN) {
+  try {
+    Sentry = require('@sentry/node');
+    Sentry.init({
+      dsn: process.env.SENTRY_DSN,
+      environment: process.env.NODE_ENV || 'development',
+      tracesSampleRate: Number(process.env.SENTRY_TRACES_SAMPLE_RATE || 0.1),
+      // Strip the dev-only error stack from outgoing events; we still
+      // see the full stack server-side in logs.
+      beforeSend(event) {
+        if (event.request && event.request.headers) {
+          delete event.request.headers['authorization'];
+          delete event.request.headers['cookie'];
+        }
+        return event;
+      },
+    });
+    console.log('[sentry] error tracking enabled (env=' + (process.env.NODE_ENV || 'development') + ')');
+  } catch (e) {
+    console.warn('[sentry] failed to initialise:', e.message);
+    Sentry = null;
+  }
+}
+
 const express     = require('express');
 const cors        = require('cors');
 const helmet      = require('helmet');
 const morgan      = require('morgan');
 const rateLimit   = require('express-rate-limit');
-require('dotenv').config();
 
 const app = express();
 
@@ -233,6 +264,14 @@ for (const [prefix, router] of ROUTES) {
 app.use((req, res) => {
   res.status(404).json({ error: 'Route not found' });
 });
+
+// ── SENTRY EXPRESS HANDLER (Audit 3.5) ────────────────────────
+// Must come AFTER routes so it captures errors thrown inside them,
+// and BEFORE our own error handler so the error reaches Sentry first.
+// No-ops when Sentry isn't initialised.
+if (Sentry && typeof Sentry.setupExpressErrorHandler === 'function') {
+  Sentry.setupExpressErrorHandler(app);
+}
 
 // ── ERROR HANDLER ─────────────────────────────────────────────
 app.use((err, req, res, next) => {
