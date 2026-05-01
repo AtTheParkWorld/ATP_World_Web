@@ -309,21 +309,137 @@ router.post('/points/redeem', authenticate, async (req, res, next) => {
       return { redemption: red[0], new_balance: newBalance };
     });
 
+    // ─ Shopify Admin: create the actual discount code ────────────
+    // Done AFTER the DB transaction so a Shopify outage doesn't block
+    // the points debit. If Shopify rejects the code we mark the row
+    // status='shopify_failed' so admin can retry from the maintenance
+    // tab; the member sees a polite "we'll email you" instead of a
+    // half-broken code.
+    const shopify = require('../services/shopify');
+    let shopifyDiscountId = null;
+    let shopifyOk = false;
+    let shopifyError = null;
+    if (shopify.isConfigured()) {
+      try {
+        const created = await shopify.createDiscountCode({
+          code:      result.redemption.discount_code,
+          amount:    Number(result.redemption.amount_value),
+          currency:  'AED',
+          expiresAt: result.redemption.expires_at,
+          title:     'ATP points (' + points + ' pts → AED ' + value + ')',
+        });
+        shopifyDiscountId = created.id;
+        shopifyOk = true;
+        await query(
+          `UPDATE points_redemptions
+              SET shopify_discount_id = $1,
+                  shopify_error       = NULL
+            WHERE id = $2`,
+          [shopifyDiscountId, result.redemption.id]
+        );
+      } catch (e) {
+        shopifyError = e.message || String(e);
+        console.warn('[store] Shopify discount create failed:', shopifyError);
+        await query(
+          `UPDATE points_redemptions
+              SET status        = 'shopify_failed',
+                  shopify_error = $1
+            WHERE id = $2`,
+          [shopifyError.slice(0, 500), result.redemption.id]
+        ).catch(() => {});
+      }
+    } else {
+      // No Admin API configured → DB-only legacy mode. Document this
+      // in the response so the UI can warn the member that an admin
+      // will reach out.
+      shopifyError = 'shopify-admin-not-configured';
+    }
+
     res.status(201).json({
-      message: 'AED ' + result.redemption.amount_value + ' discount unlocked.',
+      message: shopifyOk
+        ? ('AED ' + result.redemption.amount_value + ' discount unlocked.')
+        : ('AED ' + result.redemption.amount_value + ' redeemed — your code will be sent shortly.'),
       discount_code: result.redemption.discount_code,
       amount_value:  Number(result.redemption.amount_value),
       currency_code: 'AED',
       points_spent:  points,
       points_balance: result.new_balance,
       expires_at: result.redemption.expires_at,
-      // Tell the UI how to communicate this to the user.
-      next_step: 'Paste this code at Shopify checkout. It expires in 30 days.',
+      shopify_active: shopifyOk,
+      shopify_discount_id: shopifyDiscountId,
+      next_step: shopifyOk
+        ? 'Paste this code at Shopify checkout. It expires in 30 days.'
+        : 'Your points are reserved. We\u2019ll activate the code at Shopify and email it to you within an hour.',
     });
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message });
     next(err);
   }
+});
+
+// POST /api/store/admin/points/:id/retry-shopify (admin)
+// For redemptions that were issued in the DB but failed to create the
+// Shopify code (e.g. Admin token wasn't set yet, transient network
+// error). Re-runs the Shopify create + flips status back to 'issued'.
+router.post('/admin/points/:id/retry-shopify', authenticate, async (req, res, next) => {
+  try {
+    if (!req.member.is_admin) return res.status(403).json({ error: 'Admin only' });
+    const { rows } = await query(
+      `SELECT * FROM points_redemptions WHERE id = $1`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Redemption not found' });
+    const r = rows[0];
+    if (r.shopify_discount_id) {
+      return res.json({ message: 'Already mirrored to Shopify.', shopify_discount_id: r.shopify_discount_id });
+    }
+    const shopify = require('../services/shopify');
+    if (!shopify.isConfigured()) {
+      return res.status(503).json({ error: 'Shopify Admin API not configured (set SHOPIFY_ADMIN_TOKEN).' });
+    }
+    try {
+      const created = await shopify.createDiscountCode({
+        code:      r.discount_code,
+        amount:    Number(r.amount_value),
+        currency:  r.currency_code || 'AED',
+        expiresAt: r.expires_at,
+        title:     'ATP points retry (' + r.points_spent + ' pts → ' + (r.currency_code || 'AED') + ' ' + r.amount_value + ')',
+      });
+      await query(
+        `UPDATE points_redemptions
+            SET shopify_discount_id = $1,
+                shopify_error       = NULL,
+                status              = 'issued'
+          WHERE id = $2`,
+        [created.id, r.id]
+      );
+      res.json({ message: 'Discount mirrored to Shopify.', shopify_discount_id: created.id });
+    } catch (e) {
+      await query(
+        `UPDATE points_redemptions SET shopify_error = $1 WHERE id = $2`,
+        [(e.message || String(e)).slice(0, 500), r.id]
+      ).catch(() => {});
+      res.status(502).json({ error: e.message, code: e.code || 'SHOPIFY_RETRY_FAILED' });
+    }
+  } catch (err) { next(err); }
+});
+
+// GET /api/store/admin/points/failed (admin)
+// Lists redemptions stuck in shopify_failed so admin can see what's
+// pending mirror.
+router.get('/admin/points/failed', authenticate, async (req, res, next) => {
+  try {
+    if (!req.member.is_admin) return res.status(403).json({ error: 'Admin only' });
+    const { rows } = await query(
+      `SELECT r.*, m.first_name, m.last_name, m.email
+         FROM points_redemptions r
+         JOIN members m ON m.id = r.member_id
+        WHERE r.status = 'shopify_failed' OR (r.shopify_discount_id IS NULL AND r.shopify_error IS NOT NULL)
+        ORDER BY r.issued_at DESC
+        LIMIT 100`
+    ).catch((e) => { if (_missingTable(e)) return { rows: [] }; throw e; });
+    res.json({ failed: rows });
+  } catch (err) { next(err); }
 });
 
 // GET /api/store/points/redemptions — recent codes a member has issued

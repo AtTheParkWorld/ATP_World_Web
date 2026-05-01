@@ -1040,22 +1040,31 @@ router.post('/migrate-store-tier1', async (req, res, next) => {
     ops.push(query(`CREATE INDEX IF NOT EXISTS idx_reviews_product ON product_reviews (product_id, created_at DESC) WHERE is_published=true`));
 
     // 4. Points redemption audit. Each row = a points-for-discount
-    // transaction. amount_aed is the realised discount amount (server
-    // stores it so admin can audit the math; doesn't need to match
-    // Shopify's order-line discount exactly).
+    // transaction. amount_value is the realised discount; status
+    // tracks the lifecycle (issued → used / expired / refunded /
+    // shopify_failed when the Admin API call didn't go through).
     ops.push(query(`CREATE TABLE IF NOT EXISTS points_redemptions (
-      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-      member_id       UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
-      points_spent    INT  NOT NULL CHECK (points_spent > 0),
-      discount_code   TEXT,                                              -- Shopify code generated/handed to member
-      amount_value    NUMERIC(10,2),
-      currency_code   VARCHAR(8) DEFAULT 'AED',
-      status          VARCHAR(20) NOT NULL DEFAULT 'issued',             -- issued | used | expired | refunded
-      issued_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      used_at         TIMESTAMPTZ,
-      expires_at      TIMESTAMPTZ
+      id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      member_id           UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      points_spent        INT  NOT NULL CHECK (points_spent > 0),
+      discount_code       TEXT,                                          -- code given to the member
+      shopify_discount_id TEXT,                                          -- gid://shopify/DiscountCodeNode/...
+      amount_value        NUMERIC(10,2),
+      currency_code       VARCHAR(8) DEFAULT 'AED',
+      status              VARCHAR(20) NOT NULL DEFAULT 'issued',         -- issued | used | expired | refunded | shopify_failed
+      shopify_error       TEXT,                                          -- last error if Shopify create failed
+      issued_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      used_at             TIMESTAMPTZ,
+      expires_at          TIMESTAMPTZ
     )`));
+    // Idempotent ALTERs for installs that already ran the earlier
+    // version of this migration before the shopify_discount_id +
+    // shopify_error columns existed.
+    ops.push(query(`ALTER TABLE points_redemptions
+      ADD COLUMN IF NOT EXISTS shopify_discount_id TEXT,
+      ADD COLUMN IF NOT EXISTS shopify_error       TEXT`));
     ops.push(query(`CREATE INDEX IF NOT EXISTS idx_redemptions_member ON points_redemptions (member_id, issued_at DESC)`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_redemptions_shopify_failed ON points_redemptions (status) WHERE status='shopify_failed'`));
 
     await Promise.all(ops);
     res.json({ success: true, message: 'Store tier-1 schema ready (wishlists, member_carts, product_reviews, points_redemptions).' });

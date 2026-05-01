@@ -1537,11 +1537,14 @@ async function atpRedeemPoints(maxPoints, maxValue, rate) {
     btn.textContent = '✓ Redeemed';
     btn.style.opacity = '.6';
     msg.style.display = 'block';
+    var statusLine = data.shopify_active
+      ? '<div style="color:#aaa">Worth <strong style="color:#fff">AED ' + data.amount_value + '</strong>. Paste at Shopify checkout. Expires in 30 days.</div>'
+      : '<div style="color:#ffc400;font-size:11px;line-height:1.5">⚠️ Code reserved — we\u2019ll activate it on Shopify and email you within the hour.</div>';
     msg.innerHTML =
       '<div style="background:#0a0a0a;border:1px solid rgba(122,194,49,.4);border-radius:6px;padding:10px;margin-top:6px">' +
         '<div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Your discount code</div>' +
         '<div style="font-family:monospace;font-size:16px;font-weight:800;color:#7AC231;letter-spacing:1px;margin-bottom:6px">' + data.discount_code + '</div>' +
-        '<div style="color:#aaa">Worth <strong style="color:#fff">AED ' + data.amount_value + '</strong>. Paste at Shopify checkout. Expires in 30 days.</div>' +
+        statusLine +
         '<button onclick="navigator.clipboard&&navigator.clipboard.writeText(\'' + data.discount_code + '\').then(function(){var b=event.target;b.textContent=\'Copied ✓\';setTimeout(function(){b.textContent=\'Copy code\'},2000)})" style="margin-top:8px;background:transparent;border:1px solid rgba(122,194,49,.3);color:#7AC231;font-size:11px;font-weight:700;padding:5px 10px;border-radius:4px;cursor:pointer">Copy code</button>' +
       '</div>';
   } catch(e) {
