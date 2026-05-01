@@ -28,6 +28,30 @@ router.get('/feed', optionalAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── GET /api/community/me/posts (Theme 14) ────────────────────
+// Member's own last 20 posts — used by the "My Posts" section on the
+// profile page. Lighter than /feed: no joins needed across other
+// members, but we do bring along the per-post likes_count and
+// comments_count (already kept in sync on the row) plus liked_by_me
+// so the heart toggle renders correctly.
+router.get('/me/posts', authenticate, async (req, res, next) => {
+  try {
+    const limit = Math.min(50, parseInt(req.query.limit, 10) || 20);
+    const { rows } = await query(
+      `SELECT p.id, p.content, p.media, p.likes_count, p.comments_count, p.created_at,
+              p.member_id, m.first_name, m.last_name, m.avatar_url,
+              EXISTS(SELECT 1 FROM post_likes pl WHERE pl.post_id=p.id AND pl.member_id=$1) AS liked_by_me
+       FROM posts p
+       JOIN members m ON m.id = p.member_id
+       WHERE p.member_id = $1 AND p.is_deleted = false
+       ORDER BY p.created_at DESC
+       LIMIT $2`,
+      [req.member.id, limit]
+    );
+    res.json({ posts: rows });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/community/posts ─────────────────────────────────
 router.post('/posts', authenticate, async (req, res, next) => {
   try {
@@ -41,6 +65,37 @@ router.post('/posts', authenticate, async (req, res, next) => {
        VALUES ($1,$2,$3) RETURNING *`,
       [req.member.id, content, JSON.stringify(media)]
     );
+
+    // Theme 14 — fan-out a notification to every accepted friend when
+    // a member posts media (image or video). Text-only posts don't fire
+    // (would be too noisy). Best-effort, fire-and-forget — failure here
+    // must not affect the post creation.
+    const hasMedia = Array.isArray(media) && media.length > 0;
+    if (hasMedia) {
+      const author = req.member;
+      const authorName = ((author.first_name || '') + ' ' + (author.last_name || '')).trim() || 'A friend';
+      const mediaKind = (media[0] && (media[0].type || media[0].kind)) || 'media';
+      const niceKind = mediaKind === 'video' ? 'video' : (mediaKind === 'image' ? 'photo' : 'a new post');
+      query(
+        `INSERT INTO notifications (member_id, type, title, body, data)
+         SELECT
+           CASE WHEN f.requester_id = $1 THEN f.addressee_id ELSE f.requester_id END AS recipient,
+           'friend_post',
+           $2,
+           $3,
+           $4
+         FROM friendships f
+         WHERE f.status = 'accepted'
+           AND (f.requester_id = $1 OR f.addressee_id = $1)`,
+        [
+          author.id,
+          authorName + ' posted a new ' + niceKind,
+          'Tap to see it in the community feed.',
+          JSON.stringify({ post_id: rows[0].id, author_id: author.id, kind: niceKind }),
+        ]
+      ).catch(function(e){ console.warn('[community] friend_post notif fan-out failed', e.message); });
+    }
+
     res.status(201).json({ post: rows[0] });
   } catch (err) { next(err); }
 });
@@ -85,6 +140,20 @@ router.post('/posts/:id/like', authenticate, async (req, res, next) => {
       await query('INSERT INTO post_likes (post_id, member_id) VALUES ($1,$2)',
         [req.params.id, req.member.id]);
       await query('UPDATE posts SET likes_count=likes_count+1 WHERE id=$1', [req.params.id]);
+      // Theme 14 — notify the post author (only on the FIRST like from
+      // this member to avoid notification spam if they like/unlike).
+      // We never notify yourself for liking your own post.
+      query(
+        `INSERT INTO notifications (member_id, type, title, body, data)
+         SELECT p.member_id, 'post_liked',
+                COALESCE(NULLIF(TRIM(m.first_name || ' ' || m.last_name), ''), 'Someone') || ' liked your post',
+                COALESCE(LEFT(p.content, 60), 'Tap to see your post.'),
+                $3
+         FROM posts p, members m
+         WHERE p.id = $1 AND m.id = $2 AND p.member_id <> $2`,
+        [req.params.id, req.member.id,
+         JSON.stringify({ post_id: req.params.id, liker_id: req.member.id })]
+      ).catch(function(e){ console.warn('[community] post_liked notif failed', e.message); });
       res.json({ liked: true });
     }
   } catch (err) { next(err); }
@@ -118,6 +187,22 @@ router.post('/posts/:id/comments', authenticate, async (req, res, next) => {
       [req.params.id, req.member.id, content, parent_id || null]
     );
     await query('UPDATE posts SET comments_count=comments_count+1 WHERE id=$1', [req.params.id]);
+
+    // Theme 14 — notify the post author when someone comments on their
+    // post. Never notify yourself for commenting on your own post.
+    // Snippet of the comment is included in the notification body.
+    query(
+      `INSERT INTO notifications (member_id, type, title, body, data)
+       SELECT p.member_id, 'post_commented',
+              COALESCE(NULLIF(TRIM(m.first_name || ' ' || m.last_name), ''), 'Someone') || ' commented on your post',
+              LEFT($3, 120),
+              $4
+       FROM posts p, members m
+       WHERE p.id = $1 AND m.id = $2 AND p.member_id <> $2`,
+      [req.params.id, req.member.id, content,
+       JSON.stringify({ post_id: req.params.id, comment_id: rows[0].id, commenter_id: req.member.id })]
+    ).catch(function(e){ console.warn('[community] post_commented notif failed', e.message); });
+
     res.status(201).json({ comment: rows[0] });
   } catch (err) { next(err); }
 });

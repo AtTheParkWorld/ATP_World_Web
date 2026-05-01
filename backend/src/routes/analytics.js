@@ -216,15 +216,19 @@ router.get('/v2', authenticate, requireAdmin, async (req, res, next) => {
       revenueRows,
     ] = await Promise.all([
       // 1. Gender — count + %
+      // Theme 14: ignore the date filter for gender. Founder wants this
+      // to reflect the WHOLE current member base, not just sign-ups in
+      // the chosen window. Excludes banned members so the % is over
+      // active accounts. The date params are left in the closure but
+      // unused so the Promise.all signature stays put.
       query(
         `SELECT COALESCE(NULLIF(TRIM(gender), ''), 'unspecified') AS gender,
                 COUNT(*)::int AS count,
                 ROUND(100.0 * COUNT(*) / NULLIF(SUM(COUNT(*)) OVER (), 0), 1) AS percent
          FROM members
-         WHERE created_at BETWEEN $1 AND $2
+         WHERE COALESCE(is_banned, false) = false
          GROUP BY 1
-         ORDER BY count DESC`,
-        params
+         ORDER BY count DESC`
       ),
 
       // 2. Active vs Inactive — fixed 30-day rule based on last booked
@@ -399,12 +403,15 @@ router.get('/v2/:metric/export', authenticate, requireAdmin, async (req, res, ne
     let name = m;
 
     if (m === 'gender') {
+      // Theme 14: same change as the dashboard gender card — over the
+      // entire current member base, not just the date range cohort.
       const r = await query(
         `SELECT COALESCE(NULLIF(TRIM(gender),''),'unspecified') AS gender,
                 COUNT(*)::int AS count,
                 ROUND(100.0 * COUNT(*) / NULLIF(SUM(COUNT(*)) OVER (),0),1) AS percent
-         FROM members WHERE created_at BETWEEN $1 AND $2
-         GROUP BY 1 ORDER BY count DESC`, params);
+         FROM members
+         WHERE COALESCE(is_banned, false) = false
+         GROUP BY 1 ORDER BY count DESC`);
       rows = r.rows; columns = ['gender','count','percent']; name = 'gender-breakdown';
     } else if (m === 'activity') {
       const r = await query(

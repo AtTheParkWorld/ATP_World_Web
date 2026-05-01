@@ -546,6 +546,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
       <button class="ptab" data-tab="tribe" data-atp-call="showTab" data-args='["tribe"]'>My Tribe</button>
       <button class="ptab" data-tab="wallet" data-atp-call="showTab" data-args='["wallet"]'>Wallet</button>
       <button class="ptab" data-tab="friends" data-atp-call="showTab" data-args='["friends"]'>Friends</button>
+      <button class="ptab" data-tab="myposts" data-atp-call="showTab" data-args='["myposts"]'>My Posts</button>
       <button class="ptab" data-tab="notifications" data-atp-call="showTab" data-args='["notifications"]'>Notifications</button>
       <button class="ptab" data-tab="edit" data-atp-call="showTab" data-args='["edit"]'>Edit Profile</button>
       <button class="ptab" id="ambassadorTab" data-tab="ambassador" data-atp-call="showTab" data-args='["ambassador"]' style="display:none">⭐ Ambassador</button>
@@ -728,6 +729,19 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
         <div class="widget" style="margin-top:20px">
           <div class="widget-head"><span class="widget-title">My Friends</span></div>
           <div class="widget-body" id="friendsList"></div>
+        </div>
+      </div>
+
+      <!-- MY POSTS (Theme 14) — last 20 posts the member has made on
+           the community feed. Read-only here; full feed lives on
+           /community.html. -->
+      <div class="profile-panel" id="panel-myposts">
+        <div class="widget">
+          <div class="widget-head">
+            <span class="widget-title">My Posts</span>
+            <span class="widget-action" onclick="window.location='community.html'">Open community →</span>
+          </div>
+          <div class="widget-body" id="myPostsList"><div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">Loading\u2026</div></div>
         </div>
       </div>
 
@@ -1051,7 +1065,70 @@ function showTab(name, btn) {
     var t = document.querySelector('[data-tab="'+name+'"]');
     if(t) t.classList.add("active");
   }
+  // Theme 14 — lazy-load own posts when the My Posts tab opens
+  if (name === 'myposts') { try { loadMyPosts(); } catch(e) {} }
   window.scrollTo({top:document.querySelector(".profile-tabs-wrap").offsetTop - 80, behavior:"smooth"});
+}
+
+// Theme 14 — fetch + render the member's last 20 community posts.
+// Each card shows: media (first item only — keeps the column tight),
+// content snippet, likes count, comments count, relative time. Click
+// → opens the post in /community.html#<post_id>.
+function loadMyPosts() {
+  var el = document.getElementById('myPostsList');
+  if (!el) return;
+  fetch('/api/community/me/posts', {
+    headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('atp_token')||'') }
+  })
+    .then(function(r){ return r.ok ? r.json() : { posts: [] }; })
+    .then(function(data){
+      var posts = (data && data.posts) || [];
+      if (!posts.length) {
+        el.innerHTML = _atpEmpty('📝', 'No posts yet',
+          'Share your first session recap, milestone or shoutout in the community feed.',
+          '<a href="community.html" class="atp-btn atp-btn--primary atp-empty__cta">Open community</a>');
+        return;
+      }
+      el.innerHTML = posts.map(function(p){
+        var media = [];
+        try { media = (typeof p.media === 'string' ? JSON.parse(p.media) : p.media) || []; }
+        catch(e) { media = []; }
+        var first = media && media[0];
+        var mediaHtml = '';
+        if (first) {
+          var url  = first.url || first.src || '';
+          var kind = (first.type || first.kind || 'image');
+          if (url) {
+            mediaHtml = (kind === 'video')
+              ? '<video src="' + url + '" muted style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#000"></video>'
+              : '<img src="' + url + '" alt="" style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#0a0a0a" loading="lazy">';
+          }
+        }
+        var content = (p.content || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+        var when = '';
+        try {
+          var dt = new Date(p.created_at);
+          var diffMs = Date.now() - dt.getTime();
+          var diffDays = Math.floor(diffMs / 86400000);
+          when = diffDays === 0 ? 'Today'
+               : diffDays === 1 ? 'Yesterday'
+               : diffDays < 7   ? diffDays + 'd ago'
+               : dt.toLocaleDateString(undefined, { day:'numeric', month:'short' });
+        } catch(e){}
+        return '<a href="community.html#' + p.id + '" style="text-decoration:none;color:inherit;display:block;background:#161616;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px;margin-bottom:12px;transition:border-color .2s" onmouseover="this.style.borderColor=\'rgba(122,194,49,.3)\'" onmouseout="this.style.borderColor=\'rgba(255,255,255,.06)\'">' +
+          (mediaHtml ? '<div style="margin-bottom:10px;max-width:280px">' + mediaHtml + '</div>' : '') +
+          (content ? '<div style="font-size:13px;color:var(--light);line-height:1.5;margin-bottom:10px">' + content + '</div>' : '') +
+          '<div style="display:flex;gap:18px;font-size:12px;color:var(--muted);align-items:center">' +
+            '<span>❤️ ' + (Number(p.likes_count) || 0) + '</span>' +
+            '<span>💬 ' + (Number(p.comments_count) || 0) + '</span>' +
+            '<span style="margin-left:auto">' + when + '</span>' +
+          '</div>' +
+        '</a>';
+      }).join('');
+    })
+    .catch(function(){
+      el.innerHTML = '<div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">Couldn\u2019t load your posts \u2014 please try again.</div>';
+    });
 }
 
 // ── DATA ─────────────────────────────────────────────────────
@@ -3009,9 +3086,21 @@ function loadNotifications() {
   return window.ATP.notifications.list().then(function(data) {
     var list = (data && data.notifications) || [];
     NOTIFS = list.map(function(n) {
+      // Theme 14 — notifications carry a `data` payload (often a
+      // post_id). Wrap the text in an anchor when there's a target so
+      // clicking the row jumps to the relevant page.
+      var payload = n.data;
+      try { if (typeof payload === 'string') payload = JSON.parse(payload); } catch(e) { payload = null; }
+      var href = '';
+      if (payload && payload.post_id) href = 'community.html#' + payload.post_id;
+      else if (n.type === 'session_cancelled' && payload && payload.session_id) href = 'sessions.html';
+      var title = n.title ? '<strong>' + n.title + '</strong> ' : '';
+      var body  = n.body || '';
+      var inner = title + body;
+      var text  = href ? '<a href="' + href + '" style="color:inherit;text-decoration:none">' + inner + '</a>' : inner;
       return {
         unread: !n.read_at,
-        text:   (n.title ? '<strong>' + n.title + '</strong> ' : '') + (n.body || ''),
+        text:   text,
         time:   formatDateShort(n.created_at),
       };
     });

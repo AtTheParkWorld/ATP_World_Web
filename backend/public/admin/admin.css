@@ -101,6 +101,12 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
 .admin-form-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#444}
 .admin-form-input,.admin-form-select{background:#111;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 13px;color:#fff;font-size:13px;font-family:var(--ff-body);width:100%;transition:border-color .2s}
 .admin-form-input:focus,.admin-form-select:focus{outline:none;border-color:rgba(122,194,49,.4)}
+/* Date inputs (Theme 14) — make the native calendar picker indicator
+   high-contrast so admins see exactly where to click. Webkit only —
+   Firefox uses its own widget that's already visible enough. */
+.atp-date-input{position:relative}
+.atp-date-input::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.85;cursor:pointer;padding:4px;margin-left:6px}
+.atp-date-input::-webkit-calendar-picker-indicator:hover{opacity:1;background:rgba(122,194,49,.15);border-radius:4px}
 .admin-form-select option{background:#111}
 
 /* SESSIONS VIEW */

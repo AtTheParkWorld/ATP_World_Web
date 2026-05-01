@@ -834,15 +834,19 @@
       <div class="admin-page-sub">Real-time insights across members, sessions, and community activity.</div>
 
       <!-- Date range picker (Theme 12 / analytics v2) -->
+      <!-- Theme 14: explicit calendar icon + the wrap is a label so a
+           click anywhere (incl. icon and label text) opens the native
+           calendar picker. Calls .showPicker() if available for browsers
+           that need an explicit invocation (Safari/Chrome ≥99). -->
       <div style="display:flex;align-items:end;gap:12px;flex-wrap:wrap;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:12px;padding:14px;margin-bottom:20px">
-        <div>
-          <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#666;margin-bottom:6px">From</div>
-          <input class="admin-form-input" type="date" id="analyticsFrom" style="width:160px">
-        </div>
-        <div>
-          <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#666;margin-bottom:6px">To</div>
-          <input class="admin-form-input" type="date" id="analyticsTo" style="width:160px">
-        </div>
+        <label style="display:block;cursor:pointer">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#666;margin-bottom:6px">📅 From</div>
+          <input class="admin-form-input atp-date-input" type="date" id="analyticsFrom" style="width:170px;cursor:pointer" onclick="if(this.showPicker)this.showPicker()">
+        </label>
+        <label style="display:block;cursor:pointer">
+          <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#666;margin-bottom:6px">📅 To</div>
+          <input class="admin-form-input atp-date-input" type="date" id="analyticsTo" style="width:170px;cursor:pointer" onclick="if(this.showPicker)this.showPicker()">
+        </label>
         <button class="admin-btn admin-btn-primary" data-atp-call="loadAnalyticsV2" style="font-size:12px;padding:9px 18px">Apply</button>
         <button class="admin-btn" data-atp-call="setAnalyticsRange" data-args='["30d"]' style="font-size:12px;padding:9px 14px">Last 30 days</button>
         <button class="admin-btn" data-atp-call="setAnalyticsRange" data-args='["90d"]' style="font-size:12px;padding:9px 14px">90 days</button>
