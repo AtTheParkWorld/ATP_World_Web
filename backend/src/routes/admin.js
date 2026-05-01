@@ -201,10 +201,19 @@ router.get('/members', async (req, res, next) => {
 // ── PATCH /api/admin/members/:id/ambassador ───────────────────
 // Wrapped in a transaction so the role flip + member notification land
 // atomically — partial state (role flipped but no notification) was
-// possible before. Audit-logged.
+// possible before. Audit-logged. Audit 4.3 — opt-in optimistic locking
+// via If-Match: <updated_at> header.
 router.patch('/members/:id/ambassador', async (req, res, next) => {
   try {
     const { enabled } = req.body;
+    try {
+      const concurrency = require('../services/concurrency');
+      await concurrency.assertNotStale(req, 'members', req.params.id);
+    } catch (e) {
+      if (e.status === 412) return res.status(412).json({ error: e.message, code: e.code, current_updated_at: e.current_updated_at });
+      if (e.status === 404) return res.status(404).json({ error: e.message });
+      throw e;
+    }
     await transaction(async (client) => {
       await client.query(
         `UPDATE members SET
@@ -235,11 +244,18 @@ router.patch('/members/:id/ambassador', async (req, res, next) => {
 });
 
 // ── PATCH /api/admin/members/:id/coach ────────────────────────
-// Transaction-wrapped + audit-logged. Same partial-state risk as the
-// ambassador endpoint.
+// Transaction-wrapped + audit-logged + opt-in optimistic locking.
 router.patch('/members/:id/coach', async (req, res, next) => {
   try {
     const { enabled } = req.body;
+    try {
+      const concurrency = require('../services/concurrency');
+      await concurrency.assertNotStale(req, 'members', req.params.id);
+    } catch (e) {
+      if (e.status === 412) return res.status(412).json({ error: e.message, code: e.code, current_updated_at: e.current_updated_at });
+      if (e.status === 404) return res.status(404).json({ error: e.message });
+      throw e;
+    }
     const { rows: check } = await query(`SELECT is_ambassador FROM members WHERE id=$1::uuid`, [req.params.id]);
     if (!check.length) return res.status(404).json({ error: 'Member not found' });
     if (enabled && !check[0].is_ambassador) {

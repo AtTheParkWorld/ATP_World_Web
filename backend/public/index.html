@@ -696,7 +696,11 @@ a.product-card:hover{transform:translateY(-4px)}
       </div>
       <a href="sessions.html" class="link-arrow">Full calendar <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7h10M8 3l4 4-4 4"/></svg></a>
     </div>
-    <div class="sessions-grid">
+    <!-- Audit 4.2 — sessions grid hydrates from /api/stats/public/sessions
+         on page load. The 4 hardcoded cards below are SEO-friendly
+         fallbacks if the API is unreachable. JS swaps them with the
+         next 4 real upcoming sessions on boot. -->
+    <div class="sessions-grid" id="atp-upcoming-grid">
       <article class="session-card reveal"><span class="session-badge">Today</span><p class="session-time">Monday · 7:00 PM</p><h3 class="session-name">Community run</h3><p class="session-coach">With Coach Hugo</p><p class="session-loc">Dubai Marina Walk</p></article>
       <article class="session-card reveal rd1"><span class="session-badge">Tomorrow</span><p class="session-time">Tuesday · 7:00 PM</p><h3 class="session-name">Cardio Calisthenics</h3><p class="session-coach">With Coach Valentina</p><p class="session-loc">DIC Amphitheatre</p></article>
       <article class="session-card reveal rd2"><p class="session-time">Wednesday · 7:00 PM</p><h3 class="session-name">Traditional yoga</h3><p class="session-coach">With Coach Manju</p><p class="session-loc">DIC Amphitheatre</p></article>
@@ -715,18 +719,24 @@ a.product-card:hover{transform:translateY(-4px)}
       <p class="section-label reveal">Real results</p>
       <h2 class="section-h2 reveal rd1" id="stories-heading">These are real<br><span class="accent">ATP members</span></h2>
     </div>
+    <!-- Audit 4.2 — testimonials are CMS-editable. Each value is
+         tagged with data-cms-section="testimonials" data-cms-key="…"
+         and hydrates from /api/cms/index on page load. The fallback
+         text below ships with the page so SEO + first paint always
+         look good even without admin edits. Add new testimonials by
+         setting CMS keys testimonial1_*, testimonial2_*, testimonial3_*. -->
     <div class="stories-grid">
       <article class="story-card reveal">
-        <div class="story-card-img"><p style="font-size:11px;color:#333;text-transform:uppercase;letter-spacing:.06em">Jay Ashar · member photo</p></div>
-        <div class="story-card-body"><div class="story-card-stat">−9 kg</div><div class="story-card-name">Jay Ashar · Running tribe</div><p class="story-card-quote">"From 84 kg to 75 kg in one year. Three triathlons. Two full marathons. ATP gave me my life back."</p></div>
+        <div class="story-card-img"><img data-cms-section="testimonials" data-cms-key="testimonial1_image" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover" loading="lazy"><p data-cms-section="testimonials" data-cms-key="testimonial1_caption" style="font-size:11px;color:#333;text-transform:uppercase;letter-spacing:.06em">Jay Ashar · member photo</p></div>
+        <div class="story-card-body"><div class="story-card-stat" data-cms-section="testimonials" data-cms-key="testimonial1_stat">−9 kg</div><div class="story-card-name" data-cms-section="testimonials" data-cms-key="testimonial1_name">Jay Ashar · Running tribe</div><p class="story-card-quote" data-cms-section="testimonials" data-cms-key="testimonial1_quote">"From 84 kg to 75 kg in one year. Three triathlons. Two full marathons. ATP gave me my life back."</p></div>
       </article>
       <article class="story-card reveal rd1">
-        <div class="story-card-img tall"><p style="font-size:11px;color:#333;text-transform:uppercase;letter-spacing:.06em">Gwen Gaje · member photo</p></div>
-        <div class="story-card-body"><div class="story-card-stat">Spartan</div><div class="story-card-name">Gwen Gaje · Better tribe</div><p class="story-card-quote">"I joined for free yoga. Today I'm a Spartan racer."</p></div>
+        <div class="story-card-img tall"><img data-cms-section="testimonials" data-cms-key="testimonial2_image" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover" loading="lazy"><p data-cms-section="testimonials" data-cms-key="testimonial2_caption" style="font-size:11px;color:#333;text-transform:uppercase;letter-spacing:.06em">Gwen Gaje · member photo</p></div>
+        <div class="story-card-body"><div class="story-card-stat" data-cms-section="testimonials" data-cms-key="testimonial2_stat">Spartan</div><div class="story-card-name" data-cms-section="testimonials" data-cms-key="testimonial2_name">Gwen Gaje · Better tribe</div><p class="story-card-quote" data-cms-section="testimonials" data-cms-key="testimonial2_quote">"I joined for free yoga. Today I'm a Spartan racer."</p></div>
       </article>
       <article class="story-card reveal rd2">
-        <div class="story-card-img tall"><p style="font-size:11px;color:#333;text-transform:uppercase;letter-spacing:.06em">Valentina G. · member photo</p></div>
-        <div class="story-card-body"><div class="story-card-stat">6×/wk</div><div class="story-card-name">Valentina · Stronger tribe</div><p class="story-card-quote">"ATP is sport and socialising in one. Friends for life."</p></div>
+        <div class="story-card-img tall"><img data-cms-section="testimonials" data-cms-key="testimonial3_image" src="" alt="" style="display:none;width:100%;height:100%;object-fit:cover" loading="lazy"><p data-cms-section="testimonials" data-cms-key="testimonial3_caption" style="font-size:11px;color:#333;text-transform:uppercase;letter-spacing:.06em">Valentina G. · member photo</p></div>
+        <div class="story-card-body"><div class="story-card-stat" data-cms-section="testimonials" data-cms-key="testimonial3_stat">6×/wk</div><div class="story-card-name" data-cms-section="testimonials" data-cms-key="testimonial3_name">Valentina · Stronger tribe</div><p class="story-card-quote" data-cms-section="testimonials" data-cms-key="testimonial3_quote">"ATP is sport and socialising in one. Friends for life."</p></div>
       </article>
     </div>
   </div>
@@ -1303,6 +1313,16 @@ window.handleGoogleSignIn = async function(response) {
         const val = content[section][key];
         if (el.tagName === 'IMG' || el.tagName === 'VIDEO' || el.tagName === 'SOURCE') {
           el.src = val;
+          // Reveal media that ships hidden (display:none) when its
+          // URL lands. Used by testimonial photos that fall back to a
+          // text caption when no image is set.
+          if (val && el.style.display === 'none') el.style.display = '';
+          // Hide the sibling caption that exists as a fallback when
+          // the image isn't set, so it doesn't double up with the photo.
+          if (val && el.parentElement) {
+            const cap = el.parentElement.querySelector('p[data-cms-key$="_caption"]');
+            if (cap) cap.style.display = 'none';
+          }
         } else if (el.dataset.cmsMode === 'attr') {
           el.setAttribute(el.dataset.cmsAttr || 'href', val);
         } else {
@@ -1341,6 +1361,49 @@ window.handleGoogleSignIn = async function(response) {
       });
     })
     .catch(function(){ /* fallbacks already in DOM */ });
+})();
+
+(function _atpUpcomingSessions() {
+  // Replace the homepage "What's on near you" 4-card grid with the
+  // actual next 4 upcoming sessions from the public stats endpoint.
+  // Hardcoded fallbacks stay in the markup for SEO + fallback.
+  var grid = document.getElementById('atp-upcoming-grid');
+  if (!grid) return;
+  fetch('/api/stats/public/sessions?limit=4', { cache: 'no-cache' })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(data){
+      var sessions = data && data.sessions;
+      if (!Array.isArray(sessions) || sessions.length === 0) return;
+      function fmtTime(iso){
+        try {
+          var d = new Date(iso);
+          var today0 = new Date(); today0.setHours(0,0,0,0);
+          var tomorrow0 = new Date(today0.getTime() + 86400000);
+          var day0 = new Date(d); day0.setHours(0,0,0,0);
+          var prefix = '';
+          if (day0.getTime() === today0.getTime()) prefix = 'Today';
+          else if (day0.getTime() === tomorrow0.getTime()) prefix = 'Tomorrow';
+          else prefix = d.toLocaleDateString(undefined, { weekday:'long' });
+          var time = d.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' });
+          return { prefix: prefix, time: prefix + ' · ' + time };
+        } catch(e) { return { prefix:'', time: '' }; }
+      }
+      function safe(s){ return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+      grid.innerHTML = sessions.slice(0,4).map(function(s, i){
+        var t = fmtTime(s.scheduled_at);
+        var badge = (t.prefix === 'Today' || t.prefix === 'Tomorrow')
+          ? '<span class="session-badge">' + t.prefix + '</span>' : '';
+        var rd = i > 0 ? ' rd' + i : '';
+        return '<article class="session-card reveal' + rd + '">' +
+          badge +
+          '<p class="session-time">' + safe(t.time) + '</p>' +
+          '<h3 class="session-name">' + safe(s.name) + '</h3>' +
+          (s.tribe_name ? '<p class="session-coach">' + safe(s.tribe_name) + ' tribe</p>' : '') +
+          '<p class="session-loc">' + safe(s.location || s.city_name || '') + '</p>' +
+        '</article>';
+      }).join('');
+    })
+    .catch(function(){ /* fallbacks stay in DOM */ });
 })();
 
 (function _atpNewsletter() {

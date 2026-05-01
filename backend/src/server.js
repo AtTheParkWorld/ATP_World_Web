@@ -221,6 +221,7 @@ app.get('/coach', (req, res) => {
     res.status(404).send('Coach profile page not found');
   }
 });
+app.get('/join',     (req, res) => res.sendFile(path.join(__dirname, '../public/join.html')));
 app.get('/sessions', (req, res) => res.sendFile(path.join(__dirname, '../public/sessions.html')));
 app.get('/community',(req, res) => res.sendFile(path.join(__dirname, '../public/community.html')));
 app.get('/profile',  (req, res) => res.sendFile(path.join(__dirname, '../public/profile.html')));

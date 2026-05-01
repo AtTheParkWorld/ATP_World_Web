@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Join ATP — At The Park</title>
+<meta name="description" content="Join the UAE's largest free outdoor fitness community. 7,000+ members across Dubai, Al Ain & Muscat. Free forever.">
+<meta name="theme-color" content="#0a0a0a">
+<meta property="og:title" content="Join At The Park — Free outdoor fitness community">
+<meta property="og:description" content="Sign up in 30 seconds. 7,000+ members. 19 activities. Always free.">
+<meta property="og:image" content="https://atpworldweb-production.up.railway.app/atthepark_assets01.webp">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Bebas+Neue&display=swap">
+<link rel="stylesheet" href="/atp.min.css">
+<script src="/atp.bundle.min.js"></script>
+<style>
+  /* Page-specific layout — kept minimal because atp.css already
+     defines the brand tokens + button styles. */
+  :root { --max:520px }
+  body { background:#0a0a0a; color:#fff; min-height:100vh; display:flex; flex-direction:column }
+  .join-wrap { flex:1; display:flex; align-items:center; justify-content:center; padding:80px 20px 40px }
+  .join-card {
+    width:100%; max-width:var(--max);
+    background:linear-gradient(180deg,#0d1a08 0%,#0a0a0a 100%);
+    border:1px solid rgba(122,194,49,.22);
+    border-radius:20px; padding:36px 32px;
+    box-shadow:0 24px 80px rgba(122,194,49,.06)
+  }
+  .join-eyebrow {
+    font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;
+    color:var(--green);margin-bottom:10px
+  }
+  .join-h1 {
+    font-family:var(--ff-display);font-size:36px;font-weight:900;
+    text-transform:uppercase;line-height:1.05;letter-spacing:-.02em;
+    color:#fff;margin-bottom:8px
+  }
+  .join-sub { font-size:14px;color:rgba(255,255,255,.65);margin-bottom:28px;line-height:1.55 }
+  .join-stats {
+    display:flex;gap:18px;margin-bottom:28px;padding:14px 16px;
+    background:rgba(122,194,49,.08);border-radius:10px;border:1px solid rgba(122,194,49,.18)
+  }
+  .join-stat { flex:1;text-align:center }
+  .join-stat-num { font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--green);line-height:1 }
+  .join-stat-label { font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-top:4px }
+  .join-form { display:flex;flex-direction:column;gap:14px }
+  .join-row { display:grid;grid-template-columns:1fr 1fr;gap:10px }
+  .join-input {
+    width:100%;background:#070b06;border:1px solid rgba(255,255,255,.12);
+    border-radius:10px;padding:14px 16px;color:#fff;font-size:14px;font-family:inherit;
+    transition:border-color .15s
+  }
+  .join-input:focus { outline:none;border-color:var(--green) }
+  .join-label { font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:6px;display:block }
+  .join-btn {
+    background:var(--green);color:#0a0a0a;border:none;border-radius:10px;
+    padding:14px 20px;font-size:15px;font-weight:800;letter-spacing:.04em;
+    text-transform:uppercase;cursor:pointer;transition:opacity .15s;
+    margin-top:6px
+  }
+  .join-btn:disabled { opacity:.5;cursor:wait }
+  .join-msg { font-size:13px;line-height:1.5;min-height:18px;text-align:center;padding-top:4px }
+  .join-msg.error { color:#f87171 }
+  .join-msg.ok { color:var(--green) }
+  .join-foot { text-align:center;font-size:12px;color:rgba(255,255,255,.4);margin-top:24px }
+  .join-foot a { color:var(--green);text-decoration:none;font-weight:600 }
+  .join-foot a:hover { text-decoration:underline }
+  .join-bullets { display:flex;flex-direction:column;gap:8px;margin:18px 0 4px;padding:0;list-style:none }
+  .join-bullets li { font-size:13px;color:rgba(255,255,255,.7);display:flex;gap:10px;align-items:flex-start;line-height:1.5 }
+  .join-bullets li::before { content:'✓';color:var(--green);font-weight:800 }
+  @media (max-width:520px){
+    .join-h1 { font-size:28px }
+    .join-row { grid-template-columns:1fr }
+    .join-card { padding:28px 22px }
+  }
+</style>
+</head>
+<body>
+
+<!-- Shared nav (mounted by atp-components.js) -->
+<div id="atp-nav-host" data-active="join"></div>
+
+<main class="join-wrap">
+  <div class="join-card">
+    <div class="join-eyebrow">Join the community</div>
+    <h1 class="join-h1">Train with us.<br>Always free.</h1>
+    <p class="join-sub">Take 30 seconds. Get instant access to free outdoor sessions across Dubai, Al Ain &amp; Muscat — plus the points wallet, member events, and the ATP store.</p>
+
+    <!-- Live stats — hydrated from /api/stats/public -->
+    <div class="join-stats">
+      <div class="join-stat"><div class="join-stat-num" data-stat="members_count" data-suffix="+">7,000+</div><div class="join-stat-label">Members</div></div>
+      <div class="join-stat"><div class="join-stat-num" data-stat="activities_count">19</div><div class="join-stat-label">Activities</div></div>
+      <div class="join-stat"><div class="join-stat-num" data-stat="cities_count">3</div><div class="join-stat-label">Cities</div></div>
+    </div>
+
+    <form class="join-form" id="join-form" novalidate>
+      <div class="join-row">
+        <div>
+          <label class="join-label" for="j-first">First name</label>
+          <input class="join-input" id="j-first" name="first_name" type="text" autocomplete="given-name" required>
+        </div>
+        <div>
+          <label class="join-label" for="j-last">Last name</label>
+          <input class="join-input" id="j-last" name="last_name" type="text" autocomplete="family-name" required>
+        </div>
+      </div>
+      <div>
+        <label class="join-label" for="j-email">Email</label>
+        <input class="join-input" id="j-email" name="email" type="email" autocomplete="email" required placeholder="you@example.com">
+      </div>
+      <div>
+        <label class="join-label" for="j-phone">Mobile (optional)</label>
+        <input class="join-input" id="j-phone" name="phone" type="tel" autocomplete="tel" placeholder="+971 50 000 0000">
+      </div>
+      <div>
+        <label class="join-label" for="j-pw">Choose a password</label>
+        <input class="join-input" id="j-pw" name="password" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters">
+      </div>
+
+      <ul class="join-bullets">
+        <li>Free forever — no credit card needed</li>
+        <li>Book any session in seconds</li>
+        <li>Earn points for every session you attend</li>
+      </ul>
+
+      <button type="submit" class="join-btn" id="j-btn">Create my account →</button>
+      <div class="join-msg" id="j-msg"></div>
+    </form>
+
+    <div class="join-foot">
+      Already a member? <a href="/index.html#login">Sign in here</a>
+    </div>
+  </div>
+</main>
+
+<script>
+// Hydrate the live stats card
+fetch('/api/stats/public', { cache:'no-cache' })
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(d){
+    if (!d) return;
+    document.querySelectorAll('[data-stat]').forEach(function(el){
+      var key = el.getAttribute('data-stat');
+      var suf = el.getAttribute('data-suffix') || '';
+      if (d[key] != null) el.textContent = (d[key] >= 1000 ? d[key].toLocaleString() : d[key]) + suf;
+    });
+  })
+  .catch(function(){});
+
+// Pick up ?ref=… from URL — ATP referral codes (firstname-XXX or
+// legacy ATP-00001). Submitted alongside the registration so the
+// referrer gets the signup bonus + lock-in (Theme 4 / #19).
+function _atpReferralCode(){
+  try {
+    var u = new URL(window.location.href);
+    return u.searchParams.get('ref') || null;
+  } catch(e) { return null; }
+}
+
+// Submit
+document.getElementById('join-form').addEventListener('submit', function(ev){
+  ev.preventDefault();
+  var msg = document.getElementById('j-msg');
+  var btn = document.getElementById('j-btn');
+  var payload = {
+    first_name: document.getElementById('j-first').value.trim(),
+    last_name:  document.getElementById('j-last').value.trim(),
+    email:      document.getElementById('j-email').value.trim().toLowerCase(),
+    phone:      document.getElementById('j-phone').value.trim() || null,
+    password:   document.getElementById('j-pw').value,
+    referral_code: _atpReferralCode(),
+  };
+  if (!payload.first_name || !payload.last_name || !payload.email || !payload.password) {
+    msg.textContent = 'Please fill in name, email and password.';
+    msg.className = 'join-msg error';
+    return;
+  }
+  if (payload.password.length < 8) {
+    msg.textContent = 'Password must be at least 8 characters.';
+    msg.className = 'join-msg error';
+    return;
+  }
+  btn.disabled = true; btn.textContent = 'Creating account…';
+  msg.textContent = ''; msg.className = 'join-msg';
+  fetch('/api/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+    .then(function(r){ return r.json().then(function(b){ return { ok:r.ok, status:r.status, body:b }; }); })
+    .then(function(res){
+      if (!res.ok) {
+        btn.disabled = false; btn.textContent = 'Create my account →';
+        msg.textContent = (res.body && res.body.error) || 'Could not create account.';
+        msg.className = 'join-msg error';
+        return;
+      }
+      msg.textContent = '✅ You\'re in. Redirecting to your profile…';
+      msg.className = 'join-msg ok';
+      // Persist token using the same keys as the existing app
+      try {
+        if (res.body.token)  localStorage.setItem('atp_token', res.body.token);
+        if (res.body.member) localStorage.setItem('atp_member', JSON.stringify(res.body.member));
+      } catch(e) {}
+      setTimeout(function(){ window.location.href = '/profile.html'; }, 800);
+    })
+    .catch(function(){
+      btn.disabled = false; btn.textContent = 'Create my account →';
+      msg.textContent = 'Network error — please try again.';
+      msg.className = 'join-msg error';
+    });
+});
+</script>
+</body>
+</html>
