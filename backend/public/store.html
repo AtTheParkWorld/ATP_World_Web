@@ -467,6 +467,16 @@ window.ATP_NAV_EXTRAS = ['<button class="cart-icon-btn" data-atp-call="openCart"
     <!-- Toolbar -->
     <div class="shop-toolbar">
       <p class="shop-count"><span id="prodCountEl">—</span> products</p>
+      <!-- Audit 5 / tier 1.4 — in-page search filter. Filters cards by
+           title + product type + tags. Pure client-side, no API call. -->
+      <div style="flex:1;display:flex;justify-content:center;min-width:200px;max-width:320px">
+        <div style="position:relative;width:100%">
+          <input id="storeSearch" type="search" placeholder="Search the store…" oninput="atpStoreSearch(this.value)"
+                 style="width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:10px 14px 10px 38px;color:#fff;font-size:13px;font-family:inherit"
+                 aria-label="Search products">
+          <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:rgba(255,255,255,.4)" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="7" cy="7" r="5"/><path d="m11 11 3 3"/></svg>
+        </div>
+      </div>
       <div class="shop-sort">
         <select id="sortSelect" onchange="sortProducts(this.value)">
           <option value="default">Sort: Featured</option>
@@ -520,13 +530,59 @@ window.ATP_NAV_EXTRAS = ['<button class="cart-icon-btn" data-atp-call="openCart"
       <div class="pdp-price" id="pdpPrice"></div>
       <p class="pdp-price-note">Free delivery over AED 150</p>
       <p class="pdp-desc" id="pdpDesc"></p>
-      <div class="pdp-label">Select size</div>
+      <div class="pdp-label" style="display:flex;justify-content:space-between;align-items:center">
+        <span>Select size</span>
+        <a href="#" onclick="event.preventDefault();atpOpenSizeGuide()"
+           style="font-size:11px;color:var(--green);text-decoration:none;font-weight:600;text-transform:uppercase;letter-spacing:.06em">📏 Size guide</a>
+      </div>
       <div class="pdp-variants" id="pdpVariants"></div>
       <button class="pdp-add-btn" id="pdpAddBtn" data-atp-call="addFromPDP">Add to Cart</button>
+      <!-- Reviews summary on PDP (Audit 5 / tier 1.5) — hydrated by
+           atpLoadReviews() when the PDP opens. -->
+      <div id="pdpReviews" style="margin-top:18px;padding-top:18px;border-top:1px solid rgba(255,255,255,.08);min-height:0"></div>
       <div class="pdp-share">
         <span class="pdp-share-link" onclick="navigator.share&&navigator.share({title:document.getElementById('pdpName').textContent,url:location.href})">Share →</span>
       </div>
     </div>
+  </div>
+</div>
+
+<!-- Size guide modal (Audit 5 / tier 1.6) — opened from PDP. Three
+     standard tables; chest/length in cm matching ATP apparel cuts. -->
+<div id="atpSizeGuideOverlay" style="position:fixed;inset:0;background:rgba(0,0,0,.92);backdrop-filter:blur(10px);z-index:600;display:none;align-items:center;justify-content:center;padding:20px"
+     onclick="if(event.target===this)atpCloseSizeGuide()">
+  <div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.14);border-radius:14px;padding:28px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;position:relative">
+    <button onclick="atpCloseSizeGuide()" style="position:absolute;top:12px;right:14px;background:rgba(0,0,0,.5);border:none;color:#fff;font-size:22px;cursor:pointer;width:32px;height:32px;border-radius:50%">×</button>
+    <div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#7AC231;margin-bottom:6px">📏 Size guide</div>
+    <h2 style="font-family:var(--ff-display);font-size:24px;font-weight:900;margin:0 0 8px;text-transform:uppercase">Find your fit</h2>
+    <p style="font-size:13px;color:#888;margin-bottom:20px;line-height:1.6">All measurements in cm. We recommend laying a similar-fit garment flat and measuring chest pit-to-pit. If between sizes, size up for a relaxed fit.</p>
+
+    <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#7AC231;margin-bottom:8px;margin-top:4px">Tees &amp; tanks</div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:18px">
+      <thead><tr style="color:#666;border-bottom:1px solid #1a1a1a"><th style="text-align:left;padding:8px 4px;font-weight:600">Size</th><th style="text-align:right;padding:8px 4px;font-weight:600">Chest (cm)</th><th style="text-align:right;padding:8px 4px;font-weight:600">Length (cm)</th></tr></thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #111"><td style="padding:8px 4px;color:#fff;font-weight:600">XS</td><td style="text-align:right;padding:8px 4px;color:#aaa">88</td><td style="text-align:right;padding:8px 4px;color:#aaa">66</td></tr>
+        <tr style="border-bottom:1px solid #111"><td style="padding:8px 4px;color:#fff;font-weight:600">S</td><td style="text-align:right;padding:8px 4px;color:#aaa">93</td><td style="text-align:right;padding:8px 4px;color:#aaa">69</td></tr>
+        <tr style="border-bottom:1px solid #111"><td style="padding:8px 4px;color:#fff;font-weight:600">M</td><td style="text-align:right;padding:8px 4px;color:#aaa">98</td><td style="text-align:right;padding:8px 4px;color:#aaa">71</td></tr>
+        <tr style="border-bottom:1px solid #111"><td style="padding:8px 4px;color:#fff;font-weight:600">L</td><td style="text-align:right;padding:8px 4px;color:#aaa">103</td><td style="text-align:right;padding:8px 4px;color:#aaa">73</td></tr>
+        <tr style="border-bottom:1px solid #111"><td style="padding:8px 4px;color:#fff;font-weight:600">XL</td><td style="text-align:right;padding:8px 4px;color:#aaa">108</td><td style="text-align:right;padding:8px 4px;color:#aaa">75</td></tr>
+        <tr><td style="padding:8px 4px;color:#fff;font-weight:600">XXL</td><td style="text-align:right;padding:8px 4px;color:#aaa">113</td><td style="text-align:right;padding:8px 4px;color:#aaa">77</td></tr>
+      </tbody>
+    </table>
+
+    <div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#7AC231;margin-bottom:8px">Shorts &amp; bottoms</div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;margin-bottom:18px">
+      <thead><tr style="color:#666;border-bottom:1px solid #1a1a1a"><th style="text-align:left;padding:8px 4px;font-weight:600">Size</th><th style="text-align:right;padding:8px 4px;font-weight:600">Waist (cm)</th><th style="text-align:right;padding:8px 4px;font-weight:600">Hip (cm)</th></tr></thead>
+      <tbody>
+        <tr style="border-bottom:1px solid #111"><td style="padding:8px 4px;color:#fff;font-weight:600">XS</td><td style="text-align:right;padding:8px 4px;color:#aaa">68</td><td style="text-align:right;padding:8px 4px;color:#aaa">90</td></tr>
+        <tr style="border-bottom:1px solid #111"><td style="padding:8px 4px;color:#fff;font-weight:600">S</td><td style="text-align:right;padding:8px 4px;color:#aaa">73</td><td style="text-align:right;padding:8px 4px;color:#aaa">95</td></tr>
+        <tr style="border-bottom:1px solid #111"><td style="padding:8px 4px;color:#fff;font-weight:600">M</td><td style="text-align:right;padding:8px 4px;color:#aaa">78</td><td style="text-align:right;padding:8px 4px;color:#aaa">100</td></tr>
+        <tr style="border-bottom:1px solid #111"><td style="padding:8px 4px;color:#fff;font-weight:600">L</td><td style="text-align:right;padding:8px 4px;color:#aaa">83</td><td style="text-align:right;padding:8px 4px;color:#aaa">105</td></tr>
+        <tr><td style="padding:8px 4px;color:#fff;font-weight:600">XL</td><td style="text-align:right;padding:8px 4px;color:#aaa">88</td><td style="text-align:right;padding:8px 4px;color:#aaa">110</td></tr>
+      </tbody>
+    </table>
+
+    <p style="font-size:12px;color:#666;line-height:1.6;margin-bottom:0">Still not sure? Email <a href="mailto:general@atthepark.world" style="color:#7AC231;text-decoration:none">general@atthepark.world</a> with your usual size and we'll match.</p>
   </div>
 </div>
 
@@ -743,6 +799,37 @@ function filterAndRender() {
 
 function sortProducts(val) { filterAndRender(); }
 
+// Audit 5 / tier 1.4 — search filter (no API call). Each product card
+// has data-search-key prebuilt with title+type+tags lowercased; we
+// just toggle visibility based on substring match.
+var _atpSearchTerm = '';
+function atpStoreSearch(q) {
+  _atpSearchTerm = String(q || '').trim().toLowerCase();
+  var anyVisible = 0;
+  document.querySelectorAll('.product-card').forEach(function(card){
+    var key = card.dataset.searchKey || (card.textContent || '').toLowerCase();
+    var matches = !_atpSearchTerm || key.indexOf(_atpSearchTerm) >= 0;
+    // Don't override the existing category/availability filter — only
+    // hide further when search doesn't match. The other filters set
+    // display:none directly, so we only re-show cards that pass both.
+    if (!matches) {
+      card.style.display = 'none';
+    } else if (card.style.display === 'none') {
+      // Was the card hidden by category filter? Leave it alone. Only
+      // re-show if it was hidden by search itself (track via a flag).
+      if (card.dataset.searchHidden === '1') {
+        card.style.display = '';
+        delete card.dataset.searchHidden;
+      }
+    }
+    if (!matches) card.dataset.searchHidden = '1';
+    if (matches && card.style.display !== 'none') anyVisible++;
+  });
+  // Update the count tile
+  var countEl = document.getElementById('prodCountEl');
+  if (countEl) countEl.textContent = anyVisible;
+}
+
 var selectedVariant = null;
 
 async function loadProducts() {
@@ -883,6 +970,12 @@ function renderGrid(products) {
     card.className = 'product-card reveal';
     card.dataset.type = p.productType || '';
     card.dataset.pid = p.id;
+    // Snapshot data — used by toggleWish for the wishlist row server-side.
+    card.dataset.handle = p.handle || '';
+    card.dataset.price = String(price);
+    card.dataset.currency = cur;
+    // Lowercase title + tags for the in-page search filter.
+    card.dataset.searchKey = ((p.title || '') + ' ' + (p.productType || '') + ' ' + ((p.tags||[]).join(' '))).toLowerCase();
 
     // Store all image URLs on card for dot switching
     card.dataset.imgs = JSON.stringify(imgs);
@@ -971,12 +1064,85 @@ function quickAdd(btn) {
 }
 
 // Wishlist toggle (local only, no backend)
+// ── WISHLIST ──────────────────────────────────────────────────
+// Server-synced for logged-in members (Audit 5 / tier 1.1) with a
+// localStorage fallback so guests still get persistence within their
+// own browser. The `wishlist` map is keyed on Shopify product id and
+// each value is just `true` (presence). Product metadata is snapshotted
+// on the server side so the wishlist tile renders even if the product
+// is later deleted.
 var wishlist = {};
+var ATP_WISHLIST_LS = 'atp:store:wishlist';
+
+function _atpHasToken() { try { return !!localStorage.getItem('atp_token'); } catch(e) { return false; } }
+function _atpAuthHeader() {
+  try { var t = localStorage.getItem('atp_token'); return t ? { 'Authorization': 'Bearer ' + t } : {}; }
+  catch(e) { return {}; }
+}
+
+function _atpLoadWishlistLocal() {
+  try { wishlist = JSON.parse(localStorage.getItem(ATP_WISHLIST_LS) || '{}') || {}; }
+  catch(e) { wishlist = {}; }
+}
+function _atpSaveWishlistLocal() {
+  try { localStorage.setItem(ATP_WISHLIST_LS, JSON.stringify(wishlist)); } catch(e) {}
+}
+
+async function _atpLoadWishlistRemote() {
+  if (!_atpHasToken()) { _atpLoadWishlistLocal(); return; }
+  try {
+    var res = await fetch('/api/store/wishlist', { headers: _atpAuthHeader() });
+    if (!res.ok) { _atpLoadWishlistLocal(); return; }
+    var data = await res.json();
+    wishlist = {};
+    (data.wishlist || []).forEach(function(w){ wishlist[w.product_id] = true; });
+  } catch(e) { _atpLoadWishlistLocal(); }
+}
+
+function _atpHydrateWishlistHearts() {
+  document.querySelectorAll('.wishlist-btn').forEach(function(btn){
+    var pid = btn.dataset.pid;
+    var on = !!wishlist[pid];
+    btn.classList.toggle('active', on);
+    var svg = btn.querySelector('svg'); if (svg) svg.style.fill = on ? '#ef4444' : 'none';
+  });
+}
 function toggleWish(btn) {
-  var pid = btn.dataset.pid;
-  wishlist[pid] = !wishlist[pid];
-  btn.classList.toggle('active', !!wishlist[pid]);
-  btn.querySelector('svg').style.fill = wishlist[pid] ? '#ef4444' : 'none';
+  var pid  = btn.dataset.pid;
+  var card = btn.closest('.product-card');
+  // Read product context from the parent card so the server can
+  // snapshot title/price/image — wishlist tile keeps rendering even
+  // if the Shopify product is deleted later.
+  var snap = {
+    product_id:        pid,
+    product_handle:    card && card.dataset.handle || null,
+    product_title:     card && (card.querySelector('.product-name') || {}).textContent || null,
+    product_image_url: card && (card.querySelector('.img-primary') || {}).src || null,
+    product_price:     card && Number(card.dataset.price) || null,
+    product_currency:  card && card.dataset.currency || 'AED',
+  };
+
+  var nowOn = !wishlist[pid];
+  wishlist[pid] = nowOn;
+  btn.classList.toggle('active', nowOn);
+  var svg = btn.querySelector('svg'); if (svg) svg.style.fill = nowOn ? '#ef4444' : 'none';
+
+  if (_atpHasToken()) {
+    if (nowOn) {
+      fetch('/api/store/wishlist', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, _atpAuthHeader()),
+        body: JSON.stringify(snap),
+      }).catch(function(){});
+    } else {
+      fetch('/api/store/wishlist/' + encodeURIComponent(pid), {
+        method: 'DELETE',
+        headers: _atpAuthHeader(),
+      }).catch(function(){});
+    }
+  } else {
+    _atpSaveWishlistLocal();
+  }
 }
 // ── PRODUCT DETAIL MODAL ─────────────────────────────────────
 var pdpProduct = null;
@@ -1043,6 +1209,9 @@ function openPDP(product) {
 
   document.getElementById("pdpOverlay").classList.add("open");
   document.body.style.overflow = "hidden";
+
+  // Audit 5 / tier 1.5 — fetch reviews for this product when PDP opens.
+  if (product && product.id) atpLoadReviews(product.id);
 }
 
 function closePDP() {
@@ -1073,6 +1242,36 @@ document.getElementById("pdpOverlay").addEventListener("click", function(e) {
 // ── CART ─────────────────────────────────────────────────────
 var cartItems = [];
 
+// ── SERVER-SIDE CART SYNC (Audit 5 / tier 1.2) ────────────────
+// For logged-in members the cart is persisted server-side so it
+// follows them across devices. Each cart mutation triggers a
+// debounced PUT. Guests stay localStorage-only via the existing
+// flow.
+var _cartPushTimer = null;
+function _atpPushCart() {
+  if (!_atpHasToken()) return;
+  clearTimeout(_cartPushTimer);
+  _cartPushTimer = setTimeout(function(){
+    fetch('/api/store/cart', {
+      method: 'PUT',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, _atpAuthHeader()),
+      body: JSON.stringify({ cart: cartItems }),
+    }).catch(function(){ /* fail-soft — local state stays the source of truth */ });
+  }, 500);
+}
+async function _atpLoadCartRemote() {
+  if (!_atpHasToken()) return;
+  try {
+    var res = await fetch('/api/store/cart', { headers: _atpAuthHeader() });
+    if (!res.ok) return;
+    var data = await res.json();
+    if (Array.isArray(data.cart) && data.cart.length) {
+      cartItems = data.cart;
+      if (typeof refreshCart === 'function') refreshCart();
+    }
+  } catch(e) {}
+}
+
 function addToCart(variantId, productTitle, variantTitle, priceStr, priceNum, imgUrl) {
   var key = variantId;
   var ex = cartItems.find(function(i) { return i.key === key; });
@@ -1090,6 +1289,8 @@ function changeQty(idx, d) {
 }
 
 function refreshCart() {
+  // Push to server (debounced inside _atpPushCart). No-op for guests.
+  _atpPushCart();
   var total = cartItems.reduce(function(s, i) { return s + i.priceNum * i.qty; }, 0);
   var count = cartItems.reduce(function(s, i) { return s + i.qty; }, 0);
   var badge = document.getElementById("cartBadge");
@@ -1126,7 +1327,13 @@ function refreshCart() {
   }
 }
 
-function openCart()  { document.getElementById("cartBackdrop").classList.add("open"); document.getElementById("cartPanel").classList.add("open"); document.body.style.overflow = "hidden"; }
+function openCart()  {
+  document.getElementById("cartBackdrop").classList.add("open");
+  document.getElementById("cartPanel").classList.add("open");
+  document.body.style.overflow = "hidden";
+  // Audit 5 / tier 1.3 — render points-redeem widget if member has points.
+  atpRenderPointsRedeem();
+}
 function closeCart() { document.getElementById("cartBackdrop").classList.remove("open"); document.getElementById("cartPanel").classList.remove("open"); document.body.style.overflow = ""; }
 
 // ── CHECKOUT ─────────────────────────────────────────────────
@@ -1165,7 +1372,183 @@ async function doCheckout() {
   }
 }
 
-document.addEventListener("keydown", function(e) { if(e.key === "Escape") { closeCart(); closePDP(); } });
+document.addEventListener("keydown", function(e) {
+  if(e.key === "Escape") { closeCart(); closePDP(); atpCloseSizeGuide(); }
+});
+
+// ── SIZE GUIDE (Audit 5 / tier 1.6) ───────────────────────────
+function atpOpenSizeGuide(){
+  var ov = document.getElementById('atpSizeGuideOverlay');
+  if (ov) { ov.style.display = 'flex'; document.body.style.overflow = 'hidden'; }
+}
+function atpCloseSizeGuide(){
+  var ov = document.getElementById('atpSizeGuideOverlay');
+  if (ov) { ov.style.display = 'none'; document.body.style.overflow = ''; }
+}
+
+// ── PRODUCT REVIEWS (Audit 5 / tier 1.5) ──────────────────────
+// Hydrates the reviews block on the PDP. Fetches the aggregate +
+// up to 20 recent reviews. Displays:
+//   - star average + total count
+//   - distribution bar (5★…1★)
+//   - top 3 most recent reviews with reviewer initials, rating, body
+//   - a "Write a review" CTA for logged-in members (post via API)
+async function atpLoadReviews(productId) {
+  var box = document.getElementById('pdpReviews');
+  if (!box || !productId) return;
+  box.innerHTML = '<div style="font-size:12px;color:#555;text-align:center;padding:8px 0">Loading reviews\u2026</div>';
+  try {
+    var res = await fetch('/api/store/reviews/' + encodeURIComponent(productId));
+    var data = res.ok ? await res.json() : null;
+    var s = (data && data.summary) || { total: 0, average: null };
+    var reviews = (data && data.reviews) || [];
+    var stars = function(n){
+      n = Math.round(Number(n) || 0);
+      return '★★★★★'.slice(0, n) + '☆☆☆☆☆'.slice(0, 5 - n);
+    };
+    var headline = '';
+    if (s.total > 0) {
+      headline =
+        '<div style="display:flex;align-items:baseline;gap:10px;margin-bottom:10px">' +
+          '<span style="color:#7AC231;font-size:16px;letter-spacing:2px">' + stars(s.average) + '</span>' +
+          '<span style="font-size:13px;color:#fff;font-weight:700">' + (Number(s.average).toFixed(1)) + '</span>' +
+          '<span style="font-size:12px;color:#888">' + s.total + ' review' + (s.total === 1 ? '' : 's') + '</span>' +
+        '</div>';
+    } else {
+      headline = '<div style="font-size:12px;color:#666;margin-bottom:10px">No reviews yet — be the first.</div>';
+    }
+    var list = reviews.slice(0, 3).map(function(r){
+      return '<div style="margin-bottom:10px;padding-bottom:10px;border-bottom:1px solid #1a1a1a">' +
+        '<div style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px"><span style="color:#fff;font-weight:600">' + (r.reviewer || 'Member') + (r.verified_purchase ? ' <span style="color:#7AC231;font-size:9px;font-weight:800;letter-spacing:.06em">✓ VERIFIED</span>' : '') + '</span><span style="color:#7AC231;letter-spacing:1px">' + stars(r.rating) + '</span></div>' +
+        (r.title ? '<div style="font-size:13px;color:#fff;font-weight:600;margin-bottom:2px">' + (r.title || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>' : '') +
+        (r.body  ? '<div style="font-size:12px;color:#aaa;line-height:1.5">' + (r.body  || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div>' : '') +
+      '</div>';
+    }).join('');
+    var cta = _atpHasToken()
+      ? '<button onclick="atpOpenReviewForm(\'' + productId + '\')" style="background:transparent;border:1px solid rgba(122,194,49,.35);color:#7AC231;font-size:12px;font-weight:700;padding:8px 16px;border-radius:8px;cursor:pointer">Write a review</button>'
+      : '<div style="font-size:11px;color:#666">Sign in to leave a review.</div>';
+    box.innerHTML = headline + list + cta;
+  } catch(e) {
+    box.innerHTML = '';
+  }
+}
+
+// Quick inline review form — appended to #pdpReviews when CTA clicked.
+window.atpOpenReviewForm = function(productId){
+  var box = document.getElementById('pdpReviews');
+  if (!box) return;
+  if (box.querySelector('.atp-review-form')) return; // already open
+  var form = document.createElement('div');
+  form.className = 'atp-review-form';
+  form.style.cssText = 'margin-top:12px;padding:14px;background:#0d0d0d;border:1px solid rgba(255,255,255,.08);border-radius:10px';
+  form.innerHTML =
+    '<div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px">Your rating</div>' +
+    '<div id="atpReviewStars" style="font-size:24px;color:#444;letter-spacing:4px;margin-bottom:10px;cursor:pointer;user-select:none">' +
+      [1,2,3,4,5].map(function(n){ return '<span data-r="' + n + '">★</span>'; }).join('') + '</div>' +
+    '<input id="atpReviewTitle" placeholder="Title (optional)" style="width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:9px 12px;color:#fff;font-size:13px;font-family:inherit;margin-bottom:8px">' +
+    '<textarea id="atpReviewBody" placeholder="Tell other members what you liked\u2026" rows="3" style="width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:10px 12px;color:#fff;font-size:13px;font-family:inherit;margin-bottom:10px;resize:vertical"></textarea>' +
+    '<div style="display:flex;gap:8px"><button id="atpReviewSubmit" style="flex:1;background:#7AC231;color:#0a0a0a;border:none;font-size:13px;font-weight:800;padding:10px;border-radius:6px;cursor:pointer">Post review</button><button onclick="this.parentElement.parentElement.remove()" style="background:transparent;border:1px solid rgba(255,255,255,.15);color:#888;font-size:12px;padding:10px 16px;border-radius:6px;cursor:pointer">Cancel</button></div>';
+  box.appendChild(form);
+  var rating = 0;
+  var starsEl = form.querySelector('#atpReviewStars');
+  starsEl.addEventListener('click', function(ev){
+    var s = ev.target.closest('[data-r]'); if (!s) return;
+    rating = parseInt(s.dataset.r, 10);
+    Array.from(starsEl.children).forEach(function(c){ c.style.color = parseInt(c.dataset.r, 10) <= rating ? '#7AC231' : '#444'; });
+  });
+  form.querySelector('#atpReviewSubmit').addEventListener('click', async function(){
+    if (!rating) { alert('Pick a star rating first.'); return; }
+    var title = form.querySelector('#atpReviewTitle').value;
+    var body  = form.querySelector('#atpReviewBody').value;
+    try {
+      var res = await fetch('/api/store/reviews/' + encodeURIComponent(productId), {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, _atpAuthHeader()),
+        body: JSON.stringify({ rating: rating, title: title, body: body }),
+      });
+      var data = await res.json();
+      if (!res.ok) { alert(data.error || 'Could not save review.'); return; }
+      atpLoadReviews(productId); // refresh
+    } catch(e) { alert('Network error.'); }
+  });
+};
+
+// ── POINTS REDEMPTION (Audit 5 / tier 1.3) ────────────────────
+// Cart-drawer widget that lets members swap ATP points for a Shopify
+// discount code. Renders dynamically when the cart panel opens for a
+// logged-in member with > 0 points.
+async function atpRenderPointsRedeem() {
+  var foot = document.getElementById('cartFoot');
+  if (!foot) return;
+  var existing = document.getElementById('atpPointsRedeem');
+  if (existing) existing.remove();
+  if (!_atpHasToken()) return;
+  // Pull current balance via /auth/me — cheaper than re-querying members.
+  try {
+    var meRes = await fetch('/api/auth/me', { headers: _atpAuthHeader() });
+    if (!meRes.ok) return;
+    var me = await meRes.json();
+    var bal = (me.member && me.member.points_balance) || 0;
+    if (bal <= 0) return;
+    var rateRes = await fetch('/api/store/points/quote', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, _atpAuthHeader()),
+      body: JSON.stringify({ points: bal }),
+    });
+    var quote = await rateRes.json();
+    var rate = quote.rate_atp_per_unit || 28;
+    var maxValue = Math.floor(bal / rate);
+    if (maxValue <= 0) return;
+    var widget = document.createElement('div');
+    widget.id = 'atpPointsRedeem';
+    widget.style.cssText = 'background:linear-gradient(135deg,#0f1e0a,#0a1a08);border:1px solid rgba(122,194,49,.3);border-radius:10px;padding:14px;margin:0 0 12px;font-size:12px';
+    widget.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">' +
+        '<div><div style="color:#7AC231;font-weight:800;font-size:13px">⚡ ' + bal + ' ATP points</div><div style="color:#888;font-size:11px;margin-top:2px">Up to AED ' + maxValue + ' off · ' + rate + ' pts = AED 1</div></div>' +
+        '<button id="atpPointsRedeemBtn" style="background:var(--green);color:#0a0a0a;border:none;font-size:12px;font-weight:800;padding:8px 14px;border-radius:6px;cursor:pointer;text-transform:uppercase;letter-spacing:.05em">Redeem</button>' +
+      '</div>' +
+      '<div id="atpPointsRedeemMsg" style="color:#aaa;font-size:11px;line-height:1.5;display:none"></div>';
+    foot.insertBefore(widget, foot.firstChild);
+    document.getElementById('atpPointsRedeemBtn').addEventListener('click', function(){ atpRedeemPoints(bal, maxValue, rate); });
+  } catch(e) {}
+}
+
+async function atpRedeemPoints(maxPoints, maxValue, rate) {
+  var msg = document.getElementById('atpPointsRedeemMsg');
+  var btn = document.getElementById('atpPointsRedeemBtn');
+  // Ask how many AED-worth they want to redeem.
+  var requestedValue = prompt('How much discount do you want to redeem? (AED, max ' + maxValue + ')');
+  if (requestedValue == null) return;
+  var aed = Math.max(1, Math.min(maxValue, parseInt(requestedValue, 10) || 0));
+  if (!aed) { alert('Enter a positive AED amount.'); return; }
+  var pointsToSpend = aed * rate;
+  if (pointsToSpend > maxPoints) pointsToSpend = maxPoints;
+  if (!confirm('Redeem ' + pointsToSpend + ' points for AED ' + aed + ' off? This is irreversible.')) return;
+  btn.disabled = true; btn.textContent = '…';
+  try {
+    var res = await fetch('/api/store/points/redeem', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, _atpAuthHeader()),
+      body: JSON.stringify({ points: pointsToSpend }),
+    });
+    var data = await res.json();
+    if (!res.ok) { alert(data.error || 'Could not redeem.'); btn.disabled = false; btn.textContent = 'Redeem'; return; }
+    btn.disabled = true;
+    btn.textContent = '✓ Redeemed';
+    btn.style.opacity = '.6';
+    msg.style.display = 'block';
+    msg.innerHTML =
+      '<div style="background:#0a0a0a;border:1px solid rgba(122,194,49,.4);border-radius:6px;padding:10px;margin-top:6px">' +
+        '<div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px">Your discount code</div>' +
+        '<div style="font-family:monospace;font-size:16px;font-weight:800;color:#7AC231;letter-spacing:1px;margin-bottom:6px">' + data.discount_code + '</div>' +
+        '<div style="color:#aaa">Worth <strong style="color:#fff">AED ' + data.amount_value + '</strong>. Paste at Shopify checkout. Expires in 30 days.</div>' +
+        '<button onclick="navigator.clipboard&&navigator.clipboard.writeText(\'' + data.discount_code + '\').then(function(){var b=event.target;b.textContent=\'Copied ✓\';setTimeout(function(){b.textContent=\'Copy code\'},2000)})" style="margin-top:8px;background:transparent;border:1px solid rgba(122,194,49,.3);color:#7AC231;font-size:11px;font-weight:700;padding:5px 10px;border-radius:4px;cursor:pointer">Copy code</button>' +
+      '</div>';
+  } catch(e) {
+    btn.disabled = false; btn.textContent = 'Redeem';
+    alert('Network error.');
+  }
+}
 
 // ── AUTH ────────────────────────────────────────────────────
 
@@ -1301,7 +1684,16 @@ window.testShopify = async function() {
   }
 };
 
-loadProducts();
+// Load wishlist BEFORE products so cards render with the right
+// heart state. Fall back to localStorage if not authed.
+_atpLoadWishlistRemote().then(function(){
+  loadProducts().then(function(){ _atpHydrateWishlistHearts(); }).catch(function(){});
+});
+
+// Server-side cart sync (Audit 5 / tier 1.2). Logged-in members get
+// their cart restored across devices; logged-out members fall back
+// to the in-memory cart-only flow already wired below.
+_atpLoadCartRemote();
 
 // ── ATP API INIT ─────────────────────────────────────────────
 (function() {

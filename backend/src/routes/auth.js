@@ -982,6 +982,86 @@ router.post('/migrate-referral-codes', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-store-tier1 ────────────────────────
+// Audit 5 (online shop) — tier 1 schema:
+//   wishlists          : per-member saved Shopify products
+//   member_carts       : server-synced cart state, one row per member
+//   product_reviews    : member ratings + review text
+//   points_redemptions : audit trail of points-for-discount swaps
+//
+// All idempotent. Re-runnable.
+router.post('/migrate-store-tier1', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    const ops = [];
+
+    // 1. Wishlists — Shopify products are external IDs (gid://…), so
+    // we don't FK them. Snapshot title/image/handle so the wishlist
+    // tile renders even if the product is later deleted in Shopify.
+    ops.push(query(`CREATE TABLE IF NOT EXISTS wishlists (
+      id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      member_id          UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      product_id         TEXT NOT NULL,                                    -- Shopify gid
+      product_handle     TEXT,                                             -- url slug
+      product_title      TEXT,
+      product_image_url  TEXT,
+      product_price      NUMERIC(10,2),
+      product_currency   VARCHAR(8),
+      added_at           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(member_id, product_id)
+    )`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_wishlists_member ON wishlists (member_id, added_at DESC)`));
+
+    // 2. Server-synced cart. JSONB so we can store any cart shape;
+    // one row per member.
+    ops.push(query(`CREATE TABLE IF NOT EXISTS member_carts (
+      member_id  UUID PRIMARY KEY REFERENCES members(id) ON DELETE CASCADE,
+      cart_data  JSONB NOT NULL DEFAULT '[]',
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`));
+
+    // 3. Product reviews. verified_purchase is true when the member's
+    // ATP points history shows a session_refund / store discount
+    // activity tied to this product, OR when set manually by admin.
+    ops.push(query(`CREATE TABLE IF NOT EXISTS product_reviews (
+      id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      member_id          UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      product_id         TEXT NOT NULL,
+      rating             INT  NOT NULL CHECK (rating BETWEEN 1 AND 5),
+      title              TEXT,
+      body               TEXT,
+      verified_purchase  BOOLEAN NOT NULL DEFAULT false,
+      is_published       BOOLEAN NOT NULL DEFAULT true,
+      created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(member_id, product_id)
+    )`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_reviews_product ON product_reviews (product_id, created_at DESC) WHERE is_published=true`));
+
+    // 4. Points redemption audit. Each row = a points-for-discount
+    // transaction. amount_aed is the realised discount amount (server
+    // stores it so admin can audit the math; doesn't need to match
+    // Shopify's order-line discount exactly).
+    ops.push(query(`CREATE TABLE IF NOT EXISTS points_redemptions (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      member_id       UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      points_spent    INT  NOT NULL CHECK (points_spent > 0),
+      discount_code   TEXT,                                              -- Shopify code generated/handed to member
+      amount_value    NUMERIC(10,2),
+      currency_code   VARCHAR(8) DEFAULT 'AED',
+      status          VARCHAR(20) NOT NULL DEFAULT 'issued',             -- issued | used | expired | refunded
+      issued_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      used_at         TIMESTAMPTZ,
+      expires_at      TIMESTAMPTZ
+    )`));
+    ops.push(query(`CREATE INDEX IF NOT EXISTS idx_redemptions_member ON points_redemptions (member_id, issued_at DESC)`));
+
+    await Promise.all(ops);
+    res.json({ success: true, message: 'Store tier-1 schema ready (wishlists, member_carts, product_reviews, points_redemptions).' });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-newsletter ─────────────────────────
 // Audit 4.2 — newsletter capture. Idempotent.
 router.post('/migrate-newsletter', async (req, res, next) => {
