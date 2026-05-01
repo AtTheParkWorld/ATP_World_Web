@@ -79,6 +79,26 @@ router.put('/bulk', authenticate, requireAdmin, async (req, res, next) => {
 });
 
 
+// Auto-widen cms_content.value_url to TEXT on first upload after deploy.
+// The legacy schema declared it VARCHAR(500); base64 data URLs blow
+// past that for anything bigger than a tiny SVG. ALTER … TYPE TEXT is
+// idempotent (no-op if already TEXT) so this guard is safe to leave in
+// permanently. A null guard prevents repeated DDL on every upload.
+let _valueUrlWidened = false;
+async function _ensureValueUrlIsText() {
+  if (_valueUrlWidened) return;
+  try {
+    await query(`ALTER TABLE cms_content ALTER COLUMN value_url TYPE TEXT`);
+  } catch (e) {
+    // Many Postgres versions report "cannot alter type of a column used
+    // by a view or rule" when there's a dependency; if that fires we
+    // fall through and the next save attempt will surface the original
+    // error. Most common case (no dependents) just succeeds.
+    if (e.code && e.code !== '0A000') console.warn('[cms] widen value_url:', e.message);
+  }
+  _valueUrlWidened = true;
+}
+
 // POST /api/cms/upload — Upload image/video as base64 data URL for inline storage
 // For larger files, production should use S3/Cloudflare R2. Base64 works for <5MB images/short videos.
 router.post('/upload', authenticate, requireAdmin, async (req, res, next) => {
@@ -92,6 +112,11 @@ router.post('/upload', authenticate, requireAdmin, async (req, res, next) => {
     if (sizeBytes > 10 * 1024 * 1024) {
       return res.status(413).json({ error: 'File too large (max 10MB)' });
     }
+    // Make sure value_url can hold a full data URL before we try to
+    // insert it. Idempotent + guarded, so this only runs once per
+    // process lifetime.
+    await _ensureValueUrlIsText();
+
     // Persist as a media asset entry for reuse
     const { rows } = await query(
       `INSERT INTO cms_content (page, section, key, value_url, updated_by)
