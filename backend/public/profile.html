@@ -49,66 +49,50 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
    PROFILE COVER (Theme 15) — cursor-spotlight reveal
    ──────────────────────────────────────────────────────────────────
    Two visual layers stacked inside .profile-cover:
-     • BOTTOM  — high-res ATP logo (<img class="profile-cover-logo">)
-     • TOP     — current design (gradient + dot pattern) painted via ::before
-   The ::before has a radial-gradient mask that JS controls with the
-   cursor position. Outside the spotlight circle the overlay is fully
-   opaque (logo hidden); inside the circle it's transparent (logo shown).
-   On touch devices the mask is removed and the logo is hidden via
-   @media (hover:none) so the cover stays static. */
+     • BOTTOM  — high-res ATP wordmark (<img class="profile-cover-logo">)
+     • TOP     — design gradient + dot pattern (<div class="profile-cover-design">)
+   The TOP layer covers the logo. JS sets a radial-gradient mask on the
+   top layer following the cursor — the masked-out circle reveals the
+   logo underneath. Used a real <div> overlay (not ::before) so JS can
+   set inline mask-image styles directly — that avoids a CSS-variable
+   cascade quirk where var() inside the gradient resolved to 0 even
+   when the parent had a non-zero --reveal-r.
+   On touch / no-hover devices the mask is bypassed and the logo is
+   hidden, leaving the original design intact. */
 .profile-cover{height:220px;position:relative;overflow:hidden;background:#070b06}
 
-/* ⚠️ REPLACE the logo URL.
-   The default below is the icon-only ATP mark that ships with the site.
-   For the wide "ATP THE PARK" wordmark you shared, the easiest path:
-     1. Admin → Content → 🖼 Media Library → 📤 Upload to library
-     2. Pick the high-res PNG/WebP (≥2000 px wide, transparent bg)
-     3. Click "Copy URL" on the uploaded tile
-     4. Paste that URL into the src="…" attribute of the
-        <img class="profile-cover-logo"> element below in the HTML.
-   Alternatively, save the file directly into /backend/public/ and
-   reference it by path (e.g. /atp-logo-wide.png). */
+/* ⚠️ TO REPLACE THE LOGO:
+   Drop a new file at /backend/public/atp-logo-wide.png (or any path
+   under /backend/public/) and update the src=".." attribute on the
+   <img class="profile-cover-logo"> below.
+   Recommended: PNG/WebP, transparent background, ≥2000 px wide. */
 .profile-cover-logo{
   position:absolute;inset:0;width:100%;height:100%;
   object-fit:contain;object-position:center;
-  padding:22px 40px;
+  /* No padding — the logo fills the cover so the spotlight always lands
+     on something visible no matter where the cursor is. */
   pointer-events:none;user-select:none;
-  /* Subtle green wash so the brand colour reads through the spotlight. */
-  filter:drop-shadow(0 0 12px rgba(122,194,49,.18))
+  /* Soft green halo so the wordmark reads against the dark cover. */
+  filter:drop-shadow(0 0 14px rgba(122,194,49,.22))
 }
 
-/* TOP LAYER — the existing design. CSS mask uses a radial-gradient at
-   the cursor position to "punch" a transparent circle out of this
-   overlay, revealing the logo underneath. The two stops form the soft
-   edge: fully transparent at (radius − 30px), fully opaque at radius. */
-.profile-cover::before{
-  content:'';position:absolute;inset:0;
+/* TOP LAYER — covers the logo. The mask radial-gradient is set inline
+   from JS on every mousemove. Default (no inline style) = fully
+   opaque, hiding the logo. */
+.profile-cover-design{
+  position:absolute;inset:0;
   background:
     linear-gradient(135deg,#0f1e0a 0%,#0a1a08 40%,#0d1a0a 60%,#111 100%),
     url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%237AC231' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
   background-blend-mode:overlay,normal;
-  pointer-events:none;
-  -webkit-mask-image:radial-gradient(circle at var(--mx,50%) var(--my,50%),
-                                     transparent calc(var(--reveal-r) - 30px),
-                                     #000 var(--reveal-r));
-          mask-image:radial-gradient(circle at var(--mx,50%) var(--my,50%),
-                                     transparent calc(var(--reveal-r) - 30px),
-                                     #000 var(--reveal-r));
-  /* Smooth ease for the mask radius growing in / shrinking out.
-     Requires the @property registration below for the transition to
-     actually interpolate (older browsers fall through to instant). */
-  transition:--reveal-r .25s ease-out
+  pointer-events:none
 }
 
-/* Registering --reveal-r as a typed custom property unlocks CSS
-   transitions on it (otherwise the variable would jump instantly). */
-@property --reveal-r{syntax:'<length>';inherits:true;initial-value:0px}
-
-/* Touch / no-hover environments — skip the effect entirely, just show
-   the existing design. The logo stays hidden so layout doesn't shift. */
+/* Touch / no-hover environments — bypass the effect, hide the logo,
+   leave the design fully intact. */
 @media (hover:none){
   .profile-cover-logo{display:none}
-  .profile-cover::before{-webkit-mask-image:none;mask-image:none}
+  .profile-cover-design{-webkit-mask-image:none !important;mask-image:none !important}
 }
 .profile-cover-edit{position:absolute;top:16px;right:16px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.15);color:#fff;padding:7px 14px;border-radius:var(--radius);font-size:12px;font-weight:600;cursor:pointer;transition:background .2s}
 .profile-cover-edit:hover{background:rgba(0,0,0,.8)}
@@ -497,17 +481,15 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
 
   <!-- COVER (Theme 15 — cursor spotlight reveal) -->
   <div class="profile-cover">
-    <!-- Bottom layer: high-res ATP logo. Hidden by the design overlay
-         until the cursor draws a spotlight on it.
-         ⚠️ REPLACE the src below with your wide-wordmark logo URL.
-         Easiest: upload via admin → Content → Media Library → Copy URL,
-         then paste here. PNG/WebP at ≥2000 px wide with a transparent
-         background works best.  -->
+    <!-- Bottom: ATP wordmark. Always present; the overlay above hides
+         it until the cursor draws a spotlight. Swap the src to change. -->
     <img class="profile-cover-logo"
          src="/atp-logo-wide.png"
          alt=""
          aria-hidden="true">
-    <!-- Edit-cover stub removed (not yet a real feature) -->
+    <!-- Top: the design overlay. JS sets an inline mask-image on
+         this element to punch a circular hole at the cursor. -->
+    <div class="profile-cover-design"></div>
   </div>
 
   <!-- HERO -->
@@ -3435,39 +3417,83 @@ try { loadStoreBestSellers(); } catch(e) { console.warn('best-sellers init', e);
 // ──────────────────────────────────────────────────────────────────
 // Theme 15 — Profile cover spotlight reveal
 // ──────────────────────────────────────────────────────────────────
-// Tracks the cursor inside .profile-cover and updates --mx, --my
-// (cursor coords in px) + --reveal-r (spotlight radius). The CSS mask
-// uses these to punch a transparent circle through the design overlay,
-// revealing the ATP logo underneath. requestAnimationFrame throttles
-// updates to one per frame so rapid pointer movement stays smooth.
-// Touch devices: gated by both @media (hover:none) in CSS AND a JS
-// matchMedia check so we don't even bind listeners.
+// Tracks the cursor inside .profile-cover and writes an inline
+// mask-image on .profile-cover-design that punches a transparent
+// circle around the cursor — the ATP logo underneath shows through
+// that circle. The radius eases in on mouseenter and out on
+// mouseleave via a manual rAF lerp (CSS transitions on mask-image
+// don't interpolate reliably across browsers). Cursor (mx, my)
+// updates are immediate for responsive tracking.
+//
+// We set mask-image directly on a real <div> overlay (not a CSS
+// pseudo-element) because var() inside `mask-image: radial-gradient(…)`
+// resolved to 0 in some browsers via the cascade — bypassing CSS
+// variables and going straight to inline styles eliminates the
+// problem entirely.
+//
+// Touch / no-hover devices are gated by both a JS matchMedia check
+// AND @media (hover:none) in the CSS so the effect never fires.
 (function _atpCoverSpotlight(){
-  var cover = document.querySelector('.profile-cover');
-  if (!cover) return;
+  var cover  = document.querySelector('.profile-cover');
+  var design = cover && cover.querySelector('.profile-cover-design');
+  if (!cover || !design) return;
   if (window.matchMedia && window.matchMedia('(hover: none)').matches) return;
 
-  var pendingFrame = null;
-  function setPos(clientX, clientY){
+  // Spotlight radius constants — tweak SPOT_R to size the circle.
+  var SPOT_R = 200;          // target radius when hovering
+  var EDGE   = 40;           // soft-edge width inside the radius
+  var EASE   = 0.22;         // lerp factor toward target each frame
+
+  var radius = 0, targetRadius = 0;
+  var mx = 0, my = 0;
+  var animating = false;
+
+  function applyMask(){
+    var inner = Math.max(0, radius - EDGE);
+    var outer = radius;
+    var grad = 'radial-gradient(circle at ' + mx + 'px ' + my + 'px, '
+             + 'transparent ' + inner + 'px, '
+             + '#000 ' + outer + 'px)';
+    design.style.webkitMaskImage = grad;
+    design.style.maskImage = grad;
+  }
+  function tick(){
+    var diff = targetRadius - radius;
+    if (Math.abs(diff) < 0.5) {
+      radius = targetRadius;
+      applyMask();
+      animating = false;
+      return;
+    }
+    radius += diff * EASE;
+    applyMask();
+    requestAnimationFrame(tick);
+  }
+  function ensureAnimating(){
+    if (animating) return;
+    animating = true;
+    requestAnimationFrame(tick);
+  }
+  function updatePos(clientX, clientY){
     var rect = cover.getBoundingClientRect();
-    cover.style.setProperty('--mx', (clientX - rect.left) + 'px');
-    cover.style.setProperty('--my', (clientY - rect.top)  + 'px');
+    mx = clientX - rect.left;
+    my = clientY - rect.top;
   }
-  function onMove(ev){
-    if (pendingFrame) return;
-    pendingFrame = requestAnimationFrame(function(){
-      setPos(ev.clientX, ev.clientY);
-      pendingFrame = null;
-    });
-  }
+
   cover.addEventListener('mouseenter', function(ev){
-    setPos(ev.clientX, ev.clientY);
-    // Spotlight radius — tweak for a tighter (smaller) or looser (larger) circle.
-    cover.style.setProperty('--reveal-r', '160px');
+    updatePos(ev.clientX, ev.clientY);
+    targetRadius = SPOT_R;
+    ensureAnimating();
   });
-  cover.addEventListener('mousemove', onMove);
+  cover.addEventListener('mousemove', function(ev){
+    updatePos(ev.clientX, ev.clientY);
+    // Cursor position should track immediately — re-apply with the
+    // current radius so the circle follows even between rAF ticks.
+    if (radius > 0) applyMask();
+  });
   cover.addEventListener('mouseleave', function(){
-    cover.style.setProperty('--reveal-r', '0px');
+    targetRadius = 0;
+    ensureAnimating();
   });
 })();
 renderSessions(document.getElementById("upcomingSessions"),SESSIONS.slice(0,3));
