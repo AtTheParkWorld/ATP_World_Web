@@ -6,7 +6,7 @@
  * marked .skipIf(!__hasTestDb) so they only run in CI / when
  * TEST_DATABASE_URL is set.
  */
-const { describe, it, expect } = require('vitest');
+// describe / it / expect are injected as globals by Vitest.
 const request = require('supertest');
 const app = require('../src/server');
 

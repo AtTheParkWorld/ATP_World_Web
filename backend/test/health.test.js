@@ -3,7 +3,8 @@
  * unknown routes return a JSON 404. Runs with no DB required (the
  * health endpoint doesn't query Postgres).
  */
-const { describe, it, expect } = require('vitest');
+// describe / it / expect are injected as globals by Vitest
+// (test.globals = true in vitest.config.js).
 const request = require('supertest');
 const app = require('../src/server');
 

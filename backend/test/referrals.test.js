@@ -7,8 +7,7 @@
  * format ("fredy-a7k", "mary-b2p") which is part of the user-facing
  * brand.
  */
-const { describe, it, expect } = require('vitest');
-
+// describe / it / expect are injected as globals by Vitest.
 // Re-export the internal helpers via a narrow surface so tests can
 // poke them without mocking the DB. The service file uses local
 // functions; if it ever exposes them publicly, this is the line to

@@ -5,7 +5,7 @@
  * the subscription_plans table is empty or missing. checkout / portal
  * require auth.
  */
-const { describe, it, expect } = require('vitest');
+// describe / it / expect are injected as globals by Vitest.
 const request = require('supertest');
 const app = require('../src/server');
 

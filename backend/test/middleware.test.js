@@ -5,7 +5,7 @@
  * 401 / 403 responses on bad / missing tokens. No DB needed for the
  * negative cases.
  */
-const { describe, it, expect } = require('vitest');
+// describe / it / expect are injected as globals by Vitest.
 const request = require('supertest');
 const app = require('../src/server');
 
