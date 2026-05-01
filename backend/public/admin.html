@@ -164,7 +164,7 @@
         <div class="admin-section-body" style="padding:0">
           <table class="admin-table" id="membersTable">
             <thead><tr>
-              <th>Member</th><th>Joined</th><th>Sessions</th><th>Status</th><th>Actions</th>
+              <th>Member</th><th>Joined</th><th>Sessions</th><th>Points</th><th>Tier</th><th>Status</th><th>Actions</th>
             </tr></thead>
             <tbody id="membersTbody"></tbody>
           </table>
@@ -915,6 +915,8 @@
                 style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">💳 Plans</button>
         <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["countries"]'
                 style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">🌍 Countries</button>
+        <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["maintenance"]'
+                style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">🛠 Maintenance</button>
       </div>
 
       <!-- Announcements tab -->
@@ -1091,6 +1093,40 @@
               </div>
             </div>
             <div id="countriesList"><div style="padding:14px;color:#555;text-align:center">Loading…</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Maintenance tab (Theme 13) -->
+      <div class="settings-pane" id="settings-pane-maintenance" style="display:none">
+        <!-- Pending payment cleanup -->
+        <div class="admin-section">
+          <div class="admin-section-head">
+            <span class="admin-section-title">⏳ Pending payment bookings</span>
+            <button class="admin-btn admin-btn-primary" data-atp-call="cleanupPendingBookings" style="font-size:12px;padding:7px 14px">🧹 Cancel all &gt; 24h</button>
+          </div>
+          <div class="admin-section-body">
+            <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6">
+              Bookings stuck in <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#7AC231">pending_payment</code> for more than 1 hour are listed below.
+              They were created when a member started a Stripe checkout but never completed it.
+              Cleanup cancels every booking older than 24 hours so the seats free up for waitlists.
+            </div>
+            <div id="pendingBookingsList"><div style="padding:14px;color:#555;text-align:center">Loading…</div></div>
+          </div>
+        </div>
+
+        <!-- Failed Stripe refunds -->
+        <div class="admin-section" style="margin-top:20px">
+          <div class="admin-section-head">
+            <span class="admin-section-title">💸 Failed Stripe refunds</span>
+            <button class="admin-btn" data-atp-call="loadFailedRefunds" style="font-size:12px;padding:7px 14px">↻ Refresh</button>
+          </div>
+          <div class="admin-section-body">
+            <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6">
+              Cancelled paid-by-Stripe bookings that didn't get a refund recorded.
+              Click <strong style="color:#7AC231">Retry refund</strong> to issue the Stripe refund again.
+            </div>
+            <div id="failedRefundsList"><div style="padding:14px;color:#555;text-align:center">Loading…</div></div>
           </div>
         </div>
       </div>

@@ -7,7 +7,7 @@
 
 // ── Sub-tab switcher ─────────────────────────────────────────
 function showSettingsTab(tab) {
-  ['announcements','activities','achievements','config','plans','countries'].forEach(function(t){
+  ['announcements','activities','achievements','config','plans','countries','maintenance'].forEach(function(t){
     var pane = document.getElementById('settings-pane-' + t);
     if (pane) pane.style.display = (t === tab) ? 'block' : 'none';
   });
@@ -22,6 +22,7 @@ function showSettingsTab(tab) {
   else if (tab === 'config')       loadSystemConfig();
   else if (tab === 'plans')        loadPlansAdmin();
   else if (tab === 'countries')    loadCountriesAdmin();
+  else if (tab === 'maintenance')  loadMaintenanceTab();
 }
 
 function loadSettingsSection() {
@@ -751,6 +752,115 @@ function deactivateCountry(id) {
       if (res && res.error) { showToast('❌ ' + res.error, true); return; }
       showToast('✅ Country deactivated');
       loadCountriesAdmin();
+    })
+    .catch(function(e){ showToast('❌ ' + e.message, true); });
+}
+
+// ════════════════════════════════════════════════════════════
+// MAINTENANCE (Theme 13) — pending booking cleanup + refund retry
+// ════════════════════════════════════════════════════════════
+
+function loadMaintenanceTab() {
+  loadPendingBookings();
+  loadFailedRefunds();
+}
+
+function loadPendingBookings() {
+  var el = document.getElementById('pendingBookingsList');
+  if (!el) return;
+  fetch(ATP_API + '/admin/maintenance/pending-bookings', {
+    headers: { 'Authorization': 'Bearer ' + getToken() }
+  }).then(function(r){ return r.json(); }).then(function(data){
+    var rows = (data && data.pending) || [];
+    if (!rows.length) {
+      el.innerHTML = '<div style="padding:18px;color:#666;text-align:center">No pending-payment bookings older than 1 hour. \u2728</div>';
+      return;
+    }
+    el.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
+      '<thead><tr style="color:#666;text-align:left;border-bottom:1px solid #1a1a1a"><th style="padding:8px 6px">Member</th><th style="padding:8px 6px">Session</th><th style="padding:8px 6px;text-align:right">Pending for</th><th style="padding:8px 6px;text-align:right">Created</th></tr></thead>' +
+      '<tbody>' +
+        rows.map(function(p){
+          var nameSafe = ((p.first_name||'') + ' ' + (p.last_name||'')).trim().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') || p.email;
+          var sessionSafe = (p.session_name || 'Session').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          var hours = Number(p.hours_pending) || 0;
+          var color = hours > 24 ? '#f87171' : (hours > 6 ? '#ffc400' : '#aaa');
+          var createdAt = p.created_at ? new Date(p.created_at).toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+          return '<tr style="border-bottom:1px solid #111">' +
+            '<td style="padding:8px 6px;color:#fff">' + nameSafe + '<div style="font-size:10px;color:#666">' + (p.email||'') + '</div></td>' +
+            '<td style="padding:8px 6px;color:#aaa">' + sessionSafe + '</td>' +
+            '<td style="padding:8px 6px;text-align:right;color:' + color + ';font-weight:700">' + hours.toFixed(1) + 'h</td>' +
+            '<td style="padding:8px 6px;text-align:right;color:#666;font-size:11px">' + createdAt + '</td>' +
+          '</tr>';
+        }).join('') +
+      '</tbody></table>' +
+      '<div style="margin-top:12px;font-size:11px;color:#666">' + rows.length + ' pending bookings</div>';
+  }).catch(function(){
+    el.innerHTML = '<div style="padding:14px;color:#f87171">Failed to load pending bookings.</div>';
+  });
+}
+
+function cleanupPendingBookings() {
+  if (!confirm('Cancel every pending_payment booking older than 24 hours? Members can rebook fresh if they still want.')) return;
+  fetch(ATP_API + '/admin/maintenance/cleanup-pending-bookings', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + getToken() },
+  }).then(function(r){ return r.json(); }).then(function(res){
+    if (res && res.error) { showToast('❌ ' + res.error, true); return; }
+    showToast('🧹 Cancelled ' + (res.cancelled_count || 0) + ' bookings');
+    loadPendingBookings();
+  }).catch(function(e){ showToast('❌ ' + e.message, true); });
+}
+
+function loadFailedRefunds() {
+  var el = document.getElementById('failedRefundsList');
+  if (!el) return;
+  fetch(ATP_API + '/admin/maintenance/failed-refunds', {
+    headers: { 'Authorization': 'Bearer ' + getToken() }
+  }).then(function(r){ return r.json(); }).then(function(data){
+    var rows = (data && data.failed) || [];
+    if (!rows.length) {
+      el.innerHTML = '<div style="padding:18px;color:#666;text-align:center">No failed refunds. \u2728</div>';
+      return;
+    }
+    el.innerHTML = '<table style="width:100%;border-collapse:collapse;font-size:12px">' +
+      '<thead><tr style="color:#666;text-align:left;border-bottom:1px solid #1a1a1a"><th style="padding:8px 6px">Member</th><th style="padding:8px 6px">Session</th><th style="padding:8px 6px;text-align:right">Amount</th><th style="padding:8px 6px;text-align:right">Cancelled</th><th style="padding:8px 6px"></th></tr></thead>' +
+      '<tbody>' +
+        rows.map(function(p){
+          var nameSafe = ((p.first_name||'') + ' ' + (p.last_name||'')).trim().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') || p.email;
+          var sessionSafe = (p.session_name || 'Session').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          var amount = (p.payment_currency || 'AED').toUpperCase() + ' ' + Number(p.payment_amount || 0).toFixed(2);
+          var cancelledAt = p.cancelled_at ? new Date(p.cancelled_at).toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+          return '<tr style="border-bottom:1px solid #111">' +
+            '<td style="padding:8px 6px;color:#fff">' + nameSafe + '<div style="font-size:10px;color:#666">' + (p.email||'') + '</div></td>' +
+            '<td style="padding:8px 6px;color:#aaa">' + sessionSafe + '</td>' +
+            '<td style="padding:8px 6px;text-align:right;color:#fff;font-weight:700">' + amount + '</td>' +
+            '<td style="padding:8px 6px;text-align:right;color:#666;font-size:11px">' + cancelledAt + '</td>' +
+            '<td style="padding:8px 6px;text-align:right">' +
+              '<button class="admin-btn admin-btn-primary" style="font-size:11px;padding:5px 10px" onclick="retryRefund(this.dataset.id)" data-id="' + p.id + '">↻ Retry refund</button>' +
+            '</td>' +
+          '</tr>';
+        }).join('') +
+      '</tbody></table>' +
+      '<div style="margin-top:12px;font-size:11px;color:#666">' + rows.length + ' bookings need refunding</div>';
+  }).catch(function(){
+    el.innerHTML = '<div style="padding:14px;color:#f87171">Failed to load.</div>';
+  });
+}
+
+function retryRefund(bookingId) {
+  if (!bookingId) return;
+  if (!confirm('Issue a Stripe refund for this booking?')) return;
+  fetch(ATP_API + '/bookings/' + bookingId + '/retry-refund', {
+    method: 'POST',
+    headers: { 'Authorization': 'Bearer ' + getToken() },
+  }).then(function(r){ return r.json().then(function(b){ return { ok:r.ok, body:b }; }); })
+    .then(function(res){
+      if (!res.ok || (res.body && res.body.error)) {
+        showToast('❌ ' + ((res.body && res.body.error) || 'Refund failed'), true);
+        return;
+      }
+      showToast('💸 Refund issued: ' + (res.body.refunded_currency || 'AED') + ' ' + Number(res.body.refunded_amount || 0).toFixed(2));
+      loadFailedRefunds();
     })
     .catch(function(e){ showToast('❌ ' + e.message, true); });
 }

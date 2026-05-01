@@ -213,6 +213,7 @@ router.get('/v2', authenticate, requireAdmin, async (req, res, next) => {
       topSessionsRows,
       sessionGenderRows,
       totalsRows,
+      revenueRows,
     ] = await Promise.all([
       // 1. Gender — count + %
       query(
@@ -342,6 +343,30 @@ router.get('/v2', authenticate, requireAdmin, async (req, res, next) => {
              WHERE s.scheduled_at BETWEEN $1 AND $2 AND b.checked_in_at IS NOT NULL)                                  AS checkins_in_range`,
         params
       ),
+
+      // 8. Paid-session revenue per month — currency (Stripe) +
+      // points spent. Only counts bookings that actually paid (paid_at
+      // is set). NET of refunds: subtract refunded_amount where the
+      // refund landed inside the same month bucket. Falls back to a
+      // zero-revenue stub if the paid-sessions migration hasn't run.
+      query(
+        `SELECT TO_CHAR(DATE_TRUNC('month', b.paid_at), 'YYYY-MM') AS month,
+                COALESCE(b.payment_currency, 'AED')                AS currency,
+                SUM(CASE WHEN b.payment_method='stripe' THEN COALESCE(b.payment_amount,0)   ELSE 0 END)::numeric(12,2) AS revenue,
+                SUM(CASE WHEN b.payment_method='stripe' THEN COALESCE(b.refunded_amount,0) ELSE 0 END)::numeric(12,2) AS refunded,
+                SUM(CASE WHEN b.payment_method='points' THEN COALESCE(b.points_paid,0)     ELSE 0 END)::int           AS points_spent,
+                SUM(CASE WHEN b.payment_method='points' THEN COALESCE(b.refunded_points,0) ELSE 0 END)::int           AS points_refunded,
+                COUNT(*) FILTER (WHERE b.payment_method='stripe')::int AS stripe_bookings,
+                COUNT(*) FILTER (WHERE b.payment_method='points')::int AS points_bookings
+         FROM bookings b
+         WHERE b.paid_at BETWEEN $1 AND $2
+         GROUP BY DATE_TRUNC('month', b.paid_at), COALESCE(b.payment_currency, 'AED')
+         ORDER BY DATE_TRUNC('month', b.paid_at), 2`,
+        params
+      ).catch((e) => {
+        if (e.code === '42703') return { rows: [] };
+        throw e;
+      }),
     ]);
 
     res.json({
@@ -354,6 +379,8 @@ router.get('/v2', authenticate, requireAdmin, async (req, res, next) => {
       top_sessions:         topSessionsRows.rows,
       session_gender:       sessionGenderRows.rows,
       totals:               totalsRows.rows[0],
+      // 8. Paid revenue + points spent (Theme 13)
+      revenue:              revenueRows.rows,
     });
   } catch (err) { next(err); }
 });
@@ -433,6 +460,26 @@ router.get('/v2/:metric/export', authenticate, requireAdmin, async (req, res, ne
          GROUP BY s.id HAVING COUNT(b.id) > 0
          ORDER BY checkin_pct DESC NULLS LAST, bookings DESC`, params);
       rows = r.rows; columns = ['session','scheduled_at','bookings','checkins','checkin_pct']; name = 'session-checkin-rate';
+    } else if (m === 'revenue') {
+      const r = await query(
+        `SELECT TO_CHAR(DATE_TRUNC('month', b.paid_at), 'YYYY-MM') AS month,
+                COALESCE(b.payment_currency,'AED') AS currency,
+                SUM(CASE WHEN b.payment_method='stripe' THEN COALESCE(b.payment_amount,0)   ELSE 0 END)::numeric(12,2) AS revenue,
+                SUM(CASE WHEN b.payment_method='stripe' THEN COALESCE(b.refunded_amount,0) ELSE 0 END)::numeric(12,2) AS refunded,
+                SUM(CASE WHEN b.payment_method='points' THEN COALESCE(b.points_paid,0)     ELSE 0 END)::int           AS points_spent,
+                SUM(CASE WHEN b.payment_method='points' THEN COALESCE(b.refunded_points,0) ELSE 0 END)::int           AS points_refunded,
+                COUNT(*) FILTER (WHERE b.payment_method='stripe')::int AS stripe_bookings,
+                COUNT(*) FILTER (WHERE b.payment_method='points')::int AS points_bookings
+         FROM bookings b
+         WHERE b.paid_at BETWEEN $1 AND $2
+         GROUP BY DATE_TRUNC('month', b.paid_at), COALESCE(b.payment_currency,'AED')
+         ORDER BY 1, 2`, params).catch((e) => {
+           if (e.code === '42703') return { rows: [] };
+           throw e;
+         });
+      rows = r.rows;
+      columns = ['month','currency','revenue','refunded','points_spent','points_refunded','stripe_bookings','points_bookings'];
+      name = 'paid-session-revenue';
     } else if (m === 'session_gender') {
       const r = await query(
         `SELECT s.name AS session, s.scheduled_at,

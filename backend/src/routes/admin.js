@@ -270,6 +270,112 @@ router.patch('/members/:id/coach', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── PATCH /api/admin/members/:id/subscription ─────────────────
+// Manual override of a member's subscription tier. Accepts 'free',
+// 'premium', or 'premium_plus'. Used when admin needs to grant
+// comp access (sponsors, partners) without going through Stripe.
+// Note: this does NOT touch any Stripe subscription record — it just
+// flips members.subscription_type. If there's an active Stripe sub,
+// the next webhook event will overwrite this manual setting.
+router.patch('/members/:id/subscription', async (req, res, next) => {
+  try {
+    const { tier } = req.body || {};
+    const validTiers = ['free', 'premium', 'premium_plus'];
+    if (!validTiers.includes(tier)) {
+      return res.status(400).json({ error: 'tier must be one of: ' + validTiers.join(', ') });
+    }
+    const { rows } = await query(
+      `UPDATE members SET subscription_type=$1, updated_at=NOW()
+        WHERE id=$2 RETURNING id, first_name, last_name, subscription_type`,
+      [tier, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Member not found' });
+    audit.log(req, 'member.subscription.set', 'member', req.params.id, { tier });
+    res.json({ message: 'Subscription tier set to ' + tier, member: rows[0] });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/admin/maintenance/cleanup-pending-bookings ──────
+// Cancels pending_payment bookings older than the cutoff so seats free
+// up for waitlists and the admin views aren't cluttered. Idempotent —
+// running twice cancels the second batch (anything that's gone stale
+// since). Default cutoff is 24 hours; pass ?older_than_hours=N to
+// override.
+router.post('/maintenance/cleanup-pending-bookings', async (req, res, next) => {
+  try {
+    const cutoffHours = Math.max(1, Math.min(168, parseInt(req.query.older_than_hours, 10) || 24));
+    const { rows } = await query(
+      `UPDATE bookings
+          SET status='cancelled', cancelled_at=NOW(),
+              cancel_reason='auto-cleanup: payment not completed within ' || $1 || 'h'
+        WHERE status='pending_payment'
+          AND created_at < NOW() - ($1 || ' hours')::INTERVAL
+        RETURNING id, member_id, session_id`,
+      [cutoffHours]
+    );
+    audit.log(req, 'maintenance.cleanup_pending_bookings', null, null,
+      { cutoff_hours: cutoffHours, cancelled_count: rows.length });
+    res.json({
+      message: `Cancelled ${rows.length} pending bookings older than ${cutoffHours}h.`,
+      cancelled_count: rows.length,
+      cutoff_hours: cutoffHours,
+    });
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/admin/maintenance/pending-bookings ──────────────
+// Pending-payment bookings older than 1 hour — for the maintenance UI
+// to show the admin what's stale before they trigger cleanup.
+router.get('/maintenance/pending-bookings', async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT b.id, b.created_at, b.member_id, b.session_id,
+              EXTRACT(EPOCH FROM (NOW() - b.created_at))/3600 AS hours_pending,
+              m.first_name, m.last_name, m.email,
+              s.name AS session_name, s.scheduled_at
+         FROM bookings b
+         JOIN members m  ON m.id = b.member_id
+         JOIN sessions s ON s.id = b.session_id
+        WHERE b.status='pending_payment'
+          AND b.created_at < NOW() - INTERVAL '1 hour'
+        ORDER BY b.created_at ASC
+        LIMIT 100`
+    );
+    res.json({ pending: rows });
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/admin/maintenance/failed-refunds ─────────────────
+// Cancelled paid-by-Stripe bookings that never got a refund recorded —
+// usually because the Stripe API call failed at cancel time. Admin can
+// retry these via /api/bookings/:id/retry-refund.
+router.get('/maintenance/failed-refunds', async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT b.id, b.cancelled_at, b.payment_method, b.payment_amount,
+              b.payment_currency, b.stripe_session_id, b.stripe_payment_intent_id,
+              b.stripe_refund_id,
+              m.first_name, m.last_name, m.email,
+              s.name AS session_name, s.scheduled_at
+         FROM bookings b
+         JOIN members m  ON m.id = b.member_id
+         JOIN sessions s ON s.id = b.session_id
+        WHERE b.status='cancelled'
+          AND b.payment_method='stripe'
+          AND b.payment_amount > 0
+          AND b.refunded_at IS NULL
+          AND b.stripe_refund_id IS NULL
+        ORDER BY b.cancelled_at DESC
+        LIMIT 100`
+    ).catch((e) => {
+      // Pre-Theme-11.2 fallback (refund columns missing).
+      if (e.code === '42703') return { rows: [] };
+      throw e;
+    });
+    res.json({ failed: rows });
+  } catch (err) { next(err); }
+});
+
 // ── PATCH /api/admin/members/:id/ban ─────────────────────────
 router.patch('/members/:id/ban', async (req, res, next) => {
   try {

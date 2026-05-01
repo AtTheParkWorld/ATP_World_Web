@@ -91,6 +91,19 @@ async function loadMembersAPI() {
       var ini  = ((m.first_name||'?')[0]+(m.last_name||'?')[0]).toUpperCase();
       var joined = m.joined_at ? new Date(m.joined_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '—';
       var isAmb = m.is_ambassador;
+      // Theme 13 — inline tier dropdown so admins can comp/upgrade members
+      // without going through Stripe. Active Stripe subs will overwrite
+      // this on the next webhook event; that's fine.
+      var tier = (m.subscription_type || 'free').toLowerCase();
+      var tierSelect =
+        '<select onchange="setMemberTier(this.dataset.mid, this.value, this)" data-mid="' + m.id + '" ' +
+                'style="background:#0a0a0a;border:1px solid #1a1a1a;color:' +
+                (tier === 'premium_plus' ? '#ffc400' : (tier === 'premium' ? '#7AC231' : '#888')) +
+                ';font-size:11px;padding:4px 8px;border-radius:6px;font-weight:700;cursor:pointer">' +
+          '<option value="free"' +         (tier==='free'         ? ' selected' : '') + '>Free</option>' +
+          '<option value="premium"' +      (tier==='premium'      ? ' selected' : '') + '>⭐ Premium</option>' +
+          '<option value="premium_plus"' + (tier==='premium_plus' ? ' selected' : '') + '>⭐⭐ Premium+</option>' +
+        '</select>';
       return '<tr>'+
         '<td style="display:flex;align-items:center;gap:10px"><div class="admin-av">'+ini+'</div>'+
         '<div><div class="admin-member-name">'+name+'</div>'+
@@ -98,6 +111,7 @@ async function loadMembersAPI() {
         '<td style="color:#555;font-size:12px">'+joined+'</td>'+
         '<td style="color:#fff;font-size:13px;font-weight:600">'+(m.sessions_count||0)+'</td>'+
         '<td style="font-size:13px;font-weight:700;color:#7AC231">'+(m.points_balance||0)+'</td>'+
+        '<td>'+tierSelect+'</td>'+
         '<td><span class="badge '+(isAmb?'badge-green':'badge-grey')+'">'+(isAmb?'Ambassador':'Member')+'</span></td>'+
         '<td>'+
           (isAmb
@@ -110,5 +124,34 @@ async function loadMembersAPI() {
     var lbl = document.querySelector('#section-members .admin-section-title span');
     if (lbl) lbl.textContent = data.total.toLocaleString() + ' total';
   } catch(e) { console.warn('loadMembersAPI:', e.message); }
+}
+
+// Theme 13 — set a member's subscription tier from the inline dropdown.
+// Sends to /api/admin/members/:id/subscription. Local optimistic state +
+// a server round-trip; on failure we reload to revert.
+async function setMemberTier(memberId, tier, selectEl) {
+  if (!memberId || !tier) return;
+  if (selectEl) {
+    selectEl.disabled = true;
+    selectEl.style.opacity = '0.6';
+  }
+  try {
+    var token = getToken();
+    var res = await fetch(ATP_API + '/admin/members/' + memberId + '/subscription', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ tier: tier }),
+    }).then(function(r){ return r.json(); });
+    if (res && res.error) throw new Error(res.error);
+    showToast('✅ Tier set to ' + tier.replace('_', ' ') + ' for ' + ((res.member && res.member.first_name) || 'member'));
+    if (selectEl) {
+      selectEl.disabled = false;
+      selectEl.style.opacity = '1';
+      selectEl.style.color = tier === 'premium_plus' ? '#ffc400' : (tier === 'premium' ? '#7AC231' : '#888');
+    }
+  } catch (e) {
+    showToast('❌ ' + e.message, true);
+    loadMembersAPI(); // revert
+  }
 }
 

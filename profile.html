@@ -64,7 +64,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:
 .profile-name{font-family:var(--ff-display);font-size:36px;font-weight:900;text-transform:uppercase;letter-spacing:-.01em;line-height:1;margin-bottom:6px}
 .profile-sub{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
 .member-badge{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 12px;border-radius:20px;background:rgba(122,194,49,.12);border:1px solid rgba(122,194,49,.3);color:var(--green)}
-.member-badge.premium{background:linear-gradient(135deg,rgba(255,196,0,.12),rgba(255,150,0,.08));border-color:rgba(255,196,0,.35);color:#ffc400}
+.member-badge.premium{background:linear-gradient(135deg,rgba(122,194,49,.18),rgba(122,194,49,.08));border-color:rgba(122,194,49,.45);color:var(--green)}
+/* Theme 13 — Premium+ tier gets the gold treatment so it visually
+   outranks regular Premium. */
+.member-badge.premium-plus{background:linear-gradient(135deg,rgba(255,196,0,.18),rgba(255,150,0,.10));border-color:rgba(255,196,0,.45);color:#ffc400;box-shadow:0 0 0 1px rgba(255,196,0,.1) inset}
 .member-num{font-size:12px;color:var(--muted)}
 .profile-actions{display:flex;gap:8px;flex-wrap:wrap}
 .pf-btn{font-size:12px;font-weight:700;padding:9px 18px;border-radius:var(--radius);border:1px solid rgba(255,255,255,.15);background:transparent;color:var(--white);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
@@ -1573,13 +1576,16 @@ function _atpPremiumBenefits() {
 
 function renderPremiumCard() {
   var m = CURRENT_MEMBER || {};
-  var isPremium = (m.subscription_type || '').toLowerCase() === 'premium';
+  var sub = (m.subscription_type || '').toLowerCase();
+  // Treat both premium AND premium_plus as "paid tier" for the manage
+  // card. premium_plus gets a gold accent in _renderManageCard.
+  var isPaidTier = sub === 'premium' || sub === 'premium_plus';
   var walletEl  = document.getElementById('premiumCard');
   var bannerEl  = document.getElementById('premiumBanner');
 
-  if (isPremium) {
+  if (isPaidTier) {
     if (walletEl) walletEl.innerHTML = _renderManageCard(m);
-    // Premium members don't need a banner on overview.
+    // Paid-tier members don't need a banner on overview.
     if (bannerEl) bannerEl.innerHTML = '';
     return;
   }
@@ -1620,13 +1626,21 @@ function _renderManageCard(m) {
   }
   var statusLabel = m.subscription_status || 'active';
   var statusColor = (statusLabel === 'past_due') ? '#f59e0b' : 'var(--green)';
-  return '<div style="background:linear-gradient(135deg,#0f2a08,#0a1a06);border:1px solid rgba(122,194,49,.4);border-radius:14px;padding:22px;position:relative;overflow:hidden">' +
-    '<div style="position:absolute;top:-18px;right:-10px;font-family:var(--ff-display);font-size:80px;font-weight:900;color:rgba(122,194,49,.07);line-height:1;pointer-events:none;user-select:none">PRO</div>' +
+  // Theme 13 — Premium+ tier gets a gold/yellow accent + "PRO+" badge,
+  // standard Premium keeps the brand-green.
+  var isPlus = (m.subscription_type || '').toLowerCase() === 'premium_plus';
+  var accent = isPlus ? '#ffc400' : '#7AC231';
+  var accentBg = isPlus ? '#1a1500' : '#0f2a08';
+  var accentRgba = isPlus ? '255,196,0' : '122,194,49';
+  var label = isPlus ? '⭐⭐ Premium+ Member' : '⭐ Premium Member';
+  var monogram = isPlus ? 'PRO+' : 'PRO';
+  return '<div style="background:linear-gradient(135deg,' + accentBg + ',#0a1a06);border:1px solid rgba(' + accentRgba + ',.4);border-radius:14px;padding:22px;position:relative;overflow:hidden">' +
+    '<div style="position:absolute;top:-18px;right:-10px;font-family:var(--ff-display);font-size:' + (isPlus ? '60' : '80') + 'px;font-weight:900;color:rgba(' + accentRgba + ',.07);line-height:1;pointer-events:none;user-select:none">' + monogram + '</div>' +
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px">' +
       '<div>' +
-        '<div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(122,194,49,.85);margin-bottom:6px">⭐ Premium Member</div>' +
+        '<div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(' + accentRgba + ',.95);margin-bottom:6px">' + label + '</div>' +
         '<div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--white);text-transform:uppercase">You\u2019re in.</div>' +
-        '<div style="font-size:12px;color:' + statusColor + ';margin-top:4px;text-transform:capitalize">Status: ' + statusLabel.replace(/_/g, ' ') + '</div>' +
+        '<div style="font-size:12px;color:' + (statusLabel === 'past_due' ? '#f59e0b' : accent) + ';margin-top:4px;text-transform:capitalize">Status: ' + statusLabel.replace(/_/g, ' ') + '</div>' +
         (renewsLine ? '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + renewsLine + '</div>' : '') +
       '</div>' +
       '<button type="button" class="atp-btn atp-btn--ghost" data-atp-call="openCustomerPortal" style="font-size:12px;padding:8px 14px;white-space:nowrap">Manage</button>' +
@@ -2407,11 +2421,21 @@ function applyMemberToPage(m) {
   var subBadge = document.getElementById('subBadge');
   if (subBadge) {
     var sub = (m.subscription_type || 'free').toLowerCase();
-    subBadge.textContent = sub === 'premium' ? 'Premium Member' : 'Free Member';
-    subBadge.className = 'member-badge' + (sub === 'premium' ? ' premium' : '');
+    var label = sub === 'premium_plus' ? 'Premium+ Member'
+              : sub === 'premium'      ? 'Premium Member'
+              :                          'Free Member';
+    subBadge.textContent = label;
+    subBadge.className = 'member-badge' +
+      (sub === 'premium' ? ' premium' : '') +
+      (sub === 'premium_plus' ? ' premium-plus' : '');
   }
   var subName = document.getElementById('subName');
-  if (subName) subName.textContent = (m.subscription_type || 'Free').replace(/^./, function(c){ return c.toUpperCase(); });
+  if (subName) {
+    var sub2 = (m.subscription_type || 'free').toLowerCase();
+    subName.textContent = sub2 === 'premium_plus' ? 'Premium+'
+                       : sub2 === 'premium'      ? 'Premium'
+                       :                           'Free';
+  }
 
   // Theme 10 / #36 — render premium card now that subscription_type is known
   try { renderPremiumCard(); } catch(e) { console.warn('renderPremiumCard failed', e); }

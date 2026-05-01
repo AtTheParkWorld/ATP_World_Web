@@ -386,6 +386,62 @@ router.delete('/:id', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/bookings/:id/retry-refund (admin) ───────────────
+// For when the original cancel failed to refund — typically a Stripe
+// timeout or network blip. Looks up the booking, fires the Stripe
+// refund again, persists the result. Idempotent: if a refund was
+// already issued, returns the existing record without retrying.
+router.post('/:id/retry-refund', authenticate, async (req, res, next) => {
+  try {
+    if (!req.member.is_admin) return res.status(403).json({ error: 'Admin only' });
+    const { rows } = await query(
+      `SELECT * FROM bookings WHERE id=$1`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Booking not found' });
+    const b = rows[0];
+    if (b.status !== 'cancelled') {
+      return res.status(400).json({ error: 'Booking is not cancelled — nothing to refund.' });
+    }
+    if (b.payment_method !== 'stripe') {
+      return res.status(400).json({ error: 'Only Stripe bookings can be auto-refunded.' });
+    }
+    if (b.refunded_at && b.stripe_refund_id) {
+      return res.json({ message: 'Already refunded.', stripe_refund_id: b.stripe_refund_id, idempotent: true });
+    }
+
+    const billing = require('../services/billing');
+    const refund = await billing.refundStripeBooking(b);
+    if (!refund || !refund.id) {
+      return res.status(502).json({ error: 'Stripe refund did not return an id.' });
+    }
+    await query(
+      `UPDATE bookings
+          SET refunded_at=NOW(),
+              refund_method='stripe',
+              stripe_refund_id=$1,
+              refunded_amount=$2,
+              refunded_currency=$3
+        WHERE id=$4`,
+      [refund.id,
+       refund.amount != null ? Number(refund.amount) / 100 : b.payment_amount,
+       (refund.currency || b.payment_currency || 'AED').toUpperCase(),
+       b.id]
+    );
+    res.json({
+      message: 'Refund issued.',
+      stripe_refund_id: refund.id,
+      refunded_amount: refund.amount != null ? Number(refund.amount) / 100 : b.payment_amount,
+      refunded_currency: (refund.currency || b.payment_currency || 'AED').toUpperCase(),
+    });
+  } catch (err) {
+    if (err.code === 'NO_PAYMENT_INTENT' || err.code === 'NO_STRIPE_SESSION') {
+      return res.status(400).json({ error: err.message, code: err.code });
+    }
+    next(err);
+  }
+});
+
 // ── PATCH /api/bookings/:id/admin-cancel ──────────────────────
 // Admin-initiated cancel for a single member booking. Same 12h rule
 // by default; pass ?force_refund=1 to ignore the cutoff (e.g. when ATP

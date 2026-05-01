@@ -262,13 +262,14 @@ async function loadAnalyticsV2() {
     setKPI('kpi-active',   a.active);
     setKPI('kpi-inactive', a.inactive);
 
-    // ── Render the 7 metric cards ──
+    // ── Render the metric cards ──
     if (!grid) return;
     grid.innerHTML = [
       _renderGenderCard(data.gender, qs),
       _renderActivityCard(data.activity, qs),
       _renderNewPerMonthCard(data.new_per_month, qs),
       _renderSubscriptionCard(data.subscription, qs),
+      _renderRevenueCard(data.revenue, qs),
       _renderBookingsVsCheckinsCard(data.bookings_vs_checkins, qs),
       _renderTopSessionsCard(data.top_sessions, qs),
       _renderSessionGenderCard(data.session_gender, qs),
@@ -361,6 +362,74 @@ function _renderSubscriptionCard(rows, qs) {
       _barRow('⭐⭐ Premium+',      byTier.premium_plus, total ? (100*byTier.premium_plus/total).toFixed(1) : 0, '#ffc400') +
     '</div>';
   return _atpAnalyticsCard('💳 Subscription tier', 'subscription', qs, body);
+}
+
+// Theme 13 — Paid revenue per month (Stripe currency + points spent),
+// grouped by currency code. NET revenue (refunds subtracted) shown in
+// big green; gross + refund context underneath.
+function _renderRevenueCard(rows, qs) {
+  rows = rows || [];
+  if (!rows.length) {
+    return _atpAnalyticsCard('💰 Paid session revenue', 'revenue', qs,
+      _emptyCard('No paid bookings in this range yet.'));
+  }
+  // Aggregate totals per currency for the headline number.
+  var totalsByCurrency = {};
+  var totalPoints = 0;
+  var totalPointsRefunded = 0;
+  rows.forEach(function(r){
+    var ccy = (r.currency || 'AED').toUpperCase();
+    if (!totalsByCurrency[ccy]) totalsByCurrency[ccy] = { gross: 0, refunded: 0 };
+    totalsByCurrency[ccy].gross    += Number(r.revenue) || 0;
+    totalsByCurrency[ccy].refunded += Number(r.refunded) || 0;
+    totalPoints         += Number(r.points_spent)    || 0;
+    totalPointsRefunded += Number(r.points_refunded) || 0;
+  });
+  var headline = Object.keys(totalsByCurrency).map(function(ccy){
+    var t = totalsByCurrency[ccy];
+    var net = t.gross - t.refunded;
+    return '<div style="text-align:center">' +
+      '<div style="font-family:var(--ff-display);font-size:30px;font-weight:900;color:#7AC231">' + ccy + ' ' + Number(net).toFixed(2) + '</div>' +
+      '<div style="font-size:10px;color:#666">net (' + ccy + ' ' + Number(t.gross).toFixed(2) + ' gross − ' + ccy + ' ' + Number(t.refunded).toFixed(2) + ' refunded)</div>' +
+    '</div>';
+  }).join('<div style="height:1px;background:#222;margin:10px 0"></div>');
+  var pointsLine = (totalPoints > 0 || totalPointsRefunded > 0)
+    ? '<div style="text-align:center;border-top:1px solid #1a1a1a;padding-top:14px;margin-top:14px">' +
+        '<div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:#ffc400">' + (totalPoints - totalPointsRefunded).toLocaleString() + ' pts</div>' +
+        '<div style="font-size:10px;color:#666">points spent on sessions (net of refunds)</div>' +
+      '</div>'
+    : '';
+
+  // Monthly breakdown table.
+  // Group by month so multi-currency months render together.
+  var byMonth = {};
+  rows.forEach(function(r){
+    if (!byMonth[r.month]) byMonth[r.month] = [];
+    byMonth[r.month].push(r);
+  });
+  var months = Object.keys(byMonth).sort();
+  var tableBody = months.map(function(m){
+    return byMonth[m].map(function(r, i){
+      var ccy = (r.currency || 'AED').toUpperCase();
+      var net = (Number(r.revenue) || 0) - (Number(r.refunded) || 0);
+      return '<tr style="border-bottom:1px solid #111">' +
+        (i === 0 ? '<td style="padding:6px;color:#aaa" rowspan="' + byMonth[m].length + '">' + m + '</td>' : '') +
+        '<td style="padding:6px;color:#888">' + ccy + '</td>' +
+        '<td style="padding:6px;text-align:right;color:#7AC231;font-weight:700">' + Number(net).toFixed(2) + '</td>' +
+        '<td style="padding:6px;text-align:right;color:#666">' + (Number(r.refunded) > 0 ? '−' + Number(r.refunded).toFixed(2) : '') + '</td>' +
+        '<td style="padding:6px;text-align:right;color:#ffc400">' + (Number(r.points_spent) > 0 ? Number(r.points_spent).toLocaleString() + ' pts' : '') + '</td>' +
+        '<td style="padding:6px;text-align:right;color:#666">' + ((Number(r.stripe_bookings)||0) + (Number(r.points_bookings)||0)) + '</td>' +
+      '</tr>';
+    }).join('');
+  }).join('');
+
+  var body = headline + pointsLine +
+    '<table style="width:100%;border-collapse:collapse;font-size:11px;margin-top:14px">' +
+      '<thead><tr style="color:#666;text-align:left;border-bottom:1px solid #1a1a1a"><th style="padding:6px">Month</th><th style="padding:6px">Ccy</th><th style="padding:6px;text-align:right">Net</th><th style="padding:6px;text-align:right">Refunded</th><th style="padding:6px;text-align:right">Points</th><th style="padding:6px;text-align:right">Bookings</th></tr></thead>' +
+      '<tbody>' + tableBody + '</tbody>' +
+    '</table>';
+
+  return _atpAnalyticsCard('💰 Paid session revenue', 'revenue', qs, body);
 }
 
 function _renderBookingsVsCheckinsCard(rows, qs) {
