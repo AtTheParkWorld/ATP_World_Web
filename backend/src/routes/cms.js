@@ -2,6 +2,25 @@ const router = require('express').Router();
 const { query } = require('../db');
 const { authenticate, requireAdmin, optionalAuth } = require('../middleware/auth');
 
+// ⚠️ Route order matters: Express matches the FIRST handler whose path
+// pattern fits, so all literal/specific routes (/media/list, /upload,
+// /bulk) must be declared BEFORE the dynamic /:page and /:page/:section
+// catch-alls below. Until this push, GET /media/list was being matched
+// by GET /:page/:section (page='media', section='list') which returned
+// an empty {content:{}}, masking the real Media Library data.
+
+// GET /api/cms/media/list — list every uploaded media asset (admin only)
+router.get('/media/list', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, section AS kind, key AS filename, value_url AS url, updated_at
+       FROM cms_content WHERE page='_media'
+       ORDER BY updated_at DESC LIMIT 100`
+    );
+    res.json({ media: rows });
+  } catch (err) { next(err); }
+});
+
 // GET /api/cms/:page — Frontend fetches page content
 router.get('/:page', optionalAuth, async (req, res, next) => {
   try {
@@ -134,17 +153,9 @@ router.post('/upload', authenticate, requireAdmin, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// GET /api/cms/media/list — list all uploaded media
-router.get('/media/list', authenticate, requireAdmin, async (req, res, next) => {
-  try {
-    const { rows } = await query(
-      `SELECT id, section AS kind, key AS filename, value_url AS url, updated_at
-       FROM cms_content WHERE page='_media'
-       ORDER BY updated_at DESC LIMIT 100`
-    );
-    res.json({ media: rows });
-  } catch (err) { next(err); }
-});
+// (GET /media/list moved to the top of this file — see route-order
+//  comment above. Keeping a stub here prevents accidental re-introduction
+//  of the duplicate handler that would still be shadowed by /:page/:section.)
 
 
 module.exports = router;
