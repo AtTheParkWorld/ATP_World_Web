@@ -1337,32 +1337,41 @@ function openCart()  {
 function closeCart() { document.getElementById("cartBackdrop").classList.remove("open"); document.getElementById("cartPanel").classList.remove("open"); document.body.style.overflow = ""; }
 
 // ── CHECKOUT ─────────────────────────────────────────────────
+// Shopify deprecated `checkoutCreate` in favour of the Cart API
+// (the old mutation now returns "Field 'checkoutCreate' doesn't
+// exist on type 'Mutation'"). cartCreate returns a cart with a
+// checkoutUrl that behaves identically — same hosted checkout,
+// same payment options. The shape change:
+//   lineItems    → lines
+//   variantId    → merchandiseId
+//   checkoutUserErrors → userErrors
+//   checkout.webUrl    → cart.checkoutUrl
 async function doCheckout() {
   if (!cartItems.length) return;
   var btn = document.getElementById("checkoutBtn");
   btn.disabled = true; btn.textContent = "Creating checkout…";
   var mutation = [
     "mutation {",
-    "  checkoutCreate(input: {",
-    "    lineItems: [" +
+    "  cartCreate(input: {",
+    "    lines: [" +
       cartItems.map(function(i) {
-        return '{ variantId: "' + i.variantId + '", quantity: ' + i.qty + " }";
+        return '{ merchandiseId: "' + i.variantId + '", quantity: ' + i.qty + " }";
       }).join(", ") +
     "]",
     "  }) {",
-    "    checkout { id webUrl }",
-    "    checkoutUserErrors { field message }",
+    "    cart { id checkoutUrl }",
+    "    userErrors { field message }",
     "  }",
     "}"
   ].join(" ");
 
   try {
     var data = await shopifyQuery(mutation);
-    var result = data.checkoutCreate;
-    if (result.checkout && result.checkout.webUrl) {
-      window.location.href = result.checkout.webUrl;
+    var result = data.cartCreate;
+    if (result && result.cart && result.cart.checkoutUrl) {
+      window.location.href = result.cart.checkoutUrl;
     } else {
-      var errs = result.checkoutUserErrors;
+      var errs = result && result.userErrors;
       throw new Error(errs && errs.length ? errs[0].message : "Checkout failed");
     }
   } catch(err) {
