@@ -106,30 +106,32 @@
     </div>
 
     <form class="join-form" id="join-form" novalidate>
-      <div class="join-row">
+      <!-- Signup-only fields. Hidden when ?mode=login flips the form
+           into login mode below. -->
+      <div class="join-row" data-signup-only>
         <div>
           <label class="join-label" for="j-first">First name</label>
-          <input class="join-input" id="j-first" name="first_name" type="text" autocomplete="given-name" required>
+          <input class="join-input" id="j-first" name="first_name" type="text" autocomplete="given-name">
         </div>
         <div>
           <label class="join-label" for="j-last">Last name</label>
-          <input class="join-input" id="j-last" name="last_name" type="text" autocomplete="family-name" required>
+          <input class="join-input" id="j-last" name="last_name" type="text" autocomplete="family-name">
         </div>
       </div>
       <div>
         <label class="join-label" for="j-email">Email</label>
         <input class="join-input" id="j-email" name="email" type="email" autocomplete="email" required placeholder="you@example.com">
       </div>
-      <div>
+      <div data-signup-only>
         <label class="join-label" for="j-phone">Mobile (optional)</label>
         <input class="join-input" id="j-phone" name="phone" type="tel" autocomplete="tel" placeholder="+971 50 000 0000">
       </div>
       <div>
-        <label class="join-label" for="j-pw">Choose a password</label>
-        <input class="join-input" id="j-pw" name="password" type="password" autocomplete="new-password" required minlength="8" placeholder="At least 8 characters">
+        <label class="join-label" for="j-pw"><span data-signup-label>Choose a password</span><span data-login-label style="display:none">Password</span></label>
+        <input class="join-input" id="j-pw" name="password" type="password" autocomplete="current-password" required minlength="8" placeholder="At least 8 characters">
       </div>
 
-      <ul class="join-bullets">
+      <ul class="join-bullets" data-signup-only>
         <li>Free forever — no credit card needed</li>
         <li>Book any session in seconds</li>
         <li>Earn points for every session you attend</li>
@@ -140,7 +142,8 @@
     </form>
 
     <div class="join-foot">
-      Already a member? <a href="/index.html#login">Sign in here</a>
+      <span data-signup-only>Already a member? <a href="/join?mode=login">Sign in here</a></span>
+      <span data-login-only style="display:none">New to ATP? <a href="/join">Create an account</a></span>
     </div>
   </div>
 </main>
@@ -169,17 +172,96 @@ function _atpReferralCode(){
   } catch(e) { return null; }
 }
 
+// ── Mode (signup vs login) ────────────────────────────────────
+// /join          → signup form (default)
+// /join?mode=login → login form (email + password only)
+var _isLoginMode = (function(){
+  try { return new URL(location.href).searchParams.get('mode') === 'login'; }
+  catch(e) { return false; }
+})();
+
+(function applyMode(){
+  if (!_isLoginMode) return;
+  // Hero copy
+  var eyebrow = document.querySelector('.join-eyebrow');
+  if (eyebrow) eyebrow.textContent = 'Welcome back';
+  var h1 = document.querySelector('.join-h1');
+  if (h1) h1.innerHTML = 'Log in.<br>Keep training.';
+  var sub = document.querySelector('.join-sub');
+  if (sub) sub.textContent = 'Enter your email and password to pick up where you left off.';
+  // Hide signup-only fields, show login-only copy
+  document.querySelectorAll('[data-signup-only]').forEach(function(el){ el.style.display = 'none'; });
+  document.querySelectorAll('[data-login-only]').forEach(function(el){ el.style.display = ''; });
+  document.querySelectorAll('[data-signup-label]').forEach(function(el){ el.style.display = 'none'; });
+  document.querySelectorAll('[data-login-label]').forEach(function(el){ el.style.display = ''; });
+  // Strip required from signup-only inputs so the login submit isn't blocked
+  ['j-first','j-last'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.required = false;
+  });
+  // Loosen the password minlength — older accounts may have shorter pwds
+  var pw = document.getElementById('j-pw');
+  if (pw) { pw.minLength = 1; pw.placeholder = '••••••••'; pw.autocomplete = 'current-password'; }
+  // Button label
+  var btn = document.getElementById('j-btn');
+  if (btn) btn.textContent = 'Log in →';
+  // Drop the stats card — irrelevant on login
+  var stats = document.querySelector('.join-stats');
+  if (stats) stats.style.display = 'none';
+})();
+
 // Submit
 document.getElementById('join-form').addEventListener('submit', function(ev){
   ev.preventDefault();
   var msg = document.getElementById('j-msg');
   var btn = document.getElementById('j-btn');
+  var email = document.getElementById('j-email').value.trim().toLowerCase();
+  var password = document.getElementById('j-pw').value;
+
+  if (_isLoginMode) {
+    if (!email || !password) {
+      msg.textContent = 'Enter your email and password.';
+      msg.className = 'join-msg error';
+      return;
+    }
+    btn.disabled = true; btn.textContent = 'Logging in…';
+    msg.textContent = ''; msg.className = 'join-msg';
+    fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email: email, password: password }),
+    })
+      .then(function(r){ return r.json().then(function(b){ return { ok:r.ok, status:r.status, body:b }; }); })
+      .then(function(res){
+        if (!res.ok) {
+          btn.disabled = false; btn.textContent = 'Log in →';
+          msg.textContent = (res.body && res.body.error) || 'Wrong email or password.';
+          msg.className = 'join-msg error';
+          return;
+        }
+        msg.textContent = '✅ Welcome back. Redirecting…';
+        msg.className = 'join-msg ok';
+        try {
+          if (res.body.token)  localStorage.setItem('atp_token', res.body.token);
+          if (res.body.member) localStorage.setItem('atp_member', JSON.stringify(res.body.member));
+        } catch(e) {}
+        setTimeout(function(){ window.location.href = '/profile.html'; }, 600);
+      })
+      .catch(function(){
+        btn.disabled = false; btn.textContent = 'Log in →';
+        msg.textContent = 'Network error — please try again.';
+        msg.className = 'join-msg error';
+      });
+    return;
+  }
+
+  // ── Signup path ──────────────────────────────────────────────
   var payload = {
     first_name: document.getElementById('j-first').value.trim(),
     last_name:  document.getElementById('j-last').value.trim(),
-    email:      document.getElementById('j-email').value.trim().toLowerCase(),
+    email:      email,
     phone:      document.getElementById('j-phone').value.trim() || null,
-    password:   document.getElementById('j-pw').value,
+    password:   password,
     referral_code: _atpReferralCode(),
   };
   if (!payload.first_name || !payload.last_name || !payload.email || !payload.password) {

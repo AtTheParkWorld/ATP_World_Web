@@ -1123,23 +1123,33 @@ is wired via the atp:login event below. -->
 // for real Firebase / Supabase calls when ready.
 // ══════════════════════════════════════════════════════════════
 
+// Legacy key — the rest of the app uses `atp_token` + `atp_member`
+// (see atp-api.js / atp.js). We migrated away from `atp:user` but
+// still nuke any leftover blob on boot so a stale entry can't gate
+// `openAuth()` to a silent return.
 var ATP_USER_KEY = 'atp:user';
-var atpUser = null; // { firstName, lastName, email, avatar, joinedAt }
+var atpUser = null;
+try { localStorage.removeItem(ATP_USER_KEY); } catch(e){}
 
 // ── Persistence ──────────────────────────────────────────────
+// Source of truth = window.ATP.isLoggedIn() (atp.js). atpUser is
+// kept around as a thin local mirror only because legacy pieces of
+// this page still read it; new code should not.
 function authLoadUser() {
   try {
-    var raw = localStorage.getItem(ATP_USER_KEY);
-    if(raw) atpUser = JSON.parse(raw);
+    if (window.ATP && typeof window.ATP.getMember === 'function') {
+      atpUser = window.ATP.getMember();
+    }
   } catch(e) { atpUser = null; }
 }
 function authSaveUser(user) {
   atpUser = user;
-  try { localStorage.setItem(ATP_USER_KEY, JSON.stringify(user)); } catch(e){}
+  // Persistence is owned by window.ATP.auth.* — no localStorage write here.
 }
 function authClearUser() {
   atpUser = null;
-  try { localStorage.removeItem(ATP_USER_KEY); } catch(e){}
+  // Logout is owned by window.ATP.auth.logout(); this only clears the
+  // local mirror.
 }
 
 // ── Auth modal — delegates to shared ATPComponents.openAuthModal ──
@@ -1149,7 +1159,12 @@ function authClearUser() {
 // which join.html will eventually wire up; for now both modes land on
 // the same page (better UX than a silent dead button).
 function openAuth(mode) {
-  if (atpUser) return; // already signed in
+  // Single source of truth: window.ATP.isLoggedIn() (atp.js).
+  // The legacy `atpUser` mirror could go stale and silently no-op
+  // this whole function — checking the API state directly avoids
+  // that footgun.
+  var loggedIn = !!(window.ATP && typeof window.ATP.isLoggedIn === 'function' && window.ATP.isLoggedIn());
+  if (loggedIn) return;
   if (window.ATPComponents && window.ATPComponents.openAuthModal) {
     window.ATPComponents.openAuthModal(mode || 'signup');
     return;

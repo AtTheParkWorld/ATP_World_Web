@@ -949,32 +949,45 @@ the atp:login event handler in the script below. -->
 // for real Firebase / Supabase calls when ready.
 // ══════════════════════════════════════════════════════════════
 
+// Legacy `atp:user` key — replaced by `atp_token` + `atp_member`
+// (see atp-api.js / atp.js). Nuke any stale blob on boot so it can't
+// silently gate openAuth() to a no-op.
 var ATP_USER_KEY = 'atp:user';
-var atpUser = null; // { firstName, lastName, email, avatar, joinedAt }
+var atpUser = null;
+try { localStorage.removeItem(ATP_USER_KEY); } catch(e){}
 
 // ── Persistence ──────────────────────────────────────────────
+// Source of truth = window.ATP (atp.js). atpUser is a thin local
+// mirror only — read it, but don't write it.
 function authLoadUser() {
   try {
-    var raw = localStorage.getItem(ATP_USER_KEY);
-    if(raw) atpUser = JSON.parse(raw);
+    if (window.ATP && typeof window.ATP.getMember === 'function') {
+      atpUser = window.ATP.getMember();
+    }
   } catch(e) { atpUser = null; }
 }
 function authSaveUser(user) {
   atpUser = user;
-  try { localStorage.setItem(ATP_USER_KEY, JSON.stringify(user)); } catch(e){}
+  // Persistence owned by window.ATP.auth.*
 }
 function authClearUser() {
   atpUser = null;
-  try { localStorage.removeItem(ATP_USER_KEY); } catch(e){}
+  // Logout owned by window.ATP.auth.logout()
 }
 
 // ── Modal open/close ─────────────────────────────────────────
 // ── Auth modal — delegates to shared ATPComponents.openAuthModal ──
+// Falls back to /join when the bundle isn't available so booking
+// CTAs can't silently dead-end on this page.
 function openAuth(mode) {
-  if (atpUser) return; // already signed in
+  var loggedIn = !!(window.ATP && typeof window.ATP.isLoggedIn === 'function' && window.ATP.isLoggedIn());
+  if (loggedIn) return;
   if (window.ATPComponents && window.ATPComponents.openAuthModal) {
     window.ATPComponents.openAuthModal(mode || 'signup');
+    return;
   }
+  var qs = mode === 'login' ? '?mode=login' : '';
+  window.location.href = '/join' + qs;
 }
 function closeAuth() {
   if (window.ATPComponents && window.ATPComponents.closeAuthModal) {
