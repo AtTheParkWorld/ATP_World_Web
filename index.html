@@ -1143,11 +1143,20 @@ function authClearUser() {
 }
 
 // ── Auth modal — delegates to shared ATPComponents.openAuthModal ──
+// If the shared modal isn't available (bundle didn't initialise, etc.)
+// we fall back to navigating to the dedicated /join page so users can
+// always sign up regardless of JS state. Login mode uses ?mode=login
+// which join.html will eventually wire up; for now both modes land on
+// the same page (better UX than a silent dead button).
 function openAuth(mode) {
   if (atpUser) return; // already signed in
   if (window.ATPComponents && window.ATPComponents.openAuthModal) {
     window.ATPComponents.openAuthModal(mode || 'signup');
+    return;
   }
+  // Fallback: navigate to dedicated signup page rather than no-op
+  var qs = mode === 'login' ? '?mode=login' : '';
+  window.location.href = '/join' + qs;
 }
 function closeAuth() {
   if (window.ATPComponents && window.ATPComponents.closeAuthModal) {
