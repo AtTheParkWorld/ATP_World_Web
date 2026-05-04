@@ -15,8 +15,20 @@
 <script src="/atp.bundle.min.js"></script>
 <style>
   /* Page-specific layout — kept minimal because atp.css already
-     defines the brand tokens + button styles. */
-  :root { --max:520px }
+     defines the brand tokens + button styles.
+     atp.min.css uses --atp-* tokens; this page was authored against
+     the legacy --green / --ff-display names. Bridge them locally so
+     the submit button + accents render even when the shared bundle
+     hasn't hydrated. */
+  :root {
+    --max:520px;
+    --green:#7ac231;
+    --green-dark:#5fa01f;
+    --ff-display:"Bebas Neue", Inter, system-ui, sans-serif;
+    --light:#fff;
+    --muted:rgba(255,255,255,.6);
+    --white:#fff;
+  }
   body { background:#0a0a0a; color:#fff; min-height:100vh; display:flex; flex-direction:column }
   .join-wrap { flex:1; display:flex; align-items:center; justify-content:center; padding:80px 20px 40px }
   .join-card {
