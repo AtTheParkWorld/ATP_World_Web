@@ -8,6 +8,10 @@ const FROM = {
   name:  process.env.EMAIL_FROM_NAME || 'At The Park',
 };
 
+// Public site URL used in transactional emails. Falls back to the live
+// Railway URL if FRONTEND_URL isn't set so emailed links never break.
+const FRONTEND_URL = (process.env.FRONTEND_URL || 'https://atpworldweb-production.up.railway.app').replace(/\/$/, '');
+
 // ── EMAIL TEMPLATES ───────────────────────────────────────────
 function baseTemplate(content) {
   return `<!DOCTYPE html>
@@ -96,7 +100,7 @@ async function sendWelcome(member) {
       <span class="stat-label">Join the community</span>
     </div>
     <br>
-    <a href="${process.env.FRONTEND_URL}/sessions.html" class="btn">Book your first session →</a>
+    <a href="${FRONTEND_URL}/sessions.html" class="btn">Book your first session →</a>
     <hr class="divider">
     <p class="muted">Your member number is <strong style="color:#7AC231">${member.member_number}</strong>. 
     Keep this safe — it's on your check-in QR code.</p>
@@ -141,7 +145,7 @@ async function sendBookingConfirmation(member, session, qrData, qrToken) {
       </p>
     </div>
 
-    <a href="${process.env.FRONTEND_URL}/profile.html" class="btn">View QR in profile →</a>
+    <a href="${FRONTEND_URL}/profile.html" class="btn">View QR in profile →</a>
 
     <hr class="divider">
     <p class="muted">
@@ -181,7 +185,7 @@ async function sendStreakReminder(member, streakDays) {
     <p>Hi ${member.first_name}, you're on a <strong style="color:#7AC231">${streakDays}-day streak</strong>. 
     Don't stop now.</p>
     <p>There are sessions today. Show up, check in, and keep the fire going.</p>
-    <a href="${process.env.FRONTEND_URL}/sessions.html" class="btn">Find a session today →</a>
+    <a href="${FRONTEND_URL}/sessions.html" class="btn">Find a session today →</a>
   `);
   await send(member.email, `🔥 ${streakDays}-day streak — keep it going!`, html);
 }
@@ -196,7 +200,7 @@ async function sendPointsExpiryWarning(member, expiringPoints, expiresAt) {
     <p>Hi ${member.first_name}, you have <strong style="color:#7AC231">${expiringPoints} ATP points</strong> 
     expiring on <strong>${expiryDate}</strong>.</p>
     <p>Use them in the ATP store before they expire.</p>
-    <a href="${process.env.FRONTEND_URL}/store.html" class="btn">Shop with points →</a>
+    <a href="${FRONTEND_URL}/store.html" class="btn">Shop with points →</a>
   `);
   await send(member.email, `⏰ ${expiringPoints} ATP points expiring soon`, html);
 }
@@ -211,7 +215,7 @@ async function sendSessionReminder(member, session) {
     <p>Hi ${member.first_name}, just a reminder — you're booked for 
     <strong style="color:#7AC231">${session.name}</strong> ${sessionDate} at ${session.location}.</p>
     <p>Your QR code is saved in your ATP profile. See you there! 💪</p>
-    <a href="${process.env.FRONTEND_URL}/profile.html" class="btn">View my QR code →</a>
+    <a href="${FRONTEND_URL}/profile.html" class="btn">View my QR code →</a>
   `);
   await send(member.email, `Reminder: ${session.name} in 10 hours`, html);
 }

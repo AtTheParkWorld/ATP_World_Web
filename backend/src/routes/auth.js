@@ -157,7 +157,14 @@ router.post('/magic-link', async (req, res, next) => {
       [member.id, tokenHash, expiresAt]
     );
 
-    const magicUrl = `${process.env.FRONTEND_URL}/auth/verify?token=${rawToken}&email=${encodeURIComponent(email)}`;
+    // Resolve a working frontend base. Priority:
+    //   1. FRONTEND_URL env var (explicit production override)
+    //   2. The host the request came in on (correct for Railway + custom domains)
+    //   3. Hardcoded Railway URL as a last resort
+    const baseUrl = (process.env.FRONTEND_URL ||
+      `${req.protocol}://${req.get('host')}` ||
+      'https://atpworldweb-production.up.railway.app').replace(/\/$/, '');
+    const magicUrl = `${baseUrl}/auth/verify?token=${rawToken}&email=${encodeURIComponent(email)}`;
     await emailService.sendMagicLink(member, magicUrl);
 
     res.json({ message: 'Magic link sent to your email' });
