@@ -69,15 +69,44 @@ function baseTemplate(content) {
 }
 
 // ── SEND HELPER ───────────────────────────────────────────────
+// Lightweight status string the caller can use to surface delivery
+// state to the user. Most callers will await send() and ignore — only
+// flows that NEED confirmation (magic-link, password-reset) should
+// inspect the return value or rethrow.
+function emailServiceStatus() {
+  const key = process.env.SENDGRID_API_KEY || '';
+  if (!key || key.startsWith('SG.xxx')) {
+    return { configured: false, reason: 'SENDGRID_API_KEY env var is missing or set to a placeholder.' };
+  }
+  if (!key.startsWith('SG.')) {
+    return { configured: false, reason: 'SENDGRID_API_KEY does not look like a SendGrid key (expected to start with "SG.").' };
+  }
+  return { configured: true };
+}
+
+// send() never throws — it returns a result object the caller may inspect
+// when delivery is critical (magic-link, password-reset). Routes that
+// don't care can `await send(...)` and ignore the return value, preserving
+// the previous fire-and-forget behaviour for welcome / booking / points emails.
+//   Returns: { ok:true } on success
+//            { ok:false, code:'EMAIL_NOT_CONFIGURED', reason } when env not set
+//            { ok:false, code:'EMAIL_SEND_FAILED',    reason } on SendGrid error
 async function send(to, subject, html) {
-  if (!process.env.SENDGRID_API_KEY || process.env.SENDGRID_API_KEY.startsWith('SG.xxx')) {
-    console.log(`[EMAIL MOCK] To: ${to} | Subject: ${subject}`);
-    return;
+  const status = emailServiceStatus();
+  if (!status.configured) {
+    console.warn(`[EMAIL MOCK] To: ${to} | Subject: ${subject} | Reason: ${status.reason}`);
+    return { ok: false, code: 'EMAIL_NOT_CONFIGURED', reason: status.reason };
   }
   try {
     await sgMail.send({ to, from: FROM, subject, html });
+    return { ok: true };
   } catch (err) {
-    console.error('SendGrid error:', err.response?.body?.errors || err.message);
+    const sgErrors = err.response?.body?.errors;
+    const reason = sgErrors
+      ? sgErrors.map(e => e.message).join('; ')
+      : (err.message || 'Unknown SendGrid error');
+    console.error('SendGrid error:', sgErrors || err.message);
+    return { ok: false, code: 'EMAIL_SEND_FAILED', reason };
   }
 }
 
@@ -117,7 +146,7 @@ async function sendMagicLink(member, magicUrl) {
     <p class="muted">This link expires in 1 hour and can only be used once.<br>
     If you didn't request this, you can ignore this email.</p>
   `);
-  await send(member.email, 'Your ATP login link', html);
+  return send(member.email, 'Your ATP login link', html);
 }
 
 // ── BOOKING CONFIRMATION ──────────────────────────────────────
@@ -277,4 +306,5 @@ module.exports = {
   sendSessionReminder,
   sendSessionCancellation,
   sendRaw,
+  emailServiceStatus,
 };

@@ -6,7 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const { query, transaction } = require('../db');
 const emailService = require('../services/email');
 const referrals    = require('../services/referrals');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireAdmin } = require('../middleware/auth');
 
 // ── HELPERS ───────────────────────────────────────────────────
 function generateJWT(memberId) {
@@ -165,10 +165,38 @@ router.post('/magic-link', async (req, res, next) => {
       `${req.protocol}://${req.get('host')}` ||
       'https://atpworldweb-production.up.railway.app').replace(/\/$/, '');
     const magicUrl = `${baseUrl}/auth/verify?token=${rawToken}&email=${encodeURIComponent(email)}`;
-    await emailService.sendMagicLink(member, magicUrl);
+    const result = await emailService.sendMagicLink(member, magicUrl);
+
+    // Surface email-service failures clearly. Without this the API would
+    // return 200 but no email would arrive (SendGrid not configured, sender
+    // not verified, key revoked, …) — which is exactly the issue we hit.
+    if (result && result.ok === false) {
+      const status = result.code === 'EMAIL_NOT_CONFIGURED' ? 503 : 502;
+      return res.status(status).json({
+        error: result.code === 'EMAIL_NOT_CONFIGURED'
+          ? 'Email service is not configured. Please ask an admin to set SENDGRID_API_KEY.'
+          : 'We couldn’t send the sign-in email. Reason: ' + result.reason,
+        code: result.code,
+        detail: result.reason,
+      });
+    }
 
     res.json({ message: 'Magic link sent to your email' });
   } catch (err) { next(err); }
+});
+
+// ── GET /api/auth/email-health (admin only) ───────────────────
+// One-shot diagnostic: shows whether SENDGRID_API_KEY is set and what
+// from-address transactional emails will use. Never returns the key value.
+router.get('/email-health', authenticate, requireAdmin, (req, res) => {
+  const status = emailService.emailServiceStatus();
+  res.json({
+    configured: status.configured,
+    reason: status.reason || null,
+    from_email: process.env.EMAIL_FROM || 'no-reply@atthepark.world (default)',
+    from_name:  process.env.EMAIL_FROM_NAME || 'At The Park (default)',
+    frontend_url_env: process.env.FRONTEND_URL || null,
+  });
 });
 
 // ── GET /api/auth/verify?token=xxx&email=xxx ──────────────────

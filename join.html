@@ -515,6 +515,13 @@ Always free.</h1>
           magicBtn.disabled = false; magicBtn.textContent = 'Send sign-in link';
           if (res.status === 404) {
             magicMsg.textContent = "We couldn't find an account with that email.";
+          } else if (res.status === 503 || res.status === 502) {
+            // Email service misconfigured / SendGrid error — surface the
+            // backend's reason verbatim so admins can act on it.
+            magicMsg.innerHTML =
+              '<strong style="color:#fca5a5">Email isn’t going out right now.</strong><br>' +
+              String((res.body && (res.body.error || res.body.detail)) || 'Email service unavailable.')
+                .replace(/</g, '&lt;');
           } else {
             magicMsg.textContent = (res.body && res.body.error) || 'Something went wrong. Try again.';
           }
