@@ -115,6 +115,109 @@ var CMS_SCHEMA = {
         ]
       }
     }
+  },
+  privacy: {
+    label: '⚖️ Privacy Page',
+    sections: {
+      hero: {
+        label: 'Header',
+        desc: 'Title shown at the top of /privacy.html',
+        fields: [
+          { key: 'title',    label: 'Page Title', type: 'text',     default: 'Privacy Policy' },
+          { key: 'subtitle', label: 'Subtitle',   type: 'textarea', default: 'How At The Park collects, uses, and protects your data.' },
+        ]
+      },
+      body: {
+        label: 'Policy Body',
+        desc: 'Main policy content. Separate paragraphs with a blank line. Section headings on their own line ending with ":" become bold headings automatically.',
+        fields: [
+          { key: 'content', label: 'Privacy Policy Body', type: 'textarea', hint: 'Paragraphs separated by blank lines.' },
+        ]
+      },
+      meta: {
+        label: 'Footer Meta',
+        fields: [
+          { key: 'last_updated', label: 'Last Updated (display text)', type: 'text', default: 'May 2026' },
+          { key: 'contact_email', label: 'Contact Email for Privacy Requests', type: 'text', default: 'general@atthepark.world' },
+        ]
+      }
+    }
+  },
+  terms: {
+    label: '📜 Terms Page',
+    sections: {
+      hero: {
+        label: 'Header',
+        desc: 'Title shown at the top of /terms.html',
+        fields: [
+          { key: 'title',    label: 'Page Title', type: 'text',     default: 'Terms & Conditions' },
+          { key: 'subtitle', label: 'Subtitle',   type: 'textarea', default: 'The rules that apply when you use At The Park’s website, app, sessions, and store.' },
+        ]
+      },
+      body: {
+        label: 'Terms Body',
+        desc: 'Main terms content (paragraphs separated by blank lines).',
+        fields: [
+          { key: 'content', label: 'Terms Body', type: 'textarea' },
+        ]
+      },
+      refunds: {
+        label: 'Refund Policy (anchor #refunds)',
+        desc: 'Refund policy is now part of Terms. This appears as its own section on /terms.html and is linked from the Support footer column.',
+        fields: [
+          { key: 'title',   label: 'Section Title', type: 'text',     default: 'Refund Policy' },
+          { key: 'content', label: 'Refund Policy Body', type: 'textarea' },
+        ]
+      },
+      meta: {
+        label: 'Footer Meta',
+        fields: [
+          { key: 'last_updated', label: 'Last Updated (display text)', type: 'text', default: 'May 2026' },
+          { key: 'contact_email', label: 'Contact Email for Legal Questions', type: 'text', default: 'general@atthepark.world' },
+        ]
+      }
+    }
+  },
+  contacts: {
+    label: '📞 Contacts Page',
+    sections: {
+      hero: {
+        label: 'Header',
+        desc: 'Title shown at the top of /contacts.html',
+        fields: [
+          { key: 'title',    label: 'Page Title', type: 'text',     default: 'Contact Us' },
+          { key: 'subtitle', label: 'Subtitle',   type: 'textarea', default: 'Talk to a human. We answer every message.' },
+        ]
+      },
+      details: {
+        label: 'Contact Details',
+        desc: 'Public contact information. Leave a field blank to hide it on the page.',
+        fields: [
+          { key: 'email_general',  label: 'General Email',     type: 'text', default: 'general@atthepark.world' },
+          { key: 'email_partners', label: 'Partners Email',    type: 'text', default: 'partners@atthepark.world' },
+          { key: 'email_press',    label: 'Press / Media Email', type: 'text', default: '' },
+          { key: 'phone',          label: 'Phone (display)',   type: 'text', default: '+971 58 579 2378' },
+          { key: 'whatsapp_url',   label: 'WhatsApp Link',     type: 'text', default: 'https://api.whatsapp.com/send?phone=97156445177' },
+          { key: 'address',        label: 'Postal Address',    type: 'textarea', default: 'Dubai, United Arab Emirates' },
+          { key: 'hours',          label: 'Reply Hours',       type: 'text', default: 'Within 24 hours, 7 days a week' },
+        ]
+      },
+      social: {
+        label: 'Social Links',
+        fields: [
+          { key: 'instagram_url', label: 'Instagram URL', type: 'text', default: 'https://www.instagram.com/atthepark_uae' },
+          { key: 'facebook_url',  label: 'Facebook URL',  type: 'text', default: 'https://www.facebook.com/theparkuae/' },
+          { key: 'tiktok_url',    label: 'TikTok URL',    type: 'text', default: '' },
+        ]
+      },
+      body: {
+        label: 'Additional Notes',
+        desc: 'Optional extra copy shown below the contact details (e.g. press kit info, careers).',
+        fields: [
+          { key: 'content', label: 'Extra Body Copy', type: 'textarea' },
+        ]
+      }
+    }
   }
 };
 
