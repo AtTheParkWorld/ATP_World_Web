@@ -9,318 +9,509 @@
 <meta property="og:title" content="Join At The Park — Free outdoor fitness community">
 <meta property="og:description" content="Sign up in 30 seconds. 7,000+ members. 19 activities. Always free.">
 <meta property="og:image" content="https://atpworldweb-production.up.railway.app/atthepark_assets01.webp">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Bebas+Neue&display=swap">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/atp.min.css">
+<link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
 <script src="/atp.bundle.min.js"></script>
 <style>
-  /* Page-specific layout — kept minimal because atp.css already
-     defines the brand tokens + button styles.
-     atp.min.css uses --atp-* tokens; this page was authored against
-     the legacy --green / --ff-display names. Bridge them locally so
-     the submit button + accents render even when the shared bundle
-     hasn't hydrated. */
-  :root {
-    --max:520px;
-    --green:#7ac231;
-    --green-dark:#5fa01f;
-    --ff-display:"Bebas Neue", Inter, system-ui, sans-serif;
-    --light:#fff;
-    --muted:rgba(255,255,255,.6);
-    --white:#fff;
-  }
-  body { background:#0a0a0a; color:#fff; min-height:100vh; display:flex; flex-direction:column }
-  .join-wrap { flex:1; display:flex; align-items:center; justify-content:center; padding:80px 20px 40px }
-  .join-card {
-    width:100%; max-width:var(--max);
-    background:linear-gradient(180deg,#0d1a08 0%,#0a0a0a 100%);
-    border:1px solid rgba(122,194,49,.22);
-    border-radius:20px; padding:36px 32px;
-    box-shadow:0 24px 80px rgba(122,194,49,.06)
-  }
-  .join-eyebrow {
-    font-size:11px;font-weight:800;letter-spacing:.18em;text-transform:uppercase;
-    color:var(--green);margin-bottom:10px
-  }
-  .join-h1 {
-    font-family:var(--ff-display);font-size:36px;font-weight:900;
-    text-transform:uppercase;line-height:1.05;letter-spacing:-.02em;
-    color:#fff;margin-bottom:8px
-  }
-  .join-sub { font-size:14px;color:rgba(255,255,255,.65);margin-bottom:28px;line-height:1.55 }
-  .join-stats {
-    display:flex;gap:18px;margin-bottom:28px;padding:14px 16px;
-    background:rgba(122,194,49,.08);border-radius:10px;border:1px solid rgba(122,194,49,.18)
-  }
-  .join-stat { flex:1;text-align:center }
-  .join-stat-num { font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--green);line-height:1 }
-  .join-stat-label { font-size:10px;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.08em;margin-top:4px }
-  .join-form { display:flex;flex-direction:column;gap:14px }
-  .join-row { display:grid;grid-template-columns:1fr 1fr;gap:10px }
-  .join-input {
-    width:100%;background:#070b06;border:1px solid rgba(255,255,255,.12);
-    border-radius:10px;padding:14px 16px;color:#fff;font-size:14px;font-family:inherit;
-    transition:border-color .15s
-  }
-  .join-input:focus { outline:none;border-color:var(--green) }
-  .join-label { font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:6px;display:block }
-  .join-btn {
-    background:var(--green);color:#0a0a0a;border:none;border-radius:10px;
-    padding:14px 20px;font-size:15px;font-weight:800;letter-spacing:.04em;
-    text-transform:uppercase;cursor:pointer;transition:opacity .15s;
-    margin-top:6px
-  }
-  .join-btn:disabled { opacity:.5;cursor:wait }
-  .join-msg { font-size:13px;line-height:1.5;min-height:18px;text-align:center;padding-top:4px }
-  .join-msg.error { color:#f87171 }
-  .join-msg.ok { color:var(--green) }
-  .join-foot { text-align:center;font-size:12px;color:rgba(255,255,255,.4);margin-top:24px }
-  .join-foot a { color:var(--green);text-decoration:none;font-weight:600 }
-  .join-foot a:hover { text-decoration:underline }
-  .join-bullets { display:flex;flex-direction:column;gap:8px;margin:18px 0 4px;padding:0;list-style:none }
-  .join-bullets li { font-size:13px;color:rgba(255,255,255,.7);display:flex;gap:10px;align-items:flex-start;line-height:1.5 }
-  .join-bullets li::before { content:'✓';color:var(--green);font-weight:800 }
-  @media (max-width:520px){
-    .join-h1 { font-size:28px }
-    .join-row { grid-template-columns:1fr }
-    .join-card { padding:28px 22px }
-  }
+:root{
+  --green:#7AC231; --green-dark:#5a9a1f; --green-light:#a8e055;
+  --black:#0a0a0a; --dark:#111111; --dark2:#161616; --dark3:#1f1f1f;
+  --muted:#888888; --light:#aaaaaa; --white:#ffffff;
+  --line:rgba(255,255,255,.10); --line-soft:rgba(255,255,255,.06);
+  --ff-display:'Barlow Condensed',sans-serif; --ff-body:'DM Sans',sans-serif;
+  --nav-h:68px; --radius:8px; --radius-lg:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--ff-body);background:var(--black);color:var(--white);min-height:100vh;display:flex;flex-direction:column;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;color:inherit}
+
+/* ── HEADER NAV (mounted by atp-components.js) ─────────────── */
+#nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;padding:0 40px;transition:background .3s,border-color .3s;border-bottom:1px solid transparent}
+#nav.scrolled{background:rgba(10,10,10,.97);border-bottom-color:rgba(122,194,49,.18);backdrop-filter:blur(16px)}
+.nav-inner{width:100%;max-width:1320px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.nav-logo img{height:32px;width:auto;display:block}
+.nav-links{display:flex;align-items:center;gap:32px;list-style:none}
+.nav-links a{font-size:13px;font-weight:500;letter-spacing:.04em;color:var(--light);transition:color .2s}
+.nav-links a:hover,.nav-links a.active{color:var(--green)}
+.nav-actions{display:flex;align-items:center;gap:12px}
+.btn-ghost{font-size:13px;font-weight:600;color:var(--white);border:1px solid rgba(255,255,255,.2);padding:9px 20px;border-radius:var(--radius);background:transparent;transition:border-color .2s;letter-spacing:.03em}
+.btn-ghost:hover{border-color:var(--white)}
+.btn-primary{font-size:13px;font-weight:700;background:var(--green);color:var(--white);padding:10px 22px;border-radius:var(--radius);border:none;letter-spacing:.03em;transition:background .2s,transform .15s}
+.btn-primary:hover{background:var(--green-dark);transform:translateY(-1px)}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
+.hamburger span{display:block;width:22px;height:2px;background:var(--white);border-radius:2px}
+
+/* ── SPLIT-SCREEN GRID ─────────────────────────────────────── */
+.auth-grid{flex:1;display:grid;grid-template-columns:1.05fr 1fr;min-height:calc(100vh - var(--nav-h));margin-top:var(--nav-h)}
+
+/* Showcase (left) */
+.auth-showcase{position:relative;overflow:hidden;display:flex;flex-direction:column;justify-content:flex-end;padding:90px 64px 80px;color:#fff;isolation:isolate}
+.showcase-media{position:absolute;inset:0;z-index:0}
+.showcase-media img,.showcase-media video{width:100%;height:100%;object-fit:cover;transform:scale(1.04);transition:transform 1.2s ease-out}
+.auth-showcase:hover .showcase-media img,.auth-showcase:hover .showcase-media video{transform:scale(1.06)}
+.showcase-overlay{position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,10,.18) 0%,rgba(10,10,10,.55) 55%,rgba(10,10,10,.92) 100%);z-index:1}
+.showcase-overlay::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 0%,transparent 65%,rgba(10,10,10,.45) 100%);pointer-events:none}
+.showcase-content{position:relative;z-index:2;max-width:540px;animation:rise .6s ease-out both}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+.showcase-eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--green);margin-bottom:22px;font-weight:700;display:inline-flex;align-items:center;gap:12px}
+.showcase-eyebrow::before{content:'';display:block;width:24px;height:2px;background:var(--green)}
+.showcase-headline{font-family:var(--ff-display);font-size:clamp(48px,5.2vw,76px);font-weight:900;line-height:.95;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:20px;color:#fff;white-space:pre-line}
+.showcase-subtitle{font-size:16px;line-height:1.65;color:rgba(255,255,255,.78);max-width:460px;margin-bottom:38px;font-weight:300}
+.showcase-stats{display:flex;gap:36px;padding-top:30px;border-top:1px solid rgba(255,255,255,.16)}
+.showcase-stat-num{font-family:var(--ff-display);font-size:32px;font-weight:900;color:var(--green);line-height:1;letter-spacing:-.01em}
+.showcase-stat-label{font-size:11px;color:rgba(255,255,255,.62);text-transform:uppercase;letter-spacing:.1em;margin-top:6px;font-weight:600}
+
+/* Form panel (right) */
+.auth-form-panel{display:flex;align-items:center;justify-content:center;padding:60px 56px;background:var(--black);position:relative}
+.auth-card{width:100%;max-width:420px;animation:rise .55s ease-out both;animation-delay:.06s}
+.auth-eyebrow{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--green);margin-bottom:14px;font-weight:700}
+.auth-title{font-family:var(--ff-display);font-size:clamp(40px,4vw,52px);font-weight:900;line-height:1;text-transform:uppercase;margin-bottom:14px;letter-spacing:-.01em;white-space:pre-line}
+.auth-subtitle{font-size:15px;color:rgba(255,255,255,.66);line-height:1.65;margin-bottom:30px}
+
+/* Form */
+.auth-form{display:flex;flex-direction:column;gap:14px}
+.auth-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.auth-field{position:relative;display:flex;flex-direction:column}
+.auth-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:7px;display:flex;justify-content:space-between;align-items:center}
+.auth-label-link{font-size:11px;font-weight:600;color:var(--green);letter-spacing:.02em;text-transform:none}
+.auth-label-link:hover{text-decoration:underline}
+.auth-input{width:100%;background:#070b06;border:1px solid var(--line);border-radius:var(--radius);padding:14px 16px;color:#fff;font-size:14px;font-family:inherit;transition:border-color .15s,background .15s}
+.auth-input:hover{border-color:rgba(255,255,255,.18)}
+.auth-input:focus{outline:none;border-color:var(--green);background:#0a0f08}
+.auth-input::placeholder{color:rgba(255,255,255,.32)}
+.auth-pw-wrap{position:relative}
+.auth-pw-wrap .auth-input{padding-right:42px}
+.auth-pw-toggle{position:absolute;top:50%;right:6px;transform:translateY(-50%);width:32px;height:32px;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.5);border-radius:6px;transition:color .15s,background .15s}
+.auth-pw-toggle:hover{color:#fff;background:rgba(255,255,255,.06)}
+.auth-pw-toggle svg{width:18px;height:18px}
+
+.auth-bullets{display:flex;flex-direction:column;gap:8px;margin:8px 0 4px;padding:0;list-style:none}
+.auth-bullets li{font-size:13px;color:rgba(255,255,255,.7);display:flex;gap:10px;align-items:flex-start;line-height:1.5}
+.auth-bullets li::before{content:'✓';color:var(--green);font-weight:800;flex-shrink:0}
+
+.auth-btn{background:var(--green);color:#0a0a0a;border:none;border-radius:var(--radius);padding:15px 22px;font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:background .15s,transform .15s,box-shadow .15s;margin-top:8px;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.auth-btn:hover:not(:disabled){background:var(--green-light);transform:translateY(-1px);box-shadow:0 10px 28px rgba(122,194,49,.22)}
+.auth-btn:active{transform:translateY(0)}
+.auth-btn:disabled{opacity:.55;cursor:wait}
+
+.auth-msg{font-size:13px;line-height:1.55;min-height:18px;text-align:center;padding-top:6px;transition:color .2s}
+.auth-msg.error{color:#f87171}
+.auth-msg.ok{color:var(--green)}
+
+.auth-switch{text-align:center;font-size:13px;color:rgba(255,255,255,.5);margin-top:26px;padding-top:22px;border-top:1px solid var(--line-soft)}
+.auth-switch a{color:var(--green);font-weight:700;text-decoration:none}
+.auth-switch a:hover{text-decoration:underline}
+
+.auth-meta{margin-top:24px;font-size:11px;color:rgba(255,255,255,.36);text-align:center;line-height:1.6}
+.auth-meta a{color:rgba(255,255,255,.6);border-bottom:1px solid rgba(255,255,255,.2)}
+.auth-meta a:hover{color:#fff;border-bottom-color:#fff}
+
+/* Footer (minimal) */
+.footer-min{background:#0d0d0d;padding:36px 40px 24px;border-top:1px solid var(--line-soft);font-family:var(--ff-body);position:relative;z-index:5}
+.footer-min-inner{max-width:1320px;margin:0 auto}
+.footer-min-top{display:flex;justify-content:flex-end;margin-bottom:20px}
+.footer-min-col h4{font-family:var(--ff-display);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#fff;margin:0 0 12px}
+.footer-min-col ul{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px}
+.footer-min-col a{font-size:13px;color:#888;transition:color .2s}
+.footer-min-col a:hover{color:var(--green)}
+.footer-min-bot{padding-top:18px;border-top:1px solid var(--line-soft);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
+.footer-min-copy{font-size:12px;color:#666;margin:0}
+.footer-legal{display:flex;gap:18px}
+.footer-legal a{font-size:12px;color:#888;transition:color .2s}
+.footer-legal a:hover{color:#fff}
+
+/* Responsive */
+@media (max-width:1100px){
+  .auth-form-panel{padding:48px 36px}
+  .auth-showcase{padding:80px 44px 60px}
+}
+@media (max-width:900px){
+  #nav{padding:0 20px}
+  .nav-links,.nav-actions{display:none}
+  .hamburger{display:flex}
+  #nav.mobile-open{height:auto;flex-direction:column;align-items:stretch;background:rgba(10,10,10,.98);padding:0 20px 24px}
+  #nav.mobile-open .nav-links{display:flex;flex-direction:column;gap:18px;width:100%;padding-top:16px;border-top:1px solid rgba(255,255,255,.08)}
+  #nav.mobile-open .nav-actions{display:flex;flex-direction:column;width:100%;gap:8px;margin-top:14px}
+
+  .auth-grid{grid-template-columns:1fr}
+  .auth-showcase{display:none}
+  .auth-form-panel{padding:48px 22px 60px}
+}
+@media (max-width:520px){
+  .auth-row{grid-template-columns:1fr}
+  .auth-form-panel{padding:36px 18px 48px}
+  .auth-card{max-width:none}
+}
 </style>
 </head>
 <body>
 
-<!-- Shared nav (mounted by atp-components.js) -->
 <div id="atp-nav-host" data-active="join"></div>
 
-<main class="join-wrap">
-  <div class="join-card">
-    <div class="join-eyebrow">Join the community</div>
-    <h1 class="join-h1">Train with us.<br>Always free.</h1>
-    <p class="join-sub">Take 30 seconds. Get instant access to free outdoor sessions across Dubai, Al Ain &amp; Muscat — plus the points wallet, member events, and the ATP store.</p>
+<main class="auth-grid">
 
-    <!-- Live stats — hydrated from /api/stats/public -->
-    <div class="join-stats">
-      <div class="join-stat"><div class="join-stat-num" data-stat="members_count" data-suffix="+">7,000+</div><div class="join-stat-label">Members</div></div>
-      <div class="join-stat"><div class="join-stat-num" data-stat="activities_count">19</div><div class="join-stat-label">Activities</div></div>
-      <div class="join-stat"><div class="join-stat-num" data-stat="cities_count">3</div><div class="join-stat-label">Cities</div></div>
+  <aside class="auth-showcase" aria-hidden="true">
+    <div class="showcase-media" id="showcase-media">
+      <!-- hydrated from CMS; fallback ATP photo while loading -->
+      <img id="showcase-img" src="/atthepark_assets01.webp" alt="">
     </div>
-
-    <form class="join-form" id="join-form" novalidate>
-      <!-- Signup-only fields. Hidden when ?mode=login flips the form
-           into login mode below. -->
-      <div class="join-row" data-signup-only>
-        <div>
-          <label class="join-label" for="j-first">First name</label>
-          <input class="join-input" id="j-first" name="first_name" type="text" autocomplete="given-name">
-        </div>
-        <div>
-          <label class="join-label" for="j-last">Last name</label>
-          <input class="join-input" id="j-last" name="last_name" type="text" autocomplete="family-name">
-        </div>
+    <div class="showcase-overlay"></div>
+    <div class="showcase-content">
+      <div class="showcase-eyebrow" id="showcase-eyebrow">AT THE PARK · UAE &amp; OMAN</div>
+      <h2 class="showcase-headline" id="showcase-headline">Welcome back
+to the pack.</h2>
+      <p class="showcase-subtitle" id="showcase-subtitle">Your sessions, points and tribe are waiting.</p>
+      <div class="showcase-stats" id="showcase-stats">
+        <div><div class="showcase-stat-num" id="proof-n1">7,000+</div><div class="showcase-stat-label" id="proof-l1">Members</div></div>
+        <div><div class="showcase-stat-num" id="proof-n2">19</div><div class="showcase-stat-label" id="proof-l2">Activities</div></div>
+        <div><div class="showcase-stat-num" id="proof-n3">3</div><div class="showcase-stat-label" id="proof-l3">Cities</div></div>
       </div>
-      <div>
-        <label class="join-label" for="j-email">Email</label>
-        <input class="join-input" id="j-email" name="email" type="email" autocomplete="email" required placeholder="you@example.com">
-      </div>
-      <div data-signup-only>
-        <label class="join-label" for="j-phone">Mobile (optional)</label>
-        <input class="join-input" id="j-phone" name="phone" type="tel" autocomplete="tel" placeholder="+971 50 000 0000">
-      </div>
-      <div>
-        <label class="join-label" for="j-pw"><span data-signup-label>Choose a password</span><span data-login-label style="display:none">Password</span></label>
-        <input class="join-input" id="j-pw" name="password" type="password" autocomplete="current-password" required minlength="8" placeholder="At least 8 characters">
-      </div>
-
-      <ul class="join-bullets" data-signup-only>
-        <li>Free forever — no credit card needed</li>
-        <li>Book any session in seconds</li>
-        <li>Earn points for every session you attend</li>
-      </ul>
-
-      <button type="submit" class="join-btn" id="j-btn">Create my account →</button>
-      <div class="join-msg" id="j-msg"></div>
-    </form>
-
-    <div class="join-foot">
-      <span data-signup-only>Already a member? <a href="/join?mode=login">Sign in here</a></span>
-      <span data-login-only style="display:none">New to ATP? <a href="/join">Create an account</a></span>
     </div>
-  </div>
+  </aside>
+
+  <section class="auth-form-panel">
+    <div class="auth-card">
+      <div class="auth-eyebrow" id="form-eyebrow">Join the community</div>
+      <h1 class="auth-title" id="form-title">Train with us.
+Always free.</h1>
+      <p class="auth-subtitle" id="form-subtitle">Take 30 seconds. Free outdoor sessions across Dubai, Al Ain &amp; Muscat — plus the points wallet, member events, and the ATP store.</p>
+
+      <form class="auth-form" id="join-form" novalidate>
+        <!-- Signup-only name fields -->
+        <div class="auth-row" data-signup-only>
+          <div class="auth-field">
+            <label class="auth-label" for="j-first">First name</label>
+            <input class="auth-input" id="j-first" name="first_name" type="text" autocomplete="given-name">
+          </div>
+          <div class="auth-field">
+            <label class="auth-label" for="j-last">Last name</label>
+            <input class="auth-input" id="j-last" name="last_name" type="text" autocomplete="family-name">
+          </div>
+        </div>
+
+        <div class="auth-field">
+          <label class="auth-label" for="j-email">Email</label>
+          <input class="auth-input" id="j-email" name="email" type="email" autocomplete="email" required placeholder="you@example.com">
+        </div>
+
+        <div class="auth-field" data-signup-only>
+          <label class="auth-label" for="j-phone">Mobile (optional)</label>
+          <input class="auth-input" id="j-phone" name="phone" type="tel" autocomplete="tel" placeholder="+971 50 000 0000">
+        </div>
+
+        <div class="auth-field">
+          <label class="auth-label" for="j-pw">
+            <span><span data-signup-label>Choose a password</span><span data-login-label style="display:none">Password</span></span>
+          </label>
+          <div class="auth-pw-wrap">
+            <input class="auth-input" id="j-pw" name="password" type="password" autocomplete="current-password" required minlength="8" placeholder="At least 8 characters">
+            <button type="button" class="auth-pw-toggle" id="j-pw-toggle" aria-label="Show password" aria-pressed="false">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="j-pw-icon-eye"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" id="j-pw-icon-off" style="display:none"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 19c-7 0-10-7-10-7a17.6 17.6 0 0 1 3.18-4.66M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 10 7 10 7a17.6 17.6 0 0 1-2.16 3.19M14.12 14.12A3 3 0 0 1 9.88 9.88"/><line x1="2" y1="2" x2="22" y2="22"/></svg>
+            </button>
+          </div>
+        </div>
+
+        <ul class="auth-bullets" data-signup-only id="auth-perks">
+          <li id="perk-1">Free forever — no credit card needed</li>
+          <li id="perk-2">Book any session in seconds</li>
+          <li id="perk-3">Earn points for every session you attend</li>
+        </ul>
+
+        <button type="submit" class="auth-btn" id="j-btn">Create my account →</button>
+        <div class="auth-msg" id="j-msg" role="status" aria-live="polite"></div>
+      </form>
+
+      <p class="auth-switch" id="auth-switch">
+        <span data-signup-only>Already a member? <a href="/join?mode=login">Sign in here</a></span>
+        <span data-login-only style="display:none">New to ATP? <a href="/join">Create an account</a></span>
+      </p>
+
+      <p class="auth-meta">
+        By continuing you agree to our
+        <a href="/terms.html">Terms</a> and
+        <a href="/privacy.html">Privacy Policy</a>.
+      </p>
+    </div>
+  </section>
+
 </main>
 
+<footer class="footer-min" role="contentinfo">
+  <div class="footer-min-inner">
+    <div class="footer-min-top">
+      <div class="footer-min-col">
+        <h4>Legal</h4>
+        <ul>
+          <li><a href="/privacy.html">Privacy</a></li>
+          <li><a href="/terms.html">Terms</a></li>
+          <li><a href="/contacts.html">Contacts</a></li>
+        </ul>
+      </div>
+    </div>
+    <div class="footer-min-bot">
+      <p class="footer-min-copy">© 2026 At The Park. All rights reserved. Dubai, United Arab Emirates.</p>
+      <nav class="footer-legal" aria-label="Account">
+        <a href="/join?mode=login">Log in</a>
+        <a href="/join" style="color:var(--green)">Join free →</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+
 <script>
-// Hydrate the live stats card
-fetch('/api/stats/public', { cache:'no-cache' })
-  .then(function(r){ return r.ok ? r.json() : null; })
-  .then(function(d){
-    if (!d) return;
-    document.querySelectorAll('[data-stat]').forEach(function(el){
-      var key = el.getAttribute('data-stat');
-      var suf = el.getAttribute('data-suffix') || '';
-      if (d[key] != null) el.textContent = (d[key] >= 1000 ? d[key].toLocaleString() : d[key]) + suf;
-    });
-  })
-  .catch(function(){});
+/* ════════════════════════════════════════════════════════════════
+ * /join — split-screen auth page
+ * Hydrates from /api/cms/auth (showcase media + copy + form labels).
+ * Form submission identical to the previous page (POST /api/auth/login
+ * or /api/auth/register), so the IDs j-first/j-last/j-email/j-phone/j-pw
+ * are preserved verbatim. Mode = signup default; ?mode=login flips copy
+ * + hides signup-only fields.
+ * ════════════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
 
-// Pick up ?ref=… from URL — ATP referral codes (firstname-XXX or
-// legacy ATP-00001). Submitted alongside the registration so the
-// referrer gets the signup bonus + lock-in (Theme 4 / #19).
-function _atpReferralCode(){
-  try {
-    var u = new URL(window.location.href);
-    return u.searchParams.get('ref') || null;
-  } catch(e) { return null; }
-}
+  var API = '/api';
 
-// ── Mode (signup vs login) ────────────────────────────────────
-// /join          → signup form (default)
-// /join?mode=login → login form (email + password only)
-var _isLoginMode = (function(){
-  try { return new URL(location.href).searchParams.get('mode') === 'login'; }
-  catch(e) { return false; }
-})();
+  /* Mode detection */
+  var IS_LOGIN = (function () {
+    try { return new URL(location.href).searchParams.get('mode') === 'login'; }
+    catch (e) { return false; }
+  })();
 
-(function applyMode(){
-  if (!_isLoginMode) return;
-  // Hero copy
-  var eyebrow = document.querySelector('.join-eyebrow');
-  if (eyebrow) eyebrow.textContent = 'Welcome back';
-  var h1 = document.querySelector('.join-h1');
-  if (h1) h1.innerHTML = 'Log in.<br>Keep training.';
-  var sub = document.querySelector('.join-sub');
-  if (sub) sub.textContent = 'Enter your email and password to pick up where you left off.';
-  // Hide signup-only fields, show login-only copy
-  document.querySelectorAll('[data-signup-only]').forEach(function(el){ el.style.display = 'none'; });
-  document.querySelectorAll('[data-login-only]').forEach(function(el){ el.style.display = ''; });
-  document.querySelectorAll('[data-signup-label]').forEach(function(el){ el.style.display = 'none'; });
-  document.querySelectorAll('[data-login-label]').forEach(function(el){ el.style.display = ''; });
-  // Strip required from signup-only inputs so the login submit isn't blocked
-  ['j-first','j-last'].forEach(function(id){
+  /* Referral code (signup only) */
+  function _refCode() {
+    try { return new URL(location.href).searchParams.get('ref') || null; }
+    catch (e) { return null; }
+  }
+
+  /* Header scroll state */
+  window.addEventListener('scroll', function () {
+    var n = document.getElementById('nav');
+    if (n) n.classList.toggle('scrolled', window.scrollY > 10);
+  }, { passive: true });
+
+  /* ── Hydrate showcase + form copy from CMS ────────────────── */
+  function applyText(id, val) {
+    if (val == null || val === '') return;
     var el = document.getElementById(id);
-    if (el) el.required = false;
-  });
-  // Loosen the password minlength — older accounts may have shorter pwds
-  var pw = document.getElementById('j-pw');
-  if (pw) { pw.minLength = 1; pw.placeholder = '••••••••'; pw.autocomplete = 'current-password'; }
-  // Button label
-  var btn = document.getElementById('j-btn');
-  if (btn) btn.textContent = 'Log in →';
-  // Drop the stats card — irrelevant on login
-  var stats = document.querySelector('.join-stats');
-  if (stats) stats.style.display = 'none';
-})();
+    if (el) el.textContent = String(val);
+  }
 
-// Submit
-document.getElementById('join-form').addEventListener('submit', function(ev){
-  ev.preventDefault();
-  var msg = document.getElementById('j-msg');
-  var btn = document.getElementById('j-btn');
-  var email = document.getElementById('j-email').value.trim().toLowerCase();
-  var password = document.getElementById('j-pw').value;
+  function hydrate(content) {
+    var c = content || {};
+    var s = c.showcase || {};
+    var p = c.proof || {};
+    var formCopy = (IS_LOGIN ? c.login : c.signup) || {};
 
-  if (_isLoginMode) {
-    if (!email || !password) {
-      msg.textContent = 'Enter your email and password.';
-      msg.className = 'join-msg error';
+    /* Showcase media */
+    var media = document.getElementById('showcase-media');
+    if (media) {
+      if (s.hero_video) {
+        media.innerHTML =
+          '<video autoplay muted loop playsinline preload="metadata" poster="' +
+          (s.hero_image ? String(s.hero_image).replace(/"/g, '&quot;') : '/atthepark_assets01.webp') +
+          '"><source src="' + String(s.hero_video).replace(/"/g, '&quot;') + '"></video>';
+      } else if (s.hero_image) {
+        var img = document.getElementById('showcase-img');
+        if (img) img.src = s.hero_image;
+      }
+    }
+    /* Overlay opacity */
+    if (s.overlay_opacity) {
+      var op = Math.max(0, Math.min(80, parseInt(s.overlay_opacity, 10) || 55));
+      var o = document.querySelector('.showcase-overlay');
+      if (o) o.style.background =
+        'linear-gradient(180deg,rgba(10,10,10,' + (op / 100 / 3).toFixed(2) +
+        ') 0%,rgba(10,10,10,' + (op / 100).toFixed(2) +
+        ') 55%,rgba(10,10,10,.92) 100%)';
+    }
+
+    applyText('showcase-eyebrow',  s.eyebrow);
+    if (s.headline) {
+      var h = document.getElementById('showcase-headline');
+      if (h) h.textContent = s.headline;
+    }
+    applyText('showcase-subtitle', s.subtitle);
+
+    /* Stats */
+    applyText('proof-n1', p.stat1_num);  applyText('proof-l1', p.stat1_label);
+    applyText('proof-n2', p.stat2_num);  applyText('proof-l2', p.stat2_label);
+    applyText('proof-n3', p.stat3_num);  applyText('proof-l3', p.stat3_label);
+
+    /* Form copy */
+    applyText('form-eyebrow',  formCopy.eyebrow);
+    if (formCopy.title) {
+      var ft = document.getElementById('form-title');
+      if (ft) ft.textContent = formCopy.title;
+    }
+    applyText('form-subtitle', formCopy.subtitle);
+
+    var btn = document.getElementById('j-btn');
+    if (btn && formCopy.submit_text) btn.textContent = formCopy.submit_text;
+
+    /* Switch line */
+    var switchEl = document.getElementById('auth-switch');
+    if (switchEl && formCopy.switch_prompt && formCopy.switch_link) {
+      var visible = switchEl.querySelector(IS_LOGIN ? '[data-login-only]' : '[data-signup-only]');
+      if (visible) {
+        var href = IS_LOGIN ? '/join' : '/join?mode=login';
+        visible.innerHTML = String(formCopy.switch_prompt).replace(/</g, '&lt;') +
+          ' <a href="' + href + '">' + String(formCopy.switch_link).replace(/</g, '&lt;') + '</a>';
+      }
+    }
+
+    /* Perks (signup only) */
+    if (!IS_LOGIN) {
+      var c2 = c.signup || {};
+      ['perk1', 'perk2', 'perk3'].forEach(function (k, i) {
+        if (c2[k]) applyText('perk-' + (i + 1), c2[k]);
+      });
+    }
+  }
+
+  /* Apply login/signup mode display rules */
+  (function applyMode() {
+    if (!IS_LOGIN) return;
+    document.querySelectorAll('[data-signup-only]').forEach(function (el) { el.style.display = 'none'; });
+    document.querySelectorAll('[data-login-only]').forEach(function (el) { el.style.display = ''; });
+    document.querySelectorAll('[data-signup-label]').forEach(function (el) { el.style.display = 'none'; });
+    document.querySelectorAll('[data-login-label]').forEach(function (el) { el.style.display = ''; });
+    /* Strip required from hidden fields so the form submits */
+    ['j-first', 'j-last'].forEach(function (id) {
+      var el = document.getElementById(id);
+      if (el) el.required = false;
+    });
+    var pw = document.getElementById('j-pw');
+    if (pw) { pw.minLength = 1; pw.placeholder = '••••••••'; pw.autocomplete = 'current-password'; }
+    /* Pre-set defaults for login mode (CMS will override) */
+    var ey = document.getElementById('form-eyebrow'); if (ey) ey.textContent = 'Welcome back';
+    var ti = document.getElementById('form-title');   if (ti) ti.textContent = 'Log in.';
+    var sb = document.getElementById('form-subtitle');if (sb) sb.textContent = 'Pick up where you left off.';
+    var btn= document.getElementById('j-btn');        if (btn) btn.textContent = 'Log in →';
+  })();
+
+  /* Fetch CMS — non-blocking; defaults remain if API fails */
+  fetch(API + '/cms/auth', { cache: 'no-cache' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) { if (d && d.content) hydrate(d.content); })
+    .catch(function () { /* keep defaults */ });
+
+  /* Hydrate live stats card from /api/stats/public, only if no CMS proof override */
+  fetch(API + '/stats/public', { cache: 'no-cache' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      if (!d) return;
+      var map = { members_count: 'proof-n1', activities_count: 'proof-n2', cities_count: 'proof-n3' };
+      Object.keys(map).forEach(function (k) {
+        var el = document.getElementById(map[k]);
+        if (el && d[k] != null) {
+          var v = d[k];
+          el.textContent = (v >= 1000 ? Number(v).toLocaleString() : v) + (k === 'members_count' ? '+' : '');
+        }
+      });
+    })
+    .catch(function () { });
+
+  /* ── Password reveal toggle ───────────────────────────────── */
+  var pwToggle = document.getElementById('j-pw-toggle');
+  var pwInput  = document.getElementById('j-pw');
+  var iconEye  = document.getElementById('j-pw-icon-eye');
+  var iconOff  = document.getElementById('j-pw-icon-off');
+  if (pwToggle && pwInput) {
+    pwToggle.addEventListener('click', function () {
+      var showing = pwInput.type === 'text';
+      pwInput.type = showing ? 'password' : 'text';
+      pwToggle.setAttribute('aria-pressed', String(!showing));
+      pwToggle.setAttribute('aria-label', showing ? 'Show password' : 'Hide password');
+      iconEye.style.display = showing ? '' : 'none';
+      iconOff.style.display = showing ? 'none' : '';
+    });
+  }
+
+  /* ── Submit (login or signup) ─────────────────────────────── */
+  document.getElementById('join-form').addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var msg   = document.getElementById('j-msg');
+    var btn   = document.getElementById('j-btn');
+    var btnText = btn.textContent;
+    var email = document.getElementById('j-email').value.trim().toLowerCase();
+    var pw    = document.getElementById('j-pw').value;
+
+    function showError(text) {
+      btn.disabled = false;
+      btn.textContent = btnText;
+      msg.textContent = text;
+      msg.className = 'auth-msg error';
+    }
+
+    if (IS_LOGIN) {
+      if (!email || !pw) return showError('Enter your email and password.');
+      btn.disabled = true; btn.textContent = 'Logging in…';
+      msg.textContent = ''; msg.className = 'auth-msg';
+      fetch(API + '/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, password: pw })
+      })
+        .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+        .then(function (res) {
+          if (!res.ok) return showError((res.body && res.body.error) || 'Wrong email or password.');
+          msg.textContent = '✅ Welcome back. Redirecting…';
+          msg.className = 'auth-msg ok';
+          try {
+            if (res.body.token)  localStorage.setItem('atp_token', res.body.token);
+            if (res.body.member) localStorage.setItem('atp_member', JSON.stringify(res.body.member));
+          } catch (e) { }
+          setTimeout(function () { window.location.href = '/profile.html'; }, 600);
+        })
+        .catch(function () { showError('Network error — please try again.'); });
       return;
     }
-    btn.disabled = true; btn.textContent = 'Logging in…';
-    msg.textContent = ''; msg.className = 'join-msg';
-    fetch('/api/auth/login', {
+
+    /* Signup */
+    var payload = {
+      first_name: document.getElementById('j-first').value.trim(),
+      last_name:  document.getElementById('j-last').value.trim(),
+      email:      email,
+      phone:      document.getElementById('j-phone').value.trim() || null,
+      password:   pw,
+      referral_code: _refCode()
+    };
+    if (!payload.first_name || !payload.last_name || !payload.email || !payload.password) {
+      return showError('Please fill in name, email and password.');
+    }
+    if (payload.password.length < 8) return showError('Password must be at least 8 characters.');
+
+    btn.disabled = true; btn.textContent = 'Creating account…';
+    msg.textContent = ''; msg.className = 'auth-msg';
+    fetch(API + '/auth/register', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: email, password: password }),
+      body: JSON.stringify(payload)
     })
-      .then(function(r){ return r.json().then(function(b){ return { ok:r.ok, status:r.status, body:b }; }); })
-      .then(function(res){
-        if (!res.ok) {
-          btn.disabled = false; btn.textContent = 'Log in →';
-          msg.textContent = (res.body && res.body.error) || 'Wrong email or password.';
-          msg.className = 'join-msg error';
-          return;
-        }
-        msg.textContent = '✅ Welcome back. Redirecting…';
-        msg.className = 'join-msg ok';
+      .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+      .then(function (res) {
+        if (!res.ok) return showError((res.body && res.body.error) || 'Could not create the account.');
+        msg.textContent = '✅ Welcome to ATP. Redirecting…';
+        msg.className = 'auth-msg ok';
         try {
           if (res.body.token)  localStorage.setItem('atp_token', res.body.token);
           if (res.body.member) localStorage.setItem('atp_member', JSON.stringify(res.body.member));
-        } catch(e) {}
-        setTimeout(function(){ window.location.href = '/profile.html'; }, 600);
+        } catch (e) { }
+        setTimeout(function () { window.location.href = '/profile.html'; }, 700);
       })
-      .catch(function(){
-        btn.disabled = false; btn.textContent = 'Log in →';
-        msg.textContent = 'Network error — please try again.';
-        msg.className = 'join-msg error';
-      });
-    return;
-  }
+      .catch(function () { showError('Network error — please try again.'); });
+  });
 
-  // ── Signup path ──────────────────────────────────────────────
-  var payload = {
-    first_name: document.getElementById('j-first').value.trim(),
-    last_name:  document.getElementById('j-last').value.trim(),
-    email:      email,
-    phone:      document.getElementById('j-phone').value.trim() || null,
-    password:   password,
-    referral_code: _atpReferralCode(),
-  };
-  if (!payload.first_name || !payload.last_name || !payload.email || !payload.password) {
-    msg.textContent = 'Please fill in name, email and password.';
-    msg.className = 'join-msg error';
-    return;
-  }
-  if (payload.password.length < 8) {
-    msg.textContent = 'Password must be at least 8 characters.';
-    msg.className = 'join-msg error';
-    return;
-  }
-  btn.disabled = true; btn.textContent = 'Creating account…';
-  msg.textContent = ''; msg.className = 'join-msg';
-  fetch('/api/auth/register', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-    .then(function(r){ return r.json().then(function(b){ return { ok:r.ok, status:r.status, body:b }; }); })
-    .then(function(res){
-      if (!res.ok) {
-        btn.disabled = false; btn.textContent = 'Create my account →';
-        msg.textContent = (res.body && res.body.error) || 'Could not create account.';
-        msg.className = 'join-msg error';
-        return;
-      }
-      msg.textContent = '✅ You\'re in. Redirecting to your profile…';
-      msg.className = 'join-msg ok';
-      // Persist token using the same keys as the existing app
-      try {
-        if (res.body.token)  localStorage.setItem('atp_token', res.body.token);
-        if (res.body.member) localStorage.setItem('atp_member', JSON.stringify(res.body.member));
-      } catch(e) {}
-      setTimeout(function(){ window.location.href = '/profile.html'; }, 800);
-    })
-    .catch(function(){
-      btn.disabled = false; btn.textContent = 'Create my account →';
-      msg.textContent = 'Network error — please try again.';
-      msg.className = 'join-msg error';
-    });
-});
+})();
 </script>
 
-<footer class="footer-min" role="contentinfo" style="background:#111111;padding:40px 40px 28px;border-top:1px solid rgba(255,255,255,.06);font-family:'DM Sans',sans-serif">
-  <div class="footer-top" style="max-width:1320px;margin:0 auto 28px;display:flex;justify-content:flex-end">
-    <div class="footer-col">
-      <h4 style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#fff;margin:0 0 12px">Legal</h4>
-      <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px">
-        <li><a href="privacy.html" style="font-size:13px;color:#888;text-decoration:none">Privacy</a></li>
-        <li><a href="terms.html" style="font-size:13px;color:#888;text-decoration:none">Terms</a></li>
-        <li><a href="contacts.html" style="font-size:13px;color:#888;text-decoration:none">Contacts</a></li>
-      </ul>
-    </div>
-  </div>
-  <div style="max-width:1320px;margin:0 auto;padding-top:20px;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px">
-    <p style="font-size:12px;color:#888;margin:0">© 2026 At The Park. All rights reserved. Dubai, United Arab Emirates.</p>
-    <nav class="footer-legal" aria-label="Account" style="display:flex;gap:20px"><a href="/join?mode=login" style="font-size:12px;color:#888;text-decoration:none">Log in</a><a href="/join" style="font-size:12px;color:#7AC231;text-decoration:none">Join free →</a></nav>
-  </div>
-</footer>
 </body>
 </html>

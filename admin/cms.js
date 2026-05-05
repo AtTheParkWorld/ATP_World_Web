@@ -178,6 +178,62 @@ var CMS_SCHEMA = {
       }
     }
   },
+  auth: {
+    label: '🔑 Login & Signup Page',
+    sections: {
+      showcase: {
+        label: 'Left Panel — Showcase',
+        desc: 'Visual + brand storytelling on the left side of /join',
+        fields: [
+          { key: 'hero_image',       label: 'Hero Image',                       type: 'image',    hint: 'Recommended 1200×1600 or 1400×1800. Used as the panel background.' },
+          { key: 'hero_video',       label: 'Hero Video (optional, autoplays muted)', type: 'video', hint: 'If set, plays in place of the image. Loops silently.' },
+          { key: 'overlay_opacity',  label: 'Overlay Darkness (0–80, default 55)', type: 'text', default: '55' },
+          { key: 'eyebrow',          label: 'Top Eyebrow',                      type: 'text',     default: 'AT THE PARK · UAE & OMAN' },
+          { key: 'headline',         label: 'Headline (use \\n for new lines)', type: 'textarea', default: 'Welcome back\nto the pack.' },
+          { key: 'subtitle',         label: 'Subtitle',                         type: 'textarea', default: 'Your sessions, points and tribe are waiting.' },
+        ]
+      },
+      proof: {
+        label: 'Stats Bar',
+        desc: 'Three numbers shown at the bottom of the showcase panel',
+        fields: [
+          { key: 'stat1_num',   label: 'Stat 1 — Number', type: 'text', default: '7,000+' },
+          { key: 'stat1_label', label: 'Stat 1 — Label',  type: 'text', default: 'Members' },
+          { key: 'stat2_num',   label: 'Stat 2 — Number', type: 'text', default: '19' },
+          { key: 'stat2_label', label: 'Stat 2 — Label',  type: 'text', default: 'Activities' },
+          { key: 'stat3_num',   label: 'Stat 3 — Number', type: 'text', default: '3' },
+          { key: 'stat3_label', label: 'Stat 3 — Label',  type: 'text', default: 'Cities' },
+        ]
+      },
+      login: {
+        label: 'Login Form Copy (?mode=login)',
+        desc: 'Right-panel copy when an existing member is logging in',
+        fields: [
+          { key: 'eyebrow',       label: 'Eyebrow',           type: 'text',     default: 'Welcome back' },
+          { key: 'title',         label: 'Title',             type: 'text',     default: 'Log in.' },
+          { key: 'subtitle',      label: 'Subtitle',          type: 'textarea', default: 'Pick up where you left off.' },
+          { key: 'submit_text',   label: 'Submit Button',     type: 'text',     default: 'Log in →' },
+          { key: 'switch_prompt', label: 'Switch Prompt',     type: 'text',     default: 'New to ATP?' },
+          { key: 'switch_link',   label: 'Switch Link Text',  type: 'text',     default: 'Create an account' },
+        ]
+      },
+      signup: {
+        label: 'Signup Form Copy (default mode)',
+        desc: 'Right-panel copy when a new member is creating an account',
+        fields: [
+          { key: 'eyebrow',       label: 'Eyebrow',           type: 'text',     default: 'Join the community' },
+          { key: 'title',         label: 'Title (use \\n for new lines)', type: 'textarea', default: 'Train with us.\nAlways free.' },
+          { key: 'subtitle',      label: 'Subtitle',          type: 'textarea', default: 'Take 30 seconds. Free outdoor sessions across Dubai, Al Ain & Muscat — plus the points wallet, member events, and the ATP store.' },
+          { key: 'submit_text',   label: 'Submit Button',     type: 'text',     default: 'Create my account →' },
+          { key: 'switch_prompt', label: 'Switch Prompt',     type: 'text',     default: 'Already a member?' },
+          { key: 'switch_link',   label: 'Switch Link Text',  type: 'text',     default: 'Sign in here' },
+          { key: 'perk1',         label: 'Perk 1',            type: 'text',     default: 'Free forever — no credit card needed' },
+          { key: 'perk2',         label: 'Perk 2',            type: 'text',     default: 'Book any session in seconds' },
+          { key: 'perk3',         label: 'Perk 3',            type: 'text',     default: 'Earn points for every session you attend' },
+        ]
+      }
+    }
+  },
   contacts: {
     label: '📞 Contacts Page',
     sections: {
