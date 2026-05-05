@@ -63,9 +63,13 @@
   function authMarkup() {
     var loggedIn = !!(window.ATP && window.ATP.isLoggedIn && window.ATP.isLoggedIn());
     if (!loggedIn) {
+      // Anchors (not buttons) so right-click \u2192 "Open in new tab" works and
+      // links survive even if JS handlers fail to attach. /join.html
+      // serves both signup and login via ?mode=login.
+      var navAnchorStyle = 'display:inline-flex;align-items:center;text-decoration:none';
       return (
-        '<button class="btn-ghost" data-atp-action="login">Log in</button>' +
-        '<button class="btn-primary" data-atp-action="signup">Join free \u2192</button>'
+        '<a class="btn-ghost" href="/join?mode=login" style="' + navAnchorStyle + '">Log in</a>' +
+        '<a class="btn-primary" href="/join" style="' + navAnchorStyle + '">Join free \u2192</a>'
       );
     }
     var u = (window.ATP.getUser && window.ATP.getUser()) || {};
