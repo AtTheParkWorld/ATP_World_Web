@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Signing you in… | At The Park</title>
+<meta name="theme-color" content="#0a0a0a">
+<meta name="robots" content="noindex,nofollow">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#7AC231; --green-dark:#5a9a1f;
+  --black:#0a0a0a; --dark2:#161616;
+  --light:#aaa; --muted:#888; --white:#fff;
+  --ff-display:'Barlow Condensed',sans-serif; --ff-body:'DM Sans',sans-serif;
+  --radius:8px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff-body);background:var(--black);color:var(--white);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;-webkit-font-smoothing:antialiased}
+.verify-card{width:100%;max-width:440px;background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:48px 40px;text-align:center;animation:rise .5s ease-out both}
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.verify-icon{width:64px;height:64px;margin:0 auto 20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:900;background:rgba(122,194,49,.12);color:var(--green);transition:background .3s,color .3s}
+.verify-icon.error{background:rgba(248,113,113,.1);color:#f87171}
+.verify-title{font-family:var(--ff-display);font-size:32px;font-weight:900;text-transform:uppercase;letter-spacing:-.01em;line-height:1;margin-bottom:14px}
+.verify-sub{font-size:15px;color:rgba(255,255,255,.7);line-height:1.6;margin-bottom:24px}
+.verify-spinner{width:36px;height:36px;border:3px solid rgba(122,194,49,.18);border-top-color:var(--green);border-radius:50%;margin:8px auto 22px;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.verify-btn{background:var(--green);color:#0a0a0a;border:none;border-radius:var(--radius);padding:14px 24px;font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;text-decoration:none;display:inline-block;transition:background .15s,transform .15s}
+.verify-btn:hover{background:var(--green-dark);transform:translateY(-1px)}
+.verify-secondary{display:inline-block;margin-top:14px;font-size:13px;color:var(--muted);text-decoration:none;border-bottom:1px solid rgba(255,255,255,.18);padding-bottom:1px}
+.verify-secondary:hover{color:#fff;border-bottom-color:#fff}
+</style>
+</head>
+<body>
+
+<div class="verify-card" id="card">
+  <div class="verify-icon" id="icon">
+    <div class="verify-spinner" id="spinner" style="margin:0"></div>
+  </div>
+  <h1 class="verify-title" id="title">Signing you in…</h1>
+  <p class="verify-sub" id="sub">One moment while we verify your link.</p>
+  <div id="actions" style="display:none">
+    <a class="verify-btn" id="primary-btn" href="/join?mode=login">Try logging in</a>
+    <br>
+    <a class="verify-secondary" href="/">← Back to home</a>
+  </div>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var qs = new URLSearchParams(location.search);
+  var token = qs.get('token');
+  var email = qs.get('email');
+
+  var icon    = document.getElementById('icon');
+  var spinner = document.getElementById('spinner');
+  var title   = document.getElementById('title');
+  var sub     = document.getElementById('sub');
+  var actions = document.getElementById('actions');
+  var primary = document.getElementById('primary-btn');
+
+  function fail(message) {
+    icon.classList.add('error');
+    icon.innerHTML = '✕';
+    title.textContent = 'Link not valid';
+    sub.textContent   = message || 'This link has expired or has already been used. Request a new one and try again.';
+    primary.textContent = 'Request a new link';
+    primary.href = '/join?mode=login';
+    actions.style.display = '';
+  }
+
+  function succeed() {
+    icon.innerHTML = '✓';
+    title.textContent = 'You\'re in.';
+    sub.textContent   = 'Redirecting you now…';
+  }
+
+  if (!token || !email) {
+    return fail('The link is missing a required token. Request a new sign-in link.');
+  }
+
+  fetch('/api/auth/verify?token=' + encodeURIComponent(token) + '&email=' + encodeURIComponent(email))
+    .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+    .then(function (res) {
+      if (!res.ok || !res.body || !res.body.token) {
+        return fail((res.body && res.body.error) || 'Link expired or invalid.');
+      }
+      try { localStorage.setItem('atp_token', res.body.token); } catch (e) {}
+      succeed();
+      setTimeout(function () { window.location.href = '/profile.html'; }, 700);
+    })
+    .catch(function () {
+      fail('Network error — please try again.');
+    });
+})();
+</script>
+
+</body>
+</html>

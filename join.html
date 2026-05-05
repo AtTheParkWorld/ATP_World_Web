@@ -46,6 +46,9 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
 .btn-primary:hover{background:var(--green-dark);transform:translateY(-1px)}
 .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
 .hamburger span{display:block;width:22px;height:2px;background:var(--white);border-radius:2px}
+/* Hide right-side actions on /join — the page itself IS the auth surface,
+   so showing Log in/Join free or the logged-in avatar would be redundant. */
+#atp-nav-actions{display:none !important}
 
 /* ── SPLIT-SCREEN GRID ─────────────────────────────────────── */
 .auth-grid{flex:1;display:grid;grid-template-columns:1.05fr 1fr;min-height:calc(100vh - var(--nav-h));margin-top:var(--nav-h)}
@@ -111,6 +114,13 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
 .auth-meta{margin-top:24px;font-size:11px;color:rgba(255,255,255,.36);text-align:center;line-height:1.6}
 .auth-meta a{color:rgba(255,255,255,.6);border-bottom:1px solid rgba(255,255,255,.2)}
 .auth-meta a:hover{color:#fff;border-bottom-color:#fff}
+
+/* Magic-link panel — replaces the login form when "Forgot password?" is tapped */
+.auth-magic{display:flex;flex-direction:column;gap:14px}
+.auth-magic-back{align-self:flex-start;font-size:12px;color:rgba(255,255,255,.55);background:none;border:none;padding:6px 0;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:inline-flex;align-items:center;gap:6px;transition:color .15s}
+.auth-magic-back:hover{color:#fff}
+.auth-magic-success{padding:18px 18px;border-radius:var(--radius);background:rgba(122,194,49,.08);border:1px solid rgba(122,194,49,.32);color:#dff5c5;font-size:14px;line-height:1.55;text-align:center}
+.auth-magic-success strong{color:var(--green-light);display:block;margin-bottom:4px;font-weight:700}
 
 /* Footer (minimal) */
 .footer-min{background:#0d0d0d;padding:36px 40px 24px;border-top:1px solid var(--line-soft);font-family:var(--ff-body);position:relative;z-index:5}
@@ -208,6 +218,7 @@ Always free.</h1>
         <div class="auth-field">
           <label class="auth-label" for="j-pw">
             <span><span data-signup-label>Choose a password</span><span data-login-label style="display:none">Password</span></span>
+            <a href="#" class="auth-label-link" data-login-only id="j-forgot-link" style="display:none">Forgot password?</a>
           </label>
           <div class="auth-pw-wrap">
             <input class="auth-input" id="j-pw" name="password" type="password" autocomplete="current-password" required minlength="8" placeholder="At least 8 characters">
@@ -228,6 +239,22 @@ Always free.</h1>
         <div class="auth-msg" id="j-msg" role="status" aria-live="polite"></div>
       </form>
 
+      <!-- Magic-link request panel — hidden until "Forgot password?" tapped -->
+      <div class="auth-magic" id="j-magic" style="display:none">
+        <button type="button" class="auth-magic-back" id="j-magic-back">← Back to login</button>
+        <div class="auth-eyebrow">Reset password</div>
+        <h1 class="auth-title" style="font-size:36px">Send me a link.</h1>
+        <p class="auth-subtitle">Enter your email and we'll send a one-time sign-in link. No password needed.</p>
+        <form id="j-magic-form" novalidate>
+          <div class="auth-field">
+            <label class="auth-label" for="j-magic-email">Email</label>
+            <input class="auth-input" id="j-magic-email" type="email" autocomplete="email" required placeholder="you@example.com">
+          </div>
+          <button type="submit" class="auth-btn" id="j-magic-btn" style="margin-top:14px">Send sign-in link</button>
+          <div class="auth-msg" id="j-magic-msg" role="status" aria-live="polite"></div>
+        </form>
+      </div>
+
       <p class="auth-switch" id="auth-switch">
         <span data-signup-only>Already a member? <a href="/join?mode=login">Sign in here</a></span>
         <span data-login-only style="display:none">New to ATP? <a href="/join">Create an account</a></span>
@@ -245,22 +272,8 @@ Always free.</h1>
 
 <footer class="footer-min" role="contentinfo">
   <div class="footer-min-inner">
-    <div class="footer-min-top">
-      <div class="footer-min-col">
-        <h4>Legal</h4>
-        <ul>
-          <li><a href="/privacy.html">Privacy</a></li>
-          <li><a href="/terms.html">Terms</a></li>
-          <li><a href="/contacts.html">Contacts</a></li>
-        </ul>
-      </div>
-    </div>
-    <div class="footer-min-bot">
+    <div class="footer-min-bot" style="border-top:0;padding-top:0;justify-content:center">
       <p class="footer-min-copy">© 2026 At The Park. All rights reserved. Dubai, United Arab Emirates.</p>
-      <nav class="footer-legal" aria-label="Account">
-        <a href="/join?mode=login">Log in</a>
-        <a href="/join" style="color:var(--green)">Join free →</a>
-      </nav>
     </div>
   </div>
 </footer>
@@ -380,7 +393,11 @@ Always free.</h1>
   (function applyMode() {
     if (!IS_LOGIN) return;
     document.querySelectorAll('[data-signup-only]').forEach(function (el) { el.style.display = 'none'; });
-    document.querySelectorAll('[data-login-only]').forEach(function (el) { el.style.display = ''; });
+    /* Inline-style elements (like the Forgot password link with display:none inline)
+       need an explicit display value, not '' which leaves the inline style intact. */
+    document.querySelectorAll('[data-login-only]').forEach(function (el) {
+      el.style.display = (el.tagName === 'A' || el.tagName === 'SPAN') ? 'inline' : '';
+    });
     document.querySelectorAll('[data-signup-label]').forEach(function (el) { el.style.display = 'none'; });
     document.querySelectorAll('[data-login-label]').forEach(function (el) { el.style.display = ''; });
     /* Strip required from hidden fields so the form submits */
@@ -418,6 +435,98 @@ Always free.</h1>
       });
     })
     .catch(function () { });
+
+  /* ── Forgot password / magic-link flow ────────────────────── */
+  var forgotLink = document.getElementById('j-forgot-link');
+  var magicPanel = document.getElementById('j-magic');
+  var magicForm  = document.getElementById('j-magic-form');
+  var magicEmail = document.getElementById('j-magic-email');
+  var magicBtn   = document.getElementById('j-magic-btn');
+  var magicMsg   = document.getElementById('j-magic-msg');
+  var magicBack  = document.getElementById('j-magic-back');
+  var mainForm   = document.getElementById('join-form');
+  var authSwitch = document.getElementById('auth-switch');
+  var authMeta   = document.querySelector('.auth-meta');
+
+  function showMagic(prefillEmail) {
+    if (mainForm)   mainForm.style.display   = 'none';
+    if (authSwitch) authSwitch.style.display = 'none';
+    if (authMeta)   authMeta.style.display   = 'none';
+    /* Hide form-eyebrow / form-title / form-subtitle since the magic panel has its own header */
+    ['form-eyebrow', 'form-title', 'form-subtitle'].forEach(function (id) {
+      var el = document.getElementById(id); if (el) el.style.display = 'none';
+    });
+    if (magicPanel) magicPanel.style.display = 'flex';
+    magicMsg.textContent = ''; magicMsg.className = 'auth-msg';
+    magicBtn.disabled = false; magicBtn.textContent = 'Send sign-in link';
+    if (prefillEmail) magicEmail.value = prefillEmail;
+    setTimeout(function () { magicEmail.focus(); }, 50);
+  }
+
+  function showLogin() {
+    if (magicPanel) magicPanel.style.display = 'none';
+    if (mainForm)   mainForm.style.display   = '';
+    if (authSwitch) authSwitch.style.display = '';
+    if (authMeta)   authMeta.style.display   = '';
+    ['form-eyebrow', 'form-title', 'form-subtitle'].forEach(function (id) {
+      var el = document.getElementById(id); if (el) el.style.display = '';
+    });
+  }
+
+  if (forgotLink) {
+    forgotLink.addEventListener('click', function (ev) {
+      ev.preventDefault();
+      var emailEl = document.getElementById('j-email');
+      showMagic(emailEl ? emailEl.value.trim() : '');
+    });
+  }
+  if (magicBack) {
+    magicBack.addEventListener('click', function () { showLogin(); });
+  }
+  if (magicForm) {
+    magicForm.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var email = (magicEmail.value || '').trim().toLowerCase();
+      if (!email) {
+        magicMsg.textContent = 'Enter your email.';
+        magicMsg.className = 'auth-msg error';
+        return;
+      }
+      magicBtn.disabled = true; magicBtn.textContent = 'Sending…';
+      magicMsg.textContent = ''; magicMsg.className = 'auth-msg';
+      fetch(API + '/auth/magic-link', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      })
+        .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; }); })
+        .then(function (res) {
+          if (res.ok) {
+            /* Replace the form with a success card */
+            magicForm.innerHTML =
+              '<div class="auth-magic-success">' +
+                '<strong>✓ Check your email</strong>' +
+                'We just sent a one-time sign-in link to <strong style="display:inline">' +
+                  String(email).replace(/</g, '&lt;') +
+                '</strong>. The link expires in 1 hour.' +
+              '</div>';
+            return;
+          }
+          magicBtn.disabled = false; magicBtn.textContent = 'Send sign-in link';
+          if (res.status === 404) {
+            magicMsg.textContent = "We couldn't find an account with that email.";
+          } else {
+            magicMsg.textContent = (res.body && res.body.error) || 'Something went wrong. Try again.';
+          }
+          magicMsg.className = 'auth-msg error';
+        })
+        .catch(function () {
+          magicBtn.disabled = false; magicBtn.textContent = 'Send sign-in link';
+          magicMsg.textContent = 'Network error — please try again.';
+          magicMsg.className = 'auth-msg error';
+        });
+    });
+  }
 
   /* ── Password reveal toggle ───────────────────────────────── */
   var pwToggle = document.getElementById('j-pw-toggle');
