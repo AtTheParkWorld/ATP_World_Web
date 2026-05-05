@@ -28,7 +28,11 @@ function apiPost(path, body) {
 // ─────────────────────────────────────────────────────────────
 
 // ── AUTH ─────────────────────────────────────────────────────
-var ADMIN_CREDENTIALS = { user: 'atpadmin', pass: 'atp2015!' };
+// Login is real — POSTs /api/auth/login below and checks the
+// returned member.is_admin flag. The dead ADMIN_CREDENTIALS literal
+// that used to live here was removed because it leaked a historical
+// password format hint via View-Source even though the code never
+// referenced it.
 var adminLoggedIn = false;
 
 function adminLogin() {
@@ -87,7 +91,7 @@ function showAdminSection(name, btn) {
   // means that section never gets hidden, so navigating away leaves it
   // visible underneath the new section. 'settings' was added in Theme
   // 5b and was missing from this list — fixed here.
-  ['dashboard','members','ambassadors','sessions','challenges','coaches','analytics','content','settings'].forEach(function(s){
+  ['dashboard','members','ambassadors','sessions','challenges','coaches','analytics','content','settings','operations'].forEach(function(s){
     var el = document.getElementById('section-'+s);
     if (el) el.style.display = 'none';
   });

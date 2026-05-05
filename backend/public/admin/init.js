@@ -41,8 +41,156 @@ async function cancelSession(sessionId, sessionName) {
     if (name === 'members')    { loadMembersAPI(); }
     if (name === 'ambassadors'){ renderAmbassadors(); }
     if (name === 'settings')   { loadSettingsSection(); }
+    if (name === 'operations') { loadFailedShopifyRedemptions(); loadNewsletterAdmin(); }
   };
 })();
+
+// ═══════════════════════════════════════════════════════════
+// OPERATIONS PANELS (1.2.1)
+// ═══════════════════════════════════════════════════════════
+// Two thin viewers over backend admin endpoints that previously
+// had no UI. Both gate on requireAdmin server-side; we still pass
+// the bearer token so the request reaches the route.
+
+function _atpEscapeHtml(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+// ── Failed Shopify redemptions ───────────────────────────────
+async function loadFailedShopifyRedemptions() {
+  var host = document.getElementById('failedShopifyList');
+  if (!host) return;
+  host.innerHTML = '<div style="padding:14px;color:#555;text-align:center">Loading…</div>';
+  try {
+    var res = await fetch(ATP_API + '/store/admin/points/failed', {
+      headers: { 'Authorization': 'Bearer ' + getToken() },
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    var rows = (data && data.redemptions) || [];
+    if (!rows.length) {
+      host.innerHTML = '<div style="padding:18px;color:#888;text-align:center;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px">✅ No failed redemptions — all points are syncing to Shopify cleanly.</div>';
+      return;
+    }
+    var html = '<table class="admin-table" style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="text-align:left;color:#888;border-bottom:1px solid #1a1a1a">' +
+      '<th style="padding:10px 12px">Member</th>' +
+      '<th style="padding:10px 12px">Code</th>' +
+      '<th style="padding:10px 12px">Points</th>' +
+      '<th style="padding:10px 12px">AED</th>' +
+      '<th style="padding:10px 12px">Error</th>' +
+      '<th style="padding:10px 12px;text-align:right">Action</th>' +
+      '</tr></thead><tbody>';
+    rows.forEach(function(r){
+      html += '<tr style="border-bottom:1px solid #111">' +
+        '<td style="padding:10px 12px;color:#fff">' + _atpEscapeHtml((r.first_name||'') + ' ' + (r.last_name||'')) + '<br><span style="color:#666;font-size:11px">' + _atpEscapeHtml(r.email||'') + '</span></td>' +
+        '<td style="padding:10px 12px;font-family:monospace;color:#7AC231">' + _atpEscapeHtml(r.discount_code||'') + '</td>' +
+        '<td style="padding:10px 12px;color:#fff">' + _atpEscapeHtml(r.points_spent) + '</td>' +
+        '<td style="padding:10px 12px;color:#fff">' + _atpEscapeHtml(r.amount_value) + ' ' + _atpEscapeHtml(r.currency_code||'AED') + '</td>' +
+        '<td style="padding:10px 12px;color:#f87171;font-size:11px;max-width:240px;word-wrap:break-word">' + _atpEscapeHtml(r.shopify_error||'(no error logged)') + '</td>' +
+        '<td style="padding:10px 12px;text-align:right">' +
+          '<button class="admin-btn admin-btn-primary" onclick="retryShopifyRedemption(\'' + _atpEscapeHtml(r.id) + '\')" style="font-size:11px;padding:5px 10px">Retry</button>' +
+        '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    host.innerHTML = html;
+  } catch (e) {
+    host.innerHTML = '<div style="padding:14px;color:#f87171">Failed to load: ' + _atpEscapeHtml(e.message) + '</div>';
+  }
+}
+
+async function retryShopifyRedemption(id) {
+  if (!confirm('Retry the Shopify discount-code create call for this redemption?')) return;
+  try {
+    var res = await fetch(ATP_API + '/store/admin/points/' + encodeURIComponent(id) + '/retry-shopify', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + getToken() },
+    });
+    var data = await res.json();
+    if (!res.ok) {
+      showToast('❌ Retry failed: ' + (data.error || res.status), true);
+      return;
+    }
+    showToast('✅ Retry queued — code: ' + (data.discount_code || 'updated'));
+    loadFailedShopifyRedemptions();
+  } catch (e) {
+    showToast('❌ ' + e.message, true);
+  }
+}
+
+// ── Newsletter subscribers ───────────────────────────────────
+async function loadNewsletterAdmin() {
+  var statsHost = document.getElementById('newsletterStats');
+  var listHost  = document.getElementById('newsletterList');
+  if (!listHost) return;
+  listHost.innerHTML = '<div style="padding:14px;color:#555;text-align:center">Loading…</div>';
+  try {
+    var res = await fetch(ATP_API + '/newsletter/admin', {
+      headers: { 'Authorization': 'Bearer ' + getToken() },
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    var rows = (data && data.subscribers) || [];
+    if (statsHost) {
+      statsHost.textContent = rows.length + ' subscriber' + (rows.length === 1 ? '' : 's') + ' total. CSV export includes email + opt-in date.';
+    }
+    if (!rows.length) {
+      listHost.innerHTML = '<div style="padding:18px;color:#888;text-align:center;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px">No newsletter subscribers yet — the homepage signup form posts to <code style="color:#7AC231">/api/newsletter/subscribe</code>.</div>';
+      return;
+    }
+    var html = '<table class="admin-table" style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="text-align:left;color:#888;border-bottom:1px solid #1a1a1a">' +
+      '<th style="padding:10px 12px">Email</th>' +
+      '<th style="padding:10px 12px">Subscribed at</th>' +
+      '<th style="padding:10px 12px">Source</th>' +
+      '<th style="padding:10px 12px">Status</th>' +
+      '</tr></thead><tbody>';
+    rows.forEach(function(r){
+      var when = r.subscribed_at ? new Date(r.subscribed_at).toLocaleString() : '';
+      html += '<tr style="border-bottom:1px solid #111">' +
+        '<td style="padding:10px 12px;color:#fff">' + _atpEscapeHtml(r.email||'') + '</td>' +
+        '<td style="padding:10px 12px;color:#aaa">' + _atpEscapeHtml(when) + '</td>' +
+        '<td style="padding:10px 12px;color:#aaa">' + _atpEscapeHtml(r.source||'web') + '</td>' +
+        '<td style="padding:10px 12px;color:' + (r.unsubscribed_at ? '#f87171' : '#7AC231') + '">' +
+          (r.unsubscribed_at ? 'Unsubscribed' : 'Active') +
+        '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+    listHost.innerHTML = html;
+  } catch (e) {
+    listHost.innerHTML = '<div style="padding:14px;color:#f87171">Failed to load: ' + _atpEscapeHtml(e.message) + '</div>';
+  }
+}
+
+async function exportNewsletterCsv() {
+  // window.open can't set Authorization headers, so fetch the CSV with
+  // the bearer token, convert to a blob, and trigger a synthetic
+  // download. Avoids loosening the auth middleware to accept ?token=.
+  try {
+    var res = await fetch(ATP_API + '/newsletter/admin/export?format=csv', {
+      headers: { 'Authorization': 'Bearer ' + getToken() },
+    });
+    if (!res.ok) {
+      showToast('❌ Export failed: HTTP ' + res.status, true);
+      return;
+    }
+    var blob = await res.blob();
+    var ts = new Date().toISOString().slice(0, 10);
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'atp-newsletter-' + ts + '.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    showToast('✅ Export downloaded');
+  } catch (e) {
+    showToast('❌ ' + e.message, true);
+  }
+}
 
 async function populateChallengeCities() {
   var el = document.getElementById('cCity');

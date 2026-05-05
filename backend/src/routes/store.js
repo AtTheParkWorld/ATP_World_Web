@@ -23,7 +23,7 @@
  */
 const router = require('express').Router();
 const { query, transaction } = require('../db');
-const { authenticate } = require('../middleware/auth');
+const { authenticate, requireAdmin } = require('../middleware/auth');
 
 // ── helpers ──────────────────────────────────────────────────────
 function _missingTable(e) { return e && (e.code === '42P01' || e.code === '42703'); }
@@ -381,9 +381,8 @@ router.post('/points/redeem', authenticate, async (req, res, next) => {
 // For redemptions that were issued in the DB but failed to create the
 // Shopify code (e.g. Admin token wasn't set yet, transient network
 // error). Re-runs the Shopify create + flips status back to 'issued'.
-router.post('/admin/points/:id/retry-shopify', authenticate, async (req, res, next) => {
+router.post('/admin/points/:id/retry-shopify', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    if (!req.member.is_admin) return res.status(403).json({ error: 'Admin only' });
     const { rows } = await query(
       `SELECT * FROM points_redemptions WHERE id = $1`,
       [req.params.id]
@@ -427,9 +426,8 @@ router.post('/admin/points/:id/retry-shopify', authenticate, async (req, res, ne
 // GET /api/store/admin/points/failed (admin)
 // Lists redemptions stuck in shopify_failed so admin can see what's
 // pending mirror.
-router.get('/admin/points/failed', authenticate, async (req, res, next) => {
+router.get('/admin/points/failed', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    if (!req.member.is_admin) return res.status(403).json({ error: 'Admin only' });
     const { rows } = await query(
       `SELECT r.*, m.first_name, m.last_name, m.email
          FROM points_redemptions r
