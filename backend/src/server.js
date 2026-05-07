@@ -225,6 +225,9 @@ app.get('/join',     (req, res) => res.sendFile(path.join(__dirname, '../public/
 // Magic-link verify landing page — emailed links (FRONTEND_URL/auth/verify?token=…)
 // resolve to this static page, which calls GET /api/auth/verify and stores the JWT.
 app.get('/auth/verify', (req, res) => res.sendFile(path.join(__dirname, '../public/auth-verify.html')));
+// Coach profile pretty URLs — /coach/firstname-lastname → coach.html which
+// reads the :slug param from window.location and fetches /api/coaches/by-slug/:slug.
+app.get('/coach/:slug', (req, res) => res.sendFile(path.join(__dirname, '../public/coach.html')));
 app.get('/sessions', (req, res) => res.sendFile(path.join(__dirname, '../public/sessions.html')));
 app.get('/community',(req, res) => res.sendFile(path.join(__dirname, '../public/community.html')));
 app.get('/profile',  (req, res) => res.sendFile(path.join(__dirname, '../public/profile.html')));

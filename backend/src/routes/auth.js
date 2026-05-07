@@ -1325,6 +1325,107 @@ router.post('/migrate-audit-log', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+
+// ── POST /api/auth/migrate-coach-profile-v2 ────────────────────
+// Adds the rich-profile fields required by the redesigned /coach/:slug
+// page (cover image, photo, intro video, social links, gallery, etc.),
+// creates the coach_messages inbox table, and backfills slugs for any
+// members already flagged is_coach=true.
+router.post('/migrate-coach-profile-v2', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    // ── coach_profiles: add rich-branding columns ─────────────
+    const cols = [
+      `ADD COLUMN IF NOT EXISTS slug                    VARCHAR(80) UNIQUE`,
+      `ADD COLUMN IF NOT EXISTS display_name            VARCHAR(120)`,
+      `ADD COLUMN IF NOT EXISTS tagline                 VARCHAR(180)`,
+      `ADD COLUMN IF NOT EXISTS philosophy              TEXT`,
+      `ADD COLUMN IF NOT EXISTS cover_image_url         TEXT`,
+      `ADD COLUMN IF NOT EXISTS profile_photo_url       TEXT`,
+      `ADD COLUMN IF NOT EXISTS intro_video_url         TEXT`,
+      `ADD COLUMN IF NOT EXISTS whatsapp_url            TEXT`,
+      `ADD COLUMN IF NOT EXISTS website_url             TEXT`,
+      `ADD COLUMN IF NOT EXISTS youtube_url             TEXT`,
+      `ADD COLUMN IF NOT EXISTS linkedin_url            TEXT`,
+      `ADD COLUMN IF NOT EXISTS gallery_urls            JSONB DEFAULT '[]'`,
+      `ADD COLUMN IF NOT EXISTS accepts_private_sessions BOOLEAN DEFAULT false`,
+      `ADD COLUMN IF NOT EXISTS private_session_info    TEXT`,
+    ];
+    for (const c of cols) {
+      await query(`ALTER TABLE coach_profiles ${c}`);
+    }
+
+    // ── coach_messages: contact-form inbox ────────────────────
+    await query(`CREATE TABLE IF NOT EXISTS coach_messages (
+      id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      coach_id          UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      sender_member_id  UUID REFERENCES members(id) ON DELETE SET NULL,
+      sender_name       VARCHAR(120) NOT NULL,
+      sender_email      VARCHAR(255) NOT NULL,
+      sender_phone      VARCHAR(40),
+      subject           VARCHAR(200),
+      message           TEXT NOT NULL,
+      source_url        TEXT,
+      created_at        TIMESTAMPTZ DEFAULT NOW(),
+      read_at           TIMESTAMPTZ
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_coach_messages_coach_created ON coach_messages(coach_id, created_at DESC)`);
+
+    // ── Backfill: ensure every existing is_coach=true member has
+    //    a coach_profiles row + a unique slug. Slug strategy:
+    //      base = first-name + '-' + last-name (kebab, ascii)
+    //      collision → base + '-2', '-3', …
+    //    Existing rows missing a slug are filled in here too.
+    const { rows: coaches } = await query(
+      `SELECT m.id, m.first_name, m.last_name, cp.slug
+       FROM members m
+       LEFT JOIN coach_profiles cp ON cp.member_id=m.id
+       WHERE m.is_coach=true`
+    );
+
+    function slugify(s) {
+      return String(s || '')
+        .normalize('NFD').replace(/[\u0300-\u036F]/g, '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .slice(0, 60) || 'coach';
+    }
+
+    const usedSlugs = new Set(
+      (await query(`SELECT slug FROM coach_profiles WHERE slug IS NOT NULL`)).rows.map(r => r.slug)
+    );
+
+    let backfilled = 0;
+    for (const c of coaches) {
+      if (c.slug) continue;
+      const base = `${slugify(c.first_name)}-${slugify(c.last_name)}`.replace(/^-|-$/g, '') || 'coach';
+      let slug = base;
+      let n = 2;
+      while (usedSlugs.has(slug)) { slug = `${base}-${n++}`; }
+      usedSlugs.add(slug);
+      await query(
+        `INSERT INTO coach_profiles (member_id, slug)
+         VALUES ($1, $2)
+         ON CONFLICT (member_id) DO UPDATE SET slug=EXCLUDED.slug
+         WHERE coach_profiles.slug IS NULL`,
+        [c.id, slug]
+      );
+      backfilled++;
+    }
+
+    res.json({
+      success: true,
+      message: 'Coach profile schema v2 migrated',
+      added_columns: cols.length,
+      coach_messages_table: 'created',
+      slugs_backfilled: backfilled,
+    });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
 
 // ── POST /api/auth/grant-admin  (setup only) ──────────────────

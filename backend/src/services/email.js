@@ -138,6 +138,49 @@ async function sendWelcome(member) {
 }
 
 // ── MAGIC LINK ────────────────────────────────────────────────
+// ── COACH CONTACT MESSAGE ─────────────────────────────────────
+// Sent to a coach when a visitor uses the "Send a message" form on
+// their profile page. Returns the same { ok, code, reason } shape as
+// send() so callers can choose to surface failures.
+async function sendCoachMessage(coach, payload) {
+  const safe = (s) => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const replyTo = safe(payload.email);
+  const body = baseTemplate(`
+    <h1>New message — ${safe(coach.first_name)}</h1>
+    <p>You have a new inquiry from your ATP coach profile.</p>
+    <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:20px;margin:20px 0">
+      <p style="margin:0 0 10px"><strong style="color:#7AC231">From:</strong> ${safe(payload.name)} &lt;${replyTo}&gt;</p>
+      ${payload.phone   ? `<p style="margin:0 0 10px"><strong style="color:#7AC231">Phone:</strong> ${safe(payload.phone)}</p>` : ''}
+      ${payload.subject ? `<p style="margin:0 0 10px"><strong style="color:#7AC231">Subject:</strong> ${safe(payload.subject)}</p>` : ''}
+      <p style="margin:14px 0 0;white-space:pre-wrap">${safe(payload.message)}</p>
+    </div>
+    <p class="muted">Reply directly to this email to respond — your reply will go to <strong>${replyTo}</strong>.</p>
+  `);
+  // Use an explicit reply-to so the coach can hit "Reply" and reach the
+  // sender directly without ATP being in the loop.
+  const status = emailServiceStatus();
+  if (!status.configured) {
+    console.warn('[EMAIL MOCK] sendCoachMessage', { to: coach.email, from: payload.email });
+    return { ok: false, code: 'EMAIL_NOT_CONFIGURED', reason: status.reason };
+  }
+  try {
+    await sgMail.send({
+      to: coach.email,
+      from: FROM,
+      replyTo: payload.email,
+      subject: `[ATP] New message from ${payload.name}` + (payload.subject ? ` — ${payload.subject}` : ''),
+      html: body,
+    });
+    return { ok: true };
+  } catch (err) {
+    const sgErrors = err.response?.body?.errors;
+    const reason = sgErrors ? sgErrors.map(e => e.message).join('; ') : (err.message || 'Unknown SendGrid error');
+    console.error('SendGrid error (sendCoachMessage):', sgErrors || err.message);
+    return { ok: false, code: 'EMAIL_SEND_FAILED', reason };
+  }
+}
+
 async function sendMagicLink(member, magicUrl) {
   const html = baseTemplate(`
     <h1>Your login link</h1>
@@ -307,4 +350,5 @@ module.exports = {
   sendSessionCancellation,
   sendRaw,
   emailServiceStatus,
+  sendCoachMessage,
 };
