@@ -91,7 +91,7 @@ function showAdminSection(name, btn) {
   // means that section never gets hidden, so navigating away leaves it
   // visible underneath the new section. 'settings' was added in Theme
   // 5b and was missing from this list — fixed here.
-  ['dashboard','members','ambassadors','sessions','challenges','coaches','analytics','content','settings','operations'].forEach(function(s){
+  ['dashboard','members','ambassadors','sessions','challenges','coaches','blog','analytics','content','settings','operations'].forEach(function(s){
     var el = document.getElementById('section-'+s);
     if (el) el.style.display = 'none';
   });

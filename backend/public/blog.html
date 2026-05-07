@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="/atp.min.css">
+  <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
+  <script src="/atp.bundle.min.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The ATP Journal — Stories, training & community | At The Park</title>
+<meta name="description" content="Stories from the ATP community — coach tips, member journeys, training breakdowns, and what's happening on the ground in Dubai, Al Ain and Muscat.">
+<meta property="og:title" content="The ATP Journal">
+<meta property="og:description" content="Stories from the world's largest free outdoor fitness community.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#7AC231;--green-dark:#5a9a1f;--green-light:#a8e055;
+  --black:#0a0a0a;--dark:#111111;--dark2:#161616;--dark3:#1f1f1f;
+  --muted:#888888;--light:#aaaaaa;--white:#ffffff;
+  --line:rgba(255,255,255,.10);--line-soft:rgba(255,255,255,.06);
+  --ff-display:'Barlow Condensed',sans-serif;--ff-body:'DM Sans',sans-serif;
+  --nav-h:68px;--max:1320px;--radius:8px;--radius-lg:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--ff-body);background:var(--black);color:var(--white);overflow-x:hidden;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;color:inherit}
+
+#nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;padding:0 40px;transition:background .3s,border-color .3s;border-bottom:1px solid transparent}
+#nav.scrolled{background:rgba(10,10,10,.97);border-bottom-color:rgba(122,194,49,.18);backdrop-filter:blur(16px)}
+.nav-inner{width:100%;max-width:var(--max);margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.nav-logo img{height:32px;width:auto;display:block}
+.nav-links{display:flex;align-items:center;gap:32px;list-style:none}
+.nav-links a{font-size:13px;font-weight:500;letter-spacing:.04em;color:var(--light);transition:color .2s}
+.nav-links a:hover,.nav-links a.active{color:var(--green)}
+.nav-actions{display:flex;align-items:center;gap:12px}
+.btn-ghost{font-size:13px;font-weight:600;color:var(--white);border:1px solid rgba(255,255,255,.2);padding:9px 20px;border-radius:var(--radius);background:transparent;transition:border-color .2s;letter-spacing:.03em}
+.btn-ghost:hover{border-color:var(--white)}
+.btn-primary{font-size:13px;font-weight:700;background:var(--green);color:var(--white);padding:10px 22px;border-radius:var(--radius);border:none;letter-spacing:.03em;transition:background .2s,transform .15s}
+.btn-primary:hover{background:var(--green-dark);transform:translateY(-1px)}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
+.hamburger span{display:block;width:22px;height:2px;background:var(--white);border-radius:2px}
+
+/* HERO */
+.bl-hero{padding:calc(var(--nav-h) + 80px) 40px 60px;background:var(--dark2);border-bottom:1px solid var(--line-soft);position:relative;overflow:hidden}
+.bl-hero::before{content:'';position:absolute;top:var(--nav-h);left:0;right:0;height:3px;background:var(--green);z-index:1}
+.bl-hero-inner{max-width:var(--max);margin:0 auto;position:relative;z-index:2}
+.bl-hero-eyebrow{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--green);margin-bottom:14px;display:inline-flex;align-items:center;gap:12px}
+.bl-hero-eyebrow::before{content:'';display:block;width:24px;height:2px;background:var(--green)}
+.bl-hero h1{font-family:var(--ff-display);font-size:clamp(48px,6.5vw,88px);font-weight:900;line-height:.92;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:16px;max-width:880px}
+.bl-hero h1 .acc{color:var(--green)}
+.bl-hero-sub{font-size:17px;line-height:1.65;color:rgba(255,255,255,.78);max-width:640px;font-weight:300}
+
+/* Filter chips */
+.bl-filters{padding:24px 40px 0;max-width:var(--max);margin:0 auto;width:100%}
+.bl-chips{display:flex;gap:8px;flex-wrap:wrap}
+.bl-chip{padding:8px 16px;font-size:12px;font-weight:600;color:var(--light);background:var(--dark2);border:1px solid var(--line-soft);border-radius:18px;cursor:pointer;transition:color .15s,border-color .15s,background .15s;letter-spacing:.02em;white-space:nowrap}
+.bl-chip:hover{color:#fff;border-color:rgba(255,255,255,.22)}
+.bl-chip.active{color:#0a0a0a;background:var(--green);border-color:var(--green);font-weight:700}
+
+/* FEATURED + GRID */
+.bl-list{padding:36px 40px 80px;max-width:var(--max);margin:0 auto;width:100%;flex:1}
+
+.bl-featured{display:grid;grid-template-columns:1.4fr 1fr;gap:0;margin-bottom:36px;background:var(--dark2);border:1px solid var(--line-soft);border-radius:var(--radius-lg);overflow:hidden;text-decoration:none;color:inherit;transition:border-color .2s,transform .25s,box-shadow .25s}
+.bl-featured:hover{border-color:rgba(122,194,49,.42);transform:translateY(-2px);box-shadow:0 24px 56px rgba(0,0,0,.4)}
+.bl-featured-cover{position:relative;aspect-ratio:16/10;overflow:hidden;background:linear-gradient(135deg,#0d1a0a,#1a3e0a)}
+.bl-featured-cover img{width:100%;height:100%;object-fit:cover;transition:transform .35s}
+.bl-featured:hover .bl-featured-cover img{transform:scale(1.04)}
+.bl-featured-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,0) 50%,rgba(0,0,0,.55) 100%)}
+.bl-featured-flag{position:absolute;top:18px;left:18px;z-index:2;background:var(--green);color:#0a0a0a;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:5px 12px;border-radius:14px}
+.bl-featured-body{padding:42px 40px;display:flex;flex-direction:column;justify-content:center;gap:14px}
+.bl-featured-meta{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green)}
+.bl-featured-meta .dot{display:inline-block;color:var(--muted);margin:0 8px;font-weight:400}
+.bl-featured-meta .author{color:var(--light)}
+.bl-featured h2{font-family:var(--ff-display);font-size:clamp(28px,3vw,42px);font-weight:900;line-height:1;text-transform:uppercase;letter-spacing:-.005em;color:#fff}
+.bl-featured-excerpt{font-size:15px;line-height:1.7;color:rgba(255,255,255,.78);font-weight:300}
+.bl-featured-cta{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.04em;margin-top:6px}
+
+/* GRID */
+.bl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+.bl-card{background:var(--dark2);border:1px solid var(--line-soft);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .2s,transform .2s,box-shadow .2s}
+.bl-card:hover{border-color:rgba(122,194,49,.42);transform:translateY(-3px);box-shadow:0 18px 36px rgba(0,0,0,.32)}
+.bl-card-cover{position:relative;aspect-ratio:16/10;overflow:hidden;background:linear-gradient(135deg,#0d1a0a,#1a3e0a)}
+.bl-card-cover img{width:100%;height:100%;object-fit:cover;transition:transform .35s}
+.bl-card:hover .bl-card-cover img{transform:scale(1.05)}
+.bl-card-cat{position:absolute;top:12px;left:12px;z-index:2;background:rgba(10,10,10,.7);backdrop-filter:blur(8px);color:var(--green);font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:5px 10px;border-radius:12px;border:1px solid rgba(122,194,49,.32)}
+.bl-card-body{padding:22px 22px 24px;display:flex;flex-direction:column;gap:8px;flex:1}
+.bl-card-meta{font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.04em}
+.bl-card-meta .author{color:var(--light)}
+.bl-card-title{font-family:var(--ff-display);font-size:22px;font-weight:900;text-transform:uppercase;line-height:1.05;letter-spacing:-.005em;color:#fff;margin:6px 0 4px}
+.bl-card-excerpt{font-size:13px;line-height:1.55;color:var(--light);font-weight:400;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;flex:1}
+.bl-card-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line-soft);font-size:11px;color:var(--green);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+
+/* Empty + skeleton */
+.bl-empty{padding:60px 24px;text-align:center;background:var(--dark2);border:1px dashed var(--line);border-radius:var(--radius-lg);color:var(--light)}
+.bl-empty h3{font-family:var(--ff-display);font-size:24px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:8px;letter-spacing:.005em}
+.bl-empty p{font-size:14px;color:var(--muted);max-width:440px;margin:0 auto;line-height:1.6}
+.bl-skel{background:var(--dark2);border:1px solid var(--line-soft);border-radius:var(--radius-lg);overflow:hidden;animation:bl-pulse 1.6s ease-in-out infinite}
+.bl-skel-cover{aspect-ratio:16/10;background:linear-gradient(90deg,#161616 0%,#1f1f1f 50%,#161616 100%);background-size:200% 100%;animation:bl-shimmer 1.8s linear infinite}
+.bl-skel-body{padding:22px;display:flex;flex-direction:column;gap:10px}
+.bl-skel-line{height:14px;background:#1f1f1f;border-radius:4px}
+.bl-skel-line.short{width:60%}
+.bl-skel-line.tall{height:22px}
+@keyframes bl-pulse{0%,100%{opacity:1}50%{opacity:.7}}
+@keyframes bl-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* FOOTER */
+.footer-min{background:#0d0d0d;padding:36px 40px 24px;border-top:1px solid var(--line-soft);font-family:var(--ff-body);margin-top:auto}
+.footer-min-inner{max-width:1320px;margin:0 auto}
+.footer-min-bot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
+.footer-min-copy{font-size:12px;color:#666;margin:0}
+.footer-legal{display:flex;gap:18px}
+.footer-legal a{font-size:12px;color:#888;transition:color .2s}
+.footer-legal a:hover{color:#fff}
+
+@media (max-width:900px){
+  #nav{padding:0 20px}
+  .nav-links,.nav-actions{display:none}
+  .hamburger{display:flex}
+  #nav.mobile-open{height:auto;flex-direction:column;align-items:stretch;background:rgba(10,10,10,.98);padding:0 20px 24px}
+  #nav.mobile-open .nav-links{display:flex;flex-direction:column;gap:18px;width:100%;padding-top:16px;border-top:1px solid rgba(255,255,255,.08)}
+  #nav.mobile-open .nav-actions{display:flex;flex-direction:column;width:100%;gap:8px;margin-top:14px}
+  .bl-hero{padding:calc(var(--nav-h) + 48px) 20px 40px}
+  .bl-filters{padding:18px 20px 0}
+  .bl-list{padding:28px 20px 60px}
+  .bl-featured{grid-template-columns:1fr}
+  .bl-featured-body{padding:28px 24px}
+  .bl-grid{grid-template-columns:1fr;gap:16px}
+}
+@media (max-width:1100px) and (min-width:901px){
+  .bl-grid{grid-template-columns:repeat(2,1fr)}
+}
+</style>
+</head>
+<body>
+
+<div id="atp-nav-host" data-active=""></div>
+
+<section class="bl-hero">
+  <div class="bl-hero-inner">
+    <div class="bl-hero-eyebrow">The ATP Journal</div>
+    <h1>Stories <span class="acc">from the pack</span></h1>
+    <p class="bl-hero-sub">Coach insights, member journeys, training breakdowns, and what's actually happening on the ground in Dubai, Al Ain and Muscat. Updated regularly.</p>
+  </div>
+</section>
+
+<section class="bl-filters" id="bl-filters" style="display:none">
+  <div class="bl-chips" id="bl-chips">
+    <button class="bl-chip active" data-cat="">All posts</button>
+  </div>
+</section>
+
+<section class="bl-list">
+  <div id="bl-content">
+    <div class="bl-grid">
+      <div class="bl-skel"><div class="bl-skel-cover"></div><div class="bl-skel-body"><div class="bl-skel-line tall"></div><div class="bl-skel-line"></div><div class="bl-skel-line short"></div></div></div>
+      <div class="bl-skel"><div class="bl-skel-cover"></div><div class="bl-skel-body"><div class="bl-skel-line tall"></div><div class="bl-skel-line"></div><div class="bl-skel-line short"></div></div></div>
+      <div class="bl-skel"><div class="bl-skel-cover"></div><div class="bl-skel-body"><div class="bl-skel-line tall"></div><div class="bl-skel-line"></div><div class="bl-skel-line short"></div></div></div>
+    </div>
+  </div>
+</section>
+
+<footer class="footer-min" role="contentinfo">
+  <div class="footer-min-inner">
+    <div class="footer-min-bot">
+      <p class="footer-min-copy">© 2026 At The Park. All rights reserved. Dubai, United Arab Emirates.</p>
+      <nav class="footer-legal" aria-label="Legal">
+        <a href="/privacy.html">Privacy</a>
+        <a href="/terms.html">Terms</a>
+        <a href="/contacts.html">Contacts</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  window.addEventListener('scroll', function () {
+    var n = document.getElementById('nav');
+    if (n) n.classList.toggle('scrolled', window.scrollY > 10);
+  }, { passive: true });
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function relTime(iso) {
+    if (!iso) return '';
+    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+  function authorName(p) {
+    if (!p.author) return 'ATP';
+    return ((p.author.first_name || '') + ' ' + (p.author.last_name || '')).trim() || 'ATP';
+  }
+
+  function renderFeatured(p) {
+    var coverHtml = p.cover_image_url
+      ? '<img src="' + escapeHtml(p.cover_image_url) + '" alt="" loading="eager">'
+      : '';
+    var meta = [escapeHtml(relTime(p.published_at || p.created_at))];
+    meta.push('<span class="author">' + escapeHtml(authorName(p)) + '</span>');
+    if (p.category) meta.push(escapeHtml(p.category));
+    return '<a class="bl-featured" href="/blog/' + encodeURIComponent(p.slug) + '">'
+      + '<div class="bl-featured-cover"><div class="bl-featured-flag">⭐ Latest</div>' + coverHtml + '</div>'
+      + '<div class="bl-featured-body">'
+      +   '<div class="bl-featured-meta">' + meta.join('<span class="dot">·</span>') + '</div>'
+      +   '<h2>' + escapeHtml(p.title) + '</h2>'
+      +   (p.excerpt ? '<p class="bl-featured-excerpt">' + escapeHtml(p.excerpt) + '</p>' : '')
+      +   '<div class="bl-featured-cta">Read the post →</div>'
+      + '</div>'
+      + '</a>';
+  }
+
+  function renderCard(p) {
+    var coverHtml = p.cover_image_url
+      ? '<img src="' + escapeHtml(p.cover_image_url) + '" alt="" loading="lazy">'
+      : '';
+    return '<a class="bl-card" href="/blog/' + encodeURIComponent(p.slug) + '">'
+      + '<div class="bl-card-cover">' + (p.category ? '<span class="bl-card-cat">' + escapeHtml(p.category) + '</span>' : '') + coverHtml + '</div>'
+      + '<div class="bl-card-body">'
+      +   '<div class="bl-card-meta">' + escapeHtml(relTime(p.published_at || p.created_at)) + ' · <span class="author">' + escapeHtml(authorName(p)) + '</span></div>'
+      +   '<div class="bl-card-title">' + escapeHtml(p.title) + '</div>'
+      +   (p.excerpt ? '<p class="bl-card-excerpt">' + escapeHtml(p.excerpt) + '</p>' : '')
+      +   '<div class="bl-card-foot">Read more →</div>'
+      + '</div>'
+      + '</a>';
+  }
+
+  function render(posts) {
+    var content = document.getElementById('bl-content');
+    if (!posts.length) {
+      content.innerHTML = '<div class="bl-empty">'
+        + '<h3>Nothing here yet</h3>'
+        + '<p>The first ATP post is on its way. In the meantime, head to <a href="/sessions" style="color:var(--green)">Sessions</a> and find your next workout.</p>'
+        + '</div>';
+      return;
+    }
+    var featured = posts[0];
+    var rest = posts.slice(1);
+    var html = renderFeatured(featured);
+    if (rest.length) {
+      html += '<div class="bl-grid">' + rest.map(renderCard).join('') + '</div>';
+    }
+    content.innerHTML = html;
+  }
+
+  function loadCategories() {
+    return fetch('/api/blog/categories', { cache: 'no-cache' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        var cats = (d && d.categories) || [];
+        if (!cats.length) return;
+        var chipsEl = document.getElementById('bl-chips');
+        cats.forEach(function (c) {
+          var btn = document.createElement('button');
+          btn.className = 'bl-chip';
+          btn.setAttribute('data-cat', c.category);
+          btn.textContent = c.category + ' · ' + c.n;
+          chipsEl.appendChild(btn);
+        });
+        document.getElementById('bl-filters').style.display = '';
+        chipsEl.addEventListener('click', function (ev) {
+          var t = ev.target.closest('button.bl-chip');
+          if (!t) return;
+          Array.from(chipsEl.children).forEach(function (c) { c.classList.remove('active'); });
+          t.classList.add('active');
+          loadPosts(t.getAttribute('data-cat') || '');
+        });
+      })
+      .catch(function () { /* hidden by default */ });
+  }
+
+  function loadPosts(category) {
+    var qs = category ? '?category=' + encodeURIComponent(category) + '&limit=24' : '?limit=24';
+    var content = document.getElementById('bl-content');
+    content.innerHTML =
+      '<div class="bl-grid">' +
+        '<div class="bl-skel"><div class="bl-skel-cover"></div><div class="bl-skel-body"><div class="bl-skel-line tall"></div><div class="bl-skel-line"></div></div></div>' +
+        '<div class="bl-skel"><div class="bl-skel-cover"></div><div class="bl-skel-body"><div class="bl-skel-line tall"></div><div class="bl-skel-line"></div></div></div>' +
+        '<div class="bl-skel"><div class="bl-skel-cover"></div><div class="bl-skel-body"><div class="bl-skel-line tall"></div><div class="bl-skel-line"></div></div></div>' +
+      '</div>';
+    fetch('/api/blog' + qs, { cache: 'no-cache' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) { render((d && d.posts) || []); })
+      .catch(function () {
+        content.innerHTML = '<div class="bl-empty"><h3>Couldn\'t load posts</h3><p>Try refreshing — or email <a href="mailto:general@atthepark.world" style="color:var(--green)">general@atthepark.world</a>.</p></div>';
+      });
+  }
+
+  loadCategories();
+  loadPosts('');
+})();
+</script>
+
+</body>
+</html>

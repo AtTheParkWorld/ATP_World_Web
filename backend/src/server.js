@@ -236,6 +236,9 @@ app.get('/coach/:slug', (req, res) => res.sendFile(path.join(__dirname, '../publ
 app.get('/coaches', (req, res) => res.sendFile(path.join(__dirname, '../public/coaches.html')));
 // Visitor-facing coach conversation page — emailed token URLs land here.
 app.get('/coach-thread/:token', (req, res) => res.sendFile(path.join(__dirname, '../public/coach-thread.html')));
+// Blog — listing + single post (slug-based pretty URLs)
+app.get('/blog',         (req, res) => res.sendFile(path.join(__dirname, '../public/blog.html')));
+app.get('/blog/:slug',   (req, res) => res.sendFile(path.join(__dirname, '../public/blog-post.html')));
 app.get('/sessions', (req, res) => res.sendFile(path.join(__dirname, '../public/sessions.html')));
 app.get('/community',(req, res) => res.sendFile(path.join(__dirname, '../public/community.html')));
 app.get('/profile',  (req, res) => res.sendFile(path.join(__dirname, '../public/profile.html')));
@@ -261,6 +264,7 @@ const ROUTES = [
   ['cms',          require('./routes/cms')],
   ['cities',       require('./routes/cities')],
   ['coaches',      require('./routes/coaches')],
+  ['blog',         require('./routes/blog')],
   ['analytics',    require('./routes/analytics')],
   ['migrate',      require('./routes/migrate')],
   ['applications', require('./routes/applications')],

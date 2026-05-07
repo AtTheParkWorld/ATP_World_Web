@@ -33,6 +33,7 @@ async function cancelSession(sessionId, sessionName) {
     if (name === 'sessions')   { loadCities(); loadCoaches(); loadTribes(); setTimeout(loadSessionsList, 200); }
     if (name === 'challenges') { loadChallengesList(); populateChallengeCities(); regenerateBadge(); }
     if (name === 'coaches')    { loadCoachesSection(); }
+    if (name === 'blog')       { loadBlogSection(); }
     if (name === 'analytics')  {
       loadAnalytics();
       // Theme 12 — set default range + load v2 metrics on open

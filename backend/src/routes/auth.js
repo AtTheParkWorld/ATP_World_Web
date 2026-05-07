@@ -1505,6 +1505,37 @@ router.post('/migrate-coach-threads', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+
+// ── POST /api/auth/migrate-blog ───────────────────────────────
+// Creates the blog_posts table for the new blog feature.
+router.post('/migrate-blog', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    await query(`CREATE TABLE IF NOT EXISTS blog_posts (
+      id                UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      slug              VARCHAR(160) UNIQUE NOT NULL,
+      title             VARCHAR(240) NOT NULL,
+      excerpt           VARCHAR(500),
+      cover_image_url   TEXT,
+      body              TEXT,
+      author_member_id  UUID REFERENCES members(id) ON DELETE SET NULL,
+      category          VARCHAR(60),
+      tags              JSONB DEFAULT '[]',
+      is_published      BOOLEAN NOT NULL DEFAULT false,
+      published_at      TIMESTAMPTZ,
+      view_count        INTEGER NOT NULL DEFAULT 0,
+      created_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at        TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_blog_posts_published ON blog_posts(published_at DESC) WHERE is_published=true`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_blog_posts_category  ON blog_posts(category) WHERE is_published=true`);
+
+    res.json({ success: true, message: 'Blog schema migrated' });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
 
 // ── POST /api/auth/grant-admin  (setup only) ──────────────────
