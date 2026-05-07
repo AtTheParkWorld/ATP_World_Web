@@ -42,7 +42,88 @@ function _flattenCoachShape(c) {
   });
 }
 
+/* ── Inquiries dashboard (admin Coaches section header) ──────
+ * Pulls /api/coaches/admin/message-stats for the chosen window and
+ * renders the totals + per-coach table. Window switches with the
+ * 7d/30d/90d/All buttons (setInqRange). */
+var _INQ_RANGE = '7d';
+function setInqRange(btn, r) {
+  document.querySelectorAll('.coach-inq-range').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  _INQ_RANGE = r;
+  loadCoachInquiries();
+}
+
+async function loadCoachInquiries() {
+  var table = document.getElementById('inqTable');
+  if (!table) return;
+  table.innerHTML = '<div class="inq-empty">Loading…</div>';
+  document.getElementById('inqStatRange').textContent =
+    _INQ_RANGE === 'all' ? 'All time'
+    : _INQ_RANGE === '7d'  ? 'Last 7 days'
+    : _INQ_RANGE === '30d' ? 'Last 30 days'
+    : 'Last 90 days';
+  // Build from/to query for the API (it defaults to trailing 30d if no range)
+  var qs = '';
+  if (_INQ_RANGE !== 'all') {
+    var days = _INQ_RANGE === '7d' ? 7 : _INQ_RANGE === '90d' ? 90 : 30;
+    var from = new Date(Date.now() - days * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+    qs = '?from=' + from;
+  } else {
+    // For "all", send a from date far in the past so the where-clause is satisfied
+    qs = '?from=2020-01-01';
+  }
+  try {
+    var token = getToken();
+    var res = await fetch(ATP_API + '/coaches/admin/message-stats' + qs, {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    var d = await res.json();
+    var stats = (d && d.stats) || [];
+    var withMsgs = stats.filter(function (s) { return s.message_count > 0; });
+    document.getElementById('inqStatTotal').textContent = (d && d.total) || 0;
+    document.getElementById('inqStatCoaches').textContent = withMsgs.length;
+    if (!withMsgs.length) {
+      table.innerHTML = '<div class="inq-empty">No inquiries in this window. Once visitors use the contact form on a coach\'s public page, the activity will show up here.</div>';
+      return;
+    }
+    var rows = withMsgs.map(function (s) {
+      var name = s.display_name || ((s.first_name || '') + ' ' + (s.last_name || '')).trim();
+      var slug = s.slug || '';
+      var when = s.last_message_at ? _inqRelTime(s.last_message_at) : '';
+      var slugUrl = slug ? '/coach/' + slug : '/coach.html?id=' + s.coach_id;
+      return ''
+        + '<div class="inq-row" onclick="window.open(\'' + slugUrl + '\', \'_blank\')">'
+        +   '<div><div class="inq-name">' + (name || '—') + '</div>' + (slug ? '<div class="inq-slug">/coach/' + slug + '</div>' : '') + '</div>'
+        +   '<div class="inq-count">' + s.message_count + '</div>'
+        +   '<div class="inq-time">' + when + '</div>'
+        +   '<div class="inq-action">View public →</div>'
+        + '</div>';
+    }).join('');
+    table.innerHTML =
+      '<div class="inq-head"><div>Coach</div><div>Messages</div><div>Last message</div><div></div></div>' + rows;
+  } catch (e) {
+    table.innerHTML = '<div class="inq-empty">Couldn\'t load — ' + ((e && e.message) || 'unknown error') + '</div>';
+  }
+}
+
+function _inqRelTime(iso) {
+  try {
+    var diff = Date.now() - new Date(iso).getTime();
+    var mins = Math.round(diff / 60000);
+    if (mins < 60) return mins <= 1 ? 'just now' : mins + 'm ago';
+    var hrs = Math.round(mins / 60);
+    if (hrs < 24) return hrs + 'h ago';
+    var days = Math.round(hrs / 24);
+    if (days < 7) return days + 'd ago';
+    return new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+  } catch (e) { return ''; }
+}
+
 async function loadCoachesSection() {
+  // Refresh the inquiries dashboard at the top each time the section opens.
+  loadCoachInquiries();
+
   var grid = document.getElementById('coachesGrid');
   if (!grid) return;
   grid.innerHTML = '<div style="text-align:center;color:#444;padding:40px;grid-column:1/-1">Loading coaches...</div>';
