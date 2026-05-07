@@ -243,6 +243,10 @@ router.delete('/:id', authenticate, requireAdmin, async (req, res, next) => {
 });
 
 // ── POST /api/blog/upload — admin: cover image / inline image ─
+// Returns a SHORT reference URL (/api/blog/media/<uuid>) instead of the
+// full base64 data URL — keeps the body editor readable when admins drop
+// images into a post. The data URL is still stored in cms_content; we
+// just decode + serve it via GET /api/blog/media/:id.
 router.post('/upload', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { data_url, filename, kind } = req.body || {};
@@ -254,13 +258,44 @@ router.post('/upload', authenticate, requireAdmin, async (req, res, next) => {
       return res.status(413).json({ error: 'File too large (max 10MB)' });
     }
     const key = `blog_${(filename || 'upload').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80)}_${Date.now()}`;
-    await query(
+    const { rows } = await query(
       `INSERT INTO cms_content (page, section, key, value_url, updated_by)
        VALUES ('_media', $1, $2, $3, $4)
-       ON CONFLICT (page, section, key) DO UPDATE SET value_url=$3, updated_by=$4, updated_at=NOW()`,
+       ON CONFLICT (page, section, key) DO UPDATE SET value_url=$3, updated_by=$4, updated_at=NOW()
+       RETURNING id`,
       [kind || 'image', key, data_url, req.member.id]
     );
-    res.json({ success: true, url: data_url, size_kb: Math.round(sizeBytes / 1024) });
+    res.json({
+      success:  true,
+      url:      `/api/blog/media/${rows[0].id}`,
+      size_kb:  Math.round(sizeBytes / 1024),
+      media_id: rows[0].id,
+    });
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/blog/media/:id — public read ────────────────────
+// Decodes the base64 data URL stored at this id and streams the image
+// binary back. Public — these are blog post images so they need to load
+// for non-logged-in readers. Long cache headers since each media row's
+// value is immutable (uploads create new rows rather than overwriting).
+router.get('/media/:id', async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT value_url FROM cms_content WHERE id=$1::uuid AND page='_media'`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).send('Not found');
+    const dataUrl = rows[0].value_url;
+    if (!dataUrl || !dataUrl.startsWith('data:')) return res.status(404).send('Not an image');
+    const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if (!match) return res.status(500).send('Invalid stored format');
+    const mimeType = match[1];
+    const buf = Buffer.from(match[2], 'base64');
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Cache-Control', 'public, max-age=2592000, immutable'); // 30 days
+    res.setHeader('Content-Length', buf.length);
+    res.send(buf);
   } catch (err) { next(err); }
 });
 
