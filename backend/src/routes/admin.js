@@ -270,6 +270,37 @@ router.patch('/members/:id/coach', async (req, res, next) => {
         [enabled, req.member?.id || null, req.params.id]
       );
       if (enabled) {
+        // Auto-create the coach_profiles row + a unique slug so /coach/:slug
+        // works the moment we publish, even before the coach has logged in
+        // to fill out their public page.
+        const { rows: m } = await client.query(
+          `SELECT first_name, last_name FROM members WHERE id=$1::uuid`,
+          [req.params.id]
+        );
+        if (m.length) {
+          const slugifyBasic = (s) => String(s || '')
+            .normalize('NFD').replace(/[\u0300-\u036F]/g, '')
+            .toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+            .slice(0, 60);
+          const base = `${slugifyBasic(m[0].first_name)}-${slugifyBasic(m[0].last_name)}`.replace(/^-|-$/g, '') || 'coach';
+          let slug = base;
+          for (let n = 2; ; n++) {
+            const { rows: dup } = await client.query(
+              `SELECT 1 FROM coach_profiles WHERE slug=$1 AND member_id<>$2::uuid LIMIT 1`,
+              [slug, req.params.id]
+            );
+            if (!dup.length) break;
+            slug = `${base}-${n}`;
+          }
+          await client.query(
+            `INSERT INTO coach_profiles (member_id, slug)
+             VALUES ($1::uuid, $2)
+             ON CONFLICT (member_id) DO UPDATE
+               SET slug = COALESCE(coach_profiles.slug, EXCLUDED.slug)`,
+            [req.params.id, slug]
+          );
+        }
+
         await client.query(
           `INSERT INTO notifications (member_id, type, title, body)
            VALUES ($1,'coach_activated','🎽 You are now an ATP Coach!',

@@ -18,12 +18,12 @@
   'use strict';
 
   var NAV_LINKS = [
-    { key: 'home',      label: 'Home',      href: 'index.html' },
-    { key: 'sessions',  label: 'Sessions',  href: 'sessions.html' },
-    { key: 'community', label: 'Community', href: 'community.html' },
-    { key: 'store',     label: 'Store',     href: 'store.html' },
-    { key: 'partners',  label: 'Partners',  href: 'index.html#partners' },
-    { key: 'about',     label: 'About',     href: 'index.html#story' },
+    { key: 'home',      label: 'Home',         href: 'index.html' },
+    { key: 'sessions',  label: 'Sessions',     href: 'sessions.html' },
+    { key: 'community', label: 'Community',    href: 'community.html' },
+    { key: 'store',     label: 'Store',        href: 'store.html' },
+    { key: 'partners',  label: 'Partners',     href: 'index.html#partners' },
+    { key: 'coaches',   label: 'Our coaches',  href: 'coaches.html' },
   ];
 
   var LOGO_SRC = '/atp-logo-transparent.webp';

@@ -9,6 +9,39 @@
 // ═══════════════════════════════════════════════════════════
 var CURRENT_COACH_ID = null;
 
+/* Compat shim: the public /api/coaches endpoint now returns coaches as
+ * { id, ..., profile:{...}, social:{...}, stats:{...} } (slice 1 reshape).
+ * The admin code below was authored against the older flat shape. Rather
+ * than rewrite every access site, flatten back to the legacy keys here
+ * so the modal + grid + feature-toggle keep working. */
+function _flattenCoachShape(c) {
+  if (!c || c.profile === undefined) return c;
+  var p = c.profile || {}, s = c.social || {}, st = c.stats || {};
+  return Object.assign({}, c, {
+    bio: p.bio, tagline: p.tagline, philosophy: p.philosophy,
+    cover_image_url: p.cover_image_url,
+    profile_photo_url: p.profile_photo_url,
+    intro_video_url: p.intro_video_url,
+    specialties: p.specialties || [],
+    certifications: p.certifications || [],
+    languages: p.languages || [],
+    years_experience: p.years_experience || 0,
+    gallery_urls: p.gallery_urls || [],
+    accepts_private_sessions: !!p.accepts_private_sessions,
+    private_session_info: p.private_session_info,
+    is_featured: !!p.is_featured,
+    instagram: s.instagram, tiktok: s.tiktok,
+    whatsapp_url: s.whatsapp_url, website_url: s.website_url,
+    youtube_url: s.youtube_url, linkedin_url: s.linkedin_url,
+    rating_avg: st.rating_avg || 0,
+    rating_count: st.rating_count || 0,
+    sessions_delivered: st.sessions_delivered || 0,
+    total_sessions: st.total_sessions || 0,
+    upcoming_sessions: st.upcoming_sessions || 0,
+    city_name: c.city || c.city_name,
+  });
+}
+
 async function loadCoachesSection() {
   var grid = document.getElementById('coachesGrid');
   if (!grid) return;
@@ -16,7 +49,7 @@ async function loadCoachesSection() {
   try {
     var res = await fetch(ATP_API+'/coaches');
     var data = await res.json();
-    var coaches = data.coaches || [];
+    var coaches = (data.coaches || []).map(_flattenCoachShape);
     if (!coaches.length) {
       grid.innerHTML = '<div style="text-align:center;color:#444;padding:40px;grid-column:1/-1">No coaches yet — make members ambassadors first</div>';
       return;
@@ -69,7 +102,7 @@ async function openCoachModal(coachId) {
     var token = getToken();
     var res = await fetch(ATP_API+'/coaches/'+coachId, {headers:{'Authorization':'Bearer '+token}});
     var data = await res.json();
-    var c = data.coach;
+    var c = _flattenCoachShape(data.coach);
     window._editingCoach = c;
     var name = (c.first_name||'') + ' ' + (c.last_name||'');
     var ini  = ((c.first_name||'?')[0]+(c.last_name||'?')[0]).toUpperCase();
@@ -329,7 +362,8 @@ async function toggleCoachFeature() {
   // Get current state
   var res = await fetch(ATP_API+'/coaches/'+CURRENT_COACH_ID, {headers:{'Authorization':'Bearer '+token}});
   var data = await res.json();
-  var newFeatured = !data.coach.is_featured;
+  var c = _flattenCoachShape(data.coach);
+  var newFeatured = !c.is_featured;
   await fetch(ATP_API+'/coaches/'+CURRENT_COACH_ID, {
     method:'PUT', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
     body: JSON.stringify({is_featured: newFeatured})
