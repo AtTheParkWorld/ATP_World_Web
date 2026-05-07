@@ -561,16 +561,11 @@ a.product-card:hover{transform:translateY(-4px)}
     </div>
   </div>
   <div class="hero-right" aria-hidden="true">
-    <video
-      id="hero-video"
-      autoplay
-      muted
-      loop
-      playsinline
-      style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block;"
-    >
-      <source src="hero-video.mp4" type="video/mp4">
-    </video>
+    <!-- Hero media slot — populated from CMS (admin → Content Management →
+         🏠 Homepage → Hero Section → Hero Video / Hero Image). When neither
+         is set the slot stays as the green-bordered dark panel, which still
+         looks intentional. -->
+    <div id="hero-media-slot" style="position:absolute;inset:0;display:block"></div>
     <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(10,10,10,.55) 0%,transparent 50%);pointer-events:none;"></div>
     <div class="hero-video-label">
       <span class="hvl-dot"></span>
@@ -1486,6 +1481,33 @@ window.handleGoogleSignIn = async function(response) {
       }).join('');
     })
     .catch(function(){ /* fallbacks stay in DOM */ });
+})();
+
+/* Hero media — populate the right-side panel from /api/cms/index hero.hero_video
+   or hero.hero_image. Falls back to nothing visible (the green-bordered dark
+   panel + gradient overlay still reads intentional) when neither is set. */
+(function _atpHomeHeroMedia() {
+  var slot = document.getElementById('hero-media-slot');
+  if (!slot) return;
+  function isVid(u) { return /^data:video|\.(mp4|webm)(\?|$)/i.test(String(u || '')); }
+  function esc(s)   { return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  fetch('/api/cms/index', { cache: 'no-cache' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      if (!d || !d.content || !d.content.hero) return;
+      var h = d.content.hero;
+      var url = h.hero_video || h.hero_image || '';
+      if (!url) return;
+      var common = 'position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block';
+      if (h.hero_video || isVid(url)) {
+        slot.innerHTML = '<video autoplay muted loop playsinline preload="metadata" style="' + common + '"' +
+          (h.hero_image ? ' poster="' + esc(h.hero_image) + '"' : '') +
+          '><source src="' + esc(url) + '" type="video/mp4"></video>';
+      } else {
+        slot.innerHTML = '<img src="' + esc(url) + '" alt="" style="' + common + '">';
+      }
+    })
+    .catch(function () { /* leave the empty panel */ });
 })();
 
 /* Coaches strip on homepage — fetches /api/coaches, prefers featured first
