@@ -255,6 +255,43 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .product-sub{font-size:12px;color:var(--muted);margin-bottom:8px}
 .product-price{font-family:var(--ff-display);font-size:20px;font-weight:800;color:var(--green)}
 
+/* COACHES STRIP */
+.coaches-strip-section{background:var(--black);padding:90px 40px;border-top:1px solid rgba(255,255,255,.06);position:relative;overflow:hidden}
+.coaches-strip-section::before{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:80px;height:3px;background:var(--green)}
+.coaches-strip-inner{max-width:var(--max);margin:0 auto}
+.coaches-strip-head{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:24px;margin-bottom:32px}
+.coaches-strip-headline h2{font-family:var(--ff-display);font-size:clamp(36px,4vw,52px);font-weight:900;text-transform:uppercase;line-height:.95;letter-spacing:-.005em;color:var(--white)}
+.coaches-strip-headline h2 .accent{color:var(--green)}
+.coaches-strip-headline p.section-label{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin-bottom:12px;display:inline-flex;align-items:center;gap:10px}
+.coaches-strip-headline p.section-label::before{content:'';display:block;width:24px;height:2px;background:var(--green)}
+.coaches-strip-headline .section-sub{font-size:15px;color:var(--light);font-weight:300;margin-top:14px;max-width:540px;line-height:1.65}
+.coaches-strip-cta-link{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--green);letter-spacing:.04em;text-transform:uppercase;text-decoration:none;padding:11px 20px;border:1px solid rgba(122,194,49,.4);border-radius:var(--radius);transition:background .15s,border-color .15s,transform .15s;flex-shrink:0}
+.coaches-strip-cta-link:hover{background:rgba(122,194,49,.08);border-color:var(--green);transform:translateY(-1px)}
+.coaches-strip-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.cs-card{background:var(--dark2);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius-lg);overflow:hidden;text-decoration:none;color:inherit;transition:border-color .2s,transform .2s,box-shadow .2s;position:relative;display:flex;flex-direction:column}
+.cs-card:hover{border-color:rgba(122,194,49,.42);transform:translateY(-3px);box-shadow:0 18px 40px rgba(0,0,0,.32)}
+.cs-card-cover{position:relative;aspect-ratio:4/3;overflow:hidden;background:linear-gradient(135deg,#0d1a0a,#1a3e0a)}
+.cs-card-cover img,.cs-card-cover video{width:100%;height:100%;object-fit:cover;transition:transform .35s}
+.cs-card:hover .cs-card-cover img,.cs-card:hover .cs-card-cover video{transform:scale(1.05)}
+.cs-card-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(0,0,0,.7) 100%)}
+.cs-card-featured{position:absolute;top:10px;left:10px;z-index:2;background:var(--green);color:#0a0a0a;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:4px 8px;border-radius:12px}
+.cs-card-photo{position:absolute;bottom:-22px;left:14px;width:48px;height:48px;border-radius:50%;overflow:hidden;background:var(--dark3);border:2px solid var(--dark2);z-index:2}
+.cs-card-photo img,.cs-card-photo video{width:100%;height:100%;object-fit:cover}
+.cs-card-photo-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--green),var(--green-dark));font-family:var(--ff-display);font-size:18px;font-weight:900;color:#0a0a0a}
+.cs-card-body{padding:30px 14px 16px;display:flex;flex-direction:column;gap:6px;flex:1}
+.cs-card-name{font-family:var(--ff-display);font-size:18px;font-weight:900;text-transform:uppercase;color:#fff;letter-spacing:-.005em;line-height:1.05}
+.cs-card-tagline{font-size:12px;color:var(--light);line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cs-card-foot{margin-top:auto;padding-top:10px;font-size:11px;font-weight:700;color:var(--green);letter-spacing:.04em;text-transform:uppercase}
+.cs-skeleton{background:var(--dark2);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius-lg);overflow:hidden;animation:cs-pulse 1.5s ease-in-out infinite}
+.cs-skeleton-cover{aspect-ratio:4/3;background:linear-gradient(90deg,#161616 0%,#1f1f1f 50%,#161616 100%);background-size:200% 100%;animation:cs-shimmer 1.6s linear infinite}
+.cs-skeleton-body{padding:28px 14px 16px;display:flex;flex-direction:column;gap:8px}
+.cs-skeleton-line{height:14px;background:#1f1f1f;border-radius:4px}
+.cs-skeleton-line.short{width:60%}
+@keyframes cs-pulse{0%,100%{opacity:1}50%{opacity:.7}}
+@keyframes cs-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@media(max-width:1100px){.coaches-strip-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:600px){.coaches-strip-section{padding:60px 20px}.coaches-strip-grid{grid-template-columns:1fr}}
+
 /* PARTNERS */
 .partners-section{background:var(--dark2);padding:80px 40px;border-top:1px solid rgba(255,255,255,.06)}
 .partners-inner{max-width:var(--max);margin:0 auto}
@@ -793,6 +830,26 @@ a.product-card:hover{transform:translateY(-4px)}
     <div class="app-visual reveal rd2" aria-hidden="true">
       <div class="phone-mock"><div class="phone-mock-screen"><div class="phone-mini-cards"><div class="phone-mini"><div class="phone-mini-label">Streak</div><div class="phone-mini-val">14d</div></div><div class="phone-mini"><div class="phone-mini-label">Points</div><div class="phone-mini-val">280</div></div></div></div></div>
       <div class="phone-mock main"><div class="phone-mock-screen"><div class="phone-top"><div class="phone-greeting">Good evening, Fredy</div><div class="phone-points">280 pts</div></div><div class="phone-h">What's<br>on today?</div><div class="phone-session-card"><div class="phone-session-time">Tonight · 7:00 PM</div><div class="phone-session-name">Community Run</div><div class="phone-session-loc">Dubai Marina · 12 spots left</div></div><div class="phone-session-card" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)"><div class="phone-session-time" style="color:#7AC231">Tomorrow · 7:00 PM</div><div class="phone-session-name" style="color:white">Cardio Calisthenics</div><div class="phone-session-loc">DIC Amphitheatre</div></div></div></div>
+    </div>
+  </div>
+</section>
+
+<!-- COACHES STRIP -->
+<section class="coaches-strip-section" id="coaches-strip" aria-labelledby="coaches-strip-heading">
+  <div class="coaches-strip-inner">
+    <div class="coaches-strip-head">
+      <div class="coaches-strip-headline">
+        <p class="section-label">Coaches</p>
+        <h2 id="coaches-strip-heading"><span class="accent">Meet your</span><br>coaches</h2>
+        <p class="section-sub">Real humans, certified coaches, all volunteers — running every free ATP session across Dubai, Al Ain &amp; Muscat.</p>
+      </div>
+      <a class="coaches-strip-cta-link" href="coaches.html">View all coaches →</a>
+    </div>
+    <div class="coaches-strip-grid" id="coaches-strip-grid">
+      <div class="cs-skeleton"><div class="cs-skeleton-cover"></div><div class="cs-skeleton-body"><div class="cs-skeleton-line"></div><div class="cs-skeleton-line short"></div></div></div>
+      <div class="cs-skeleton"><div class="cs-skeleton-cover"></div><div class="cs-skeleton-body"><div class="cs-skeleton-line"></div><div class="cs-skeleton-line short"></div></div></div>
+      <div class="cs-skeleton"><div class="cs-skeleton-cover"></div><div class="cs-skeleton-body"><div class="cs-skeleton-line"></div><div class="cs-skeleton-line short"></div></div></div>
+      <div class="cs-skeleton"><div class="cs-skeleton-cover"></div><div class="cs-skeleton-body"><div class="cs-skeleton-line"></div><div class="cs-skeleton-line short"></div></div></div>
     </div>
   </div>
 </section>
@@ -1429,6 +1486,55 @@ window.handleGoogleSignIn = async function(response) {
       }).join('');
     })
     .catch(function(){ /* fallbacks stay in DOM */ });
+})();
+
+/* Coaches strip on homepage — fetches /api/coaches, prefers featured first
+   then highest rating, caps at 4 cards. Skeletons in the markup keep the
+   layout from popping while the fetch is in flight. */
+(function _atpHomeCoachesStrip() {
+  var grid = document.getElementById('coaches-strip-grid');
+  if (!grid) return;
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function isVid(u){ return /^data:video|\.(mp4|webm)(\?|$)/i.test(String(u||'')); }
+  function arr(v){ if (Array.isArray(v)) return v; if (typeof v === 'string') { try { var p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch(e){} } return []; }
+
+  fetch('/api/coaches', { cache: 'no-cache' })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      var coaches = (d && d.coaches) || [];
+      if (!coaches.length) { grid.parentElement.parentElement.style.display = 'none'; return; }
+
+      // Already sorted by featured DESC, rating DESC, joined ASC server-side.
+      var picks = coaches.slice(0, 4);
+
+      grid.innerHTML = picks.map(function(c){
+        var p = c.profile || {}, st = c.stats || {};
+        var displayName = c.display_name || ((c.first_name || '') + ' ' + (c.last_name || '')).trim() || 'Coach';
+        var initials = ((c.first_name || ' ')[0] + (c.last_name || ' ')[0]).toUpperCase().trim() || '·';
+        var slugUrl = c.slug ? '/coach/' + encodeURIComponent(c.slug) : '/coach.html?id=' + encodeURIComponent(c.id);
+        var cover = p.cover_image_url
+          ? (isVid(p.cover_image_url)
+              ? '<video src="' + esc(p.cover_image_url) + '" muted autoplay loop playsinline></video>'
+              : '<img src="' + esc(p.cover_image_url) + '" alt="" loading="lazy">')
+          : '';
+        var photo = p.profile_photo_url
+          ? (isVid(p.profile_photo_url)
+              ? '<video src="' + esc(p.profile_photo_url) + '" muted autoplay loop playsinline></video>'
+              : '<img src="' + esc(p.profile_photo_url) + '" alt="">')
+          : '<div class="cs-card-photo-fallback">' + esc(initials) + '</div>';
+        var featured = p.is_featured ? '<div class="cs-card-featured">⭐ Featured</div>' : '';
+        var sessionsLed = st.sessions_delivered || st.total_sessions || 0;
+        return '<a class="cs-card" href="' + slugUrl + '">'
+          + '<div class="cs-card-cover">' + featured + cover + '<div class="cs-card-photo">' + photo + '</div></div>'
+          + '<div class="cs-card-body">'
+          +   '<div class="cs-card-name">' + esc(displayName) + '</div>'
+          +   (p.tagline ? '<div class="cs-card-tagline">' + esc(p.tagline) + '</div>' : '')
+          +   '<div class="cs-card-foot">' + (sessionsLed ? sessionsLed + ' sessions led' : 'View profile →') + '</div>'
+          + '</div>'
+          + '</a>';
+      }).join('');
+    })
+    .catch(function(){ /* leave skeletons up — the section is decorative */ });
 })();
 
 (function _atpNewsletter() {
