@@ -230,6 +230,162 @@ async function saveBlogPost() {
   }
 }
 
+/* ── Body editor: toolbar, inline image upload, drag-drop ─────────
+ * Inserts markdown-lite into the body textarea so admins don't have to
+ * remember the syntax. Same renderer that displays it on the post page
+ * already handles ![alt](url), **bold**, *italic*, [text](url), ##/###
+ * headings, > blockquotes, and - bullet lists. */
+
+// Insert text around the current selection / at the cursor.
+//   mode = 'cursor'  → drop the prefix at the line start, leave caret where it lands
+//   mode = 'wrap'    → wrap selected text with prefix + suffix; if nothing selected,
+//                      insert prefix+suffix and put caret in the middle.
+function insertBlogMarkdown(prefix, suffix, mode) {
+  var ta = document.getElementById('bp-body');
+  if (!ta) return;
+  ta.focus();
+  var start = ta.selectionStart;
+  var end   = ta.selectionEnd;
+  var v     = ta.value;
+  var sel   = v.slice(start, end);
+  var newSel;
+
+  if (mode === 'wrap') {
+    if (sel) {
+      ta.value = v.slice(0, start) + prefix + sel + suffix + v.slice(end);
+      newSel = [start + prefix.length, end + prefix.length];
+    } else {
+      var placeholder = prefix === '**' ? 'bold text' : prefix === '*' ? 'italic text' : 'text';
+      ta.value = v.slice(0, start) + prefix + placeholder + suffix + v.slice(end);
+      newSel = [start + prefix.length, start + prefix.length + placeholder.length];
+    }
+  } else {
+    // 'cursor' — insert prefix at the start of the current line
+    var lineStart = v.lastIndexOf('\n', start - 1) + 1;
+    ta.value = v.slice(0, lineStart) + prefix + v.slice(lineStart);
+    newSel = [start + prefix.length, end + prefix.length];
+  }
+  ta.setSelectionRange(newSel[0], newSel[1]);
+}
+
+function promptBlogLink() {
+  var url = prompt('Link URL (https://…):');
+  if (!url) return;
+  var ta = document.getElementById('bp-body');
+  var sel = ta.value.slice(ta.selectionStart, ta.selectionEnd);
+  var label = sel || prompt('Link text:', '') || url;
+  var insert = '[' + label + '](' + url + ')';
+  var start = ta.selectionStart;
+  ta.value = ta.value.slice(0, start) + insert + ta.value.slice(ta.selectionEnd);
+  ta.focus();
+  ta.setSelectionRange(start + insert.length, start + insert.length);
+}
+
+function pickBlogInlineImage() {
+  var input = document.getElementById('bp-inline-file');
+  if (input) { input.value = ''; input.click(); }
+}
+
+async function handleBlogInlineImage(ev) {
+  var f = ev.target.files && ev.target.files[0];
+  if (!f) return;
+  await _uploadAndInsertInline(f);
+}
+
+async function _uploadAndInsertInline(file) {
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('File too large (max 10MB).', 'danger');
+    return;
+  }
+  var ta = document.getElementById('bp-body');
+  if (!ta) return;
+  var start = ta.selectionStart;
+  var end   = ta.selectionEnd;
+  // Insert a placeholder while uploading so the cursor doesn't drift
+  var placeholder = '\n\n![uploading…](uploading)\n\n';
+  ta.value = ta.value.slice(0, start) + placeholder + ta.value.slice(end);
+  ta.setSelectionRange(start, start + placeholder.length);
+  ta.focus();
+  showToast('Uploading image…', 'info');
+
+  try {
+    var token = getToken();
+    var dataUrl = await new Promise(function (resolve, reject) {
+      var reader = new FileReader();
+      reader.onload  = function () { resolve(reader.result); };
+      reader.onerror = function () { reject(new Error('read failed')); };
+      reader.readAsDataURL(file);
+    });
+    var res = await fetch(ATP_API + '/blog/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ data_url: dataUrl, filename: file.name, kind: 'image' })
+    });
+    var d = await res.json();
+    if (!d || !d.success) {
+      ta.value = ta.value.replace(placeholder, '');
+      showToast((d && d.error) || 'Upload failed', 'danger');
+      return;
+    }
+    var alt = (file.name || 'image').replace(/\.[^.]+$/, '').replace(/[_-]+/g, ' ').trim();
+    var markdown = '\n\n![' + alt + '](' + d.url + ')\n\n';
+    ta.value = ta.value.replace(placeholder, markdown);
+    var caret = ta.value.indexOf(markdown) + markdown.length;
+    ta.setSelectionRange(caret, caret);
+    showToast('✓ Image inserted', 'success');
+  } catch (e) {
+    ta.value = ta.value.replace(placeholder, '');
+    showToast('Upload failed', 'danger');
+  }
+}
+
+// Drag-and-drop image onto the body textarea
+(function _wireBlogBodyDragDrop() {
+  // Wait for the modal to exist before binding
+  var attach = function () {
+    var ta = document.getElementById('bp-body');
+    if (!ta || ta._dragWired) return;
+    ta._dragWired = true;
+
+    ta.addEventListener('dragover', function (ev) {
+      if (ev.dataTransfer && ev.dataTransfer.types && ev.dataTransfer.types.indexOf('Files') !== -1) {
+        ev.preventDefault();
+        ta.style.borderColor = 'rgba(122,194,49,.6)';
+        ta.style.background  = '#0a0f08';
+      }
+    });
+    ta.addEventListener('dragleave', function () {
+      ta.style.borderColor = '';
+      ta.style.background  = '';
+    });
+    ta.addEventListener('drop', function (ev) {
+      if (!ev.dataTransfer || !ev.dataTransfer.files || !ev.dataTransfer.files.length) return;
+      ev.preventDefault();
+      ta.style.borderColor = '';
+      ta.style.background  = '';
+      var f = ev.dataTransfer.files[0];
+      if (!/^image\//.test(f.type)) {
+        showToast('Only image files can be dropped here.', 'danger');
+        return;
+      }
+      _uploadAndInsertInline(f);
+    });
+
+    // Cmd/Ctrl + B / I shortcuts for bold / italic
+    ta.addEventListener('keydown', function (ev) {
+      if (!(ev.metaKey || ev.ctrlKey)) return;
+      if (ev.key === 'b' || ev.key === 'B') { ev.preventDefault(); insertBlogMarkdown('**', '**', 'wrap'); }
+      else if (ev.key === 'i' || ev.key === 'I') { ev.preventDefault(); insertBlogMarkdown('*', '*', 'wrap'); }
+    });
+  };
+
+  // Try once now (in case admin section already rendered) and again on
+  // any future open of the editor — the modal element exists in the
+  // page from first paint, so binding once is enough.
+  if (document.readyState !== 'loading') attach();
+  else document.addEventListener('DOMContentLoaded', attach);
+})();
+
 async function deleteBlogPost() {
   if (!BLOG_EDITING) return;
   if (!confirm('Delete "' + BLOG_EDITING.title + '" — this cannot be undone.')) return;

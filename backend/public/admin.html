@@ -969,8 +969,20 @@
             </div>
             <div>
               <label for="bp-body">Body</label>
+              <div class="bp-body-toolbar" style="display:flex;gap:6px;margin-bottom:8px;flex-wrap:wrap;align-items:center">
+                <button type="button" class="admin-btn" onclick="insertBlogMarkdown('## ', '', 'cursor')"      style="font-size:11px;padding:6px 10px" title="Heading">H2</button>
+                <button type="button" class="admin-btn" onclick="insertBlogMarkdown('### ', '', 'cursor')"     style="font-size:11px;padding:6px 10px" title="Subheading">H3</button>
+                <button type="button" class="admin-btn" onclick="insertBlogMarkdown('**', '**', 'wrap')"       style="font-size:11px;padding:6px 10px;font-weight:800" title="Bold (Cmd/Ctrl+B)">B</button>
+                <button type="button" class="admin-btn" onclick="insertBlogMarkdown('*', '*', 'wrap')"         style="font-size:11px;padding:6px 10px;font-style:italic" title="Italic (Cmd/Ctrl+I)">I</button>
+                <button type="button" class="admin-btn" onclick="insertBlogMarkdown('> ', '', 'cursor')"       style="font-size:11px;padding:6px 10px" title="Quote">❝</button>
+                <button type="button" class="admin-btn" onclick="insertBlogMarkdown('- ', '', 'cursor')"       style="font-size:11px;padding:6px 10px" title="Bullet list">•</button>
+                <button type="button" class="admin-btn" onclick="promptBlogLink()"                            style="font-size:11px;padding:6px 10px" title="Insert link">🔗 Link</button>
+                <button type="button" class="admin-btn admin-btn-primary" onclick="pickBlogInlineImage()"     style="font-size:11px;padding:6px 12px;font-weight:700" title="Insert image">📷 Image</button>
+                <span style="font-size:11px;color:#555;margin-left:auto">or drop an image right onto the box</span>
+              </div>
               <textarea id="bp-body" rows="14" placeholder="Write your post here. Plain text with paragraph breaks (blank lines) works fine. HTML allowed for advanced formatting."></textarea>
-              <div style="font-size:11px;color:#444;margin-top:4px">Tip: separate paragraphs with a blank line. ## starts a heading. **bold** for emphasis.</div>
+              <input type="file" id="bp-inline-file" accept="image/*" style="display:none" onchange="handleBlogInlineImage(event)">
+              <div style="font-size:11px;color:#444;margin-top:4px">Tip: paragraphs split on blank lines. <code style="background:#0a0a0a;padding:1px 4px;border-radius:3px;color:#aaa">## heading</code>, <code style="background:#0a0a0a;padding:1px 4px;border-radius:3px;color:#aaa">**bold**</code>, <code style="background:#0a0a0a;padding:1px 4px;border-radius:3px;color:#aaa">*italic*</code>, <code style="background:#0a0a0a;padding:1px 4px;border-radius:3px;color:#aaa">[text](url)</code>, <code style="background:#0a0a0a;padding:1px 4px;border-radius:3px;color:#aaa">![alt](image-url)</code>.</div>
             </div>
             <div class="blog-editor-grid">
               <div>
