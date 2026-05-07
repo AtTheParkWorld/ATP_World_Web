@@ -149,8 +149,9 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
 // Shared loader for feedback + upcoming sessions on a single coach
 async function loadCoachExtras(coachRow, res, next) {
   try {
+    // 1. Coach-direct feedback (member rated the coach)
     const { rows: feedback } = await query(
-      `SELECT cf.rating, cf.comment, cf.created_at,
+      `SELECT cf.id, cf.rating, cf.comment, cf.created_at,
               m2.first_name, m2.last_name
        FROM coach_feedback cf
        JOIN members m2 ON m2.id=cf.member_id
@@ -159,6 +160,20 @@ async function loadCoachExtras(coachRow, res, next) {
       [coachRow.id]
     ).catch(() => ({ rows: [] }));
 
+    // 2. Session feedback — ratings of sessions this coach led
+    const { rows: sessionFeedback } = await query(
+      `SELECT sf.id, sf.rating, sf.comment, sf.created_at,
+              m2.first_name, m2.last_name,
+              s.id AS session_id, s.name AS session_name, s.scheduled_at AS session_at
+       FROM session_feedback sf
+       JOIN members m2 ON m2.id=sf.member_id
+       JOIN sessions s ON s.id=sf.session_id
+       WHERE s.coach_id=$1
+       ORDER BY sf.created_at DESC LIMIT 12`,
+      [coachRow.id]
+    ).catch(() => ({ rows: [] }));
+
+    // 3. Upcoming sessions
     const { rows: sessions } = await query(
       `SELECT s.id, s.name, s.location, s.scheduled_at, s.capacity,
               (SELECT COUNT(*) FROM bookings b WHERE b.session_id=s.id AND b.status='confirmed') AS registered
@@ -170,11 +185,53 @@ async function loadCoachExtras(coachRow, res, next) {
 
     res.json({
       coach: shapeCoach(coachRow),
-      feedback,
+      feedback,                  // direct coach feedback (kind='coach' on the front-end)
+      session_feedback: sessionFeedback,  // session ratings (kind='session')
       upcoming_sessions: sessions,
     });
   } catch (err) { next(err); }
 }
+
+// ── DELETE /api/coaches/:id/feedback/:feedbackId — admin moderation ─
+// Removes a coach_feedback row and recomputes the coach's rolling
+// rating_avg / rating_count. Admin-only by design — the schema lets a
+// member upsert their own row but never delete; this endpoint is the
+// moderation hook.
+router.delete('/:id/feedback/:feedbackId', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `DELETE FROM coach_feedback
+       WHERE id=$1 AND coach_id=$2
+       RETURNING id`,
+      [req.params.feedbackId, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Feedback not found' });
+    await query(
+      `UPDATE coach_profiles SET
+         rating_avg   = COALESCE((SELECT AVG(rating)::numeric(3,2) FROM coach_feedback WHERE coach_id=$1 AND is_approved=true), 0),
+         rating_count = (SELECT COUNT(*) FROM coach_feedback WHERE coach_id=$1 AND is_approved=true)
+       WHERE member_id=$1`,
+      [req.params.id]
+    );
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+// ── DELETE /api/coaches/:id/session-feedback/:feedbackId — admin moderation ─
+// Removes a session_feedback row, scoped by sessions where coach_id matches.
+router.delete('/:id/session-feedback/:feedbackId', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `DELETE FROM session_feedback sf
+       USING sessions s
+       WHERE sf.id=$1 AND sf.session_id=s.id AND s.coach_id=$2
+       RETURNING sf.id`,
+      [req.params.feedbackId, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Session feedback not found' });
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
 
 // ── PUT /api/coaches/:id — update coach profile (self or admin) ─
 router.put('/:id', authenticate, async (req, res, next) => {

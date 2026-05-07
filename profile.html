@@ -3095,8 +3095,8 @@ function loadCoachProfileSelf(memberId) {
       setNum('coachStatRating',   st.rating_avg ? Number(st.rating_avg).toFixed(1) : '—');
       setNum('coachStatReviews',  st.rating_count || 0);
 
-      // Recent feedback (this endpoint returns it alongside the coach)
-      renderCoachFeedback(data && data.feedback);
+      // Recent feedback — merge direct + session ratings
+      renderCoachFeedback(data && data.feedback, data && data.session_feedback, c.id);
     })
     .catch(function(err){ console.warn('[coach] load failed', err && err.message); });
 
@@ -3422,30 +3422,86 @@ function splitToJsonList(s) {
   return String(s).split(',').map(function(x){return x.trim();}).filter(Boolean);
 }
 
-function renderCoachFeedback(rows) {
-  var list = document.getElementById('coachFeedbackList');
+function renderCoachFeedback(coachRows, sessionRows, coachId) {
+  var list  = document.getElementById('coachFeedbackList');
   var count = document.getElementById('coachFeedbackCount');
   if (!list) return;
-  if (!rows || !rows.length) {
+
+  // Merge both kinds of feedback chronologically
+  var coachF   = (coachRows   || []).map(function (r) { return Object.assign({}, r, { _kind: 'coach' }); });
+  var sessionF = (sessionRows || []).map(function (r) { return Object.assign({}, r, { _kind: 'session' }); });
+  var rows = coachF.concat(sessionF).sort(function (a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+
+  if (!rows.length) {
     list.innerHTML = '<div style="padding:14px 0;color:var(--muted);font-size:13px;text-align:center">No reviews yet — keep coaching, the feedback will follow.</div>';
     if (count) count.textContent = '0';
     return;
   }
-  if (count) count.textContent = rows.length + ' review' + (rows.length === 1 ? '' : 's');
-  list.innerHTML = rows.map(function(r) {
-    var name  = ((r.first_name||'') + ' ' + (r.last_name||'')).trim() || 'ATP Member';
-    var stars = '★'.repeat(r.rating || 0) + '☆'.repeat(Math.max(0, 5 - (r.rating || 0)));
-    var when  = r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB', { month:'short', year:'numeric' }) : '';
+  if (count) count.textContent = rows.length + ' review' + (rows.length === 1 ? '' : 's')
+    + ' · ' + coachF.length + ' direct · ' + sessionF.length + ' session';
+
+  // Stash coach id so the delete handler can build the right URL
+  window.__PROFILE_COACH_ID = coachId;
+
+  // Admin viewer? Members can't delete; only admins see the × control
+  var isAdminViewer = (function () {
+    try { return !!(CURRENT_MEMBER && CURRENT_MEMBER.is_admin); } catch (e) { return false; }
+  })();
+
+  list.innerHTML = rows.map(function (r) {
+    var name      = ((r.first_name || '') + ' ' + (r.last_name || '')).trim() || 'ATP Member';
+    var stars     = '★'.repeat(r.rating || 0) + '☆'.repeat(Math.max(0, 5 - (r.rating || 0)));
+    var when      = r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : '';
+    var sessionAt = r.session_at ? new Date(r.session_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+
+    var typeChip = r._kind === 'coach'
+      ? '<span style="display:inline-block;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--green);background:rgba(122,194,49,.1);border:1px solid rgba(122,194,49,.3);padding:2px 8px;border-radius:10px;margin-right:8px">Direct</span>'
+      : '<span style="display:inline-block;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#ffc400;background:rgba(255,196,0,.08);border:1px solid rgba(255,196,0,.28);padding:2px 8px;border-radius:10px;margin-right:8px">Session: ' + escapeHtml(r.session_name || 'Session') + (sessionAt ? ' · ' + escapeHtml(sessionAt) : '') + '</span>';
+
+    var deleteBtn = isAdminViewer
+      ? '<button onclick="profileDeleteFeedback(\'' + escapeHtml(r._kind) + '\',\'' + escapeHtml(r.id) + '\',this)" title="Delete (admin only)" style="margin-left:auto;width:24px;height:24px;border-radius:50%;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.4);color:#fca5a5;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0">×</button>'
+      : '';
+
     return ''
       + '<div class="coach-feedback-row">'
-      +   '<div class="coach-feedback-head">'
-      +     '<span class="coach-feedback-name">' + escapeHtml(name) + '</span>'
-      +     '<span class="coach-feedback-stars">' + stars + '</span>'
+      +   '<div class="coach-feedback-head" style="align-items:center">'
+      +     '<span style="display:flex;align-items:center;gap:0;min-width:0">' + typeChip + '<span class="coach-feedback-name">' + escapeHtml(name) + '</span></span>'
+      +     '<span style="display:flex;align-items:center;gap:10px"><span class="coach-feedback-stars">' + stars + '</span>' + deleteBtn + '</span>'
       +   '</div>'
       +   (r.comment ? '<div class="coach-feedback-comment">' + escapeHtml(r.comment) + '</div>' : '')
       +   '<div class="coach-feedback-time">' + escapeHtml(when) + '</div>'
       + '</div>';
   }).join('');
+}
+
+function profileDeleteFeedback(kind, feedbackId, btn) {
+  if (!confirm('Delete this ' + (kind === 'coach' ? 'direct feedback' : 'session feedback') + '? This cannot be undone.')) return;
+  var coachId = window.__PROFILE_COACH_ID || (CURRENT_MEMBER && CURRENT_MEMBER.id);
+  if (!coachId) return;
+  var path = kind === 'coach'
+    ? COACH_API + '/coaches/' + encodeURIComponent(coachId) + '/feedback/' + encodeURIComponent(feedbackId)
+    : COACH_API + '/coaches/' + encodeURIComponent(coachId) + '/session-feedback/' + encodeURIComponent(feedbackId);
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  fetch(path, { method: 'DELETE', headers: _coachAuth() })
+    .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+    .then(function (res) {
+      if (!res.ok) {
+        if (btn) { btn.disabled = false; btn.textContent = '×'; }
+        if (window.ATPComponents) ATPComponents.toast((res.body && res.body.error) || 'Couldn\'t delete', 'danger');
+        return;
+      }
+      var card = btn && btn.closest('.coach-feedback-row');
+      if (card) {
+        card.style.transition = 'opacity .2s, transform .2s';
+        card.style.opacity = '0'; card.style.transform = 'scale(.96)';
+        setTimeout(function () { card.remove(); }, 220);
+      }
+      if (window.ATPComponents) ATPComponents.toast('Feedback removed', 'success');
+    })
+    .catch(function () {
+      if (btn) { btn.disabled = false; btn.textContent = '×'; }
+      if (window.ATPComponents) ATPComponents.toast('Network error', 'danger');
+    });
 }
 
 function saveCoachProfileSelf() {
