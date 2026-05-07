@@ -18,7 +18,7 @@
   'use strict';
 
   var NAV_LINKS = [
-    { key: 'home',      label: 'Home',         href: 'index.html' },
+    { key: 'blog',      label: 'Blog',         href: 'blog.html' },
     { key: 'sessions',  label: 'Sessions',     href: 'sessions.html' },
     { key: 'community', label: 'Community',    href: 'community.html' },
     { key: 'store',     label: 'Store',        href: 'store.html' },
