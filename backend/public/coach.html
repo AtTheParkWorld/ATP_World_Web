@@ -246,6 +246,7 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
       </div>
       <div class="cp-hero-info">
         <div class="cp-hero-eyebrow" id="cp-hero-eyebrow">Coach</div>
+        <span class="cp-featured-badge" id="cp-featured-badge" style="display:none;align-items:center;gap:5px;background:var(--green);color:#0a0a0a;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:5px 12px;border-radius:14px;margin-bottom:10px">⭐ Featured coach</span>
         <h1 class="cp-hero-name" id="cp-hero-name">—</h1>
         <p class="cp-hero-tagline" id="cp-hero-tagline"></p>
         <div class="cp-hero-meta" id="cp-hero-meta"></div>
@@ -470,6 +471,10 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     var eyebrowParts = ['Coach'];
     if (c.city) eyebrowParts.push(c.city);
     setText('cp-hero-eyebrow', eyebrowParts.join(' · '));
+    if (p.is_featured) {
+      var fb = document.getElementById('cp-featured-badge');
+      if (fb) fb.style.display = 'inline-flex';
+    }
     setText('cp-hero-name', displayName);
     setText('cp-hero-tagline', p.tagline || '');
 

@@ -116,6 +116,43 @@ var CMS_SCHEMA = {
       }
     }
   },
+  coaches: {
+    label: '🎽 Our Coaches Page',
+    sections: {
+      hero: {
+        label: 'Page Hero',
+        desc: 'Header at the top of /coaches',
+        fields: [
+          { key: 'eyebrow',  label: 'Top Eyebrow',  type: 'text',     default: 'The team' },
+          { key: 'title',    label: 'Page Title',   type: 'text',     default: 'Our Coaches' },
+          { key: 'subtitle', label: 'Subtitle',     type: 'textarea', default: 'Certified coaches, real volunteers. Every ATP session is led by one of these humans — find your match and book a spot.' },
+          { key: 'banner',   label: 'Banner Image (optional, full-width strip)', type: 'image' },
+        ]
+      },
+      intro: {
+        label: 'Intro Strip',
+        desc: 'Three quick stats / facts shown above the grid',
+        fields: [
+          { key: 'stat1_num',   label: 'Stat 1 — Number',   type: 'text', default: '21' },
+          { key: 'stat1_label', label: 'Stat 1 — Label',    type: 'text', default: 'Certified coaches' },
+          { key: 'stat2_num',   label: 'Stat 2 — Number',   type: 'text', default: '19' },
+          { key: 'stat2_label', label: 'Stat 2 — Label',    type: 'text', default: 'Activities' },
+          { key: 'stat3_num',   label: 'Stat 3 — Number',   type: 'text', default: '7' },
+          { key: 'stat3_label', label: 'Stat 3 — Label',    type: 'text', default: 'Days a week' },
+        ]
+      },
+      cta: {
+        label: 'Bottom CTA',
+        desc: 'Banner shown below the coach grid',
+        fields: [
+          { key: 'title',    label: 'Title',           type: 'text',     default: 'Want to coach for ATP?' },
+          { key: 'subtitle', label: 'Subtitle',        type: 'textarea', default: 'We\'re always looking for certified coaches who share the mission. Get in touch — we\'ll meet you at a session.' },
+          { key: 'cta_text', label: 'Button Text',     type: 'text',     default: 'Apply to coach' },
+          { key: 'cta_link', label: 'Button Link',     type: 'text',     default: 'mailto:general@atthepark.world?subject=Coach%20application' },
+        ]
+      }
+    }
+  },
   privacy: {
     label: '⚖️ Privacy Page',
     sections: {

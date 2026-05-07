@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="/atp.min.css">
+  <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
+  <script src="/atp.bundle.min.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Our Coaches | At The Park</title>
+<meta name="description" content="Meet the certified coaches behind every ATP session — running, yoga, padel, kickboxing, crosstraining and more across Dubai, Al Ain and Muscat.">
+<meta property="og:title" content="Our Coaches — At The Park">
+<meta property="og:description" content="The humans who run every free session. Find your coach.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#7AC231;--green-dark:#5a9a1f;--green-light:#a8e055;
+  --black:#0a0a0a;--dark:#111111;--dark2:#161616;--dark3:#1f1f1f;
+  --muted:#888888;--light:#aaaaaa;--white:#ffffff;
+  --line:rgba(255,255,255,.10);--line-soft:rgba(255,255,255,.06);
+  --ff-display:'Barlow Condensed',sans-serif;--ff-body:'DM Sans',sans-serif;
+  --nav-h:68px;--max:1320px;--radius:8px;--radius-lg:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:var(--ff-body);background:var(--black);color:var(--white);overflow-x:hidden;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+img{display:block;max-width:100%}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;color:inherit}
+
+/* HEADER NAV */
+#nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;padding:0 40px;transition:background .3s,border-color .3s;border-bottom:1px solid transparent}
+#nav.scrolled{background:rgba(10,10,10,.97);border-bottom-color:rgba(122,194,49,.18);backdrop-filter:blur(16px)}
+.nav-inner{width:100%;max-width:var(--max);margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:24px}
+.nav-logo img{height:32px;width:auto;display:block}
+.nav-links{display:flex;align-items:center;gap:32px;list-style:none}
+.nav-links a{font-size:13px;font-weight:500;letter-spacing:.04em;color:var(--light);transition:color .2s}
+.nav-links a:hover,.nav-links a.active{color:var(--green)}
+.nav-actions{display:flex;align-items:center;gap:12px}
+.btn-ghost{font-size:13px;font-weight:600;color:var(--white);border:1px solid rgba(255,255,255,.2);padding:9px 20px;border-radius:var(--radius);background:transparent;transition:border-color .2s;letter-spacing:.03em}
+.btn-ghost:hover{border-color:var(--white)}
+.btn-primary{font-size:13px;font-weight:700;background:var(--green);color:var(--white);padding:10px 22px;border-radius:var(--radius);border:none;letter-spacing:.03em;transition:background .2s,transform .15s}
+.btn-primary:hover{background:var(--green-dark);transform:translateY(-1px)}
+.hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
+.hamburger span{display:block;width:22px;height:2px;background:var(--white);border-radius:2px}
+
+/* HERO */
+.cl-hero{position:relative;padding:calc(var(--nav-h) + 80px) 40px 60px;background:var(--dark2);border-bottom:1px solid var(--line-soft);overflow:hidden;isolation:isolate}
+.cl-hero-banner{position:absolute;inset:0;z-index:0}
+.cl-hero-banner img{width:100%;height:100%;object-fit:cover;opacity:.35}
+.cl-hero-banner::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(10,10,10,.4),rgba(10,10,10,.95))}
+.cl-hero::before{content:'';position:absolute;top:var(--nav-h);left:0;right:0;height:3px;background:var(--green);z-index:1}
+.cl-hero-inner{max-width:var(--max);margin:0 auto;position:relative;z-index:2}
+.cl-hero-eyebrow{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--green);margin-bottom:14px;display:inline-flex;align-items:center;gap:12px}
+.cl-hero-eyebrow::before{content:'';display:block;width:24px;height:2px;background:var(--green)}
+.cl-hero h1{font-family:var(--ff-display);font-size:clamp(48px,6vw,84px);font-weight:900;line-height:.95;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:16px;max-width:880px}
+.cl-hero h1 .acc{color:var(--green)}
+.cl-hero-sub{font-size:17px;line-height:1.65;color:rgba(255,255,255,.78);max-width:640px;font-weight:300}
+
+/* INTRO STATS */
+.cl-stats{padding:32px 40px 0}
+.cl-stats-inner{max-width:var(--max);margin:0 auto;display:grid;grid-template-columns:repeat(3,1fr);gap:0;background:var(--dark2);border:1px solid var(--line-soft);border-radius:var(--radius-lg);overflow:hidden}
+.cl-stat{padding:26px 18px;text-align:center;border-right:1px solid var(--line-soft)}
+.cl-stat:last-child{border-right:0}
+.cl-stat-num{font-family:var(--ff-display);font-size:38px;font-weight:900;color:var(--green);line-height:1;margin-bottom:6px}
+.cl-stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+
+/* GRID */
+.cl-grid-section{padding:48px 40px 60px;max-width:var(--max);margin:0 auto;width:100%}
+.cl-grid-head{display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:24px;flex-wrap:wrap;gap:14px}
+.cl-grid-title{font-family:var(--ff-display);font-size:28px;font-weight:900;text-transform:uppercase;color:#fff;letter-spacing:-.005em}
+.cl-grid-count{font-size:13px;color:var(--muted)}
+.cl-grid-count strong{color:var(--green-light)}
+.cl-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px}
+
+/* COACH CARD */
+.cl-card{background:var(--dark2);border:1px solid var(--line-soft);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .2s,transform .2s,box-shadow .2s;position:relative}
+.cl-card:hover{border-color:rgba(122,194,49,.45);transform:translateY(-4px);box-shadow:0 20px 48px rgba(0,0,0,.35)}
+.cl-card-cover{position:relative;aspect-ratio:16/10;overflow:hidden;background:linear-gradient(135deg,#0d1a0a,#1a3e0a)}
+.cl-card-cover img,.cl-card-cover video{width:100%;height:100%;object-fit:cover;transition:transform .35s}
+.cl-card:hover .cl-card-cover img,.cl-card:hover .cl-card-cover video{transform:scale(1.05)}
+.cl-card-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(0,0,0,.65) 100%)}
+.cl-card-featured{position:absolute;top:12px;left:12px;z-index:2;background:var(--green);color:#0a0a0a;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:5px 10px;border-radius:14px;display:flex;align-items:center;gap:5px}
+.cl-card-rating{position:absolute;top:12px;right:12px;z-index:2;background:rgba(0,0,0,.65);backdrop-filter:blur(8px);color:#fff;font-size:12px;font-weight:700;padding:5px 10px;border-radius:14px;display:flex;align-items:center;gap:5px}
+.cl-card-rating .star{color:#ffc400}
+
+.cl-card-photo{position:absolute;bottom:-32px;left:18px;width:64px;height:64px;border-radius:50%;overflow:hidden;background:var(--dark3);border:3px solid var(--dark2);z-index:2}
+.cl-card-photo img,.cl-card-photo video{width:100%;height:100%;object-fit:cover}
+.cl-card-photo-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--green),var(--green-dark));font-family:var(--ff-display);font-size:22px;font-weight:900;color:#0a0a0a}
+
+.cl-card-body{padding:42px 18px 20px;display:flex;flex-direction:column;gap:8px;flex:1}
+.cl-card-name{font-family:var(--ff-display);font-size:22px;font-weight:900;text-transform:uppercase;color:#fff;letter-spacing:-.005em;line-height:1.05}
+.cl-card-tagline{font-size:13px;color:var(--light);line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.cl-card-meta{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.cl-card-meta-pill{font-size:11px;color:var(--muted);padding:3px 10px;background:rgba(255,255,255,.04);border:1px solid var(--line-soft);border-radius:12px;letter-spacing:.02em;font-weight:500}
+.cl-card-specs{display:flex;flex-wrap:wrap;gap:5px;margin-top:6px}
+.cl-card-spec{font-size:11px;color:var(--green-light);padding:3px 9px;background:rgba(122,194,49,.08);border:1px solid rgba(122,194,49,.28);border-radius:12px;font-weight:600;letter-spacing:.02em}
+.cl-card-foot{display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:14px;border-top:1px solid var(--line-soft);font-size:12px;color:var(--muted)}
+.cl-card-foot strong{color:var(--green);font-weight:700}
+.cl-card-foot .arrow{color:var(--green);font-weight:700;font-size:13px}
+
+/* Empty + loading */
+.cl-loading{padding:80px 24px;text-align:center;color:var(--muted);font-size:14px}
+.cl-empty{padding:60px 24px;text-align:center;background:var(--dark2);border:1px dashed var(--line);border-radius:var(--radius-lg);color:var(--light)}
+.cl-empty h3{font-family:var(--ff-display);font-size:22px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:8px}
+.cl-empty p{font-size:14px;color:var(--muted);max-width:420px;margin:0 auto}
+
+.cl-skeleton{background:var(--dark2);border:1px solid var(--line-soft);border-radius:var(--radius-lg);overflow:hidden;animation:cl-pulse 1.5s ease-in-out infinite}
+.cl-skeleton-cover{aspect-ratio:16/10;background:linear-gradient(90deg,#161616 0%,#1f1f1f 50%,#161616 100%);background-size:200% 100%;animation:cl-shimmer 1.6s linear infinite}
+.cl-skeleton-body{padding:42px 18px 20px;display:flex;flex-direction:column;gap:10px}
+.cl-skeleton-line{height:14px;background:#1f1f1f;border-radius:4px}
+.cl-skeleton-line.short{width:60%}
+.cl-skeleton-line.tall{height:22px}
+@keyframes cl-pulse{0%,100%{opacity:1}50%{opacity:.7}}
+@keyframes cl-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+
+/* CTA banner */
+.cl-cta{margin:36px 40px 80px;max-width:var(--max);margin-left:auto;margin-right:auto}
+.cl-cta-card{background:linear-gradient(135deg,rgba(122,194,49,.08),rgba(122,194,49,.02));border:1px solid rgba(122,194,49,.3);border-radius:var(--radius-lg);padding:40px;display:flex;align-items:center;justify-content:space-between;gap:24px;flex-wrap:wrap}
+.cl-cta-text h3{font-family:var(--ff-display);font-size:30px;font-weight:900;text-transform:uppercase;color:#fff;letter-spacing:-.005em;margin-bottom:8px}
+.cl-cta-text p{font-size:14px;color:rgba(255,255,255,.7);line-height:1.6;max-width:520px}
+.cl-cta-btn{display:inline-flex;align-items:center;gap:8px;background:var(--green);color:#0a0a0a;padding:14px 28px;border-radius:var(--radius);font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;transition:background .15s,transform .15s;flex-shrink:0}
+.cl-cta-btn:hover{background:var(--green-light);transform:translateY(-1px)}
+
+/* FOOTER */
+.footer-min{background:#0d0d0d;padding:36px 40px 24px;border-top:1px solid var(--line-soft);font-family:var(--ff-body);margin-top:auto}
+.footer-min-inner{max-width:1320px;margin:0 auto}
+.footer-min-bot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
+.footer-min-copy{font-size:12px;color:#666;margin:0}
+.footer-legal{display:flex;gap:18px}
+.footer-legal a{font-size:12px;color:#888;transition:color .2s}
+.footer-legal a:hover{color:#fff}
+
+/* Responsive */
+@media (max-width:900px){
+  #nav{padding:0 20px}
+  .nav-links,.nav-actions{display:none}
+  .hamburger{display:flex}
+  #nav.mobile-open{height:auto;flex-direction:column;align-items:stretch;background:rgba(10,10,10,.98);padding:0 20px 24px}
+  #nav.mobile-open .nav-links{display:flex;flex-direction:column;gap:18px;width:100%;padding-top:16px;border-top:1px solid rgba(255,255,255,.08)}
+  #nav.mobile-open .nav-actions{display:flex;flex-direction:column;width:100%;gap:8px;margin-top:14px}
+  .cl-hero{padding:calc(var(--nav-h) + 48px) 20px 40px}
+  .cl-stats{padding:24px 20px 0}
+  .cl-stats-inner{grid-template-columns:1fr}
+  .cl-stat{border-right:0;border-bottom:1px solid var(--line-soft)}
+  .cl-stat:last-child{border-bottom:0}
+  .cl-grid-section{padding:32px 20px 40px}
+  .cl-cta{margin:24px 20px 60px}
+  .cl-cta-card{padding:28px 22px;flex-direction:column;align-items:flex-start}
+}
+</style>
+</head>
+<body>
+
+<div id="atp-nav-host" data-active="coaches"></div>
+
+<!-- HERO -->
+<section class="cl-hero">
+  <div class="cl-hero-banner" id="cl-hero-banner"></div>
+  <div class="cl-hero-inner">
+    <div class="cl-hero-eyebrow" id="cl-hero-eyebrow">The team</div>
+    <h1><span id="cl-hero-title">Our Coaches</span></h1>
+    <p class="cl-hero-sub" id="cl-hero-sub">Certified coaches, real volunteers. Every ATP session is led by one of these humans — find your match and book a spot.</p>
+  </div>
+</section>
+
+<!-- INTRO STATS -->
+<section class="cl-stats">
+  <div class="cl-stats-inner">
+    <div class="cl-stat"><div class="cl-stat-num" id="cl-s1n">21</div><div class="cl-stat-label" id="cl-s1l">Certified coaches</div></div>
+    <div class="cl-stat"><div class="cl-stat-num" id="cl-s2n">19</div><div class="cl-stat-label" id="cl-s2l">Activities</div></div>
+    <div class="cl-stat"><div class="cl-stat-num" id="cl-s3n">7</div><div class="cl-stat-label" id="cl-s3l">Days a week</div></div>
+  </div>
+</section>
+
+<!-- GRID -->
+<section class="cl-grid-section">
+  <div class="cl-grid-head">
+    <div class="cl-grid-title">Meet the coaches</div>
+    <div class="cl-grid-count" id="cl-grid-count">Loading…</div>
+  </div>
+  <div class="cl-grid" id="cl-grid">
+    <!-- skeletons while loading -->
+    <div class="cl-skeleton"><div class="cl-skeleton-cover"></div><div class="cl-skeleton-body"><div class="cl-skeleton-line tall"></div><div class="cl-skeleton-line"></div><div class="cl-skeleton-line short"></div></div></div>
+    <div class="cl-skeleton"><div class="cl-skeleton-cover"></div><div class="cl-skeleton-body"><div class="cl-skeleton-line tall"></div><div class="cl-skeleton-line"></div><div class="cl-skeleton-line short"></div></div></div>
+    <div class="cl-skeleton"><div class="cl-skeleton-cover"></div><div class="cl-skeleton-body"><div class="cl-skeleton-line tall"></div><div class="cl-skeleton-line"></div><div class="cl-skeleton-line short"></div></div></div>
+    <div class="cl-skeleton"><div class="cl-skeleton-cover"></div><div class="cl-skeleton-body"><div class="cl-skeleton-line tall"></div><div class="cl-skeleton-line"></div><div class="cl-skeleton-line short"></div></div></div>
+  </div>
+</section>
+
+<!-- CTA banner (apply to coach) -->
+<div class="cl-cta">
+  <div class="cl-cta-card">
+    <div class="cl-cta-text">
+      <h3 id="cl-cta-title">Want to coach for ATP?</h3>
+      <p id="cl-cta-sub">We're always looking for certified coaches who share the mission. Get in touch — we'll meet you at a session.</p>
+    </div>
+    <a class="cl-cta-btn" id="cl-cta-btn" href="mailto:general@atthepark.world?subject=Coach%20application">Apply to coach →</a>
+  </div>
+</div>
+
+<footer class="footer-min" role="contentinfo">
+  <div class="footer-min-inner">
+    <div class="footer-min-bot">
+      <p class="footer-min-copy">© 2026 At The Park. All rights reserved. Dubai, United Arab Emirates.</p>
+      <nav class="footer-legal" aria-label="Legal">
+        <a href="/privacy.html">Privacy</a>
+        <a href="/terms.html">Terms</a>
+        <a href="/contacts.html">Contacts</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  'use strict';
+
+  /* Header scroll */
+  window.addEventListener('scroll', function () {
+    var n = document.getElementById('nav');
+    if (n) n.classList.toggle('scrolled', window.scrollY > 10);
+  }, { passive: true });
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function arr(v) {
+    if (Array.isArray(v)) return v;
+    if (typeof v === 'string') { try { var p = JSON.parse(v); return Array.isArray(p) ? p : []; } catch (e) { return []; } }
+    return [];
+  }
+  function isVideoUrl(u) { return /^data:video|\.(mp4|webm)(\?|$)/i.test(String(u || '')); }
+
+  /* ── Hydrate page hero/intro/cta from CMS ──────────────── */
+  function applyText(id, v) { if (v == null || v === '') return; var el = document.getElementById(id); if (el) el.textContent = String(v); }
+  function applyAttr(id, attr, v) { if (v == null || v === '') return; var el = document.getElementById(id); if (el) el.setAttribute(attr, v); }
+  fetch('/api/cms/coaches', { cache: 'no-cache' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      if (!d || !d.content) return;
+      var hero  = d.content.hero  || {};
+      var intro = d.content.intro || {};
+      var cta   = d.content.cta   || {};
+      applyText('cl-hero-eyebrow', hero.eyebrow);
+      applyText('cl-hero-title',   hero.title);
+      applyText('cl-hero-sub',     hero.subtitle);
+      if (hero.banner) {
+        document.getElementById('cl-hero-banner').innerHTML =
+          '<img src="' + escapeHtml(hero.banner) + '" alt="">';
+      }
+      applyText('cl-s1n', intro.stat1_num); applyText('cl-s1l', intro.stat1_label);
+      applyText('cl-s2n', intro.stat2_num); applyText('cl-s2l', intro.stat2_label);
+      applyText('cl-s3n', intro.stat3_num); applyText('cl-s3l', intro.stat3_label);
+      applyText('cl-cta-title', cta.title);
+      applyText('cl-cta-sub',   cta.subtitle);
+      if (cta.cta_text) document.getElementById('cl-cta-btn').textContent = cta.cta_text + ' →';
+      if (cta.cta_link) document.getElementById('cl-cta-btn').setAttribute('href', cta.cta_link);
+    })
+    .catch(function () { /* keep defaults */ });
+
+  /* ── Fetch + render coaches list ───────────────────────── */
+  function renderCard(c) {
+    var p = c.profile || {}; var st = c.stats || {};
+    var displayName = c.display_name || ((c.first_name || '') + ' ' + (c.last_name || '')).trim() || 'Coach';
+    var initials = ((c.first_name || ' ')[0] + (c.last_name || ' ')[0]).toUpperCase().trim() || '·';
+    var slugUrl = c.slug ? '/coach/' + encodeURIComponent(c.slug) : '/coach.html?id=' + encodeURIComponent(c.id);
+
+    var cover = '';
+    if (p.cover_image_url) {
+      cover = isVideoUrl(p.cover_image_url)
+        ? '<video src="' + escapeHtml(p.cover_image_url) + '" muted autoplay loop playsinline></video>'
+        : '<img src="' + escapeHtml(p.cover_image_url) + '" alt="" loading="lazy">';
+    }
+
+    var photo = '';
+    if (p.profile_photo_url) {
+      photo = isVideoUrl(p.profile_photo_url)
+        ? '<video src="' + escapeHtml(p.profile_photo_url) + '" muted autoplay loop playsinline></video>'
+        : '<img src="' + escapeHtml(p.profile_photo_url) + '" alt="">';
+    } else {
+      photo = '<div class="cl-card-photo-fallback">' + escapeHtml(initials) + '</div>';
+    }
+
+    var meta = [];
+    if (c.city) meta.push('<span class="cl-card-meta-pill">📍 ' + escapeHtml(c.city) + '</span>');
+    if (p.years_experience > 0) meta.push('<span class="cl-card-meta-pill">' + p.years_experience + ' yrs</span>');
+    var langs = arr(p.languages);
+    if (langs.length > 1) meta.push('<span class="cl-card-meta-pill">' + langs.length + ' langs</span>');
+
+    var specs = arr(p.specialties).slice(0, 3);
+    var specsHtml = specs.map(function (s) {
+      return '<span class="cl-card-spec">' + escapeHtml(s) + '</span>';
+    }).join('');
+
+    var ratingChip = (st.rating_count > 0)
+      ? '<div class="cl-card-rating"><span class="star">★</span> ' + Number(st.rating_avg).toFixed(1) + '</div>'
+      : '';
+    var featuredChip = p.is_featured
+      ? '<div class="cl-card-featured">⭐ Featured</div>'
+      : '';
+
+    var sessionsLed = st.sessions_delivered || st.total_sessions || 0;
+
+    return '<a class="cl-card" href="' + slugUrl + '">'
+      + '<div class="cl-card-cover">' + featuredChip + ratingChip + cover + '<div class="cl-card-photo">' + photo + '</div></div>'
+      + '<div class="cl-card-body">'
+      +   '<div class="cl-card-name">' + escapeHtml(displayName) + '</div>'
+      +   (p.tagline ? '<div class="cl-card-tagline">' + escapeHtml(p.tagline) + '</div>' : '')
+      +   (meta.length ? '<div class="cl-card-meta">' + meta.join('') + '</div>' : '')
+      +   (specsHtml ? '<div class="cl-card-specs">' + specsHtml + '</div>' : '')
+      +   '<div class="cl-card-foot">'
+      +     '<span>' + (sessionsLed ? '<strong>' + sessionsLed + '</strong> sessions led' : 'New on ATP') + '</span>'
+      +     '<span class="arrow">View profile →</span>'
+      +   '</div>'
+      + '</div>'
+      + '</a>';
+  }
+
+  fetch('/api/coaches', { cache: 'no-cache' })
+    .then(function (r) { return r.json(); })
+    .then(function (d) {
+      var coaches = (d && d.coaches) || [];
+      var grid = document.getElementById('cl-grid');
+      var count = document.getElementById('cl-grid-count');
+      if (!coaches.length) {
+        grid.innerHTML = '<div class="cl-empty" style="grid-column:1/-1">'
+          + '<h3>Coaches coming soon</h3>'
+          + '<p>We\'re onboarding the team. Check back shortly — and in the meantime, every session is still free and open.</p>'
+          + '</div>';
+        if (count) count.textContent = '0 coaches';
+        return;
+      }
+      grid.innerHTML = coaches.map(renderCard).join('');
+      if (count) {
+        var featured = coaches.filter(function (c) { return c.profile && c.profile.is_featured; }).length;
+        count.innerHTML = '<strong>' + coaches.length + '</strong> coaches' + (featured ? ' · ' + featured + ' featured' : '');
+      }
+    })
+    .catch(function () {
+      var grid = document.getElementById('cl-grid');
+      grid.innerHTML = '<div class="cl-empty" style="grid-column:1/-1">'
+        + '<h3>Couldn\'t load coaches</h3>'
+        + '<p>Something on our end. Try refreshing — or email <a href="mailto:general@atthepark.world" style="color:var(--green)">general@atthepark.world</a>.</p>'
+        + '</div>';
+    });
+
+})();
+</script>
+
+</body>
+</html>

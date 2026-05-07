@@ -232,6 +232,8 @@ app.get('/auth/verify', (req, res) => res.sendFile(path.join(__dirname, '../publ
 // Coach profile pretty URLs — /coach/firstname-lastname → coach.html which
 // reads the :slug param from window.location and fetches /api/coaches/by-slug/:slug.
 app.get('/coach/:slug', (req, res) => res.sendFile(path.join(__dirname, '../public/coach.html')));
+// Public coaches listing — /coaches → coaches.html (CMS-driven hero + grid)
+app.get('/coaches', (req, res) => res.sendFile(path.join(__dirname, '../public/coaches.html')));
 app.get('/sessions', (req, res) => res.sendFile(path.join(__dirname, '../public/sessions.html')));
 app.get('/community',(req, res) => res.sendFile(path.join(__dirname, '../public/community.html')));
 app.get('/profile',  (req, res) => res.sendFile(path.join(__dirname, '../public/profile.html')));
