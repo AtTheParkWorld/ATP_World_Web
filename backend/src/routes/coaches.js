@@ -277,6 +277,40 @@ router.put('/:id', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/coaches/:id/upload — coach uploads cover/photo/gallery ─
+// Coach (or admin) can upload their own media. Stored as a base64 data
+// URL in cms_content under page='_coach' so it's reusable + visible in
+// the admin Media Library, just like CMS uploads.
+router.post('/:id/upload', authenticate, async (req, res, next) => {
+  try {
+    if (req.member.id !== req.params.id && !req.member.is_admin) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const { data_url, filename, kind } = req.body || {};
+    if (!data_url || !String(data_url).startsWith('data:')) {
+      return res.status(400).json({ error: 'data_url (base64) required' });
+    }
+    const sizeBytes = Math.round((data_url.length - data_url.indexOf(',')) * 0.75);
+    if (sizeBytes > 10 * 1024 * 1024) {
+      return res.status(413).json({ error: 'File too large (max 10MB)' });
+    }
+    // Persist as a media row so the file lives somewhere queryable. Key
+    // is `coach_<member_id>_<filename>_<timestamp>` to avoid collisions.
+    const key = `coach_${req.params.id}_${(filename || 'upload').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80)}_${Date.now()}`;
+    await query(
+      `INSERT INTO cms_content (page, section, key, value_url, updated_by)
+       VALUES ('_media', $1, $2, $3, $4)
+       ON CONFLICT (page, section, key) DO UPDATE SET value_url=$3, updated_by=$4, updated_at=NOW()`,
+      [kind || 'image', key, data_url, req.member.id]
+    );
+    res.json({
+      success: true,
+      url: data_url,
+      size_kb: Math.round(sizeBytes / 1024),
+    });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/coaches/:id/feedback — member leaves rating ───
 router.post('/:id/feedback', authenticate, async (req, res, next) => {
   try {
