@@ -7,6 +7,15 @@
 var BLOG_FILTER = 'all'; // 'all' | 'published' | 'draft'
 var BLOG_EDITING = null; // current post object when editor is open
 
+// Local helper — the admin bundle doesn't define a shared escapeHtml,
+// so we keep one here. Same shape as the public-page versions.
+function _blEscape(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+if (typeof escapeHtml === 'undefined') { window.escapeHtml = _blEscape; }
+
 function setBlogFilter(btn, name) {
   document.querySelectorAll('.blog-filter').forEach(function (b) { b.classList.remove('active'); });
   if (btn) btn.classList.add('active');
@@ -83,6 +92,7 @@ async function openBlogEditor(postId) {
     titleH3.textContent = 'New post';
     if (deleteBtn) deleteBtn.style.display = 'none';
     BLOG_EDITING = null;
+    renderBlogPreview();
     return;
   }
 
@@ -112,6 +122,7 @@ async function openBlogEditor(postId) {
     document.getElementById('bp-tags').value     = (post.tags || []).join(', ');
     document.getElementById('bp-published').checked = !!post.is_published;
     _renderBlogCover(post.cover_image_url);
+    renderBlogPreview();
   } catch (e) {
     titleH3.textContent = 'Error loading post';
   }
@@ -230,6 +241,59 @@ async function saveBlogPost() {
   }
 }
 
+/* ── Live preview ─────────────────────────────────────────────────
+ * Mirrors the renderer used on the public /blog/:slug page. If the body
+ * looks like HTML we render it as-is; otherwise apply the same markdown-
+ * lite conversions (## ###, > quote, - list, **bold**, *italic*, links,
+ * inline images via ![alt](url)). Wired to the textarea oninput, plus
+ * any toolbar action that mutates the body. */
+function _blRenderBody(raw) {
+  if (!raw) return '';
+  var trimmed = String(raw).trim();
+  var hasHtml = /<\/?(p|div|h[1-6]|ul|ol|li|img|video|iframe|figure|blockquote|pre|code|strong|em|a|br|hr|span)\b/i.test(trimmed);
+  if (hasHtml) return trimmed;
+  var esc = function (s) { return _blEscape(s); };
+  function inline(s) {
+    return esc(s)
+      .replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, '<img src="$2" alt="$1">')
+      .replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+      .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+      .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>');
+  }
+  return trimmed.split(/\n\s*\n/).map(function (block) {
+    var t = block.trim();
+    if (!t) return '';
+    if (/^###\s+/.test(t)) return '<h3>' + inline(t.replace(/^###\s+/, '')) + '</h3>';
+    if (/^##\s+/.test(t))  return '<h2>' + inline(t.replace(/^##\s+/, '')) + '</h2>';
+    if (/^>\s+/.test(t))   return '<blockquote>' + inline(t.replace(/^>\s+/, '').replace(/\n>\s+/g, ' ')) + '</blockquote>';
+    if (/^---+$/.test(t))  return '<hr>';
+    if (/^[-*]\s+/.test(t)) {
+      var items = t.split(/\n[-*]\s+/).map(function (l, i) { return i === 0 ? l.replace(/^[-*]\s+/, '') : l; });
+      return '<ul>' + items.map(function (li) { return '<li>' + inline(li) + '</li>'; }).join('') + '</ul>';
+    }
+    return '<p>' + inline(t).replace(/\n/g, '<br>') + '</p>';
+  }).join('\n');
+}
+
+var _blPreviewTimer = null;
+function renderBlogPreview() {
+  // Debounce — re-render at most every ~120ms while typing
+  if (_blPreviewTimer) clearTimeout(_blPreviewTimer);
+  _blPreviewTimer = setTimeout(function () {
+    var ta   = document.getElementById('bp-body');
+    var pane = document.getElementById('bp-preview');
+    if (!ta || !pane) return;
+    var raw = ta.value || '';
+    if (!raw.trim()) {
+      pane.classList.add('empty');
+      pane.innerHTML = "Start writing — your post will render here as it'll appear on the public page.";
+      return;
+    }
+    pane.classList.remove('empty');
+    pane.innerHTML = _blRenderBody(raw);
+  }, 120);
+}
+
 /* ── Body editor: toolbar, inline image upload, drag-drop ─────────
  * Inserts markdown-lite into the body textarea so admins don't have to
  * remember the syntax. Same renderer that displays it on the post page
@@ -266,6 +330,7 @@ function insertBlogMarkdown(prefix, suffix, mode) {
     newSel = [start + prefix.length, end + prefix.length];
   }
   ta.setSelectionRange(newSel[0], newSel[1]);
+  renderBlogPreview();
 }
 
 function promptBlogLink() {
@@ -279,6 +344,7 @@ function promptBlogLink() {
   ta.value = ta.value.slice(0, start) + insert + ta.value.slice(ta.selectionEnd);
   ta.focus();
   ta.setSelectionRange(start + insert.length, start + insert.length);
+  renderBlogPreview();
 }
 
 function pickBlogInlineImage() {
@@ -332,6 +398,7 @@ async function _uploadAndInsertInline(file) {
     ta.value = ta.value.replace(placeholder, markdown);
     var caret = ta.value.indexOf(markdown) + markdown.length;
     ta.setSelectionRange(caret, caret);
+    renderBlogPreview();
     showToast('✓ Image inserted', 'success');
   } catch (e) {
     ta.value = ta.value.replace(placeholder, '');
