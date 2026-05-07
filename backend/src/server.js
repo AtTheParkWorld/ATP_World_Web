@@ -143,7 +143,11 @@ app.post('/api/v1/billing/webhook',
   express.raw({ type: 'application/json' }),
   billingRoutes.webhookHandler);
 
-app.use(express.json({ limit: '1mb' }));
+// 15 MB JSON body — base64-encoded media is ~33% larger than the
+// source file, so a 10 MB image (our app-level cap) becomes ~13.4 MB
+// of JSON. Coach + CMS uploads need this headroom; everything else is
+// nowhere near. urlencoded stays small since no form posts media.
+app.use(express.json({ limit: '15mb' }));
 app.use(express.urlencoded({ extended: true, limit: '256kb' }));
 app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
