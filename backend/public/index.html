@@ -1543,7 +1543,17 @@ window.handleGoogleSignIn = async function(response) {
     .then(function (r) { return r.ok ? r.json() : null; })
     .then(function (d) {
       var posts = (d && d.posts) || [];
-      if (!posts.length) { section.style.display = 'none'; return; }
+      if (!posts.length) {
+        // Empty state — keep the section visible so it doesn't look broken
+        // and the headline still tells visitors there's a journal coming.
+        grid.innerHTML =
+          '<div style="grid-column:1/-1;padding:48px 32px;text-align:center;background:var(--dark2);border:1px dashed rgba(255,255,255,.12);border-radius:14px">'
+          + '<div style="font-size:42px;margin-bottom:14px;opacity:.4">📝</div>'
+          + '<div style="font-family:var(--ff-display);font-size:24px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:8px;letter-spacing:.005em">First posts coming soon</div>'
+          + '<div style="font-size:14px;color:var(--muted);max-width:480px;margin:0 auto;line-height:1.6">Coach insights, member journeys, training breakdowns — we\'re publishing the first wave shortly. Want a heads up? Subscribe to the newsletter below.</div>'
+          + '</div>';
+        return;
+      }
       grid.innerHTML = posts.map(function (p) {
         var coverHtml = p.cover_image_url
           ? '<img src="' + esc(p.cover_image_url) + '" alt="" loading="lazy">'
