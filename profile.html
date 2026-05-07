@@ -3104,57 +3104,57 @@ function loadCoachProfileSelf(memberId) {
   loadCoachInbox();
 }
 
-// ── Inbox ──────────────────────────────────────────────────
+// ── Inbox (threaded) ───────────────────────────────────────
 function loadCoachInbox() {
   if (!CURRENT_MEMBER || !CURRENT_MEMBER.id) return;
   var list = document.getElementById('coachInboxList');
   if (list) list.innerHTML = '<div class="coach-inbox-empty">Loading…</div>';
 
-  fetch(COACH_API + '/coaches/' + CURRENT_MEMBER.id + '/messages?limit=50', { headers: _coachAuth() })
+  fetch(COACH_API + '/coaches/' + CURRENT_MEMBER.id + '/threads?limit=50', { headers: _coachAuth() })
     .then(function(r){ return r.json(); })
     .then(function(d){
-      var msgs = (d && d.messages) || [];
-      var unread = (d && d.unread) || 0;
+      var threads = (d && d.threads) || [];
+      var unreadThreads = (d && d.unread_threads) || 0;
       var badge = document.getElementById('coachInboxBadge');
-      if (badge) badge.textContent = msgs.length
-        ? (msgs.length + ' message' + (msgs.length === 1 ? '' : 's') + ' · ' + unread + ' unread')
+      if (badge) badge.textContent = threads.length
+        ? (threads.length + ' conversation' + (threads.length === 1 ? '' : 's') + ' · ' + unreadThreads + ' unread')
         : '';
+      // Inquiries-30d stat = threads with last_message_at within 30d
       var inquiriesStat = document.getElementById('coachStatInquiries');
       if (inquiriesStat) {
         var since = Date.now() - 30 * 24 * 60 * 60 * 1000;
-        inquiriesStat.textContent = msgs.filter(function(m){ return new Date(m.created_at).getTime() >= since; }).length;
+        inquiriesStat.textContent = threads.filter(function(t){ return new Date(t.last_message_at).getTime() >= since; }).length;
       }
-      _renderCoachInbox(msgs);
+      _renderCoachInbox(threads);
     })
     .catch(function(){
-      if (list) list.innerHTML = '<div class="coach-inbox-empty">Couldn\'t load messages. Try Refresh.</div>';
+      if (list) list.innerHTML = '<div class="coach-inbox-empty">Couldn\'t load conversations. Try Refresh.</div>';
     });
 }
 
-function _renderCoachInbox(msgs) {
+function _renderCoachInbox(threads) {
   var list = document.getElementById('coachInboxList');
   if (!list) return;
-  if (!msgs.length) {
-    list.innerHTML = '<div class="coach-inbox-empty">No inquiries yet. Once people start messaging from your public page, they\'ll appear here.</div>';
+  if (!threads.length) {
+    list.innerHTML = '<div class="coach-inbox-empty">No conversations yet. Once visitors message you from your public page, they\'ll appear here as 2-way chats.</div>';
     return;
   }
-  list.innerHTML = msgs.map(function(m){
-    var unread = !m.read_at;
-    var snippet = (m.message || '').replace(/\s+/g, ' ').slice(0, 200);
-    var subj = m.subject || '';
-    var time = m.created_at ? _coachRelTime(m.created_at) : '';
+  list.innerHTML = threads.map(function(t){
+    var unread = (t.coach_unread > 0);
+    var snippet = (t.last_message_preview || '').replace(/\s+/g, ' ').slice(0, 200);
+    var subj = t.subject || '';
+    var time = t.last_message_at ? _coachRelTime(t.last_message_at) : '';
+    var lastFromCoach = t.last_message_role === 'coach';
+    var msgCount = t.message_count || 1;
     return ''
-      + '<div class="coach-inbox-row' + (unread ? ' unread' : '') + '" data-msg-id="' + escapeHtml(m.id) + '" onclick="toggleCoachMessage(this)">'
+      + '<div class="coach-inbox-row' + (unread ? ' unread' : '') + '" data-thread-id="' + escapeHtml(t.id) + '" onclick="toggleCoachThread(this)">'
       +   '<div class="coach-inbox-head">'
-      +     '<div class="coach-inbox-from">' + (unread ? '<span class="coach-inbox-dot"></span>' : '') + escapeHtml(m.sender_name || '—') + ' <span class="email">&lt;' + escapeHtml(m.sender_email || '') + '&gt;</span></div>'
-      +     '<div class="coach-inbox-time">' + escapeHtml(time) + '</div>'
+      +     '<div class="coach-inbox-from">' + (unread ? '<span class="coach-inbox-dot"></span>' : '') + escapeHtml(t.sender_name || '—') + ' <span class="email">&lt;' + escapeHtml(t.sender_email || '') + '&gt;</span></div>'
+      +     '<div class="coach-inbox-time">' + escapeHtml(time) + (msgCount > 1 ? ' · ' + msgCount + ' msgs' : '') + '</div>'
       +   '</div>'
       +   (subj ? '<div class="coach-inbox-subject">' + escapeHtml(subj) + '</div>' : '')
-      +   '<div class="coach-inbox-snippet">' + escapeHtml(snippet) + (m.message && m.message.length > snippet.length ? '…' : '') + '</div>'
-      +   '<div class="coach-inbox-actions">'
-      +     '<a href="mailto:' + encodeURIComponent(m.sender_email || '') + '?subject=' + encodeURIComponent(subj ? 'Re: ' + subj : 'Hi from ATP') + '" onclick="event.stopPropagation()">Reply by email →</a>'
-      +     (m.sender_phone ? '<a href="https://wa.me/' + encodeURIComponent(String(m.sender_phone).replace(/[^0-9+]/g, '')) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()">WhatsApp →</a>' : '')
-      +   '</div>'
+      +   '<div class="coach-inbox-snippet">' + (lastFromCoach ? '<span style="color:var(--green);font-weight:600">You: </span>' : '') + escapeHtml(snippet) + (snippet.length === 200 ? '…' : '') + '</div>'
+      +   '<div class="coach-inbox-actions" data-thread-body></div>'
       + '</div>';
   }).join('');
 }
@@ -3173,28 +3173,118 @@ function _coachRelTime(iso) {
   } catch (e) { return ''; }
 }
 
-function toggleCoachMessage(row) {
+function toggleCoachThread(row) {
   var expanded = row.classList.toggle('expanded');
-  if (expanded && row.classList.contains('unread')) {
-    var id = row.getAttribute('data-msg-id');
-    fetch(COACH_API + '/coaches/' + CURRENT_MEMBER.id + '/messages/' + id + '/read', {
-      method: 'PATCH', headers: _coachAuth(),
-    }).then(function(){
-      row.classList.remove('unread');
-      var dot = row.querySelector('.coach-inbox-dot');
-      if (dot) dot.remove();
-      // Decrement the unread part of the badge
-      var badge = document.getElementById('coachInboxBadge');
-      if (badge) {
-        var t = badge.textContent || '';
-        var m = t.match(/(\d+) unread/);
-        if (m) {
-          var n = Math.max(0, parseInt(m[1], 10) - 1);
-          badge.textContent = t.replace(/\d+ unread/, n + ' unread');
+  if (!expanded) return;
+
+  var threadId = row.getAttribute('data-thread-id');
+  var bodyEl = row.querySelector('[data-thread-body]');
+  if (!bodyEl) return;
+
+  // Already loaded? Re-show.
+  if (row.dataset.loaded === '1') {
+    bodyEl.style.display = 'block';
+    return;
+  }
+  bodyEl.innerHTML = '<div style="padding:14px 0;color:var(--muted);font-size:12px">Loading messages…</div>';
+
+  fetch(COACH_API + '/coaches/' + CURRENT_MEMBER.id + '/threads/' + threadId, { headers: _coachAuth() })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var thread = d.thread || {};
+      var msgs   = d.messages || [];
+      var coachName = (function(){
+        try { var m = JSON.parse(localStorage.getItem('atp_member') || '{}'); return ((m.first_name || '') + ' ' + (m.last_name || '')).trim() || 'You'; }
+        catch(e) { return 'You'; }
+      })();
+      var timeline = msgs.map(function(m){
+        var who = m.from_role === 'coach' ? coachName : (m.sender_name || thread.sender_name || 'Visitor');
+        var when = m.created_at ? _coachRelTime(m.created_at) : '';
+        var bg   = m.from_role === 'coach' ? 'background:rgba(122,194,49,.08);border:1px solid rgba(122,194,49,.28)' : 'background:#0d0d0d;border:1px solid var(--line-soft)';
+        var align = m.from_role === 'coach' ? 'margin-left:auto;border-bottom-right-radius:6px' : 'margin-right:auto;border-bottom-left-radius:6px';
+        return ''
+          + '<div class="cti-msg" style="' + bg + ';' + align + ';max-width:88%;padding:10px 14px;border-radius:10px">'
+          +   '<div style="font-size:11px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:' + (m.from_role === 'coach' ? 'var(--green)' : '#aaa') + ';margin-bottom:4px;display:flex;justify-content:space-between;gap:14px">'
+          +     '<span>' + escapeHtml(who) + '</span><span style="color:var(--muted);font-weight:500;font-size:10px;text-transform:none;letter-spacing:0">' + escapeHtml(when) + '</span>'
+          +   '</div>'
+          +   '<div style="font-size:13px;line-height:1.55;color:#eee;white-space:pre-wrap;word-break:break-word">' + escapeHtml(m.message) + '</div>'
+          + '</div>';
+      }).join('');
+
+      var senderPhone = thread.sender_phone ? String(thread.sender_phone).replace(/[^0-9+]/g, '') : '';
+      bodyEl.innerHTML =
+        '<div style="display:flex;flex-direction:column;gap:8px;margin-top:10px;padding-top:10px;border-top:1px solid var(--line-soft)">' + timeline + '</div>'
+        + '<form onclick="event.stopPropagation()" onsubmit="event.preventDefault();sendCoachReply(this,\'' + escapeHtml(threadId) + '\')" style="margin-top:12px;display:flex;flex-direction:column;gap:8px">'
+        +   '<textarea required minlength="1" maxlength="4000" rows="3" placeholder="Type your reply…" style="background:#070b06;border:1px solid var(--line);border-radius:var(--radius);padding:10px 12px;color:#fff;font-size:13px;font-family:inherit;resize:vertical;min-height:64px"></textarea>'
+        +   '<div style="display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">'
+        +     '<div style="font-size:11px;color:var(--muted)">Visitor will get an email + can read the full thread.</div>'
+        +     '<div style="display:flex;gap:8px">'
+        +       (senderPhone ? '<a class="pf-btn" href="https://wa.me/' + encodeURIComponent(senderPhone) + '" target="_blank" rel="noopener" onclick="event.stopPropagation()" style="background:transparent;border:1px solid rgba(255,255,255,.18);font-size:11px;padding:8px 14px">WhatsApp ↗</a>' : '')
+        +       '<button type="submit" class="pf-btn primary" style="font-size:11px;padding:8px 16px">Send reply</button>'
+        +     '</div>'
+        +   '</div>'
+        +   '<div data-reply-msg style="font-size:11px;color:var(--muted);min-height:14px"></div>'
+        + '</form>';
+
+      row.dataset.loaded = '1';
+
+      // Mark unread cleared (the GET on the thread already does this server-side)
+      if (row.classList.contains('unread')) {
+        row.classList.remove('unread');
+        var dot = row.querySelector('.coach-inbox-dot');
+        if (dot) dot.remove();
+        var badge = document.getElementById('coachInboxBadge');
+        if (badge) {
+          var t = badge.textContent || '';
+          var m = t.match(/(\d+) unread/);
+          if (m) {
+            var n = Math.max(0, parseInt(m[1], 10) - 1);
+            badge.textContent = t.replace(/\d+ unread/, n + ' unread');
+          }
         }
       }
-    }).catch(function(){});
+    })
+    .catch(function(){
+      bodyEl.innerHTML = '<div style="padding:14px 0;color:#fca5a5;font-size:12px">Couldn\'t load this conversation. Try Refresh.</div>';
+    });
+}
+
+function sendCoachReply(form, threadId) {
+  var ta  = form.querySelector('textarea');
+  var btn = form.querySelector('button[type=submit]');
+  var msg = form.querySelector('[data-reply-msg]');
+  var body = (ta.value || '').trim();
+  if (body.length < 1) {
+    msg.textContent = 'Type a reply first.';
+    msg.style.color = '#fca5a5';
+    return;
   }
+  btn.disabled = true; btn.textContent = 'Sending…';
+  msg.textContent = ''; msg.style.color = 'var(--muted)';
+  fetch(COACH_API + '/coaches/' + CURRENT_MEMBER.id + '/threads/' + threadId + '/reply', {
+    method: 'POST',
+    headers: _coachAuth(),
+    body: JSON.stringify({ message: body })
+  }).then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); })
+    .then(function(res){
+      if (!res.ok) {
+        btn.disabled = false; btn.textContent = 'Send reply';
+        msg.textContent = (res.body && res.body.error) || 'Couldn\'t send.';
+        msg.style.color = '#fca5a5';
+        return;
+      }
+      ta.value = '';
+      btn.disabled = false; btn.textContent = 'Send reply';
+      msg.textContent = '✓ Sent. Reload to see your reply in the thread.';
+      msg.style.color = 'var(--green)';
+      // Soft reload of the inbox so the thread bumps to the top + last_message_role updates
+      setTimeout(loadCoachInbox, 800);
+    })
+    .catch(function(){
+      btn.disabled = false; btn.textContent = 'Send reply';
+      msg.textContent = 'Network error.';
+      msg.style.color = '#fca5a5';
+    });
 }
 
 // ── Visuals: cover / photo / gallery ────────────────────────

@@ -1426,6 +1426,85 @@ router.post('/migrate-coach-profile-v2', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+
+// ── POST /api/auth/migrate-coach-threads ──────────────────────
+// Adds the coach_message_threads table + thread_id/from_role on
+// coach_messages so the redesigned inbox is a 2-way conversation
+// between visitor + coach. Backfills: every existing coach_messages
+// row becomes its own thread (one message in the timeline).
+router.post('/migrate-coach-threads', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    await query(`CREATE TABLE IF NOT EXISTS coach_message_threads (
+      id                 UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      coach_id           UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      sender_member_id   UUID REFERENCES members(id) ON DELETE SET NULL,
+      sender_name        VARCHAR(120) NOT NULL,
+      sender_email       VARCHAR(255) NOT NULL,
+      sender_phone       VARCHAR(40),
+      subject            VARCHAR(200),
+      public_token       VARCHAR(64) UNIQUE NOT NULL,
+      created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      last_message_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      coach_unread       INTEGER NOT NULL DEFAULT 0,
+      visitor_unread     INTEGER NOT NULL DEFAULT 0,
+      is_closed          BOOLEAN NOT NULL DEFAULT false
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_coach_threads_coach_recent ON coach_message_threads(coach_id, last_message_at DESC)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_coach_threads_email_coach  ON coach_message_threads(sender_email, coach_id)`);
+
+    await query(`ALTER TABLE coach_messages ADD COLUMN IF NOT EXISTS thread_id UUID`);
+    await query(`ALTER TABLE coach_messages ADD COLUMN IF NOT EXISTS from_role VARCHAR(20)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_coach_messages_thread ON coach_messages(thread_id, created_at)`);
+
+    // Backfill — every existing message becomes its own single-message thread
+    const { rows: orphans } = await query(
+      `SELECT id, coach_id, sender_member_id, sender_name, sender_email,
+              sender_phone, subject, created_at, read_at
+       FROM coach_messages
+       WHERE thread_id IS NULL`
+    );
+    let backfilled = 0;
+    for (const m of orphans) {
+      const token = require('crypto').randomBytes(24).toString('hex');
+      const { rows: t } = await query(
+        `INSERT INTO coach_message_threads
+          (coach_id, sender_member_id, sender_name, sender_email, sender_phone,
+           subject, public_token, created_at, last_message_at,
+           coach_unread, visitor_unread)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$8,$9,0)
+         RETURNING id`,
+        [m.coach_id, m.sender_member_id, m.sender_name, m.sender_email,
+         m.sender_phone, m.subject, token, m.created_at,
+         m.read_at ? 0 : 1]
+      );
+      await query(
+        `UPDATE coach_messages SET thread_id=$1, from_role='member' WHERE id=$2`,
+        [t[0].id, m.id]
+      );
+      backfilled++;
+    }
+
+    await query(`UPDATE coach_messages SET from_role='member' WHERE from_role IS NULL`);
+    await query(`ALTER TABLE coach_messages ALTER COLUMN thread_id SET NOT NULL`).catch(() => {});
+    await query(`ALTER TABLE coach_messages ALTER COLUMN from_role SET NOT NULL`).catch(() => {});
+    await query(`ALTER TABLE coach_messages ADD CONSTRAINT fk_coach_messages_thread
+      FOREIGN KEY (thread_id) REFERENCES coach_message_threads(id) ON DELETE CASCADE`)
+      .catch((e) => { if (!/already exists/i.test(e.message)) throw e; });
+    await query(`ALTER TABLE coach_messages ADD CONSTRAINT chk_coach_messages_role
+      CHECK (from_role IN ('member','coach'))`)
+      .catch((e) => { if (!/already exists/i.test(e.message)) throw e; });
+
+    res.json({
+      success: true,
+      message: 'Coach message threads migrated',
+      threads_created: backfilled,
+    });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
 
 // ── POST /api/auth/grant-admin  (setup only) ──────────────────

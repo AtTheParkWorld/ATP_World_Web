@@ -1,8 +1,16 @@
 // ── COACHES ───────────────────────────────────────────────────
-const router = require('express').Router();
+const router  = require('express').Router();
+const crypto  = require('crypto');
 const { query } = require('../db');
 const { authenticate, requireAdmin, optionalAuth } = require('../middleware/auth');
 const emailService = require('../services/email');
+
+// Build the public site URL — same fallback chain as /api/auth/magic-link.
+function _frontendBase(req) {
+  return (process.env.FRONTEND_URL ||
+    (req && `${req.protocol}://${req.get('host')}`) ||
+    'https://atpworldweb-production.up.railway.app').replace(/\/$/, '');
+}
 
 // ── Helpers ───────────────────────────────────────────────────
 function slugify(s) {
@@ -344,10 +352,11 @@ router.post('/:id/feedback', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// ── POST /api/coaches/:id/message — public contact form ─────
-// Anyone (logged-in or not) can send a message to a coach. We store it
-// in coach_messages (for admin analytics + coach inbox) and email the
-// coach a copy via SendGrid. Rate-limited via a simple per-IP table check.
+// ── POST /api/coaches/:id/message — start a new thread ─────
+// Anyone (logged-in or not) can open a conversation with a coach. We
+// create a coach_message_threads row, store the first message, and
+// email both sides — coach gets the inquiry, visitor gets a copy + a
+// public-token URL they can use to view + reply without an account.
 router.post('/:id/message', optionalAuth, async (req, res, next) => {
   try {
     const { name, email, phone, subject, message, source_url } = req.body || {};
@@ -361,9 +370,8 @@ router.post('/:id/message', optionalAuth, async (req, res, next) => {
       return res.status(400).json({ error: 'Message is too long (max 4000 chars).' });
     }
 
-    // Confirm coach exists
     const { rows: coach } = await query(
-      `SELECT m.id, m.email, m.first_name, m.last_name, cp.display_name
+      `SELECT m.id, m.email, m.first_name, m.last_name, cp.display_name, cp.slug
        FROM members m LEFT JOIN coach_profiles cp ON cp.member_id=m.id
        WHERE m.id=$1 AND m.is_coach=true`,
       [req.params.id]
@@ -371,10 +379,9 @@ router.post('/:id/message', optionalAuth, async (req, res, next) => {
     if (!coach.length) return res.status(404).json({ error: 'Coach not found' });
     const c = coach[0];
 
-    // Light rate-limit: same email may send max 5 messages per hour to
-    // any one coach. Stops obvious spam without blocking real inquiries.
+    // Rate-limit: max 5 thread starts per hour per (coach, email)
     const { rows: recent } = await query(
-      `SELECT COUNT(*)::int AS n FROM coach_messages
+      `SELECT COUNT(*)::int AS n FROM coach_message_threads
        WHERE coach_id=$1 AND sender_email=$2 AND created_at > NOW() - INTERVAL '1 hour'`,
       [req.params.id, String(email).toLowerCase()]
     );
@@ -382,77 +389,287 @@ router.post('/:id/message', optionalAuth, async (req, res, next) => {
       return res.status(429).json({ error: 'Too many messages from this email recently. Try again later.' });
     }
 
-    await query(
-      `INSERT INTO coach_messages
-        (coach_id, sender_member_id, sender_name, sender_email, sender_phone, subject, message, source_url)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+    const senderName  = String(name).trim().slice(0, 120);
+    const senderEmail = String(email).trim().toLowerCase().slice(0, 255);
+    const senderPhone = phone ? String(phone).trim().slice(0, 40) : null;
+    const subj        = subject ? String(subject).trim().slice(0, 200) : null;
+    const body        = String(message).trim();
+    const token       = crypto.randomBytes(24).toString('hex');
+
+    const { rows: thread } = await query(
+      `INSERT INTO coach_message_threads
+        (coach_id, sender_member_id, sender_name, sender_email, sender_phone,
+         subject, public_token, coach_unread, visitor_unread)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,1,0)
+       RETURNING id, public_token`,
       [
         req.params.id,
         req.member ? req.member.id : null,
-        String(name).trim().slice(0, 120),
-        String(email).trim().toLowerCase().slice(0, 255),
-        phone ? String(phone).trim().slice(0, 40) : null,
-        subject ? String(subject).trim().slice(0, 200) : null,
-        String(message).trim(),
+        senderName, senderEmail, senderPhone, subj, token,
+      ]
+    );
+
+    await query(
+      `INSERT INTO coach_messages
+        (coach_id, thread_id, from_role, sender_member_id,
+         sender_name, sender_email, sender_phone, subject, message, source_url)
+       VALUES ($1,$2,'member',$3,$4,$5,$6,$7,$8,$9)`,
+      [
+        req.params.id, thread[0].id,
+        req.member ? req.member.id : null,
+        senderName, senderEmail, senderPhone, subj, body,
         source_url ? String(source_url).slice(0, 500) : null,
       ]
     );
 
-    // Email the coach (best-effort — don't fail the API if email is mocked/down)
-    try {
-      const result = await emailService.sendCoachMessage(
-        { email: c.email, first_name: c.display_name || c.first_name },
-        { name, email, phone, subject, message, source_url }
-      );
-      if (result && result.ok === false) {
-        console.warn('[coach-message] email failed:', result.code, result.reason);
-      }
-    } catch (e) {
-      console.warn('[coach-message] email threw:', e.message);
-    }
+    const baseUrl   = _frontendBase(req);
+    const threadUrl = `${baseUrl}/coach-thread/${thread[0].public_token}`;
+    const coachName = c.display_name || c.first_name;
+    const coachLabel = c.display_name || `${c.first_name} ${c.last_name}`.trim();
 
-    res.json({ success: true, message: 'Your message was sent.' });
+    // Coach email — inbox notification with reply-to set to the visitor
+    try {
+      await emailService.sendCoachThreadInitial(
+        { to: c.email, recipient: 'coach', coachFirstName: coachName, coachLabel },
+        { name: senderName, email: senderEmail, phone: senderPhone, subject: subj, message: body, threadUrl }
+      );
+    } catch (e) { console.warn('[coach-thread] coach email threw:', e.message); }
+
+    // Visitor copy — confirmation + thread URL so they can come back to reply
+    try {
+      await emailService.sendCoachThreadInitial(
+        { to: senderEmail, recipient: 'visitor', coachFirstName: coachName, coachLabel },
+        { name: senderName, email: senderEmail, phone: senderPhone, subject: subj, message: body, threadUrl }
+      );
+    } catch (e) { console.warn('[coach-thread] visitor email threw:', e.message); }
+
+    res.json({
+      success: true,
+      thread_id: thread[0].id,
+      public_token: thread[0].public_token,
+      thread_url: threadUrl,
+    });
   } catch (err) { next(err); }
 });
 
-// ── GET /api/coaches/:id/messages — coach inbox (self or admin) ─
-router.get('/:id/messages', authenticate, async (req, res, next) => {
+
+// ── GET /api/coach-threads — coach's inbox ──────────────────
+// Used as a sub-route of /api/coaches; the path on the front-end is
+// /api/coaches/:id/threads. Coach (self) or admin only.
+router.get('/:id/threads', authenticate, async (req, res, next) => {
   try {
     if (req.member.id !== req.params.id && !req.member.is_admin) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    const limit  = Math.min(200, Number(req.query.limit) || 50);
+    const limit  = Math.min(100, Number(req.query.limit) || 50);
     const offset = Math.max(0, Number(req.query.offset) || 0);
-    const { rows } = await query(
-      `SELECT id, sender_name, sender_email, sender_phone, subject, message,
-              source_url, created_at, read_at
-       FROM coach_messages
-       WHERE coach_id=$1
-       ORDER BY created_at DESC
+    const { rows: threads } = await query(
+      `SELECT t.id, t.sender_name, t.sender_email, t.sender_phone, t.subject,
+              t.public_token, t.created_at, t.last_message_at,
+              t.coach_unread, t.visitor_unread, t.is_closed,
+              (SELECT COUNT(*)::int FROM coach_messages cm WHERE cm.thread_id=t.id) AS message_count,
+              (SELECT message FROM coach_messages cm WHERE cm.thread_id=t.id
+               ORDER BY created_at DESC LIMIT 1) AS last_message_preview,
+              (SELECT from_role FROM coach_messages cm WHERE cm.thread_id=t.id
+               ORDER BY created_at DESC LIMIT 1) AS last_message_role
+       FROM coach_message_threads t
+       WHERE t.coach_id=$1
+       ORDER BY t.last_message_at DESC
        LIMIT $2 OFFSET $3`,
       [req.params.id, limit, offset]
     );
-    const { rows: count } = await query(
+    const { rows: agg } = await query(
       `SELECT COUNT(*)::int AS total,
-              COUNT(*) FILTER (WHERE read_at IS NULL)::int AS unread
-       FROM coach_messages WHERE coach_id=$1`,
+              COALESCE(SUM(coach_unread),0)::int AS unread_messages,
+              COUNT(*) FILTER (WHERE coach_unread > 0)::int AS unread_threads
+       FROM coach_message_threads WHERE coach_id=$1`,
       [req.params.id]
     );
-    res.json({ messages: rows, total: count[0].total, unread: count[0].unread });
+    res.json({
+      threads,
+      total:           agg[0].total,
+      unread_threads:  agg[0].unread_threads,
+      unread_messages: agg[0].unread_messages,
+    });
   } catch (err) { next(err); }
 });
 
-// ── PATCH /api/coaches/:id/messages/:msgId/read ──────────────
-router.patch('/:id/messages/:msgId/read', authenticate, async (req, res, next) => {
+// ── GET /api/coaches/:id/threads/:threadId — single thread (coach view) ─
+router.get('/:id/threads/:threadId', authenticate, async (req, res, next) => {
   try {
     if (req.member.id !== req.params.id && !req.member.is_admin) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    await query(
-      `UPDATE coach_messages SET read_at=COALESCE(read_at, NOW())
-       WHERE id=$1 AND coach_id=$2`,
-      [req.params.msgId, req.params.id]
+    const { rows: t } = await query(
+      `SELECT * FROM coach_message_threads WHERE id=$1 AND coach_id=$2`,
+      [req.params.threadId, req.params.id]
     );
+    if (!t.length) return res.status(404).json({ error: 'Thread not found' });
+
+    const { rows: msgs } = await query(
+      `SELECT id, from_role, sender_name, sender_email, message, created_at
+       FROM coach_messages
+       WHERE thread_id=$1
+       ORDER BY created_at ASC`,
+      [req.params.threadId]
+    );
+
+    // Mark coach's unread cleared
+    if (t[0].coach_unread > 0) {
+      await query(`UPDATE coach_message_threads SET coach_unread=0 WHERE id=$1`, [req.params.threadId]);
+    }
+
+    res.json({ thread: t[0], messages: msgs });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/coaches/:id/threads/:threadId/reply — coach replies ─
+router.post('/:id/threads/:threadId/reply', authenticate, async (req, res, next) => {
+  try {
+    if (req.member.id !== req.params.id && !req.member.is_admin) {
+      return res.status(403).json({ error: 'Forbidden' });
+    }
+    const body = String((req.body && req.body.message) || '').trim();
+    if (body.length < 1) return res.status(400).json({ error: 'Empty reply' });
+    if (body.length > 4000) return res.status(400).json({ error: 'Reply too long (max 4000)' });
+
+    const { rows: t } = await query(
+      `SELECT t.*, m.first_name, m.last_name, cp.display_name
+       FROM coach_message_threads t
+       JOIN members m ON m.id=t.coach_id
+       LEFT JOIN coach_profiles cp ON cp.member_id=t.coach_id
+       WHERE t.id=$1 AND t.coach_id=$2`,
+      [req.params.threadId, req.params.id]
+    );
+    if (!t.length) return res.status(404).json({ error: 'Thread not found' });
+    const thread = t[0];
+    const coachLabel = thread.display_name || `${thread.first_name} ${thread.last_name}`.trim();
+
+    await query(
+      `INSERT INTO coach_messages
+        (coach_id, thread_id, from_role,
+         sender_name, sender_email, message)
+       VALUES ($1,$2,'coach',$3,$4,$5)`,
+      [req.params.id, thread.id, coachLabel, req.member.email || '', body]
+    );
+    await query(
+      `UPDATE coach_message_threads
+       SET last_message_at=NOW(), visitor_unread=visitor_unread+1, coach_unread=0
+       WHERE id=$1`,
+      [thread.id]
+    );
+
+    // Notify the visitor by email — they can click the public link to reply
+    try {
+      const baseUrl   = _frontendBase(req);
+      const threadUrl = `${baseUrl}/coach-thread/${thread.public_token}`;
+      await emailService.sendCoachThreadReply(
+        { to: thread.sender_email, recipient: 'visitor',
+          visitorFirstName: thread.sender_name.split(' ')[0],
+          coachLabel },
+        { message: body, subject: thread.subject, threadUrl }
+      );
+    } catch (e) { console.warn('[coach-thread reply] visitor email threw:', e.message); }
+
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/coach-threads/by-token/:token — visitor view ──
+// Public, no auth. The token IS the auth.
+router.get('/threads/by-token/:token', optionalAuth, async (req, res, next) => {
+  try {
+    const { rows: t } = await query(
+      `SELECT t.id, t.coach_id, t.sender_name, t.sender_email, t.sender_phone,
+              t.subject, t.created_at, t.last_message_at, t.visitor_unread,
+              t.is_closed, m.first_name AS coach_first_name, m.last_name AS coach_last_name,
+              cp.display_name AS coach_display_name, cp.slug AS coach_slug,
+              cp.profile_photo_url, cp.cover_image_url
+       FROM coach_message_threads t
+       JOIN members m ON m.id=t.coach_id
+       LEFT JOIN coach_profiles cp ON cp.member_id=t.coach_id
+       WHERE t.public_token=$1`,
+      [req.params.token]
+    );
+    if (!t.length) return res.status(404).json({ error: 'Thread not found' });
+    const thread = t[0];
+
+    const { rows: msgs } = await query(
+      `SELECT id, from_role, sender_name, message, created_at
+       FROM coach_messages
+       WHERE thread_id=$1
+       ORDER BY created_at ASC`,
+      [thread.id]
+    );
+
+    // Mark visitor's unread cleared
+    if (thread.visitor_unread > 0) {
+      await query(`UPDATE coach_message_threads SET visitor_unread=0 WHERE id=$1`, [thread.id]);
+    }
+
+    res.json({ thread, messages: msgs });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/coach-threads/by-token/:token/reply — visitor reply ─
+router.post('/threads/by-token/:token/reply', optionalAuth, async (req, res, next) => {
+  try {
+    const body = String((req.body && req.body.message) || '').trim();
+    if (body.length < 1) return res.status(400).json({ error: 'Empty reply' });
+    if (body.length > 4000) return res.status(400).json({ error: 'Reply too long (max 4000)' });
+
+    const { rows: t } = await query(
+      `SELECT t.*, m.email AS coach_email, m.first_name AS coach_first_name,
+              cp.display_name AS coach_display_name
+       FROM coach_message_threads t
+       JOIN members m ON m.id=t.coach_id
+       LEFT JOIN coach_profiles cp ON cp.member_id=t.coach_id
+       WHERE t.public_token=$1`,
+      [req.params.token]
+    );
+    if (!t.length) return res.status(404).json({ error: 'Thread not found' });
+    const thread = t[0];
+    if (thread.is_closed) return res.status(403).json({ error: 'This conversation is closed' });
+
+    // Light rate-limit on visitor replies — 10 per hour per thread
+    const { rows: recent } = await query(
+      `SELECT COUNT(*)::int AS n FROM coach_messages
+       WHERE thread_id=$1 AND from_role='member'
+         AND created_at > NOW() - INTERVAL '1 hour'`,
+      [thread.id]
+    );
+    if (recent[0]?.n >= 10) {
+      return res.status(429).json({ error: 'Too many replies — try again later.' });
+    }
+
+    await query(
+      `INSERT INTO coach_messages
+        (coach_id, thread_id, from_role, sender_member_id,
+         sender_name, sender_email, sender_phone, message)
+       VALUES ($1,$2,'member',$3,$4,$5,$6,$7)`,
+      [thread.coach_id, thread.id, thread.sender_member_id,
+       thread.sender_name, thread.sender_email, thread.sender_phone, body]
+    );
+    await query(
+      `UPDATE coach_message_threads
+       SET last_message_at=NOW(), coach_unread=coach_unread+1, visitor_unread=0
+       WHERE id=$1`,
+      [thread.id]
+    );
+
+    // Notify the coach
+    try {
+      const baseUrl   = _frontendBase(req);
+      const threadUrl = `${baseUrl}/coach-thread/${thread.public_token}`;
+      const coachName = thread.coach_display_name || thread.coach_first_name;
+      await emailService.sendCoachThreadReply(
+        { to: thread.coach_email, recipient: 'coach',
+          coachFirstName: coachName, visitorName: thread.sender_name },
+        { message: body, subject: thread.subject, threadUrl,
+          replyTo: thread.sender_email }
+      );
+    } catch (e) { console.warn('[coach-thread reply] coach email threw:', e.message); }
+
     res.json({ success: true });
   } catch (err) { next(err); }
 });

@@ -181,6 +181,97 @@ async function sendCoachMessage(coach, payload) {
   }
 }
 
+// ── COACH MESSAGE THREADS ──────────────────────────────────────
+// Two emails per thread event: one to the coach, one to the visitor.
+// Same template, different framing — controlled by recipient='coach'|'visitor'.
+async function sendCoachThreadInitial(envelope, payload) {
+  const safe = (s) => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const isCoach = envelope.recipient === 'coach';
+  const subject = isCoach
+    ? `[ATP] New message from ${payload.name}` + (payload.subject ? ` — ${payload.subject}` : '')
+    : `Your message to ${envelope.coachLabel} — At The Park`;
+
+  const intro = isCoach
+    ? `<p>Hi ${safe(envelope.coachFirstName)}, you have a new inquiry from your ATP coach profile.</p>`
+    : `<p>Hi ${safe(payload.name.split(' ')[0])}, thanks for reaching out to <strong style="color:#7AC231">${safe(envelope.coachLabel)}</strong>. Your message landed in their inbox — they usually reply within 24 hours.</p>`;
+
+  const cta = isCoach
+    ? `<a href="${payload.threadUrl}" class="btn">Open conversation →</a>
+       <p class="muted" style="margin-top:8px">Or just hit reply on this email — your reply will go to <strong>${safe(payload.email)}</strong>.</p>`
+    : `<p>You can come back to this conversation any time:</p>
+       <a href="${payload.threadUrl}" class="btn">Open the conversation →</a>
+       <p class="muted" style="margin-top:8px">Bookmark that link — no login needed.</p>`;
+
+  const body = baseTemplate(`
+    <h1>${isCoach ? 'New inquiry' : 'Message received'}</h1>
+    ${intro}
+    <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:20px;margin:20px 0">
+      <p style="margin:0 0 8px"><strong style="color:#7AC231">${isCoach ? 'From' : 'To'}:</strong> ${isCoach ? safe(payload.name) + ' &lt;' + safe(payload.email) + '&gt;' : safe(envelope.coachLabel)}</p>
+      ${payload.phone   ? `<p style="margin:0 0 8px"><strong style="color:#7AC231">Phone:</strong> ${safe(payload.phone)}</p>` : ''}
+      ${payload.subject ? `<p style="margin:0 0 8px"><strong style="color:#7AC231">Subject:</strong> ${safe(payload.subject)}</p>` : ''}
+      <p style="margin:14px 0 0;white-space:pre-wrap">${safe(payload.message)}</p>
+    </div>
+    ${cta}
+  `);
+
+  const status = emailServiceStatus();
+  if (!status.configured) {
+    console.warn('[EMAIL MOCK] sendCoachThreadInitial', { to: envelope.to, recipient: envelope.recipient });
+    return { ok: false, code: 'EMAIL_NOT_CONFIGURED', reason: status.reason };
+  }
+  try {
+    const sendArgs = { to: envelope.to, from: FROM, subject, html: body };
+    // Coach gets reply-to set to the visitor — hitting Reply emails them directly
+    if (isCoach) sendArgs.replyTo = payload.email;
+    await sgMail.send(sendArgs);
+    return { ok: true };
+  } catch (err) {
+    const reason = err.response?.body?.errors ? err.response.body.errors.map(e => e.message).join('; ') : err.message;
+    console.error('SendGrid error (sendCoachThreadInitial):', reason);
+    return { ok: false, code: 'EMAIL_SEND_FAILED', reason };
+  }
+}
+
+async function sendCoachThreadReply(envelope, payload) {
+  const safe = (s) => String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  const isCoach = envelope.recipient === 'coach';
+  const subject = isCoach
+    ? `[ATP] ${envelope.visitorName} replied` + (payload.subject ? ` — ${payload.subject}` : '')
+    : `${envelope.coachLabel} replied to your message — At The Park`;
+
+  const intro = isCoach
+    ? `<p>Hi ${safe(envelope.coachFirstName)}, <strong style="color:#7AC231">${safe(envelope.visitorName)}</strong> replied in your conversation.</p>`
+    : `<p>Hi ${safe(envelope.visitorFirstName)}, <strong style="color:#7AC231">${safe(envelope.coachLabel)}</strong> got back to you.</p>`;
+
+  const body = baseTemplate(`
+    <h1>${isCoach ? 'New reply' : 'New reply from your coach'}</h1>
+    ${intro}
+    <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:20px;margin:20px 0">
+      <p style="margin:14px 0 0;white-space:pre-wrap">${safe(payload.message)}</p>
+    </div>
+    <a href="${payload.threadUrl}" class="btn">Open the conversation →</a>
+    <p class="muted" style="margin-top:8px">Reply directly in the thread — both of you get the full history.</p>
+  `);
+
+  const status = emailServiceStatus();
+  if (!status.configured) {
+    console.warn('[EMAIL MOCK] sendCoachThreadReply', { to: envelope.to, recipient: envelope.recipient });
+    return { ok: false, code: 'EMAIL_NOT_CONFIGURED', reason: status.reason };
+  }
+  try {
+    const sendArgs = { to: envelope.to, from: FROM, subject, html: body };
+    if (payload.replyTo) sendArgs.replyTo = payload.replyTo;
+    await sgMail.send(sendArgs);
+    return { ok: true };
+  } catch (err) {
+    const reason = err.response?.body?.errors ? err.response.body.errors.map(e => e.message).join('; ') : err.message;
+    console.error('SendGrid error (sendCoachThreadReply):', reason);
+    return { ok: false, code: 'EMAIL_SEND_FAILED', reason };
+  }
+}
+
 async function sendMagicLink(member, magicUrl) {
   const html = baseTemplate(`
     <h1>Your login link</h1>
@@ -351,4 +442,6 @@ module.exports = {
   sendRaw,
   emailServiceStatus,
   sendCoachMessage,
+  sendCoachThreadInitial,
+  sendCoachThreadReply,
 };

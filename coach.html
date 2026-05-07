@@ -678,11 +678,15 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
           msg.className = 'cp-cf-msg error';
           return;
         }
-        // Replace the form with a success card
+        // Replace the form with a success card. If the API returned a
+        // thread_url, expose a "View this conversation" link so the visitor
+        // can come back to read replies without hunting through email.
+        var threadUrl = (res.body && res.body.thread_url) || '';
         var form = document.getElementById('cp-form');
         form.innerHTML = '<div class="cp-cf-success">'
           + '<strong>✓ Message sent</strong>'
-          + 'The coach will reply directly to <strong style="display:inline">' + escapeHtml(email) + '</strong> within 24 hours.'
+          + 'The coach will reply at <strong style="display:inline">' + escapeHtml(email) + '</strong> within 24 hours. We\'ve emailed you a copy.'
+          + (threadUrl ? '<div style="margin-top:14px"><a href="' + escapeHtml(threadUrl) + '" style="display:inline-block;padding:10px 18px;background:rgba(122,194,49,.12);border:1px solid rgba(122,194,49,.4);border-radius:var(--radius);color:var(--green);text-decoration:none;font-weight:700;font-size:13px;letter-spacing:.04em;text-transform:uppercase">Open this conversation →</a><div style="margin-top:8px;font-size:11px;color:var(--muted)">Bookmark that link — you can reply any time without logging in.</div></div>' : '')
           + '</div>';
       })
       .catch(function () {
