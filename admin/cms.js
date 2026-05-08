@@ -786,9 +786,22 @@ async function handleCmsUpload(event) {
         msg.style.color = '#7AC231';
         // Set the URL in the target field if we were called from a CMS
         // editor field. Standalone Library uploads have no target.
+        // ALSO write into CMS_CONTENT_CACHE so the imminent renderCmsEditor
+        // re-render doesn't wipe the new URL — that was the bug behind
+        // "Hero Video URL does not save or upload": the field showed the
+        // URL for 800ms, then the re-render restored the empty cached value.
         if (_uploadTargetFieldId) {
           var target = document.getElementById(_uploadTargetFieldId);
-          if (target) target.value = d.url;
+          if (target) {
+            target.value = d.url;
+            var sec = target.dataset.section;
+            var key = target.dataset.key;
+            if (sec && key && CMS_CURRENT_PAGE) {
+              if (!CMS_CONTENT_CACHE[CMS_CURRENT_PAGE]) CMS_CONTENT_CACHE[CMS_CURRENT_PAGE] = {};
+              if (!CMS_CONTENT_CACHE[CMS_CURRENT_PAGE][sec]) CMS_CONTENT_CACHE[CMS_CURRENT_PAGE][sec] = {};
+              CMS_CONTENT_CACHE[CMS_CURRENT_PAGE][sec][key] = d.url;
+            }
+          }
         }
         setTimeout(function() {
           document.getElementById('mediaUploadModal').style.display = 'none';
