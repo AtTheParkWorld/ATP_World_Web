@@ -2733,15 +2733,47 @@ function showMessage(msg){
 function triggerAvatarUpload(){document.getElementById("avatarInput").click();}
 function handleAvatarUpload(input){
   if(!input.files||!input.files[0])return;
+  var f = input.files[0];
+  if (f.size > 8 * 1024 * 1024) {
+    if (window.ATPComponents) ATPComponents.toast('Photo too large (max 8MB).', 'danger');
+    return;
+  }
   var reader=new FileReader();
   reader.onload=function(e){
+    var dataUrl = e.target.result;
+    // Render immediately so the user sees the new photo.
     var av=document.getElementById("profileAvatar");
-    av.querySelector("#avatarInitials").style.display="none";
+    var initialsEl = av.querySelector("#avatarInitials");
+    if (initialsEl) initialsEl.style.display="none";
     var img=av.querySelector("img")||document.createElement("img");
-    img.src=e.target.result;img.style.cssText="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%";
+    img.src=dataUrl;
+    img.style.cssText="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;border-radius:50%";
     av.insertBefore(img,av.firstChild);
+
+    // Persist to the server so it survives a refresh. Without this PATCH
+    // the upload is browser-memory only and disappears on reload.
+    if (window.ATP && window.ATP.members && window.ATP.members.updateAvatar) {
+      window.ATP.members.updateAvatar(dataUrl)
+        .then(function(res){
+          if (res && res.error) {
+            if (window.ATPComponents) ATPComponents.toast('Couldn\'t save photo: ' + res.error, 'danger');
+            return;
+          }
+          // Update the in-memory member so other paths (incl. /auth/me cache)
+          // see the new avatar without a hard refresh.
+          if (CURRENT_MEMBER) CURRENT_MEMBER.avatar_url = dataUrl;
+          try {
+            var m = JSON.parse(localStorage.getItem('atp_member') || 'null');
+            if (m) { m.avatar_url = dataUrl; localStorage.setItem('atp_member', JSON.stringify(m)); }
+          } catch(_){}
+          if (window.ATPComponents) ATPComponents.toast('Profile photo saved', 'success');
+        })
+        .catch(function(){
+          if (window.ATPComponents) ATPComponents.toast('Connection error — photo not saved', 'danger');
+        });
+    }
   };
-  reader.readAsDataURL(input.files[0]);
+  reader.readAsDataURL(f);
 }
 
 
