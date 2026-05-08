@@ -580,9 +580,21 @@ function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId)
   var nameField = document.getElementById('bookName');
   var emailField = document.getElementById('bookEmail');
   var phoneField = document.getElementById('bookPhone');
-  nameField.value = atpUser ? ((atpUser.firstName||'') + ' ' + (atpUser.lastName||'')).trim() : '';
-  emailField.value = atpUser ? (atpUser.email||'') : '';
-  phoneField.value = '';
+
+  // Pull the freshest member directly from localStorage (atp_member) so the
+  // form populates even before ATP.init() finishes its async /auth/me call.
+  // Handles both shapes: raw API (snake_case) and the legacy atpUser mirror
+  // (camelCase). Phone is added so it autofills too.
+  var lsMember = null;
+  try { lsMember = JSON.parse(localStorage.getItem('atp_member') || 'null'); } catch(e){}
+  var src = lsMember || atpUser || {};
+  var first = src.first_name || src.firstName || '';
+  var last  = src.last_name  || src.lastName  || '';
+  var email = src.email      || '';
+  var phone = src.phone      || '';
+  nameField.value  = (first + ' ' + last).trim();
+  emailField.value = email;
+  phoneField.value = phone;
   nameField.classList.remove('error');
   emailField.classList.remove('error');
   var errEl = document.getElementById('bookError');
@@ -964,8 +976,13 @@ try { localStorage.removeItem(ATP_USER_KEY); } catch(e){}
 // mirror only — read it, but don't write it.
 function authLoadUser() {
   try {
-    if (window.ATP && typeof window.ATP.getMember === 'function') {
-      atpUser = window.ATP.getMember();
+    // window.ATP exposes getUser (not getMember). Fall back to reading the
+    // cached member from localStorage so the modal autofill works even when
+    // window.ATP isn't ready yet.
+    if (window.ATP && typeof window.ATP.getUser === 'function') {
+      atpUser = window.ATP.getUser();
+    } else {
+      atpUser = JSON.parse(localStorage.getItem('atp_member') || 'null');
     }
   } catch(e) { atpUser = null; }
 }
