@@ -290,7 +290,7 @@ var CMS_SCHEMA = {
           { key: 'email_partners', label: 'Partners Email',    type: 'text', default: 'partners@atthepark.world' },
           { key: 'email_press',    label: 'Press / Media Email', type: 'text', default: '' },
           { key: 'phone',          label: 'Phone (display)',   type: 'text', default: '+971 58 579 2378' },
-          { key: 'whatsapp_url',   label: 'WhatsApp Link',     type: 'text', default: 'https://api.whatsapp.com/send?phone=97156445177' },
+          { key: 'whatsapp_url',   label: 'WhatsApp Link',     type: 'text', default: 'https://api.whatsapp.com/send?phone=971585792378' },
           { key: 'address',        label: 'Postal Address',    type: 'textarea', default: 'Dubai, United Arab Emirates' },
           { key: 'hours',          label: 'Reply Hours',       type: 'text', default: 'Within 24 hours, 7 days a week' },
         ]
@@ -298,7 +298,7 @@ var CMS_SCHEMA = {
       social: {
         label: 'Social Links',
         fields: [
-          { key: 'instagram_url', label: 'Instagram URL', type: 'text', default: 'https://www.instagram.com/atthepark_uae' },
+          { key: 'instagram_url', label: 'Instagram URL', type: 'text', default: 'https://www.instagram.com/atthepark_world/?hl=en' },
           { key: 'facebook_url',  label: 'Facebook URL',  type: 'text', default: 'https://www.facebook.com/theparkuae/' },
           { key: 'tiktok_url',    label: 'TikTok URL',    type: 'text', default: '' },
         ]
