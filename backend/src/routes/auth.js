@@ -1596,6 +1596,20 @@ router.post('/migrate-blog', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-avatar-text ────────────────────────
+// avatar_url was VARCHAR(500) — too small for the data: URLs we store
+// when members upload an avatar straight from the browser. Bump it to
+// TEXT (unlimited) so the PATCH /api/members/avatar persistence stops
+// failing with "value too long for type character varying(500)".
+router.post('/migrate-avatar-text', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    await query(`ALTER TABLE members ALTER COLUMN avatar_url TYPE TEXT`);
+    res.json({ success: true, message: 'members.avatar_url widened to TEXT' });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-member-tribe ───────────────────────
 // Adds members.tribe_id (UUID, FK→tribes) so referrals can copy the
 // referrer's tribe to the new member at signup. Idempotent + gated by

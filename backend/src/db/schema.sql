@@ -26,7 +26,7 @@ CREATE TABLE IF NOT EXISTS members (
   email             VARCHAR(255) UNIQUE NOT NULL,
   phone             VARCHAR(30)  UNIQUE,
   password_hash     VARCHAR(255),               -- null for social/magic link only
-  avatar_url        VARCHAR(500),
+  avatar_url        TEXT,                       -- TEXT (not VARCHAR) so we can store data: URLs for member-uploaded photos
   avatar_gallery    JSONB        DEFAULT '[]',  -- array of photo URLs
   date_of_birth     DATE,
   gender            VARCHAR(20),                -- male, female, non-binary, prefer_not_to_say
