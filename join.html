@@ -115,6 +115,56 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
 .auth-meta a{color:rgba(255,255,255,.6);border-bottom:1px solid rgba(255,255,255,.2)}
 .auth-meta a:hover{color:#fff;border-bottom-color:#fff}
 
+/* Referral code field (signup only) */
+.auth-ref-row{display:flex;gap:8px;align-items:center}
+.auth-ref-row .auth-input{flex:1}
+.auth-ref-info-btn{background:none;border:none;color:rgba(255,255,255,.45);cursor:pointer;font-family:inherit;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:none;display:inline-flex;align-items:center;gap:4px;padding:0;transition:color .15s}
+.auth-ref-info-btn:hover{color:var(--green)}
+.auth-ref-info-btn .info-dot{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;background:rgba(255,255,255,.12);color:#fff;font-size:9px;font-weight:800;font-style:italic;font-family:serif}
+.auth-ref-info-btn:hover .info-dot{background:var(--green);color:#0a0a0a}
+.auth-ref-feedback{font-size:12px;line-height:1.5;margin-top:7px;min-height:0;color:rgba(255,255,255,.55);transition:color .2s}
+.auth-ref-feedback.ok{color:var(--green)}
+.auth-ref-feedback.error{color:#f87171}
+.auth-ref-feedback.checking{color:rgba(255,255,255,.5)}
+.auth-ref-feedback strong{color:#fff;font-weight:700}
+.auth-ref-feedback.ok strong{color:var(--green-light)}
+
+/* Info modal */
+.auth-modal{position:fixed;inset:0;background:rgba(0,0,0,.78);display:none;align-items:center;justify-content:center;z-index:1000;padding:20px;backdrop-filter:blur(6px);animation:fadeIn .2s ease-out}
+.auth-modal.open{display:flex}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.auth-modal-card{background:linear-gradient(180deg,#161616 0%,#0d0d0d 100%);border:1px solid rgba(122,194,49,.22);border-radius:var(--radius-lg);max-width:480px;width:100%;padding:32px 28px 28px;position:relative;animation:rise .35s ease-out both;box-shadow:0 20px 60px rgba(0,0,0,.6)}
+.auth-modal-close{position:absolute;top:14px;right:14px;width:32px;height:32px;border-radius:50%;background:rgba(255,255,255,.06);color:rgba(255,255,255,.7);font-size:20px;line-height:1;display:flex;align-items:center;justify-content:center;border:none;cursor:pointer;transition:background .15s,color .15s}
+.auth-modal-close:hover{background:rgba(255,255,255,.14);color:#fff}
+.auth-modal-eyebrow{font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--green);font-weight:700;margin-bottom:10px}
+.auth-modal-title{font-family:var(--ff-display);font-size:30px;font-weight:900;text-transform:uppercase;letter-spacing:-.005em;margin-bottom:18px;line-height:1.05}
+.auth-modal-list{list-style:none;padding:0;margin:0 0 16px;display:flex;flex-direction:column;gap:12px}
+.auth-modal-list li{font-size:14px;line-height:1.55;color:rgba(255,255,255,.8);padding-left:26px;position:relative}
+.auth-modal-list li::before{content:'✓';position:absolute;left:0;top:0;color:var(--green);font-weight:800;font-size:14px}
+.auth-modal-list li strong{color:#fff;font-weight:700}
+.auth-modal-foot{font-size:13px;color:rgba(255,255,255,.55);line-height:1.55;padding-top:14px;border-top:1px solid var(--line-soft)}
+.auth-modal-cta{margin-top:18px;width:100%;background:var(--green);color:#0a0a0a;border:none;border-radius:var(--radius);padding:13px 18px;font-size:13px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;transition:background .15s}
+.auth-modal-cta:hover{background:var(--green-light)}
+
+/* Post-signup celebration card */
+.auth-celebrate{display:none;flex-direction:column;align-items:center;text-align:center;animation:rise .5s ease-out both;padding:8px 0}
+.auth-celebrate.open{display:flex}
+.auth-celebrate-icon{font-size:48px;line-height:1;margin-bottom:8px}
+.auth-celebrate-title{font-family:var(--ff-display);font-size:44px;font-weight:900;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:10px;color:var(--green)}
+.auth-celebrate-sub{font-size:14px;color:rgba(255,255,255,.72);line-height:1.6;margin-bottom:22px;max-width:360px}
+.auth-celebrate-tribe{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;background:rgba(122,194,49,.10);border:1px solid rgba(122,194,49,.32);border-radius:999px;color:var(--green-light);font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:18px}
+.auth-celebrate-label{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,255,255,.5);font-weight:700;margin-bottom:8px}
+.auth-celebrate-code{display:flex;gap:8px;align-items:stretch;width:100%;max-width:360px;margin-bottom:14px}
+.auth-celebrate-code code{flex:1;background:#070b06;border:1px solid var(--green);border-radius:var(--radius);padding:14px 16px;color:#fff;font-family:'SF Mono',Menlo,monospace;font-size:15px;font-weight:600;letter-spacing:.04em;text-align:center}
+.auth-celebrate-copy{background:var(--green);color:#0a0a0a;border:none;border-radius:var(--radius);padding:0 18px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;cursor:pointer;transition:background .15s,transform .1s;font-family:inherit}
+.auth-celebrate-copy:hover{background:var(--green-light)}
+.auth-celebrate-copy.copied{background:#fff}
+.auth-celebrate-share{display:flex;gap:8px;justify-content:center;margin-bottom:14px}
+.auth-celebrate-share a{display:inline-flex;align-items:center;justify-content:center;width:38px;height:38px;border-radius:50%;background:rgba(255,255,255,.06);color:rgba(255,255,255,.75);transition:background .15s,color .15s,transform .15s}
+.auth-celebrate-share a:hover{background:var(--green);color:#0a0a0a;transform:translateY(-1px)}
+.auth-celebrate-share svg{width:18px;height:18px}
+.auth-celebrate-hint{font-size:12px;color:rgba(255,255,255,.4);margin-top:8px}
+
 /* Magic-link panel — replaces the login form when "Forgot password?" is tapped */
 .auth-magic{display:flex;flex-direction:column;gap:14px}
 .auth-magic-back{align-self:flex-start;font-size:12px;color:rgba(255,255,255,.55);background:none;border:none;padding:6px 0;cursor:pointer;font-family:inherit;letter-spacing:.02em;display:inline-flex;align-items:center;gap:6px;transition:color .15s}
@@ -229,6 +279,17 @@ Always free.</h1>
           </div>
         </div>
 
+        <div class="auth-field" data-signup-only id="j-ref-field">
+          <label class="auth-label" for="j-ref">
+            <span>Referral code <span style="opacity:.55;text-transform:none;letter-spacing:0;font-weight:500">(optional)</span></span>
+            <button type="button" class="auth-ref-info-btn" id="j-ref-info" aria-label="How does a referral code work?">
+              <span class="info-dot">i</span><span>How it works</span>
+            </button>
+          </label>
+          <input class="auth-input" id="j-ref" name="referral_code" type="text" placeholder="e.g. fredy-a7k" autocapitalize="off" autocomplete="off" spellcheck="false">
+          <div class="auth-ref-feedback" id="j-ref-feedback" aria-live="polite"></div>
+        </div>
+
         <ul class="auth-bullets" data-signup-only id="auth-perks">
           <li id="perk-1">Free forever — no credit card needed</li>
           <li id="perk-2">Book any session in seconds</li>
@@ -238,6 +299,30 @@ Always free.</h1>
         <button type="submit" class="auth-btn" id="j-btn">Create my account →</button>
         <div class="auth-msg" id="j-msg" role="status" aria-live="polite"></div>
       </form>
+
+      <!-- Post-signup celebration — replaces the form on success -->
+      <div class="auth-celebrate" id="j-celebrate" aria-live="polite">
+        <div class="auth-celebrate-icon">🎉</div>
+        <h2 class="auth-celebrate-title">You're in!</h2>
+        <p class="auth-celebrate-sub" id="j-celebrate-sub">Welcome to ATP. Here's your personal referral code — share it with friends and start earning points every time they check in.</p>
+        <div class="auth-celebrate-tribe" id="j-celebrate-tribe" style="display:none">
+          <span>★</span><span id="j-celebrate-tribe-name">Tribe</span>
+        </div>
+        <div class="auth-celebrate-label">Your referral code</div>
+        <div class="auth-celebrate-code">
+          <code id="j-celebrate-code">—</code>
+          <button type="button" class="auth-celebrate-copy" id="j-celebrate-copy">Copy</button>
+        </div>
+        <div class="auth-celebrate-share" id="j-celebrate-share">
+          <a href="#" target="_blank" rel="noopener" id="j-share-wa" aria-label="Share via WhatsApp" title="WhatsApp">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4l-2-1c-.3-.1-.5-.1-.7.1-.2.2-.7.8-.9 1-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.4-.5-.6-.5h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.2 0 1.3.9 2.5 1 2.7.1.2 1.8 2.7 4.4 3.8 1.6.7 2.2.7 3 .6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.4c1.5.8 3.1 1.2 4.8 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18.3c-1.5 0-3-.4-4.3-1.2l-.3-.2-3.2.8.9-3-.2-.3c-.9-1.4-1.4-3-1.4-4.6 0-4.6 3.7-8.3 8.3-8.3s8.3 3.7 8.3 8.3-3.7 8.5-8.1 8.5z"/></svg>
+          </a>
+          <a href="#" id="j-share-copy-link" aria-label="Copy share link" title="Copy invite link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          </a>
+        </div>
+        <p class="auth-celebrate-hint" id="j-celebrate-hint">Heading to your profile in a moment…</p>
+      </div>
 
       <!-- Magic-link request panel — hidden until "Forgot password?" tapped -->
       <div class="auth-magic" id="j-magic" style="display:none">
@@ -270,6 +355,23 @@ Always free.</h1>
 
 </main>
 
+<!-- Referral info modal -->
+<div class="auth-modal" id="j-ref-modal" role="dialog" aria-modal="true" aria-labelledby="j-ref-modal-title" aria-hidden="true">
+  <div class="auth-modal-card">
+    <button type="button" class="auth-modal-close" id="j-ref-modal-close" aria-label="Close">×</button>
+    <div class="auth-modal-eyebrow">Tribes &amp; Referrals</div>
+    <h3 id="j-ref-modal-title" class="auth-modal-title">How a referral code works</h3>
+    <ul class="auth-modal-list">
+      <li>You join your friend's <strong>tribe</strong> — Better, Faster or Stronger — and train together as a team.</li>
+      <li>They get <strong>50 points</strong> for inviting you, plus <strong>1–2 points every time you check in</strong>.</li>
+      <li>You get <strong>your own referral code</strong> the moment you sign up — share it and earn the same way.</li>
+      <li>Premium tribe members earn a <strong>200-point bonus</strong> when their referrals upgrade.</li>
+    </ul>
+    <p class="auth-modal-foot">No code? No worries — you can still join. You'll get your own code right after signup.</p>
+    <button type="button" class="auth-modal-cta" id="j-ref-modal-ok">Got it</button>
+  </div>
+</div>
+
 <footer class="footer-min" role="contentinfo">
   <div class="footer-min-inner">
     <div class="footer-min-bot" style="border-top:0;padding-top:0;justify-content:center">
@@ -298,10 +400,17 @@ Always free.</h1>
     catch (e) { return false; }
   })();
 
-  /* Referral code (signup only) */
-  function _refCode() {
+  /* Referral code (signup only). Priority:
+     1. The visible input field (user-typed wins, including overrides of ?ref=)
+     2. The ?ref= URL param (fallback for shared links). */
+  function _refUrlParam() {
     try { return new URL(location.href).searchParams.get('ref') || null; }
     catch (e) { return null; }
+  }
+  function _refCode() {
+    var el = document.getElementById('j-ref');
+    if (el && el.value.trim()) return el.value.trim();
+    return _refUrlParam();
   }
 
   /* Header scroll state */
@@ -535,6 +644,107 @@ Always free.</h1>
     });
   }
 
+  /* ── Referral field: pre-fill, info modal, live validation ──── */
+  (function setupReferral() {
+    if (IS_LOGIN) return; // signup-only
+
+    var refInput    = document.getElementById('j-ref');
+    var refFeedback = document.getElementById('j-ref-feedback');
+    var refInfoBtn  = document.getElementById('j-ref-info');
+    var refModal    = document.getElementById('j-ref-modal');
+    var refModalX   = document.getElementById('j-ref-modal-close');
+    var refModalOk  = document.getElementById('j-ref-modal-ok');
+
+    if (!refInput) return;
+
+    /* Pre-fill from ?ref= so shared links still work; fire validation immediately
+       so the user sees who they're joining without typing. */
+    var urlRef = _refUrlParam();
+    if (urlRef) {
+      refInput.value = urlRef;
+      validateReferral();
+    }
+
+    /* Info modal — open / close / ESC / backdrop click */
+    function openModal() {
+      if (!refModal) return;
+      refModal.classList.add('open');
+      refModal.setAttribute('aria-hidden', 'false');
+      document.body.style.overflow = 'hidden';
+      setTimeout(function () { refModalOk && refModalOk.focus(); }, 50);
+    }
+    function closeModal() {
+      if (!refModal) return;
+      refModal.classList.remove('open');
+      refModal.setAttribute('aria-hidden', 'true');
+      document.body.style.overflow = '';
+    }
+    if (refInfoBtn) refInfoBtn.addEventListener('click', openModal);
+    if (refModalX)  refModalX.addEventListener('click', closeModal);
+    if (refModalOk) refModalOk.addEventListener('click', closeModal);
+    if (refModal)   refModal.addEventListener('click', function (ev) {
+      if (ev.target === refModal) closeModal();
+    });
+    document.addEventListener('keydown', function (ev) {
+      if (ev.key === 'Escape' && refModal && refModal.classList.contains('open')) closeModal();
+    });
+
+    /* Live validation — debounced lookup against /api/auth/lookup-referrer/:code.
+       Renders inline feedback under the input: idle / checking / ok / error. */
+    var debounceTimer = null;
+    var inflightCode  = null;
+
+    function setFeedback(state, html) {
+      if (!refFeedback) return;
+      refFeedback.className = 'auth-ref-feedback' + (state ? ' ' + state : '');
+      refFeedback.innerHTML = html || '';
+    }
+
+    function validateReferral() {
+      var code = (refInput.value || '').trim();
+      if (!code) {
+        setFeedback('', '');
+        return;
+      }
+      if (code.length < 3) {
+        setFeedback('error', 'That looks too short to be a code.');
+        return;
+      }
+      setFeedback('checking', 'Checking…');
+      inflightCode = code;
+      fetch(API + '/auth/lookup-referrer/' + encodeURIComponent(code), { cache: 'no-store' })
+        .then(function (r) { return r.ok ? r.json() : { valid: false }; })
+        .then(function (d) {
+          /* Race guard: ignore stale responses if user kept typing. */
+          if (inflightCode !== code) return;
+          if (d && d.valid) {
+            var name  = d.referrer_name ? String(d.referrer_name).replace(/</g, '&lt;') : 'someone';
+            var tribe = d.referrer_tribe ? String(d.referrer_tribe).replace(/</g, '&lt;') : null;
+            var tribeLine = tribe ? ' · You\'ll join the <strong>' + tribe + '</strong> tribe' : '';
+            setFeedback('ok', '✓ Referred by <strong>' + name + '</strong>' + tribeLine);
+          } else {
+            setFeedback('error', "We couldn't find that code. Double-check the spelling — or skip the field.");
+          }
+        })
+        .catch(function () {
+          if (inflightCode !== code) return;
+          setFeedback('', ''); // network blip — don't scare the user
+        });
+    }
+
+    refInput.addEventListener('input', function () {
+      clearTimeout(debounceTimer);
+      var v = (refInput.value || '').trim();
+      if (!v) { setFeedback('', ''); return; }
+      setFeedback('checking', 'Checking…');
+      debounceTimer = setTimeout(validateReferral, 450);
+    });
+    refInput.addEventListener('blur', function () {
+      clearTimeout(debounceTimer);
+      validateReferral();
+    });
+  })();
+
   /* ── Password reveal toggle ───────────────────────────────── */
   var pwToggle = document.getElementById('j-pw-toggle');
   var pwInput  = document.getElementById('j-pw');
@@ -615,16 +825,154 @@ Always free.</h1>
       .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
       .then(function (res) {
         if (!res.ok) return showError((res.body && res.body.error) || 'Could not create the account.');
-        msg.textContent = '✅ Welcome to ATP. Redirecting…';
-        msg.className = 'auth-msg ok';
         try {
           if (res.body.token)  localStorage.setItem('atp_token', res.body.token);
           if (res.body.member) localStorage.setItem('atp_member', JSON.stringify(res.body.member));
         } catch (e) { }
-        setTimeout(function () { window.location.href = '/profile.html'; }, 700);
+        showCelebrate(res.body.member || {});
       })
       .catch(function () { showError('Network error — please try again.'); });
   });
+
+  /* ── Post-signup celebration card ─────────────────────────────
+   * Replaces the form with a "you're in" panel showing the new member's
+   * own friendly referral code so they can share it immediately. The
+   * referrer's tribe (if any) was copied server-side; we surface it here
+   * via /auth/me so the card reads "You're in the Stronger tribe". */
+  function showCelebrate(member) {
+    var celebrate = document.getElementById('j-celebrate');
+    var formEl    = document.getElementById('join-form');
+    var perks     = document.getElementById('auth-perks');
+    var subtitle  = document.getElementById('form-subtitle');
+    var title     = document.getElementById('form-title');
+    var eyebrow   = document.getElementById('form-eyebrow');
+    var switchEl  = document.getElementById('auth-switch');
+    var metaEl    = document.querySelector('.auth-meta');
+
+    if (!celebrate) {
+      // Card markup missing — fall back to old behaviour.
+      setTimeout(function () { window.location.href = '/profile.html'; }, 700);
+      return;
+    }
+    if (formEl)   formEl.style.display = 'none';
+    if (perks)    perks.style.display = 'none';
+    if (eyebrow)  eyebrow.style.display = 'none';
+    if (title)    title.style.display = 'none';
+    if (subtitle) subtitle.style.display = 'none';
+    if (switchEl) switchEl.style.display = 'none';
+    if (metaEl)   metaEl.style.display = 'none';
+
+    var code = member && member.referral_code;
+
+    /* If the response didn't include a referral_code (older backend / pre-migration),
+       fetch /auth/me with the new token so we still surface a code. */
+    function paint(codeVal, tribeName) {
+      celebrate.classList.add('open');
+      var codeEl  = document.getElementById('j-celebrate-code');
+      var tribeEl = document.getElementById('j-celebrate-tribe');
+      var tribeNm = document.getElementById('j-celebrate-tribe-name');
+
+      if (codeEl) codeEl.textContent = codeVal || 'Generating…';
+      if (tribeName && tribeEl && tribeNm) {
+        tribeNm.textContent = "You're in the " + tribeName + ' tribe';
+        tribeEl.style.display = '';
+      }
+
+      /* Build the share URL using THIS member's code. */
+      var shareUrl  = (location.origin || 'https://atpworldweb-production.up.railway.app') +
+                      '/join?ref=' + encodeURIComponent(codeVal || '');
+      var shareText = "Join me on At The Park — UAE's free outdoor fitness community. Use my code: " +
+                      (codeVal || '') + ' ' + shareUrl;
+
+      var waLink = document.getElementById('j-share-wa');
+      if (waLink) waLink.href = 'https://wa.me/?text=' + encodeURIComponent(shareText);
+
+      var copyLink = document.getElementById('j-share-copy-link');
+      if (copyLink) {
+        copyLink.addEventListener('click', function (ev) {
+          ev.preventDefault();
+          _copyText(shareUrl, copyLink, '✓');
+        });
+      }
+
+      var copyBtn = document.getElementById('j-celebrate-copy');
+      if (copyBtn && codeVal) {
+        copyBtn.addEventListener('click', function () {
+          _copyText(codeVal, copyBtn, 'Copied!');
+        });
+      }
+    }
+
+    if (code) {
+      // Tribe name might not have come back in the register response — fetch /me.
+      _fetchTribeName(member.id).then(function (tribe) { paint(code, tribe); });
+    } else {
+      // Fall back to /auth/me with the saved token.
+      var token; try { token = localStorage.getItem('atp_token'); } catch (e) {}
+      fetch(API + '/auth/me', { headers: token ? { Authorization: 'Bearer ' + token } : {} })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          var c = d && (d.referral_code || (d.member && d.member.referral_code));
+          var t = d && (d.tribe_name || (d.tribe && d.tribe.name));
+          paint(c, t);
+        })
+        .catch(function () { paint('', null); });
+    }
+
+    /* Auto-redirect after enough time for the user to copy the code. */
+    var hint = document.getElementById('j-celebrate-hint');
+    var sec  = 8;
+    function tick() {
+      if (sec <= 0) { window.location.href = '/profile.html'; return; }
+      if (hint) hint.textContent = 'Heading to your profile in ' + sec + 's…';
+      sec--;
+      setTimeout(tick, 1000);
+    }
+    tick();
+  }
+
+  function _fetchTribeName(memberId) {
+    var token; try { token = localStorage.getItem('atp_token'); } catch (e) {}
+    if (!token) return Promise.resolve(null);
+    return fetch(API + '/auth/me', { headers: { Authorization: 'Bearer ' + token } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (!d) return null;
+        return d.tribe_name || (d.tribe && d.tribe.name) || (d.member && d.member.tribe_name) || null;
+      })
+      .catch(function () { return null; });
+  }
+
+  function _copyText(text, btn, okLabel) {
+    var done = function () {
+      if (!btn) return;
+      var orig = btn.textContent;
+      btn.textContent = okLabel || '✓';
+      btn.classList.add('copied');
+      setTimeout(function () {
+        btn.textContent = orig;
+        btn.classList.remove('copied');
+      }, 1400);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done, function () {
+        _copyFallback(text); done();
+      });
+    } else {
+      _copyFallback(text); done();
+    }
+  }
+  function _copyFallback(text) {
+    try {
+      var ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed'; ta.style.left = '-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+    } catch (e) { /* ignore */ }
+  }
 
 })();
 </script>

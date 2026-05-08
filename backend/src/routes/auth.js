@@ -75,22 +75,27 @@ router.post('/register', async (req, res, next) => {
     const token  = generateJWT(member.id);
 
     // Theme 4 / #19 — record referral relationship + award referrer's signup
-    // bonus. Both `referrer_id` (uuid) and `referral_code` (friendly code
-    // OR legacy member_number) are accepted.
+    // bonus, AND copy the referrer's tribe to the new member. Awaited so
+    // the /api/auth/me response right after registration sees tribe_id set.
+    // Both `referrer_id` (uuid) and `referral_code` (friendly code OR legacy
+    // member_number) are accepted.
     if (referrer_id || referral_code) {
-      referrals.recordSignupReferral({
-        referrerId:    referrer_id || null,
-        referralCode:  referral_code || null,
-        newMemberId:   member.id,
-      }).catch(function(){ /* fire-and-forget */ });
+      try {
+        await referrals.recordSignupReferral({
+          referrerId:    referrer_id || null,
+          referralCode:  referral_code || null,
+          newMemberId:   member.id,
+        });
+      } catch (_) { /* never block registration */ }
     }
 
     // Generate the new friendly referral code (firstname-XXX) for this
-    // member so they have something shareable from day one. Best-effort —
-    // failure here doesn't block registration.
-    referrals.ensureReferralCode(member.id, member.first_name)
-      .then(function(code){ if (code) member.referral_code = code; })
-      .catch(function(){});
+    // member so they have something shareable from day one. Awaited so the
+    // response includes the code — drives the post-signup celebration card.
+    try {
+      const code = await referrals.ensureReferralCode(member.id, member.first_name);
+      if (code) member.referral_code = code;
+    } catch (_) { /* best-effort */ }
 
     // Send welcome email
     await emailService.sendWelcome(member);
@@ -182,6 +187,46 @@ router.post('/magic-link', async (req, res, next) => {
     }
 
     res.json({ message: 'Magic link sent to your email' });
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/auth/lookup-referrer/:code (public) ──────────────
+// Validates a referral code on the registration form. Accepts either the
+// friendly per-member code (members.referral_code, e.g. "fredy-a7k") OR
+// the legacy member_number (e.g. "ATP-00001"). Returns the referrer's
+// first name + tribe so the UI can show "Referred by Sarah · You'll join
+// the Stronger tribe". Public on purpose — same exposure as a shared link.
+router.get('/lookup-referrer/:code', async (req, res, next) => {
+  try {
+    const code = String(req.params.code || '').trim();
+    if (!code || code.length < 3) return res.json({ valid: false });
+    const { rows } = await query(
+      `SELECT m.first_name, t.name AS tribe_name, t.slug AS tribe_slug
+       FROM members m
+       LEFT JOIN tribes t ON t.id = m.tribe_id
+       WHERE LOWER(m.referral_code) = LOWER($1)
+          OR LOWER(m.member_number) = LOWER($1)
+       LIMIT 1`,
+      [code]
+    ).catch(async (e) => {
+      // Pre-migration: referral_code column missing — fall back to member_number only.
+      if (e.code === '42703') {
+        return query(
+          `SELECT m.first_name, t.name AS tribe_name, t.slug AS tribe_slug
+           FROM members m LEFT JOIN tribes t ON t.id = m.tribe_id
+           WHERE LOWER(m.member_number) = LOWER($1) LIMIT 1`,
+          [code]
+        );
+      }
+      throw e;
+    });
+    if (!rows.length) return res.json({ valid: false });
+    res.json({
+      valid: true,
+      referrer_name: rows[0].first_name,
+      referrer_tribe: rows[0].tribe_name || null,
+      referrer_tribe_slug: rows[0].tribe_slug || null,
+    });
   } catch (err) { next(err); }
 });
 
@@ -325,7 +370,8 @@ router.get('/me', authenticate, async (req, res, next) => {
     const { rows } = await query(
       `SELECT m.*,
               c.name AS city_name,
-              t.name AS tribe_name,
+              COALESCE(t1.name, t2.name) AS tribe_name,
+              COALESCE(t1.slug, t2.slug) AS tribe_slug,
               co.code            AS country_code,
               co.name            AS country_name,
               co.currency_code   AS country_currency_code,
@@ -334,8 +380,9 @@ router.get('/me', authenticate, async (req, res, next) => {
               (SELECT COUNT(*) FROM bookings b WHERE b.member_id=m.id AND b.status='attended') AS sessions_count,
               (SELECT COUNT(*) FROM referrals r WHERE r.referrer_id=m.id) AS referrals_count
        FROM members m
-       LEFT JOIN cities c    ON c.id  = m.city_id
-       LEFT JOIN tribes t    ON t.name = (m.sports_preferences->>0)
+       LEFT JOIN cities c    ON c.id   = m.city_id
+       LEFT JOIN tribes t1   ON t1.id  = m.tribe_id
+       LEFT JOIN tribes t2   ON t2.name = (m.sports_preferences->>0)
        LEFT JOIN countries co ON co.id = m.country_id
        WHERE m.id = $1`,
       [req.member.id]
@@ -1533,6 +1580,47 @@ router.post('/migrate-blog', async (req, res, next) => {
     await query(`CREATE INDEX IF NOT EXISTS idx_blog_posts_category  ON blog_posts(category) WHERE is_published=true`);
 
     res.json({ success: true, message: 'Blog schema migrated' });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/migrate-member-tribe ───────────────────────
+// Adds members.tribe_id (UUID, FK→tribes) so referrals can copy the
+// referrer's tribe to the new member at signup. Idempotent + gated by
+// ADMIN_SETUP_KEY. Safe to run on existing data — column is nullable.
+router.post('/migrate-member-tribe', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    await query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS tribe_id UUID`);
+    await query(`
+      DO $$
+      BEGIN
+        IF NOT EXISTS (
+          SELECT 1 FROM information_schema.table_constraints
+           WHERE constraint_name = 'members_tribe_id_fkey'
+        ) THEN
+          ALTER TABLE members
+            ADD CONSTRAINT members_tribe_id_fkey
+            FOREIGN KEY (tribe_id) REFERENCES tribes(id);
+        END IF;
+      END $$;
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_members_tribe ON members(tribe_id) WHERE tribe_id IS NOT NULL`);
+
+    // Backfill: legacy members had their tribe stored as the first entry of
+    // sports_preferences (case-insensitive match against tribes.name). Pull
+    // that across for anyone who hasn't been assigned yet.
+    const { rowCount: backfilled } = await query(`
+      UPDATE members m
+         SET tribe_id = t.id
+        FROM tribes t
+       WHERE m.tribe_id IS NULL
+         AND m.sports_preferences ? '0'
+         AND LOWER(t.name) = LOWER(m.sports_preferences->>0)
+    `);
+
+    res.json({ success: true, message: 'members.tribe_id migrated', backfilled });
   } catch (err) { next(err); }
 });
 

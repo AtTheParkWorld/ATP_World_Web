@@ -32,6 +32,7 @@ CREATE TABLE IF NOT EXISTS members (
   gender            VARCHAR(20),                -- male, female, non-binary, prefer_not_to_say
   nationality       VARCHAR(100),
   city_id           UUID REFERENCES cities(id),
+  tribe_id          UUID,                       -- FK added below after tribes table exists
   subscription_type VARCHAR(20)  NOT NULL DEFAULT 'free', -- free, premium
   subscription_ends TIMESTAMPTZ,
   sports_preferences JSONB       DEFAULT '[]',  -- array of sport names
@@ -97,6 +98,21 @@ CREATE TABLE IF NOT EXISTS tribes (
   icon        VARCHAR(50),
   created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
+
+-- members.tribe_id FK + index — declared inline above as bare UUID because
+-- tribes is declared after members. Fresh deploys add the FK here.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.table_constraints
+     WHERE constraint_name = 'members_tribe_id_fkey'
+  ) THEN
+    ALTER TABLE members
+      ADD CONSTRAINT members_tribe_id_fkey
+      FOREIGN KEY (tribe_id) REFERENCES tribes(id);
+  END IF;
+END $$;
+CREATE INDEX IF NOT EXISTS idx_members_tribe ON members(tribe_id) WHERE tribe_id IS NOT NULL;
 
 -- ── SESSIONS ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS sessions (

@@ -95,6 +95,20 @@ async function recordSignupReferral({ referrerId, referralCode, newMemberId }) {
          ON CONFLICT (referred_id) DO NOTHING`,
         [resolvedReferrer, newMemberId, referralCode || resolvedReferrer.slice(0, 8)]
       );
+      // Inherit the referrer's tribe (Better/Faster/Stronger). Only sets
+      // tribe_id if the new member doesn't already have one — never overrides.
+      // Wrapped in a try/catch so a missing tribe_id column on legacy DBs
+      // can't break signups.
+      try {
+        await client.query(
+          `UPDATE members
+              SET tribe_id = (SELECT tribe_id FROM members WHERE id = $1)
+            WHERE id = $2 AND tribe_id IS NULL`,
+          [resolvedReferrer, newMemberId]
+        );
+      } catch (e) {
+        if (e.code !== '42703') throw e; // ignore "column does not exist"
+      }
       if (points > 0) {
         await awardPoints(client, resolvedReferrer, points, 'referral_signup', newMemberId,
           'Signup referral bonus');
