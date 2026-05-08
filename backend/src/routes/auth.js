@@ -25,7 +25,7 @@ function generateMemberNumber(id) {
 async function getMemberByEmail(email) {
   const { rows } = await query(
     `SELECT id, first_name, last_name, email, password_hash, is_banned,
-            is_admin, is_ambassador, subscription_type, email_verified
+            is_admin, is_ambassador, is_coach, subscription_type, email_verified
      FROM members WHERE LOWER(email) = LOWER($1)`,
     [email]
   );

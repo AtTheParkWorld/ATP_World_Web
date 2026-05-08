@@ -162,7 +162,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
   </div>
 </header>
 
-<main id="main" class="ci-layout" role="main">
+<div class="ci-layout">
 
   <!-- SCANNER SIDE -->
   <div class="ci-scanner-side">
@@ -237,7 +237,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
     <div class="ci-list-body" id="attendanceList"></div>
   </div>
 
-</main>
+</div>
 
 <!-- TOAST -->
 <div class="ci-toast" id="ciToast"></div>
@@ -557,13 +557,26 @@ function showToast(msg, type) {
   setTimeout(function(){t.classList.remove('show');}, 2800);
 }
 
-// ── AMBASSADOR GUARD ──────────────────────────────────────────
+// ── SCANNER ACCESS GUARD ──────────────────────────────────────
+// Accepts ATP Ambassadors AND ATP Coaches (and admins). Coaches need to
+// scan members in at the sessions they run, same UX as ambassadors. Reads
+// from multiple legacy storage shapes for robustness across deploys.
 (function() {
-  var user = null;
-  try { user = JSON.parse(localStorage.getItem('atp:user')); } catch(e){}
-  var isAmbassador = user && (user.ambassador === true || localStorage.getItem('atp:ambassador') === 'true');
-  if (!isAmbassador) {
-    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;gap:20px;padding:40px"><div style="font-size:48px">🔒</div><div style="font-family:Barlow Condensed,sans-serif;font-size:32px;font-weight:900;text-transform:uppercase;color:#fff">Ambassador Access Only</div><div style="font-size:14px;color:rgba(255,255,255,.5);max-width:320px;line-height:1.6">This page is restricted to ATP Ambassadors. Contact your admin to get access.</div><a href="profile.html" style="margin-top:12px;padding:12px 24px;background:#7AC231;color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none">← Back to Profile</a></div>';
+  function isScanner() {
+    try {
+      var m = JSON.parse(localStorage.getItem('atp_member') || 'null');
+      if (m && (m.is_admin || m.is_ambassador || m.is_coach)) return true;
+    } catch(e){}
+    try {
+      var u = JSON.parse(localStorage.getItem('atp:user') || 'null');
+      if (u && (u.admin || u.ambassador || u.coach)) return true;
+    } catch(e){}
+    if (localStorage.getItem('atp:ambassador') === 'true') return true;
+    if (localStorage.getItem('atp:coach') === 'true') return true;
+    return false;
+  }
+  if (!isScanner()) {
+    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;gap:20px;padding:40px"><div style="font-size:48px">🔒</div><div style="font-family:Barlow Condensed,sans-serif;font-size:32px;font-weight:900;text-transform:uppercase;color:#fff">Scanner Access Only</div><div style="font-size:14px;color:rgba(255,255,255,.5);max-width:320px;line-height:1.6">This page is restricted to ATP Ambassadors and Coaches. Contact your admin to get access.</div><a href="profile.html" style="margin-top:12px;padding:12px 24px;background:#7AC231;color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none">← Back to Profile</a></div>';
     return;
   }
 })();
@@ -586,7 +599,7 @@ updateStats();
           (member.first_name[0] + (member.last_name||'X')[0]).toUpperCase(),
         joinedAt: member.joined_at, memberId: member.id,
         memberNumber: member.member_number,
-        ambassador: member.is_ambassador, admin: member.is_admin,
+        ambassador: member.is_ambassador, admin: member.is_admin, coach: member.is_coach,
       };
       if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
     }
@@ -594,10 +607,9 @@ updateStats();
     if (member.is_ambassador && typeof checkAmbassadorRole === 'function') {
       checkAmbassadorRole();
     }
-    // Store ambassador flag for checkin page
-    if (member.is_ambassador) {
-      localStorage.setItem('atp:ambassador', 'true');
-    }
+    // Persist scanner flags so the guard above accepts the page on reload.
+    if (member.is_ambassador) localStorage.setItem('atp:ambassador', 'true');
+    if (member.is_coach)      localStorage.setItem('atp:coach', 'true');
   }).catch(function() {});
 })();
 
@@ -868,13 +880,26 @@ function showToast(msg, type) {
   setTimeout(function(){t.classList.remove('show');}, 2800);
 }
 
-// ── AMBASSADOR GUARD ──────────────────────────────────────────
+// ── SCANNER ACCESS GUARD ──────────────────────────────────────
+// Accepts ATP Ambassadors AND ATP Coaches (and admins). Coaches need to
+// scan members in at the sessions they run, same UX as ambassadors. Reads
+// from multiple legacy storage shapes for robustness across deploys.
 (function() {
-  var user = null;
-  try { user = JSON.parse(localStorage.getItem('atp:user')); } catch(e){}
-  var isAmbassador = user && (user.ambassador === true || localStorage.getItem('atp:ambassador') === 'true');
-  if (!isAmbassador) {
-    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;gap:20px;padding:40px"><div style="font-size:48px">🔒</div><div style="font-family:Barlow Condensed,sans-serif;font-size:32px;font-weight:900;text-transform:uppercase;color:#fff">Ambassador Access Only</div><div style="font-size:14px;color:rgba(255,255,255,.5);max-width:320px;line-height:1.6">This page is restricted to ATP Ambassadors. Contact your admin to get access.</div><a href="profile.html" style="margin-top:12px;padding:12px 24px;background:#7AC231;color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none">← Back to Profile</a></div>';
+  function isScanner() {
+    try {
+      var m = JSON.parse(localStorage.getItem('atp_member') || 'null');
+      if (m && (m.is_admin || m.is_ambassador || m.is_coach)) return true;
+    } catch(e){}
+    try {
+      var u = JSON.parse(localStorage.getItem('atp:user') || 'null');
+      if (u && (u.admin || u.ambassador || u.coach)) return true;
+    } catch(e){}
+    if (localStorage.getItem('atp:ambassador') === 'true') return true;
+    if (localStorage.getItem('atp:coach') === 'true') return true;
+    return false;
+  }
+  if (!isScanner()) {
+    document.body.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;text-align:center;gap:20px;padding:40px"><div style="font-size:48px">🔒</div><div style="font-family:Barlow Condensed,sans-serif;font-size:32px;font-weight:900;text-transform:uppercase;color:#fff">Scanner Access Only</div><div style="font-size:14px;color:rgba(255,255,255,.5);max-width:320px;line-height:1.6">This page is restricted to ATP Ambassadors and Coaches. Contact your admin to get access.</div><a href="profile.html" style="margin-top:12px;padding:12px 24px;background:#7AC231;color:#fff;border-radius:10px;font-size:14px;font-weight:700;text-decoration:none">← Back to Profile</a></div>';
     return;
   }
 })();
@@ -897,7 +922,7 @@ updateStats();
           (member.first_name[0] + (member.last_name||'X')[0]).toUpperCase(),
         joinedAt: member.joined_at, memberId: member.id,
         memberNumber: member.member_number,
-        ambassador: member.is_ambassador, admin: member.is_admin,
+        ambassador: member.is_ambassador, admin: member.is_admin, coach: member.is_coach,
       };
       if (typeof renderAuthNav === 'function') renderAuthNav(atpUser);
     }
@@ -905,10 +930,9 @@ updateStats();
     if (member.is_ambassador && typeof checkAmbassadorRole === 'function') {
       checkAmbassadorRole();
     }
-    // Store ambassador flag for checkin page
-    if (member.is_ambassador) {
-      localStorage.setItem('atp:ambassador', 'true');
-    }
+    // Persist scanner flags so the guard above accepts the page on reload.
+    if (member.is_ambassador) localStorage.setItem('atp:ambassador', 'true');
+    if (member.is_coach)      localStorage.setItem('atp:coach', 'true');
   }).catch(function() {});
 })();
 

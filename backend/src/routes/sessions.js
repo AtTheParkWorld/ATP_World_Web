@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { query, transaction } = require('../db');
-const { authenticate, requireAdmin, requireAmbassador, optionalAuth } = require('../middleware/auth');
+const { authenticate, requireAdmin, requireAmbassador, requireScanner, optionalAuth } = require('../middleware/auth');
 const streak       = require('../services/streak');
 const referrals    = require('../services/referrals');
 const achievements = require('../services/achievements');
@@ -222,8 +222,8 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
 // ── PATCH /api/sessions/:id/complete ─────────────────────────
 router.patch('/:id/complete', authenticate, async (req, res, next) => {
   try {
-    if (!req.member.is_admin && !req.member.is_ambassador) {
-      return res.status(403).json({ error: 'Admin or ambassador required' });
+    if (!req.member.is_admin && !req.member.is_ambassador && !req.member.is_coach) {
+      return res.status(403).json({ error: 'Admin, ambassador or coach required' });
     }
 
     await query(
@@ -241,7 +241,7 @@ router.patch('/:id/complete', authenticate, async (req, res, next) => {
 });
 
 // ── GET /api/sessions/:id/attendance ─────────────────────────
-router.get('/:id/attendance', authenticate, requireAmbassador, async (req, res, next) => {
+router.get('/:id/attendance', authenticate, requireScanner, async (req, res, next) => {
   try {
     const { rows } = await query(
       `SELECT b.id, b.status, b.qr_token, b.checked_in_at, b.check_in_method,
@@ -259,8 +259,8 @@ router.get('/:id/attendance', authenticate, requireAmbassador, async (req, res, 
 });
 
 // ── POST /api/sessions/:id/checkin ────────────────────────────
-// Ambassador scans QR or manually checks in
-router.post('/:id/checkin', authenticate, requireAmbassador, async (req, res, next) => {
+// Ambassador or coach scans QR / manually checks in.
+router.post('/:id/checkin', authenticate, requireScanner, async (req, res, next) => {
   try {
     const { qr_token, member_id, method = 'manual' } = req.body;
     if (!qr_token && !member_id) {

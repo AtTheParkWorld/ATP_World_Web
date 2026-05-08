@@ -11,7 +11,7 @@ const authenticate = async (req, res, next) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const { rows } = await query(
-      `SELECT id, first_name, last_name, email, is_admin, is_ambassador,
+      `SELECT id, first_name, last_name, email, is_admin, is_ambassador, is_coach,
               is_banned, subscription_type, city_id
        FROM members WHERE id = $1`,
       [decoded.sub]
@@ -44,6 +44,18 @@ const requireAmbassador = (req, res, next) => {
   next();
 };
 
+// ── REQUIRE SCANNER (admin OR ambassador OR coach) ────────────
+// Coaches need to scan members in at the sessions they run, same UX as
+// ambassadors. Kept as a separate gate from requireAmbassador so future
+// ambassador-only endpoints (e.g. ambassador-specific bonuses) stay strict.
+const requireScanner = (req, res, next) => {
+  const m = req.member;
+  if (!m?.is_admin && !m?.is_ambassador && !m?.is_coach) {
+    return res.status(403).json({ error: 'Ambassador or coach access required' });
+  }
+  next();
+};
+
 // ── OPTIONAL AUTH (doesn't fail if no token) ──────────────────
 const optionalAuth = async (req, res, next) => {
   const header = req.headers.authorization;
@@ -52,7 +64,7 @@ const optionalAuth = async (req, res, next) => {
     const token = header.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const { rows } = await query(
-      'SELECT id, first_name, last_name, email, is_admin, is_ambassador FROM members WHERE id = $1',
+      'SELECT id, first_name, last_name, email, is_admin, is_ambassador, is_coach FROM members WHERE id = $1',
       [decoded.sub]
     );
     if (rows.length) req.member = rows[0];
@@ -60,4 +72,4 @@ const optionalAuth = async (req, res, next) => {
   next();
 };
 
-module.exports = { authenticate, requireAdmin, requireAmbassador, optionalAuth };
+module.exports = { authenticate, requireAdmin, requireAmbassador, requireScanner, optionalAuth };
