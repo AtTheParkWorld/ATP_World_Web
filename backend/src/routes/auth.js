@@ -23,13 +23,26 @@ function generateMemberNumber(id) {
 }
 
 async function getMemberByEmail(email) {
-  const { rows } = await query(
-    `SELECT id, first_name, last_name, email, password_hash, is_banned,
-            is_admin, is_ambassador, is_coach, subscription_type, email_verified
-     FROM members WHERE LOWER(email) = LOWER($1)`,
-    [email]
-  );
-  return rows[0] || null;
+  try {
+    const { rows } = await query(
+      `SELECT id, first_name, last_name, email, password_hash, is_banned,
+              is_admin, is_ambassador, is_coach, subscription_type, email_verified
+       FROM members WHERE LOWER(email) = LOWER($1)`,
+      [email]
+    );
+    return rows[0] || null;
+  } catch (e) {
+    // Pre-migration fallback — `is_coach` column missing on this DB.
+    if (e.code !== '42703') throw e;
+    const { rows } = await query(
+      `SELECT id, first_name, last_name, email, password_hash, is_banned,
+              is_admin, is_ambassador, subscription_type, email_verified
+       FROM members WHERE LOWER(email) = LOWER($1)`,
+      [email]
+    );
+    if (rows[0]) rows[0].is_coach = false;
+    return rows[0] || null;
+  }
 }
 
 // ── POST /api/auth/register ───────────────────────────────────

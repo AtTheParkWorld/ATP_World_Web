@@ -10,12 +10,27 @@ const authenticate = async (req, res, next) => {
   const token = header.split(' ')[1];
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const { rows } = await query(
-      `SELECT id, first_name, last_name, email, is_admin, is_ambassador, is_coach,
-              is_banned, subscription_type, city_id
-       FROM members WHERE id = $1`,
-      [decoded.sub]
-    );
+    let rows;
+    try {
+      ({ rows } = await query(
+        `SELECT id, first_name, last_name, email, is_admin, is_ambassador, is_coach,
+                is_banned, subscription_type, city_id
+         FROM members WHERE id = $1`,
+        [decoded.sub]
+      ));
+    } catch (e) {
+      // Pre-migration fallback — `is_coach` column doesn't exist yet on this
+      // DB. Don't 401 the user; fetch without that column and treat as false.
+      if (e.code === '42703') {
+        ({ rows } = await query(
+          `SELECT id, first_name, last_name, email, is_admin, is_ambassador,
+                  is_banned, subscription_type, city_id
+           FROM members WHERE id = $1`,
+          [decoded.sub]
+        ));
+        if (rows.length) rows[0].is_coach = false;
+      } else { throw e; }
+    }
     if (!rows.length) return res.status(401).json({ error: 'Member not found' });
     if (rows[0].is_banned) return res.status(403).json({ error: 'Account suspended' });
     req.member = rows[0];
@@ -63,10 +78,21 @@ const optionalAuth = async (req, res, next) => {
   try {
     const token = header.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    const { rows } = await query(
-      'SELECT id, first_name, last_name, email, is_admin, is_ambassador, is_coach FROM members WHERE id = $1',
-      [decoded.sub]
-    );
+    let rows;
+    try {
+      ({ rows } = await query(
+        'SELECT id, first_name, last_name, email, is_admin, is_ambassador, is_coach FROM members WHERE id = $1',
+        [decoded.sub]
+      ));
+    } catch (e) {
+      if (e.code === '42703') {
+        ({ rows } = await query(
+          'SELECT id, first_name, last_name, email, is_admin, is_ambassador FROM members WHERE id = $1',
+          [decoded.sub]
+        ));
+        if (rows.length) rows[0].is_coach = false;
+      } else { throw e; }
+    }
     if (rows.length) req.member = rows[0];
   } catch (_) {}
   next();
