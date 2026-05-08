@@ -648,7 +648,7 @@ function buildPostCard(post) {
     var items = post.media.map(function(m, i) {
       var cnt = post.media.length > 1 ? '<div class="post-media-counter">'+(i+1)+'/'+post.media.length+'</div>' : '';
       if(m.type==="video") {
-        return '<div class="post-media-item">'+cnt+'<video src="'+m.src+'" controls playsinline></video></div>';
+        return '<div class="post-media-item">'+cnt+'<video src="'+m.src+'" autoplay muted loop playsinline controls></video></div>';
       }
       return '<div class="post-media-item">'+cnt+'<img src="'+m.src+'" alt="post image" loading="lazy"></div>';
     }).join("");

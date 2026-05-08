@@ -442,10 +442,20 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     var displayName = c.display_name || ((c.first_name || '') + ' ' + (c.last_name || '')).trim() || 'Coach';
     document.title = displayName + ' · ATP Coach';
 
-    /* Hero — cover + photo + name + tagline */
+    /* Hero — cover + photo + name + tagline. Build the <video> element
+       imperatively (not innerHTML) and set src directly so the autoplay
+       data: URL case actually starts on iOS / Safari — same trick the
+       index hero uses. */
     var heroMedia = document.getElementById('cp-hero-media');
     if (p.intro_video_url) {
-      heroMedia.innerHTML = '<video autoplay muted loop playsinline preload="metadata" poster="' + escapeHtml(p.cover_image_url || '') + '"><source src="' + escapeHtml(p.intro_video_url) + '"></video>';
+      heroMedia.innerHTML = '';
+      var vid = document.createElement('video');
+      vid.autoplay = true; vid.muted = true; vid.loop = true; vid.playsInline = true;
+      vid.preload = 'auto';
+      if (p.cover_image_url) vid.poster = p.cover_image_url;
+      vid.src = p.intro_video_url;
+      heroMedia.appendChild(vid);
+      var pp = vid.play(); if (pp && typeof pp.catch === 'function') pp.catch(function(){});
     } else if (p.cover_image_url) {
       heroMedia.innerHTML = '<img src="' + escapeHtml(p.cover_image_url) + '" alt="">';
     }
@@ -578,7 +588,7 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     if (gallery.length) {
       document.getElementById('cp-gallery').innerHTML = gallery.map(function(url, i){
         var media = isVideoUrl(url)
-          ? '<video src="' + escapeHtml(url) + '" muted></video>'
+          ? '<video src="' + escapeHtml(url) + '" autoplay muted loop playsinline></video>'
           : '<img src="' + escapeHtml(url) + '" alt="" loading="lazy">';
         return '<div class="cp-gallery-item" onclick="openLightbox(' + i + ')">' + media + '</div>';
       }).join('');
