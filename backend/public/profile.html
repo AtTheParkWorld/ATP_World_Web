@@ -3575,6 +3575,20 @@ function pickCoachUpload(kind) {
             COACH_GALLERY.push(d.url);
             _coachRenderGallery();
           }
+          // Persist immediately. Server-side auto-persist is the primary
+          // mechanism (target: kind above), but we ALSO trigger a full save
+          // here as a safety net — that way if the user uploads a photo and
+          // navigates away or hard-refreshes before clicking "Save changes",
+          // every form value is committed in one shot.
+          _coachSilentSave();
+          if (window.ATPComponents) {
+            ATPComponents.toast(
+              kind === 'cover' ? 'Cover image saved' :
+              kind === 'photo' ? 'Profile photo saved' :
+              'Added to gallery',
+              'success'
+            );
+          }
         })
         .catch(function(){
           if (tile) tile.classList.remove('busy');
@@ -3695,6 +3709,49 @@ function profileDeleteFeedback(kind, feedbackId, btn) {
       if (btn) { btn.disabled = false; btn.textContent = '×'; }
       if (window.ATPComponents) ATPComponents.toast('Network error', 'danger');
     });
+}
+
+// Silent partial save — fires automatically after every successful upload
+// so cover/photo/gallery URLs are persisted to coach_profiles immediately,
+// without the user having to click "Save changes". No "cover required"
+// blocker, no toast on success (the upload toast already confirmed it).
+// Sends ALL current form values + the latest media so other fields aren't
+// wiped (the PUT endpoint replaces the whole row).
+function _coachSilentSave() {
+  if (!CURRENT_MEMBER || !CURRENT_MEMBER.id) return;
+  var get = function(id){ var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  var coverTile = document.getElementById('coachCoverUpload');
+  var photoTile = document.getElementById('coachPhotoUpload');
+  var coverUrl = (coverTile && coverTile.dataset.url) || null;
+  var photoUrl = (photoTile && photoTile.dataset.url) || null;
+
+  var body = {
+    display_name:      get('coachDisplayName') || null,
+    tagline:           get('coachTagline') || null,
+    bio:               get('coachBio') || null,
+    philosophy:        get('coachPhilosophy') || null,
+    intro_video_url:   get('coachIntroVideo') || null,
+    cover_image_url:   coverUrl,
+    profile_photo_url: photoUrl,
+    specialties:       splitToJsonList(get('coachSpecialties')),
+    certifications:    splitToJsonList(get('coachCertifications')),
+    languages:         splitToJsonList(get('coachLanguages')),
+    years_experience:  parseInt(get('coachYears'), 10) || 0,
+    instagram:         get('coachInstagram') || null,
+    tiktok:            get('coachTiktok') || null,
+    whatsapp_url:      get('coachWhatsapp') || null,
+    website_url:       get('coachWebsite') || null,
+    youtube_url:       get('coachYoutube') || null,
+    linkedin_url:      get('coachLinkedin') || null,
+    gallery_urls:      COACH_GALLERY.slice(0, 12),
+    accepts_private_sessions: !!(document.getElementById('coachPrivateToggle') || {}).checked,
+    private_session_info: get('coachPrivateInfo') || null,
+  };
+  fetch(COACH_API + '/coaches/' + CURRENT_MEMBER.id, {
+    method: 'PUT',
+    headers: _coachAuth(),
+    body: JSON.stringify(body),
+  }).catch(function(){ /* silent — server-side auto-persist is the primary path */ });
 }
 
 function saveCoachProfileSelf() {
