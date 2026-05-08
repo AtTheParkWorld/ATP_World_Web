@@ -86,7 +86,16 @@ var CMS_SCHEMA = {
           { key: 'title',    label: 'Page Title',    type: 'text',     default: 'All Sessions' },
           { key: 'subtitle', label: 'Subtitle',      type: 'textarea', default: 'Browse and book upcoming ATP sessions across Dubai, Al Ain and Muscat.' },
         ]
-      }
+      },
+      // Tribes + Activities live in their own DB tables (not the CMS k/v
+      // store) but are surfaced here so admins can manage the taxonomy
+      // alongside the rest of the Sessions page content. Rendered by the
+      // custom function below, not the field iterator.
+      tribesActivities: {
+        label: 'Tribes & Activities',
+        desc: 'These feed every session form and the public filters. Add / rename / recolor a tribe to change what admins (and members) can pick from.',
+        customRenderer: 'tribesActivities',
+      },
     }
   },
   community: {
@@ -362,6 +371,15 @@ function renderCmsEditor() {
       '<div class="cms-field-group-title">' + section.label + '</div>' +
       (section.desc ? '<div class="cms-field-group-desc">' + section.desc + '</div>' : '');
 
+    // Sections can opt out of the field iterator and render their own UI
+    // (live tribes/activities CRUD, etc). The host div gets hydrated by
+    // the named renderer after the editor is in the DOM.
+    if (section.customRenderer) {
+      html += '<div id="cmsCustom_' + sectionKey + '" data-cms-custom="' + section.customRenderer + '"></div>';
+      html += '</div>';
+      return;
+    }
+
     section.fields.forEach(function(field) {
       var current_val = sectionData[field.key] != null ? sectionData[field.key] : (field.default || '');
       var fieldId = 'cms_' + page + '_' + sectionKey + '_' + field.key;
@@ -400,6 +418,279 @@ function renderCmsEditor() {
   html += '</div>';
 
   document.getElementById('cmsEditorBody').innerHTML = html;
+
+  // After the markup lands, hydrate any custom-renderer panels.
+  document.querySelectorAll('[data-cms-custom]').forEach(function(host) {
+    var name = host.getAttribute('data-cms-custom');
+    if (name === 'tribesActivities' && typeof cmsRenderTribesActivities === 'function') {
+      cmsRenderTribesActivities(host);
+    }
+  });
+}
+
+// ── CMS custom panel: Tribes & Activities ─────────────────────
+// Lives inside the Sessions Page tab. Loads tribes from /api/sessions/tribes
+// and activities from /api/activities/admin, renders one card per tribe
+// with its activities, plus inline forms for add / rename / recolor / delete.
+// Every action hits the live API, then re-renders.
+async function cmsRenderTribesActivities(host) {
+  if (!host) return;
+  host.innerHTML = '<div style="padding:18px;color:#666;font-size:13px">Loading tribes & activities…</div>';
+  try {
+    var token = getToken();
+    var [tribesRes, actsRes] = await Promise.all([
+      fetch(ATP_API + '/sessions/tribes').then(function(r){ return r.ok ? r.json() : { tribes: [] }; }),
+      fetch(ATP_API + '/activities/admin', { headers: { 'Authorization': 'Bearer ' + token } }).then(function(r){ return r.ok ? r.json() : { activities: [] }; }),
+    ]);
+    var tribes = (tribesRes && tribesRes.tribes) || [];
+    var acts   = (actsRes && actsRes.activities) || [];
+
+    function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+
+    var html = '';
+
+    // ── Tribes block ─────────────────────────────────────────
+    html += '<div style="background:#0d0d0d;border:1px solid #222;border-radius:10px;padding:14px;margin-bottom:18px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+    html += '<div style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#7AC231">Tribes (' + tribes.length + ')</div>';
+    html += '<button class="admin-btn" style="font-size:11px;padding:5px 10px" data-atp-call="cmsTribeNew">+ Add Tribe</button>';
+    html += '</div>';
+    if (!tribes.length) {
+      html += '<div style="font-size:13px;color:#666;padding:12px 0">No tribes yet. Add one to start grouping sessions.</div>';
+    } else {
+      html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">';
+      tribes.forEach(function(t) {
+        var color = t.color || '#7AC231';
+        var actCount = acts.filter(function(a){ return a.tribe_id === t.id; }).length;
+        html += '<div style="background:#161616;border:1px solid ' + esc(color) + '40;border-left:4px solid ' + esc(color) + ';border-radius:8px;padding:12px">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
+            '<span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:' + esc(color) + '"></span>' +
+            '<input type="text" value="' + esc(t.name) + '" id="cmsTribeName_' + t.id + '" style="flex:1;background:transparent;border:none;color:#fff;font-size:14px;font-weight:700;padding:2px 4px;outline:none">' +
+          '</div>' +
+          '<div style="display:flex;gap:6px;align-items:center;margin-bottom:8px">' +
+            '<input type="color" value="' + esc(color) + '" id="cmsTribeColor_' + t.id + '" style="width:30px;height:28px;border:1px solid #2a2a2a;border-radius:4px;background:#0a0a0a;cursor:pointer">' +
+            '<span style="font-size:11px;color:#666">' + actCount + ' activit' + (actCount === 1 ? 'y' : 'ies') + '</span>' +
+          '</div>' +
+          '<div style="display:flex;gap:6px">' +
+            '<button class="admin-btn admin-btn-primary" style="font-size:11px;padding:5px 10px;flex:1" data-atp-call="cmsTribeSave" data-args=\'["' + t.id + '"]\'>Save</button>' +
+            '<button class="admin-btn admin-btn-danger" style="font-size:11px;padding:5px 10px" data-atp-call="cmsTribeDelete" data-args=\'["' + t.id + '","' + esc(t.name).replace(/'/g,"&#39;") + '"]\'>Delete</button>' +
+          '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+
+    // ── Activities block, grouped by tribe ───────────────────
+    html += '<div style="background:#0d0d0d;border:1px solid #222;border-radius:10px;padding:14px">';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+    html += '<div style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#7AC231">Activities (' + acts.length + ')</div>';
+    html += '<button class="admin-btn" style="font-size:11px;padding:5px 10px" data-atp-call="cmsActivityNew">+ Add Activity</button>';
+    html += '</div>';
+
+    // Group activities by tribe
+    var byTribe = {};
+    tribes.forEach(function(t){ byTribe[t.id] = { tribe: t, items: [] }; });
+    var orphans = [];
+    acts.forEach(function(a){
+      if (a.tribe_id && byTribe[a.tribe_id]) byTribe[a.tribe_id].items.push(a);
+      else orphans.push(a);
+    });
+
+    Object.keys(byTribe).forEach(function(tid) {
+      var grp = byTribe[tid];
+      var color = grp.tribe.color || '#7AC231';
+      html += '<div style="margin-bottom:14px">';
+      html += '<div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:' + esc(color) + ';margin-bottom:6px">' + esc(grp.tribe.name) + ' · ' + grp.items.length + '</div>';
+      if (!grp.items.length) {
+        html += '<div style="font-size:12px;color:#555;padding:6px 0">No activities yet. Click "+ Add Activity" and pick this tribe.</div>';
+      } else {
+        html += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+        grp.items.forEach(function(a) {
+          var icon = a.icon || '🏷️';
+          var faded = a.is_active ? '1' : '.45';
+          html += '<div style="display:inline-flex;align-items:center;gap:6px;background:#161616;border:1px solid #2a2a2a;border-radius:20px;padding:5px 10px;opacity:' + faded + '">' +
+            '<span>' + icon + '</span>' +
+            '<span style="font-size:12px;font-weight:600">' + esc(a.name) + '</span>' +
+            '<button class="admin-btn" style="font-size:10px;padding:2px 6px;margin-left:2px" data-atp-call="cmsActivityEdit" data-args=\'["' + a.id + '"]\' title="Edit">✏️</button>' +
+            '<button class="admin-btn admin-btn-danger" style="font-size:10px;padding:2px 6px" data-atp-call="cmsActivityDelete" data-args=\'["' + a.id + '","' + esc(a.name).replace(/'/g,"&#39;") + '"]\' title="Deactivate">×</button>' +
+          '</div>';
+        });
+        html += '</div>';
+      }
+      html += '</div>';
+    });
+    if (orphans.length) {
+      html += '<div style="margin-bottom:14px">';
+      html += '<div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:#888;margin-bottom:6px">No tribe · ' + orphans.length + '</div>';
+      html += '<div style="display:flex;flex-wrap:wrap;gap:6px">';
+      orphans.forEach(function(a) {
+        var icon = a.icon || '🏷️';
+        var faded = a.is_active ? '1' : '.45';
+        html += '<div style="display:inline-flex;align-items:center;gap:6px;background:#161616;border:1px solid #2a2a2a;border-radius:20px;padding:5px 10px;opacity:' + faded + '">' +
+          '<span>' + icon + '</span>' +
+          '<span style="font-size:12px;font-weight:600">' + esc(a.name) + '</span>' +
+          '<button class="admin-btn" style="font-size:10px;padding:2px 6px;margin-left:2px" data-atp-call="cmsActivityEdit" data-args=\'["' + a.id + '"]\'>✏️</button>' +
+          '<button class="admin-btn admin-btn-danger" style="font-size:10px;padding:2px 6px" data-atp-call="cmsActivityDelete" data-args=\'["' + a.id + '","' + esc(a.name).replace(/'/g,"&#39;") + '"]\'>×</button>' +
+        '</div>';
+      });
+      html += '</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+
+    host.innerHTML = html;
+  } catch(e) {
+    host.innerHTML = '<div style="padding:14px;color:#f87171;font-size:13px">Failed to load tribes / activities: ' + (e.message || e) + '</div>';
+  }
+}
+
+// ── Tribe handlers (data-atp-call targets) ────────────────────
+function cmsTribeNew() {
+  var name = prompt('New tribe name (e.g. "Tactical")');
+  if (!name) return;
+  var color = prompt('Tribe color (hex, e.g. "#FF6B6B"). Leave blank for default.', '#7AC231') || null;
+  var token = getToken();
+  fetch(ATP_API + '/sessions/tribes/admin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ name: name, color: color }),
+  }).then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); })
+    .then(function(res){
+      if (!res.ok) { showToast('❌ ' + (res.body && res.body.error || 'Save failed'), true); return; }
+      showToast('✅ Tribe added');
+      var host = document.querySelector('[data-cms-custom="tribesActivities"]');
+      if (host) cmsRenderTribesActivities(host);
+    })
+    .catch(function(e){ showToast('❌ ' + e.message, true); });
+}
+function cmsTribeSave(e, btn) {
+  var id = JSON.parse(btn.getAttribute('data-args'))[0];
+  var name  = (document.getElementById('cmsTribeName_' + id) || {}).value || '';
+  var color = (document.getElementById('cmsTribeColor_' + id) || {}).value || null;
+  if (!name.trim()) { showToast('Name required', true); return; }
+  var token = getToken();
+  fetch(ATP_API + '/sessions/tribes/admin/' + id, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ name: name.trim(), color: color }),
+  }).then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); })
+    .then(function(res){
+      if (!res.ok) { showToast('❌ ' + (res.body && res.body.error || 'Save failed'), true); return; }
+      showToast('✅ Tribe saved');
+      var host = document.querySelector('[data-cms-custom="tribesActivities"]');
+      if (host) cmsRenderTribesActivities(host);
+    })
+    .catch(function(e){ showToast('❌ ' + e.message, true); });
+}
+function cmsTribeDelete(e, btn) {
+  var args = JSON.parse(btn.getAttribute('data-args'));
+  var id = args[0]; var name = args[1] || 'tribe';
+  if (!confirm('Delete tribe "' + name + '"? This only works if no sessions or activities still use it.')) return;
+  var token = getToken();
+  fetch(ATP_API + '/sessions/tribes/admin/' + id, {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer ' + token },
+  }).then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); })
+    .then(function(res){
+      if (!res.ok) {
+        var msg = (res.body && res.body.error) || 'Delete failed';
+        if (res.body && (res.body.sessions_count > 0 || res.body.activities_count > 0)) {
+          msg += ' — ' + res.body.sessions_count + ' session(s) and ' + res.body.activities_count + ' activit(ies) still use this tribe.';
+        }
+        showToast('❌ ' + msg, true);
+        return;
+      }
+      showToast('✅ Tribe deleted');
+      var host = document.querySelector('[data-cms-custom="tribesActivities"]');
+      if (host) cmsRenderTribesActivities(host);
+    })
+    .catch(function(e){ showToast('❌ ' + e.message, true); });
+}
+
+// ── Activity handlers (data-atp-call targets) ─────────────────
+function cmsActivityNew() {
+  // Same prompt-driven flow as tribes: keeps the panel self-contained
+  // without wiring a multi-field modal.
+  fetch(ATP_API + '/sessions/tribes')
+    .then(function(r){ return r.ok ? r.json() : { tribes: [] }; })
+    .then(function(d) {
+      var tribes = (d && d.tribes) || [];
+      if (!tribes.length) { alert('Add a tribe first.'); return; }
+      var name = prompt('Activity name (e.g. "Trail Running")');
+      if (!name) return;
+      var icon = prompt('Icon emoji (optional)', '') || null;
+      var labels = tribes.map(function(t, i){ return (i+1) + '. ' + t.name; }).join('\n');
+      var pick = prompt('Pick tribe number:\n\n' + labels);
+      var idx = parseInt(pick, 10) - 1;
+      if (isNaN(idx) || !tribes[idx]) return;
+      var token = getToken();
+      fetch(ATP_API + '/activities/admin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+        body: JSON.stringify({ name: name.trim(), icon: icon, tribe_id: tribes[idx].id }),
+      }).then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); })
+        .then(function(res){
+          if (!res.ok) { showToast('❌ ' + (res.body && res.body.error || 'Save failed'), true); return; }
+          showToast('✅ Activity added');
+          var host = document.querySelector('[data-cms-custom="tribesActivities"]');
+          if (host) cmsRenderTribesActivities(host);
+        });
+    });
+}
+function cmsActivityEdit(e, btn) {
+  var id = JSON.parse(btn.getAttribute('data-args'))[0];
+  var token = getToken();
+  fetch(ATP_API + '/activities/admin', { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      var a = ((data && data.activities) || []).find(function(x){ return x.id === id; });
+      if (!a) return;
+      var name = prompt('Activity name', a.name || '');
+      if (name === null) return;
+      var icon = prompt('Icon emoji', a.icon || '');
+      // Reload tribes and let admin re-pick
+      fetch(ATP_API + '/sessions/tribes')
+        .then(function(r){ return r.ok ? r.json() : { tribes: [] }; })
+        .then(function(d) {
+          var tribes = (d && d.tribes) || [];
+          var labels = tribes.map(function(t, i){ return (i+1) + '. ' + t.name; }).join('\n');
+          var currentIdx = tribes.findIndex(function(t){ return t.id === a.tribe_id; });
+          var pick = prompt('Pick tribe number:\n\n' + labels, currentIdx >= 0 ? String(currentIdx + 1) : '');
+          var newTribeId = a.tribe_id;
+          if (pick !== null && pick.trim()) {
+            var idx = parseInt(pick, 10) - 1;
+            if (!isNaN(idx) && tribes[idx]) newTribeId = tribes[idx].id;
+          }
+          fetch(ATP_API + '/activities/admin/' + id, {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+            body: JSON.stringify({ name: name.trim(), icon: icon || null, tribe_id: newTribeId }),
+          }).then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); })
+            .then(function(res){
+              if (!res.ok) { showToast('❌ ' + (res.body && res.body.error || 'Save failed'), true); return; }
+              showToast('✅ Activity updated');
+              var host = document.querySelector('[data-cms-custom="tribesActivities"]');
+              if (host) cmsRenderTribesActivities(host);
+            });
+        });
+    });
+}
+function cmsActivityDelete(e, btn) {
+  var args = JSON.parse(btn.getAttribute('data-args'));
+  var id = args[0]; var name = args[1] || 'activity';
+  if (!confirm('Deactivate activity "' + name + '"? Existing sessions keep their reference; the activity just stops appearing in the create-session form.')) return;
+  var token = getToken();
+  fetch(ATP_API + '/activities/admin/' + id, {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer ' + token },
+  }).then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); })
+    .then(function(res){
+      if (!res.ok) { showToast('❌ ' + (res.body && res.body.error || 'Delete failed'), true); return; }
+      showToast('✅ Activity removed');
+      var host = document.querySelector('[data-cms-custom="tribesActivities"]');
+      if (host) cmsRenderTribesActivities(host);
+    });
 }
 
 async function saveCmsContent() {

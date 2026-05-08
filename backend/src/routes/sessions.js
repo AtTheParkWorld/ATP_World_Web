@@ -97,6 +97,83 @@ router.get('/tribes', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── Admin tribes CRUD ─────────────────────────────────────────
+// POST/PATCH/DELETE under /api/sessions/tribes/admin so the CMS Sessions
+// Page can let admins add/rename/recolor tribes (and their activities
+// flow through the existing /api/activities admin routes).
+function _tribeSlug(s) {
+  return String(s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g,'-').replace(/^-+|-+$/g,'');
+}
+
+router.post('/tribes/admin', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { name, color = null, description = null } = req.body || {};
+    if (!name || !String(name).trim()) return res.status(400).json({ error: 'name required' });
+    const slug = _tribeSlug(name);
+    if (!slug) return res.status(400).json({ error: 'name must contain letters/numbers' });
+    const { rows } = await query(
+      `INSERT INTO tribes (name, slug, color, description)
+            VALUES ($1, $2, $3, $4)
+       ON CONFLICT (slug) DO UPDATE SET
+         name=EXCLUDED.name, color=COALESCE(EXCLUDED.color, tribes.color),
+         description=COALESCE(EXCLUDED.description, tribes.description)
+       RETURNING id, name, slug, color, description`,
+      [String(name).trim(), slug, color, description]
+    );
+    res.status(201).json({ tribe: rows[0] });
+  } catch (err) { next(err); }
+});
+
+router.patch('/tribes/admin/:id', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { name, color, description } = req.body || {};
+    const updates = [];
+    const params  = [];
+    let idx = 1;
+    if (name !== undefined) {
+      updates.push(`name = $${idx++}`); params.push(String(name).trim());
+      // Keep slug in sync with name so the public filter URLs stay clean.
+      const slug = _tribeSlug(name);
+      if (slug) { updates.push(`slug = $${idx++}`); params.push(slug); }
+    }
+    if (color       !== undefined) { updates.push(`color = $${idx++}`);       params.push(color); }
+    if (description !== undefined) { updates.push(`description = $${idx++}`); params.push(description); }
+    if (!updates.length) return res.status(400).json({ error: 'No updatable fields' });
+    params.push(req.params.id);
+    const { rows } = await query(
+      `UPDATE tribes SET ${updates.join(', ')} WHERE id = $${idx} RETURNING id, name, slug, color, description`,
+      params
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Tribe not found' });
+    res.json({ tribe: rows[0] });
+  } catch (err) { next(err); }
+});
+
+router.delete('/tribes/admin/:id', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    // Block deletion if any session or activity still references the tribe;
+    // refusing here is friendlier than letting Postgres throw a FK error
+    // and surfaces a clear next step to the admin (reassign, then delete).
+    const ref = await query(
+      `SELECT
+         (SELECT COUNT(*) FROM sessions   WHERE tribe_id=$1) AS sessions_count,
+         (SELECT COUNT(*) FROM activities WHERE tribe_id=$1) AS activities_count`,
+      [req.params.id]
+    );
+    const r = ref.rows[0] || {};
+    if (Number(r.sessions_count) > 0 || Number(r.activities_count) > 0) {
+      return res.status(409).json({
+        error: 'Tribe has linked sessions / activities',
+        sessions_count: Number(r.sessions_count),
+        activities_count: Number(r.activities_count),
+      });
+    }
+    const { rowCount } = await query(`DELETE FROM tribes WHERE id = $1`, [req.params.id]);
+    if (!rowCount) return res.status(404).json({ error: 'Tribe not found' });
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
 // ── GET /api/sessions/:id ─────────────────────────────────────
 router.get('/:id', optionalAuth, async (req, res, next) => {
   try {
