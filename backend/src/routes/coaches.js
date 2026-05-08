@@ -351,7 +351,7 @@ router.post('/:id/upload', authenticate, async (req, res, next) => {
     if (req.member.id !== req.params.id && !req.member.is_admin) {
       return res.status(403).json({ error: 'Forbidden' });
     }
-    const { data_url, filename, kind } = req.body || {};
+    const { data_url, filename, kind, target } = req.body || {};
     if (!data_url || !String(data_url).startsWith('data:')) {
       return res.status(400).json({ error: 'data_url (base64) required' });
     }
@@ -368,6 +368,49 @@ router.post('/:id/upload', authenticate, async (req, res, next) => {
        ON CONFLICT (page, section, key) DO UPDATE SET value_url=$3, updated_by=$4, updated_at=NOW()`,
       [kind || 'image', key, data_url, req.member.id]
     );
+
+    // Auto-persist the upload to coach_profiles so the URL survives a page
+    // refresh without requiring the coach to also click "Save changes".
+    // target tells us which slot the upload lands in: cover image, profile
+    // photo, or gallery (append, capped at 12). If the row doesn't exist
+    // yet (coach has never saved a profile), upsert with sensible defaults.
+    const slot = (target || '').toLowerCase();
+    if (slot === 'cover' || slot === 'photo' || slot === 'gallery') {
+      const { rows: existing } = await query(
+        `SELECT cp.gallery_urls, m.first_name, m.last_name
+           FROM members m LEFT JOIN coach_profiles cp ON cp.member_id=m.id
+          WHERE m.id=$1`,
+        [req.params.id]
+      );
+      const ex = existing[0] || {};
+
+      if (slot === 'gallery') {
+        let gallery = [];
+        try {
+          gallery = Array.isArray(ex.gallery_urls)
+            ? ex.gallery_urls
+            : (ex.gallery_urls ? JSON.parse(ex.gallery_urls) : []);
+        } catch (_) { gallery = []; }
+        gallery = gallery.slice(0, 11); // make room for the new entry, cap at 12
+        gallery.push(data_url);
+        await query(
+          `INSERT INTO coach_profiles (member_id, gallery_urls)
+                VALUES ($1, $2::jsonb)
+           ON CONFLICT (member_id) DO UPDATE SET gallery_urls=EXCLUDED.gallery_urls`,
+          [req.params.id, JSON.stringify(gallery)]
+        );
+      } else {
+        const col = (slot === 'cover') ? 'cover_image_url' : 'profile_photo_url';
+        // Two-step upsert so we don't blow away other columns on first save.
+        await query(
+          `INSERT INTO coach_profiles (member_id, ${col})
+                VALUES ($1, $2)
+           ON CONFLICT (member_id) DO UPDATE SET ${col}=EXCLUDED.${col}`,
+          [req.params.id, data_url]
+        );
+      }
+    }
+
     res.json({
       success: true,
       url: data_url,

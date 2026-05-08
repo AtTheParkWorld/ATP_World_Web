@@ -1141,6 +1141,30 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
           <div class="pstat"><div class="pstat-num" id="coachStatInquiries">0</div><div class="pstat-label">Inquiries (30d)</div></div>
         </div>
 
+        <!-- MY SESSIONS — two columns: sessions this coach is leading +
+             sessions they've booked as a regular ATP member. Populated by
+             loadCoachMySessions() and loadCoachMyBookings(). -->
+        <div class="coach-my-sessions" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+          <div class="widget" style="margin:0">
+            <div class="widget-head">
+              <span class="widget-title">🎽 Sessions I'm Coaching</span>
+              <span class="widget-action" onclick="window.location='sessions.html'">All →</span>
+            </div>
+            <div class="widget-body" id="coachSessionsCoaching">
+              <div style="padding:18px 0;color:var(--muted);font-size:13px;text-align:center">Loading…</div>
+            </div>
+          </div>
+          <div class="widget" style="margin:0">
+            <div class="widget-head">
+              <span class="widget-title">🎟️ Sessions I've Booked</span>
+              <span class="widget-action" data-atp-call="showTab" data-args='["sessions"]'>All →</span>
+            </div>
+            <div class="widget-body" id="coachSessionsBooked">
+              <div style="padding:18px 0;color:var(--muted);font-size:13px;text-align:center">Loading…</div>
+            </div>
+          </div>
+        </div>
+
         <!-- PUBLIC PROFILE EDITOR -->
         <div class="coach-editor">
           <div class="widget-head" style="border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:14px;margin-bottom:14px">
@@ -3187,11 +3211,86 @@ function loadCoachProfileSelf(memberId) {
 
       // Recent feedback — merge direct + session ratings
       renderCoachFeedback(data && data.feedback, data && data.session_feedback, c.id);
+
+      // "Sessions I'm coaching" list (left column of My Sessions)
+      renderCoachMySessions(data && data.upcoming_sessions);
     })
     .catch(function(err){ console.warn('[coach] load failed', err && err.message); });
 
   // Inbox — independent fetch; also drives the Inquiries (30d) stat
   loadCoachInbox();
+
+  // "Sessions I've booked" list (right column of My Sessions). Pulls the
+  // member's own bookings so coaches see their member-side calendar in the
+  // same place — no need to flip back to the Sessions tab.
+  loadCoachMyBookings();
+}
+
+// ── COACH "MY SESSIONS" — two lists ──────────────────────────
+// Left column: sessions where the logged-in coach is the assigned coach_id.
+// Comes back from /api/coaches/:id as data.upcoming_sessions.
+function renderCoachMySessions(sessions) {
+  var el = document.getElementById('coachSessionsCoaching');
+  if (!el) return;
+  var list = Array.isArray(sessions) ? sessions : [];
+  if (!list.length) {
+    el.innerHTML = '<div style="padding:18px 0;color:var(--muted);font-size:13px;text-align:center;line-height:1.55">No upcoming sessions assigned.<br><span style="color:var(--light);font-size:12px">Admin can assign you to a session from the admin panel.</span></div>';
+    return;
+  }
+  el.innerHTML = list.map(function(s) {
+    var when = s.scheduled_at ? new Date(s.scheduled_at) : null;
+    var whenStr = when ? when.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'}) +
+                          ' · ' + when.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit'}) : '';
+    var reg = (s.registered != null ? s.registered : 0) + (s.capacity ? ' / ' + s.capacity : '');
+    return '<div class="session-row" style="cursor:pointer" onclick="window.location=\'/checkin.html?session=' + encodeURIComponent(s.id) + '\'">' +
+             '<div class="session-info">' +
+               '<div class="session-name">' + escapeHtml(s.name || 'Session') + '</div>' +
+               '<div class="session-meta">' + escapeHtml(whenStr) + (s.location ? ' · ' + escapeHtml(s.location) : '') + '</div>' +
+             '</div>' +
+             '<div style="display:flex;align-items:center;gap:8px">' +
+               '<span style="font-size:11px;color:var(--green);font-weight:700">' + escapeHtml(String(reg)) + '</span>' +
+               '<span class="session-status upcoming">Check in →</span>' +
+             '</div>' +
+           '</div>';
+  }).join('');
+}
+
+// Right column: sessions the coach has booked as a member.
+function loadCoachMyBookings() {
+  var el = document.getElementById('coachSessionsBooked');
+  if (!el) return;
+  var token; try { token = localStorage.getItem('atp_token'); } catch(e){}
+  if (!token) return;
+  fetch('/api/members/bookings', { headers: { Authorization: 'Bearer ' + token } })
+    .then(function(r){ return r.ok ? r.json() : { bookings: [] }; })
+    .then(function(d) {
+      var all = (d && d.bookings) || [];
+      // Show upcoming only — past bookings live on the Sessions tab.
+      var now = Date.now();
+      var upcoming = all.filter(function(b) {
+        if (!b.scheduled_at) return false;
+        if (b.status === 'cancelled' || b.status === 'no_show') return false;
+        return new Date(b.scheduled_at).getTime() >= now - 60 * 60 * 1000; // 1h grace
+      }).slice(0, 6);
+      if (!upcoming.length) {
+        el.innerHTML = '<div style="padding:18px 0;color:var(--muted);font-size:13px;text-align:center;line-height:1.55">No sessions booked yet.<br><a href="sessions.html" style="color:var(--green);font-weight:700;text-decoration:none">Browse sessions →</a></div>';
+        return;
+      }
+      el.innerHTML = upcoming.map(function(b) {
+        var when = b.scheduled_at ? new Date(b.scheduled_at) : null;
+        var whenStr = when ? when.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'}) +
+                              ' · ' + when.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit'}) : '';
+        var statusLbl = (b.status === 'attended') ? 'Attended' : 'Booked';
+        return '<div class="session-row" style="cursor:pointer" onclick="window.location=\'sessions.html#' + encodeURIComponent(b.session_id || '') + '\'">' +
+                 '<div class="session-info">' +
+                   '<div class="session-name">' + escapeHtml(b.session_name || 'Session') + '</div>' +
+                   '<div class="session-meta">' + escapeHtml(whenStr) + (b.location ? ' · ' + escapeHtml(b.location) : '') + '</div>' +
+                 '</div>' +
+                 '<span class="session-status upcoming">' + escapeHtml(statusLbl) + '</span>' +
+               '</div>';
+      }).join('');
+    })
+    .catch(function(){ el.innerHTML = '<div style="padding:18px 0;color:var(--muted);font-size:13px;text-align:center">Couldn\'t load bookings.</div>'; });
 }
 
 // ── Inbox (threaded) ───────────────────────────────────────
@@ -3457,7 +3556,11 @@ function pickCoachUpload(kind) {
         body: JSON.stringify({
           data_url: reader.result,
           filename: f.name,
-          kind: f.type.indexOf('video/') === 0 ? 'video' : 'image',
+          // kind = the media type (image/video) for storage
+          kind:   f.type.indexOf('video/') === 0 ? 'video' : 'image',
+          // target = which slot to persist to (cover/photo/gallery) so the
+          // server auto-saves the URL to coach_profiles, no extra Save click.
+          target: kind,
         }),
       }).then(function(r){ return r.json(); })
         .then(function(d){
