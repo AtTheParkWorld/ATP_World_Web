@@ -10,6 +10,8 @@ const { authenticate, requireAdmin, optionalAuth } = require('../middleware/auth
 // an empty {content:{}}, masking the real Media Library data.
 
 // GET /api/cms/media/list — list every uploaded media asset (admin only)
+// Rewrites stored data: URLs into short /api/cms/media/<id> references so
+// the admin Media Library page doesn't choke on multi-MB strings per row.
 router.get('/media/list', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { rows } = await query(
@@ -17,7 +19,44 @@ router.get('/media/list', authenticate, requireAdmin, async (req, res, next) => 
        FROM cms_content WHERE page='_media'
        ORDER BY updated_at DESC LIMIT 100`
     );
-    res.json({ media: rows });
+    const lite = rows.map(r => ({
+      id: r.id, kind: r.kind, filename: r.filename,
+      url: (r.url && String(r.url).startsWith('data:')) ? `/api/cms/media/${r.id}` : r.url,
+      updated_at: r.updated_at,
+    }));
+    res.json({ media: lite });
+  } catch (err) { next(err); }
+});
+
+// GET /api/cms/media/:id — public read of an uploaded asset
+// Decodes the base64 data URL stored at this id and streams the binary
+// back. Public on purpose — hero videos, page images, etc. need to load
+// for anyone visiting the marketing site, logged in or not. 30-day
+// immutable cache because each media row is write-once (uploads create
+// new keys with timestamps rather than overwriting).
+router.get('/media/:id', async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT value_url FROM cms_content WHERE id=$1::uuid AND page='_media'`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).send('Not found');
+    const dataUrl = rows[0].value_url;
+    if (!dataUrl) return res.status(404).send('Empty');
+    // If somebody set value_url to a normal http(s) URL, redirect to it
+    // instead of trying to decode base64 from it.
+    if (!dataUrl.startsWith('data:')) {
+      return res.redirect(302, dataUrl);
+    }
+    const match = dataUrl.match(/^data:([^;]+);base64,(.+)$/);
+    if (!match) return res.status(500).send('Invalid stored format');
+    const mimeType = match[1];
+    const buf = Buffer.from(match[2], 'base64');
+    res.setHeader('Content-Type', mimeType);
+    res.setHeader('Cache-Control', 'public, max-age=2592000, immutable'); // 30 days
+    res.setHeader('Content-Length', buf.length);
+    res.setHeader('Accept-Ranges', 'bytes'); // helps video seek
+    res.send(buf);
   } catch (err) { next(err); }
 });
 
@@ -136,17 +175,27 @@ router.post('/upload', authenticate, requireAdmin, async (req, res, next) => {
     // process lifetime.
     await _ensureValueUrlIsText();
 
-    // Persist as a media asset entry for reuse
+    // Persist as a media asset entry. Use a per-upload key (filename +
+    // timestamp) so each upload becomes its own row rather than the
+    // ON CONFLICT path overwriting the previous one — crucial because the
+    // returned URL embeds the row id, and overwriting an old row would
+    // change every page that referenced it.
+    const safeName = String(filename || 'upload').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80);
+    const dbKey    = `${safeName}_${Date.now()}`;
     const { rows } = await query(
       `INSERT INTO cms_content (page, section, key, value_url, updated_by)
        VALUES ('_media', $1, $2, $3, $4)
        ON CONFLICT (page, section, key) DO UPDATE SET value_url=$3, updated_by=$4, updated_at=NOW()
        RETURNING id`,
-      [kind || 'image', filename || ('upload_' + Date.now()), data_url, req.member.id]
+      [kind || 'image', dbKey, data_url, req.member.id]
     );
+    // Return a SHORT reference URL instead of the multi-MB data URL — the
+    // admin field stays readable, the public /api/cms/<page> response stays
+    // small, and browsers fetch the actual binary from /api/cms/media/<id>
+    // (which sets Accept-Ranges so video seeking works).
     res.json({
       success: true,
-      url: data_url,
+      url: `/api/cms/media/${rows[0].id}`,
       id: rows[0].id,
       size_kb: Math.round(sizeBytes / 1024)
     });

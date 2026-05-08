@@ -1596,6 +1596,46 @@ router.post('/migrate-blog', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-cms-media-refs ─────────────────────
+// One-shot cleanup: any cms_content row outside the '_media' page that
+// stores a full data: URL gets moved into a fresh '_media' row, and the
+// original row is rewritten to point at /api/cms/media/<id>. After this
+// runs, the admin editor stops showing a multi-MB base64 string in the
+// field, and the public /api/cms/<page> response shrinks dramatically.
+router.post('/migrate-cms-media-refs', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    const { rows } = await query(
+      `SELECT id, page, section, key, value_url
+         FROM cms_content
+        WHERE page <> '_media'
+          AND value_url LIKE 'data:%'`
+    );
+    let migrated = 0;
+    for (const r of rows) {
+      // Stash the data URL in a new _media row
+      const safeKey = `migrated_${r.page}_${r.section}_${r.key}`.replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 90);
+      const kind    = r.value_url.startsWith('data:video') ? 'video' : 'image';
+      const dbKey   = `${safeKey}_${Date.now()}`;
+      const ins = await query(
+        `INSERT INTO cms_content (page, section, key, value_url)
+              VALUES ('_media', $1, $2, $3)
+         ON CONFLICT (page, section, key) DO UPDATE SET value_url=$3, updated_at=NOW()
+         RETURNING id`,
+        [kind, dbKey, r.value_url]
+      );
+      const newRef = `/api/cms/media/${ins.rows[0].id}`;
+      await query(
+        `UPDATE cms_content SET value_url=$1, updated_at=NOW() WHERE id=$2`,
+        [newRef, r.id]
+      );
+      migrated++;
+    }
+    res.json({ success: true, migrated });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-tribe-activities ───────────────────
 // Adds tribe_id to activities (one-to-many: each activity belongs to a
 // tribe), adds activity_id to sessions (one-to-many: each session is one
