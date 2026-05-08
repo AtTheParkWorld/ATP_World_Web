@@ -8,14 +8,17 @@ const achievements = require('../services/achievements');
 // ── GET /api/sessions ─────────────────────────────────────────
 router.get('/', optionalAuth, async (req, res, next) => {
   try {
-    const { city_id, tribe, status = 'upcoming', limit = 20, offset = 0 } = req.query;
+    const { city_id, tribe, tribe_id, activity_id, activity, status = 'upcoming', limit = 20, offset = 0 } = req.query;
 
     let where = ['s.status = $1'];
     const params = [status];
     let idx = 2;
 
-    if (city_id)  { where.push(`s.city_id = $${idx++}`);       params.push(city_id); }
-    if (tribe)    { where.push(`t.slug = $${idx++}`);           params.push(tribe); }
+    if (city_id)     { where.push(`s.city_id = $${idx++}`);       params.push(city_id); }
+    if (tribe)       { where.push(`t.slug = $${idx++}`);           params.push(tribe); }
+    if (tribe_id)    { where.push(`s.tribe_id = $${idx++}`);       params.push(tribe_id); }
+    if (activity_id) { where.push(`s.activity_id = $${idx++}`);    params.push(activity_id); }
+    if (activity)    { where.push(`a.slug = $${idx++}`);           params.push(activity); }
 
     // Theme 11 — return price_points + currency_code so the booking
     // modal can render the payment options. Falls back to the legacy
@@ -28,8 +31,9 @@ router.get('/', optionalAuth, async (req, res, next) => {
                 s.price_points, s.currency_code,
                 s.capacity, s.points_reward, s.status, s.is_live_enabled,
                 s.session_category, s.sport_type, s.courts, s.cancellation_reason,
-                s.city_id, s.coach_id,
+                s.city_id, s.coach_id, s.activity_id,
                 t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
+                a.name AS activity_name, a.slug AS activity_slug, a.icon AS activity_icon,
                 c.name AS city_name,
                 m.first_name AS coach_first, m.last_name AS coach_last,
                 m.avatar_url AS coach_avatar,
@@ -39,6 +43,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
                 (SELECT COUNT(*) FROM waiting_list wl WHERE wl.session_id=s.id) AS waitlist_count
          FROM sessions s
          LEFT JOIN tribes t ON t.id = s.tribe_id
+         LEFT JOIN activities a ON a.id = s.activity_id
          LEFT JOIN cities c ON c.id = s.city_id
          LEFT JOIN members m ON m.id = s.coach_id
          WHERE ${where.join(' AND ')}
@@ -55,8 +60,9 @@ router.get('/', optionalAuth, async (req, res, next) => {
                 0 AS price_points, NULL AS currency_code,
                 s.capacity, s.points_reward, s.status, s.is_live_enabled,
                 s.session_category, s.sport_type, s.courts, s.cancellation_reason,
-                s.city_id, s.coach_id,
+                s.city_id, s.coach_id, s.activity_id,
                 t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
+                a.name AS activity_name, a.slug AS activity_slug, a.icon AS activity_icon,
                 c.name AS city_name,
                 m.first_name AS coach_first, m.last_name AS coach_last,
                 m.avatar_url AS coach_avatar,
@@ -66,6 +72,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
                 (SELECT COUNT(*) FROM waiting_list wl WHERE wl.session_id=s.id) AS waitlist_count
          FROM sessions s
          LEFT JOIN tribes t ON t.id = s.tribe_id
+         LEFT JOIN activities a ON a.id = s.activity_id
          LEFT JOIN cities c ON c.id = s.city_id
          LEFT JOIN members m ON m.id = s.coach_id
          WHERE ${where.join(' AND ')}
@@ -96,6 +103,7 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
     const { rows } = await query(
       `SELECT s.*,
               t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
+              a.name AS activity_name, a.slug AS activity_slug, a.icon AS activity_icon,
               c.name AS city_name,
               m.first_name AS coach_first, m.last_name AS coach_last,
                             (SELECT COUNT(*) FROM bookings b
@@ -106,6 +114,7 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
               (SELECT AVG(rating)::numeric(3,1) FROM session_feedback sf WHERE sf.session_id=s.id) AS avg_rating
        FROM sessions s
        LEFT JOIN tribes t ON t.id = s.tribe_id
+       LEFT JOIN activities a ON a.id = s.activity_id
        LEFT JOIN cities c ON c.id = s.city_id
        LEFT JOIN members m ON m.id = s.coach_id
        WHERE s.id = $1`,
@@ -140,7 +149,7 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
 router.post('/', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const {
-      name, tribe_id, city_id, description, coach_id, location,
+      name, tribe_id, activity_id, city_id, description, coach_id, location,
       location_maps_url, session_type = 'free', price = 0, capacity,
       scheduled_at, duration_mins = 60, points_reward = 10,
       is_live_enabled = false, repeat_dates,
@@ -210,6 +219,20 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
           );
         }
         const { rows } = result;
+        // Apply activity_id post-INSERT so we don't have to rewire two big
+        // VALUES lists for it. SAVEPOINT keeps the column-missing case
+        // (pre-migration DB) from poisoning the transaction.
+        if (activity_id) {
+          await client.query('SAVEPOINT set_activity');
+          try {
+            await client.query(`UPDATE sessions SET activity_id=$1 WHERE id=$2`, [activity_id, rows[0].id]);
+            rows[0].activity_id = activity_id;
+            await client.query('RELEASE SAVEPOINT set_activity');
+          } catch (e) {
+            await client.query('ROLLBACK TO SAVEPOINT set_activity');
+            if (e.code !== '42703') throw e;
+          }
+        }
         sessions.push(rows[0]);
       }
       return sessions;
@@ -424,7 +447,7 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { id } = req.params;
     const {
-      name, tribe_id, city_id, description, coach_id, location, location_maps_url,
+      name, tribe_id, activity_id, city_id, description, coach_id, location, location_maps_url,
       session_type, capacity, scheduled_at, duration_mins, points_reward,
       is_live_enabled, session_category, sport_type, courts,
       // Paid-session pricing (Theme 11)
@@ -471,6 +494,18 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
       rows = r.rows;
     }
     if (!rows.length) return res.status(404).json({ error: 'Session not found' });
+
+    // Apply activity_id separately so we don't have to expand both UPDATE
+    // statements above. Pre-migration DBs (no activity_id column) skip silently.
+    if (activity_id !== undefined) {
+      try {
+        await query(`UPDATE sessions SET activity_id=$1 WHERE id=$2`, [activity_id || null, id]);
+        rows[0].activity_id = activity_id || null;
+      } catch (e) {
+        if (e.code !== '42703') throw e;
+      }
+    }
+
     res.json({ session: rows[0] });
   } catch (err) { next(err); }
 });

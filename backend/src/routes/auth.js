@@ -1596,6 +1596,95 @@ router.post('/migrate-blog', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-tribe-activities ───────────────────
+// Adds tribe_id to activities (one-to-many: each activity belongs to a
+// tribe), adds activity_id to sessions (one-to-many: each session is one
+// activity), and seeds the founder-defined activity catalogue per tribe.
+// Idempotent + gated by ADMIN_SETUP_KEY.
+router.post('/migrate-tribe-activities', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    // 1. ensure tribes exist (founder spec: Stronger / Faster / Better)
+    const seedTribes = [
+      { name: 'Stronger', slug: 'stronger', color: '#7AC231', description: 'Strength, power, hybrid training.' },
+      { name: 'Faster',   slug: 'faster',   color: '#F59E0B', description: 'Endurance, cardio, speed.' },
+      { name: 'Better',   slug: 'better',   color: '#60A5FA', description: 'Mobility, mind, recovery.' },
+    ];
+    for (const t of seedTribes) {
+      await query(
+        `INSERT INTO tribes (name, slug, color, description)
+              VALUES ($1, $2, $3, $4)
+         ON CONFLICT (slug) DO UPDATE SET
+           name=EXCLUDED.name, color=COALESCE(tribes.color, EXCLUDED.color),
+           description=COALESCE(tribes.description, EXCLUDED.description)`,
+        [t.name, t.slug, t.color, t.description]
+      );
+    }
+
+    // 2. add tribe_id to activities
+    await query(`ALTER TABLE activities ADD COLUMN IF NOT EXISTS tribe_id UUID REFERENCES tribes(id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_activities_tribe ON activities(tribe_id) WHERE tribe_id IS NOT NULL`);
+
+    // 3. add activity_id to sessions
+    await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS activity_id UUID REFERENCES activities(id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_sessions_activity ON sessions(activity_id) WHERE activity_id IS NOT NULL`);
+
+    // 4. seed activities per tribe (founder spec). Match on (slug) so re-runs
+    // refresh names + sort_order without duplicating.
+    const tribeRows = await query(`SELECT id, slug FROM tribes WHERE slug IN ('stronger','faster','better')`);
+    const tribeBySlug = {};
+    tribeRows.rows.forEach(r => { tribeBySlug[r.slug] = r.id; });
+
+    const seedActivities = [
+      { tribe: 'stronger', name: 'Functional Training',  icon: '🏋️', sort: 10 },
+      { tribe: 'stronger', name: 'Cardio Calisthenics',  icon: '💪', sort: 20 },
+      { tribe: 'stronger', name: 'Boot Camp',            icon: '🥾', sort: 30 },
+      { tribe: 'stronger', name: 'Circuit Training',     icon: '🔁', sort: 40 },
+      { tribe: 'stronger', name: 'Power Lifting',        icon: '🏋️‍♂️', sort: 50 },
+      { tribe: 'stronger', name: 'Hybrid Training',      icon: '⚡', sort: 60 },
+      { tribe: 'faster',   name: 'Speed Running',        icon: '🏃', sort: 10 },
+      { tribe: 'faster',   name: 'Long Distance Running',icon: '🏃‍♀️', sort: 20 },
+      { tribe: 'faster',   name: 'Swimming',             icon: '🏊', sort: 30 },
+      { tribe: 'faster',   name: 'Cycling',              icon: '🚴', sort: 40 },
+      { tribe: 'better',   name: 'Traditional Yoga',     icon: '🧘', sort: 10 },
+      { tribe: 'better',   name: 'Sound Healing',        icon: '🔔', sort: 20 },
+      { tribe: 'better',   name: 'Power Yoga',           icon: '🧘‍♀️', sort: 30 },
+      { tribe: 'better',   name: 'Latino Dance',         icon: '💃', sort: 40 },
+      { tribe: 'better',   name: 'Zumba',                icon: '🕺', sort: 50 },
+      { tribe: 'better',   name: 'Ashtanga Yoga',        icon: '🪷', sort: 60 },
+    ];
+    function slugify(s) {
+      return String(s || '').toLowerCase().trim().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+    }
+    let inserted = 0, updated = 0;
+    for (const a of seedActivities) {
+      const tribeId = tribeBySlug[a.tribe];
+      if (!tribeId) continue;
+      const slug = slugify(a.name);
+      const r = await query(
+        `INSERT INTO activities (name, slug, icon, sort_order, tribe_id, is_active)
+              VALUES ($1, $2, $3, $4, $5, true)
+         ON CONFLICT (slug) DO UPDATE SET
+           name=EXCLUDED.name, icon=EXCLUDED.icon,
+           sort_order=EXCLUDED.sort_order, tribe_id=EXCLUDED.tribe_id,
+           is_active=true
+         RETURNING (xmax = 0) AS inserted`,
+        [a.name, slug, a.icon, a.sort, tribeId]
+      );
+      if (r.rows[0] && r.rows[0].inserted) inserted++; else updated++;
+    }
+
+    res.json({
+      success: true,
+      tribes_seeded: seedTribes.length,
+      activities_inserted: inserted,
+      activities_updated: updated,
+    });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-avatar-text ────────────────────────
 // avatar_url was VARCHAR(500) — too small for the data: URLs we store
 // when members upload an avatar straight from the browser. Bump it to

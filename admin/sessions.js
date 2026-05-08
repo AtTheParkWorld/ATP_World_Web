@@ -153,6 +153,48 @@ async function loadTribes() {
   } catch(e) { console.warn('Tribes load error:', e.message); }
 }
 
+// Activity catalogue cached per page-load. The session form's "Activity"
+// select is populated on demand based on the chosen tribe.
+var SESSION_ACTIVITIES_CACHE = null;
+async function loadActivitiesForSession() {
+  try {
+    var res  = await fetch(ATP_API + '/activities');
+    var data = await res.json();
+    SESSION_ACTIVITIES_CACHE = (data && data.activities) || [];
+    filterActivitiesByTribe(); // initial render uses currently selected tribe (or all)
+  } catch(e) { console.warn('Activities load error:', e.message); SESSION_ACTIVITIES_CACHE = []; }
+}
+
+// Cascading filter: when tribe changes, narrow the Activity dropdown to
+// activities tagged with that tribe. "No tribe" shows the full catalogue
+// so admins can still pick a tribe-less activity. Preserves the current
+// activity selection if it still matches.
+function filterActivitiesByTribe() {
+  var tribeSel = document.getElementById('sTribe');
+  var actSel   = document.getElementById('sActivity');
+  if (!actSel) return;
+  if (!SESSION_ACTIVITIES_CACHE) {
+    actSel.innerHTML = '<option value="">Loading activities…</option>';
+    return;
+  }
+  var tribeId = tribeSel ? tribeSel.value : '';
+  var keep    = actSel.value;
+  var list    = SESSION_ACTIVITIES_CACHE.filter(function(a){
+    return tribeId ? (a.tribe_id === tribeId) : true;
+  });
+  if (!list.length) {
+    actSel.innerHTML = '<option value="">' + (tribeId ? 'No activities for this tribe yet' : 'No activities defined') + '</option>';
+    return;
+  }
+  actSel.innerHTML = '<option value="">— Select activity —</option>' +
+    list.map(function(a){
+      var icon = a.icon ? a.icon + ' ' : '';
+      return '<option value="' + a.id + '">' + icon + (a.name || '').replace(/</g,'&lt;') + '</option>';
+    }).join('');
+  // Restore selection if it still belongs to the visible list
+  if (keep && list.some(function(a){ return a.id === keep; })) actSel.value = keep;
+}
+
 function updateSportLevels() {
   buildCourtsUI();
 }
@@ -296,8 +338,9 @@ async function createSession() {
   var desc      = document.getElementById('sDesc').value.trim();
   var maps      = document.getElementById('sMaps').value.trim();
   var live      = document.getElementById('sLiveEnabled').checked;
-  var coach_id  = document.getElementById('sCoach').value || null;
-  var tribe_id  = document.getElementById('sTribe').value || null;
+  var coach_id    = document.getElementById('sCoach').value || null;
+  var tribe_id    = document.getElementById('sTribe').value || null;
+  var activity_id = (document.getElementById('sActivity') || {}).value || null;
   var cat       = (document.querySelector('.session-cat-btn.active') || {}).dataset?.cat || 'regular';
   var sport     = document.getElementById('sSport').value || null;
 
@@ -338,7 +381,7 @@ async function createSession() {
   var scheduled_at = repeat_dates ? repeat_dates[0] : document.getElementById('sEditDate')?.value;
 
   var payload = {
-    name, tribe_id, city_id, description: desc, coach_id, location,
+    name, tribe_id, activity_id, city_id, description: desc, coach_id, location,
     location_maps_url: maps, session_type: stype, capacity,
     scheduled_at, duration_mins: duration, points_reward: points,
     is_live_enabled: live, session_category: cat,
@@ -425,6 +468,14 @@ function editSession(s) {
   if (document.getElementById('sCurrency'))    document.getElementById('sCurrency').value    = s.currency_code || 'AED';
   if (s.coach_id) document.getElementById('sCoach').value = s.coach_id;
   if (s.tribe_id) document.getElementById('sTribe').value = s.tribe_id;
+  // Activity: re-filter the dropdown to the selected tribe, then pick the
+  // saved activity. Wrapped in setTimeout so it runs after the activities
+  // catalogue resolves on first edit-open.
+  setTimeout(function(){
+    if (typeof filterActivitiesByTribe === 'function') filterActivitiesByTribe();
+    var actEl = document.getElementById('sActivity');
+    if (actEl && s.activity_id) actEl.value = s.activity_id;
+  }, 50);
   // Set city + country
   var cityObj = ALL_CITIES.find(function(c){ return c.id === s.city_id; });
   if (cityObj) {

@@ -271,8 +271,14 @@
             </div>
             <div class="admin-form-group">
               <label class="admin-form-label" for="sTribe">Tribe</label>
-              <select class="admin-form-select" id="sTribe">
+              <select class="admin-form-select" id="sTribe" onchange="filterActivitiesByTribe()">
                 <option value="">No tribe</option>
+              </select>
+            </div>
+            <div class="admin-form-group">
+              <label class="admin-form-label" for="sActivity">Activity</label>
+              <select class="admin-form-select" id="sActivity">
+                <option value="">Select tribe first</option>
               </select>
             </div>
             <div class="admin-form-group">
@@ -1185,8 +1191,14 @@
             <div id="activityFormWrap" style="display:none;background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:16px">
               <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:12px" id="activityFormTitle">New activity</div>
               <input type="hidden" id="actEditId" value="">
-              <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:14px">
+              <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px">
                 <div><label class="admin-form-label" for="actName">Name *</label><input class="admin-form-input" type="text" id="actName" placeholder="e.g. Trail Running"></div>
+                <div>
+                  <label class="admin-form-label" for="actTribe">Tribe *</label>
+                  <select class="admin-form-input" id="actTribe">
+                    <option value="">No tribe</option>
+                  </select>
+                </div>
                 <div><label class="admin-form-label" for="actIcon">Icon (emoji)</label><input class="admin-form-input" type="text" id="actIcon" placeholder="🏃" maxlength="4"></div>
                 <div><label class="admin-form-label" for="actSort">Sort order</label><input class="admin-form-input" type="number" id="actSort" value="100" min="0" max="9999"></div>
               </div>

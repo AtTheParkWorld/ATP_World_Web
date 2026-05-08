@@ -337,7 +337,13 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
           </button>
         </div>
       </div>
-      <div class="day-filters">
+      <div class="day-filters" style="align-items:center">
+        <select id="activityFilter" class="day-btn" style="padding:8px 12px;cursor:pointer" onchange="filterActivity(this.value)">
+          <option value="all">All activities</option>
+        </select>
+        <select id="cityFilter" class="day-btn" style="padding:8px 12px;cursor:pointer" onchange="filterCity(this.value)">
+          <option value="all">All cities</option>
+        </select>
         <button class="day-btn active" data-atp-call="filterDay" data-args='["all"]'>All days</button>
         <button class="day-btn" data-atp-call="filterDay" data-args='["Monday"]'>Mon</button>
         <button class="day-btn" data-atp-call="filterDay" data-args='["Tuesday"]'>Tue</button>
@@ -510,13 +516,15 @@ document.querySelectorAll('.nav-links a').forEach(function(a){
   if(a.getAttribute('href') === 'sessions.html') a.classList.add('active');
 });
 
-var currentTribe = 'all', currentDay = 'all';
+var currentTribe = 'all', currentDay = 'all', currentActivity = 'all', currentCity = 'all';
 var activeSession = {};
 
 function filterTribe(tribe, btn) {
   currentTribe = tribe;
   document.querySelectorAll('.filter-tab').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
+  // Tribe change should narrow the activity dropdown to that tribe.
+  populateActivityFilter();
   applyFilters();
 }
 function filterDay(day, btn) {
@@ -525,17 +533,79 @@ function filterDay(day, btn) {
   btn.classList.add('active');
   applyFilters();
 }
+function filterActivity(slugOrId) {
+  currentActivity = slugOrId || 'all';
+  applyFilters();
+}
+function filterCity(cityId) {
+  currentCity = cityId || 'all';
+  applyFilters();
+}
 function resetFilters() {
-  currentTribe = 'all'; currentDay = 'all';
+  currentTribe = 'all'; currentDay = 'all'; currentActivity = 'all'; currentCity = 'all';
   document.querySelectorAll('.filter-tab')[0].click();
   document.querySelectorAll('.day-btn')[0].click();
+  var a = document.getElementById('activityFilter'); if (a) a.value = 'all';
+  var c = document.getElementById('cityFilter');     if (c) c.value = 'all';
 }
+
+// Populate the Activity dropdown from /api/activities, narrowed to the
+// currently selected tribe (so the picker mirrors the tribe → activity
+// hierarchy admins set up). Falls back to all activities when the tribe
+// filter is "all". Cached so we only hit the API once per page load.
+var ACTIVITIES_CACHE = null;
+function populateActivityFilter() {
+  var sel = document.getElementById('activityFilter');
+  if (!sel) return;
+  var paint = function(list){
+    var visible = list.filter(function(a){
+      return currentTribe === 'all' || (a.tribe_slug || '') === currentTribe;
+    });
+    var keep = sel.value;
+    sel.innerHTML = '<option value="all">All activities</option>' +
+      visible.map(function(a){
+        var icon = a.icon ? a.icon + ' ' : '';
+        return '<option value="' + (a.slug || a.id) + '">' + icon + (a.name || '').replace(/</g,'&lt;') + '</option>';
+      }).join('');
+    if (keep && visible.some(function(a){ return (a.slug || a.id) === keep; })) sel.value = keep;
+    else { sel.value = 'all'; currentActivity = 'all'; }
+  };
+  if (ACTIVITIES_CACHE) { paint(ACTIVITIES_CACHE); return; }
+  fetch('/api/activities')
+    .then(function(r){ return r.ok ? r.json() : { activities: [] }; })
+    .then(function(d){ ACTIVITIES_CACHE = (d && d.activities) || []; paint(ACTIVITIES_CACHE); })
+    .catch(function(){});
+}
+
+// City dropdown — populated from the loaded sessions so we only show
+// cities that actually have a session this week.
+function populateCityFilter() {
+  var sel = document.getElementById('cityFilter');
+  if (!sel) return;
+  var seen = {};
+  document.querySelectorAll('.session-card').forEach(function(c){
+    var id = c.dataset.city || '';
+    var label = (c.querySelector('.sc-loc') || {}).textContent || '';
+    // Pull the city tag (after the " · " separator) from the location line.
+    var cityName = (label.split(' · ')[1] || '').trim();
+    if (id && cityName && !seen[id]) seen[id] = cityName;
+  });
+  var keep = sel.value;
+  var entries = Object.keys(seen).map(function(id){ return { id: id, name: seen[id] }; })
+    .sort(function(a,b){ return a.name.localeCompare(b.name); });
+  sel.innerHTML = '<option value="all">All cities</option>' +
+    entries.map(function(e){ return '<option value="' + e.id + '">' + e.name.replace(/</g,'&lt;') + '</option>'; }).join('');
+  if (keep && entries.some(function(e){ return e.id === keep; })) sel.value = keep;
+}
+
 function applyFilters() {
   var cards = document.querySelectorAll('.session-card');
   var count = 0;
   cards.forEach(function(c) {
-    var ok = (currentTribe === 'all' || c.dataset.tribe === currentTribe)
-           && (currentDay   === 'all' || c.dataset.day   === currentDay);
+    var ok = (currentTribe    === 'all' || c.dataset.tribe    === currentTribe)
+           && (currentDay      === 'all' || c.dataset.day      === currentDay)
+           && (currentActivity === 'all' || c.dataset.activity === currentActivity)
+           && (currentCity     === 'all' || c.dataset.city     === currentCity);
     c.style.display = ok ? '' : 'none';
     if(ok) count++;
   });
@@ -1313,6 +1383,8 @@ function renderSessionsGrid(sessions) {
     article.className = 'session-card reveal visible';
     article.setAttribute('data-tribe', tribe);
     article.setAttribute('data-day', dayName);
+    article.setAttribute('data-activity', s.activity_slug || s.activity_id || '');
+    article.setAttribute('data-city', s.city_id || '');
     article.setAttribute('data-session-id', s.id);
     article.innerHTML =
       '<span class="sc-free">' + escapeHtml(priceTag) + '</span>' +
@@ -1331,6 +1403,12 @@ function renderSessionsGrid(sessions) {
   // Insert cards before the state divs
   if (loading) grid.insertBefore(frag, loading);
   else grid.appendChild(frag);
+
+  // Populate the Activity + City filter dropdowns now that cards exist.
+  // Activity comes from /api/activities (full catalogue), City is derived
+  // from the actually-loaded sessions so unused cities don't pollute the list.
+  if (typeof populateActivityFilter === 'function') populateActivityFilter();
+  if (typeof populateCityFilter === 'function')     populateCityFilter();
 
   applyFilters();
 }

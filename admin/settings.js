@@ -163,7 +163,33 @@ function deleteAnnouncement(e, btn) {
 // ACTIVITIES (#9 admin)
 // ════════════════════════════════════════════════════════════
 
+var ACTIVITY_TRIBES_CACHE = null;
+function _loadActivityTribesOptions() {
+  // Populate the tribe dropdown on the activity form. Cached per page load.
+  var sel = document.getElementById('actTribe');
+  if (!sel) return Promise.resolve([]);
+  if (ACTIVITY_TRIBES_CACHE) {
+    sel.innerHTML = '<option value="">No tribe</option>' +
+      ACTIVITY_TRIBES_CACHE.map(function(t){
+        return '<option value="' + t.id + '">' + (t.name || '').replace(/</g,'&lt;') + '</option>';
+      }).join('');
+    return Promise.resolve(ACTIVITY_TRIBES_CACHE);
+  }
+  return fetch(ATP_API + '/sessions/tribes')
+    .then(function(r){ return r.ok ? r.json() : { tribes: [] }; })
+    .then(function(d){
+      ACTIVITY_TRIBES_CACHE = (d && d.tribes) || [];
+      sel.innerHTML = '<option value="">No tribe</option>' +
+        ACTIVITY_TRIBES_CACHE.map(function(t){
+          return '<option value="' + t.id + '">' + (t.name || '').replace(/</g,'&lt;') + '</option>';
+        }).join('');
+      return ACTIVITY_TRIBES_CACHE;
+    })
+    .catch(function(){ return []; });
+}
+
 function loadActivitiesAdmin() {
+  _loadActivityTribesOptions();
   fetch(ATP_API + '/activities/admin', { headers: { 'Authorization': 'Bearer ' + getToken() } })
     .then(function(r){ return r.json(); })
     .then(function(data){ renderActivitiesAdmin((data && data.activities) || []); })
@@ -185,8 +211,12 @@ function renderActivitiesAdmin(list) {
         var icon = a.icon || '🏷️';
         var border = a.is_active ? 'rgba(122,194,49,.3)' : 'rgba(255,255,255,.08)';
         var op = a.is_active ? '1' : '.45';
+        var tribe = a.tribe_name
+          ? '<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:20px;background:rgba(122,194,49,.12);color:#7AC231;border:1px solid rgba(122,194,49,.3);margin-bottom:6px">' + a.tribe_name.replace(/</g,'&lt;') + '</span>'
+          : '<span style="display:inline-block;font-size:10px;color:#666;margin-bottom:6px">No tribe</span>';
         return '<div style="background:#0d0d0d;border:1px solid ' + border + ';border-radius:10px;padding:14px;opacity:' + op + '">' +
           '<div style="font-size:24px;margin-bottom:8px">' + icon + '</div>' +
+          '<div>' + tribe + '</div>' +
           '<div style="font-size:14px;font-weight:700;margin-bottom:2px">' + name + '</div>' +
           '<div style="font-size:11px;color:#666;margin-bottom:10px">Order ' + (a.sort_order || 100) + ' · ' + (a.is_active ? 'Active' : 'Off') + '</div>' +
           '<div style="display:flex;gap:6px">' +
@@ -203,6 +233,9 @@ function showActivityForm() {
   document.getElementById('activityFormTitle').textContent = 'New activity';
   ['actEditId','actName','actIcon'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
   document.getElementById('actSort').value = '100';
+  _loadActivityTribesOptions().then(function(){
+    var t = document.getElementById('actTribe'); if (t) t.value = '';
+  });
   document.getElementById('actName').focus();
 }
 function cancelActivityForm() {
@@ -221,6 +254,10 @@ function editActivity(e, btn) {
       document.getElementById('actName').value   = a.name || '';
       document.getElementById('actIcon').value   = a.icon || '';
       document.getElementById('actSort').value   = a.sort_order || 100;
+      _loadActivityTribesOptions().then(function(){
+        var t = document.getElementById('actTribe');
+        if (t) t.value = a.tribe_id || '';
+      });
     });
 }
 function saveActivity() {
@@ -229,6 +266,7 @@ function saveActivity() {
     name:       document.getElementById('actName').value.trim(),
     icon:       document.getElementById('actIcon').value.trim() || null,
     sort_order: Number(document.getElementById('actSort').value) || 100,
+    tribe_id:   document.getElementById('actTribe').value || null,
   };
   if (!body.name) { showToast('Name required', true); return; }
   var url    = id ? (ATP_API + '/activities/admin/' + id) : (ATP_API + '/activities/admin');

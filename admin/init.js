@@ -30,7 +30,7 @@ async function cancelSession(sessionId, sessionName) {
   var _orig = window.showAdminSection;
   window.showAdminSection = function(name, btn) {
     if (_orig) _orig(name, btn);
-    if (name === 'sessions')   { loadCities(); loadCoaches(); loadTribes(); setTimeout(loadSessionsList, 200); }
+    if (name === 'sessions')   { loadCities(); loadCoaches(); loadTribes(); loadActivitiesForSession(); setTimeout(loadSessionsList, 200); }
     if (name === 'challenges') { loadChallengesList(); populateChallengeCities(); regenerateBadge(); }
     if (name === 'coaches')    { loadCoachesSection(); }
     if (name === 'blog')       { loadBlogSection(); }
