@@ -334,6 +334,20 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .referral-code{font-family:var(--ff-display);font-size:32px;font-weight:900;color:var(--green);letter-spacing:.06em;margin:12px 0}
 .referral-copy-btn{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;padding:10px 20px;border-radius:var(--radius);border:1px solid rgba(122,194,49,.3);background:rgba(122,194,49,.08);color:var(--green);cursor:pointer;transition:all .2s}
 .referral-copy-btn:hover{background:rgba(122,194,49,.15)}
+
+/* Share channels — buttons live on the referral hero on Overview + My Tribe.
+   WhatsApp is the primary CTA (UAE/Oman market dominance). Outline buttons
+   handle Copy / Email / native share for the rest. */
+.share-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.share-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:var(--radius);font-size:13px;font-weight:700;cursor:pointer;border:1px solid rgba(255,255,255,.14);background:rgba(255,255,255,.04);color:var(--white);transition:background .15s,border-color .15s,transform .1s;font-family:inherit;letter-spacing:.02em}
+.share-btn:hover{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.22);transform:translateY(-1px)}
+.share-btn:active{transform:translateY(0)}
+.share-btn svg{width:14px;height:14px;flex-shrink:0}
+.share-btn--whatsapp{background:#25D366;color:#0a0a0a;border-color:#25D366;font-weight:800}
+.share-btn--whatsapp:hover{background:#22c55e;color:#0a0a0a;border-color:#22c55e}
+.share-btn--whatsapp svg{width:16px;height:16px}
+.share-btn--icon{padding:10px;width:40px;height:40px;justify-content:center}
+.share-btn--icon svg{width:16px;height:16px}
 .referral-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1px;background:rgba(255,255,255,.06);border-radius:var(--radius);overflow:hidden;margin-top:16px}
 .ref-stat{background:var(--dark2);padding:16px;text-align:center}
 .ref-stat-num{font-family:var(--ff-display);font-size:26px;font-weight:900;color:var(--white)}
@@ -718,23 +732,29 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
         <!-- Referral mini-hero — first thing visible on the profile so the
              member's friendly code is always one tap away from being shared.
              Populated by applyMemberToPage() from m.referral_code. -->
-        <div class="ref-hero-mini" id="overviewRefHero" style="display:flex;align-items:center;gap:14px;background:linear-gradient(120deg,rgba(122,194,49,.12),rgba(122,194,49,.04));border:1px solid rgba(122,194,49,.28);border-radius:var(--radius-lg);padding:16px 18px;margin-bottom:16px;flex-wrap:wrap">
-          <div style="flex:1;min-width:200px">
+        <div class="ref-hero-mini" id="overviewRefHero" style="display:flex;align-items:center;gap:18px;background:linear-gradient(120deg,rgba(122,194,49,.12),rgba(122,194,49,.04));border:1px solid rgba(122,194,49,.28);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:16px;flex-wrap:wrap">
+          <div style="flex:1;min-width:220px">
             <div style="display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);font-weight:700;margin-bottom:6px">
               <span>★ Your referral code</span>
               <span id="overviewRefTribe" style="display:none;font-size:10px;letter-spacing:.08em;color:var(--green-light);background:rgba(122,194,49,.12);border:1px solid rgba(122,194,49,.28);border-radius:999px;padding:2px 8px"></span>
             </div>
-            <div id="overviewRefCode" style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:var(--white);letter-spacing:.04em;line-height:1.05">…</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:4px">Share with friends — earn <strong style="color:var(--green)">50 pts</strong> when they sign up, plus 1–2 pts every check-in.</div>
+            <div id="overviewRefCode" style="font-family:var(--ff-display);font-size:28px;font-weight:900;color:var(--white);letter-spacing:.04em;line-height:1.05">…</div>
+            <div style="font-size:12px;color:var(--muted);margin-top:6px">Share your code — earn <strong style="color:var(--green)">50 pts</strong> per signup, plus 1–2 pts every check-in.</div>
           </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="referral-copy-btn" data-atp-call="shareReferral" style="background:var(--green);color:#0a0a0a;border:none;font-weight:800">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-              Share
+          <div class="share-row">
+            <button class="share-btn share-btn--whatsapp" data-atp-call="shareReferralWhatsApp" aria-label="Share on WhatsApp">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4l-2-1c-.3-.1-.5-.1-.7.1-.2.2-.7.8-.9 1-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.4-.5-.6-.5h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.2 0 1.3.9 2.5 1 2.7.1.2 1.8 2.7 4.4 3.8 1.6.7 2.2.7 3 .6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.4c1.5.8 3.1 1.2 4.8 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18.3c-1.5 0-3-.4-4.3-1.2l-.3-.2-3.2.8.9-3-.2-.3c-.9-1.4-1.4-3-1.4-4.6 0-4.6 3.7-8.3 8.3-8.3s8.3 3.7 8.3 8.3-3.7 8.5-8.1 8.5z"/></svg>
+              WhatsApp
             </button>
-            <button class="referral-copy-btn" data-atp-call="copyReferral" id="overviewRefCopyBtn">
-              <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="9" height="9" rx="1"/><path d="M3 12H2a1 1 0 01-1-1V2a1 1 0 011-1h9a1 1 0 011 1v1"/></svg>
-              <span id="overviewRefCopyLabel">Copy link</span>
+            <button class="share-btn" data-atp-call="copyReferralCode" aria-label="Copy referral code">
+              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="9" height="9" rx="1"/><path d="M3 12H2a1 1 0 01-1-1V2a1 1 0 011-1h9a1 1 0 011 1v1"/></svg>
+              <span id="overviewRefCopyLabel">Copy code</span>
+            </button>
+            <button class="share-btn share-btn--icon" data-atp-call="shareReferralEmail" aria-label="Share via email" title="Email">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
+            </button>
+            <button class="share-btn share-btn--icon" data-atp-call="shareReferral" aria-label="More share options" title="More">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
             </button>
           </div>
         </div>
@@ -858,14 +878,20 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
                    applyMemberToPage from m.referral_code. Falls back to
                    member_number for legacy accounts. -->
               <div class="referral-code" id="refCode" style="font-family:var(--ff-display);letter-spacing:.04em">…</div>
-              <div style="display:flex;gap:8px;flex-wrap:wrap;justify-content:center;margin-top:10px">
-                <button class="referral-copy-btn" data-atp-call="shareReferral" style="background:var(--green);color:#0a0a0a;border:none;font-weight:800">
-                  <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-                  Share with friends
+              <div class="share-row" style="justify-content:center;margin-top:14px">
+                <button class="share-btn share-btn--whatsapp" data-atp-call="shareReferralWhatsApp" aria-label="Share on WhatsApp">
+                  <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4l-2-1c-.3-.1-.5-.1-.7.1-.2.2-.7.8-.9 1-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.4-.5-.6-.5h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.2 0 1.3.9 2.5 1 2.7.1.2 1.8 2.7 4.4 3.8 1.6.7 2.2.7 3 .6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.4c1.5.8 3.1 1.2 4.8 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18.3c-1.5 0-3-.4-4.3-1.2l-.3-.2-3.2.8.9-3-.2-.3c-.9-1.4-1.4-3-1.4-4.6 0-4.6 3.7-8.3 8.3-8.3s8.3 3.7 8.3 8.3-3.7 8.5-8.1 8.5z"/></svg>
+                  Share on WhatsApp
                 </button>
-                <button class="referral-copy-btn" data-atp-call="copyReferral">
-                  <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="9" height="9" rx="1"/><path d="M3 12H2a1 1 0 01-1-1V2a1 1 0 011-1h9a1 1 0 011 1v1"/></svg>
-                  Copy link
+                <button class="share-btn" data-atp-call="copyReferralCode" aria-label="Copy referral code">
+                  <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="9" height="9" rx="1"/><path d="M3 12H2a1 1 0 01-1-1V2a1 1 0 011-1h9a1 1 0 011 1v1"/></svg>
+                  Copy code
+                </button>
+                <button class="share-btn share-btn--icon" data-atp-call="shareReferralEmail" aria-label="Share via email" title="Email">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,6 12,13 2,6"/></svg>
+                </button>
+                <button class="share-btn share-btn--icon" data-atp-call="shareReferral" aria-label="More share options" title="More">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
                 </button>
               </div>
               <div class="referral-stats">
@@ -1277,14 +1303,9 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
         <button class="upgrade-btn">⭐ Upgrade to Premium</button>
       </div>
 
-      <div class="sub-card">
-        <div class="sub-card-label">Referral Link</div>
-        <div style="font-size:13px;color:var(--muted);margin-bottom:12px;line-height:1.6">Share ATP. Every referral earns <strong style="color:var(--green)">50 points</strong>.</div>
-        <div style="background:var(--dark3);border-radius:var(--radius);padding:11px 14px;display:flex;justify-content:space-between;align-items:center;cursor:pointer" data-atp-call="copyReferral">
-          <span style="font-size:12px;color:var(--light);font-family:monospace" id="referralLinkText">Loading…</span>
-          <span style="font-size:11px;font-weight:700;color:var(--green)" id="copyText">Copy</span>
-        </div>
-      </div>
+      <!-- Referral sub-card removed — code + share buttons now live in the
+           Overview hero + My Tribe tab so the same UI isn't duplicated three
+           times. -->
 
       <!-- Theme 9 / #33 — Featured best-seller from Shopify, replaces
            the old static Quick Stats card. Lazy-loaded by
@@ -2448,11 +2469,11 @@ function _atpReferralMessage() {
 
 // Share-or-copy. On mobile (Web Share API supported) opens the native
 // share sheet for one-tap WhatsApp / SMS / etc.; on desktop copies the
-// link to the clipboard.
+// invite text to the clipboard.
 function shareReferral() {
   var url  = _atpReferralUrl();
   var code = _atpReferralCode();
-  if (!url) {
+  if (!code) {
     if (window.ATPComponents) ATPComponents.toast('Referral code not ready yet — try again in a moment.', 'warning');
     return;
   }
@@ -2464,24 +2485,52 @@ function shareReferral() {
     }).catch(function(){ /* user dismissed share sheet */ });
     return;
   }
-  // Desktop fallback — copy + toast.
-  if (navigator.clipboard) navigator.clipboard.writeText(url).catch(function(){});
-  if (window.ATPComponents) ATPComponents.toast('Link copied: ' + url, 'success');
+  // Desktop fallback — copy the full invite message + toast.
+  var msg = _atpReferralMessage();
+  if (navigator.clipboard) navigator.clipboard.writeText(msg).catch(function(){});
+  if (window.ATPComponents) ATPComponents.toast('Invite copied — paste anywhere.', 'success');
 }
 
-// Legacy entry point — older buttons still call copyReferral. Now just
-// copies; for one-tap social share use shareReferral().
-function copyReferral(){
-  var url = _atpReferralUrl();
-  if (!url) {
-    if (window.ATPComponents) ATPComponents.toast('Referral link not ready yet — try again in a moment.', 'warning');
+// One-tap WhatsApp share — opens wa.me with the prefilled invite message.
+// Works on mobile (jumps to the WhatsApp app) and desktop (web.whatsapp.com).
+function shareReferralWhatsApp() {
+  var code = _atpReferralCode();
+  if (!code) {
+    if (window.ATPComponents) ATPComponents.toast('Referral code not ready yet — try again in a moment.', 'warning');
     return;
   }
-  if (navigator.clipboard) navigator.clipboard.writeText(url).catch(function(){});
-  var el = document.getElementById('copyText');
-  if (el) { el.textContent = 'Copied!'; setTimeout(function(){ el.textContent = 'Copy'; }, 2000); }
-  if (window.ATPComponents) ATPComponents.toast('Link copied: ' + url, 'success');
+  var msg = _atpReferralMessage();
+  window.open('https://wa.me/?text=' + encodeURIComponent(msg), '_blank', 'noopener');
 }
+
+// Email share — opens the user's mail client with subject + body prefilled.
+function shareReferralEmail() {
+  var code = _atpReferralCode();
+  if (!code) {
+    if (window.ATPComponents) ATPComponents.toast('Referral code not ready yet — try again in a moment.', 'warning');
+    return;
+  }
+  var subject = "Join me on At The Park";
+  var body    = _atpReferralMessage();
+  window.location.href = 'mailto:?subject=' + encodeURIComponent(subject) +
+                        '&body=' + encodeURIComponent(body);
+}
+
+// Copies just the code (e.g. "fredy-a7k") so the friend types it on /join.
+function copyReferralCode() {
+  var code = _atpReferralCode();
+  if (!code) {
+    if (window.ATPComponents) ATPComponents.toast('Referral code not ready yet — try again in a moment.', 'warning');
+    return;
+  }
+  if (navigator.clipboard) navigator.clipboard.writeText(code).catch(function(){});
+  if (window.ATPComponents) ATPComponents.toast('Code copied: ' + code, 'success');
+}
+
+// Legacy entry point — older buttons still call copyReferral. Aliased to
+// the new copyReferralCode (which copies just the code, not the URL) so
+// the rebrand from "Copy link" → "Copy code" is consistent across the app.
+function copyReferral() { return copyReferralCode(); }
 
 // Activities multi-select — toggle individual pill
 function togglePill(e, btn){
