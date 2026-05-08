@@ -1319,6 +1319,23 @@ function formatSessionTime(scheduledAt) {
   var h12 = h > 12 ? h-12 : (h===0?12:h);
   return h12 + ':' + (m<10?'0':'')+m + ' ' + ampm;
 }
+
+// Render a "07:00 AM – 08:00 AM" range when ends_at is available, falling
+// back to scheduled_at + duration_mins for legacy rows that don't yet
+// have ends_at populated. Returns just the start time when neither end
+// signal is present.
+function formatSessionTimeRange(s) {
+  if (!s) return '';
+  var startStr = formatSessionTime(s.scheduled_at);
+  var endIso = s.ends_at;
+  if (!endIso && s.scheduled_at && s.duration_mins) {
+    var d = new Date(s.scheduled_at);
+    d.setMinutes(d.getMinutes() + parseInt(s.duration_mins, 10));
+    endIso = d.toISOString();
+  }
+  if (!endIso) return startStr;
+  return startStr + ' – ' + formatSessionTime(endIso);
+}
 function normalizeTribe(slug) {
   if (!slug) return '';
   var s = String(slug).toLowerCase();
@@ -1355,7 +1372,8 @@ function renderSessionsGrid(sessions) {
     var dow     = d.getDay();
     var dayName = DAY_NAMES_FULL[dow];
     var time    = formatSessionTime(s.scheduled_at);
-    var dayTime = dayName + ' · ' + time;
+    var timeRange = formatSessionTimeRange(s);
+    var dayTime = dayName + ' · ' + timeRange;
     var tribe   = normalizeTribe(s.tribe_slug);
     var tribeLabel = s.tribe_name ? String(s.tribe_name).toUpperCase() : (tribe ? tribe.toUpperCase() + ' TRIBE' : 'ATP SESSION');
     var coach   = s.coach_name && s.coach_name.trim() ? s.coach_name.trim() : 'ATP Coach';

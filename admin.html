@@ -307,10 +307,11 @@
               <label class="admin-form-label" for="sMaps">Google Maps URL</label>
               <input class="admin-form-input" type="text" id="sMaps" placeholder="https://maps.google.com/..." aria-label="https://maps.google.com/...">
             </div>
-            <div class="admin-form-group">
-              <label class="admin-form-label" for="sDuration">Duration (mins)</label>
-              <input class="admin-form-input" type="number" id="sDuration" value="60" min="15" max="240">
-            </div>
+            <!-- Duration is now derived from each day's start + end time
+                 (see "Days & times" below). Field kept hidden so any code
+                 still reading sDuration.value as a fallback default keeps
+                 working without the user seeing it. -->
+            <input type="hidden" id="sDuration" value="60">
             <div class="admin-form-group">
               <label class="admin-form-label" for="sCap">Capacity (total)</label>
               <input class="admin-form-input" type="number" id="sCap" value="30" min="1" max="500">

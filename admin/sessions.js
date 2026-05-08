@@ -93,9 +93,20 @@ function updateDayTimes() {
   container.innerHTML = checked.map(function(day) {
     return '<div style="display:flex;align-items:center;gap:8px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:8px 12px">' +
       '<span style="font-size:12px;font-weight:700;color:#7AC231;min-width:32px">'+day+'</span>' +
-      '<input class="admin-form-input" type="time" id="time-'+day+'" value="06:30" style="width:100px;padding:4px 8px">' +
+      '<input class="admin-form-input" type="time" id="time-'+day+'" value="06:30" style="width:90px;padding:4px 8px" title="Start time">' +
+      '<span style="font-size:11px;color:#666">to</span>' +
+      '<input class="admin-form-input" type="time" id="endtime-'+day+'" value="07:30" style="width:90px;padding:4px 8px" title="End time">' +
       '</div>';
   }).join('');
+}
+
+// Convert "HH:MM" pair to a positive minute delta. Crosses midnight if end < start.
+function _minutesBetween(start, end) {
+  if (!start || !end) return 0;
+  var s = start.split(':'); var e = end.split(':');
+  var mins = (parseInt(e[0],10)*60 + parseInt(e[1],10)) - (parseInt(s[0],10)*60 + parseInt(s[1],10));
+  if (mins < 0) mins += 24 * 60;
+  return mins;
 }
 
 function filterCitiesByCountry() {
@@ -282,6 +293,61 @@ function editSessionById(id) {
   if (s) editSession(s);
 }
 
+// Pre-fill the create form from an existing session — same name, description,
+// coach, tribe, activity, location, capacity, etc. — so the admin only has
+// to pick new days/times. Stays in CREATE mode (SESSION_EDIT_ID = null) so
+// hitting Save spawns a brand-new session row instead of overwriting the
+// original.
+function duplicateSessionById(id) {
+  var s = SESSIONS_CACHE[id];
+  if (!s) return;
+  resetSessionForm();
+  // Title hint
+  var nameEl = document.getElementById('sName');
+  if (nameEl) nameEl.value = (s.name || '') + ' (copy)';
+  // Common fields
+  var setVal = function(elId, v){ var el = document.getElementById(elId); if (el) el.value = v == null ? '' : v; };
+  setVal('sDesc',     s.description);
+  setVal('sLoc',      s.location);
+  setVal('sMaps',     s.location_maps_url);
+  setVal('sDuration', s.duration_mins || 60);
+  setVal('sCap',      s.capacity || 30);
+  setVal('sPoints',   s.points_reward || 10);
+  setVal('sType',     s.session_type || 'free');
+  if (document.getElementById('sPrice'))       document.getElementById('sPrice').value       = (s.price && Number(s.price) > 0) ? Number(s.price).toFixed(2) : '';
+  if (document.getElementById('sPricePoints')) document.getElementById('sPricePoints').value = s.price_points || '';
+  if (document.getElementById('sCurrency'))    document.getElementById('sCurrency').value    = s.currency_code || 'AED';
+  if (s.coach_id) document.getElementById('sCoach').value = s.coach_id;
+  if (s.tribe_id) document.getElementById('sTribe').value = s.tribe_id;
+  // Activity (cascading on tribe — defer so the dropdown is populated first)
+  setTimeout(function(){
+    if (typeof filterActivitiesByTribe === 'function') filterActivitiesByTribe();
+    var actEl = document.getElementById('sActivity');
+    if (actEl && s.activity_id) actEl.value = s.activity_id;
+  }, 50);
+  // City / country
+  var cityObj = (typeof ALL_CITIES !== 'undefined' ? ALL_CITIES : []).find(function(c){ return c.id === s.city_id; });
+  if (cityObj) {
+    document.getElementById('sCountry').value = cityObj.country || 'UAE';
+    if (typeof filterCitiesByCountry === 'function') filterCitiesByCountry();
+    document.getElementById('sCity').value = s.city_id;
+  }
+  if (typeof selectCategory === 'function') selectCategory(s.session_category || 'regular');
+  if (s.sport_type) { var sp = document.getElementById('sSport'); if (sp) sp.value = s.sport_type; }
+  if (s.courts) {
+    var nc = document.getElementById('sNumCourts'); if (nc) nc.value = s.courts.length;
+    if (typeof buildCourtsUI === 'function') buildCourtsUI();
+  }
+  // Title + UI cues so the admin knows they're starting a fresh row, not editing
+  var fTitle = document.getElementById('sessionFormTitle');
+  if (fTitle) fTitle.textContent = 'Duplicate Session — pick new days & times';
+  var subBtn = document.getElementById('sessionSubmitLabel');
+  if (subBtn) subBtn.textContent = '✓ Create copy';
+  var section = document.getElementById('sessionFormSection');
+  if (section) section.scrollIntoView({behavior:'smooth'});
+  if (typeof showToast === 'function') showToast('📋 Duplicated — set days & times for the new session');
+}
+
 
 async function cancelSessionById(id) {
   var s = SESSIONS_CACHE[id];
@@ -362,10 +428,22 @@ async function createSession() {
   }
 
   var times = {};
+  var endTimes = {};
   days.forEach(function(day) {
-    var el = document.getElementById('time-'+day);
-    times[day] = el ? el.value : '06:30';
+    var sEl = document.getElementById('time-'+day);
+    var eEl = document.getElementById('endtime-'+day);
+    times[day]    = sEl ? sEl.value : '06:30';
+    endTimes[day] = eEl ? eEl.value : '07:30';
   });
+
+  // Derive duration from the first selected day's start/end pair. All days
+  // in a recurring set share the same duration here; if you want per-day
+  // durations later, the `endTimes` map already has them.
+  var firstDay = days[0];
+  if (firstDay) {
+    var derived = _minutesBetween(times[firstDay], endTimes[firstDay]);
+    if (derived > 0) duration = derived;
+  }
 
   var repeat_dates = null;
   if (!isEdit) {
@@ -558,6 +636,7 @@ async function loadSessionsList() {
         '<td style="font-size:12px;color:#888">'+(s.coach_name||'—')+'</td>' +
         '<td style="white-space:nowrap">' +
           '<button class="admin-btn" style="font-size:11px;padding:4px 8px;margin-right:3px" onclick="editSessionById(\'' + s.id + '\')" title="Edit">✏️</button>' +
+          '<button class="admin-btn" style="font-size:11px;padding:4px 8px;margin-right:3px" onclick="duplicateSessionById(\'' + s.id + '\')" title="Duplicate session">📋</button>' +
           '<button class="admin-btn" style="font-size:11px;padding:4px 8px;margin-right:3px" onclick="viewRegistrations(\'' + s.id + '\')" title="Registrations">' +
           '👥 ' + (s.registrations_count || 0) +
           '</button>' +

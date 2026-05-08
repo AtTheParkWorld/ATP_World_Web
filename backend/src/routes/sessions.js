@@ -233,6 +233,22 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
             if (e.code !== '42703') throw e;
           }
         }
+        // Persist ends_at = scheduled_at + duration_mins so the session has
+        // an explicit end time (admin form derives duration from start+end
+        // pickers, but we recompute on the server as the source of truth).
+        await client.query('SAVEPOINT set_ends');
+        try {
+          const r2 = await client.query(
+            `UPDATE sessions SET ends_at = scheduled_at + ($1 || ' minutes')::interval
+              WHERE id = $2 RETURNING ends_at`,
+            [String(duration_mins || 60), rows[0].id]
+          );
+          if (r2.rows[0]) rows[0].ends_at = r2.rows[0].ends_at;
+          await client.query('RELEASE SAVEPOINT set_ends');
+        } catch (e) {
+          await client.query('ROLLBACK TO SAVEPOINT set_ends');
+          if (e.code !== '42703') throw e; // ends_at column missing — silently skip
+        }
         sessions.push(rows[0]);
       }
       return sessions;
@@ -504,6 +520,19 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
       } catch (e) {
         if (e.code !== '42703') throw e;
       }
+    }
+
+    // Recompute ends_at from scheduled_at + duration_mins so the end time
+    // tracks any duration / scheduled_at change. Idempotent + safe pre-migration.
+    try {
+      const r2 = await query(
+        `UPDATE sessions SET ends_at = scheduled_at + ($1 || ' minutes')::interval
+          WHERE id = $2 RETURNING ends_at`,
+        [String(duration_mins || 60), id]
+      );
+      if (r2.rows[0]) rows[0].ends_at = r2.rows[0].ends_at;
+    } catch (e) {
+      if (e.code !== '42703') throw e;
     }
 
     res.json({ session: rows[0] });
