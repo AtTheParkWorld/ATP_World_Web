@@ -771,18 +771,31 @@ async function handleCmsUpload(event) {
 
     try {
       var token = getToken();
+      // Tell the server which CMS field this upload is replacing (if any)
+      // so the URL gets auto-saved straight into cms_content. The admin no
+      // longer has to also click "Save All Changes" for media uploads —
+      // the upload IS the save.
+      var targetField = _uploadTargetFieldId ? document.getElementById(_uploadTargetFieldId) : null;
+      var body = {
+        data_url: dataUrl,
+        filename: file.name,
+        kind: file.type.startsWith('video/') ? 'video' : 'image',
+      };
+      if (targetField && targetField.dataset.section && targetField.dataset.key && CMS_CURRENT_PAGE && CMS_CURRENT_PAGE !== '_media') {
+        body.target_page    = CMS_CURRENT_PAGE;
+        body.target_section = targetField.dataset.section;
+        body.target_key     = targetField.dataset.key;
+      }
       var res = await fetch(ATP_API + '/cms/upload', {
         method:'POST',
         headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-        body: JSON.stringify({
-          data_url: dataUrl,
-          filename: file.name,
-          kind: file.type.startsWith('video/') ? 'video' : 'image'
-        })
+        body: JSON.stringify(body)
       });
       var d = await res.json();
       if (d.success) {
-        msg.textContent = '✅ Uploaded (' + d.size_kb + ' KB) — added to Media Library';
+        msg.textContent = d.auto_saved
+          ? '✅ Uploaded (' + d.size_kb + ' KB) — saved & live'
+          : '✅ Uploaded (' + d.size_kb + ' KB) — click Save All Changes to apply';
         msg.style.color = '#7AC231';
         // Set the URL in the target field if we were called from a CMS
         // editor field. Standalone Library uploads have no target.

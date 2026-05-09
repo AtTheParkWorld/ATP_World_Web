@@ -159,9 +159,15 @@ async function _ensureValueUrlIsText() {
 
 // POST /api/cms/upload — Upload image/video as base64 data URL for inline storage
 // For larger files, production should use S3/Cloudflare R2. Base64 works for <5MB images/short videos.
+//
+// Optional `target_page` / `target_section` / `target_key` in the body —
+// when provided, the new short reference URL is also UPSERTed into that
+// CMS field automatically. So a hero-video upload from the admin lands in
+// cms_content[index][hero][hero_video] without the admin needing to also
+// click "Save All Changes" afterwards.
 router.post('/upload', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const { data_url, filename, kind } = req.body;
+    const { data_url, filename, kind, target_page, target_section, target_key } = req.body;
     if (!data_url || !data_url.startsWith('data:')) {
       return res.status(400).json({ error: 'data_url (base64) required' });
     }
@@ -189,15 +195,42 @@ router.post('/upload', authenticate, requireAdmin, async (req, res, next) => {
        RETURNING id`,
       [kind || 'image', dbKey, data_url, req.member.id]
     );
+    const shortUrl = `/api/cms/media/${rows[0].id}`;
+
+    // Auto-persist into the target CMS field if the caller told us which
+    // one. Saves the founder one extra "Save All Changes" click and
+    // eliminates the stale-cache class of bugs entirely.
+    let auto_saved = false;
+    if (target_page && target_section && target_key && target_page !== '_media') {
+      try {
+        await query(
+          `INSERT INTO cms_content (page, section, key, value_url, updated_by)
+                VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (page, section, key) DO UPDATE SET
+             value_url = EXCLUDED.value_url,
+             value_text = NULL,
+             updated_by = EXCLUDED.updated_by,
+             updated_at = NOW()`,
+          [target_page, target_section, target_key, shortUrl, req.member.id]
+        );
+        auto_saved = true;
+      } catch (e) {
+        // Don't fail the upload just because the auto-save couldn't land —
+        // the admin can still hit Save All Changes manually.
+        console.warn('[cms] upload auto-save failed:', e.message);
+      }
+    }
+
     // Return a SHORT reference URL instead of the multi-MB data URL — the
     // admin field stays readable, the public /api/cms/<page> response stays
     // small, and browsers fetch the actual binary from /api/cms/media/<id>
     // (which sets Accept-Ranges so video seeking works).
     res.json({
       success: true,
-      url: `/api/cms/media/${rows[0].id}`,
+      url: shortUrl,
       id: rows[0].id,
-      size_kb: Math.round(sizeBytes / 1024)
+      size_kb: Math.round(sizeBytes / 1024),
+      auto_saved,
     });
   } catch (err) { next(err); }
 });
