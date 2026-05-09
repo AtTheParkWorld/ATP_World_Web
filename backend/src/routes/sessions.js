@@ -570,7 +570,10 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
       const r = await query(
         `UPDATE sessions SET
           name=$1, tribe_id=$2, city_id=$3, description=$4, coach_id=$5, location=$6,
-          location_maps_url=$7, session_type=$8, capacity=$9, scheduled_at=$10,
+          -- COALESCE on scheduled_at so an EDIT with no date editor in
+          -- the form (sEditDate doesn't exist) doesn't wipe the existing
+          -- value and trip the NOT NULL constraint.
+          location_maps_url=$7, session_type=$8, capacity=$9, scheduled_at=COALESCE($10, scheduled_at),
           duration_mins=$11, points_reward=$12, is_live_enabled=$13,
           session_category=$14, sport_type=$15, courts=$16,
           price=$17, price_points=$18, currency_code=$19,
@@ -592,7 +595,10 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
       const r = await query(
         `UPDATE sessions SET
           name=$1, tribe_id=$2, city_id=$3, description=$4, coach_id=$5, location=$6,
-          location_maps_url=$7, session_type=$8, capacity=$9, scheduled_at=$10,
+          -- COALESCE on scheduled_at so an EDIT with no date editor in
+          -- the form (sEditDate doesn't exist) doesn't wipe the existing
+          -- value and trip the NOT NULL constraint.
+          location_maps_url=$7, session_type=$8, capacity=$9, scheduled_at=COALESCE($10, scheduled_at),
           duration_mins=$11, points_reward=$12, is_live_enabled=$13,
           session_category=$14, sport_type=$15, courts=$16, price=$17,
           updated_at=NOW()

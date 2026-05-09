@@ -504,7 +504,11 @@ async function createSession() {
   }
 
   var courts = cat === 'team_sports' ? getCourtsData() : null;
-  var scheduled_at = repeat_dates ? repeat_dates[0] : document.getElementById('sEditDate')?.value;
+  // CREATE: scheduled_at comes from the first day in the recurrence set.
+  // EDIT: there's no date editor in the form (sEditDate doesn't exist), so
+  // we leave scheduled_at undefined → omitted from the JSON body → server
+  // COALESCE keeps the existing column value instead of nulling it.
+  var scheduled_at = repeat_dates ? repeat_dates[0] : (document.getElementById('sEditDate')?.value || undefined);
 
   var intro_video_url = (document.getElementById('sIntroVideo') || {}).value || null;
   if (intro_video_url === 'Uploading…') intro_video_url = null;
