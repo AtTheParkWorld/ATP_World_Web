@@ -126,10 +126,11 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 .sc-free{position:absolute;top:16px;right:16px;font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 10px;border-radius:20px;background:rgba(122,194,49,.12);color:var(--green);border:1px solid rgba(122,194,49,.2)}
 
 /* ── HOVER PREVIEW ── small floating popup that plays the session's
-   intro_video_url while the cursor is over a card. Position is set
-   imperatively in JS so the popup can flip sides if the card is
-   near the right edge of the viewport. */
-.session-preview-pop{position:fixed;width:340px;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#000;border:1px solid rgba(122,194,49,.35);box-shadow:0 24px 60px rgba(0,0,0,.5),0 0 0 4px rgba(10,10,10,.6);opacity:0;pointer-events:none;transform:translateY(8px) scale(.96);transition:opacity .18s ease-out,transform .18s ease-out;z-index:300;display:none}
+   intro_video_url while the cursor is over a card. Vertical 9:16
+   (matches the 1080×1920 phone-portrait source admins are asked to
+   upload). Position is set imperatively in JS so the popup can flip
+   sides if the card is near the right edge of the viewport. */
+.session-preview-pop{position:fixed;width:280px;aspect-ratio:9/16;border-radius:14px;overflow:hidden;background:#000;border:1px solid rgba(122,194,49,.35);box-shadow:0 24px 60px rgba(0,0,0,.5),0 0 0 4px rgba(10,10,10,.6);opacity:0;pointer-events:none;transform:translateY(8px) scale(.96);transition:opacity .18s ease-out,transform .18s ease-out;z-index:300;display:none}
 .session-preview-pop.open{display:block;opacity:1;transform:translateY(0) scale(1)}
 .session-preview-pop video{width:100%;height:100%;object-fit:cover;display:block;background:#000}
 .session-preview-pop::after{content:'';position:absolute;left:0;right:0;bottom:0;height:30px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.55));pointer-events:none}
@@ -1465,8 +1466,8 @@ function _ensurePreviewPop() {
 function _placePreviewPop(card) {
   var pop = _ensurePreviewPop();
   var rect = card.getBoundingClientRect();
-  var w = pop.offsetWidth || 340;
-  var h = pop.offsetHeight || Math.round(340 * 9 / 16);
+  var w = pop.offsetWidth || 280;
+  var h = pop.offsetHeight || Math.round(280 * 16 / 9);
   var pad = 12;
   // Default: above-and-to-the-right of the card. If that overflows, flip.
   var top  = rect.top - h - pad;
