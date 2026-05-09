@@ -100,6 +100,52 @@ function updateDayTimes() {
   }).join('');
 }
 
+// ── Session intro-video upload (hover preview on /sessions cards) ──
+// Reuses /api/cms/upload (already returns short /api/cms/media/<id> refs
+// and stores the binary so it survives a refresh). Just drops the
+// returned URL into the form field — saving the session persists it.
+function pickSessionIntroVideo() {
+  var input = document.getElementById('sIntroVideoFile');
+  if (input) { input.value = ''; input.click(); }
+}
+function handleSessionIntroUpload(input) {
+  var f = input && input.files && input.files[0];
+  if (!f) return;
+  if (f.size > 10 * 1024 * 1024) {
+    if (typeof showToast === 'function') showToast('❌ Video too large (max 10MB).', true);
+    return;
+  }
+  var token = (typeof getToken === 'function') ? getToken() : (localStorage.getItem('atp_token') || '');
+  var urlField = document.getElementById('sIntroVideo');
+  if (urlField) urlField.value = 'Uploading…';
+  var reader = new FileReader();
+  reader.onload = function() {
+    fetch(ATP_API + '/cms/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({
+        data_url: reader.result,
+        filename: f.name,
+        kind: 'video',
+      }),
+    }).then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); })
+      .then(function(res){
+        if (!res.ok || !res.body || !res.body.success) {
+          if (urlField) urlField.value = '';
+          if (typeof showToast === 'function') showToast('❌ ' + ((res.body && res.body.error) || 'Upload failed'), true);
+          return;
+        }
+        if (urlField) urlField.value = res.body.url; // /api/cms/media/<id>
+        if (typeof showToast === 'function') showToast('✅ Preview video uploaded — Save Session to apply');
+      })
+      .catch(function(e){
+        if (urlField) urlField.value = '';
+        if (typeof showToast === 'function') showToast('❌ ' + e.message, true);
+      });
+  };
+  reader.readAsDataURL(f);
+}
+
 // Convert "HH:MM" pair to a positive minute delta. Crosses midnight if end < start.
 function _minutesBetween(start, end) {
   if (!start || !end) return 0;
@@ -319,6 +365,8 @@ function duplicateSessionById(id) {
   if (document.getElementById('sCurrency'))    document.getElementById('sCurrency').value    = s.currency_code || 'AED';
   if (s.coach_id) document.getElementById('sCoach').value = s.coach_id;
   if (s.tribe_id) document.getElementById('sTribe').value = s.tribe_id;
+  var introEl = document.getElementById('sIntroVideo');
+  if (introEl) introEl.value = s.intro_video_url || '';
   // Activity (cascading on tribe — defer so the dropdown is populated first)
   setTimeout(function(){
     if (typeof filterActivitiesByTribe === 'function') filterActivitiesByTribe();
@@ -458,8 +506,11 @@ async function createSession() {
   var courts = cat === 'team_sports' ? getCourtsData() : null;
   var scheduled_at = repeat_dates ? repeat_dates[0] : document.getElementById('sEditDate')?.value;
 
+  var intro_video_url = (document.getElementById('sIntroVideo') || {}).value || null;
+  if (intro_video_url === 'Uploading…') intro_video_url = null;
   var payload = {
     name, tribe_id, activity_id, city_id, description: desc, coach_id, location,
+    intro_video_url,
     location_maps_url: maps, session_type: stype, capacity,
     scheduled_at, duration_mins: duration, points_reward: points,
     is_live_enabled: live, session_category: cat,
@@ -546,6 +597,8 @@ function editSession(s) {
   if (document.getElementById('sCurrency'))    document.getElementById('sCurrency').value    = s.currency_code || 'AED';
   if (s.coach_id) document.getElementById('sCoach').value = s.coach_id;
   if (s.tribe_id) document.getElementById('sTribe').value = s.tribe_id;
+  var introEl = document.getElementById('sIntroVideo');
+  if (introEl) introEl.value = s.intro_video_url || '';
   // Activity: re-filter the dropdown to the selected tribe, then pick the
   // saved activity. Wrapped in setTimeout so it runs after the activities
   // catalogue resolves on first edit-open.

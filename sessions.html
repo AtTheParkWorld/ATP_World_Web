@@ -125,6 +125,15 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 .sc-loc::before{content:"◈";color:var(--green);font-size:10px}
 .sc-free{position:absolute;top:16px;right:16px;font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 10px;border-radius:20px;background:rgba(122,194,49,.12);color:var(--green);border:1px solid rgba(122,194,49,.2)}
 
+/* ── HOVER PREVIEW ── small floating popup that plays the session's
+   intro_video_url while the cursor is over a card. Position is set
+   imperatively in JS so the popup can flip sides if the card is
+   near the right edge of the viewport. */
+.session-preview-pop{position:fixed;width:340px;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:#000;border:1px solid rgba(122,194,49,.35);box-shadow:0 24px 60px rgba(0,0,0,.5),0 0 0 4px rgba(10,10,10,.6);opacity:0;pointer-events:none;transform:translateY(8px) scale(.96);transition:opacity .18s ease-out,transform .18s ease-out;z-index:300;display:none}
+.session-preview-pop.open{display:block;opacity:1;transform:translateY(0) scale(1)}
+.session-preview-pop video{width:100%;height:100%;object-fit:cover;display:block;background:#000}
+.session-preview-pop::after{content:'';position:absolute;left:0;right:0;bottom:0;height:30px;background:linear-gradient(180deg,transparent,rgba(0,0,0,.55));pointer-events:none}
+
 /* ── MODAL ── */
 .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(8px);z-index:200;display:flex;align-items:center;justify-content:center;padding:20px;opacity:0;pointer-events:none;transition:opacity .25s}
 .modal-overlay.open{opacity:1;pointer-events:all}
@@ -1404,6 +1413,7 @@ function renderSessionsGrid(sessions) {
     article.setAttribute('data-activity', s.activity_slug || s.activity_id || '');
     article.setAttribute('data-city', s.city_id || '');
     article.setAttribute('data-session-id', s.id);
+    if (s.intro_video_url) article.setAttribute('data-intro-video', s.intro_video_url);
     article.innerHTML =
       '<span class="sc-free">' + escapeHtml(priceTag) + '</span>' +
       '<p class="sc-tribe ' + tribe + '">' + escapeHtml(tribeLabel) + '</p>' +
@@ -1428,7 +1438,93 @@ function renderSessionsGrid(sessions) {
   if (typeof populateActivityFilter === 'function') populateActivityFilter();
   if (typeof populateCityFilter === 'function')     populateCityFilter();
 
+  // Hover-preview popup wiring — re-runs each render so newly-built cards
+  // are bound. The popup element + listeners are idempotent.
+  if (typeof _wireSessionHoverPreview === 'function') _wireSessionHoverPreview();
+
   applyFilters();
+}
+
+// ── Hover-preview popup ──────────────────────────────────────
+// Single floating popup reused across every card. Mounts on demand,
+// plays the card's data-intro-video while the cursor stays inside, and
+// closes on mouseleave. Touch devices are skipped — there's no real
+// "hover" so the popup would just steal taps. Edge-aware positioning
+// flips to the left of the card if the right side would clip out.
+var _previewPop = null;
+var _previewTimer = null;
+function _ensurePreviewPop() {
+  if (_previewPop) return _previewPop;
+  _previewPop = document.createElement('div');
+  _previewPop.className = 'session-preview-pop';
+  _previewPop.setAttribute('aria-hidden', 'true');
+  _previewPop.innerHTML = '<video muted loop playsinline preload="metadata"></video>';
+  document.body.appendChild(_previewPop);
+  return _previewPop;
+}
+function _placePreviewPop(card) {
+  var pop = _ensurePreviewPop();
+  var rect = card.getBoundingClientRect();
+  var w = pop.offsetWidth || 340;
+  var h = pop.offsetHeight || Math.round(340 * 9 / 16);
+  var pad = 12;
+  // Default: above-and-to-the-right of the card. If that overflows, flip.
+  var top  = rect.top - h - pad;
+  var left = rect.left + (rect.width / 2) - (w / 2);
+  if (top < 12) top = rect.bottom + pad;       // not enough space above → drop below
+  if (left + w > window.innerWidth - 12) left = window.innerWidth - w - 12;
+  if (left < 12) left = 12;
+  pop.style.top  = top  + 'px';
+  pop.style.left = left + 'px';
+}
+function _wireSessionHoverPreview() {
+  // Skip on touch-primary devices — long-press could fire a phantom hover.
+  if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return;
+  var grid = document.getElementById('sessionsGrid');
+  if (!grid || grid._hoverPreviewBound) return;
+  grid._hoverPreviewBound = true;
+
+  grid.addEventListener('mouseenter', function(e) {
+    var card = e.target.closest && e.target.closest('.session-card');
+    if (!card) return;
+    var url = card.getAttribute('data-intro-video');
+    if (!url) return;
+    clearTimeout(_previewTimer);
+    _previewTimer = setTimeout(function() {
+      var pop = _ensurePreviewPop();
+      var v = pop.querySelector('video');
+      if (v && v.src !== url) v.src = url;
+      _placePreviewPop(card);
+      pop.classList.add('open');
+      var p = v && v.play ? v.play() : null;
+      if (p && typeof p.catch === 'function') p.catch(function(){});
+    }, 180); // brief delay so a quick mouse-over doesn't flash the popup
+  }, true);
+
+  grid.addEventListener('mouseleave', function(e) {
+    var card = e.target.closest && e.target.closest('.session-card');
+    if (!card) return;
+    clearTimeout(_previewTimer);
+    if (_previewPop) {
+      _previewPop.classList.remove('open');
+      var v = _previewPop.querySelector('video');
+      if (v) { try { v.pause(); v.currentTime = 0; } catch(_){} }
+    }
+  }, true);
+
+  // Re-place on scroll so the popup tracks the card if the user scrolls
+  // while hovered. Throttled with rAF to stay cheap.
+  var rafPending = false;
+  window.addEventListener('scroll', function() {
+    if (rafPending || !_previewPop || !_previewPop.classList.contains('open')) return;
+    rafPending = true;
+    requestAnimationFrame(function() {
+      rafPending = false;
+      var hovered = document.querySelector('.session-card:hover');
+      if (hovered && _previewPop.classList.contains('open')) _placePreviewPop(hovered);
+      else if (_previewPop.classList.contains('open')) _previewPop.classList.remove('open');
+    });
+  }, { passive: true });
 }
 
 function renderCalendarFromSessions(sessions) {

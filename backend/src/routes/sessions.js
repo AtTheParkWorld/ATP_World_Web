@@ -31,7 +31,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
                 s.price_points, s.currency_code,
                 s.capacity, s.points_reward, s.status, s.is_live_enabled,
                 s.session_category, s.sport_type, s.courts, s.cancellation_reason,
-                s.city_id, s.coach_id, s.activity_id,
+                s.city_id, s.coach_id, s.activity_id, s.intro_video_url,
                 t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
                 a.name AS activity_name, a.slug AS activity_slug, a.icon AS activity_icon,
                 c.name AS city_name,
@@ -60,7 +60,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
                 0 AS price_points, NULL AS currency_code,
                 s.capacity, s.points_reward, s.status, s.is_live_enabled,
                 s.session_category, s.sport_type, s.courts, s.cancellation_reason,
-                s.city_id, s.coach_id, s.activity_id,
+                s.city_id, s.coach_id, s.activity_id, NULL AS intro_video_url,
                 t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
                 a.name AS activity_name, a.slug AS activity_slug, a.icon AS activity_icon,
                 c.name AS city_name,
@@ -238,6 +238,8 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
       // and currency_code are new — both optional, default to 0/AED.
       price_points = 0,
       currency_code = 'AED',
+      // Hover-preview video shown over the session card on /sessions
+      intro_video_url,
     } = req.body;
 
     if (!name || !city_id || !scheduled_at || !location) {
@@ -310,6 +312,20 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
             if (e.code !== '42703') throw e;
           }
         }
+        // intro_video_url — same SAVEPOINTed UPDATE pattern so a pre-migration
+        // DB without the column doesn't break session creation.
+        if (intro_video_url !== undefined) {
+          await client.query('SAVEPOINT set_intro');
+          try {
+            await client.query(`UPDATE sessions SET intro_video_url=$1 WHERE id=$2`, [intro_video_url || null, rows[0].id]);
+            rows[0].intro_video_url = intro_video_url || null;
+            await client.query('RELEASE SAVEPOINT set_intro');
+          } catch (e) {
+            await client.query('ROLLBACK TO SAVEPOINT set_intro');
+            if (e.code !== '42703') throw e;
+          }
+        }
+
         // Persist ends_at = scheduled_at + duration_mins so the session has
         // an explicit end time (admin form derives duration from start+end
         // pickers, but we recompute on the server as the source of truth).
@@ -545,6 +561,8 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
       is_live_enabled, session_category, sport_type, courts,
       // Paid-session pricing (Theme 11)
       price = 0, price_points = 0, currency_code = 'AED',
+      // Hover-preview video for /sessions card
+      intro_video_url,
     } = req.body;
 
     let rows;
@@ -594,6 +612,18 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
       try {
         await query(`UPDATE sessions SET activity_id=$1 WHERE id=$2`, [activity_id || null, id]);
         rows[0].activity_id = activity_id || null;
+      } catch (e) {
+        if (e.code !== '42703') throw e;
+      }
+    }
+
+    // Hover-preview video — separate UPDATE so we don't expand the big
+    // PUT statements above. Pre-migration DBs (no intro_video_url col)
+    // skip silently.
+    if (intro_video_url !== undefined) {
+      try {
+        await query(`UPDATE sessions SET intro_video_url=$1 WHERE id=$2`, [intro_video_url || null, id]);
+        rows[0].intro_video_url = intro_video_url || null;
       } catch (e) {
         if (e.code !== '42703') throw e;
       }

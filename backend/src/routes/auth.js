@@ -1596,6 +1596,18 @@ router.post('/migrate-blog', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-session-intro-video ────────────────
+// Adds sessions.intro_video_url so admins can attach a short hover-preview
+// clip per session. Idempotent + gated by ADMIN_SETUP_KEY.
+router.post('/migrate-session-intro-video', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS intro_video_url TEXT`);
+    res.json({ success: true, message: 'sessions.intro_video_url ready' });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-cms-media-refs ─────────────────────
 // One-shot cleanup: any cms_content row outside the '_media' page that
 // stores a full data: URL gets moved into a fresh '_media' row, and the

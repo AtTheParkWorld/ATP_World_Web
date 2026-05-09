@@ -331,6 +331,17 @@
               <label class="admin-form-label" for="sDesc">Description</label>
               <input class="admin-form-input" type="text" id="sDesc" placeholder="Brief session description (optional)" aria-label="Brief session description (optional)">
             </div>
+            <!-- Hover-preview video: shows on the public /sessions card
+                 when a member moves the cursor over it. Optional. -->
+            <div class="admin-form-group full">
+              <label class="admin-form-label" for="sIntroVideo">Hover-Preview Video (optional)</label>
+              <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+                <input class="admin-form-input" type="text" id="sIntroVideo" placeholder="/api/cms/media/... or paste a URL" style="flex:1;min-width:280px">
+                <button type="button" class="admin-btn" style="font-size:11px;padding:9px 16px;white-space:nowrap" onclick="pickSessionIntroVideo()">📁 Upload</button>
+                <span style="font-size:11px;color:#666">Recommended: <strong style="color:#aaa">640×360 px</strong> (16:9, &lt;5MB)</span>
+              </div>
+              <input type="file" id="sIntroVideoFile" accept="video/*" style="display:none" onchange="handleSessionIntroUpload(this)">
+            </div>
 
             <!-- Paid-session pricing — set EITHER currency price OR points price OR both.
                  Members will pick at booking time (Stripe checkout / wallet redemption).
