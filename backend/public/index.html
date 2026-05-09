@@ -54,7 +54,20 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .hamburger span{display:block;width:22px;height:2px;background:var(--white);border-radius:2px}
 
 /* HERO */
-.hero{min-height:100vh;padding-top:var(--nav-h);display:grid;grid-template-columns:1fr 1fr;position:relative;overflow:hidden}
+.hero{min-height:100vh;padding-top:var(--nav-h);display:grid;grid-template-columns:1fr 1fr;position:relative;overflow:hidden;background:var(--dark)}
+/* Full-section video background — sits behind both columns. The CMS hero
+   video now fills the whole hero, not just the right panel. */
+.hero-bg{position:absolute;inset:0;z-index:0;overflow:hidden}
+.hero-bg video,.hero-bg img{width:100%;height:100%;object-fit:cover;display:block}
+/* Gradient overlay so the headline / sub / stats stay readable over the
+   video. Heavy on the left, fading out across the page so the right side
+   keeps the cinematic feel. Plus a subtle top/bottom edge so the nav and
+   the bottom green stripe stay clean. */
+.hero-bg-overlay{position:absolute;inset:0;z-index:1;pointer-events:none;
+  background:
+    linear-gradient(90deg, rgba(10,10,10,.88) 0%, rgba(10,10,10,.72) 28%, rgba(10,10,10,.38) 58%, rgba(10,10,10,.12) 100%),
+    linear-gradient(180deg, rgba(10,10,10,.35) 0%, transparent 22%, transparent 78%, rgba(10,10,10,.45) 100%);
+}
 .hero-left{display:flex;flex-direction:column;justify-content:center;padding:80px 56px 80px 64px;position:relative;z-index:2}
 .hero-tag{display:inline-flex;align-items:center;gap:8px;font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin-bottom:28px}
 .hero-tag::before{content:'';display:block;width:24px;height:2px;background:var(--green)}
@@ -70,11 +83,15 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .btn-hero-sec{font-size:14px;font-weight:500;color:var(--light);display:inline-flex;align-items:center;gap:6px;border:none;background:none;transition:color .2s}
 .btn-hero-sec:hover{color:var(--white)}
 .btn-hero-sec span{text-decoration:underline;text-underline-offset:3px}
-.hero-right{position:relative;overflow:hidden;background:var(--dark2);border-left:1px solid rgba(255,255,255,.06)}
+/* Right column is now decoration-only — green frame + live label sit
+   above the full-section video. No background colour because the video
+   shows through; no border-left because the green ::before stripe
+   already separates the two columns. */
+.hero-right{position:relative;overflow:hidden;background:transparent;z-index:2}
 .hero-img-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
 .hero-img-placeholder .img-note{font-size:11px;color:#444;letter-spacing:.08em;text-transform:uppercase;text-align:center;line-height:1.8;max-width:200px}
-.hero-right::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:4px;background:var(--green)}
-.hero-right::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--green)}
+.hero-right::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:4px;background:var(--green);z-index:3}
+.hero-right::before{content:'';position:absolute;top:0;left:0;width:4px;height:100%;background:var(--green);z-index:3}
 .hero-video-label{position:absolute;bottom:28px;right:28px;display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.75);background:rgba(10,10,10,.55);backdrop-filter:blur(8px);padding:7px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.12)}
 .hvl-dot{display:block;width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse-dot 1.8s ease-in-out infinite;flex-shrink:0}
 @keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.75)}}
@@ -361,7 +378,11 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 }
 @media(max-width:900px){
   .hero{grid-template-columns:1fr}
+  /* Right panel hides on mobile (just decorative + the live label),
+     but the .hero-bg video stays as a full-width background — overlay
+     darkens harder so the centred text stays legible. */
   .hero-right{display:none}
+  .hero-bg-overlay{background:linear-gradient(180deg, rgba(10,10,10,.55) 0%, rgba(10,10,10,.78) 100%)}
   .hero-left{padding:60px 24px}
   .story-inner{grid-template-columns:1fr;gap:48px}
   .app-inner{grid-template-columns:1fr;gap:48px}
@@ -515,6 +536,11 @@ a.product-card:hover{transform:translateY(-4px)}
 
 <!-- HERO -->
 <section class="hero" aria-labelledby="hero-heading">
+  <!-- Full-section video background. Populated below from
+       /api/cms/index hero.hero_video; falls back to the green-bordered
+       dark panel when neither video nor image is set. -->
+  <div id="hero-media-slot" class="hero-bg" aria-hidden="true"></div>
+  <div class="hero-bg-overlay" aria-hidden="true"></div>
   <div class="hero-left">
     <p class="hero-tag">Dubai's #1 free fitness community</p>
     <h1 class="hero-h1" id="hero-heading">
@@ -561,12 +587,9 @@ a.product-card:hover{transform:translateY(-4px)}
     </div>
   </div>
   <div class="hero-right" aria-hidden="true">
-    <!-- Hero media slot — populated from CMS (admin → Content Management →
-         🏠 Homepage → Hero Section → Hero Video / Hero Image). When neither
-         is set the slot stays as the green-bordered dark panel, which still
-         looks intentional. -->
-    <div id="hero-media-slot" style="position:absolute;inset:0;display:block"></div>
-    <div style="position:absolute;inset:0;background:linear-gradient(to right,rgba(10,10,10,.55) 0%,transparent 50%);pointer-events:none;"></div>
+    <!-- Decoration-only column. The hero video has moved up to be a
+         direct child of .hero so it spans both columns; this panel is
+         now just the green frame + the live-sessions label. -->
     <div class="hero-video-label">
       <span class="hvl-dot"></span>
       Live sessions · Dubai · Al Ain · Muscat
@@ -1504,9 +1527,10 @@ window.handleGoogleSignIn = async function(response) {
     .catch(function(){ /* fallbacks stay in DOM */ });
 })();
 
-/* Hero media — populate the right-side panel from /api/cms/index hero.hero_video
-   or hero.hero_image. Falls back to nothing visible (the green-bordered dark
-   panel + gradient overlay still reads intentional) when neither is set. */
+/* Hero media — populate the full-section background panel from /api/cms/index
+   hero.hero_video or hero.hero_image. Falls back to nothing visible (the
+   green-bordered dark panel + gradient overlay still reads intentional) when
+   neither is set. */
 (function _atpHomeHeroMedia() {
   var slot = document.getElementById('hero-media-slot');
   if (!slot) return;
