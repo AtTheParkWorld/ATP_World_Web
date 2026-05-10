@@ -87,6 +87,16 @@ var CMS_SCHEMA = {
           { key: 'subtitle', label: 'Subtitle',      type: 'textarea', default: 'Browse and book upcoming ATP sessions across Dubai, Al Ain and Muscat.' },
         ]
       },
+      // Booking T&C — shown inside the booking modal on /sessions.html.
+      // Members must tick "I agree" before the green Book button enables.
+      booking_terms: {
+        label: 'Booking — Terms & Conditions',
+        desc: 'Shown in the booking modal. Members must tick "I agree" before the Book button enables. Plain text — line breaks render as paragraphs.',
+        fields: [
+          { key: 'terms_text', label: 'Terms & Conditions text', type: 'textarea',
+            default: 'By booking this session you agree that participation is at your own risk. Please arrive on time and follow the coach\'s safety instructions throughout. If you can no longer attend, cancel via your profile so the spot frees up for another member. ATP reserves the right to refuse entry if attendance compromises the safety of the group.' },
+        ]
+      },
       // Tribes + Activities live in their own DB tables (not the CMS k/v
       // store) but are surfaced here so admins can manage the taxonomy
       // alongside the rest of the Sessions page content. Rendered by the
