@@ -1653,7 +1653,6 @@ router.post('/seed-default-plans', async (req, res, next) => {
           '20% off at the ATP store',
           '+200 bonus points when your referrals upgrade',
           'Early access to new sessions',
-          'Premium member badge on your profile',
         ],
         sort_order: 20,
       },
