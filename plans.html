@@ -50,29 +50,53 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .plans-toggle button{padding:9px 22px;font-size:13px;font-weight:700;color:var(--light);border-radius:999px;letter-spacing:.04em;transition:all .2s}
 .plans-toggle button.on{background:var(--green);color:#0a0a0a}
 
-/* TIER GRID */
+/* TIER GRID — Free is the hero, gets more visual weight than the
+   paid tiers. Desktop uses a 1.25fr / 1fr / 1fr grid so the free card
+   physically reads larger. */
 .plans-grid-wrap{padding:60px 40px 80px;max-width:var(--max);margin:0 auto}
-.plans-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;align-items:stretch}
-.plan-card{position:relative;background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-lg);padding:36px 28px;display:flex;flex-direction:column;transition:transform .25s,border-color .25s,box-shadow .25s}
-.plan-card:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.18)}
-.plan-card.featured{border-color:var(--green);background:linear-gradient(180deg,rgba(122,194,49,.06) 0%,var(--dark2) 60%);box-shadow:0 24px 64px rgba(122,194,49,.08),0 0 0 1px var(--green) inset}
-.plan-card.featured:hover{transform:translateY(-6px);box-shadow:0 32px 80px rgba(122,194,49,.14),0 0 0 1px var(--green) inset}
-.plan-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);padding:6px 14px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;background:var(--green);color:#0a0a0a;border-radius:20px;box-shadow:0 6px 18px rgba(122,194,49,.4)}
-.plan-current{position:absolute;top:14px;right:14px;padding:4px 10px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(122,194,49,.15);color:var(--green);border:1px solid rgba(122,194,49,.35);border-radius:20px}
+.plans-grid{display:grid;grid-template-columns:1.25fr 1fr 1fr;gap:22px;align-items:stretch}
+.plan-card{position:relative;background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-lg);padding:36px 28px;display:flex;flex-direction:column;transition:transform .25s,border-color .25s,box-shadow .25s;opacity:.92}
+.plan-card:hover{transform:translateY(-4px);border-color:rgba(255,255,255,.18);opacity:1}
+.plan-card.featured{opacity:1}
+.plan-card.featured.free{
+  background:linear-gradient(160deg,rgba(122,194,49,.18) 0%,rgba(122,194,49,.05) 45%,var(--dark2) 100%);
+  border-color:var(--green);
+  box-shadow:0 32px 80px rgba(122,194,49,.18), 0 0 0 1px var(--green) inset, inset 0 1px 0 rgba(255,255,255,.05);
+  padding:44px 32px 40px;
+}
+.plan-card.featured.free::before{
+  content:'';position:absolute;inset:-1px;border-radius:var(--radius-lg);
+  background:radial-gradient(120% 60% at 50% 0%, rgba(122,194,49,.25), transparent 60%);
+  pointer-events:none;z-index:0;
+}
+.plan-card.featured.free > *{position:relative;z-index:1}
+.plan-card.featured.free:hover{transform:translateY(-6px);box-shadow:0 40px 100px rgba(122,194,49,.28), 0 0 0 1px var(--green) inset}
+/* Featured-but-paid (used only if there's no free plan in the list) */
+.plan-card.featured:not(.free){border-color:var(--green);background:linear-gradient(180deg,rgba(122,194,49,.06) 0%,var(--dark2) 60%);box-shadow:0 24px 64px rgba(122,194,49,.08),0 0 0 1px var(--green) inset}
 
-.plan-eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:10px}
+.plan-badge{position:absolute;top:-12px;left:50%;transform:translateX(-50%);padding:6px 14px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;background:var(--green);color:#0a0a0a;border-radius:20px;box-shadow:0 6px 18px rgba(122,194,49,.4);white-space:nowrap;z-index:2}
+.plan-badge--free{padding:8px 18px;font-size:12px;letter-spacing:.14em;background:linear-gradient(135deg,var(--green-light) 0%,var(--green) 100%);box-shadow:0 10px 28px rgba(122,194,49,.55), 0 0 0 4px rgba(122,194,49,.18)}
+.plan-current{position:absolute;top:14px;right:14px;padding:4px 10px;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;background:rgba(122,194,49,.15);color:var(--green);border:1px solid rgba(122,194,49,.35);border-radius:20px;z-index:2}
+
+.plan-eyebrow{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+.plan-card.free .plan-eyebrow{color:var(--green)}
 .plan-name{font-family:var(--ff-display);font-size:34px;font-weight:900;letter-spacing:-.005em;text-transform:uppercase;line-height:1;margin-bottom:8px;color:#fff}
-.plan-card.featured .plan-name{color:var(--green-light)}
+.plan-card.featured.free .plan-name{font-size:42px;color:var(--green-light);text-shadow:0 2px 24px rgba(122,194,49,.35)}
 .plan-tagline{font-size:13px;color:var(--light);line-height:1.55;margin-bottom:24px;min-height:42px}
+.plan-card.featured.free .plan-tagline{font-size:15px;color:#fff;min-height:0}
 
 .plan-price-row{display:flex;align-items:baseline;gap:8px;margin-bottom:6px}
 .plan-price-ccy{font-size:14px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;align-self:flex-start;padding-top:8px}
-.plan-price{font-family:var(--ff-display);font-size:56px;font-weight:900;line-height:1;color:#fff;letter-spacing:-.01em}
-.plan-card.featured .plan-price{color:var(--green-light)}
+.plan-price{font-family:var(--ff-display);font-size:52px;font-weight:900;line-height:1;color:#fff;letter-spacing:-.01em}
+.plan-card.featured:not(.free) .plan-price{color:var(--green-light)}
 .plan-price-int{font-size:13px;color:var(--muted);font-weight:500}
 .plan-price-sub{font-size:12px;color:var(--muted);margin-bottom:28px}
-.plan-card.free .plan-price{font-size:46px}
-.plan-card.free .plan-price-int{color:var(--green)}
+/* FREE — the price is the headline of the whole page. Huge, gradient,
+   plus a forever marker that lives next to it instead of below. */
+.plan-card.free .plan-price{font-size:88px;background:linear-gradient(180deg,#fff 0%,var(--green-light) 60%,var(--green) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;letter-spacing:-.02em}
+.plan-card.free .plan-price-int{display:none}
+.plan-card.featured.free .plan-price{font-size:104px;line-height:.95;text-shadow:0 8px 36px rgba(122,194,49,.4)}
+.plan-card.featured.free .plan-price-sub{font-size:13px;color:rgba(255,255,255,.75);margin-bottom:32px;font-weight:500;letter-spacing:.02em}
 
 .plan-features{list-style:none;padding:0;margin:0 0 28px;display:flex;flex-direction:column;gap:11px;flex:1}
 .plan-features li{font-size:14px;line-height:1.5;color:var(--light);display:flex;gap:10px;align-items:flex-start}
@@ -85,6 +109,9 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .plan-cta.secondary{background:transparent;color:var(--white);border:1px solid rgba(255,255,255,.2)}
 .plan-cta.secondary:hover{border-color:var(--green);color:var(--green)}
 .plan-cta:disabled{opacity:.45;cursor:not-allowed}
+/* Bigger, glowier CTA on the featured-free card so it pulls the eye. */
+.plan-card.featured.free .plan-cta.primary{padding:18px 28px;font-size:16px;letter-spacing:.05em;box-shadow:0 14px 36px rgba(122,194,49,.42)}
+.plan-card.featured.free .plan-cta.primary:hover{box-shadow:0 18px 48px rgba(122,194,49,.55);transform:translateY(-2px)}
 
 .plans-trust{margin:60px auto 0;max-width:var(--max);padding:32px 28px;background:var(--dark2);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius-lg);text-align:center}
 .plans-trust-headline{font-family:var(--ff-display);font-size:24px;font-weight:800;text-transform:uppercase;letter-spacing:.005em;margin-bottom:10px}
@@ -115,6 +142,10 @@ footer p{font-size:12px;color:var(--muted);margin:0}
   .plans-grid{grid-template-columns:1fr;gap:16px}
   .plan-card.featured{transform:none}
   .plan-card.featured:hover{transform:translateY(-4px)}
+  .plan-card.featured.free{padding:36px 24px 32px}
+  .plan-card.featured.free .plan-name{font-size:34px}
+  .plan-card.free .plan-price,
+  .plan-card.featured.free .plan-price{font-size:72px}
   .plans-trust-row{gap:24px}
 }
 
@@ -132,8 +163,8 @@ footer p{font-size:12px;color:var(--muted);margin:0}
   <section class="plans-hero">
     <div class="plans-hero-inner">
       <div class="plans-eyebrow">Membership</div>
-      <h1>Find your <span class="accent">tribe.</span></h1>
-      <p class="plans-hero-sub">Free for life, always — or upgrade for premium sessions, double points, and member perks. Every plan keeps you outdoors, training with the pack.</p>
+      <h1>Train <span class="accent">free.</span> Forever.</h1>
+      <p class="plans-hero-sub">ATP is free for life — no card, no trial, no expiry. Upgrade only if you want premium sessions and bonus perks. The whole community trains together either way.</p>
     </div>
   </section>
 
@@ -239,18 +270,15 @@ footer p{font-size:12px;color:var(--muted);margin:0}
       '</ul>';
   }
 
-  // Pick which card to feature as Most Popular. Prefer an explicit "Premium"
-  // (not "Premium Plus") name; if none matches, the middle one of the sorted
-  // list wins. Falls back to the first paid plan otherwise.
+  // The Free plan is the hero of this page — that's the offer ATP wants
+  // visitors to anchor on. Featured = the free plan (if there is one),
+  // not the most-expensive paid tier.
   function pickFeatured(plans) {
-    var byName = plans.find(function(p) {
-      var n = String(p.name || '').toLowerCase().trim();
-      return n === 'premium';
-    });
-    if (byName) return byName.id;
-    if (plans.length >= 3) return plans[1].id; // middle of 3
-    var firstPaid = plans.find(function(p){ return (parseInt(p.amount_cents,10)||0) > 0; });
-    return firstPaid ? firstPaid.id : null;
+    var free = plans.find(function(p){ return (parseInt(p.amount_cents, 10) || 0) === 0; });
+    if (free) return free.id;
+    // No free plan defined yet — fall back to middle / first paid.
+    if (plans.length >= 3) return plans[1].id;
+    return plans[0] ? plans[0].id : null;
   }
 
   // Member's current plan id, if logged in. Falls back to the
@@ -299,15 +327,21 @@ footer p{font-size:12px;color:var(--muted);margin:0}
   function renderCard(plan, opts) {
     var isFeatured = plan.id === opts.featuredId;
     var isCurrent  = opts.currentId && plan.id === opts.currentId;
+    var isFree     = (parseInt(plan.amount_cents, 10) || 0) === 0;
     var classes = ['plan-card'];
     if (isFeatured) classes.push('featured');
-    if ((parseInt(plan.amount_cents,10)||0) === 0) classes.push('free');
+    if (isFree)     classes.push('free');
     var name    = esc(plan.name || 'Plan');
     var tagline = esc(plan.tagline || '');
+    // Featured-free gets the loudest badge ("Forever Free"); paid plans
+    // that happen to be featured get the classic "Most Popular".
+    var badgeMarkup = '';
+    if (isFeatured && isFree) badgeMarkup = '<span class="plan-badge plan-badge--free">★ Always Free</span>';
+    else if (isFeatured)      badgeMarkup = '<span class="plan-badge">★ Most Popular</span>';
     return '<div class="' + classes.join(' ') + '" data-plan-id="' + esc(plan.id) + '">' +
-      (isFeatured ? '<span class="plan-badge">★ Most Popular</span>' : '') +
-      (isCurrent  ? '<span class="plan-current">Your plan</span>' : '') +
-      '<div class="plan-eyebrow">' + ((parseInt(plan.amount_cents,10)||0) === 0 ? 'Free Tier' : 'Paid Tier') + '</div>' +
+      badgeMarkup +
+      (isCurrent ? '<span class="plan-current">Your plan</span>' : '') +
+      '<div class="plan-eyebrow">' + (isFree ? 'Forever — no card' : 'Optional upgrade') + '</div>' +
       '<div class="plan-name">' + name + '</div>' +
       '<div class="plan-tagline">' + tagline + '</div>' +
       priceMarkup(plan) +
