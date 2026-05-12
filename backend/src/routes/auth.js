@@ -1608,6 +1608,103 @@ router.post('/migrate-session-intro-video', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/seed-default-plans ─────────────────────────
+// One-shot seeder for the founder-spec three-tier catalogue:
+// Free for Life · Premium · Premium Plus. Idempotent — upserts on
+// (name) so re-running won't duplicate rows but will refresh tagline +
+// features + pricing if the founder edited them in the SQL but wants
+// to reset to defaults.
+router.post('/seed-default-plans', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    const seeds = [
+      {
+        name: 'Free for Life',
+        tagline: 'Train with the community — no card, no expiry.',
+        description: 'Everything you need to start training with ATP and never pay a thing. Forever.',
+        amount_cents: 0,
+        currency: 'aed',
+        interval: 'month',
+        features: [
+          'Unlimited free outdoor sessions across Dubai, Al Ain & Muscat',
+          'Book any session in seconds',
+          'Earn ATP points on every check-in',
+          'Join a tribe — Better, Faster or Stronger',
+          'Member-only community feed',
+        ],
+        sort_order: 10,
+      },
+      {
+        name: 'Premium',
+        tagline: 'Faster perks, double points, premium-only sessions.',
+        description: 'Everything in Free, plus the premium training sessions and 2× points on every check-in.',
+        amount_cents: 4900, // AED 49 / month
+        currency: 'aed',
+        interval: 'month',
+        features: [
+          'Everything in Free',
+          'Premium-only sessions (small groups, top coaches)',
+          '2× points on every check-in',
+          'Early access to new sessions',
+          'Priority ambassador support',
+        ],
+        sort_order: 20,
+      },
+      {
+        name: 'Premium Plus',
+        tagline: 'For members who want it all — coach access, partner perks.',
+        description: 'Premium plus monthly 1-on-1 coach access, partner perks across the city, and exclusive events.',
+        amount_cents: 9900, // AED 99 / month
+        currency: 'aed',
+        interval: 'month',
+        features: [
+          'Everything in Premium',
+          '1-on-1 monthly check-in with an ATP coach',
+          'Exclusive Premium+ member events',
+          'Partner perks (gyms, cafes, recovery)',
+          'Free entry to all ATP retreats',
+        ],
+        sort_order: 30,
+      },
+    ];
+
+    let inserted = 0, updated = 0;
+    for (const p of seeds) {
+      // Match on case-insensitive name so the seeder finds a row even if
+      // someone tweaked the casing in admin.
+      const found = await query(
+        `SELECT id FROM subscription_plans WHERE LOWER(name) = LOWER($1) LIMIT 1`,
+        [p.name]
+      );
+      if (found.rows.length) {
+        await query(
+          `UPDATE subscription_plans
+              SET tagline=$1, description=$2, amount_cents=$3, currency=$4,
+                  interval=$5, features=$6::jsonb, sort_order=$7, is_active=true,
+                  updated_at=NOW()
+            WHERE id=$8`,
+          [p.tagline, p.description, p.amount_cents, p.currency, p.interval,
+           JSON.stringify(p.features), p.sort_order, found.rows[0].id]
+        );
+        updated++;
+      } else {
+        await query(
+          `INSERT INTO subscription_plans
+             (name, tagline, description, amount_cents, currency, interval,
+              features, sort_order, is_active)
+           VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, true)`,
+          [p.name, p.tagline, p.description, p.amount_cents, p.currency,
+           p.interval, JSON.stringify(p.features), p.sort_order]
+        );
+        inserted++;
+      }
+    }
+    res.json({ success: true, inserted, updated });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-cms-media-refs ─────────────────────
 // One-shot cleanup: any cms_content row outside the '_media' page that
 // stores a full data: URL gets moved into a fresh '_media' row, and the

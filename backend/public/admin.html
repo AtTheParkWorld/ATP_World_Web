@@ -1286,7 +1286,11 @@
               <div style="margin-bottom:10px"><label class="admin-form-label" for="planFeatures">Features (one per line)</label><textarea class="admin-form-input" id="planFeatures" rows="4" placeholder="Unlimited session bookings&#10;Premium-only sessions&#10;2× points on every check-in&#10;Priority Ambassador support" style="font-size:12px"></textarea></div>
               <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px">
                 <div><label class="admin-form-label" for="planStripePriceId">Stripe price id *</label><input class="admin-form-input" type="text" id="planStripePriceId" placeholder="price_1Pxxxxxxxxxxx" style="font-family:monospace;font-size:12px"></div>
-                <div><label class="admin-form-label" for="planAmount">Amount (cents)</label><input class="admin-form-input" type="number" id="planAmount" value="0" min="0" placeholder="e.g. 4900"></div>
+                <div>
+                  <label class="admin-form-label" for="planAmount">Amount</label>
+                  <input class="admin-form-input" type="number" id="planAmount" value="0" min="0" placeholder="e.g. 4900">
+                  <div style="font-size:10px;color:#666;margin-top:4px">In cents/fils. 4900 = AED 49.00. Leave 0 for Free plans.</div>
+                </div>
                 <div><label class="admin-form-label" for="planCurrency">Currency</label><input class="admin-form-input" type="text" id="planCurrency" value="aed" maxlength="3" style="text-transform:lowercase"></div>
                 <div><label class="admin-form-label" for="planInterval">Interval</label><select class="admin-form-select" id="planInterval"><option value="month">Monthly</option><option value="year">Yearly</option></select></div>
               </div>

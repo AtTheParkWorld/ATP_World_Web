@@ -22,6 +22,7 @@
     { key: 'sessions',  label: 'Sessions',     href: 'sessions.html' },
     { key: 'community', label: 'Community',    href: 'community.html' },
     { key: 'store',     label: 'Store',        href: 'store.html' },
+    { key: 'plans',     label: 'Plans',        href: 'plans.html' },
     { key: 'partners',  label: 'Partners',     href: 'index.html#partners' },
     { key: 'coaches',   label: 'Our coaches',  href: 'coaches.html' },
   ];
