@@ -1608,6 +1608,30 @@ router.post('/migrate-session-intro-video', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-annual-plans ───────────────────────
+// Adds three columns to subscription_plans so admins can run a yearly
+// promo alongside the monthly tier on the same plan row:
+//   annual_amount_cents      — full-year price in cents/fils
+//   annual_stripe_price_id   — separate Stripe Price for the yearly SKU
+//   annual_savings_label     — admin-controlled badge copy ("Save 17%",
+//                              "2 months free", etc.). Optional —
+//                              if null the public page auto-computes
+//                              the % saved versus 12× monthly.
+// Idempotent + gated by ADMIN_SETUP_KEY.
+router.post('/migrate-annual-plans', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    await query(`ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS annual_amount_cents    INT`);
+    await query(`ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS annual_stripe_price_id VARCHAR(64)`);
+    await query(`ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS annual_savings_label   VARCHAR(120)`);
+    // The Stripe price id should be unique across yearly + monthly, so
+    // protect against double-pasting the same id on different plans.
+    await query(`CREATE UNIQUE INDEX IF NOT EXISTS idx_plans_annual_stripe_unique ON subscription_plans (annual_stripe_price_id) WHERE annual_stripe_price_id IS NOT NULL`);
+    res.json({ success: true, message: 'subscription_plans annual_* columns ready' });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/seed-default-plans ─────────────────────────
 // One-shot seeder for the founder-spec three-tier catalogue:
 // Free for Life · Premium · Premium Plus. Idempotent — upserts on
@@ -1643,6 +1667,9 @@ router.post('/seed-default-plans', async (req, res, next) => {
         tagline: 'Premium-only sessions, point earning, community streaming.',
         description: 'Everything in Free, plus the premium-only training sessions, points on every check-in, unlimited community streaming, and 20% off the store.',
         amount_cents: 4900, // AED 49 / month
+        // Annual promo: AED 490/yr ≈ 2 months free vs 12 × AED 49 = AED 588
+        annual_amount_cents: 49000,
+        annual_savings_label: '2 months free',
         currency: 'aed',
         interval: 'month',
         features: [
@@ -1661,6 +1688,9 @@ router.post('/seed-default-plans', async (req, res, next) => {
         tagline: 'The full ATP experience — coach access, partner perks, double points.',
         description: 'Premium, plus a monthly 1-on-1 coach check-in, exclusive events, partner perks across the city, and the deepest store discount.',
         amount_cents: 9900, // AED 99 / month
+        // Annual promo: AED 990/yr ≈ 2 months free vs 12 × AED 99 = AED 1,188
+        annual_amount_cents: 99000,
+        annual_savings_label: '2 months free',
         currency: 'aed',
         interval: 'month',
         features: [
@@ -1687,27 +1717,69 @@ router.post('/seed-default-plans', async (req, res, next) => {
         `SELECT id FROM subscription_plans WHERE LOWER(name) = LOWER($1) LIMIT 1`,
         [p.name]
       );
-      if (found.rows.length) {
-        await query(
-          `UPDATE subscription_plans
-              SET tagline=$1, description=$2, amount_cents=$3, currency=$4,
-                  interval=$5, features=$6::jsonb, sort_order=$7, is_active=true,
-                  updated_at=NOW()
-            WHERE id=$8`,
-          [p.tagline, p.description, p.amount_cents, p.currency, p.interval,
-           JSON.stringify(p.features), p.sort_order, found.rows[0].id]
-        );
-        updated++;
-      } else {
-        await query(
-          `INSERT INTO subscription_plans
-             (name, tagline, description, amount_cents, currency, interval,
-              features, sort_order, is_active)
-           VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, true)`,
-          [p.name, p.tagline, p.description, p.amount_cents, p.currency,
-           p.interval, JSON.stringify(p.features), p.sort_order]
-        );
-        inserted++;
+      // Two write paths: full one if annual_* columns exist, legacy one
+      // otherwise. The 42703 fallback keeps the seeder working on DBs
+      // that haven't run migrate-annual-plans yet.
+      async function writeFull(id) {
+        if (id) {
+          await query(
+            `UPDATE subscription_plans
+                SET tagline=$1, description=$2, amount_cents=$3, currency=$4,
+                    interval=$5, features=$6::jsonb, sort_order=$7, is_active=true,
+                    annual_amount_cents=$8, annual_savings_label=$9,
+                    updated_at=NOW()
+              WHERE id=$10`,
+            [p.tagline, p.description, p.amount_cents, p.currency, p.interval,
+             JSON.stringify(p.features), p.sort_order,
+             p.annual_amount_cents != null ? p.annual_amount_cents : null,
+             p.annual_savings_label || null,
+             id]
+          );
+          updated++;
+        } else {
+          await query(
+            `INSERT INTO subscription_plans
+               (name, tagline, description, amount_cents, currency, interval,
+                features, sort_order, is_active,
+                annual_amount_cents, annual_savings_label)
+             VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, true, $9, $10)`,
+            [p.name, p.tagline, p.description, p.amount_cents, p.currency,
+             p.interval, JSON.stringify(p.features), p.sort_order,
+             p.annual_amount_cents != null ? p.annual_amount_cents : null,
+             p.annual_savings_label || null]
+          );
+          inserted++;
+        }
+      }
+      async function writeLegacy(id) {
+        if (id) {
+          await query(
+            `UPDATE subscription_plans
+                SET tagline=$1, description=$2, amount_cents=$3, currency=$4,
+                    interval=$5, features=$6::jsonb, sort_order=$7, is_active=true,
+                    updated_at=NOW()
+              WHERE id=$8`,
+            [p.tagline, p.description, p.amount_cents, p.currency, p.interval,
+             JSON.stringify(p.features), p.sort_order, id]
+          );
+          updated++;
+        } else {
+          await query(
+            `INSERT INTO subscription_plans
+               (name, tagline, description, amount_cents, currency, interval,
+                features, sort_order, is_active)
+             VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8, true)`,
+            [p.name, p.tagline, p.description, p.amount_cents, p.currency,
+             p.interval, JSON.stringify(p.features), p.sort_order]
+          );
+          inserted++;
+        }
+      }
+      try {
+        await writeFull(found.rows[0] && found.rows[0].id);
+      } catch (e) {
+        if (e.code !== '42703') throw e;
+        await writeLegacy(found.rows[0] && found.rows[0].id);
       }
     }
     res.json({ success: true, inserted, updated });

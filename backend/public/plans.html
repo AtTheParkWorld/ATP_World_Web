@@ -44,11 +44,23 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .plans-hero h1 .accent{color:var(--green)}
 .plans-hero-sub{font-size:17px;color:var(--light);line-height:1.65;font-weight:300;max-width:560px;margin:0 auto}
 
-/* BILLING TOGGLE (only shows when there are yearly variants) */
-.plans-toggle{display:none;margin:32px auto 0;padding:6px;background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:999px;width:max-content}
-.plans-toggle.active{display:inline-flex}
-.plans-toggle button{padding:9px 22px;font-size:13px;font-weight:700;color:var(--light);border-radius:999px;letter-spacing:.04em;transition:all .2s}
-.plans-toggle button.on{background:var(--green);color:#0a0a0a}
+/* BILLING TOGGLE — appears once we know at least one plan has an
+   annual_* configuration. Pill with two buttons, the active one in
+   green. The "savings" caption next to it picks the biggest discount
+   across all paid plans so visitors immediately see the upside. */
+.plans-toggle-wrap{display:none;flex-direction:column;align-items:center;gap:10px;margin:32px auto 0}
+.plans-toggle-wrap.active{display:flex}
+.plans-toggle{display:inline-flex;padding:6px;background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:999px;position:relative}
+.plans-toggle button{padding:10px 22px;font-size:13px;font-weight:700;color:var(--light);border-radius:999px;letter-spacing:.04em;transition:all .2s}
+.plans-toggle button.on{background:var(--green);color:#0a0a0a;box-shadow:0 4px 16px rgba(122,194,49,.32)}
+.plans-toggle button:not(.on):hover{color:#fff}
+.plans-savings-caption{font-size:12px;color:var(--green-light);font-weight:600;letter-spacing:.04em;display:inline-flex;align-items:center;gap:8px}
+.plans-savings-caption::before{content:'✨'}
+
+/* Yearly card flourishes — strikethrough monthly equivalent + savings
+   pill at the top of the price block. */
+.plan-strike{font-size:14px;color:var(--muted);text-decoration:line-through;text-decoration-color:rgba(255,255,255,.35);margin-right:6px}
+.plan-savings-pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;margin-bottom:10px;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;background:rgba(122,194,49,.14);color:var(--green-light);border:1px solid rgba(122,194,49,.32);border-radius:20px}
 
 /* TIER GRID — Free is the hero, gets more visual weight than the
    paid tiers. Desktop uses a 1.25fr / 1fr / 1fr grid so the free card
@@ -165,6 +177,15 @@ footer p{font-size:12px;color:var(--muted);margin:0}
       <div class="plans-eyebrow">Membership</div>
       <h1>Train <span class="accent">free.</span> Forever.</h1>
       <p class="plans-hero-sub">ATP is free for life — no card, no trial, no expiry. Upgrade only if you want premium sessions and bonus perks. The whole community trains together either way.</p>
+
+      <!-- Monthly / Yearly toggle. Auto-hides if no plan has an annual SKU. -->
+      <div class="plans-toggle-wrap" id="plansToggleWrap">
+        <div class="plans-toggle" role="tablist" aria-label="Billing interval">
+          <button type="button" data-interval="month" class="on" role="tab" aria-selected="true">Monthly</button>
+          <button type="button" data-interval="year"  role="tab" aria-selected="false">Yearly</button>
+        </div>
+        <div class="plans-savings-caption" id="plansSavingsCaption" style="display:none"></div>
+      </div>
     </div>
   </section>
 
@@ -237,22 +258,64 @@ footer p{font-size:12px;color:var(--muted);margin:0}
     });
   }
 
-  // Render the currency line: "AED 49 /month" or "Free forever" for $0 plans.
-  function priceMarkup(plan) {
-    var amt = parseInt(plan.amount_cents, 10) || 0;
+  // Compute % saved when paying annually vs 12 × monthly. Null when
+  // either price is missing or annual isn't actually cheaper.
+  function annualSavingsPct(plan) {
+    var monthly = parseInt(plan.amount_cents, 10) || 0;
+    var annual  = parseInt(plan.annual_amount_cents, 10) || 0;
+    if (!monthly || !annual) return null;
+    var twelve = monthly * 12;
+    if (annual >= twelve) return null;
+    return Math.round((1 - (annual / twelve)) * 100);
+  }
+
+  // Render the currency line. Interval mode is "month" or "year"; when
+  // "year" and the plan has an annual_amount_cents, use that instead.
+  function priceMarkup(plan, intervalMode) {
+    var monthly = parseInt(plan.amount_cents, 10) || 0;
+    var annual  = parseInt(plan.annual_amount_cents, 10) || 0;
     var ccy = (plan.currency || 'aed').toUpperCase();
-    var interval = (plan.interval || 'month').toLowerCase();
-    if (amt === 0) {
+    if (monthly === 0 && annual === 0) {
       return '<div class="plan-price-row"><span class="plan-price">Free</span></div>' +
              '<div class="plan-price-sub">Always. No card required.</div>';
     }
+    var useAnnual = (intervalMode === 'year' && annual > 0);
+    var amt = useAnnual ? annual : monthly;
+    var unit = useAnnual ? 'year' : 'month';
     var display = (amt / 100).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
-    return '<div class="plan-price-row">' +
-             '<span class="plan-price-ccy">' + esc(ccy) + '</span>' +
-             '<span class="plan-price">' + esc(display) + '</span>' +
-             '<span class="plan-price-int">/' + esc(interval) + '</span>' +
-           '</div>' +
-           '<div class="plan-price-sub">Cancel anytime · billed in ' + esc(ccy) + '</div>';
+
+    var savingsBlock = '';
+    if (useAnnual) {
+      var savedLabel = plan.annual_savings_label;
+      if (!savedLabel) {
+        var pct = annualSavingsPct(plan);
+        if (pct) savedLabel = 'Save ' + pct + '%';
+      }
+      if (savedLabel) {
+        savingsBlock = '<div class="plan-savings-pill">★ ' + esc(savedLabel) + '</div>';
+      }
+    }
+
+    // When showing the yearly view, surface the monthly-equivalent as a
+    // crossed-out comparison so the discount reads instantly.
+    var strike = '';
+    if (useAnnual && monthly > 0) {
+      var twelveDisplay = ((monthly * 12) / 100).toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+      strike = '<span class="plan-strike">' + esc(ccy) + ' ' + esc(twelveDisplay) + '</span>';
+    }
+
+    var subLine = useAnnual
+      ? 'Billed once a year · cancel anytime'
+      : 'Cancel anytime · billed monthly in ' + esc(ccy);
+
+    return savingsBlock +
+      '<div class="plan-price-row">' +
+        '<span class="plan-price-ccy">' + esc(ccy) + '</span>' +
+        strike +
+        '<span class="plan-price">' + esc(display) + '</span>' +
+        '<span class="plan-price-int">/' + esc(unit) + '</span>' +
+      '</div>' +
+      '<div class="plan-price-sub">' + subLine + '</div>';
   }
 
   // Feature bullets — JSONB array from the DB. Falls back to splitting
@@ -303,31 +366,37 @@ footer p{font-size:12px;color:var(--muted);margin:0}
     return null;
   }
 
-  function ctaFor(plan, member, currentId) {
-    var amt = parseInt(plan.amount_cents, 10) || 0;
+  function ctaFor(plan, member, currentId, intervalMode) {
+    var monthly = parseInt(plan.amount_cents, 10) || 0;
+    var annual  = parseInt(plan.annual_amount_cents, 10) || 0;
     var isCurrent = currentId && plan.id === currentId;
     if (isCurrent) {
       return '<button class="plan-cta secondary" disabled>You\'re on this plan</button>';
     }
-    if (amt === 0) {
+    if (monthly === 0 && annual === 0) {
       // Free CTA — if already logged in, just take them to the profile.
       var href = member ? '/profile.html' : '/join';
       var label = member ? 'Back to profile' : 'Join free →';
       return '<a class="plan-cta primary" href="' + href + '" data-plan-id="' + esc(plan.id) + '">' + label + '</a>';
     }
-    // Paid — kick off Stripe Checkout if we have a price id, else show
-    // a "Coming soon" disabled state so the page never dead-ends.
-    if (!plan.stripe_price_id) {
+    var useAnnual = (intervalMode === 'year' && annual > 0);
+    // The checkout button needs the right Stripe Price id available
+    // server-side. purchasable / purchasable_annual flags from the API
+    // tell us which side is live.
+    var canBuy = useAnnual ? !!plan.purchasable_annual : !!plan.purchasable;
+    if (!canBuy) {
       return '<button class="plan-cta secondary" disabled title="Stripe price id not set">Coming soon</button>';
     }
-    var primary = String(plan.name || '').toLowerCase() === 'premium' ? 'Get Premium →' : 'Upgrade →';
-    return '<button class="plan-cta primary" data-cta-checkout data-plan-id="' + esc(plan.id) + '">' + primary + '</button>';
+    var nm = String(plan.name || '').toLowerCase();
+    var primary = nm === 'premium' ? 'Get Premium →' : nm.indexOf('plus') >= 0 ? 'Go Premium Plus →' : 'Upgrade →';
+    return '<button class="plan-cta primary" data-cta-checkout data-plan-id="' + esc(plan.id) +
+           '" data-interval="' + (useAnnual ? 'year' : 'month') + '">' + primary + '</button>';
   }
 
   function renderCard(plan, opts) {
     var isFeatured = plan.id === opts.featuredId;
     var isCurrent  = opts.currentId && plan.id === opts.currentId;
-    var isFree     = (parseInt(plan.amount_cents, 10) || 0) === 0;
+    var isFree     = (parseInt(plan.amount_cents, 10) || 0) === 0 && (parseInt(plan.annual_amount_cents, 10) || 0) === 0;
     var classes = ['plan-card'];
     if (isFeatured) classes.push('featured');
     if (isFree)     classes.push('free');
@@ -344,9 +413,9 @@ footer p{font-size:12px;color:var(--muted);margin:0}
       '<div class="plan-eyebrow">' + (isFree ? 'Forever — no card' : 'Optional upgrade') + '</div>' +
       '<div class="plan-name">' + name + '</div>' +
       '<div class="plan-tagline">' + tagline + '</div>' +
-      priceMarkup(plan) +
+      priceMarkup(plan, opts.intervalMode) +
       featuresList(plan) +
-      ctaFor(plan, opts.member, opts.currentId) +
+      ctaFor(plan, opts.member, opts.currentId, opts.intervalMode) +
     '</div>';
   }
 
@@ -355,9 +424,14 @@ footer p{font-size:12px;color:var(--muted);margin:0}
     if (g) g.innerHTML = '<div class="plans-error" style="grid-column:1/-1">' + esc(msg) + '</div>';
   }
 
-  function render(plans, member) {
+  // App state — kept on the function so the toggle handler can re-render
+  // without re-fetching anything.
+  var STATE = { plans: [], member: null, interval: 'month' };
+
+  function render() {
     var grid = document.getElementById('plansGrid');
     if (!grid) return;
+    var plans = STATE.plans.slice();
     // Sort by sort_order ASC, then amount ASC, so Free comes first.
     plans.sort(function(a, b) {
       var so = (a.sort_order || 0) - (b.sort_order || 0);
@@ -369,11 +443,66 @@ footer p{font-size:12px;color:var(--muted);margin:0}
       return;
     }
     var featuredId = pickFeatured(plans);
-    var currentId  = currentPlanIdFor(member, plans);
-    grid.style.gridTemplateColumns = 'repeat(' + Math.min(plans.length, 3) + ',1fr)';
+    var currentId  = currentPlanIdFor(STATE.member, plans);
+    grid.style.gridTemplateColumns = (plans.length >= 3)
+      ? '1.25fr 1fr 1fr'
+      : 'repeat(' + Math.min(plans.length, 3) + ',1fr)';
     grid.innerHTML = plans.map(function(p){
-      return renderCard(p, { featuredId: featuredId, currentId: currentId, member: member });
+      return renderCard(p, {
+        featuredId: featuredId,
+        currentId:  currentId,
+        member:     STATE.member,
+        intervalMode: STATE.interval,
+      });
     }).join('');
+  }
+
+  // Show / hide the Monthly/Yearly toggle based on whether any plan
+  // actually has annual pricing configured. Sets the biggest savings
+  // headline so the toggle has an obvious payoff.
+  function setupToggle() {
+    var wrap    = document.getElementById('plansToggleWrap');
+    var caption = document.getElementById('plansSavingsCaption');
+    if (!wrap) return;
+    var withAnnual = STATE.plans.filter(function(p){
+      return (parseInt(p.annual_amount_cents, 10) || 0) > 0;
+    });
+    if (!withAnnual.length) {
+      wrap.classList.remove('active');
+      return;
+    }
+    wrap.classList.add('active');
+
+    // Best savings shown in the caption — either the admin-set label or
+    // the auto-computed percentage.
+    var bestLabel = '';
+    var bestPct = 0;
+    withAnnual.forEach(function(p) {
+      var pct = annualSavingsPct(p);
+      if (pct && pct > bestPct) { bestPct = pct; bestLabel = p.annual_savings_label || ('Save ' + pct + '%'); }
+    });
+    if (!bestLabel && withAnnual[0]) bestLabel = withAnnual[0].annual_savings_label || '';
+    if (caption && bestLabel) {
+      caption.textContent = 'Pay yearly · ' + bestLabel;
+      caption.style.display = '';
+    } else if (caption) {
+      caption.style.display = 'none';
+    }
+
+    // Wire button clicks (once per setup).
+    wrap.querySelectorAll('.plans-toggle button').forEach(function(btn){
+      btn.onclick = function() {
+        var interval = btn.getAttribute('data-interval');
+        if (interval === STATE.interval) return;
+        STATE.interval = interval;
+        wrap.querySelectorAll('.plans-toggle button').forEach(function(b){
+          var on = b.getAttribute('data-interval') === interval;
+          b.classList.toggle('on', on);
+          b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        render();
+      };
+    });
   }
 
   // Checkout click handler. Delegated so it survives re-renders.
@@ -381,7 +510,8 @@ footer p{font-size:12px;color:var(--muted);margin:0}
     var btn = ev.target.closest('[data-cta-checkout]');
     if (!btn) return;
     ev.preventDefault();
-    var planId = btn.getAttribute('data-plan-id');
+    var planId   = btn.getAttribute('data-plan-id');
+    var interval = btn.getAttribute('data-interval') || STATE.interval || 'month';
     if (!planId) return;
     // Must be logged in to start a checkout — bounce through /join if not.
     if (!(window.ATP && window.ATP.isLoggedIn && window.ATP.isLoggedIn())) {
@@ -398,7 +528,12 @@ footer p{font-size:12px;color:var(--muted);margin:0}
     fetch('/api/billing/checkout', {
       method: 'POST',
       headers: { 'Content-Type':'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ plan_id: planId, success_url: window.location.origin + '/profile.html?upgraded=1', cancel_url: window.location.href }),
+      body: JSON.stringify({
+        plan_id: planId,
+        interval: interval,
+        success_url: window.location.origin + '/profile.html?upgraded=1',
+        cancel_url:  window.location.href,
+      }),
     })
       .then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); })
       .then(function(res) {
@@ -429,9 +564,10 @@ footer p{font-size:12px;color:var(--muted);margin:0}
     fetch('/api/billing/plans', { cache: 'no-cache' }).then(function(r){ return r.ok ? r.json() : { plans: [] }; }),
     memberPromise,
   ]).then(function(results) {
-    var plans  = (results[0] && results[0].plans) || [];
-    var member = results[1] || null;
-    render(plans, member);
+    STATE.plans  = (results[0] && results[0].plans) || [];
+    STATE.member = results[1] || null;
+    setupToggle();
+    render();
   }).catch(function() {
     showError('Could not load plans. Refresh the page or try again in a moment.');
   });

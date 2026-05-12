@@ -50,7 +50,9 @@ router.get('/plans', async (req, res, next) => {
         `SELECT p.id, p.name, p.tagline, p.description, p.currency, p.amount_cents,
                 p.interval, p.features, p.sort_order, p.is_active,
                 p.country_id,
-                CASE WHEN p.stripe_price_id IS NOT NULL THEN true ELSE false END AS purchasable
+                p.annual_amount_cents, p.annual_savings_label,
+                CASE WHEN p.stripe_price_id        IS NOT NULL THEN true ELSE false END AS purchasable,
+                CASE WHEN p.annual_stripe_price_id IS NOT NULL THEN true ELSE false END AS purchasable_annual
          FROM subscription_plans p
          ${where}
          ORDER BY p.sort_order, p.amount_cents`,
@@ -58,7 +60,7 @@ router.get('/plans', async (req, res, next) => {
       );
       rows = result.rows;
     } catch (e) {
-      // Fallback for pre-Theme-8 deploys missing the country_id column.
+      // Fallback for older deploys missing annual_* columns and/or country_id.
       if (e.code === '42703' /* undefined_column */) {
         const result = await query(
           `SELECT id, name, tagline, description, currency, amount_cents,
@@ -102,15 +104,41 @@ router.post('/checkout', authenticate, async (req, res, next) => {
     if (!billing.isConfigured()) {
       return res.status(503).json({ error: 'Stripe is not configured yet.' });
     }
-    const { plan_id, success_url, cancel_url } = req.body || {};
+    const { plan_id, success_url, cancel_url, interval } = req.body || {};
     if (!plan_id) return res.status(400).json({ error: 'plan_id required' });
+    const wantsAnnual = String(interval || '').toLowerCase() === 'year';
 
-    const { rows: plans } = await query(
-      `SELECT id, stripe_price_id FROM subscription_plans
-        WHERE id=$1 AND is_active=true LIMIT 1`,
-      [plan_id]
-    );
-    if (!plans.length) return res.status(404).json({ error: 'Plan not found.' });
+    // Resolve the row defensively — annual_* columns may be missing on
+    // pre-migration DBs, in which case we just ignore the yearly request
+    // and fall back to the monthly Stripe price.
+    let planRow = null;
+    try {
+      const r = await query(
+        `SELECT id, stripe_price_id, annual_stripe_price_id, annual_amount_cents
+           FROM subscription_plans WHERE id=$1 AND is_active=true LIMIT 1`,
+        [plan_id]
+      );
+      planRow = r.rows[0] || null;
+    } catch (e) {
+      if (e.code !== '42703') throw e;
+      const r = await query(
+        `SELECT id, stripe_price_id FROM subscription_plans
+          WHERE id=$1 AND is_active=true LIMIT 1`,
+        [plan_id]
+      );
+      planRow = r.rows[0] || null;
+    }
+    if (!planRow) return res.status(404).json({ error: 'Plan not found.' });
+
+    // Pick yearly Stripe Price when the front-end asked for it and the
+    // admin has filled in annual_stripe_price_id on this row. Otherwise
+    // fall back to monthly.
+    if (wantsAnnual && planRow.annual_stripe_price_id) {
+      planRow.stripe_price_id = planRow.annual_stripe_price_id;
+    } else if (wantsAnnual && !planRow.annual_stripe_price_id) {
+      return res.status(400).json({ error: 'Annual price not configured for this plan yet.' });
+    }
+    const plans = [planRow];
 
     const { rows: members } = await query(
       'SELECT id, email, first_name, last_name, phone, stripe_customer_id FROM members WHERE id=$1',
@@ -171,6 +199,7 @@ router.get('/admin/plans', authenticate, requireAdmin, async (req, res, next) =>
         `SELECT p.id, p.name, p.tagline, p.description, p.stripe_price_id, p.currency,
                 p.amount_cents, p.interval, p.features, p.sort_order, p.is_active,
                 p.country_id, co.code AS country_code, co.name AS country_name,
+                p.annual_amount_cents, p.annual_stripe_price_id, p.annual_savings_label,
                 p.created_at, p.updated_at
            FROM subscription_plans p
            LEFT JOIN countries co ON co.id = p.country_id
@@ -200,26 +229,53 @@ router.post('/admin/plans', authenticate, requireAdmin, async (req, res, next) =
       name, tagline, description, stripe_price_id,
       currency, amount_cents, interval, features,
       sort_order, is_active, country_id,
+      annual_amount_cents, annual_stripe_price_id, annual_savings_label,
     } = req.body || {};
     if (!name || !name.trim()) return res.status(400).json({ error: 'name required' });
 
-    const { rows } = await query(
-      `INSERT INTO subscription_plans
-         (name, tagline, description, stripe_price_id, currency, amount_cents,
-          interval, features, sort_order, is_active, country_id)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-       RETURNING *`,
-      [name.trim(), tagline || null, description || null,
-       stripe_price_id || null, (currency || 'aed').toLowerCase(),
-       Math.max(0, parseInt(amount_cents) || 0),
-       (interval === 'year' ? 'year' : 'month'),
-       features ? JSON.stringify(features) : null,
-       parseInt(sort_order) || 100,
-       is_active !== false,
-       country_id || null]
-    );
-    audit.log(req, 'subscription_plan.create', 'subscription_plan', rows[0].id, { name: rows[0].name });
-    res.status(201).json({ plan: rows[0] });
+    try {
+      const { rows } = await query(
+        `INSERT INTO subscription_plans
+           (name, tagline, description, stripe_price_id, currency, amount_cents,
+            interval, features, sort_order, is_active, country_id,
+            annual_amount_cents, annual_stripe_price_id, annual_savings_label)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14)
+         RETURNING *`,
+        [name.trim(), tagline || null, description || null,
+         stripe_price_id || null, (currency || 'aed').toLowerCase(),
+         Math.max(0, parseInt(amount_cents) || 0),
+         (interval === 'year' ? 'year' : 'month'),
+         features ? JSON.stringify(features) : null,
+         parseInt(sort_order) || 100,
+         is_active !== false,
+         country_id || null,
+         annual_amount_cents != null ? Math.max(0, parseInt(annual_amount_cents) || 0) : null,
+         annual_stripe_price_id || null,
+         annual_savings_label || null]
+      );
+      audit.log(req, 'subscription_plan.create', 'subscription_plan', rows[0].id, { name: rows[0].name });
+      return res.status(201).json({ plan: rows[0] });
+    } catch (e) {
+      // Pre-migration fallback — annual_* columns missing. Insert without them.
+      if (e.code !== '42703') throw e;
+      const { rows } = await query(
+        `INSERT INTO subscription_plans
+           (name, tagline, description, stripe_price_id, currency, amount_cents,
+            interval, features, sort_order, is_active, country_id)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+         RETURNING *`,
+        [name.trim(), tagline || null, description || null,
+         stripe_price_id || null, (currency || 'aed').toLowerCase(),
+         Math.max(0, parseInt(amount_cents) || 0),
+         (interval === 'year' ? 'year' : 'month'),
+         features ? JSON.stringify(features) : null,
+         parseInt(sort_order) || 100,
+         is_active !== false,
+         country_id || null]
+      );
+      audit.log(req, 'subscription_plan.create', 'subscription_plan', rows[0].id, { name: rows[0].name });
+      res.status(201).json({ plan: rows[0] });
+    }
   } catch (err) { next(err); }
 });
 
@@ -230,7 +286,8 @@ router.patch('/admin/plans/:id', authenticate, requireAdmin, async (req, res, ne
     let i = 1;
     const allowed = ['name','tagline','description','stripe_price_id','currency',
                      'amount_cents','interval','features','sort_order','is_active',
-                     'country_id'];
+                     'country_id',
+                     'annual_amount_cents','annual_stripe_price_id','annual_savings_label'];
     for (const k of allowed) {
       if (k in (req.body || {})) {
         let v = req.body[k];
@@ -243,11 +300,39 @@ router.patch('/admin/plans/:id', authenticate, requireAdmin, async (req, res, ne
     }
     if (!fields.length) return res.status(400).json({ error: 'No fields to update' });
     values.push(req.params.id);
-    const { rows } = await query(
-      `UPDATE subscription_plans SET ${fields.join(', ')}, updated_at=NOW()
-        WHERE id=$${i} RETURNING *`,
-      values
-    );
+    let rows;
+    try {
+      const r = await query(
+        `UPDATE subscription_plans SET ${fields.join(', ')}, updated_at=NOW()
+          WHERE id=$${i} RETURNING *`,
+        values
+      );
+      rows = r.rows;
+    } catch (e) {
+      // Pre-migration: annual_* columns missing. Drop them from the
+      // update set and retry so the rest of the patch still goes through.
+      if (e.code !== '42703') throw e;
+      const annualKeys = new Set(['annual_amount_cents','annual_stripe_price_id','annual_savings_label']);
+      const f2 = []; const v2 = []; let j = 1;
+      for (const k of allowed) {
+        if (annualKeys.has(k)) continue;
+        if (k in (req.body || {})) {
+          let v = req.body[k];
+          if (k === 'features' && v != null) v = JSON.stringify(v);
+          if (k === 'currency' && v) v = String(v).toLowerCase();
+          if (k === 'interval') v = (v === 'year' ? 'year' : 'month');
+          f2.push(`${k}=$${j++}`); v2.push(v);
+        }
+      }
+      if (!f2.length) return res.status(400).json({ error: 'Annual fields not migrated yet — run migrate-annual-plans first.' });
+      v2.push(req.params.id);
+      const r = await query(
+        `UPDATE subscription_plans SET ${f2.join(', ')}, updated_at=NOW()
+          WHERE id=$${j} RETURNING *`,
+        v2
+      );
+      rows = r.rows;
+    }
     if (!rows.length) return res.status(404).json({ error: 'Plan not found' });
     audit.log(req, 'subscription_plan.update', 'subscription_plan', rows[0].id, { name: rows[0].name });
     res.json({ plan: rows[0] });

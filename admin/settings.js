@@ -569,6 +569,9 @@ function showPlanForm() {
   document.getElementById('planInterval').value     = 'month';
   document.getElementById('planSort').value         = 100;
   document.getElementById('planActive').checked     = true;
+  if (document.getElementById('planAnnualStripePriceId')) document.getElementById('planAnnualStripePriceId').value = '';
+  if (document.getElementById('planAnnualAmount'))        document.getElementById('planAnnualAmount').value        = '';
+  if (document.getElementById('planAnnualSavingsLabel'))  document.getElementById('planAnnualSavingsLabel').value  = '';
   if (document.getElementById('planCountry')) document.getElementById('planCountry').value = '';
   document.getElementById('planFormTitle').textContent = 'New plan';
   document.getElementById('planFormWrap').style.display = 'block';
@@ -593,6 +596,9 @@ function editPlan(id) {
   document.getElementById('planInterval').value       = p.interval || 'month';
   document.getElementById('planSort').value           = p.sort_order || 100;
   document.getElementById('planActive').checked       = !!p.is_active;
+  if (document.getElementById('planAnnualStripePriceId')) document.getElementById('planAnnualStripePriceId').value = p.annual_stripe_price_id || '';
+  if (document.getElementById('planAnnualAmount'))        document.getElementById('planAnnualAmount').value        = p.annual_amount_cents != null ? p.annual_amount_cents : '';
+  if (document.getElementById('planAnnualSavingsLabel'))  document.getElementById('planAnnualSavingsLabel').value  = p.annual_savings_label || '';
   if (document.getElementById('planCountry')) {
     populatePlanCountryDropdown(p.country_id || '');
   }
@@ -608,18 +614,22 @@ function savePlan() {
   var id = document.getElementById('planEditId').value;
   var featsRaw = document.getElementById('planFeatures').value || '';
   var features = featsRaw.split(/\r?\n/).map(function(s){ return s.trim(); }).filter(Boolean);
+  var annualAmtRaw = (document.getElementById('planAnnualAmount') || {}).value;
   var body = {
-    name:            (document.getElementById('planName').value || '').trim(),
-    tagline:         (document.getElementById('planTagline').value || '').trim() || null,
-    description:     (document.getElementById('planDescription').value || '').trim() || null,
-    stripe_price_id: (document.getElementById('planStripePriceId').value || '').trim() || null,
-    amount_cents:    parseInt(document.getElementById('planAmount').value, 10) || 0,
-    currency:        (document.getElementById('planCurrency').value || 'aed').toLowerCase().trim(),
-    interval:        document.getElementById('planInterval').value === 'year' ? 'year' : 'month',
-    features:        features.length ? features : null,
-    sort_order:      parseInt(document.getElementById('planSort').value, 10) || 100,
-    is_active:       document.getElementById('planActive').checked,
-    country_id:      (document.getElementById('planCountry') && document.getElementById('planCountry').value) || null,
+    name:                   (document.getElementById('planName').value || '').trim(),
+    tagline:                (document.getElementById('planTagline').value || '').trim() || null,
+    description:            (document.getElementById('planDescription').value || '').trim() || null,
+    stripe_price_id:        (document.getElementById('planStripePriceId').value || '').trim() || null,
+    amount_cents:           parseInt(document.getElementById('planAmount').value, 10) || 0,
+    currency:               (document.getElementById('planCurrency').value || 'aed').toLowerCase().trim(),
+    interval:               document.getElementById('planInterval').value === 'year' ? 'year' : 'month',
+    features:               features.length ? features : null,
+    sort_order:             parseInt(document.getElementById('planSort').value, 10) || 100,
+    is_active:              document.getElementById('planActive').checked,
+    country_id:             (document.getElementById('planCountry') && document.getElementById('planCountry').value) || null,
+    annual_amount_cents:    annualAmtRaw === '' || annualAmtRaw == null ? null : (parseInt(annualAmtRaw, 10) || 0),
+    annual_stripe_price_id: ((document.getElementById('planAnnualStripePriceId') || {}).value || '').trim() || null,
+    annual_savings_label:   ((document.getElementById('planAnnualSavingsLabel')   || {}).value || '').trim() || null,
   };
   if (!body.name) { showToast('Plan name required', true); return; }
 

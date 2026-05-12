@@ -1294,6 +1294,29 @@
                 <div><label class="admin-form-label" for="planCurrency">Currency</label><input class="admin-form-input" type="text" id="planCurrency" value="aed" maxlength="3" style="text-transform:lowercase"></div>
                 <div><label class="admin-form-label" for="planInterval">Interval</label><select class="admin-form-select" id="planInterval"><option value="month">Monthly</option><option value="year">Yearly</option></select></div>
               </div>
+              <!-- Yearly promo (optional). Lets admins offer an annual
+                   billing option alongside the monthly tier with its own
+                   Stripe Price and savings copy. Leave the amount empty
+                   to disable yearly on this plan. -->
+              <fieldset style="border:1px dashed rgba(122,194,49,.25);border-radius:8px;padding:12px 14px;margin-bottom:14px">
+                <legend style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7AC231;padding:0 6px">🎁 Yearly promo (optional)</legend>
+                <div style="display:grid;grid-template-columns:2fr 1fr 1.5fr;gap:10px">
+                  <div>
+                    <label class="admin-form-label" for="planAnnualStripePriceId">Annual Stripe price id</label>
+                    <input class="admin-form-input" type="text" id="planAnnualStripePriceId" placeholder="price_1Pyearxxxxxxx" style="font-family:monospace;font-size:12px">
+                  </div>
+                  <div>
+                    <label class="admin-form-label" for="planAnnualAmount">Annual amount</label>
+                    <input class="admin-form-input" type="number" id="planAnnualAmount" min="0" placeholder="e.g. 49000">
+                    <div style="font-size:10px;color:#666;margin-top:4px">In cents/fils. 49000 = AED 490.00. Leave blank to disable yearly.</div>
+                  </div>
+                  <div>
+                    <label class="admin-form-label" for="planAnnualSavingsLabel">Savings badge</label>
+                    <input class="admin-form-input" type="text" id="planAnnualSavingsLabel" placeholder="e.g. 2 months free">
+                    <div style="font-size:10px;color:#666;margin-top:4px">Shown on the yearly toggle. Leave blank to auto-compute % saved.</div>
+                  </div>
+                </div>
+              </fieldset>
               <div style="margin-bottom:14px">
                 <label class="admin-form-label" for="planCountry">Country (Theme 8)</label>
                 <select class="admin-form-select" id="planCountry"><option value="">🌍 Global (all countries)</option></select>
