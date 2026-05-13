@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="/atp.min.css">
+  <script src="/atp.bundle.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live · At The Park</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#7AC231;--green-dark:#5a9a1f;--green-light:#a8e055;
+  --black:#0a0a0a;--dark:#111111;--dark2:#1a1a1a;--dark3:#222222;
+  --muted:#888888;--light:#aaaaaa;--white:#ffffff;
+  --red:#ef4444;
+  --ff-display:'Barlow Condensed',sans-serif;--ff-body:'DM Sans',sans-serif;
+  --nav-h:68px;--max:1320px;--radius:8px;--radius-lg:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff-body);background:var(--black);color:var(--white);min-height:100vh;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;color:inherit}
+
+#nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;padding:0 40px;border-bottom:1px solid transparent;transition:background .3s}
+#nav.scrolled{background:rgba(10,10,10,.97);border-bottom-color:rgba(122,194,49,.18);backdrop-filter:blur(16px)}
+
+main{padding:var(--nav-h) 24px 60px;max-width:var(--max);margin:0 auto}
+
+.watch-grid{display:grid;grid-template-columns:1fr 320px;gap:22px;margin-top:24px}
+@media(max-width:1024px){.watch-grid{grid-template-columns:1fr}}
+
+.watch-player-wrap{position:relative;background:#000;border-radius:var(--radius-lg);overflow:hidden;border:1px solid rgba(255,255,255,.08);aspect-ratio:16/9}
+.watch-player-wrap video{width:100%;height:100%;object-fit:cover;display:block;background:#000}
+.watch-overlay-state{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:14px;color:var(--light);background:rgba(0,0,0,.7);z-index:5;text-align:center;padding:24px}
+.watch-overlay-state .icon{font-size:48px;opacity:.5}
+.watch-overlay-state.hidden{display:none}
+.watch-overlay-state .spinner{width:36px;height:36px;border:3px solid rgba(255,255,255,.15);border-top-color:var(--green);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.watch-live-pill{position:absolute;top:14px;left:14px;display:inline-flex;align-items:center;gap:6px;padding:5px 12px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;background:var(--red);color:#fff;border-radius:6px;z-index:4;box-shadow:0 4px 12px rgba(239,68,68,.4)}
+.watch-live-pill .dot{width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
+.watch-viewer-pill{position:absolute;top:14px;right:14px;display:inline-flex;align-items:center;gap:6px;padding:5px 11px;font-size:12px;font-weight:700;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);color:#fff;border-radius:6px;z-index:4}
+
+/* Floating reactions ascending from bottom right (Instagram-style) */
+.watch-reactions{position:absolute;right:14px;bottom:80px;width:60px;height:200px;pointer-events:none;z-index:3;overflow:hidden}
+.watch-reaction{position:absolute;bottom:0;right:14px;font-size:24px;animation:rise 3s ease-out forwards;opacity:0}
+@keyframes rise{
+  0%{bottom:0;opacity:0;transform:scale(.6)}
+  10%{opacity:1;transform:scale(1.1)}
+  20%{transform:scale(1)}
+  100%{bottom:200px;opacity:0;transform:translateX(-30px) scale(.7)}
+}
+
+/* Reaction bar — sits below the player */
+.watch-actions{display:flex;gap:10px;padding:14px 18px;background:var(--dark2);border:1px solid rgba(255,255,255,.06);border-top:none;border-radius:0 0 var(--radius-lg) var(--radius-lg);flex-wrap:wrap;align-items:center}
+.watch-react-btn{padding:8px 14px;font-size:16px;border-radius:999px;background:#0d0d0d;border:1px solid rgba(255,255,255,.1);transition:all .15s}
+.watch-react-btn:hover{transform:translateY(-2px);border-color:var(--green);background:rgba(122,194,49,.06)}
+
+/* Banner ad slot — sits between player and meta block */
+.watch-ad{margin-top:14px;border-radius:var(--radius-lg);overflow:hidden;background:var(--dark2);border:1px solid rgba(255,255,255,.06);display:block;position:relative}
+.watch-ad img{display:block;width:100%;max-height:120px;object-fit:cover}
+.watch-ad-label{position:absolute;top:6px;right:8px;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.55);background:rgba(0,0,0,.55);padding:2px 6px;border-radius:4px;backdrop-filter:blur(4px)}
+
+.watch-meta{margin-top:18px;padding:20px 22px;background:var(--dark2);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius-lg)}
+.watch-host-row{display:flex;align-items:center;gap:12px;margin-bottom:14px}
+.watch-host-av{width:48px;height:48px;border-radius:50%;background:var(--dark3);overflow:hidden;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff}
+.watch-host-av img{width:100%;height:100%;object-fit:cover}
+.watch-host-info{flex:1;min-width:0}
+.watch-host-name{font-size:16px;font-weight:700;color:#fff}
+.watch-host-role{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);font-weight:700}
+.watch-title{font-family:var(--ff-display);font-size:30px;font-weight:900;letter-spacing:.005em;text-transform:uppercase;margin-bottom:8px;line-height:1.05}
+.watch-desc{font-size:14px;color:var(--light);line-height:1.6;white-space:pre-line}
+
+/* Side panel (chat-style) */
+.watch-side{background:var(--dark2);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius-lg);padding:20px;display:flex;flex-direction:column;max-height:680px}
+.watch-side h3{font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:.005em;margin-bottom:12px}
+.watch-side-stats{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px}
+.watch-side-stat{padding:12px;background:#0a0a0a;border-radius:var(--radius);border:1px solid rgba(255,255,255,.05)}
+.watch-side-stat-num{font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--green);line-height:1}
+.watch-side-stat-lbl{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:4px}
+.watch-share-row{display:flex;gap:8px;flex-wrap:wrap}
+.watch-share-row button{flex:1;min-width:90px;padding:10px;font-size:12px;font-weight:700;background:#0d0d0d;border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);transition:all .15s}
+.watch-share-row button:hover{border-color:var(--green);color:var(--green)}
+
+.watch-locked{padding:80px 40px;background:var(--dark2);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius-lg);text-align:center}
+.watch-locked h2{font-family:var(--ff-display);font-size:32px;font-weight:900;text-transform:uppercase;margin-bottom:12px}
+.watch-locked p{color:var(--light);max-width:480px;margin:0 auto 22px;line-height:1.6}
+.watch-locked a{display:inline-block;padding:13px 28px;background:var(--green);color:#0a0a0a;border-radius:var(--radius);font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-size:13px}
+
+footer{background:var(--dark);padding:36px 40px 24px;border-top:1px solid rgba(255,255,255,.06);text-align:center}
+footer p{font-size:12px;color:var(--muted);margin:0}
+
+@media(max-width:900px){
+  #nav{padding:0 20px}
+  main{padding:var(--nav-h) 14px 60px}
+}
+</style>
+</head>
+<body>
+
+<div id="atp-nav-host" data-active="stream"></div>
+
+<main>
+  <div id="lockedView" style="display:none">
+    <div class="watch-locked">
+      <h2 id="lockedTitle">Upgrade to watch</h2>
+      <p id="lockedSub">This stream is gated to ATP members on a higher tier.</p>
+      <a href="/plans.html">See plans →</a>
+    </div>
+  </div>
+
+  <div id="playerView" style="display:none">
+    <div class="watch-player-wrap">
+      <video id="player" autoplay playsinline controls></video>
+      <span class="watch-live-pill"><span class="dot"></span> Live</span>
+      <span class="watch-viewer-pill">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 3-5 6-5s6 2 6 5"/></svg>
+        <span id="viewerCount">0</span>
+      </span>
+      <div class="watch-reactions" id="reactionsLayer"></div>
+      <div class="watch-overlay-state" id="overlay">
+        <div class="spinner"></div>
+        <div id="overlayText">Connecting…</div>
+      </div>
+    </div>
+    <div class="watch-actions">
+      <button class="watch-react-btn" data-react="❤️">❤️</button>
+      <button class="watch-react-btn" data-react="🔥">🔥</button>
+      <button class="watch-react-btn" data-react="💪">💪</button>
+      <button class="watch-react-btn" data-react="👏">👏</button>
+      <button class="watch-react-btn" data-react="🎉">🎉</button>
+      <span style="margin-left:auto;font-size:12px;color:var(--muted)" id="latencyHint">Buffering…</span>
+    </div>
+
+    <a class="watch-ad" id="watchAd" style="display:none" target="_blank" rel="noopener">
+      <img id="watchAdImg" src="" alt="">
+      <span class="watch-ad-label">Ad</span>
+    </a>
+
+    <div class="watch-grid">
+      <div class="watch-meta">
+        <div class="watch-host-row">
+          <div class="watch-host-av" id="hostAv">·</div>
+          <div class="watch-host-info">
+            <div class="watch-host-name" id="hostName">—</div>
+            <div class="watch-host-role" id="hostRole">host</div>
+          </div>
+        </div>
+        <h1 class="watch-title" id="streamTitle">Live stream</h1>
+        <p class="watch-desc" id="streamDesc"></p>
+      </div>
+      <aside class="watch-side">
+        <h3>Live stats</h3>
+        <div class="watch-side-stats">
+          <div class="watch-side-stat"><div class="watch-side-stat-num" id="statViewers">0</div><div class="watch-side-stat-lbl">Watching now</div></div>
+          <div class="watch-side-stat"><div class="watch-side-stat-num" id="statPeak">0</div><div class="watch-side-stat-lbl">Peak</div></div>
+        </div>
+        <h3>Share</h3>
+        <div class="watch-share-row">
+          <button id="shareWa">WhatsApp</button>
+          <button id="shareCopy">Copy link</button>
+        </div>
+        <p style="font-size:11px;color:var(--muted);line-height:1.5;margin-top:14px">Stream is live now — Premium members on the link can hop straight in.</p>
+      </aside>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <p>© 2026 At The Park. All rights reserved.</p>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+
+  window.addEventListener('scroll', function(){
+    var n = document.getElementById('nav');
+    if (n) n.classList.toggle('scrolled', window.scrollY > 10);
+  }, { passive: true });
+
+  // ── Parse stream id from query ──────────────────────────────
+  var sid = (function(){
+    try { return new URL(location.href).searchParams.get('id') || null; } catch(e) { return null; }
+  })();
+  if (!sid) { window.location.href = '/stream.html'; return; }
+
+  function token() {
+    try { return localStorage.getItem('atp_token') || ''; } catch(e) { return ''; }
+  }
+  function authHeaders() {
+    var t = token(); return t ? { 'Authorization': 'Bearer ' + t } : {};
+  }
+
+  function setOverlay(text) {
+    var ov = document.getElementById('overlay');
+    var t  = document.getElementById('overlayText');
+    if (text == null) { ov.classList.add('hidden'); return; }
+    t.textContent = text;
+    ov.classList.remove('hidden');
+  }
+
+  function showLocked(tier) {
+    document.getElementById('lockedView').style.display = '';
+    document.getElementById('playerView').style.display = 'none';
+    document.getElementById('lockedTitle').textContent = tier === 'premium_plus' ? 'Premium Plus only' : 'Premium members only';
+    document.getElementById('lockedSub').textContent = tier === 'premium_plus'
+      ? 'This is a coaching session — only available to ATP Premium Plus members. Upgrade to watch live.'
+      : 'This stream is for Premium and Premium Plus members. Upgrade to join the community feed live.';
+  }
+
+  // ── Fetch stream metadata (host, title, lock state) ─────────
+  async function loadMeta() {
+    var r = await fetch('/api/streams/live', { headers: authHeaders() });
+    if (!r.ok) return null;
+    var d = await r.json();
+    var s = (d.streams || []).find(function(x){ return x.id === sid; });
+    return s || null;
+  }
+
+  // ── Rotating banner ad ──────────────────────────────────────
+  async function loadAd() {
+    try {
+      var r = await fetch('/api/streams/ads/random');
+      var d = await r.json();
+      var ad = d.ad;
+      if (!ad) return;
+      var a   = document.getElementById('watchAd');
+      var img = document.getElementById('watchAdImg');
+      img.src = ad.image_url;
+      a.style.display = 'block';
+      if (ad.click_url) {
+        a.href = ad.click_url;
+        a.onclick = function(){
+          // Best-effort click tracking; don't block navigation if it fails.
+          try { fetch('/api/streams/ads/' + encodeURIComponent(ad.id) + '/click', { method: 'POST' }); } catch(_){}
+        };
+      } else {
+        a.removeAttribute('href');
+      }
+    } catch(e) {}
+  }
+
+  // ── MediaSource-based chunked playback ─────────────────────
+  //
+  // The viewer pumps chunks from /api/streams/:id/chunks into a
+  // MediaSource SourceBuffer. The first request seeds the buffer
+  // with up to the rolling 120s window so we don't sit on a black
+  // screen waiting for the next chunk; subsequent requests tail
+  // anything new via ?after=<lastSeq>.
+  var STATE = { ms: null, sb: null, lastSeq: -1, mime: null, ended: false, queue: [], appending: false, viewId: null };
+
+  function initMediaSource(mime) {
+    return new Promise(function(resolve, reject) {
+      var v = document.getElementById('player');
+      var ms = new MediaSource();
+      v.src = URL.createObjectURL(ms);
+      ms.addEventListener('sourceopen', function() {
+        try {
+          if (!MediaSource.isTypeSupported(mime)) {
+            // Some browsers report Vp9 unsupported even though the
+            // recorder produced it — fall back to generic webm.
+            var fallback = 'video/webm;codecs=vp8,opus';
+            if (MediaSource.isTypeSupported(fallback)) mime = fallback;
+          }
+          var sb = ms.addSourceBuffer(mime);
+          sb.mode = 'sequence';
+          sb.addEventListener('updateend', function(){
+            STATE.appending = false;
+            flushQueue();
+          });
+          STATE.ms = ms; STATE.sb = sb; STATE.mime = mime;
+          resolve();
+        } catch(e) { reject(e); }
+      });
+    });
+  }
+
+  function flushQueue() {
+    if (STATE.appending || !STATE.sb || !STATE.queue.length) return;
+    var next = STATE.queue.shift();
+    STATE.appending = true;
+    try { STATE.sb.appendBuffer(next); }
+    catch(e) { STATE.appending = false; }
+  }
+
+  function pushBytes(arrayBuf) {
+    STATE.queue.push(new Uint8Array(arrayBuf));
+    flushQueue();
+  }
+
+  async function pullChunks() {
+    if (STATE.ended) return;
+    try {
+      var url = '/api/streams/' + encodeURIComponent(sid) + '/chunks' +
+                (STATE.lastSeq >= 0 ? ('?after=' + STATE.lastSeq) : '');
+      var r = await fetch(url, { headers: authHeaders() });
+      if (r.status === 410) { onStreamEnded(); return; }
+      if (r.status === 403) { showLocked('premium'); return; }
+      if (r.status === 204) { /* no new chunks yet */ }
+      else if (r.ok) {
+        var headerMime = r.headers.get('X-Stream-Mime') || 'video/webm;codecs=vp8,opus';
+        if (!STATE.ms) { await initMediaSource(headerMime); }
+        var lastSeqHdr = parseInt(r.headers.get('X-Last-Seq'), 10);
+        if (!isNaN(lastSeqHdr)) STATE.lastSeq = lastSeqHdr;
+        var buf = await r.arrayBuffer();
+        if (buf.byteLength) pushBytes(buf);
+        setOverlay(null);
+        document.getElementById('latencyHint').textContent = '~4-8s behind live';
+      }
+    } catch(e) { /* network blip — retry */ }
+    // Re-poll every 2s while the stream is live.
+    setTimeout(pullChunks, 2000);
+  }
+
+  function onStreamEnded() {
+    STATE.ended = true;
+    setOverlay('Stream ended');
+  }
+
+  // ── View session lifecycle (analytics) ──────────────────────
+  async function openView() {
+    var r = await fetch('/api/streams/' + encodeURIComponent(sid) + '/view', {
+      method: 'POST', headers: authHeaders(),
+    });
+    if (r.ok) {
+      var d = await r.json();
+      STATE.viewId = d.view_id;
+    }
+  }
+  async function heartbeat() {
+    if (!STATE.viewId || STATE.ended) return;
+    try {
+      await fetch('/api/streams/' + encodeURIComponent(sid) + '/view/' + STATE.viewId, {
+        method: 'PATCH',
+        headers: Object.assign({ 'Content-Type':'application/json' }, authHeaders()),
+        body: JSON.stringify({}),
+      });
+    } catch(e) {}
+  }
+  function endView() {
+    if (!STATE.viewId) return;
+    try {
+      navigator.sendBeacon &&
+        navigator.sendBeacon(
+          '/api/streams/' + encodeURIComponent(sid) + '/view/' + STATE.viewId,
+          new Blob([JSON.stringify({ end: true })], { type: 'application/json' })
+        );
+    } catch(e){}
+  }
+  window.addEventListener('beforeunload', endView);
+  window.addEventListener('pagehide', endView);
+
+  // ── Live stats refresh (concurrent + peak) ──────────────────
+  async function refreshStats() {
+    try {
+      var r = await fetch('/api/streams/live', { headers: authHeaders() });
+      if (!r.ok) return;
+      var d = await r.json();
+      var s = (d.streams || []).find(function(x){ return x.id === sid; });
+      if (!s) return;
+      document.getElementById('viewerCount').textContent = s.concurrent_viewers || 0;
+      document.getElementById('statViewers').textContent = s.concurrent_viewers || 0;
+      document.getElementById('statPeak').textContent    = s.peak_viewers || 0;
+    } catch(e) {}
+  }
+
+  // ── Reactions overlay (Instagram-style float) ───────────────
+  function spawnReaction(emoji) {
+    var layer = document.getElementById('reactionsLayer');
+    var el = document.createElement('div');
+    el.className = 'watch-reaction';
+    el.textContent = emoji;
+    el.style.right = (4 + Math.random() * 18) + 'px';
+    layer.appendChild(el);
+    setTimeout(function(){ if (el.parentNode) el.parentNode.removeChild(el); }, 3500);
+  }
+  document.querySelectorAll('.watch-react-btn').forEach(function(b){
+    b.onclick = function(){ spawnReaction(b.getAttribute('data-react')); };
+  });
+
+  // ── Share row ───────────────────────────────────────────────
+  document.getElementById('shareWa').onclick = function() {
+    var url = location.href;
+    var text = 'Catch this live ATP session: ' + url;
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank', 'noopener');
+  };
+  document.getElementById('shareCopy').onclick = function() {
+    try {
+      navigator.clipboard.writeText(location.href);
+      this.textContent = 'Copied ✓';
+      var self = this;
+      setTimeout(function(){ self.textContent = 'Copy link'; }, 1500);
+    } catch(e) {}
+  };
+
+  // ── Boot ────────────────────────────────────────────────────
+  (async function boot() {
+    var meta = await loadMeta();
+    if (!meta) {
+      setOverlay('Stream not found — it may have ended.');
+      return;
+    }
+    // Gate check (server also enforces; this is so the UI swaps cleanly).
+    if (meta.is_locked) { showLocked(meta.tier_required); return; }
+    document.getElementById('playerView').style.display = '';
+
+    // Hydrate the meta panel.
+    var hostName = ((meta.first_name || '') + ' ' + (meta.last_name || '')).trim() || 'ATP host';
+    document.getElementById('hostName').textContent = hostName;
+    document.getElementById('hostRole').textContent = (meta.host_role || 'host') + ' · ' + (meta.stream_type === 'coaching' ? 'Coaching session' : 'Community session');
+    document.getElementById('streamTitle').textContent = meta.title || 'Live stream';
+    document.getElementById('streamDesc').textContent  = meta.description || '';
+    if (meta.host_photo) {
+      var av = document.getElementById('hostAv');
+      av.innerHTML = '<img src="' + meta.host_photo + '" alt="">';
+    } else {
+      document.getElementById('hostAv').textContent = ((meta.first_name||'?')[0] + ((meta.last_name||'')[0] || '')).toUpperCase();
+    }
+
+    setOverlay('Connecting to live feed…');
+    await loadAd();
+    await openView();
+    pullChunks();
+    refreshStats();
+    setInterval(refreshStats, 10_000);
+    setInterval(heartbeat,    10_000);
+    // Refresh the ad every 60s so two ads share the airtime evenly.
+    setInterval(loadAd, 60_000);
+  })();
+
+})();
+</script>
+</body>
+</html>

@@ -1608,6 +1608,69 @@ router.post('/migrate-session-intro-video', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-streaming ──────────────────────────
+// Creates the streaming MVP tables:
+//   streams       — one row per live broadcast (host, title, type, tier,
+//                   started_at, ended_at, viewer/avg metrics)
+//   stream_views  — one row per viewer session for analytics
+//   stream_ads    — admin-managed banner ads shown on the watch page
+// All idempotent + gated by ADMIN_SETUP_KEY.
+router.post('/migrate-streaming', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    await query(`CREATE TABLE IF NOT EXISTS streams (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      host_member_id  UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      title           VARCHAR(200) NOT NULL,
+      description     TEXT,
+      stream_type     VARCHAR(20)  NOT NULL DEFAULT 'community', -- community | coaching
+      tier_required   VARCHAR(20)  NOT NULL DEFAULT 'premium',   -- premium | premium_plus
+      status          VARCHAR(20)  NOT NULL DEFAULT 'live',      -- live | ended
+      mime_type       VARCHAR(80),                                -- e.g. video/webm;codecs=vp9,opus
+      started_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+      ended_at        TIMESTAMPTZ,
+      peak_viewers    INT          NOT NULL DEFAULT 0,
+      total_unique_viewers INT     NOT NULL DEFAULT 0,
+      total_view_seconds   BIGINT  NOT NULL DEFAULT 0,
+      created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_streams_status_started ON streams(status, started_at DESC)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_streams_host           ON streams(host_member_id)`);
+
+    await query(`CREATE TABLE IF NOT EXISTS stream_views (
+      id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      stream_id        UUID NOT NULL REFERENCES streams(id) ON DELETE CASCADE,
+      viewer_member_id UUID REFERENCES members(id) ON DELETE SET NULL,
+      joined_at        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      left_at          TIMESTAMPTZ,
+      duration_seconds INT          NOT NULL DEFAULT 0,
+      last_heartbeat_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_stream_views_stream ON stream_views(stream_id)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_stream_views_viewer ON stream_views(viewer_member_id) WHERE viewer_member_id IS NOT NULL`);
+
+    await query(`CREATE TABLE IF NOT EXISTS stream_ads (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      name            VARCHAR(160) NOT NULL,
+      image_url       TEXT NOT NULL,
+      click_url       TEXT,
+      weight          INT          NOT NULL DEFAULT 1,
+      is_active       BOOLEAN      NOT NULL DEFAULT true,
+      starts_at       TIMESTAMPTZ,
+      ends_at         TIMESTAMPTZ,
+      impressions     BIGINT       NOT NULL DEFAULT 0,
+      clicks          BIGINT       NOT NULL DEFAULT 0,
+      created_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+      updated_at      TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_stream_ads_active ON stream_ads(is_active) WHERE is_active = true`);
+
+    res.json({ success: true, message: 'streams, stream_views, stream_ads tables ready' });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-annual-plans ───────────────────────
 // Adds three columns to subscription_plans so admins can run a yearly
 // promo alongside the monthly tier on the same plan row:

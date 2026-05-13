@@ -1155,6 +1155,8 @@
                 style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">💳 Plans</button>
         <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["countries"]'
                 style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">🌍 Countries</button>
+        <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["streaming"]'
+                style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">🎥 Streaming</button>
         <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["maintenance"]'
                 style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">🛠 Maintenance</button>
       </div>
@@ -1366,6 +1368,74 @@
               </div>
             </div>
             <div id="countriesList"><div style="padding:14px;color:#555;text-align:center">Loading…</div></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Streaming tab — banner ads CRUD + live analytics dashboard -->
+      <div class="settings-pane" id="settings-pane-streaming" style="display:none">
+        <div class="admin-section">
+          <div class="admin-section-head">
+            <span class="admin-section-title">🎥 Live streaming · ads &amp; analytics</span>
+            <button class="admin-btn admin-btn-primary" data-atp-call="showStreamAdForm" style="font-size:12px;padding:7px 14px">+ New banner ad</button>
+          </div>
+          <div class="admin-section-body">
+            <div style="font-size:12px;color:#888;margin-bottom:16px;line-height:1.6">
+              Banner ads rotate (weighted) below the live video on <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#7AC231">/stream-watch.html</code>. Set <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#7AC231">weight</code> higher to show a creative more often. Impressions + clicks are tracked per ad.
+            </div>
+
+            <!-- Live dashboard tiles -->
+            <div id="streamDashTiles" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px">
+              <div style="background:#0d0d0d;border:1px solid #1a1a1a;border-radius:10px;padding:14px">
+                <div style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:#ef4444" id="dashLiveCount">—</div>
+                <div style="font-size:11px;color:#666;letter-spacing:.06em;text-transform:uppercase;margin-top:4px">Live now</div>
+              </div>
+              <div style="background:#0d0d0d;border:1px solid #1a1a1a;border-radius:10px;padding:14px">
+                <div style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:#7AC231" id="dashConcurrent">—</div>
+                <div style="font-size:11px;color:#666;letter-spacing:.06em;text-transform:uppercase;margin-top:4px">Concurrent viewers</div>
+              </div>
+              <div style="background:#0d0d0d;border:1px solid #1a1a1a;border-radius:10px;padding:14px">
+                <div style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:#7AC231" id="dash7dStreams">—</div>
+                <div style="font-size:11px;color:#666;letter-spacing:.06em;text-transform:uppercase;margin-top:4px">Streams · 7d</div>
+              </div>
+              <div style="background:#0d0d0d;border:1px solid #1a1a1a;border-radius:10px;padding:14px">
+                <div style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:#7AC231" id="dash7dUnique">—</div>
+                <div style="font-size:11px;color:#666;letter-spacing:.06em;text-transform:uppercase;margin-top:4px">Unique viewers · 7d</div>
+              </div>
+              <div style="background:#0d0d0d;border:1px solid #1a1a1a;border-radius:10px;padding:14px">
+                <div style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:#7AC231" id="dash7dAvg">—</div>
+                <div style="font-size:11px;color:#666;letter-spacing:.06em;text-transform:uppercase;margin-top:4px">Avg watch · 7d</div>
+              </div>
+            </div>
+
+            <!-- Ad form -->
+            <div id="streamAdFormWrap" style="display:none;background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:16px">
+              <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:12px" id="streamAdFormTitle">New banner ad</div>
+              <input type="hidden" id="streamAdEditId" value="">
+              <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">
+                <div><label class="admin-form-label" for="streamAdName">Name *</label><input class="admin-form-input" type="text" id="streamAdName" placeholder="e.g. Fall apparel drop"></div>
+                <div><label class="admin-form-label" for="streamAdWeight">Weight</label><input class="admin-form-input" type="number" id="streamAdWeight" value="1" min="1"><div style="font-size:10px;color:#666;margin-top:4px">Higher = shown more often.</div></div>
+              </div>
+              <div style="margin-bottom:10px">
+                <label class="admin-form-label" for="streamAdImage">Image URL *</label>
+                <input class="admin-form-input" type="text" id="streamAdImage" placeholder="https://… or /api/cms/media/<id>">
+                <div style="font-size:10px;color:#666;margin-top:4px">Recommended: 1600×200 px (landscape banner). Use the Media Library to upload first, paste the short ref here.</div>
+              </div>
+              <div style="margin-bottom:10px">
+                <label class="admin-form-label" for="streamAdClick">Click URL</label>
+                <input class="admin-form-input" type="text" id="streamAdClick" placeholder="https://store.atthepark.world/collections/new">
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+                <div><label class="admin-form-label" for="streamAdStartsAt">Starts (optional)</label><input class="admin-form-input" type="datetime-local" id="streamAdStartsAt"></div>
+                <div><label class="admin-form-label" for="streamAdEndsAt">Ends (optional)</label><input class="admin-form-input" type="datetime-local" id="streamAdEndsAt"></div>
+              </div>
+              <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#aaa;margin-bottom:14px"><input type="checkbox" id="streamAdActive" checked> Active</label>
+              <div style="display:flex;gap:8px">
+                <button class="admin-btn admin-btn-primary" data-atp-call="saveStreamAd" style="font-size:12px">Save</button>
+                <button class="admin-btn" data-atp-call="cancelStreamAdForm" style="font-size:12px">Cancel</button>
+              </div>
+            </div>
+            <div id="streamAdsList"><div style="padding:14px;color:#555;text-align:center">Loading…</div></div>
           </div>
         </div>
       </div>

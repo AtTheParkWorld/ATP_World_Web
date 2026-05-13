@@ -277,6 +277,7 @@ const ROUTES = [
   ['newsletter',   require('./routes/newsletter')],
   ['store',        require('./routes/store')],
   ['shopify-install', require('./routes/shopifyInstall')],
+  ['streams',      require('./routes/streams')],
 ];
 for (const [prefix, router] of ROUTES) {
   app.use('/api/'    + prefix, router);

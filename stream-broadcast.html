@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="/atp.min.css">
+  <script src="/atp.bundle.min.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Go Live · At The Park</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#7AC231;--green-dark:#5a9a1f;--green-light:#a8e055;
+  --black:#0a0a0a;--dark:#111111;--dark2:#1a1a1a;--dark3:#222222;
+  --muted:#888888;--light:#aaaaaa;--white:#ffffff;
+  --red:#ef4444;
+  --ff-display:'Barlow Condensed',sans-serif;--ff-body:'DM Sans',sans-serif;
+  --nav-h:68px;--max:1280px;--radius:8px;--radius-lg:14px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff-body);background:var(--black);color:var(--white);min-height:100vh;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;color:inherit}
+
+#nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;padding:0 40px;border-bottom:1px solid transparent;transition:background .3s}
+#nav.scrolled{background:rgba(10,10,10,.97);border-bottom-color:rgba(122,194,49,.18);backdrop-filter:blur(16px)}
+
+main{padding:calc(var(--nav-h) + 32px) 24px 80px;max-width:var(--max);margin:0 auto}
+
+.bc-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:24px}
+@media(max-width:1024px){.bc-grid{grid-template-columns:1fr}}
+
+.bc-preview-wrap{background:#000;border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-lg);overflow:hidden;position:relative;aspect-ratio:16/9}
+.bc-preview-wrap video{width:100%;height:100%;object-fit:cover;display:block}
+.bc-preview-placeholder{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:14px;flex-direction:column;gap:12px;text-align:center;padding:24px}
+.bc-preview-placeholder .icon{font-size:48px;opacity:.4}
+
+.bc-live-pill{position:absolute;top:14px;left:14px;display:none;align-items:center;gap:6px;padding:5px 12px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;background:var(--red);color:#fff;border-radius:6px;z-index:2;box-shadow:0 4px 12px rgba(239,68,68,.4)}
+.bc-live-pill.on{display:inline-flex}
+.bc-live-pill .dot{width:8px;height:8px;border-radius:50%;background:#fff;animation:pulse 1.4s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.7)}}
+.bc-viewer-pill{position:absolute;top:14px;right:14px;display:none;align-items:center;gap:6px;padding:5px 11px;font-size:12px;font-weight:700;background:rgba(0,0,0,.7);backdrop-filter:blur(8px);color:#fff;border-radius:6px;z-index:2}
+.bc-viewer-pill.on{display:inline-flex}
+
+.bc-controls{padding:18px 22px;background:var(--dark2);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius-lg);margin-top:16px;display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+.bc-controls .btn{padding:11px 22px;font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;border-radius:var(--radius);border:1px solid rgba(255,255,255,.14);background:transparent;color:#fff;transition:all .15s;display:inline-flex;align-items:center;gap:8px}
+.bc-controls .btn.primary{background:var(--red);border-color:var(--red)}
+.bc-controls .btn.primary:hover{background:#dc2626}
+.bc-controls .btn.danger{color:var(--red);border-color:rgba(239,68,68,.5)}
+.bc-controls .btn.success{background:var(--green);color:#0a0a0a;border-color:var(--green)}
+.bc-controls .btn.success:hover{background:var(--green-light)}
+.bc-controls .btn:disabled{opacity:.45;cursor:not-allowed}
+.bc-controls .toggle{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--light);cursor:pointer}
+.bc-controls .toggle input{accent-color:var(--green)}
+
+.bc-side{background:var(--dark2);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius-lg);padding:24px}
+.bc-side h2{font-family:var(--ff-display);font-size:22px;font-weight:800;text-transform:uppercase;margin-bottom:16px;letter-spacing:.005em}
+.bc-field{margin-bottom:14px}
+.bc-field label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+.bc-field input,.bc-field textarea,.bc-field select{width:100%;padding:11px 14px;background:#0d0d0d;border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);color:#fff;font-family:inherit;font-size:14px;transition:border-color .15s}
+.bc-field input:focus,.bc-field textarea:focus,.bc-field select:focus{outline:none;border-color:var(--green)}
+.bc-field textarea{resize:vertical;min-height:72px}
+.bc-field-help{font-size:11px;color:var(--muted);margin-top:5px;line-height:1.5}
+
+.bc-radio-row{display:flex;gap:10px;flex-wrap:wrap}
+.bc-radio-row label{flex:1;min-width:140px;padding:14px;background:#0d0d0d;border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);cursor:pointer;transition:all .15s;display:flex;align-items:flex-start;gap:10px}
+.bc-radio-row label:hover{border-color:rgba(255,255,255,.2)}
+.bc-radio-row label.on{border-color:var(--green);background:rgba(122,194,49,.06)}
+.bc-radio-row input{margin-top:3px;accent-color:var(--green);flex-shrink:0}
+.bc-radio-row .opt-title{font-size:13px;font-weight:700;color:#fff;display:block;margin-bottom:4px}
+.bc-radio-row .opt-sub{font-size:11px;color:var(--muted);line-height:1.45}
+
+.bc-stats{margin-top:18px;padding:16px;background:#0a0a0a;border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.bc-stat-num{font-family:var(--ff-display);font-size:24px;font-weight:900;color:var(--green);line-height:1}
+.bc-stat-label{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;margin-top:4px}
+
+.bc-msg{font-size:13px;line-height:1.55;padding:10px 14px;border-radius:var(--radius);margin-top:14px;display:none}
+.bc-msg.ok{display:block;background:rgba(122,194,49,.08);color:var(--green-light);border:1px solid rgba(122,194,49,.25)}
+.bc-msg.err{display:block;background:rgba(239,68,68,.08);color:#fca5a5;border:1px solid rgba(239,68,68,.25)}
+
+.bc-gate{max-width:520px;margin:120px auto;padding:36px;background:var(--dark2);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius-lg);text-align:center}
+.bc-gate h1{font-family:var(--ff-display);font-size:30px;font-weight:900;text-transform:uppercase;margin-bottom:12px}
+.bc-gate p{color:var(--light);line-height:1.65;margin-bottom:22px}
+.bc-gate a{display:inline-block;padding:13px 26px;background:var(--green);color:#0a0a0a;border-radius:var(--radius);font-weight:800;letter-spacing:.04em;text-transform:uppercase;font-size:13px}
+</style>
+</head>
+<body>
+
+<div id="atp-nav-host" data-active="stream"></div>
+
+<main id="mainShell" style="display:none">
+  <div class="bc-grid">
+    <div>
+      <div class="bc-preview-wrap" id="previewWrap">
+        <video id="previewVideo" autoplay muted playsinline></video>
+        <div class="bc-preview-placeholder" id="previewPlaceholder">
+          <div class="icon">📷</div>
+          <div>Allow camera + microphone access<br>to start your stream</div>
+        </div>
+        <span class="bc-live-pill" id="livePill"><span class="dot"></span> Live</span>
+        <span class="bc-viewer-pill" id="viewerPill">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3 3-5 6-5s6 2 6 5"/></svg>
+          <span id="viewerCount">0</span>
+        </span>
+      </div>
+      <div class="bc-controls">
+        <button class="btn primary" id="startBtn">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="8"/></svg>
+          Start broadcast
+        </button>
+        <button class="btn danger" id="stopBtn" disabled>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg>
+          End broadcast
+        </button>
+        <label class="toggle">
+          <input type="checkbox" id="micToggle" checked>
+          Mic on
+        </label>
+        <label class="toggle">
+          <input type="checkbox" id="camToggle" checked>
+          Camera on
+        </label>
+        <div style="margin-left:auto;font-size:12px;color:var(--muted)" id="elapsed">—</div>
+      </div>
+      <div class="bc-msg" id="bcMsg"></div>
+    </div>
+
+    <aside class="bc-side">
+      <h2>Stream details</h2>
+      <div class="bc-field">
+        <label for="bcTitle">Title</label>
+        <input id="bcTitle" type="text" placeholder="e.g. Sunrise mobility flow" maxlength="200">
+      </div>
+      <div class="bc-field">
+        <label for="bcDesc">Description (optional)</label>
+        <textarea id="bcDesc" placeholder="What's this session about? Equipment needed?"></textarea>
+      </div>
+      <div class="bc-field">
+        <label>Stream type</label>
+        <div class="bc-radio-row" id="bcType">
+          <label class="on">
+            <input type="radio" name="bcType" value="community" checked>
+            <span><span class="opt-title">Community</span><span class="opt-sub">Open to Premium &amp; Premium Plus members</span></span>
+          </label>
+          <label>
+            <input type="radio" name="bcType" value="coaching">
+            <span><span class="opt-title">Coaching</span><span class="opt-sub">Premium Plus members only</span></span>
+          </label>
+        </div>
+        <div class="bc-field-help">Coaching sessions auto-gate to Premium Plus. Community sessions unlock for both paid tiers.</div>
+      </div>
+      <div class="bc-stats">
+        <div><div class="bc-stat-num" id="statViewers">0</div><div class="bc-stat-label">Concurrent</div></div>
+        <div><div class="bc-stat-num" id="statPeak">0</div><div class="bc-stat-label">Peak viewers</div></div>
+      </div>
+    </aside>
+  </div>
+</main>
+
+<div class="bc-gate" id="gate" style="display:none">
+  <h1>Coach / Ambassador access</h1>
+  <p>Only ATP coaches, ambassadors, and admins can broadcast live. Want to host? Apply via your profile and we'll review your application.</p>
+  <a href="/profile.html">Back to profile</a>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  // ── Auth gate ────────────────────────────────────────────────
+  var member = null;
+  try { member = JSON.parse(localStorage.getItem('atp_member') || 'null'); } catch(e){}
+  if (!member) { window.location.href = '/join?mode=login'; return; }
+  var canBroadcast = !!(member.is_admin || member.is_ambassador || member.is_coach);
+  if (!canBroadcast) {
+    document.getElementById('gate').style.display = 'block';
+    return;
+  }
+  document.getElementById('mainShell').style.display = '';
+
+  window.addEventListener('scroll', function(){
+    var n = document.getElementById('nav');
+    if (n) n.classList.toggle('scrolled', window.scrollY > 10);
+  }, { passive: true });
+
+  // ── State ───────────────────────────────────────────────────
+  var STATE = {
+    mediaStream:  null,
+    mediaRecorder: null,
+    streamId:     null,
+    seq:          0,
+    elapsedTimer: null,
+    statsTimer:   null,
+    startedAt:    null,
+    chunkMime:    null,
+  };
+
+  function showMsg(text, kind) {
+    var m = document.getElementById('bcMsg');
+    if (!m) return;
+    m.textContent = text || '';
+    m.className = 'bc-msg' + (kind ? ' ' + kind : '');
+    if (!text) m.style.display = 'none';
+  }
+
+  // Type radio styling
+  document.querySelectorAll('input[name="bcType"]').forEach(function(r){
+    r.addEventListener('change', function(){
+      document.querySelectorAll('#bcType label').forEach(function(l){ l.classList.remove('on'); });
+      r.closest('label').classList.add('on');
+    });
+  });
+
+  // Mic / Cam toggles affect the live stream tracks immediately.
+  document.getElementById('micToggle').addEventListener('change', function(e){
+    if (!STATE.mediaStream) return;
+    STATE.mediaStream.getAudioTracks().forEach(function(t){ t.enabled = e.target.checked; });
+  });
+  document.getElementById('camToggle').addEventListener('change', function(e){
+    if (!STATE.mediaStream) return;
+    STATE.mediaStream.getVideoTracks().forEach(function(t){ t.enabled = e.target.checked; });
+  });
+
+  // ── Preview camera + mic ───────────────────────────────────
+  async function ensurePreview() {
+    if (STATE.mediaStream) return STATE.mediaStream;
+    var constraints = {
+      video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 30 } },
+      audio: { echoCancellation: true, noiseSuppression: true },
+    };
+    var stream = await navigator.mediaDevices.getUserMedia(constraints);
+    STATE.mediaStream = stream;
+    var v = document.getElementById('previewVideo');
+    v.srcObject = stream;
+    document.getElementById('previewPlaceholder').style.display = 'none';
+    return stream;
+  }
+
+  // Pick a MediaRecorder mime the browser actually supports. Order
+  // matters — VP9 is sharper, VP8 is most compatible, then plain webm.
+  function pickMime() {
+    var candidates = [
+      'video/webm;codecs=vp9,opus',
+      'video/webm;codecs=vp8,opus',
+      'video/webm;codecs=vp9',
+      'video/webm;codecs=vp8',
+      'video/webm',
+    ];
+    for (var i=0; i<candidates.length; i++) {
+      if (window.MediaRecorder && MediaRecorder.isTypeSupported && MediaRecorder.isTypeSupported(candidates[i])) {
+        return candidates[i];
+      }
+    }
+    return null;
+  }
+
+  // ── Start / stop ────────────────────────────────────────────
+  async function startBroadcast() {
+    var title = (document.getElementById('bcTitle').value || '').trim();
+    if (!title) { showMsg('Add a title before going live.', 'err'); return; }
+    var type = document.querySelector('input[name="bcType"]:checked').value;
+
+    showMsg('Requesting camera + microphone…');
+    try {
+      await ensurePreview();
+    } catch(e) {
+      showMsg('Camera/mic access denied. Allow it in the browser address bar.', 'err');
+      return;
+    }
+
+    var mime = pickMime();
+    if (!mime) {
+      showMsg('Your browser doesn\'t support MediaRecorder. Try Chrome on desktop.', 'err');
+      return;
+    }
+    STATE.chunkMime = mime;
+
+    showMsg('Creating stream…');
+    var token = '';
+    try { token = localStorage.getItem('atp_token') || ''; } catch(_){}
+    var resp;
+    try {
+      resp = await fetch('/api/streams', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + token },
+        body: JSON.stringify({ title: title, description: document.getElementById('bcDesc').value || null, stream_type: type, mime_type: mime }),
+      }).then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); });
+    } catch(e) {
+      showMsg('Could not create the stream: ' + e.message, 'err');
+      return;
+    }
+    if (!resp.ok || !resp.body || !resp.body.stream) {
+      showMsg((resp.body && resp.body.error) || 'Failed to start stream', 'err');
+      return;
+    }
+    STATE.streamId  = resp.body.stream.id;
+    STATE.seq       = 0;
+    STATE.startedAt = Date.now();
+
+    // Start MediaRecorder, emit 2-second chunks
+    var rec = new MediaRecorder(STATE.mediaStream, {
+      mimeType: mime,
+      videoBitsPerSecond: 1_500_000, // 1.5 Mbps — fine for 720p / data-friendly
+      audioBitsPerSecond: 96_000,
+    });
+    STATE.mediaRecorder = rec;
+    rec.ondataavailable = async function(ev) {
+      if (!ev.data || !ev.data.size) return;
+      try {
+        var buf = await ev.data.arrayBuffer();
+        await fetch('/api/streams/' + encodeURIComponent(STATE.streamId) + '/chunk', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/octet-stream',
+            'X-Stream-Mime': STATE.chunkMime || mime,
+            'Authorization': 'Bearer ' + token,
+          },
+          body: buf,
+        });
+      } catch(e) { /* silent — next chunk will retry. */ }
+    };
+    rec.start(2000);
+
+    document.getElementById('livePill').classList.add('on');
+    document.getElementById('viewerPill').classList.add('on');
+    document.getElementById('startBtn').disabled = true;
+    document.getElementById('stopBtn').disabled = false;
+    showMsg('You\'re live — share /stream.html with your members.', 'ok');
+
+    // Tick elapsed + stats every 5s
+    STATE.elapsedTimer = setInterval(updateElapsed, 1000);
+    STATE.statsTimer   = setInterval(refreshStats, 5000);
+  }
+
+  function updateElapsed() {
+    if (!STATE.startedAt) return;
+    var s = Math.floor((Date.now() - STATE.startedAt) / 1000);
+    var hh = Math.floor(s / 3600), mm = Math.floor((s % 3600) / 60), ss = s % 60;
+    var fmt = (hh ? (hh + ':') : '') + String(mm).padStart(2,'0') + ':' + String(ss).padStart(2,'0');
+    var el = document.getElementById('elapsed');
+    if (el) el.textContent = fmt;
+  }
+
+  async function refreshStats() {
+    if (!STATE.streamId) return;
+    var token = '';
+    try { token = localStorage.getItem('atp_token') || ''; } catch(_){}
+    try {
+      var r = await fetch('/api/streams/' + encodeURIComponent(STATE.streamId) + '/analytics', {
+        headers: { 'Authorization':'Bearer ' + token },
+      });
+      if (!r.ok) return;
+      var d = await r.json();
+      var a = d.analytics || {};
+      document.getElementById('viewerCount').textContent = a.concurrent_viewers || 0;
+      document.getElementById('statViewers').textContent = a.concurrent_viewers || 0;
+      document.getElementById('statPeak').textContent    = a.peak_viewers || 0;
+    } catch(e) {}
+  }
+
+  async function stopBroadcast() {
+    if (!STATE.streamId) return;
+    var token = '';
+    try { token = localStorage.getItem('atp_token') || ''; } catch(_){}
+    try { STATE.mediaRecorder && STATE.mediaRecorder.stop(); } catch(_){}
+    try {
+      await fetch('/api/streams/' + encodeURIComponent(STATE.streamId) + '/end', {
+        method: 'POST',
+        headers: { 'Authorization':'Bearer ' + token },
+      });
+    } catch(e) {}
+    clearInterval(STATE.elapsedTimer); STATE.elapsedTimer = null;
+    clearInterval(STATE.statsTimer);   STATE.statsTimer = null;
+    document.getElementById('livePill').classList.remove('on');
+    document.getElementById('viewerPill').classList.remove('on');
+    document.getElementById('startBtn').disabled = false;
+    document.getElementById('stopBtn').disabled = true;
+    showMsg('Stream ended. Stats are saved to your profile.', 'ok');
+    STATE.streamId = null;
+    STATE.startedAt = null;
+  }
+
+  document.getElementById('startBtn').onclick = startBroadcast;
+  document.getElementById('stopBtn').onclick  = stopBroadcast;
+
+  // Try to grab the camera up front so the preview lights up immediately.
+  ensurePreview().catch(function(){
+    // Stays placeholder until the user clicks Start.
+  });
+
+  // Best-effort: clean up if the broadcaster closes the tab mid-stream.
+  window.addEventListener('beforeunload', function(){
+    if (STATE.streamId) {
+      try {
+        navigator.sendBeacon &&
+          navigator.sendBeacon('/api/streams/' + STATE.streamId + '/end?best_effort=1', '');
+      } catch(e){}
+    }
+  });
+})();
+</script>
+</body>
+</html>
