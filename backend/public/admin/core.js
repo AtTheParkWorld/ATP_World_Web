@@ -11,7 +11,7 @@
  * ════════════════════════════════════════════════════════════════ */
 
 // ── Global API helpers ────────────────────────────────────────
-var ATP_API = 'https://atpworldweb-production.up.railway.app/api';
+var ATP_API = '/api';
 function getToken() { return localStorage.getItem('atp_token') || ''; }
 function apiGet(path) {
   return fetch(ATP_API + path, {
@@ -41,7 +41,7 @@ function adminLogin() {
   var errEl = document.getElementById('loginErr');
   errEl.style.display = 'none';
   if (!u || !p) { errEl.textContent = 'Please enter email and password'; errEl.style.display = 'block'; return; }
-  fetch('https://atpworldweb-production.up.railway.app/api/auth/login', {
+  fetch('/api/auth/login', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({email: u, password: p})

@@ -32,7 +32,7 @@ function filterMembers(q) {
     // If logged in and search has content, hit real API
     var token = getToken();
     if (token && q && q.length > 1) {
-      var url = 'https://atpworldweb-production.up.railway.app/api/admin/members?limit=50&search=' + encodeURIComponent(q);
+      var url = '/api/admin/members?limit=50&search=' + encodeURIComponent(q);
       fetch(url, {headers:{'Authorization':'Bearer '+token}})
         .then(function(r){return r.json();})
         .then(function(data) {

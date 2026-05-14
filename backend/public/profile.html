@@ -2706,7 +2706,7 @@ function saveProfile(){
   if (pwd || pwd2) {
     if (pwd !== pwd2) { showMessage('Passwords do not match'); return; }
     if (pwd.length < 8) { showMessage('Password must be at least 8 characters'); return; }
-    passwordPromise = fetch('https://atpworldweb-production.up.railway.app/api/auth/change-password', {
+    passwordPromise = fetch('/api/auth/change-password', {
       method: 'POST',
       headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + (localStorage.getItem('atp_token')||'') },
       body: JSON.stringify({ new_password: pwd }),
@@ -3219,7 +3219,7 @@ function submitAmbassadorApply() {
 // ── Coach profile (self) ────────────────────────────────────
 // Uses existing public coaches API: GET /api/coaches/:id (read), PUT
 // /api/coaches/:id (upsert — auth required, allowed for self).
-var COACH_API = 'https://atpworldweb-production.up.railway.app/api';
+var COACH_API = '/api';
 function _coachAuth() {
   var t = localStorage.getItem('atp_token') || '';
   var h = { 'Content-Type': 'application/json' };

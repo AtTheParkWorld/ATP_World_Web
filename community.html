@@ -1166,12 +1166,12 @@ if(atpUser) renderAuthNav(atpUser);
 
 // ══════════════════════════════════════════════════════════════
 // ATP BACKEND WIRING — uses admin.html helper pattern
-// Base: https://atpworldweb-production.up.railway.app/api
+// Base: /api
 // Token:  localStorage.atp_token  (written on login — see above)
 // Also falls back to atp:jwt used by atp-api.js, so sessions
 // established through either path keep working.
 // ══════════════════════════════════════════════════════════════
-var ATP_API = 'https://atpworldweb-production.up.railway.app/api';
+var ATP_API = '/api';
 function getApiToken() {
   return localStorage.getItem('atp_token') || localStorage.getItem('atp:jwt') || '';
 }

@@ -5,7 +5,7 @@
 (function() {
   'use strict';
 
-  var BASE = 'https://atpworldweb-production.up.railway.app/api';
+  var BASE = '/api';
 
   /* ── Helpers ─────────────────────────────────────────────── */
   function token()  { return localStorage.getItem('atp_token') || ''; }

@@ -1155,7 +1155,7 @@ function renderCount(n) {
 async function loadCount() {
   // Try to get real count from backend
   try {
-    var resp = await fetch('https://atpworldweb-production.up.railway.app/api/admin/members?limit=1');
+    var resp = await fetch('/api/admin/members?limit=1');
     var data = await resp.json();
     if (data.total && data.total > ATP_BASE_COUNT) {
       renderCount(data.total);

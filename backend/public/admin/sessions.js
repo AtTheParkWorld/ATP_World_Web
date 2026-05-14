@@ -15,7 +15,7 @@ async function loadCities() {
   // Try to get from API
   try {
     var token = getToken();
-    var data = await fetch('https://atpworldweb-production.up.railway.app/api/sessions?limit=1', {
+    var data = await fetch('/api/sessions?limit=1', {
       headers: {'Authorization':'Bearer '+token}
     }).then(function(r){return r.json();});
 
@@ -603,8 +603,8 @@ async function createSession() {
   try {
     var token = getToken();
     var url = isEdit
-      ? 'https://atpworldweb-production.up.railway.app/api/sessions/' + SESSION_EDIT_ID
-      : 'https://atpworldweb-production.up.railway.app/api/sessions';
+      ? '/api/sessions/' + SESSION_EDIT_ID
+      : '/api/sessions';
     var method = isEdit ? 'PUT' : 'POST';
 
     var res = await fetch(url, {
@@ -813,7 +813,7 @@ async function viewRegistrations(sessionId) {
 
   try {
     var token = getToken();
-    var res = await fetch('https://atpworldweb-production.up.railway.app/api/sessions/'+sessionId+'/registrations', {
+    var res = await fetch('/api/sessions/'+sessionId+'/registrations', {
       headers:{'Authorization':'Bearer '+token}
     });
     var data = await res.json();

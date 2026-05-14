@@ -277,7 +277,7 @@ var BOOKED_MEMBERS = [
   try {
     var token = localStorage.getItem('atp_token');
     if (!token) return;
-    var data = await fetch('https://atpworldweb-production.up.railway.app/api/sessions?status=upcoming&limit=30', {
+    var data = await fetch('/api/sessions?status=upcoming&limit=30', {
       headers: {'Authorization': 'Bearer ' + token}
     }).then(function(r) { return r.json(); });
     if (data.sessions && data.sessions.length) {
@@ -380,7 +380,7 @@ function processQR(raw) {
     try { token = JSON.parse(raw).token || ''; } catch(e) {}
     if (token) {
       // POST direct to API with qr data
-      fetch('https://atpworldweb-production.up.railway.app/api/sessions/' + sessionId + '/checkin', {
+      fetch('/api/sessions/' + sessionId + '/checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('atp_token') },
         body: JSON.stringify({ qr_token: token, method: 'qr_scan' })
@@ -703,7 +703,7 @@ function processQR(raw) {
     try { token = JSON.parse(raw).token || ''; } catch(e) {}
     if (token) {
       // POST direct to API with qr data
-      fetch('https://atpworldweb-production.up.railway.app/api/sessions/' + sessionId + '/checkin', {
+      fetch('/api/sessions/' + sessionId + '/checkin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('atp_token') },
         body: JSON.stringify({ qr_token: token, method: 'qr_scan' })

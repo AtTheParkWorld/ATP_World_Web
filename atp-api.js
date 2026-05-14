@@ -11,9 +11,10 @@
   'use strict';
 
   // ── CONFIG ──────────────────────────────────────────────────
-  // Switch to your Railway URL when backend is live:
-  // const API_BASE = 'https://atp-backend.railway.app/api';
-  const API_BASE = window.ATP_API_BASE || 'https://atpworldweb-production.up.railway.app/api';
+  // Same-origin by default — the frontend and API live on the same
+  // Render service, so '/api' just works. A page can override via
+  // window.ATP_API_BASE if it needs to point at a different host.
+  const API_BASE = window.ATP_API_BASE || '/api';
   // Reconciled with atp.js — both files now use the same key. The legacy
   // atp:jwt / atp:user keys are still read for backward compatibility and
   // migrated into atp_token / atp_member on first load.
