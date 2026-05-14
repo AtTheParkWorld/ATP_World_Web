@@ -218,7 +218,28 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
       }
     }
 
-    res.json({ session: rows[0], myBooking, myWaitlistPos });
+    // Assigned ambassadors — surfaced as a flat array so the admin form
+    // can pre-fill its multi-select. Pre-migration DBs fall through silently.
+    let assignedAmbassadors = [];
+    try {
+      const a = await query(
+        `SELECT sa.ambassador_id, m.first_name, m.last_name, m.email
+           FROM session_ambassadors sa
+           JOIN members m ON m.id = sa.ambassador_id
+          WHERE sa.session_id = $1
+          ORDER BY m.first_name`,
+        [req.params.id]
+      );
+      assignedAmbassadors = a.rows;
+    } catch (e) {
+      if (e.code !== '42P01' && e.code !== '42703') throw e;
+    }
+
+    res.json({
+      session: rows[0],
+      assigned_ambassadors: assignedAmbassadors,
+      myBooking, myWaitlistPos,
+    });
   } catch (err) { next(err); }
 });
 
@@ -240,6 +261,10 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
       currency_code = 'AED',
       // Hover-preview video shown over the session card on /sessions
       intro_video_url,
+      // Live streaming wiring — admin per-session toggle + assigned
+      // ambassadors who are permitted to broadcast on it.
+      is_streamable = false,
+      assigned_ambassador_ids = [],
     } = req.body;
 
     if (!name || !city_id || !scheduled_at || !location) {
@@ -323,6 +348,37 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
           } catch (e) {
             await client.query('ROLLBACK TO SAVEPOINT set_intro');
             if (e.code !== '42703') throw e;
+          }
+        }
+        // is_streamable + assigned_ambassador_ids — same defensive pattern
+        // so pre-migration DBs (no is_streamable column / no
+        // session_ambassadors table) silently fall through.
+        await client.query('SAVEPOINT set_streamable');
+        try {
+          await client.query(`UPDATE sessions SET is_streamable=$1 WHERE id=$2`,
+            [!!is_streamable, rows[0].id]);
+          rows[0].is_streamable = !!is_streamable;
+          await client.query('RELEASE SAVEPOINT set_streamable');
+        } catch (e) {
+          await client.query('ROLLBACK TO SAVEPOINT set_streamable');
+          if (e.code !== '42703') throw e;
+        }
+        if (Array.isArray(assigned_ambassador_ids) && assigned_ambassador_ids.length) {
+          await client.query('SAVEPOINT set_ambs');
+          try {
+            for (const ambId of assigned_ambassador_ids) {
+              if (!ambId) continue;
+              await client.query(
+                `INSERT INTO session_ambassadors (session_id, ambassador_id, assigned_by)
+                      VALUES ($1, $2, $3)
+                 ON CONFLICT (session_id, ambassador_id) DO NOTHING`,
+                [rows[0].id, ambId, req.member.id]
+              );
+            }
+            await client.query('RELEASE SAVEPOINT set_ambs');
+          } catch (e) {
+            await client.query('ROLLBACK TO SAVEPOINT set_ambs');
+            if (e.code !== '42P01' && e.code !== '42703') throw e;
           }
         }
 
@@ -563,6 +619,9 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
       price = 0, price_points = 0, currency_code = 'AED',
       // Hover-preview video for /sessions card
       intro_video_url,
+      // Live streaming per-session: toggle + assigned ambassadors
+      is_streamable,
+      assigned_ambassador_ids,
     } = req.body;
 
     let rows;
@@ -646,6 +705,35 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
       if (r2.rows[0]) rows[0].ends_at = r2.rows[0].ends_at;
     } catch (e) {
       if (e.code !== '42703') throw e;
+    }
+
+    // is_streamable — defensive UPDATE, only when the admin sent the field.
+    if (is_streamable !== undefined) {
+      try {
+        await query(`UPDATE sessions SET is_streamable=$1 WHERE id=$2`, [!!is_streamable, id]);
+        rows[0].is_streamable = !!is_streamable;
+      } catch (e) {
+        if (e.code !== '42703') throw e;
+      }
+    }
+    // assigned_ambassador_ids — REPLACE semantics. If the field is sent
+    // as an array (even empty), the full set of ambassadors for this
+    // session is rewritten to match. Sent as undefined → no change.
+    if (Array.isArray(assigned_ambassador_ids)) {
+      try {
+        await query(`DELETE FROM session_ambassadors WHERE session_id=$1`, [id]);
+        for (const ambId of assigned_ambassador_ids) {
+          if (!ambId) continue;
+          await query(
+            `INSERT INTO session_ambassadors (session_id, ambassador_id, assigned_by)
+                  VALUES ($1, $2, $3)
+             ON CONFLICT (session_id, ambassador_id) DO NOTHING`,
+            [id, ambId, req.member.id]
+          );
+        }
+      } catch (e) {
+        if (e.code !== '42P01' && e.code !== '42703') throw e;
+      }
     }
 
     res.json({ session: rows[0] });

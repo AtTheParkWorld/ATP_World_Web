@@ -343,6 +343,29 @@
               <input type="file" id="sIntroVideoFile" accept="video/*" style="display:none" onchange="handleSessionIntroUpload(this)">
             </div>
 
+            <!-- 🎥 Live streaming for this session ─ admin-controlled.
+                 If toggled on, the assigned coach + nominated ambassadors
+                 can broadcast from /stream-broadcast. Members who have
+                 BOOKED the session (and hold a Premium/Premium+ plan)
+                 can watch live. -->
+            <div class="admin-form-group full" style="margin-top:8px;padding:14px;background:#0d1a0a;border-radius:10px;border:1px solid #1f3a0d">
+              <div style="font-family:var(--ff-display);font-size:13px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:8px">🎥 Live Streaming</div>
+              <label style="display:flex;align-items:center;gap:10px;font-size:13px;color:#fff;cursor:pointer;margin-bottom:12px">
+                <input type="checkbox" id="sIsStreamable" style="width:18px;height:18px;accent-color:#7AC231">
+                Allow this session to be streamed live
+              </label>
+              <div id="sStreamingDetails" style="display:none">
+                <label class="admin-form-label" for="sAmbassadorPicker">Nominated ambassadors</label>
+                <select class="admin-form-select" id="sAmbassadorPicker" style="margin-bottom:8px">
+                  <option value="">— Add ambassador —</option>
+                </select>
+                <div id="sAmbassadorChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px"></div>
+                <div style="font-size:11px;color:#666;line-height:1.5">
+                  The session's assigned coach can always broadcast. Add ambassadors here to let them go live on this session too. Only members <strong>booked for the session</strong> on Premium / Premium Plus can watch.
+                </div>
+              </div>
+            </div>
+
             <!-- Paid-session pricing — set EITHER currency price OR points price OR both.
                  Members will pick at booking time (Stripe checkout / wallet redemption).
                  Leave both at 0 for a free session. -->

@@ -127,27 +127,35 @@ main{padding:calc(var(--nav-h) + 32px) 24px 80px;max-width:var(--max);margin:0 a
 
     <aside class="bc-side">
       <h2>Stream details</h2>
+      <!-- Session picker — only shows sessions where: (a) admin flagged
+           is_streamable=true, (b) the broadcaster is the coach or a
+           nominated ambassador, and (c) the session is in the
+           upcoming/recent window. The session you pick determines who
+           can watch (only members booked for that session). -->
       <div class="bc-field">
-        <label for="bcTitle">Title</label>
-        <input id="bcTitle" type="text" placeholder="e.g. Sunrise mobility flow" maxlength="200">
+        <label for="bcSession">Pick a session</label>
+        <select id="bcSession">
+          <option value="">Loading your eligible sessions…</option>
+        </select>
+        <div class="bc-field-help" id="bcSessionHelp">Sessions appear here when admin marks them as streamable AND you're the assigned coach or a nominated ambassador.</div>
       </div>
       <div class="bc-field">
-        <label for="bcDesc">Description (optional)</label>
-        <textarea id="bcDesc" placeholder="What's this session about? Equipment needed?"></textarea>
+        <label for="bcDesc">Description (optional override)</label>
+        <textarea id="bcDesc" placeholder="Anything members watching live should know?"></textarea>
       </div>
       <div class="bc-field">
         <label>Stream type</label>
         <div class="bc-radio-row" id="bcType">
           <label class="on">
             <input type="radio" name="bcType" value="community" checked>
-            <span><span class="opt-title">Community</span><span class="opt-sub">Open to Premium &amp; Premium Plus members</span></span>
+            <span><span class="opt-title">Community</span><span class="opt-sub">Premium &amp; Premium Plus members (who are booked)</span></span>
           </label>
           <label>
             <input type="radio" name="bcType" value="coaching">
-            <span><span class="opt-title">Coaching</span><span class="opt-sub">Premium Plus members only</span></span>
+            <span><span class="opt-title">Coaching</span><span class="opt-sub">Premium Plus only (who are booked)</span></span>
           </label>
         </div>
-        <div class="bc-field-help">Coaching sessions auto-gate to Premium Plus. Community sessions unlock for both paid tiers.</div>
+        <div class="bc-field-help">Tier gate applies on top of the booking gate. Either way, only members who booked the session can watch.</div>
       </div>
       <div class="bc-stats">
         <div><div class="bc-stat-num" id="statViewers">0</div><div class="bc-stat-label">Concurrent</div></div>
@@ -254,10 +262,50 @@ main{padding:calc(var(--nav-h) + 32px) 24px 80px;max-width:var(--max);margin:0 a
     return null;
   }
 
+  // ── Load eligible sessions on boot ──────────────────────────
+  async function loadEligibleSessions() {
+    var token = '';
+    try { token = localStorage.getItem('atp_token') || ''; } catch(_){}
+    var sel = document.getElementById('bcSession');
+    var help = document.getElementById('bcSessionHelp');
+    try {
+      var r = await fetch('/api/streams/eligible-sessions', { headers: { 'Authorization':'Bearer ' + token } });
+      var d = await r.json();
+      var sessions = (d && d.sessions) || [];
+      if (!sessions.length) {
+        sel.innerHTML = '<option value="">— No streamable sessions assigned to you —</option>';
+        help.textContent = 'Ask the admin to enable streaming on a session and nominate you (coach or ambassador) before you can go live.';
+        return;
+      }
+      sel.innerHTML = sessions.map(function(s){
+        var when = '';
+        try {
+          var d2 = new Date(s.scheduled_at);
+          when = d2.toLocaleDateString(undefined, { weekday:'short', day:'numeric', month:'short' }) +
+                 ' · ' + d2.toLocaleTimeString(undefined, { hour:'numeric', minute:'2-digit' });
+        } catch(e) {}
+        var roleTag = s.my_role === 'coach' ? '🎽' : (s.my_role === 'ambassador' ? '⭐' : '🛠');
+        return '<option value="' + s.id + '" data-name="' + (s.name||'').replace(/"/g,'&quot;') + '">' +
+                 roleTag + ' ' + (s.name || 'Session') + ' · ' + when +
+               '</option>';
+      }).join('');
+      // Auto-select the closest upcoming session
+      if (sessions[0]) sel.value = sessions[0].id;
+      help.textContent = 'Picked from sessions where you\'re the coach or a nominated ambassador. Only members BOOKED on this session can watch.';
+    } catch(e) {
+      sel.innerHTML = '<option value="">— Could not load —</option>';
+      help.textContent = 'Couldn\'t load your sessions. Refresh and try again.';
+    }
+  }
+
   // ── Start / stop ────────────────────────────────────────────
   async function startBroadcast() {
-    var title = (document.getElementById('bcTitle').value || '').trim();
-    if (!title) { showMsg('Add a title before going live.', 'err'); return; }
+    var sessionSel = document.getElementById('bcSession');
+    var sessionId  = sessionSel && sessionSel.value;
+    if (!sessionId) { showMsg('Pick a session before going live.', 'err'); return; }
+    var title = (sessionSel.options[sessionSel.selectedIndex] || {}).getAttribute &&
+                sessionSel.options[sessionSel.selectedIndex].getAttribute('data-name');
+    title = title || 'ATP Live';
     var type = document.querySelector('input[name="bcType"]:checked').value;
 
     showMsg('Requesting camera + microphone…');
@@ -283,7 +331,13 @@ main{padding:calc(var(--nav-h) + 32px) 24px 80px;max-width:var(--max);margin:0 a
       resp = await fetch('/api/streams', {
         method: 'POST',
         headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + token },
-        body: JSON.stringify({ title: title, description: document.getElementById('bcDesc').value || null, stream_type: type, mime_type: mime }),
+        body: JSON.stringify({
+          session_id: sessionId,
+          title: title,
+          description: document.getElementById('bcDesc').value || null,
+          stream_type: type,
+          mime_type: mime,
+        }),
       }).then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); });
     } catch(e) {
       showMsg('Could not create the stream: ' + e.message, 'err');
@@ -387,6 +441,9 @@ main{padding:calc(var(--nav-h) + 32px) 24px 80px;max-width:var(--max);margin:0 a
   ensurePreview().catch(function(){
     // Stays placeholder until the user clicks Start.
   });
+  // Populate the session picker — only sessions the broadcaster is
+  // eligible to stream show up.
+  loadEligibleSessions();
 
   // Best-effort: clean up if the broadcaster closes the tab mid-stream.
   window.addEventListener('beforeunload', function(){

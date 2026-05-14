@@ -205,10 +205,11 @@ footer p{font-size:12px;color:var(--muted);margin:0}
   function showLocked(tier) {
     document.getElementById('lockedView').style.display = '';
     document.getElementById('playerView').style.display = 'none';
-    document.getElementById('lockedTitle').textContent = tier === 'premium_plus' ? 'Premium Plus only' : 'Premium members only';
-    document.getElementById('lockedSub').textContent = tier === 'premium_plus'
-      ? 'This is a coaching session — only available to ATP Premium Plus members. Upgrade to watch live.'
-      : 'This stream is for Premium and Premium Plus members. Upgrade to join the community feed live.';
+    var tierName = tier === 'premium_plus' ? 'Premium Plus' : 'Premium';
+    document.getElementById('lockedTitle').textContent = 'Members-only stream';
+    document.getElementById('lockedSub').textContent =
+      'To watch this live session you need (1) a booking on the underlying session and (2) an active ATP ' +
+      tierName + ' plan. Book the session from /sessions, upgrade your plan on /plans, then come back to this stream.';
   }
 
   // ── Fetch stream metadata (host, title, lock state) ─────────

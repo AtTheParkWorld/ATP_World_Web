@@ -1608,6 +1608,43 @@ router.post('/migrate-session-intro-video', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-stream-sessions ────────────────────
+// Wires streaming to sessions:
+//   sessions.is_streamable          — admin toggle per session
+//   session_ambassadors             — many-to-many between a session
+//                                     and ambassador members nominated
+//                                     to support / broadcast that session
+//   streams.session_id              — FK from a live broadcast to the
+//                                     session it belongs to (only sessions
+//                                     with is_streamable=true can spawn
+//                                     a stream; viewers must hold a booking)
+// Idempotent + gated by ADMIN_SETUP_KEY.
+router.post('/migrate-stream-sessions', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS is_streamable BOOLEAN NOT NULL DEFAULT false`);
+
+    await query(`CREATE TABLE IF NOT EXISTS session_ambassadors (
+      session_id      UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+      ambassador_id   UUID NOT NULL REFERENCES members(id)  ON DELETE CASCADE,
+      assigned_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      assigned_by     UUID REFERENCES members(id) ON DELETE SET NULL,
+      PRIMARY KEY (session_id, ambassador_id)
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_session_ambassadors_amb ON session_ambassadors (ambassador_id)`);
+
+    // streams.session_id — defensive ADD COLUMN IF NOT EXISTS; nullable
+    // so already-recorded free-form streams keep working. New streams
+    // will REQUIRE session_id at the route level.
+    await query(`ALTER TABLE streams ADD COLUMN IF NOT EXISTS session_id UUID REFERENCES sessions(id) ON DELETE SET NULL`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_streams_session ON streams (session_id) WHERE session_id IS NOT NULL`);
+
+    res.json({ success: true, message: 'session_ambassadors + sessions.is_streamable + streams.session_id ready' });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-streaming ──────────────────────────
 // Creates the streaming MVP tables:
 //   streams       — one row per live broadcast (host, title, type, tier,

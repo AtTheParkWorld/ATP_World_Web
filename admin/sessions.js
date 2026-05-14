@@ -197,6 +197,71 @@ async function loadCoaches() {
   } catch(e) { console.warn('Coaches load error:', e.message); }
 }
 
+// Ambassadors picker for the session form. Loaded once per page session
+// since the roster changes rarely. Used by the "Nominated ambassadors"
+// multi-select that only shows when "Allow this session to be streamed
+// live" is on.
+var ALL_AMBASSADORS = [];
+var SESSION_AMBS_PICK = []; // mirror of currently picked ambassador ids
+async function loadAmbassadorsForSession() {
+  try {
+    var data = await apiGet('/admin/members?is_ambassador=true&limit=500');
+    ALL_AMBASSADORS = (data.members || []).slice();
+    renderAmbassadorPicker();
+  } catch(e) { console.warn('Ambassadors load error:', e.message); }
+}
+function renderAmbassadorPicker() {
+  var sel = document.getElementById('sAmbassadorPicker');
+  if (!sel) return;
+  var pickedSet = new Set(SESSION_AMBS_PICK);
+  sel.innerHTML = '<option value="">— Add ambassador —</option>' +
+    ALL_AMBASSADORS
+      .filter(function(m){ return !pickedSet.has(m.id); })
+      .map(function(m){
+        return '<option value="' + m.id + '">' + (m.first_name||'') + ' ' + (m.last_name||'') + (m.email ? ' · ' + m.email : '') + '</option>';
+      }).join('');
+  renderAmbassadorChips();
+}
+function renderAmbassadorChips() {
+  var wrap = document.getElementById('sAmbassadorChips');
+  if (!wrap) return;
+  if (!SESSION_AMBS_PICK.length) {
+    wrap.innerHTML = '<div style="font-size:11px;color:#666;padding:4px 0">No ambassadors nominated yet — the coach can still go live.</div>';
+    return;
+  }
+  wrap.innerHTML = SESSION_AMBS_PICK.map(function(id){
+    var m = ALL_AMBASSADORS.find(function(x){ return x.id === id; }) || { first_name:'Ambassador', last_name:'' };
+    var name = ((m.first_name||'') + ' ' + (m.last_name||'')).trim() || 'Ambassador';
+    return '<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;font-size:12px;background:rgba(122,194,49,.12);color:#7AC231;border:1px solid rgba(122,194,49,.3);border-radius:20px">' +
+      name.replace(/</g,'&lt;') +
+      '<button type="button" onclick="removeSessionAmbassador(\'' + id + '\')" style="background:none;border:none;color:#7AC231;cursor:pointer;font-size:14px;line-height:1;padding:0">×</button>' +
+    '</span>';
+  }).join('');
+}
+function addSessionAmbassador(id) {
+  if (!id) return;
+  if (SESSION_AMBS_PICK.indexOf(id) >= 0) return;
+  SESSION_AMBS_PICK.push(id);
+  renderAmbassadorPicker();
+}
+function removeSessionAmbassador(id) {
+  SESSION_AMBS_PICK = SESSION_AMBS_PICK.filter(function(x){ return x !== id; });
+  renderAmbassadorPicker();
+}
+// Wire the picker change once on first run.
+(function bindAmbassadorPicker() {
+  document.addEventListener('change', function(ev){
+    if (ev.target && ev.target.id === 'sAmbassadorPicker') {
+      var v = ev.target.value;
+      if (v) { addSessionAmbassador(v); ev.target.value = ''; }
+    }
+    if (ev.target && ev.target.id === 'sIsStreamable') {
+      var det = document.getElementById('sStreamingDetails');
+      if (det) det.style.display = ev.target.checked ? '' : 'none';
+    }
+  });
+})();
+
 async function loadTribes() {
   try {
     var res = await fetch(ATP_API + '/sessions/tribes');
@@ -512,6 +577,8 @@ async function createSession() {
 
   var intro_video_url = (document.getElementById('sIntroVideo') || {}).value || null;
   if (intro_video_url === 'Uploading…') intro_video_url = null;
+  var is_streamable = !!(document.getElementById('sIsStreamable') || {}).checked;
+  var assigned_ambassador_ids = is_streamable ? SESSION_AMBS_PICK.slice() : [];
   var payload = {
     name, tribe_id, activity_id, city_id, description: desc, coach_id, location,
     intro_video_url,
@@ -524,6 +591,9 @@ async function createSession() {
     price_points:   price_points || 0,
     currency_code:  currency_code || 'AED',
     repeat_dates: repeat_dates && repeat_dates.length > 1 ? repeat_dates : null,
+    // Live streaming wiring
+    is_streamable: is_streamable,
+    assigned_ambassador_ids: assigned_ambassador_ids,
   };
 
   var btnLabel = document.getElementById('sessionSubmitLabel');
@@ -577,6 +647,11 @@ function resetSessionForm() {
   document.querySelectorAll('.day-check-btn input').forEach(function(cb){ cb.checked = false; });
   document.getElementById('dayTimesContainer').innerHTML = '';
   selectCategory('regular');
+  // Reset live-streaming controls.
+  var st = document.getElementById('sIsStreamable'); if (st) st.checked = false;
+  var det = document.getElementById('sStreamingDetails'); if (det) det.style.display = 'none';
+  SESSION_AMBS_PICK = [];
+  if (typeof renderAmbassadorPicker === 'function') renderAmbassadorPicker();
   document.getElementById('sessionFormTitle').textContent = 'Create New Session';
   document.getElementById('sessionSubmitLabel').textContent = '＋ Create Session';
   document.getElementById('cancelEditBtn').style.display = 'none';
@@ -624,6 +699,25 @@ function editSession(s) {
     document.getElementById('sNumCourts').value = s.courts.length;
     buildCourtsUI();
   }
+  // Live streaming prefill — the cached session row already carries
+  // is_streamable when present; the assigned ambassadors come from a
+  // dedicated GET (since they live in a join table).
+  var stEl  = document.getElementById('sIsStreamable');
+  var detEl = document.getElementById('sStreamingDetails');
+  if (stEl) {
+    stEl.checked = !!s.is_streamable;
+    if (detEl) detEl.style.display = stEl.checked ? '' : 'none';
+  }
+  SESSION_AMBS_PICK = [];
+  if (typeof renderAmbassadorPicker === 'function') renderAmbassadorPicker();
+  if (s.id) {
+    apiGet('/sessions/' + s.id).then(function(d){
+      var amb = (d && d.assigned_ambassadors) || [];
+      SESSION_AMBS_PICK = amb.map(function(a){ return a.ambassador_id; });
+      renderAmbassadorPicker();
+    }).catch(function(){});
+  }
+
   document.getElementById('sessionFormTitle').textContent = 'Edit Session';
   document.getElementById('sessionSubmitLabel').textContent = '✓ Save Changes';
   document.getElementById('cancelEditBtn').style.display = 'inline-block';

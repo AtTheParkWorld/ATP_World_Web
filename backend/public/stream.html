@@ -177,11 +177,14 @@ footer p{font-size:12px;color:var(--muted);margin:0}
     var tierClass = s.tier_required === 'premium_plus' ? 'plus' : '';
     var tierLabel = s.tier_required === 'premium_plus' ? 'Premium Plus' : 'Premium';
     var typeBadge = s.stream_type === 'coaching' ? '🎯 Coaching' : '🌳 Community';
+    // Lock copy now reflects the two-gate model: must be on the right
+    // tier AND must hold a booking on the session. We don't know which
+    // gate failed (the API just returns is_locked) so the message
+    // names both — the member self-diagnoses.
     var lockBlurb = '';
     if (locked) {
-      lockBlurb = s.tier_required === 'premium_plus'
-        ? '<div class="stream-locked-cta">Upgrade to Premium Plus to watch</div>'
-        : '<div class="stream-locked-cta">Upgrade to Premium to watch</div>';
+      var tierLabel = s.tier_required === 'premium_plus' ? 'Premium Plus' : 'Premium';
+      lockBlurb = '<div class="stream-locked-cta">Book the session + go ' + tierLabel + ' to watch</div>';
     }
     var playIcon = locked
       ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>'

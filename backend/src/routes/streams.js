@@ -62,50 +62,162 @@ function _concurrent(buf) {
   return n;
 }
 
-// Tier gate — visitors only see streams their plan unlocks.
-function _canViewStream(member, stream) {
-  // No tier restriction at all
-  if (!stream.tier_required) return true;
+// Tier gate (subscription only). Booking + tier checks are layered on
+// top of this in _canViewStreamAsync below.
+function _tierAllows(member, tierRequired) {
+  if (!tierRequired) return true;
   if (!member) return false;
   if (member.is_admin) return true;
   const sub = String(member.subscription_type || '').toLowerCase();
-  if (stream.tier_required === 'premium') {
-    return sub === 'premium' || sub === 'premium_plus';
-  }
-  if (stream.tier_required === 'premium_plus') {
-    return sub === 'premium_plus';
-  }
+  if (tierRequired === 'premium') return sub === 'premium' || sub === 'premium_plus';
+  if (tierRequired === 'premium_plus') return sub === 'premium_plus';
   return false;
 }
 
-// Only coaches + ambassadors (+ admins) can broadcast.
+// Session-anchored viewer gate. A member can watch a stream when:
+//   - they are the host (always)
+//   - they're an admin (always)
+//   - they meet the tier requirement AND hold an active booking on
+//     the underlying session
+async function _canViewStreamAsync(member, stream) {
+  if (!member) return false;
+  if (member.is_admin) return true;
+  if (member.id === stream.host_member_id) return true;
+  if (!_tierAllows(member, stream.tier_required)) return false;
+  // No session id — legacy / free-form stream — fall back to tier only.
+  if (!stream.session_id) return true;
+  const { rows } = await query(
+    `SELECT 1 FROM bookings
+      WHERE member_id=$1 AND session_id=$2
+        AND status IN ('confirmed', 'attended')
+      LIMIT 1`,
+    [member.id, stream.session_id]
+  );
+  return rows.length > 0;
+}
+
+// Broadcaster eligibility: admin / session coach / nominated session
+// ambassador. Returns the session row + the resolved tier_required so
+// the create handler can stamp it onto the stream.
+async function _resolveBroadcasterEligibility(member, sessionId) {
+  if (!sessionId) return { ok: false, error: 'session_id required — every stream is anchored to a session.' };
+  const { rows } = await query(
+    `SELECT id, coach_id, is_streamable, name FROM sessions WHERE id=$1 LIMIT 1`,
+    [sessionId]
+  ).catch(() => ({ rows: [] }));
+  if (!rows.length) return { ok: false, error: 'Session not found' };
+  const session = rows[0];
+  if (!session.is_streamable && !member.is_admin) {
+    return { ok: false, error: 'This session is not enabled for streaming.' };
+  }
+  if (member.is_admin) return { ok: true, session };
+  if (session.coach_id && session.coach_id === member.id) return { ok: true, session };
+  // Check if the member is a nominated ambassador for this session.
+  const { rows: amb } = await query(
+    `SELECT 1 FROM session_ambassadors WHERE session_id=$1 AND ambassador_id=$2 LIMIT 1`,
+    [sessionId, member.id]
+  ).catch(() => ({ rows: [] }));
+  if (amb.length) return { ok: true, session };
+  return { ok: false, error: 'Only the assigned coach or nominated ambassadors can stream this session.' };
+}
+
+// Broadcaster gate kept as a quick role check for entry to /stream-broadcast.
 function _canBroadcast(member) {
   if (!member) return false;
   return !!(member.is_admin || member.is_ambassador || member.is_coach);
 }
 
 // ── POST /api/streams ─ host starts a stream ──────────────────
+// Streams are anchored to sessions. The caller must be the session's
+// assigned coach, a nominated ambassador, or admin. The session must
+// be flagged is_streamable=true. Title + tier are inferred from the
+// session (admin can override stream_type via the body to flip a
+// community session to a coaching one if needed).
 router.post('/', authenticate, async (req, res, next) => {
   try {
     if (!_canBroadcast(req.member)) {
       return res.status(403).json({ error: 'Only coaches, ambassadors, or admins can stream.' });
     }
-    let { title, description = null, stream_type = 'community', tier_required, mime_type = null } = req.body || {};
-    if (!title || !String(title).trim()) return res.status(400).json({ error: 'title required' });
+    let { session_id, title, description = null, stream_type, tier_required, mime_type = null } = req.body || {};
+    if (!session_id) return res.status(400).json({ error: 'session_id required' });
+    const elig = await _resolveBroadcasterEligibility(req.member, session_id);
+    if (!elig.ok) return res.status(403).json({ error: elig.error });
+
+    // Inherit title from the session unless the broadcaster overrode it.
+    if (!title || !String(title).trim()) title = elig.session.name;
+    // Default stream_type = community; admins can flip to coaching at
+    // create time to enforce a higher tier requirement on this broadcast.
     stream_type   = (stream_type === 'coaching') ? 'coaching' : 'community';
-    // Coaching streams default to Premium Plus; community defaults to Premium.
     if (!tier_required) tier_required = (stream_type === 'coaching') ? 'premium_plus' : 'premium';
     tier_required = (tier_required === 'premium_plus') ? 'premium_plus' : 'premium';
 
-    const { rows } = await query(
-      `INSERT INTO streams (host_member_id, title, description, stream_type, tier_required, mime_type)
-            VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING id, host_member_id, title, description, stream_type, tier_required, status,
-                 started_at, mime_type`,
-      [req.member.id, String(title).trim().slice(0, 200), description, stream_type, tier_required, mime_type]
-    );
+    // Prefer the column-rich INSERT (with session_id). Falls back to
+    // the legacy INSERT if migrate-stream-sessions hasn't run yet.
+    let rows;
+    try {
+      const r = await query(
+        `INSERT INTO streams
+           (host_member_id, session_id, title, description, stream_type, tier_required, mime_type)
+              VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id, host_member_id, session_id, title, description, stream_type,
+                   tier_required, status, started_at, mime_type`,
+        [req.member.id, session_id, String(title).trim().slice(0, 200),
+         description, stream_type, tier_required, mime_type]
+      );
+      rows = r.rows;
+    } catch (e) {
+      if (e.code !== '42703') throw e;
+      const r = await query(
+        `INSERT INTO streams (host_member_id, title, description, stream_type, tier_required, mime_type)
+              VALUES ($1, $2, $3, $4, $5, $6)
+         RETURNING id, host_member_id, title, description, stream_type, tier_required,
+                   status, started_at, mime_type`,
+        [req.member.id, String(title).trim().slice(0, 200), description, stream_type, tier_required, mime_type]
+      );
+      rows = r.rows;
+    }
     _buf(rows[0].id).mime = mime_type || null;
     res.status(201).json({ stream: rows[0] });
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/streams/eligible-sessions ─ broadcaster's sessions ─
+// Returns the upcoming sessions THIS caller is allowed to stream:
+// they're the session's coach OR a nominated ambassador, AND the
+// session has is_streamable=true. Used by /stream-broadcast.html so
+// the broadcaster picks from a closed list of legit sessions rather
+// than free-form typing a title.
+router.get('/eligible-sessions', authenticate, async (req, res, next) => {
+  try {
+    if (!_canBroadcast(req.member)) return res.status(403).json({ error: 'Not a broadcaster role' });
+    let rows;
+    try {
+      const r = await query(
+        `SELECT DISTINCT s.id, s.name, s.scheduled_at, s.ends_at, s.location,
+                s.session_type, s.coach_id, s.is_streamable,
+                CASE
+                  WHEN s.coach_id = $1 THEN 'coach'
+                  WHEN sa.ambassador_id IS NOT NULL THEN 'ambassador'
+                  ELSE 'admin'
+                END AS my_role
+           FROM sessions s
+           LEFT JOIN session_ambassadors sa
+                  ON sa.session_id = s.id AND sa.ambassador_id = $1
+          WHERE s.is_streamable = true
+            AND s.scheduled_at >= NOW() - INTERVAL '4 hours'
+            AND ($2 = true OR s.coach_id = $1 OR sa.ambassador_id = $1)
+          ORDER BY s.scheduled_at ASC
+          LIMIT 30`,
+        [req.member.id, !!req.member.is_admin]
+      );
+      rows = r.rows;
+    } catch (e) {
+      // Pre-migration: is_streamable column or session_ambassadors table
+      // missing — admin hasn't run migrate-stream-sessions yet.
+      if (e.code !== '42P01' && e.code !== '42703') throw e;
+      rows = [];
+    }
+    res.json({ sessions: rows });
   } catch (err) { next(err); }
 });
 
@@ -199,22 +311,31 @@ router.post('/:id/chunk',
 // MediaSource has enough data to start playing immediately.
 router.get('/:id/chunks', optionalAuth, async (req, res, next) => {
   try {
-    const { rows } = await query(
-      `SELECT s.id, s.status, s.tier_required, s.mime_type,
-              s.host_member_id
-         FROM streams s WHERE s.id=$1 LIMIT 1`,
-      [req.params.id]
-    );
-    if (!rows.length) return res.status(404).json({ error: 'Stream not found' });
-    const stream = rows[0];
+    // Pull session_id too so the booking gate has what it needs.
+    let stream = null;
+    try {
+      const r = await query(
+        `SELECT s.id, s.status, s.tier_required, s.mime_type,
+                s.host_member_id, s.session_id
+           FROM streams s WHERE s.id=$1 LIMIT 1`,
+        [req.params.id]
+      );
+      stream = r.rows[0];
+    } catch (e) {
+      if (e.code !== '42703') throw e;
+      const r = await query(
+        `SELECT s.id, s.status, s.tier_required, s.mime_type, s.host_member_id
+           FROM streams s WHERE s.id=$1 LIMIT 1`,
+        [req.params.id]
+      );
+      stream = r.rows[0];
+    }
+    if (!stream) return res.status(404).json({ error: 'Stream not found' });
     if (stream.status !== 'live') return res.status(410).json({ error: 'Stream ended' });
 
-    // Tier gate. Allow the host their own stream regardless of tier
-    // so the broadcast page's preview works.
-    const isHost = req.member && req.member.id === stream.host_member_id;
-    if (!isHost && !_canViewStream(req.member, stream)) {
-      return res.status(403).json({ error: 'Upgrade required to watch this stream' });
-    }
+    // Async eligibility check — booking + tier, with host bypass.
+    const ok = await _canViewStreamAsync(req.member, stream);
+    if (!ok) return res.status(403).json({ error: 'You need a booking on this session + a Premium plan to watch.' });
 
     const buf = STREAMS.get(req.params.id);
     if (!buf || !buf.chunks.length) return res.status(204).end();
@@ -239,44 +360,80 @@ router.get('/:id/chunks', optionalAuth, async (req, res, next) => {
 // ── GET /api/streams/live ─ list active streams the user can join ─
 router.get('/live', optionalAuth, async (req, res, next) => {
   try {
-    const { rows } = await query(
-      `SELECT s.id, s.title, s.description, s.stream_type, s.tier_required,
-              s.started_at, s.peak_viewers, s.host_member_id,
-              m.first_name, m.last_name, m.avatar_url,
-              COALESCE(cp.profile_photo_url, m.avatar_url) AS host_photo,
-              CASE WHEN m.is_coach THEN 'coach' WHEN m.is_ambassador THEN 'ambassador' ELSE 'member' END AS host_role
-         FROM streams s
-         JOIN members m ON m.id = s.host_member_id
-         LEFT JOIN coach_profiles cp ON cp.member_id = m.id
-        WHERE s.status='live'
-        ORDER BY s.started_at DESC`
-    );
-    // Decorate each row with the in-process concurrent viewer count.
-    const list = rows.map(r => {
+    let rows;
+    try {
+      const r = await query(
+        `SELECT s.id, s.title, s.description, s.stream_type, s.tier_required,
+                s.started_at, s.peak_viewers, s.host_member_id, s.session_id,
+                sess.name AS session_name, sess.location AS session_location,
+                m.first_name, m.last_name, m.avatar_url,
+                COALESCE(cp.profile_photo_url, m.avatar_url) AS host_photo,
+                CASE WHEN m.is_coach THEN 'coach' WHEN m.is_ambassador THEN 'ambassador' ELSE 'member' END AS host_role
+           FROM streams s
+           JOIN members m ON m.id = s.host_member_id
+           LEFT JOIN sessions sess        ON sess.id = s.session_id
+           LEFT JOIN coach_profiles cp    ON cp.member_id = m.id
+          WHERE s.status='live'
+          ORDER BY s.started_at DESC`
+      );
+      rows = r.rows;
+    } catch (e) {
+      if (e.code !== '42703') throw e;
+      // Pre-migration fallback: no s.session_id column yet.
+      const r = await query(
+        `SELECT s.id, s.title, s.description, s.stream_type, s.tier_required,
+                s.started_at, s.peak_viewers, s.host_member_id,
+                m.first_name, m.last_name, m.avatar_url,
+                COALESCE(cp.profile_photo_url, m.avatar_url) AS host_photo,
+                CASE WHEN m.is_coach THEN 'coach' WHEN m.is_ambassador THEN 'ambassador' ELSE 'member' END AS host_role
+           FROM streams s
+           JOIN members m ON m.id = s.host_member_id
+           LEFT JOIN coach_profiles cp ON cp.member_id = m.id
+          WHERE s.status='live'
+          ORDER BY s.started_at DESC`
+      );
+      rows = r.rows;
+    }
+    // For each stream resolve the per-viewer gate. This does one
+    // booking lookup per stream — fine at MVP scale, can batch later.
+    const out = [];
+    for (const r of rows) {
       const buf = STREAMS.get(r.id);
       const concurrent = buf ? _concurrent(buf) : 0;
-      const canView = _canViewStream(req.member, r);
-      return Object.assign({}, r, {
+      const canView = await _canViewStreamAsync(req.member, r).catch(() => false);
+      const isHost  = req.member && req.member.id === r.host_member_id;
+      out.push(Object.assign({}, r, {
         concurrent_viewers: concurrent,
-        can_view: canView || (req.member && req.member.id === r.host_member_id),
-        is_locked: !canView && !(req.member && req.member.id === r.host_member_id),
-      });
-    });
-    res.json({ streams: list });
+        can_view:  canView || isHost,
+        is_locked: !canView && !isHost,
+      }));
+    }
+    res.json({ streams: out });
   } catch (err) { next(err); }
 });
 
 // ── POST /api/streams/:id/view ─ viewer opens a session ───────
 router.post('/:id/view', optionalAuth, async (req, res, next) => {
   try {
-    const { rows: sRows } = await query(
-      `SELECT id, status, tier_required, host_member_id FROM streams WHERE id=$1 LIMIT 1`,
-      [req.params.id]
-    );
+    let sRows;
+    try {
+      const r = await query(
+        `SELECT id, status, tier_required, host_member_id, session_id FROM streams WHERE id=$1 LIMIT 1`,
+        [req.params.id]
+      );
+      sRows = r.rows;
+    } catch (e) {
+      if (e.code !== '42703') throw e;
+      const r = await query(
+        `SELECT id, status, tier_required, host_member_id FROM streams WHERE id=$1 LIMIT 1`,
+        [req.params.id]
+      );
+      sRows = r.rows;
+    }
     if (!sRows.length || sRows[0].status !== 'live') return res.status(404).json({ error: 'Stream not live' });
     const stream = sRows[0];
-    const isHost = req.member && req.member.id === stream.host_member_id;
-    if (!isHost && !_canViewStream(req.member, stream)) return res.status(403).json({ error: 'Upgrade required' });
+    const ok = await _canViewStreamAsync(req.member, stream);
+    if (!ok) return res.status(403).json({ error: 'You need a booking on this session + a Premium plan to watch.' });
 
     const { rows } = await query(
       `INSERT INTO stream_views (stream_id, viewer_member_id)
