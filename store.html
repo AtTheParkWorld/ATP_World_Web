@@ -865,10 +865,12 @@ async function loadProducts() {
     allProducts = data.products.edges.map(function(e) { return e.node; });
 
     if (!allProducts.length) {
-      showStatus("warn",
-        "No products found. Make sure each product is <strong>Active</strong> and published to the <strong>Headless</strong> sales channel in Shopify." +
-        " <a href='https://admin.shopify.com/store/atp-store-7903/products' target='_blank' style='color:inherit;text-decoration:underline'>Open Shopify →</a>"
-      );
+      // Founder-facing error copy used to embed the Shopify admin URL,
+      // which leaked the store handle to every visitor. Now it just
+      // says the store is being restocked — the actual diagnostic
+      // detail lives in the browser console for the founder.
+      showStatus("warn", "Our store is being restocked. Check back soon — new drops every month.");
+      console.warn('[store] No products returned by Shopify. Check that products are Active and published to the Headless sales channel.');
       renderGrid(allProducts);
       return;
     }
@@ -880,17 +882,11 @@ async function loadProducts() {
     populateHero(allProducts);
 
   } catch (err) {
-    console.error("Shopify error:", err);
-    var msg = err.message || String(err);
-    var hint = "";
-    if (msg.includes("401") || msg.includes("403")) {
-      hint = " Token may be invalid. <a href='https://admin.shopify.com/store/atp-store-7903/headless' target='_blank' style='color:inherit;text-decoration:underline'>Check Headless token →</a>";
-    } else if (msg.includes("Failed to fetch") || msg.includes("NetworkError") || msg.includes("Load failed")) {
-      hint = " Network blocked. Check if store password is on. <a href='https://admin.shopify.com/store/atp-store-7903/online_store/preferences' target='_blank' style='color:inherit;text-decoration:underline'>Check preferences →</a>";
-    } else if (msg.includes("CORS")) {
-      hint = " CORS error — token may not have Storefront API permission.";
-    }
-    showStatus("err", "Could not load products: " + msg + hint);
+    console.error("[store] Shopify error:", err);
+    // Public-facing copy stays neutral; the diagnostic detail (token
+    // state, CORS, store-password) is logged to the console where
+    // only the founder/dev sees it.
+    showStatus("err", "We couldn't load the store right now. Refresh in a minute — we're on it.");
     // Show skeleton cards so layout doesn't break
     document.getElementById("prodCountEl").textContent = "—";
   }

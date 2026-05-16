@@ -61,15 +61,27 @@ async function _stripInlineFromPosts(rows) {
 router.get('/feed', optionalAuth, async (req, res, next) => {
   try {
     const { limit = 20, before } = req.query;
-    const params = [limit];
+    // Parameterise everything — member_id used to be interpolated into
+    // the SQL string which, while not exploitable in practice (UUID
+    // generated server-side), is the wrong shape. Build the param list
+    // explicitly so each value is bound, including member_id.
+    const params = [parseInt(limit, 10) || 20];
+    const viewerId = req.member ? req.member.id : null;
+    params.push(viewerId);                // $2 — may be null
+    const memberParamIdx = params.length;
     let beforeClause = '';
-    if (before) { beforeClause = `AND p.created_at < $${params.length + 1}`; params.push(before); }
+    if (before) {
+      params.push(before);
+      beforeClause = `AND p.created_at < $${params.length}`;
+    }
 
     const { rows } = await query(
       `SELECT p.id, p.content, p.media, p.likes_count, p.comments_count, p.created_at,
               m.id AS member_id, m.first_name, m.last_name, m.avatar_url,
               m.member_number, m.is_ambassador,
-              ${req.member ? `EXISTS(SELECT 1 FROM post_likes pl WHERE pl.post_id=p.id AND pl.member_id='${req.member.id}') AS liked_by_me,` : 'false AS liked_by_me,'}
+              CASE WHEN $${memberParamIdx}::uuid IS NULL THEN false
+                   ELSE EXISTS(SELECT 1 FROM post_likes pl WHERE pl.post_id=p.id AND pl.member_id=$${memberParamIdx}::uuid)
+              END AS liked_by_me,
               t.name AS tribe_name
        FROM posts p
        JOIN members m ON m.id = p.member_id

@@ -542,6 +542,31 @@ document.querySelectorAll('.nav-links a').forEach(function(a){
 var currentTribe = 'all', currentDay = 'all', currentActivity = 'all', currentCity = 'all';
 var activeSession = {};
 
+// Resolve the hardcoded tribe filter buttons' slugs ("better" / "faster"
+// / "stronger") to their actual tribe_id on boot. If admin later renames
+// "Better" to "Mindful" in CMS, the button labelled "Better" still maps
+// to the same tribe_id so the filter keeps working. The button's
+// data-args attribute is rewritten to carry the resolved id.
+(function _resolveTribeFilterIds() {
+  fetch('/api/sessions/tribes', { cache: 'no-cache' })
+    .then(function(r){ return r.ok ? r.json() : { tribes: [] }; })
+    .then(function(d) {
+      var bySlug = {};
+      (d.tribes || []).forEach(function(t){ if (t && t.slug) bySlug[t.slug.toLowerCase()] = t.id; });
+      document.querySelectorAll('.filter-tab[data-atp-call="filterTribe"]').forEach(function(btn) {
+        try {
+          var args = JSON.parse(btn.getAttribute('data-args') || '[]');
+          var v = (args[0] || '').toLowerCase();
+          if (v && v !== 'all' && bySlug[v]) {
+            args[0] = bySlug[v];
+            btn.setAttribute('data-args', JSON.stringify(args));
+          }
+        } catch (e) {}
+      });
+    })
+    .catch(function(){ /* legacy slug-match path still works */ });
+})();
+
 function filterTribe(tribe, btn) {
   currentTribe = tribe;
   document.querySelectorAll('.filter-tab').forEach(function(b){ b.classList.remove('active'); });
@@ -625,7 +650,12 @@ function applyFilters() {
   var cards = document.querySelectorAll('.session-card');
   var count = 0;
   cards.forEach(function(c) {
-    var ok = (currentTribe    === 'all' || c.dataset.tribe    === currentTribe)
+    // Tribe match: prefer tribe_id (stable across CMS renames) and fall
+    // back to slug for legacy cards that don't carry the id yet.
+    var tribeOk = (currentTribe === 'all')
+      || c.dataset.tribeId === currentTribe
+      || c.dataset.tribe   === currentTribe;
+    var ok = tribeOk
            && (currentDay      === 'all' || c.dataset.day      === currentDay)
            && (currentActivity === 'all' || c.dataset.activity === currentActivity)
            && (currentCity     === 'all' || c.dataset.city     === currentCity);
@@ -906,8 +936,17 @@ async function submitBooking() {
   }
 
   if (!activeSession || !activeSession.id) {
-    // No real session ID — local fallback (for legacy hardcoded entries only)
-    setTimeout(function() { showConfirmation(name, email); }, 500);
+    // Every session that opens this modal comes from the live API now;
+    // the old hardcoded-entries fallback was running silently with no
+    // qrToken / qrData, leaving the confirmation panel empty. Treat
+    // this as a real error instead.
+    btn.disabled = false;
+    btn.textContent = originalLabel;
+    if (errEl) {
+      errEl.textContent = 'Could not identify this session. Please refresh and try again.';
+      errEl.style.display = 'block';
+      errEl.classList.add('show');
+    }
     return;
   }
 
@@ -1537,6 +1576,9 @@ function renderSessionsGrid(sessions) {
     var article = document.createElement('article');
     article.className = 'session-card reveal visible';
     article.setAttribute('data-tribe', tribe);
+    // Stable tribe_id so the tribe filter keeps working even if admin
+    // renames a tribe in CMS (which changes the slug).
+    if (s.tribe_id) article.setAttribute('data-tribe-id', s.tribe_id);
     article.setAttribute('data-day', dayName);
     article.setAttribute('data-activity', s.activity_slug || s.activity_id || '');
     article.setAttribute('data-city', s.city_id || '');

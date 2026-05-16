@@ -1886,6 +1886,154 @@ router.post('/seed-default-plans', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-all-data-urls ──────────────────────
+// Sweep every place we know stores data: URLs and convert them to
+// short /api/cms/media/<id> refs. Covers:
+//   - blog_posts.cover_image_url
+//   - stream_ads.image_url
+//   - coach_profiles.cover_image_url + profile_photo_url + gallery_urls
+//   - members.avatar_url
+//   - posts.media[].src (community feed — also runs as lazy-migrate
+//                        on /community/feed read, this is a one-shot)
+// Idempotent: a row whose value already starts with /api/cms/media/
+// or http(s):// is left alone. Gated by ADMIN_SETUP_KEY.
+router.post('/migrate-all-data-urls', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    async function _stash(dataUrl, hint) {
+      const kind = dataUrl.startsWith('data:video') ? 'video' : 'image';
+      const safeHint = String(hint || 'legacy').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 60);
+      const key = `migrated_${safeHint}_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`;
+      const ins = await query(
+        `INSERT INTO cms_content (page, section, key, value_url)
+              VALUES ('_media', $1, $2, $3)
+         ON CONFLICT (page, section, key) DO UPDATE SET value_url=$3
+         RETURNING id`,
+        [kind, key, dataUrl]
+      );
+      return `/api/cms/media/${ins.rows[0].id}`;
+    }
+
+    const counts = {
+      blog_covers: 0, stream_ads: 0, coach_covers: 0, coach_photos: 0,
+      coach_gallery: 0, member_avatars: 0, post_media: 0,
+    };
+
+    // 1. blog_posts.cover_image_url
+    try {
+      const { rows } = await query(
+        `SELECT id, slug, cover_image_url FROM blog_posts
+          WHERE cover_image_url LIKE 'data:%'`
+      );
+      for (const r of rows) {
+        const newRef = await _stash(r.cover_image_url, 'blog_cover_' + r.slug);
+        await query('UPDATE blog_posts SET cover_image_url=$1 WHERE id=$2', [newRef, r.id]);
+        counts.blog_covers++;
+      }
+    } catch (e) { if (e.code !== '42P01') throw e; }
+
+    // 2. stream_ads.image_url
+    try {
+      const { rows } = await query(
+        `SELECT id, image_url FROM stream_ads WHERE image_url LIKE 'data:%'`
+      );
+      for (const r of rows) {
+        const newRef = await _stash(r.image_url, 'stream_ad');
+        await query('UPDATE stream_ads SET image_url=$1, updated_at=NOW() WHERE id=$2', [newRef, r.id]);
+        counts.stream_ads++;
+      }
+    } catch (e) { if (e.code !== '42P01') throw e; }
+
+    // 3. coach_profiles — cover, photo, and gallery (JSONB array)
+    try {
+      const { rows } = await query(
+        `SELECT member_id, cover_image_url, profile_photo_url, gallery_urls
+           FROM coach_profiles`
+      );
+      for (const r of rows) {
+        const updates = [];
+        const params  = [];
+        let i = 1;
+        if (r.cover_image_url && r.cover_image_url.startsWith('data:')) {
+          const newRef = await _stash(r.cover_image_url, 'coach_cover');
+          updates.push(`cover_image_url=$${i++}`); params.push(newRef);
+          counts.coach_covers++;
+        }
+        if (r.profile_photo_url && r.profile_photo_url.startsWith('data:')) {
+          const newRef = await _stash(r.profile_photo_url, 'coach_photo');
+          updates.push(`profile_photo_url=$${i++}`); params.push(newRef);
+          counts.coach_photos++;
+        }
+        let gallery = r.gallery_urls;
+        if (typeof gallery === 'string') { try { gallery = JSON.parse(gallery); } catch(_) { gallery = []; } }
+        if (Array.isArray(gallery)) {
+          let touched = false;
+          const out = [];
+          for (const g of gallery) {
+            if (typeof g === 'string' && g.startsWith('data:')) {
+              out.push(await _stash(g, 'coach_gallery'));
+              touched = true;
+              counts.coach_gallery++;
+            } else { out.push(g); }
+          }
+          if (touched) {
+            updates.push(`gallery_urls=$${i++}::jsonb`);
+            params.push(JSON.stringify(out));
+          }
+        }
+        if (updates.length) {
+          params.push(r.member_id);
+          await query(
+            `UPDATE coach_profiles SET ${updates.join(', ')} WHERE member_id=$${i}`,
+            params
+          );
+        }
+      }
+    } catch (e) { if (e.code !== '42P01') throw e; }
+
+    // 4. members.avatar_url
+    try {
+      const { rows } = await query(
+        `SELECT id, avatar_url FROM members WHERE avatar_url LIKE 'data:%'`
+      );
+      for (const r of rows) {
+        const newRef = await _stash(r.avatar_url, 'avatar');
+        await query('UPDATE members SET avatar_url=$1 WHERE id=$2', [newRef, r.id]);
+        counts.member_avatars++;
+      }
+    } catch (e) { if (e.code !== '42703') throw e; }
+
+    // 5. posts.media[].src — community feed
+    try {
+      const { rows } = await query(
+        `SELECT id, media FROM posts WHERE is_deleted=false AND media::text LIKE '%"data:%'`
+      );
+      for (const r of rows) {
+        let media = r.media;
+        if (typeof media === 'string') { try { media = JSON.parse(media); } catch(_) { media = []; } }
+        if (!Array.isArray(media)) continue;
+        let touched = false;
+        const out = [];
+        for (const m of media) {
+          if (m && typeof m.src === 'string' && m.src.startsWith('data:')) {
+            const newRef = await _stash(m.src, 'post_media');
+            out.push({ ...m, src: newRef });
+            touched = true;
+            counts.post_media++;
+          } else { out.push(m); }
+        }
+        if (touched) {
+          await query('UPDATE posts SET media=$1 WHERE id=$2', [JSON.stringify(out), r.id]);
+        }
+      }
+    } catch (e) { if (e.code !== '42P01') throw e; }
+
+    res.json({ success: true, migrated: counts });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-cms-media-refs ─────────────────────
 // One-shot cleanup: any cms_content row outside the '_media' page that
 // stores a full data: URL gets moved into a fresh '_media' row, and the

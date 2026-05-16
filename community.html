@@ -554,7 +554,9 @@ var mediaFiles = [];
 function handleMedia(input, type) {
   var files = Array.from(input.files);
   files.forEach(function(file) {
-    if(type==="video" && file.size > 200*1024*1024) { alert("Video must be under 2 minutes / 200MB"); return; }
+    // Copy used to claim "under 2 minutes / 200MB" but we only enforce
+    // bytes — pick one and own it. 200 MB is the cap.
+    if(type==="video" && file.size > 200*1024*1024) { alert("Video must be under 200 MB. Try shortening it or exporting at lower quality."); return; }
     mediaFiles.push({file:file, type:type});
     var reader = new FileReader();
     reader.onload = function(e) {

@@ -585,7 +585,9 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .onboard-card-arrow{font-size:13px;font-weight:700;color:var(--green);margin-top:4px}
 @media(max-width:900px){.onboard-grid{grid-template-columns:1fr;padding:0 16px}.role-banner{padding:0 16px}}
 </style>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- Vendored locally — see backend/public/vendor/. Keeps /profile working
+     even if cdnjs is blocked / down. -->
+<script src="/vendor/qrcode.min.js"></script>
 
 </head>
 <body>

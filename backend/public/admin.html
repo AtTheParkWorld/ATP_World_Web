@@ -17,6 +17,41 @@
 </head>
 <body>
 
+<!-- ── PRE-BOOT AUTH GATE ─────────────────────────────────────
+     Runs synchronously before anything else paints. If the visitor
+     doesn't have an atp_token at all, bounce them to /join with a
+     ?next= so they come back here after sign-in. If they DO have a
+     token + a cached atp_member with is_admin=true, skip the
+     username/password login screen entirely — they're already an
+     authenticated admin from the main site, no reason to re-auth.
+     Anything else (token exists but member object not yet hydrated,
+     or is_admin not yet known) falls through to the existing login
+     form for password verification. -->
+<script>
+(function adminAuthGate() {
+  try {
+    var t = localStorage.getItem('atp_token') || '';
+    if (!t) {
+      window.location.replace('/join?mode=login&next=' + encodeURIComponent('/admin.html'));
+      return;
+    }
+    var m = JSON.parse(localStorage.getItem('atp_member') || 'null');
+    // Cached admin member → mark logged-in so the login screen never paints.
+    // The legacy core.js still owns final auth state; we just skip its UI.
+    if (m && m.is_admin === true) {
+      window.adminLoggedIn = true;
+      // Hide the login screen before paint so there's no flicker.
+      var s = document.currentScript;
+      if (s && s.parentNode) {
+        var style = document.createElement('style');
+        style.textContent = '#loginScreen{display:none !important}#adminWrap{display:block !important}';
+        document.head.appendChild(style);
+      }
+    }
+  } catch (e) { /* fall through — login screen will show */ }
+})();
+</script>
+
 <!-- LOGIN SCREEN -->
 <div class="admin-login" id="loginScreen">
   <div class="admin-login-box">
