@@ -1886,6 +1886,36 @@ router.post('/seed-default-plans', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/admin-reset-password ───────────────────────
+// Emergency password reset for an admin who's locked out of the panel
+// (e.g. magic-link email isn't delivering because FRONTEND_URL was
+// pointing at the wrong subdomain). Gated by ADMIN_SETUP_KEY so only
+// someone with Render env access can use it — that's the same security
+// boundary as the existing migration endpoints.
+//
+// Body: { setupKey, email, new_password }
+// Returns: { success: true, member: { id, email } }
+router.post('/admin-reset-password', async (req, res, next) => {
+  try {
+    const { setupKey, email, new_password } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    if (!email)        return res.status(400).json({ error: 'email required' });
+    if (!new_password || new_password.length < 8) {
+      return res.status(400).json({ error: 'new_password must be at least 8 characters' });
+    }
+    const hash = await bcrypt.hash(new_password, 12);
+    const { rows } = await query(
+      `UPDATE members
+          SET password_hash=$1, updated_at=NOW()
+        WHERE LOWER(email)=LOWER($2)
+        RETURNING id, email, first_name, last_name, is_admin`,
+      [hash, email]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Member not found' });
+    res.json({ success: true, member: rows[0] });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-all-data-urls ──────────────────────
 // Sweep every place we know stores data: URLs and convert them to
 // short /api/cms/media/<id> refs. Covers:
