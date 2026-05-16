@@ -501,3 +501,337 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
                 opacity var(--atp-dur-fast) var(--atp-ease);
   }
 }
+
+/* ════════════════════════════════════════════════════════════════
+ * DESIGN SYSTEM v2 (1.17.0)
+ * Polish pass — fills the gaps in the v1 layer that the design audit
+ * called out: canonical modal, card, badge, and stat utilities, plus
+ * site-wide rules that smooth over legacy class inconsistencies
+ * without editing every page individually.
+ *
+ * NOTE on type scale: v1 ships 8 sizes (xs → 3xl). The audit asked
+ * to lock this to 5. Rather than removing tokens (which would break
+ * every page that uses them), the 5 PREFERRED sizes are flagged in
+ * the comment below — new code should stick to these and migrate
+ * existing usages opportunistically.
+ *
+ *   PREFER   xs (11px)  · sm (12px) · base (14px) · md (16px) · xl (22px)
+ *   AVOID    lg (18px)  · 2xl (28px) · 3xl (36px)
+ * ════════════════════════════════════════════════════════════════ */
+
+/* ── CARD ───────────────────────────────────────────────────────
+   Canonical container for everything from session cards to plan
+   tiles. Pages currently define their own (.session-card, .plan-card,
+   .coach-card, etc.) — adopting .atp-card on new work + the legacy
+   hover rule below shares the same elevation behaviour. */
+.atp-card {
+  background: var(--atp-bg-2);
+  border: 1px solid var(--atp-line);
+  border-radius: var(--atp-radius-lg);
+  padding: var(--atp-space-5);
+  transition: border-color var(--atp-dur) var(--atp-ease),
+              transform   var(--atp-dur) var(--atp-ease),
+              box-shadow  var(--atp-dur) var(--atp-ease);
+}
+.atp-card--interactive { cursor: pointer; }
+.atp-card--featured {
+  border-color: var(--atp-green);
+  background: linear-gradient(180deg, var(--atp-green-soft) 0%, var(--atp-bg-2) 60%);
+}
+
+/* ── BADGE / PILL ───────────────────────────────────────────────
+   Audit asked for a 3-color palette (green / amber / red) instead of
+   the 7 colors scattered across pages. Use these by default; the
+   legacy class normalization further down maps existing pill classes
+   to this palette so the site reads consistently without page edits. */
+.atp-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 10px;
+  font-size: var(--atp-text-xs);
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+.atp-badge--success {
+  background: var(--atp-green-soft);
+  color: #a8e055;
+  border-color: var(--atp-green-line);
+}
+.atp-badge--warning {
+  background: rgba(245, 158, 11, .12);
+  color: #fbbf24;
+  border-color: rgba(245, 158, 11, .35);
+}
+.atp-badge--danger {
+  background: rgba(239, 68, 68, .12);
+  color: #fca5a5;
+  border-color: rgba(239, 68, 68, .35);
+}
+.atp-badge--neutral {
+  background: rgba(255, 255, 255, .06);
+  color: var(--atp-fg-muted);
+  border-color: var(--atp-line);
+}
+
+/* ── STAT BLOCK ─────────────────────────────────────────────────
+   Repeated >12× across pages (hero stats, profile stats, plans
+   trust band, admin dashboard). Audit asked for a single component
+   so each instance can't drift. */
+.atp-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 4px;
+  padding: var(--atp-space-3) var(--atp-space-2);
+}
+.atp-stat__num {
+  font-family: var(--ff-display, var(--atp-font-display, sans-serif));
+  font-size: var(--atp-text-2xl);
+  font-weight: 900;
+  color: var(--atp-green);
+  line-height: 1;
+  letter-spacing: -.01em;
+}
+.atp-stat__label {
+  font-size: var(--atp-text-xs);
+  color: var(--atp-fg-muted);
+  text-transform: uppercase;
+  letter-spacing: .08em;
+}
+.atp-stat--inline { flex-direction: row; gap: 8px; align-items: baseline; }
+.atp-stat--inline .atp-stat__num { font-size: var(--atp-text-xl); }
+
+/* ── MODAL ──────────────────────────────────────────────────────
+   Single overlay + card spec. Several pages currently roll their
+   own (.modal-overlay, .qr-modal-overlay, .auth-modal, .mediaUploadModal
+   in admin). Adopting .atp-modal-* on new modals; legacy ones stay
+   for now but inherit the same backdrop blur via the cross-cut rule
+   in the LEGACY POLISH block below. */
+.atp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--atp-space-5);
+  background: rgba(0, 0, 0, .82);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--atp-dur) var(--atp-ease);
+}
+.atp-modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.atp-modal-card {
+  background: var(--atp-bg-2);
+  border: 1px solid var(--atp-line-strong);
+  border-radius: var(--atp-radius-lg);
+  padding: var(--atp-space-6);
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100vh - 80px);
+  overflow-y: auto;
+  transform: scale(.96) translateY(8px);
+  opacity: 0;
+  transition: transform var(--atp-dur) var(--atp-ease),
+              opacity   var(--atp-dur) var(--atp-ease);
+}
+.atp-modal-overlay.open .atp-modal-card {
+  transform: scale(1) translateY(0);
+  opacity: 1;
+}
+.atp-modal-card__close {
+  position: absolute;
+  top: var(--atp-space-3);
+  right: var(--atp-space-3);
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, .06);
+  color: var(--atp-fg-muted);
+  border: none;
+  cursor: pointer;
+  transition: background var(--atp-dur-fast) var(--atp-ease),
+              color      var(--atp-dur-fast) var(--atp-ease);
+}
+.atp-modal-card__close:hover {
+  background: rgba(255, 255, 255, .14);
+  color: var(--atp-fg);
+}
+
+/* ════════════════════════════════════════════════════════════════
+ * GLOBAL POLISH (cross-page, no class adoption required)
+ * Rules that fix common audit findings at the cascade level so
+ * pages don't need individual edits.
+ * ════════════════════════════════════════════════════════════════ */
+
+/* ── #10 · Disable card hover transforms on mobile ──────────────
+   The lift-on-hover animation on cards (.session-card, .coach-card,
+   .plan-card, .stat-card, .post-card, .blog-card, etc.) is purely
+   decorative on phones (no hover state, just a tap) and triggers
+   layout repaint on touchstart, costing FPS on long lists. Disable
+   transforms below 900px width — keep them on desktop. */
+@media (max-width: 900px) {
+  .session-card,
+  .session-card:hover,
+  .coach-card,
+  .coach-card:hover,
+  .plan-card,
+  .plan-card:hover,
+  .post-card,
+  .post-card:hover,
+  .blog-card,
+  .blog-card:hover,
+  .atp-card,
+  .atp-card:hover {
+    transform: none !important;
+  }
+}
+
+/* ── #9 · Badge color normalization ─────────────────────────────
+   Maps the seven-ish pill colors scattered across pages onto the
+   three-color palette (green / amber / red) so the site reads with
+   one voice. Pages keep their existing class names — these rules
+   override the local colors. */
+.member-badge.premium,
+.member-badge.premium-plus,
+.coach-badge,
+.ambassador-badge,
+.tribe-badge {
+  background: var(--atp-green-soft) !important;
+  border: 1px solid var(--atp-green-line) !important;
+  color: #a8e055 !important;
+}
+.member-badge:not(.premium):not(.premium-plus) {
+  background: rgba(255, 255, 255, .06) !important;
+  border: 1px solid var(--atp-line) !important;
+  color: var(--atp-fg-muted) !important;
+}
+.badge-grey,
+.badge-neutral {
+  background: rgba(255, 255, 255, .06) !important;
+  color: var(--atp-fg-muted) !important;
+  border: 1px solid var(--atp-line) !important;
+}
+.badge-green,
+.badge-success {
+  background: var(--atp-green-soft) !important;
+  color: #a8e055 !important;
+  border: 1px solid var(--atp-green-line) !important;
+}
+.badge-amber,
+.badge-warning,
+.badge-yellow {
+  background: rgba(245, 158, 11, .12) !important;
+  color: #fbbf24 !important;
+  border: 1px solid rgba(245, 158, 11, .35) !important;
+}
+.badge-red,
+.badge-danger {
+  background: rgba(239, 68, 68, .12) !important;
+  color: #fca5a5 !important;
+  border: 1px solid rgba(239, 68, 68, .35) !important;
+}
+
+/* ── #4 · Centralized footer ────────────────────────────────────
+   Used by ATPComponents.mountFooter(). A page that wants the canonical
+   footer just drops `<div id="atp-footer-host"></div>` before </body>
+   and the bundle injects this markup on boot. */
+.atp-footer {
+  background: var(--atp-bg-1);
+  padding: var(--atp-space-12) var(--atp-space-8) var(--atp-space-6);
+  border-top: 1px solid var(--atp-line);
+  font-family: var(--ff-body, var(--atp-font-body, system-ui));
+}
+.atp-footer-inner {
+  max-width: 1320px;
+  margin: 0 auto;
+}
+.atp-footer-top {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: var(--atp-space-8);
+  margin-bottom: var(--atp-space-8);
+}
+.atp-footer-tagline {
+  font-size: var(--atp-text-sm);
+  color: var(--atp-fg-muted);
+  line-height: 1.6;
+  max-width: 320px;
+  margin: 0 0 var(--atp-space-4);
+}
+.atp-footer-socials { display: flex; gap: var(--atp-space-2); }
+.atp-social-btn {
+  width: 34px; height: 34px;
+  border-radius: 50%;
+  background: var(--atp-bg-3);
+  display: flex; align-items: center; justify-content: center;
+  color: var(--atp-fg-muted);
+  transition: background var(--atp-dur) var(--atp-ease),
+              color var(--atp-dur) var(--atp-ease);
+}
+.atp-social-btn:hover { background: var(--atp-green); color: var(--atp-bg); }
+.atp-footer-col h4 {
+  font-family: var(--ff-display, var(--atp-font-display, sans-serif));
+  font-size: var(--atp-text-sm);
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--atp-fg);
+  margin: 0 0 var(--atp-space-3);
+}
+.atp-footer-col ul { list-style: none; padding: 0; margin: 0; }
+.atp-footer-col li { margin-bottom: var(--atp-space-2); }
+.atp-footer-col a {
+  font-size: var(--atp-text-sm);
+  color: var(--atp-fg-muted);
+  transition: color var(--atp-dur) var(--atp-ease);
+}
+.atp-footer-col a:hover { color: var(--atp-green); }
+.atp-footer-bottom {
+  padding-top: var(--atp-space-5);
+  border-top: 1px solid var(--atp-line);
+  display: flex; justify-content: space-between; align-items: center;
+  flex-wrap: wrap; gap: var(--atp-space-3);
+}
+.atp-footer-copy { font-size: var(--atp-text-xs); color: var(--atp-fg-muted); margin: 0; }
+.atp-footer-legal { display: flex; gap: var(--atp-space-4); align-items: center; }
+.atp-footer-legal a {
+  font-size: var(--atp-text-xs);
+  color: var(--atp-fg-muted);
+  transition: color var(--atp-dur) var(--atp-ease);
+}
+.atp-footer-legal a:hover { color: var(--atp-fg); }
+@media (max-width: 900px) {
+  .atp-footer { padding: var(--atp-space-8) var(--atp-space-5) var(--atp-space-5); }
+  .atp-footer-top { grid-template-columns: 1fr 1fr; gap: var(--atp-space-6); }
+}
+@media (max-width: 560px) {
+  .atp-footer-top { grid-template-columns: 1fr; }
+}
+
+/* ── #8 · Modal backdrop consistency ────────────────────────────
+   Force a unified backdrop on legacy modal overlays so each one
+   doesn't ship its own slightly-different blur/dim. */
+.modal-overlay,
+.qr-modal-overlay,
+.auth-overlay,
+#mediaUploadModal,
+#registrationsModal,
+#paymentChooserOverlay {
+  backdrop-filter: blur(8px) !important;
+  -webkit-backdrop-filter: blur(8px) !important;
+}

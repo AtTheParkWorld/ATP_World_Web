@@ -1613,13 +1613,18 @@ function renderStreakGrid(el, days) {
   el.innerHTML = html;
 }
 
-function _atpEmpty(icon, title, desc, ctaHtml) {
-  return '<div class="atp-empty">' +
-    '<div class="atp-empty__icon">' + icon + '</div>' +
-    '<h3 class="atp-empty__title">' + title + '</h3>' +
-    '<p class="atp-empty__desc">' + desc + '</p>' +
-    (ctaHtml || '') +
-  '</div>';
+// _atpEmpty + _atpSpinner are now exposed globally from atp-components.js
+// (Design System v2). This stub is kept for any inline caller that
+// runs before atp.bundle.min.js loads — the global version overrides it.
+if (typeof window._atpEmpty !== 'function') {
+  window._atpEmpty = function(icon, title, desc, ctaHtml) {
+    return '<div class="atp-empty">' +
+      '<div class="atp-empty__icon">' + icon + '</div>' +
+      '<h3 class="atp-empty__title">' + title + '</h3>' +
+      '<p class="atp-empty__desc">' + desc + '</p>' +
+      (ctaHtml || '') +
+    '</div>';
+  };
 }
 
 function renderSessions(el, sessions) {
