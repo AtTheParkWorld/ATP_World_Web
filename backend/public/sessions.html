@@ -144,8 +144,11 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 .modal-close:hover{border-color:var(--white);color:var(--white)}
 .modal-tribe{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green);margin-bottom:8px}
 .modal-name{font-family:var(--ff-display);font-size:40px;font-weight:900;text-transform:uppercase;color:var(--white);margin-bottom:6px;line-height:1}
-.modal-meta{font-size:13px;color:var(--muted);margin-bottom:28px;line-height:2;border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:20px}
-.modal-meta strong{color:var(--light)}
+.modal-meta{font-size:13px;color:var(--muted);margin-bottom:18px;border-bottom:1px solid rgba(255,255,255,.06);padding-bottom:14px}
+.modal-meta-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:var(--light)}
+.modal-meta-row span{display:inline-flex;align-items:center;gap:4px}
+.modal-meta-sep{color:rgba(255,255,255,.18);font-weight:700}
+.modal-meta-desc{margin-top:10px;font-style:italic;font-size:12px;color:var(--muted);line-height:1.5}
 .form-group{margin-bottom:16px}
 .form-group label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
 .form-group input{width:100%;background:var(--dark3);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:13px 16px;color:var(--white);font-size:14px;font-family:var(--ff-body);transition:border-color .2s}
@@ -732,11 +735,19 @@ function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId)
   document.getElementById('modalTribe').textContent = (tribe || 'ATP').toUpperCase() + ' TRIBE';
   document.getElementById('modalName').textContent = name;
   var whenLabel = _formatBookingWhen(sFull, dayTime);
+  // Single tighter block: when / where / coach on one line with bullet
+  // separators, description below as a soft caption (only if present).
+  // Cuts the modal's vertical chrome by ~40% so the T&C + green button
+  // sit above the fold on mobile.
   document.getElementById('modalMeta').innerHTML =
-    '<span><strong>When:</strong> ' + whenLabel + '</span> ' +
-    '<span><strong>Coach:</strong> ' + coach + '</span> ' +
-    '<span><strong>Where:</strong> ' + loc + '</span> ' +
-    (desc ? '<span style="margin-top:6px;display:block;font-style:italic;color:var(--muted)">' + desc + '</span>' : '');
+    '<div class="modal-meta-row">' +
+      '<span>📅 ' + escapeHtml(whenLabel) + '</span>' +
+      '<span class="modal-meta-sep">·</span>' +
+      '<span>📍 ' + escapeHtml(loc) + '</span>' +
+      '<span class="modal-meta-sep">·</span>' +
+      '<span>🎽 ' + escapeHtml(coach) + '</span>' +
+    '</div>' +
+    (desc ? '<p class="modal-meta-desc">' + escapeHtml(desc) + '</p>' : '');
   document.getElementById('modalForm').style.display = 'block';
   document.getElementById('confirmPanel').style.display = 'none';
 
@@ -1584,12 +1595,15 @@ function renderSessionsGrid(sessions) {
     article.setAttribute('data-city', s.city_id || '');
     article.setAttribute('data-session-id', s.id);
     if (s.intro_video_url) article.setAttribute('data-intro-video', s.intro_video_url);
+    // Card UI shows only what the visitor needs to decide whether to open
+    // the modal: name, when, where, price. Coach + description live inside
+    // the modal where there's room to actually read them. Keeps the grid
+    // scannable on mobile where 11 lines was crushing the layout.
     article.innerHTML =
       '<span class="sc-free">' + escapeHtml(priceTag) + '</span>' +
       '<p class="sc-tribe ' + tribe + '">' + escapeHtml(tribeLabel) + '</p>' +
       '<h3 class="sc-name">' + escapeHtml(s.name) + '</h3>' +
       '<p class="sc-time">' + escapeHtml(dayTime) + '</p>' +
-      '<p class="sc-coach">With Coach ' + escapeHtml(coach) + '</p>' +
       '<p class="sc-loc">' + escapeHtml(loc) + escapeHtml(cityTag) + '</p>';
 
     article.addEventListener('click', function() {

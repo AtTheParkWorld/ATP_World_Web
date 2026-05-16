@@ -87,17 +87,76 @@ function selectCategory(cat) {
   if (cat === 'team_sports') buildCourtsUI();
 }
 
+// Renders one start/end time row per checked day, plus a "Same time
+// for all days" toggle at the top. When the toggle is on, the per-day
+// rows collapse into a single bulk row whose values are copied onto
+// every selected day before save (so the server gets explicit per-day
+// times either way — admin just doesn't have to re-type them).
 function updateDayTimes() {
   var container = document.getElementById('dayTimesContainer');
   var checked = Array.from(document.querySelectorAll('.day-check-btn input:checked')).map(function(i){ return i.value; });
-  container.innerHTML = checked.map(function(day) {
-    return '<div style="display:flex;align-items:center;gap:8px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:8px 12px">' +
-      '<span style="font-size:12px;font-weight:700;color:#7AC231;min-width:32px">'+day+'</span>' +
-      '<input class="admin-form-input" type="time" id="time-'+day+'" value="06:30" style="width:90px;padding:4px 8px" title="Start time">' +
-      '<span style="font-size:11px;color:#666">to</span>' +
-      '<input class="admin-form-input" type="time" id="endtime-'+day+'" value="07:30" style="width:90px;padding:4px 8px" title="End time">' +
+  if (!checked.length) { container.innerHTML = ''; return; }
+
+  // Preserve the toggle + values across re-renders so admin doesn't
+  // lose their typed times when they tick / untick another day.
+  var sameOn   = (document.getElementById('sameTimeAll') || {}).checked;
+  var bulkS    = (document.getElementById('time-ALL')   || {}).value || '06:30';
+  var bulkE    = (document.getElementById('endtime-ALL')|| {}).value || '07:30';
+
+  var toggleRow =
+    '<label style="display:flex;align-items:center;gap:8px;padding:6px 4px;font-size:12px;color:#aaa;cursor:pointer;margin-bottom:6px">' +
+      '<input type="checkbox" id="sameTimeAll" ' + (sameOn ? 'checked' : '') + ' onchange="updateDayTimes()" style="accent-color:#7AC231">' +
+      'Same time for all days' +
+    '</label>';
+
+  var perDay;
+  if (sameOn) {
+    perDay = '<div style="display:flex;align-items:center;gap:8px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:8px 12px">' +
+        '<span style="font-size:12px;font-weight:700;color:#7AC231;min-width:60px">All days</span>' +
+        '<input class="admin-form-input" type="time" id="time-ALL"    value="' + bulkS + '" style="width:90px;padding:4px 8px" title="Start time">' +
+        '<span style="font-size:11px;color:#666">to</span>' +
+        '<input class="admin-form-input" type="time" id="endtime-ALL" value="' + bulkE + '" style="width:90px;padding:4px 8px" title="End time">' +
+        '<span style="font-size:11px;color:#666;margin-left:6px">applies to ' + checked.length + ' day' + (checked.length === 1 ? '' : 's') + '</span>' +
       '</div>';
-  }).join('');
+  } else {
+    perDay = checked.map(function(day) {
+      return '<div style="display:flex;align-items:center;gap:8px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:8px 12px">' +
+        '<span style="font-size:12px;font-weight:700;color:#7AC231;min-width:32px">'+day+'</span>' +
+        '<input class="admin-form-input" type="time" id="time-'+day+'" value="06:30" style="width:90px;padding:4px 8px" title="Start time">' +
+        '<span style="font-size:11px;color:#666">to</span>' +
+        '<input class="admin-form-input" type="time" id="endtime-'+day+'" value="07:30" style="width:90px;padding:4px 8px" title="End time">' +
+        '</div>';
+    }).join('');
+  }
+  container.innerHTML = toggleRow + perDay;
+}
+
+// On save, if the "Same time for all days" toggle is on, expand the
+// bulk values to the per-day inputs the save code already reads from.
+// Safe no-op when the toggle is off.
+function _expandSameTimeBulk() {
+  var sameOn = (document.getElementById('sameTimeAll') || {}).checked;
+  if (!sameOn) return;
+  var bulkS = (document.getElementById('time-ALL')    || {}).value;
+  var bulkE = (document.getElementById('endtime-ALL') || {}).value;
+  if (!bulkS || !bulkE) return;
+  Array.from(document.querySelectorAll('.day-check-btn input:checked')).forEach(function(input) {
+    var day = input.value;
+    // Synthesize hidden inputs the save reader expects, so we don't
+    // have to refactor the existing per-day reader.
+    function _ensure(id, val) {
+      var el = document.getElementById(id);
+      if (!el) {
+        el = document.createElement('input');
+        el.type = 'hidden';
+        el.id   = id;
+        document.body.appendChild(el);
+      }
+      el.value = val;
+    }
+    _ensure('time-' + day,    bulkS);
+    _ensure('endtime-' + day, bulkE);
+  });
 }
 
 // ── Session intro-video upload (hover preview on /sessions cards) ──
@@ -183,6 +242,31 @@ async function loadCities() {
     filterCitiesByCountry();
   } catch(e) { console.warn('Cities load error:', e.message); }
 }
+
+// Auto-suggest is_streamable=true when admin assigns a coach. Most
+// coach-led sessions end up streamable anyway, so default the toggle
+// on whenever a coach is picked — admin can still untick it. Doesn't
+// fire if the toggle was already manually changed.
+function autoSuggestStreamable() {
+  var coach = document.getElementById('sCoach');
+  var st    = document.getElementById('sIsStreamable');
+  var det   = document.getElementById('sStreamingDetails');
+  if (!coach || !st) return;
+  // Skip if admin has explicitly touched the streamable toggle for this
+  // session (the dataset flag is set by the change listener below).
+  if (st.dataset.userTouched === '1') return;
+  if (coach.value) {
+    st.checked = true;
+    if (det) det.style.display = '';
+  }
+}
+// Remember when admin manually clicks the toggle so auto-suggest stops
+// overriding their explicit choice.
+document.addEventListener('change', function(ev) {
+  if (ev.target && ev.target.id === 'sIsStreamable') {
+    ev.target.dataset.userTouched = '1';
+  }
+});
 
 async function loadCoaches() {
   try {
@@ -499,6 +583,10 @@ async function cancelSeriesByName() {
 async function createSession() {
   var msgEl = document.getElementById('sessionFormMsg');
   var isEdit = !!SESSION_EDIT_ID;
+  // If the "Same time for all days" toggle is on, materialise the
+  // per-day time inputs first so the existing reader keeps working
+  // unchanged. Safe no-op when the toggle is off.
+  try { _expandSameTimeBulk(); } catch(e) {}
 
   var name      = document.getElementById('sName').value.trim();
   var city_id   = document.getElementById('sCity').value;
@@ -648,7 +736,8 @@ function resetSessionForm() {
   document.getElementById('dayTimesContainer').innerHTML = '';
   selectCategory('regular');
   // Reset live-streaming controls.
-  var st = document.getElementById('sIsStreamable'); if (st) st.checked = false;
+  var st = document.getElementById('sIsStreamable');
+  if (st) { st.checked = false; delete st.dataset.userTouched; }
   var det = document.getElementById('sStreamingDetails'); if (det) det.style.display = 'none';
   SESSION_AMBS_PICK = [];
   if (typeof renderAmbassadorPicker === 'function') renderAmbassadorPicker();

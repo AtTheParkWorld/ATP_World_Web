@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="/atp.min.css">
+  <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
+  <script src="/atp.bundle.min.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Legal · Privacy & Terms | At The Park</title>
+  <meta name="description" content="The legal side of At The Park — privacy policy, terms of service, and refund policy in one place.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#7AC231;--green-dark:#5a9a1f;--green-light:#a8e055;
+  --black:#0a0a0a;--dark:#111111;--dark2:#1a1a1a;--dark3:#222222;
+  --muted:#888888;--light:#aaaaaa;--white:#ffffff;
+  --ff-display:'Barlow Condensed',sans-serif;--ff-body:'DM Sans',sans-serif;
+  --nav-h:68px;--max:920px;--radius:6px;--radius-lg:12px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:calc(var(--nav-h) + 60px)}
+body{font-family:var(--ff-body);background:var(--black);color:var(--white);overflow-x:hidden;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+main{flex:1}
+img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;color:inherit}
+
+#nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;padding:0 40px;transition:background .3s,border-color .3s;border-bottom:1px solid transparent}
+#nav.scrolled{background:rgba(10,10,10,.97);border-bottom-color:rgba(122,194,49,.18);backdrop-filter:blur(16px)}
+.nav-inner{width:100%;max-width:1320px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:24px}
+
+.page-hero{padding:calc(var(--nav-h) + 56px) 40px 36px;background:var(--dark2);border-bottom:1px solid rgba(255,255,255,.06);position:relative}
+.page-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--green)}
+.page-hero-inner{max-width:var(--max);margin:0 auto}
+.page-hero-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:14px;display:flex;align-items:center;gap:10px}
+.page-hero-label::before{content:'';display:block;width:20px;height:2px;background:var(--green)}
+.page-hero h1{font-family:var(--ff-display);font-size:clamp(40px,5vw,64px);font-weight:900;line-height:1;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:14px}
+.page-hero-sub{font-size:16px;color:var(--light);line-height:1.65;font-weight:300;max-width:640px}
+
+/* Section anchor nav — sticky under the global nav so the two docs
+   are always one click away. */
+.legal-nav{position:sticky;top:var(--nav-h);z-index:50;background:rgba(10,10,10,.92);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.06)}
+.legal-nav-inner{max-width:var(--max);margin:0 auto;padding:0 40px;display:flex;gap:0}
+.legal-nav a{padding:14px 20px;font-size:13px;font-weight:600;color:var(--muted);border-bottom:2px solid transparent;transition:color .2s,border-color .2s}
+.legal-nav a:hover{color:var(--light)}
+.legal-nav a.active{color:var(--white);border-bottom-color:var(--green)}
+
+.legal-body{padding:48px 40px 80px}
+.legal-inner{max-width:var(--max);margin:0 auto}
+.legal-section{margin-bottom:64px;scroll-margin-top:calc(var(--nav-h) + 60px)}
+.legal-section:last-child{margin-bottom:0}
+.legal-section-head{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:22px;padding-bottom:14px;border-bottom:1px solid rgba(255,255,255,.08)}
+.legal-section-head h2{font-family:var(--ff-display);font-size:30px;font-weight:900;text-transform:uppercase;letter-spacing:-.005em;line-height:1.1}
+.legal-section-head .updated{font-size:12px;color:var(--muted);white-space:nowrap}
+.legal-content{font-size:15px;line-height:1.75;color:var(--light)}
+.legal-content p{margin-bottom:16px}
+.legal-content h2{font-family:var(--ff-display);font-size:20px;font-weight:800;text-transform:uppercase;color:var(--white);letter-spacing:.02em;margin:28px 0 12px}
+.legal-content h3{font-size:14px;font-weight:700;color:var(--white);margin:20px 0 8px;text-transform:uppercase;letter-spacing:.06em}
+.legal-content strong{color:var(--white);font-weight:600}
+.legal-content a{color:var(--green);border-bottom:1px solid rgba(122,194,49,.4);transition:border-color .2s}
+.legal-content a:hover{border-color:var(--green)}
+.legal-content ul,.legal-content ol{margin:8px 0 16px 22px}
+.legal-content li{margin-bottom:6px}
+
+footer{background:var(--dark);padding:44px 40px 24px;border-top:1px solid rgba(255,255,255,.06);text-align:center}
+footer p{font-size:12px;color:var(--muted);margin:0}
+
+@media(max-width:900px){
+  #nav{padding:0 20px}
+  .page-hero{padding:calc(var(--nav-h) + 36px) 20px 28px}
+  .page-hero h1{font-size:36px}
+  .legal-body{padding:36px 20px 60px}
+  .legal-nav-inner{padding:0 20px;overflow-x:auto;scrollbar-width:none}
+  .legal-nav-inner::-webkit-scrollbar{display:none}
+  .legal-section{margin-bottom:48px}
+  .legal-section-head h2{font-size:24px}
+}
+</style>
+</head>
+<body>
+
+<div id="atp-nav-host" data-active=""></div>
+
+<main>
+  <section class="page-hero">
+    <div class="page-hero-inner">
+      <div class="page-hero-label">Legal</div>
+      <h1>The rules.</h1>
+      <p class="page-hero-sub">Privacy policy, terms of service, and refund policy — in one place. Admin-editable from the CMS so the live page reflects whatever's been published.</p>
+    </div>
+  </section>
+
+  <nav class="legal-nav" aria-label="Legal sections">
+    <div class="legal-nav-inner">
+      <a href="#privacy" id="navPrivacy">Privacy Policy</a>
+      <a href="#terms"   id="navTerms">Terms of Service</a>
+      <a href="#refunds" id="navRefunds">Refund Policy</a>
+    </div>
+  </nav>
+
+  <section class="legal-body">
+    <div class="legal-inner">
+      <!-- Each section renders from CMS — admin manages Privacy under
+           page='privacy' and Terms under page='terms'. Refund anchor is
+           the same content as terms.refund_policy_body if set, else
+           hidden so admins don't have an empty section. -->
+      <section class="legal-section" id="privacy">
+        <div class="legal-section-head">
+          <h2 id="privacy-title">Privacy Policy</h2>
+          <span class="updated" id="privacy-updated"></span>
+        </div>
+        <div class="legal-content" id="privacy-content"><p style="color:var(--muted)">Loading…</p></div>
+      </section>
+
+      <section class="legal-section" id="terms">
+        <div class="legal-section-head">
+          <h2 id="terms-title">Terms of Service</h2>
+          <span class="updated" id="terms-updated"></span>
+        </div>
+        <div class="legal-content" id="terms-content"><p style="color:var(--muted)">Loading…</p></div>
+      </section>
+
+      <section class="legal-section" id="refunds" style="display:none">
+        <div class="legal-section-head">
+          <h2 id="refunds-title">Refund Policy</h2>
+        </div>
+        <div class="legal-content" id="refunds-content"></div>
+      </section>
+    </div>
+  </section>
+</main>
+
+<footer role="contentinfo">
+  <p>© 2026 At The Park. All rights reserved. Dubai, United Arab Emirates.</p>
+</footer>
+
+<script>
+/* ════════════════════════════════════════════════════════════════
+ * /legal — combines Privacy + Terms + (optional) Refund Policy.
+ * Pulls each from the existing /api/cms/<page> endpoints, so the
+ * existing privacy.html / terms.html CMS schemas keep working —
+ * admin can edit either page independently and this combined view
+ * picks up both. Section anchors so footers can deep-link.
+ * ════════════════════════════════════════════════════════════════ */
+(function() {
+  'use strict';
+  var API = (window.ATP_API_BASE || '/api');
+
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // Same markdown-lite renderer as the standalone legal pages — keeps
+  // admin's existing copy unchanged. Lines ending with ":" become H3,
+  // "## " becomes H2, blank lines split paragraphs.
+  function renderLegalCopy(raw) {
+    if (!raw) return '<p style="color:var(--muted)">No content yet.</p>';
+    var paragraphs = String(raw).replace(/\r\n/g, '\n').split(/\n\s*\n/);
+    return paragraphs.map(function(p) {
+      var trimmed = p.trim();
+      if (!trimmed) return '';
+      if (trimmed.length < 80 && /:\s*$/.test(trimmed) && !/\n/.test(trimmed)) {
+        return '<h3>' + escapeHtml(trimmed.replace(/:\s*$/, '')) + '</h3>';
+      }
+      if (/^##\s+/.test(trimmed)) {
+        return '<h2>' + escapeHtml(trimmed.replace(/^##\s+/, '')) + '</h2>';
+      }
+      var html = escapeHtml(trimmed).replace(/\n/g, '<br>');
+      return '<p>' + html + '</p>';
+    }).join('');
+  }
+
+  async function loadOne(pageKey, ids) {
+    try {
+      var res = await fetch(API + '/cms/' + pageKey, { cache: 'no-cache' });
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      var data = await res.json();
+      var c = (data && data.content) || {};
+      var hero = c.hero || {};
+      var body = c.body || {};
+      var meta = c.meta || {};
+      if (hero.title) document.getElementById(ids.title).textContent = hero.title;
+      if (meta.last_updated) document.getElementById(ids.updated).textContent = 'Updated ' + meta.last_updated;
+      document.getElementById(ids.content).innerHTML = renderLegalCopy(body.content);
+      return { hero: hero, body: body, meta: meta };
+    } catch (e) {
+      document.getElementById(ids.content).innerHTML =
+        '<p style="color:var(--muted)">Couldn\'t load this section. Try refreshing.</p>';
+      return null;
+    }
+  }
+
+  async function load() {
+    var [privacy, terms] = await Promise.all([
+      loadOne('privacy', { title: 'privacy-title', updated: 'privacy-updated', content: 'privacy-content' }),
+      loadOne('terms',   { title: 'terms-title',   updated: 'terms-updated',   content: 'terms-content'   }),
+    ]);
+
+    // Refund policy is OPTIONAL — only render if admin has set terms.refund
+    // content. Hides cleanly when empty so the page never looks broken.
+    var refundContent = terms && terms.refund && terms.refund.content;
+    if (refundContent) {
+      document.getElementById('refunds-content').innerHTML = renderLegalCopy(refundContent);
+      document.getElementById('refunds').style.display = '';
+    } else {
+      // Drop the refund nav link too so it doesn't lead to a dead anchor.
+      var navR = document.getElementById('navRefunds');
+      if (navR) navR.style.display = 'none';
+    }
+  }
+
+  // Active section highlighting in the sticky sub-nav. Updates as the
+  // user scrolls so they always know which doc they're reading.
+  function updateActiveNav() {
+    var sections = ['privacy', 'terms', 'refunds'];
+    var navIds = { privacy: 'navPrivacy', terms: 'navTerms', refunds: 'navRefunds' };
+    var middle = window.innerHeight / 2;
+    var active = sections[0];
+    sections.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el || el.style.display === 'none') return;
+      var rect = el.getBoundingClientRect();
+      if (rect.top < middle) active = id;
+    });
+    Object.keys(navIds).forEach(function(k) {
+      var a = document.getElementById(navIds[k]);
+      if (a) a.classList.toggle('active', k === active);
+    });
+  }
+
+  window.addEventListener('scroll', function() {
+    var n = document.getElementById('nav');
+    if (n) n.classList.toggle('scrolled', window.scrollY > 10);
+    updateActiveNav();
+  }, { passive: true });
+
+  load().then(updateActiveNav);
+})();
+</script>
+
+</body>
+</html>

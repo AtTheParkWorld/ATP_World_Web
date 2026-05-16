@@ -300,7 +300,7 @@
             </div>
             <div class="admin-form-group">
               <label class="admin-form-label" for="sCoach">Coach</label>
-              <select class="admin-form-select" id="sCoach">
+              <select class="admin-form-select" id="sCoach" onchange="autoSuggestStreamable()">
                 <option value="">Loading coaches...</option>
               </select>
             </div>
@@ -1210,7 +1210,7 @@
         <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["config"]'
                 style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">⚙️ System Config</button>
         <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["plans"]'
-                style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">💳 Plans</button>
+                style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">💳 Membership</button>
         <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["countries"]'
                 style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">🌍 Countries</button>
         <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["streaming"]'
@@ -1327,7 +1327,7 @@
       <div class="settings-pane" id="settings-pane-plans" style="display:none">
         <div class="admin-section">
           <div class="admin-section-head">
-            <span class="admin-section-title">Subscription plans</span>
+            <span class="admin-section-title">Membership plans</span>
             <button class="admin-btn admin-btn-primary" data-atp-call="showPlanForm" style="font-size:12px;padding:7px 14px">+ New plan</button>
           </div>
           <div class="admin-section-body">

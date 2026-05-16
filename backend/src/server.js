@@ -244,6 +244,8 @@ app.get('/community',(req, res) => res.sendFile(path.join(__dirname, '../public/
 app.get('/profile',  (req, res) => res.sendFile(path.join(__dirname, '../public/profile.html')));
 app.get('/store',    (req, res) => res.sendFile(path.join(__dirname, '../public/store.html')));
 app.get('/checkin',  (req, res) => res.sendFile(path.join(__dirname, '../public/checkin.html')));
+// Combined legal page — privacy + terms + refund in one place, deep-linkable.
+app.get('/legal',    (req, res) => res.sendFile(path.join(__dirname, '../public/legal.html')));
 app.get('/',         (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 
 // ── API Routes ───────────────────────────────────────────────────────────────

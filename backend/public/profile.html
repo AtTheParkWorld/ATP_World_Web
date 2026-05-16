@@ -634,6 +634,14 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
         </div>
       </div>
       <div class="profile-actions">
+        <!-- One-click shortcut to the next upcoming session's check-in QR.
+             Hidden until loadBookings populates a real upcoming booking;
+             handler in profile-init hydrates the dataset attrs at runtime
+             so admin redesign of the modal doesn't break this entry point. -->
+        <button class="pf-btn primary" id="nextQrBtn" data-atp-call="showNextCheckinQR" style="display:none;background:rgba(122,194,49,.15);color:var(--green);border:1px solid rgba(122,194,49,.4)">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="4" height="4"/><rect x="10" y="2" width="4" height="4"/><rect x="2" y="10" width="4" height="4"/><path d="M10 10h1M13 10h1M10 13h4"/></svg>
+          Next check-in QR
+        </button>
         <button class="pf-btn" data-atp-call="showTab" data-args='["notifications"]'>
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1a5 5 0 015 5v3l1.5 2.5H1.5L3 9V6a5 5 0 015-5z"/><path d="M6.5 13.5a1.5 1.5 0 003 0"/></svg>
           <span id="notifCount" style="display:none;background:var(--green);color:#fff;width:18px;height:18px;border-radius:50%;font-size:10px;display:inline-flex;align-items:center;justify-content:center">3</span>
@@ -1188,7 +1196,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
           <!-- Section: Visuals -->
           <div class="coach-editor-section">
-            <div class="coach-editor-section-title">Visuals <small>Cover image required · profile photo + intro video optional</small></div>
+            <div class="coach-editor-section-title">1 · Who you are — visuals <small>Cover image required · profile photo + intro video optional</small></div>
             <label style="display:block;margin-bottom:6px">Cover image (full-width hero — recommended 1600×900, JPG/PNG/WebP, &lt;10MB)</label>
             <div class="coach-cover-upload" id="coachCoverUpload" data-atp-call="pickCoachUpload" data-args='["cover"]'>
               <div class="coach-cover-upload-empty" id="coachCoverEmpty"><strong>Upload cover image</strong>Click to choose a file</div>
@@ -1212,7 +1220,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
           <!-- Section: Identity -->
           <div class="coach-editor-section">
-            <div class="coach-editor-section-title">Identity</div>
+            <div class="coach-editor-section-title">1 · Who you are — identity <small>Name, tagline, bio, philosophy</small></div>
             <div class="coach-editor-grid">
               <div>
                 <label for="coachDisplayName">Display name</label>
@@ -1237,7 +1245,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
           <!-- Section: Skills & credentials -->
           <div class="coach-editor-section">
-            <div class="coach-editor-section-title">Skills & credentials</div>
+            <div class="coach-editor-section-title">2 · Expertise — skills &amp; credentials</div>
             <div class="coach-editor-grid">
               <div>
                 <label for="coachSpecialties">Specialties</label>
@@ -1263,7 +1271,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
           <!-- Section: Social links -->
           <div class="coach-editor-section">
-            <div class="coach-editor-section-title">Social links <small>All optional</small></div>
+            <div class="coach-editor-section-title">3 · How to reach you — socials <small>All optional</small></div>
             <div class="coach-editor-grid">
               <div><label for="coachInstagram">Instagram handle</label><input id="coachInstagram" type="text" placeholder="@yourhandle"></div>
               <div><label for="coachTiktok">TikTok handle</label><input id="coachTiktok" type="text" placeholder="@yourhandle"></div>
@@ -1276,14 +1284,14 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
           <!-- Section: Gallery -->
           <div class="coach-editor-section">
-            <div class="coach-editor-section-title">Photo / video gallery <small><span id="coachGalleryCount">0</span>/12</small></div>
+            <div class="coach-editor-section-title">2 · Expertise — gallery <small><span id="coachGalleryCount">0</span>/12 photos &amp; videos</small></div>
             <div class="coach-gallery-grid" id="coachGalleryGrid"></div>
             <div class="help" style="margin-top:8px">Drop in 6–12 shots of you coaching, your sessions, or members at work. JPG/PNG/WebP/MP4, max 10MB each.</div>
           </div>
 
           <!-- Section: Private 1:1 -->
           <div class="coach-editor-section">
-            <div class="coach-editor-section-title">Private 1:1 sessions <small>You handle bookings + payment off-platform</small></div>
+            <div class="coach-editor-section-title">3 · How to reach you — private 1:1 sessions <small>You handle bookings + payment off-platform</small></div>
             <label class="atp-toggle">
               <input type="checkbox" id="coachPrivateToggle">
               <span class="atp-toggle-track"></span>
@@ -2823,6 +2831,38 @@ function handleAvatarUpload(input){
 // Loaded from CDN in head
 // ── SESSION QR MODAL ─────────────────────────────────────────
 var profileQRInstance = null;
+// Persistent QR shortcut — surfaces the QR for the nearest upcoming
+// booking in one click from anywhere on the profile, instead of the
+// member having to navigate to Sessions tab → find the right card →
+// click Show QR. Refreshes whenever loadBookings repopulates SESSIONS.
+function refreshNextQrShortcut() {
+  var btn = document.getElementById('nextQrBtn');
+  if (!btn || typeof SESSIONS === 'undefined') return;
+  var upcoming = (SESSIONS || []).filter(function(s){
+    return s.status === 'upcoming' && s.qr_token;
+  }).sort(function(a, b){
+    return new Date(a.scheduled_at || 0) - new Date(b.scheduled_at || 0);
+  });
+  if (!upcoming.length) { btn.style.display = 'none'; return; }
+  btn.style.display = '';
+  // Stash the booking on the button so the click handler doesn't have
+  // to re-search.
+  btn._booking = upcoming[0];
+}
+
+function showNextCheckinQR() {
+  var btn = document.getElementById('nextQrBtn');
+  var b = btn && btn._booking;
+  if (!b) return;
+  // Build the same encoded payload showSessionQR expects below.
+  var payload = JSON.stringify({
+    id:      b.qr_token,
+    session: b.name,
+    dayTime: (b.day || '') + ' · ' + (b.time || ''),
+  });
+  showSessionQR(encodeURIComponent(payload), b.qr_token);
+}
+
 function showSessionQR(encodedData, id) {
   var data = decodeURIComponent(encodedData);
   var parsed = {};
@@ -4011,6 +4051,9 @@ function loadBookings() {
     var upcoming = mapped.filter(function(s){ return s.status === 'upcoming'; });
     renderSessions(document.getElementById('upcomingSessions'), upcoming.slice(0,3));
     renderSessions(document.getElementById('allSessions'), mapped);
+    // Refresh the header's "Next check-in QR" button — appears only
+    // when there's an upcoming booking with a qr_token.
+    try { refreshNextQrShortcut(); } catch(e) {}
   }).catch(function(){});
 }
 
