@@ -2,6 +2,61 @@ const router = require('express').Router();
 const { query, transaction } = require('../db');
 const { authenticate, requireAdmin, optionalAuth } = require('../middleware/auth');
 
+// Rewrite any inline data: URL in a post's media array into a short
+// /api/cms/media/<id> reference, migrating the raw bytes into a
+// cms_content row on first read. Lazy migration — legacy posts that
+// were created before the composer fix get cleaned up on demand
+// without a separate cron, and new posts (which already store short
+// refs) pass through unchanged in nanoseconds.
+async function _rewriteInlineMedia(media) {
+  if (!Array.isArray(media)) return media;
+  let touched = false;
+  const out = [];
+  for (const m of media) {
+    if (!m || typeof m !== 'object' || !m.src) { out.push(m); continue; }
+    if (!String(m.src).startsWith('data:')) { out.push(m); continue; }
+    try {
+      const dataUrl = m.src;
+      const isVideo = dataUrl.startsWith('data:video');
+      const key = `community_legacy_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+      const r = await query(
+        `INSERT INTO cms_content (page, section, key, value_url)
+              VALUES ('_media', $1, $2, $3)
+         ON CONFLICT (page, section, key) DO UPDATE SET value_url=$3
+         RETURNING id`,
+        [isVideo ? 'video' : 'image', key, dataUrl]
+      );
+      out.push({ ...m, src: `/api/cms/media/${r.rows[0].id}` });
+      touched = true;
+    } catch (e) {
+      // If the migration write fails, fall back to original (still works,
+      // just doesn't shrink the payload this time).
+      out.push(m);
+    }
+  }
+  return { media: out, touched };
+}
+
+async function _stripInlineFromPosts(rows) {
+  // Walk posts in serial — typical feed is <30 rows and each row touches
+  // at most 4 media items, so this is bounded. Persist the rewrite back
+  // to the row so the next /feed call is a clean cache hit.
+  for (const row of rows) {
+    if (!row.media) continue;
+    let parsed = row.media;
+    if (typeof parsed === 'string') { try { parsed = JSON.parse(parsed); } catch(e) { continue; } }
+    if (!Array.isArray(parsed) || !parsed.length) continue;
+    const hasInline = parsed.some(m => m && typeof m.src === 'string' && m.src.startsWith('data:'));
+    if (!hasInline) { row.media = parsed; continue; }
+    const result = await _rewriteInlineMedia(parsed);
+    row.media = result.media;
+    if (result.touched) {
+      await query('UPDATE posts SET media=$1 WHERE id=$2', [JSON.stringify(result.media), row.id]).catch(()=>{});
+    }
+  }
+  return rows;
+}
+
 // ── GET /api/community/feed ───────────────────────────────────
 router.get('/feed', optionalAuth, async (req, res, next) => {
   try {
@@ -24,6 +79,7 @@ router.get('/feed', optionalAuth, async (req, res, next) => {
        LIMIT $1`,
       params
     );
+    await _stripInlineFromPosts(rows);
     res.json({ posts: rows });
   } catch (err) { next(err); }
 });
@@ -48,6 +104,7 @@ router.get('/me/posts', authenticate, async (req, res, next) => {
        LIMIT $2`,
       [req.member.id, limit]
     );
+    await _stripInlineFromPosts(rows);
     res.json({ posts: rows });
   } catch (err) { next(err); }
 });

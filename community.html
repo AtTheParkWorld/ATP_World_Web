@@ -594,21 +594,53 @@ function updatePostBtn() {
   document.getElementById("postBtn").disabled = !txt && !hasMedia;
 }
 
-function submitPost() {
+// Upload each media file to /api/cms/upload first so the post stores
+// a short /api/cms/media/<id> reference instead of the raw data: URL.
+// Before this fix, every fetch of /api/community/feed shipped multi-MB
+// per video — caching was useless and members on mobile data hated it.
+async function submitPost() {
   var txt = document.getElementById("postText").value.trim();
   var files = mediaFiles.filter(function(f){return f!==null;});
-  var mediaSrcs = [];
-  var loaded = 0;
   if(!files.length) { createPost(txt, []); return; }
-  files.forEach(function(m, i) {
-    var reader = new FileReader();
-    reader.onload = function(e) {
-      mediaSrcs[i] = {src: e.target.result, type: m.type};
-      loaded++;
-      if(loaded===files.length) createPost(txt, mediaSrcs);
-    };
-    reader.readAsDataURL(m.file);
-  });
+
+  // Show "Uploading…" state on the post button so the founder knows
+  // something is happening; videos take a few seconds.
+  var btn = document.getElementById("postBtn");
+  var origLabel = btn ? btn.textContent : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
+
+  function readAsDataUrl(file) {
+    return new Promise(function(resolve, reject) {
+      var fr = new FileReader();
+      fr.onload  = function(e){ resolve(e.target.result); };
+      fr.onerror = function(){ reject(new Error('read failed')); };
+      fr.readAsDataURL(file);
+    });
+  }
+
+  var token = '';
+  try { token = localStorage.getItem('atp_token') || ''; } catch(_){}
+  var uploaded = [];
+  try {
+    for (var i = 0; i < files.length; i++) {
+      var f = files[i];
+      var dataUrl = await readAsDataUrl(f.file);
+      var r = await fetch('/api/cms/upload', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
+        body: JSON.stringify({ data_url: dataUrl, filename: f.file.name, kind: f.type === 'video' ? 'video' : 'image' }),
+      });
+      var d = await r.json();
+      if (!d || !d.success || !d.url) throw new Error((d && d.error) || 'Upload failed');
+      uploaded.push({ src: d.url, type: f.type });
+    }
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = origLabel; }
+    alert('Could not upload media: ' + e.message);
+    return;
+  }
+  if (btn) { btn.textContent = origLabel; }
+  createPost(txt, uploaded);
 }
 
 function createPost(txt, media) {

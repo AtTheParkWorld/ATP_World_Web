@@ -400,6 +400,20 @@ Always free.</h1>
     catch (e) { return false; }
   })();
 
+  /* Honor ?next=/some-page after a successful sign-in or sign-up.
+     Plans / store / sessions deep-links pass this so a logged-out
+     visitor who clicks "Get Premium →" lands back at /plans.html
+     instead of being dumped on /profile.html and having to navigate
+     back. Same-origin only — guard against open-redirect injection. */
+  function _nextRedirect() {
+    try {
+      var n = new URL(location.href).searchParams.get('next');
+      if (n && n.charAt(0) === '/' && n.charAt(1) !== '/') return n;
+    } catch (e) {}
+    return '/profile.html';
+  }
+  var POST_AUTH_DEST = _nextRedirect();
+
   /* Referral code (signup only). Priority:
      1. The visible input field (user-typed wins, including overrides of ?ref=)
      2. The ?ref= URL param (fallback for shared links). */
@@ -795,7 +809,7 @@ Always free.</h1>
             if (res.body.token)  localStorage.setItem('atp_token', res.body.token);
             if (res.body.member) localStorage.setItem('atp_member', JSON.stringify(res.body.member));
           } catch (e) { }
-          setTimeout(function () { window.location.href = '/profile.html'; }, 600);
+          setTimeout(function () { window.location.href = POST_AUTH_DEST; }, 600);
         })
         .catch(function () { showError('Network error — please try again.'); });
       return;
@@ -851,7 +865,7 @@ Always free.</h1>
 
     if (!celebrate) {
       // Card markup missing — fall back to old behaviour.
-      setTimeout(function () { window.location.href = '/profile.html'; }, 700);
+      setTimeout(function () { window.location.href = POST_AUTH_DEST; }, 700);
       return;
     }
     if (formEl)   formEl.style.display = 'none';
@@ -921,7 +935,7 @@ Always free.</h1>
     var hint = document.getElementById('j-celebrate-hint');
     var sec  = 8;
     function tick() {
-      if (sec <= 0) { window.location.href = '/profile.html'; return; }
+      if (sec <= 0) { window.location.href = POST_AUTH_DEST; return; }
       if (hint) hint.textContent = 'Heading to your profile in ' + sec + 's…';
       sec--;
       setTimeout(tick, 1000);
