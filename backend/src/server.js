@@ -246,6 +246,8 @@ app.get('/store',    (req, res) => res.sendFile(path.join(__dirname, '../public/
 app.get('/checkin',  (req, res) => res.sendFile(path.join(__dirname, '../public/checkin.html')));
 // Combined legal page — privacy + terms + refund in one place, deep-linkable.
 app.get('/legal',    (req, res) => res.sendFile(path.join(__dirname, '../public/legal.html')));
+// Partners — B2B landing page (sponsorship tiers + lead-gen form).
+app.get('/partners', (req, res) => res.sendFile(path.join(__dirname, '../public/partners.html')));
 app.get('/',         (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 
 // ── API Routes ───────────────────────────────────────────────────────────────
@@ -280,6 +282,7 @@ const ROUTES = [
   ['store',        require('./routes/store')],
   ['shopify-install', require('./routes/shopifyInstall')],
   ['streams',      require('./routes/streams')],
+  ['partners',     require('./routes/partners')],
 ];
 for (const [prefix, router] of ROUTES) {
   app.use('/api/'    + prefix, router);

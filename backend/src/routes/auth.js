@@ -1886,6 +1886,152 @@ router.post('/seed-default-plans', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-partners ───────────────────────────
+// Builds the three tables behind the new /partners.html B2B page:
+//   partner_tiers       — admin-managed packages (Community / Champion /
+//                         Title Sponsor). Pricing + perks + sort_order.
+//   partners_directory  — current partner logos shown on the page.
+//   partner_inquiries   — leads submitted via the inquiry form.
+// Idempotent. Also seeds three default tiers if none exist so the
+// page renders something useful out of the gate.
+router.post('/migrate-partners', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    await query(`CREATE TABLE IF NOT EXISTS partner_tiers (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      name            VARCHAR(120) NOT NULL,
+      slug            VARCHAR(80) UNIQUE NOT NULL,
+      tagline         VARCHAR(200),
+      description     TEXT,
+      monthly_price_cents INT NOT NULL DEFAULT 0,
+      currency        VARCHAR(8) NOT NULL DEFAULT 'aed',
+      perks           JSONB NOT NULL DEFAULT '[]',
+      sort_order      INT NOT NULL DEFAULT 100,
+      is_featured     BOOLEAN NOT NULL DEFAULT false,
+      is_active       BOOLEAN NOT NULL DEFAULT true,
+      cta_label       VARCHAR(60),
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+
+    await query(`CREATE TABLE IF NOT EXISTS partners_directory (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      name            VARCHAR(120) NOT NULL,
+      logo_url        TEXT,
+      website_url     TEXT,
+      tier_id         UUID REFERENCES partner_tiers(id) ON DELETE SET NULL,
+      blurb           TEXT,
+      testimonial     TEXT,
+      testimonial_attribution VARCHAR(160),
+      is_featured     BOOLEAN NOT NULL DEFAULT false,
+      is_active       BOOLEAN NOT NULL DEFAULT true,
+      sort_order      INT NOT NULL DEFAULT 100,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_partners_active ON partners_directory(is_active, sort_order)`);
+
+    await query(`CREATE TABLE IF NOT EXISTS partner_inquiries (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      contact_name    VARCHAR(160) NOT NULL,
+      contact_email   VARCHAR(255) NOT NULL,
+      contact_phone   VARCHAR(60),
+      company         VARCHAR(200),
+      brand_size      VARCHAR(40),   -- e.g. "1-10 staff", "11-50", "51-200", "200+"
+      interested_tier_id UUID REFERENCES partner_tiers(id) ON DELETE SET NULL,
+      budget_band     VARCHAR(60),   -- e.g. "AED 5-15k / month"
+      message         TEXT,
+      source          VARCHAR(80),   -- where the inquiry came from
+      status          VARCHAR(20) NOT NULL DEFAULT 'new', -- new | contacted | qualified | won | lost
+      assigned_to     UUID REFERENCES members(id) ON DELETE SET NULL,
+      admin_notes     TEXT,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_partner_inquiries_status ON partner_inquiries(status, created_at DESC)`);
+
+    // Seed default tiers if the table is empty. Founder can edit any
+    // value from the admin Partners panel afterwards.
+    const { rows: existingTiers } = await query(`SELECT id FROM partner_tiers LIMIT 1`);
+    let tiersSeeded = 0;
+    if (!existingTiers.length) {
+      const tiers = [
+        {
+          name: 'Community Partner',
+          slug: 'community',
+          tagline: 'Get in front of 7,000+ active members.',
+          description: 'For brands that want to support the mission and reach our health-conscious community.',
+          monthly_price_cents: 500000, // AED 5,000 / month
+          currency: 'aed',
+          perks: [
+            'Logo on the public Partners page',
+            'Logo on every session check-in screen',
+            '1 dedicated Instagram story per month',
+            'Mention in the monthly member newsletter',
+            'Access to community feedback + insights',
+          ],
+          sort_order: 10,
+          is_featured: false,
+          cta_label: 'Become a Community Partner',
+        },
+        {
+          name: 'Champion Partner',
+          slug: 'champion',
+          tagline: 'Activate the community at sessions + events.',
+          description: 'Everything in Community, plus on-the-ground activations at sessions and member events.',
+          monthly_price_cents: 1500000, // AED 15,000 / month
+          currency: 'aed',
+          perks: [
+            'Everything in Community',
+            'Branded session day every month (your logo on signage, coach intro)',
+            'Sampling / product activation at 2 sessions per month',
+            'Co-branded reel posted to ATP socials (12k+ followers)',
+            'First right of refusal on quarterly themed events',
+            'Dedicated brand ambassador from the ATP coaching team',
+          ],
+          sort_order: 20,
+          is_featured: true,
+          cta_label: 'Become a Champion Partner',
+        },
+        {
+          name: 'Title Sponsor',
+          slug: 'title',
+          tagline: 'Own a tribe. Anchor the community.',
+          description: 'Exclusive co-branding with one of the three ATP tribes (Better / Faster / Stronger). Reserved for one brand per tribe, per year.',
+          monthly_price_cents: 4500000, // AED 45,000 / month
+          currency: 'aed',
+          perks: [
+            'Everything in Champion',
+            'Exclusive tribe co-branding (e.g. "Better tribe powered by [your brand]")',
+            'Your logo on the tribe filter on /sessions, member profiles, leaderboards',
+            'Naming rights on a quarterly flagship event',
+            'Two dedicated branded sessions per month',
+            'Annual case study + impact report',
+            'C-suite access — direct line to the ATP founders',
+          ],
+          sort_order: 30,
+          is_featured: false,
+          cta_label: 'Apply to become a Title Sponsor',
+        },
+      ];
+      for (const t of tiers) {
+        await query(
+          `INSERT INTO partner_tiers
+             (name, slug, tagline, description, monthly_price_cents, currency,
+              perks, sort_order, is_featured, cta_label)
+           VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9,$10)`,
+          [t.name, t.slug, t.tagline, t.description, t.monthly_price_cents,
+           t.currency, JSON.stringify(t.perks), t.sort_order, t.is_featured, t.cta_label]
+        );
+        tiersSeeded++;
+      }
+    }
+    res.json({ success: true, tiers_seeded: tiersSeeded });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/admin-reset-password ───────────────────────
 // Emergency password reset for an admin who's locked out of the panel
 // (e.g. magic-link email isn't delivering because FRONTEND_URL was

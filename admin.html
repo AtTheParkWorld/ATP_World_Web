@@ -119,6 +119,11 @@
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M2 4h12v8H2z"/><path d="M5 7h6M5 9h4"/></svg>
         Operations
       </div>
+      <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["partners"]'>
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 4h10v2H3zM3 8h10v2H3zM5 12h6"/><circle cx="2" cy="5" r="1"/><circle cx="2" cy="9" r="1"/></svg>
+        Partners
+        <span id="adminPartnersBadge" style="display:none;margin-left:auto;background:rgba(245,158,11,.18);color:#fbbf24;border:1px solid rgba(245,158,11,.4);font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px"></span>
+      </div>
     </div>
     <div class="admin-logout" data-atp-call="adminLogout">← Sign out</div>
   </nav>
@@ -1579,6 +1584,121 @@
         <div class="admin-section-body">
           <div id="newsletterStats" style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6">Loading subscribers…</div>
           <div id="newsletterList"><div style="padding:14px;color:#555;text-align:center">Loading…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PARTNERS section ──────────────────────────────────
+         Lead-gen dashboard for the /partners.html page. Three
+         sub-tabs: Inquiries (lead pipeline), Tiers (sponsorship
+         packages), Directory (existing partner logos + quotes). -->
+    <div id="section-partners" style="display:none">
+      <div class="admin-section" style="margin-bottom:18px">
+        <div class="admin-section-head">
+          <span class="admin-section-title">🤝 Partners</span>
+          <div style="display:flex;gap:6px">
+            <button class="partners-subtab active" data-partners-tab="inquiries" style="padding:7px 14px;font-size:12px;font-weight:700;background:rgba(122,194,49,.12);color:#7AC231;border:1px solid rgba(122,194,49,.3);border-radius:8px;cursor:pointer">Inquiries</button>
+            <button class="partners-subtab" data-partners-tab="tiers" style="padding:7px 14px;font-size:12px;font-weight:700;background:transparent;color:#888;border:1px solid #2a2a2a;border-radius:8px;cursor:pointer">Tiers</button>
+            <button class="partners-subtab" data-partners-tab="directory" style="padding:7px 14px;font-size:12px;font-weight:700;background:transparent;color:#888;border:1px solid #2a2a2a;border-radius:8px;cursor:pointer">Directory</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- INQUIRIES tab — the lead pipeline -->
+      <div class="admin-section partners-pane" id="partners-pane-inquiries">
+        <div class="admin-section-head">
+          <span class="admin-section-title">Lead pipeline</span>
+          <div style="display:flex;gap:8px;align-items:center">
+            <select id="partnersInquiryFilter" style="background:#0a0a0a;border:1px solid #2a2a2a;color:#fff;padding:7px 10px;border-radius:6px;font-size:12px" onchange="loadPartnerInquiries()">
+              <option value="">All statuses</option>
+              <option value="new">New</option>
+              <option value="contacted">Contacted</option>
+              <option value="qualified">Qualified</option>
+              <option value="won">Won</option>
+              <option value="lost">Lost</option>
+            </select>
+            <button class="admin-btn" data-atp-call="loadPartnerInquiries" style="font-size:12px;padding:7px 14px">↻ Refresh</button>
+          </div>
+        </div>
+        <div class="admin-section-body">
+          <div id="partnerInquiriesList"><div style="padding:24px;color:#555;text-align:center">Loading inquiries…</div></div>
+        </div>
+      </div>
+
+      <!-- TIERS tab -->
+      <div class="admin-section partners-pane" id="partners-pane-tiers" style="display:none">
+        <div class="admin-section-head">
+          <span class="admin-section-title">Partnership tiers</span>
+          <button class="admin-btn admin-btn-primary" data-atp-call="newPartnerTier" style="font-size:12px;padding:7px 14px">+ New tier</button>
+        </div>
+        <div class="admin-section-body">
+          <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6">
+            Each tier appears as a card on <a href="/partners.html" target="_blank" style="color:#7AC231">/partners</a>. Edit name, pricing, and the bullet-point perks. Mark one tier as "featured" — it gets the ★ Most Popular treatment.
+          </div>
+          <div id="partnerTierFormWrap" style="display:none;background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:16px">
+            <input type="hidden" id="ptEditId" value="">
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:10px">
+              <div><label class="admin-form-label" for="ptName">Tier name *</label><input class="admin-form-input" type="text" id="ptName" placeholder="Champion Partner"></div>
+              <div>
+                <label class="admin-form-label" for="ptPrice">Monthly price</label>
+                <input class="admin-form-input" type="number" id="ptPrice" min="0" placeholder="1500000">
+                <div style="font-size:10px;color:#666;margin-top:4px">In fils/cents. 1500000 = AED 15,000. Leave 0 for "Custom".</div>
+              </div>
+              <div><label class="admin-form-label" for="ptSort">Sort order</label><input class="admin-form-input" type="number" id="ptSort" value="100"></div>
+            </div>
+            <div style="margin-bottom:10px"><label class="admin-form-label" for="ptTagline">Tagline (1 line)</label><input class="admin-form-input" type="text" id="ptTagline" placeholder="Activate the community at sessions + events."></div>
+            <div style="margin-bottom:10px"><label class="admin-form-label" for="ptDescription">Description (longer pitch)</label><textarea class="admin-form-input" id="ptDescription" rows="2"></textarea></div>
+            <div style="margin-bottom:10px"><label class="admin-form-label" for="ptPerks">Perks (one per line)</label><textarea class="admin-form-input" id="ptPerks" rows="6" placeholder="Logo on the public Partners page&#10;1 dedicated Instagram story per month&#10;…" style="font-size:12px"></textarea></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
+              <div><label class="admin-form-label" for="ptCta">CTA button label</label><input class="admin-form-input" type="text" id="ptCta" placeholder="Become a Champion Partner"></div>
+              <div style="display:flex;gap:14px;align-items:end;padding-bottom:6px">
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa"><input type="checkbox" id="ptFeatured"> Featured (★)</label>
+                <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa"><input type="checkbox" id="ptActive" checked> Active</label>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="admin-btn admin-btn-primary" data-atp-call="savePartnerTier" style="font-size:12px">Save</button>
+              <button class="admin-btn" data-atp-call="cancelPartnerTierForm" style="font-size:12px">Cancel</button>
+            </div>
+          </div>
+          <div id="partnerTiersList"><div style="padding:14px;color:#555;text-align:center">Loading tiers…</div></div>
+        </div>
+      </div>
+
+      <!-- DIRECTORY tab -->
+      <div class="admin-section partners-pane" id="partners-pane-directory" style="display:none">
+        <div class="admin-section-head">
+          <span class="admin-section-title">Partner directory</span>
+          <button class="admin-btn admin-btn-primary" data-atp-call="newPartnerDirectory" style="font-size:12px;padding:7px 14px">+ Add partner</button>
+        </div>
+        <div class="admin-section-body">
+          <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6">
+            Existing partners shown in the logo strip on <a href="/partners.html" target="_blank" style="color:#7AC231">/partners</a>. Add a testimonial on at least one entry — it surfaces as the page's social-proof quote.
+          </div>
+          <div id="partnerDirFormWrap" style="display:none;background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:16px">
+            <input type="hidden" id="pdEditId" value="">
+            <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">
+              <div><label class="admin-form-label" for="pdName">Partner name *</label><input class="admin-form-input" type="text" id="pdName" placeholder="Dusit Thani"></div>
+              <div><label class="admin-form-label" for="pdSort">Sort order</label><input class="admin-form-input" type="number" id="pdSort" value="100"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+              <div><label class="admin-form-label" for="pdLogo">Logo URL (or /api/cms/media/...)</label><input class="admin-form-input" type="text" id="pdLogo" placeholder="https://..." style="font-family:monospace;font-size:12px"></div>
+              <div><label class="admin-form-label" for="pdWebsite">Website URL</label><input class="admin-form-input" type="text" id="pdWebsite" placeholder="https://..." style="font-family:monospace;font-size:12px"></div>
+            </div>
+            <div style="margin-bottom:10px"><label class="admin-form-label" for="pdTier">Tier</label><select class="admin-form-select" id="pdTier"><option value="">No tier</option></select></div>
+            <div style="margin-bottom:10px"><label class="admin-form-label" for="pdBlurb">Blurb (optional)</label><textarea class="admin-form-input" id="pdBlurb" rows="2"></textarea></div>
+            <div style="margin-bottom:10px"><label class="admin-form-label" for="pdQuote">Testimonial (appears in the quote section)</label><textarea class="admin-form-input" id="pdQuote" rows="3" placeholder="Working with ATP was the highest-ROI marketing we did all year."></textarea></div>
+            <div style="margin-bottom:14px"><label class="admin-form-label" for="pdQuoteAttr">Testimonial attribution</label><input class="admin-form-input" type="text" id="pdQuoteAttr" placeholder="Sarah Khan · Head of Marketing"></div>
+            <div style="display:flex;gap:14px;margin-bottom:14px">
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa"><input type="checkbox" id="pdFeatured"> Featured (top of list)</label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa"><input type="checkbox" id="pdActive" checked> Active</label>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="admin-btn admin-btn-primary" data-atp-call="savePartnerDirectory" style="font-size:12px">Save</button>
+              <button class="admin-btn" data-atp-call="cancelPartnerDirectoryForm" style="font-size:12px">Cancel</button>
+            </div>
+          </div>
+          <div id="partnerDirectoryList"><div style="padding:14px;color:#555;text-align:center">Loading partners…</div></div>
         </div>
       </div>
     </div>
