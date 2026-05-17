@@ -248,6 +248,8 @@ app.get('/checkin',  (req, res) => res.sendFile(path.join(__dirname, '../public/
 app.get('/legal',    (req, res) => res.sendFile(path.join(__dirname, '../public/legal.html')));
 // Partners — B2B landing page (sponsorship tiers + lead-gen form).
 app.get('/partners', (req, res) => res.sendFile(path.join(__dirname, '../public/partners.html')));
+// Offers — member-facing commercial page (discounts, events, points redemption).
+app.get('/offers',   (req, res) => res.sendFile(path.join(__dirname, '../public/offers.html')));
 app.get('/',         (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 
 // ── API Routes ───────────────────────────────────────────────────────────────
@@ -283,6 +285,7 @@ const ROUTES = [
   ['shopify-install', require('./routes/shopifyInstall')],
   ['streams',      require('./routes/streams')],
   ['partners',     require('./routes/partners')],
+  ['offers',       require('./routes/offers')],
 ];
 for (const [prefix, router] of ROUTES) {
   app.use('/api/'    + prefix, router);

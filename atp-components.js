@@ -24,7 +24,7 @@
     { key: 'community', label: 'Community',    href: 'community.html' },
     { key: 'store',     label: 'Store',        href: 'store.html' },
     { key: 'plans',     label: 'Membership',   href: 'plans.html' },
-    { key: 'partners',  label: 'Partners',     href: 'partners.html' },
+    { key: 'offers',    label: 'Offers',       href: 'offers.html' },
     { key: 'coaches',   label: 'Our coaches',  href: 'coaches.html' },
   ];
 
@@ -661,6 +661,7 @@
             '</ul></div>' +
             '<div class="atp-footer-col"><h4>Help</h4><ul>' +
               '<li><a href="contacts.html">Contact us</a></li>' +
+              '<li><a href="partners.html">For Partners</a></li>' +
               '<li><a href="legal.html#privacy">Privacy</a></li>' +
               '<li><a href="legal.html#terms">Terms</a></li>' +
             '</ul></div>' +

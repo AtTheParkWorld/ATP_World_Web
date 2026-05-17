@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="/atp.min.css">
+  <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
+  <script src="/atp.bundle.min.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Member Offers · Discounts, Events &amp; Perks · At The Park</title>
+  <meta name="description" content="Exclusive discounts, sports event tickets and promos from At The Park partners. Convert your ATP points into discount codes — only for members.">
+  <meta property="og:title" content="Member Offers · At The Park">
+  <meta property="og:description" content="Discounts, race tickets and partner perks. Earn at sessions, redeem for codes.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#7AC231;--green-dark:#5a9a1f;--green-light:#a8e055;
+  --black:#0a0a0a;--dark:#111111;--dark2:#1a1a1a;--dark3:#222222;
+  --muted:#888888;--light:#aaaaaa;--white:#ffffff;
+  --gold:#f5c042;--orange:#ff8a3d;
+  --ff-display:'Barlow Condensed',sans-serif;--ff-body:'DM Sans',sans-serif;
+  --nav-h:68px;--max:1200px;--radius:8px;--radius-lg:16px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:calc(var(--nav-h) + 30px)}
+body{font-family:var(--ff-body);background:var(--black);color:var(--white);overflow-x:hidden;-webkit-font-smoothing:antialiased;min-height:100vh;display:flex;flex-direction:column}
+main{flex:1}
+img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;color:inherit}
+
+#nav{position:fixed;top:0;left:0;right:0;z-index:100;height:var(--nav-h);display:flex;align-items:center;padding:0 40px;transition:background .3s,border-color .3s;border-bottom:1px solid transparent}
+#nav.scrolled{background:rgba(10,10,10,.97);border-bottom-color:rgba(122,194,49,.18);backdrop-filter:blur(16px)}
+.nav-inner{width:100%;max-width:1320px;margin:0 auto;display:flex;align-items:center;justify-content:space-between;gap:24px}
+
+/* ── HERO ─────────────────────────────────────────────────── */
+.o-hero{padding:calc(var(--nav-h) + 80px) 40px 60px;position:relative;overflow:hidden;background:radial-gradient(60% 80% at 50% 0%, rgba(245,192,66,.16) 0%, transparent 60%), radial-gradient(40% 60% at 80% 100%, rgba(122,194,49,.10) 0%, transparent 60%), var(--black)}
+.o-hero::before{content:'';position:absolute;top:0;left:50%;width:60%;height:1px;transform:translateX(-50%);background:linear-gradient(90deg,transparent,var(--gold),transparent)}
+.o-hero-inner{max-width:var(--max);margin:0 auto;display:grid;grid-template-columns:1.2fr 1fr;gap:40px;align-items:center}
+.o-eyebrow{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);margin-bottom:18px;display:inline-flex;align-items:center;gap:10px}
+.o-eyebrow::before,.o-eyebrow::after{content:'';display:block;width:22px;height:2px;background:var(--gold)}
+.o-hero h1{font-family:var(--ff-display);font-size:clamp(46px,6.5vw,80px);font-weight:900;line-height:.92;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:18px}
+.o-hero h1 .acc{color:var(--gold)}
+.o-hero-sub{font-size:16px;color:var(--light);line-height:1.7;font-weight:300;max-width:560px;margin-bottom:26px}
+.o-hero-actions{display:flex;gap:12px;flex-wrap:wrap}
+.o-btn-primary{font-size:13px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;background:var(--gold);color:#0a0a0a;padding:15px 28px;border-radius:var(--radius);transition:transform .15s,box-shadow .2s,background .2s;display:inline-flex;align-items:center;gap:8px;border:none}
+.o-btn-primary:hover{background:#ffd066;transform:translateY(-1px);box-shadow:0 10px 26px rgba(245,192,66,.32)}
+.o-btn-green{font-size:13px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;background:var(--green);color:#0a0a0a;padding:15px 28px;border-radius:var(--radius);transition:transform .15s,box-shadow .2s,background .2s;display:inline-flex;align-items:center;gap:8px;border:none}
+.o-btn-green:hover{background:var(--green-light);transform:translateY(-1px);box-shadow:0 10px 26px rgba(122,194,49,.32)}
+.o-btn-ghost{font-size:13px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--white);padding:15px 26px;border-radius:var(--radius);border:1px solid rgba(255,255,255,.22);transition:border-color .2s,background .2s;display:inline-flex;align-items:center;gap:8px}
+.o-btn-ghost:hover{border-color:var(--gold);color:var(--gold)}
+
+/* HERO featured card (right column) */
+.o-feat{background:linear-gradient(135deg,rgba(245,192,66,.10),rgba(122,194,49,.06));border:1px solid rgba(245,192,66,.32);border-radius:var(--radius-lg);padding:26px;position:relative;overflow:hidden}
+.o-feat::before{content:'FEATURED OFFER';position:absolute;top:14px;right:14px;font-size:10px;font-weight:900;letter-spacing:.14em;color:var(--gold);background:rgba(245,192,66,.14);padding:4px 8px;border-radius:4px}
+.o-feat-partner{font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:12px}
+.o-feat h2{font-family:var(--ff-display);font-size:28px;font-weight:900;text-transform:uppercase;line-height:1.04;letter-spacing:-.01em;margin-bottom:10px}
+.o-feat-desc{font-size:13px;color:var(--light);line-height:1.6;margin-bottom:16px}
+.o-feat-meta{display:flex;align-items:center;gap:14px;font-size:12px;color:var(--muted);margin-bottom:18px}
+.o-feat-meta strong{color:var(--gold);font-weight:700}
+
+/* ── POINTS BANNER (logged-in) ────────────────────────────── */
+.o-points-bar{display:none;max-width:var(--max);margin:0 auto;padding:0 40px}
+.o-points-bar.show{display:block}
+.o-points-card{background:linear-gradient(90deg,rgba(122,194,49,.10),rgba(122,194,49,.02));border:1px solid rgba(122,194,49,.28);border-radius:var(--radius-lg);padding:20px 26px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;margin-top:-30px;margin-bottom:30px;position:relative;z-index:5}
+.o-points-card-text h3{font-family:var(--ff-display);font-size:22px;font-weight:900;text-transform:uppercase;color:#fff;letter-spacing:.02em;line-height:1}
+.o-points-card-text p{font-size:13px;color:var(--light);margin-top:6px}
+.o-points-num{font-family:var(--ff-display);font-size:42px;font-weight:900;color:var(--green);line-height:1;letter-spacing:-.01em}
+
+/* ── FILTER TABS ──────────────────────────────────────────── */
+.o-filters{max-width:var(--max);margin:0 auto;padding:30px 40px 0;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.o-filter{font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--light);padding:10px 18px;border-radius:99px;border:1px solid rgba(255,255,255,.12);background:transparent;transition:border-color .2s,color .2s,background .2s}
+.o-filter:hover{border-color:rgba(122,194,49,.5);color:#fff}
+.o-filter.active{background:var(--green);color:#0a0a0a;border-color:var(--green)}
+
+/* ── OFFERS GRID ──────────────────────────────────────────── */
+.o-grid-wrap{max-width:var(--max);margin:0 auto;padding:30px 40px 80px}
+.o-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:22px}
+.o-card{background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;transition:transform .2s,border-color .2s,box-shadow .25s}
+.o-card:hover{transform:translateY(-3px);border-color:rgba(245,192,66,.32);box-shadow:0 16px 36px rgba(0,0,0,.4)}
+.o-card-img{width:100%;height:170px;background:linear-gradient(135deg,var(--dark3),var(--dark));background-size:cover;background-position:center;position:relative;display:flex;align-items:flex-end;justify-content:space-between;padding:14px}
+.o-tag{display:inline-block;font-size:10px;font-weight:900;letter-spacing:.12em;text-transform:uppercase;background:rgba(10,10,10,.78);color:#fff;padding:5px 9px;border-radius:4px;backdrop-filter:blur(6px)}
+.o-tag.discount{background:rgba(122,194,49,.92);color:#0a0a0a}
+.o-tag.event{background:rgba(245,192,66,.92);color:#0a0a0a}
+.o-tag.promo{background:rgba(255,138,61,.92);color:#0a0a0a}
+.o-tag.featured-star{background:rgba(255,255,255,.94);color:#0a0a0a}
+.o-card-body{padding:18px 18px 20px;display:flex;flex-direction:column;flex:1}
+.o-partner-line{font-size:11px;color:var(--gold);font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.o-card h3{font-family:var(--ff-display);font-size:20px;font-weight:800;text-transform:uppercase;line-height:1.1;letter-spacing:.01em;color:#fff;margin-bottom:8px}
+.o-card-desc{font-size:13px;color:var(--light);line-height:1.6;margin-bottom:14px;flex:1}
+.o-card-meta{display:flex;align-items:center;gap:10px;font-size:12px;color:var(--muted);margin-bottom:14px;flex-wrap:wrap}
+.o-card-meta .pill{background:rgba(255,255,255,.06);color:#fff;padding:4px 9px;border-radius:99px;font-weight:600;font-size:11px;letter-spacing:.04em}
+.o-card-meta .pill.gold{background:rgba(245,192,66,.14);color:var(--gold)}
+.o-card-meta .pill.green{background:rgba(122,194,49,.14);color:var(--green)}
+.o-card-foot{display:flex;align-items:center;gap:10px}
+.o-card-foot .o-btn-primary,
+.o-card-foot .o-btn-green,
+.o-card-foot .o-btn-ghost{padding:11px 18px;font-size:12px;flex:1;justify-content:center}
+
+/* ── EMPTY STATE ──────────────────────────────────────────── */
+.o-empty{grid-column:1/-1;text-align:center;padding:60px 20px;color:var(--muted)}
+.o-empty h3{font-family:var(--ff-display);font-size:24px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:8px}
+.o-empty p{font-size:14px}
+
+/* ── HOW IT WORKS STRIP ───────────────────────────────────── */
+.o-how{background:var(--dark2);padding:70px 40px;border-top:1px solid rgba(255,255,255,.06)}
+.o-how-inner{max-width:var(--max);margin:0 auto}
+.o-how-head{text-align:center;margin-bottom:36px}
+.o-section-label{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;display:inline-flex;align-items:center;gap:10px}
+.o-section-label::before,.o-section-label::after{content:'';display:block;width:22px;height:2px;background:var(--gold)}
+.o-section-h2{font-family:var(--ff-display);font-size:clamp(32px,4vw,46px);font-weight:900;line-height:1;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:12px}
+.o-section-h2 .acc{color:var(--gold)}
+.o-how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+.o-how-step{background:var(--dark);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius-lg);padding:28px 24px;position:relative}
+.o-how-step .num{position:absolute;top:18px;right:20px;font-family:var(--ff-display);font-size:60px;font-weight:900;color:rgba(245,192,66,.10);line-height:1}
+.o-how-step h3{font-family:var(--ff-display);font-size:22px;font-weight:800;text-transform:uppercase;color:#fff;letter-spacing:.02em;margin-bottom:8px}
+.o-how-step p{font-size:13px;color:var(--light);line-height:1.65}
+
+/* ── MY REDEMPTIONS ───────────────────────────────────────── */
+.o-mine{max-width:var(--max);margin:0 auto;padding:70px 40px 80px;display:none}
+.o-mine.show{display:block}
+.o-mine-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;margin-top:24px}
+.o-redemption{background:var(--dark2);border:1px solid rgba(122,194,49,.2);border-radius:var(--radius-lg);padding:18px}
+.o-redemption-title{font-family:var(--ff-display);font-size:16px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:6px;line-height:1.15}
+.o-redemption-code{font-family:var(--ff-display);font-size:18px;font-weight:900;letter-spacing:.04em;color:var(--green);background:rgba(122,194,49,.10);padding:8px 12px;border-radius:6px;margin:10px 0;text-align:center;user-select:all;cursor:copy}
+.o-redemption-meta{font-size:11px;color:var(--muted);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.o-redemption-status{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:3px 7px;border-radius:4px;background:rgba(122,194,49,.16);color:var(--green)}
+.o-redemption-status.used{background:rgba(255,255,255,.10);color:var(--muted)}
+.o-redemption-status.expired{background:rgba(255,71,71,.14);color:#ff8a8a}
+
+/* ── LOGGED-OUT CTA ───────────────────────────────────────── */
+.o-locked{background:linear-gradient(135deg,rgba(245,192,66,.06),rgba(122,194,49,.04));border:1px dashed rgba(245,192,66,.32);border-radius:var(--radius-lg);padding:50px 30px;text-align:center;margin-bottom:30px}
+.o-locked h2{font-family:var(--ff-display);font-size:30px;font-weight:900;text-transform:uppercase;line-height:1;margin-bottom:10px;color:#fff}
+.o-locked p{color:var(--light);font-size:14px;margin-bottom:22px;max-width:480px;margin-left:auto;margin-right:auto;line-height:1.6}
+
+/* ── FAQ ──────────────────────────────────────────────────── */
+.o-faq{background:var(--dark);padding:60px 40px 90px;border-top:1px solid rgba(255,255,255,.06)}
+.o-faq-inner{max-width:780px;margin:0 auto}
+.o-faq-head{text-align:center;margin-bottom:30px}
+.o-faq-item{border-bottom:1px solid rgba(255,255,255,.08);padding:18px 0}
+.o-faq-q{display:flex;align-items:center;justify-content:space-between;gap:14px;font-family:var(--ff-display);font-size:18px;font-weight:700;text-transform:uppercase;color:#fff;letter-spacing:.02em;cursor:pointer}
+.o-faq-q::after{content:'+';font-size:20px;color:var(--gold);transition:transform .2s}
+.o-faq-item.open .o-faq-q::after{transform:rotate(45deg)}
+.o-faq-a{font-size:14px;color:var(--light);line-height:1.7;margin-top:0;max-height:0;overflow:hidden;transition:max-height .25s,margin-top .25s}
+.o-faq-item.open .o-faq-a{max-height:300px;margin-top:10px}
+
+/* ── MODAL ────────────────────────────────────────────────── */
+.o-modal{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:none;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(6px)}
+.o-modal.show{display:flex}
+.o-modal-card{background:var(--dark2);border:1px solid rgba(245,192,66,.32);border-radius:var(--radius-lg);max-width:440px;width:100%;padding:32px 30px;text-align:center}
+.o-modal-card h3{font-family:var(--ff-display);font-size:28px;font-weight:900;text-transform:uppercase;color:#fff;margin-bottom:10px;line-height:1}
+.o-modal-card .sub{font-size:13px;color:var(--light);line-height:1.6;margin-bottom:18px}
+.o-modal-code{font-family:var(--ff-display);font-size:30px;font-weight:900;letter-spacing:.06em;color:var(--gold);background:rgba(245,192,66,.10);padding:18px 12px;border-radius:8px;margin:14px 0;user-select:all;cursor:copy}
+.o-modal-actions{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:18px}
+
+/* ── RESPONSIVE ───────────────────────────────────────────── */
+@media (max-width:880px){
+  .o-hero{padding:calc(var(--nav-h) + 60px) 22px 40px}
+  .o-hero-inner{grid-template-columns:1fr;gap:30px}
+  .o-points-bar,.o-filters,.o-grid-wrap,.o-how,.o-mine,.o-faq{padding-left:22px;padding-right:22px}
+  .o-how-grid{grid-template-columns:1fr}
+  .o-points-card{flex-direction:column;text-align:center;align-items:center}
+}
+</style>
+</head>
+
+<body>
+
+<!-- ═══ NAV (mounted by atp-components.js) ═══ -->
+<div id="atp-nav-host" data-active="offers"></div>
+
+<main>
+
+<!-- ═══ HERO ═══ -->
+<section class="o-hero">
+  <div class="o-hero-inner">
+    <div>
+      <div class="o-eyebrow">Member Perks</div>
+      <h1>Train hard.<br><span class="acc">Earn perks.</span></h1>
+      <p class="o-hero-sub">Exclusive discounts on gear, race tickets, recovery, nutrition and more — sourced from partners who believe in what we're building. Turn every session into rewards.</p>
+      <div class="o-hero-actions">
+        <a href="#offers-grid" class="o-btn-primary">Browse offers →</a>
+        <a href="#how-it-works" class="o-btn-ghost">How it works</a>
+      </div>
+    </div>
+    <div id="hero-featured-slot">
+      <!-- Featured offer card rendered here. Fallback below shown until JS loads. -->
+      <div class="o-feat">
+        <div class="o-feat-partner">Loading partner offers…</div>
+        <h2>A perk a week.<br>Sometimes more.</h2>
+        <p class="o-feat-desc">Discounts on running shoes, recovery clinics, marathon entries — only for ATP members. New drops every week.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ POINTS BAR (logged-in only) ═══ -->
+<div class="o-points-bar" id="pointsBar">
+  <div class="o-points-card">
+    <div class="o-points-card-text">
+      <h3>Your ATP points</h3>
+      <p>Earn points at every session. Spend them on partner discount codes.</p>
+    </div>
+    <div style="text-align:right">
+      <div class="o-points-num" id="pointsBalance">0</div>
+      <p style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">points available</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FILTERS ═══ -->
+<div class="o-filters" id="offers-grid">
+  <button class="o-filter active" data-type="">All offers</button>
+  <button class="o-filter" data-type="discount">Discounts</button>
+  <button class="o-filter" data-type="event">Race &amp; events</button>
+  <button class="o-filter" data-type="promo">Promos &amp; freebies</button>
+</div>
+
+<!-- ═══ OFFERS GRID ═══ -->
+<div class="o-grid-wrap">
+  <div class="o-grid" id="offersGrid">
+    <div class="o-empty" id="offersLoading">
+      <h3>Loading offers…</h3>
+      <p>Hold on a sec.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ MY REDEMPTIONS (logged-in only) ═══ -->
+<section class="o-mine" id="myRedemptionsSection">
+  <div class="o-how-head" style="text-align:left;margin-bottom:8px">
+    <div class="o-section-label">Your codes</div>
+    <h2 class="o-section-h2">Active <span class="acc">discount codes</span></h2>
+    <p style="font-size:14px;color:var(--light);margin-top:8px">Tap any code to copy. Most codes are good for 90 days unless the partner sets an earlier expiry.</p>
+  </div>
+  <div class="o-mine-list" id="myRedemptionsList"></div>
+</section>
+
+<!-- ═══ HOW IT WORKS ═══ -->
+<section class="o-how" id="how-it-works">
+  <div class="o-how-inner">
+    <div class="o-how-head">
+      <div class="o-section-label">How it works</div>
+      <h2 class="o-section-h2">Three steps. <span class="acc">Real perks.</span></h2>
+    </div>
+    <div class="o-how-grid">
+      <div class="o-how-step">
+        <span class="num">1</span>
+        <h3>Earn points</h3>
+        <p>Show up. Train. Check in at every session. You bank points for showing up, joining challenges and inviting friends.</p>
+      </div>
+      <div class="o-how-step">
+        <span class="num">2</span>
+        <h3>Browse offers</h3>
+        <p>Discounts on running shoes, race entries, recovery, nutrition. Some are free claims, some are points-gated — the partner sets the rate.</p>
+      </div>
+      <div class="o-how-step">
+        <span class="num">3</span>
+        <h3>Redeem your code</h3>
+        <p>One tap to generate a unique code. Use it on the partner's site or in-store. Codes stay in your "Active codes" list until they're used.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══ FAQ ═══ -->
+<section class="o-faq">
+  <div class="o-faq-inner">
+    <div class="o-faq-head">
+      <div class="o-section-label">FAQ</div>
+      <h2 class="o-section-h2">Quick <span class="acc">answers</span></h2>
+    </div>
+    <div class="o-faq-item">
+      <div class="o-faq-q">Do I need to be a member?</div>
+      <div class="o-faq-a">Yes. Member offers are part of the perks of being in the ATP community. Joining is free — sign up takes 30 seconds and you'll have a points balance immediately.</div>
+    </div>
+    <div class="o-faq-item">
+      <div class="o-faq-q">How do I earn points?</div>
+      <div class="o-faq-a">Every session you attend banks points. Joining challenges, hitting streaks, referring friends, posting in the community feed — all top up your balance. Your profile shows the exact breakdown.</div>
+    </div>
+    <div class="o-faq-item">
+      <div class="o-faq-q">How long is my discount code valid?</div>
+      <div class="o-faq-a">Most codes are good for 90 days from the moment you generate them. Some partner offers have shorter or longer windows — check the offer card before you redeem.</div>
+    </div>
+    <div class="o-faq-item">
+      <div class="o-faq-q">Can I get my points back if I don't use the code?</div>
+      <div class="o-faq-a">Points are deducted the moment you generate a code, but if the partner confirms you never used it we'll refund. Email general@atthepark.world with the code and we'll sort it out.</div>
+    </div>
+    <div class="o-faq-item">
+      <div class="o-faq-q">How do race / event tickets work?</div>
+      <div class="o-faq-a">For paid events (marathons, races, clinics), the partner runs their own checkout. Tap the offer and we'll send you straight to their booking page — usually with a discount applied for ATP members.</div>
+    </div>
+    <div class="o-faq-item">
+      <div class="o-faq-q">Are you a brand? How do I list an offer here?</div>
+      <div class="o-faq-a">We work with brands that align with the ATP community — fitness, wellness, recovery, nutrition, events. <a href="partners.html" style="color:var(--green)">Pitch us here →</a></div>
+    </div>
+  </div>
+</section>
+
+</main>
+
+<!-- ═══ REDEMPTION MODAL ═══ -->
+<div class="o-modal" id="redeemModal">
+  <div class="o-modal-card">
+    <h3 id="modalTitle">Your code</h3>
+    <p class="sub" id="modalSub">Tap to copy and use on the partner's site.</p>
+    <div class="o-modal-code" id="modalCode">ATP-XXXX-XXXX</div>
+    <p style="font-size:11px;color:var(--muted)" id="modalExpiry"></p>
+    <div class="o-modal-actions">
+      <button class="o-btn-primary" id="modalGoBtn">Use code now →</button>
+      <button class="o-btn-ghost" onclick="document.getElementById('redeemModal').classList.remove('show')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ FOOTER (mounted by atp-components.js) ═══ -->
+<div id="atp-footer-host"></div>
+
+<script>
+(function() {
+  'use strict';
+  var API = (window.ATP_API_BASE || '/api');
+  var state = { type: '', offers: [], all: [] };
+
+  function isLoggedIn() {
+    return !!(window.ATP && window.ATP.isLoggedIn && window.ATP.isLoggedIn());
+  }
+  function token() {
+    try { return localStorage.getItem('atp_token') || null; } catch(e) { return null; }
+  }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+  function fmtDate(s) {
+    if (!s) return '';
+    try {
+      return new Date(s).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' });
+    } catch(e) { return ''; }
+  }
+
+  /* ── Featured offer (hero right column) ─────────────── */
+  function renderFeatured(o) {
+    var slot = document.getElementById('hero-featured-slot');
+    if (!o) {
+      slot.innerHTML =
+        '<div class="o-feat">' +
+          '<div class="o-feat-partner">Latest perks</div>' +
+          '<h2>A perk a week.<br>Sometimes more.</h2>' +
+          '<p class="o-feat-desc">Discounts on running shoes, recovery clinics, marathon entries — only for ATP members. New drops every week.</p>' +
+          '<a href="#offers-grid" class="o-btn-primary" style="padding:12px 22px;font-size:12px">Browse all offers →</a>' +
+        '</div>';
+      return;
+    }
+    var bg = o.image_url ? 'background-image:url(\'' + escapeHtml(o.image_url) + '\');background-size:cover;background-position:center' : '';
+    slot.innerHTML =
+      '<div class="o-feat" style="' + (bg ? 'min-height:300px;position:relative' : '') + '">' +
+        (o.partner_name ? '<div class="o-feat-partner">' + escapeHtml(o.partner_name) + '</div>' : '<div class="o-feat-partner">Featured</div>') +
+        '<h2>' + escapeHtml(o.title) + '</h2>' +
+        (o.description ? '<p class="o-feat-desc">' + escapeHtml(o.description.slice(0, 140)) + (o.description.length > 140 ? '…' : '') + '</p>' : '') +
+        '<div class="o-feat-meta">' +
+          (o.discount_pct ? '<span><strong>' + o.discount_pct + '% off</strong></span>' : '') +
+          (o.points_required > 0 ? '<span>' + o.points_required + ' points</span>' : (o.offer_type === 'event' ? '<span>Race / event</span>' : '<span>Free claim</span>')) +
+        '</div>' +
+        '<button class="o-btn-primary" style="padding:13px 22px;font-size:12px" data-offer-id="' + o.id + '">' +
+          (o.offer_type === 'event' ? 'Get tickets →' : 'Redeem now →') +
+        '</button>' +
+      '</div>';
+    var btn = slot.querySelector('[data-offer-id]');
+    if (btn) btn.addEventListener('click', function() { redeem(o.id); });
+  }
+
+  /* ── Offers grid ─────────────────────────────────────── */
+  function renderCard(o) {
+    var bg = o.image_url ? 'style="background-image:url(\'' + escapeHtml(o.image_url) + '\');background-size:cover;background-position:center"' : '';
+    var typeLabel = o.offer_type === 'event' ? 'Event' : (o.offer_type === 'promo' ? 'Promo' : 'Discount');
+    var ctaText = o.offer_type === 'event' ? 'Get tickets →' : (o.points_required > 0 ? 'Redeem · ' + o.points_required + ' pts' : 'Claim now →');
+    var btnClass = o.offer_type === 'event' ? 'o-btn-primary' : (o.points_required > 0 ? 'o-btn-green' : 'o-btn-primary');
+    return (
+      '<div class="o-card">' +
+        '<div class="o-card-img" ' + bg + '>' +
+          (o.is_featured ? '<span class="o-tag featured-star">★ Featured</span>' : '<span></span>') +
+          '<span class="o-tag ' + o.offer_type + '">' + typeLabel + '</span>' +
+        '</div>' +
+        '<div class="o-card-body">' +
+          (o.partner_name ? '<div class="o-partner-line">' + escapeHtml(o.partner_name) + '</div>' : '') +
+          '<h3>' + escapeHtml(o.title) + '</h3>' +
+          (o.description ? '<p class="o-card-desc">' + escapeHtml(o.description.slice(0, 140)) + (o.description.length > 140 ? '…' : '') + '</p>' : '') +
+          '<div class="o-card-meta">' +
+            (o.discount_pct ? '<span class="pill gold">' + o.discount_pct + '% off</span>' : '') +
+            (o.points_required > 0 ? '<span class="pill green">' + o.points_required + ' pts</span>' : '') +
+            (o.event_date ? '<span class="pill">📅 ' + fmtDate(o.event_date) + '</span>' : '') +
+            (o.event_location ? '<span class="pill">📍 ' + escapeHtml(o.event_location) + '</span>' : '') +
+            (o.ends_at ? '<span class="pill">Ends ' + fmtDate(o.ends_at) + '</span>' : '') +
+          '</div>' +
+          '<div class="o-card-foot">' +
+            '<button class="' + btnClass + '" data-redeem="' + o.id + '">' + ctaText + '</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderGrid() {
+    var grid = document.getElementById('offersGrid');
+    var list = state.offers;
+    if (!list.length) {
+      grid.innerHTML =
+        '<div class="o-empty">' +
+          '<h3>No offers yet in this category</h3>' +
+          '<p>Check the other tabs or come back soon — we drop new perks every week.</p>' +
+        '</div>';
+      return;
+    }
+    if (!isLoggedIn()) {
+      var lockedCta =
+        '<div class="o-locked">' +
+          '<h2>Join free to unlock these offers</h2>' +
+          '<p>Member offers are a perk of the community. Sign up takes 30 seconds — no credit card, no commitment.</p>' +
+          '<a href="/join" class="o-btn-primary">Join free →</a> ' +
+          '<a href="/join?mode=login" class="o-btn-ghost" style="margin-left:8px">Already a member · Log in</a>' +
+        '</div>';
+      grid.innerHTML = lockedCta + list.map(renderCard).join('');
+    } else {
+      grid.innerHTML = list.map(renderCard).join('');
+    }
+    Array.prototype.forEach.call(grid.querySelectorAll('[data-redeem]'), function(btn) {
+      btn.addEventListener('click', function() { redeem(btn.getAttribute('data-redeem')); });
+    });
+  }
+
+  function applyFilter() {
+    state.offers = state.type ? state.all.filter(function(o) { return o.offer_type === state.type; }) : state.all;
+    renderGrid();
+  }
+
+  function loadOffers() {
+    return fetch(API + '/offers').then(function(r) { return r.json(); }).then(function(d) {
+      state.all = d.offers || [];
+      applyFilter();
+      // First featured offer for the hero slot
+      var feat = state.all.find(function(o) { return o.is_featured; }) || state.all[0];
+      renderFeatured(feat);
+    }).catch(function() {
+      document.getElementById('offersGrid').innerHTML =
+        '<div class="o-empty"><h3>Couldn\'t load offers</h3><p>Try refreshing in a moment.</p></div>';
+      renderFeatured(null);
+    });
+  }
+
+  function loadPoints() {
+    if (!isLoggedIn()) return;
+    var t = token();
+    if (!t) return;
+    fetch(API + '/points/balance', { headers: { Authorization: 'Bearer ' + t } })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        document.getElementById('pointsBalance').textContent = (d.balance || 0).toLocaleString();
+        document.getElementById('pointsBar').classList.add('show');
+      })
+      .catch(function() {});
+  }
+
+  function loadMyRedemptions() {
+    if (!isLoggedIn()) return;
+    var t = token();
+    if (!t) return;
+    fetch(API + '/offers/my/redemptions', { headers: { Authorization: 'Bearer ' + t } })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        var list = (d.redemptions || []).filter(function(r) { return r.status === 'issued'; });
+        if (!list.length) return;
+        var html = list.slice(0, 12).map(function(r) {
+          return (
+            '<div class="o-redemption">' +
+              '<div class="o-redemption-title">' + escapeHtml(r.title) + '</div>' +
+              (r.partner_name ? '<div style="font-size:11px;color:var(--gold);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px">' + escapeHtml(r.partner_name) + '</div>' : '') +
+              '<div class="o-redemption-code" title="Tap to copy">' + escapeHtml(r.code) + '</div>' +
+              '<div class="o-redemption-meta">' +
+                '<span>' + (r.points_spent > 0 ? r.points_spent + ' pts' : 'Free') + '</span>' +
+                '<span class="o-redemption-status ' + r.status + '">' + r.status + '</span>' +
+              '</div>' +
+              (r.expires_at ? '<div style="font-size:10px;color:var(--muted);margin-top:6px">Expires ' + fmtDate(r.expires_at) + '</div>' : '') +
+              (r.external_url ? '<a href="' + escapeHtml(r.external_url) + '" target="_blank" rel="noopener" class="o-btn-ghost" style="margin-top:10px;padding:9px 14px;font-size:11px;width:100%;justify-content:center">Use this code →</a>' : '') +
+            '</div>'
+          );
+        }).join('');
+        document.getElementById('myRedemptionsList').innerHTML = html;
+        document.getElementById('myRedemptionsSection').classList.add('show');
+        // Tap-to-copy on codes
+        Array.prototype.forEach.call(document.querySelectorAll('.o-redemption-code'), function(el) {
+          el.addEventListener('click', function() {
+            if (navigator.clipboard) navigator.clipboard.writeText(el.textContent.trim()).then(function() {
+              el.style.color = '#7AC231';
+              setTimeout(function() { el.style.color = ''; }, 900);
+            });
+          });
+        });
+      })
+      .catch(function() {});
+  }
+
+  /* ── Redemption flow ─────────────────────────────────── */
+  function redeem(offerId) {
+    var offer = state.all.find(function(o) { return o.id === offerId; });
+    if (!offer) return;
+
+    // Events with external URL: send straight to partner's site
+    if (offer.offer_type === 'event' && offer.points_required === 0 && offer.external_url) {
+      window.open(offer.external_url, '_blank', 'noopener');
+      return;
+    }
+    if (!isLoggedIn()) {
+      location.href = '/join?next=' + encodeURIComponent('/offers');
+      return;
+    }
+    var t = token();
+    fetch(API + '/offers/' + offerId + '/redeem', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + t },
+    })
+      .then(function(r) { return r.json().then(function(d) { return { ok: r.ok, body: d }; }); })
+      .then(function(out) {
+        if (!out.ok) {
+          alert(out.body.error || 'Redemption failed');
+          return;
+        }
+        var red = out.body.redemption || {};
+        document.getElementById('modalTitle').textContent = out.body.already_redeemed ? 'You already have a code' : 'Code generated!';
+        document.getElementById('modalSub').textContent = (offer.partner_name ? offer.partner_name + ' · ' : '') + offer.title;
+        document.getElementById('modalCode').textContent = red.code || '';
+        document.getElementById('modalExpiry').textContent = red.expires_at ? 'Valid until ' + fmtDate(red.expires_at) : '';
+        var goBtn = document.getElementById('modalGoBtn');
+        if (red.external_url || offer.external_url) {
+          goBtn.style.display = '';
+          goBtn.onclick = function() { window.open(red.external_url || offer.external_url, '_blank', 'noopener'); };
+        } else {
+          goBtn.style.display = 'none';
+        }
+        document.getElementById('redeemModal').classList.add('show');
+        // Refresh the side panel + points
+        loadPoints();
+        loadMyRedemptions();
+        // Tap-to-copy in modal
+        document.getElementById('modalCode').onclick = function() {
+          if (navigator.clipboard) navigator.clipboard.writeText(red.code);
+        };
+      })
+      .catch(function() { alert('Network error — try again.'); });
+  }
+
+  /* ── Boot ────────────────────────────────────────────── */
+  document.addEventListener('DOMContentLoaded', function() {
+    // Filter handlers
+    Array.prototype.forEach.call(document.querySelectorAll('.o-filter'), function(b) {
+      b.addEventListener('click', function() {
+        Array.prototype.forEach.call(document.querySelectorAll('.o-filter'), function(x) { x.classList.remove('active'); });
+        b.classList.add('active');
+        state.type = b.getAttribute('data-type') || '';
+        applyFilter();
+      });
+    });
+    // FAQ accordion
+    Array.prototype.forEach.call(document.querySelectorAll('.o-faq-item'), function(item) {
+      var q = item.querySelector('.o-faq-q');
+      if (q) q.addEventListener('click', function() { item.classList.toggle('open'); });
+    });
+    // Nav scrolled effect
+    var nav = document.getElementById('nav');
+    function onScroll() { if (nav) nav.classList.toggle('scrolled', window.scrollY > 20); }
+    window.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    // Load data
+    loadOffers();
+    loadPoints();
+    loadMyRedemptions();
+  });
+})();
+</script>
+
+</body>
+</html>

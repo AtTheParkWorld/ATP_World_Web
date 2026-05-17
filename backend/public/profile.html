@@ -766,6 +766,21 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
         <!-- Mini premium banner — only shows for free members. Same renderer
              as the wallet card but in compact mode so it's not too pushy. -->
         <div id="premiumBanner" style="margin-bottom:16px"></div>
+
+        <!-- Offers quick-access — surfaces a featured partner offer + a
+             link to the full /offers.html. Populated by JS below; hides
+             itself silently if there's nothing to show. -->
+        <a id="profileOffersCard" href="/offers" style="display:none;text-decoration:none;color:inherit;background:linear-gradient(120deg,rgba(245,192,66,.14),rgba(122,194,49,.06));border:1px solid rgba(245,192,66,.32);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:16px;align-items:center;gap:18px;flex-wrap:wrap;transition:transform .15s,box-shadow .2s">
+          <div style="flex:1;min-width:220px">
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f5c042;font-weight:700;margin-bottom:6px">
+              <span id="offersCardEyebrow">★ Member offers</span>
+            </div>
+            <div id="offersCardTitle" style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--white);letter-spacing:.02em;line-height:1.1;text-transform:uppercase">Discounts, race tickets &amp; more</div>
+            <div id="offersCardSub" style="font-size:12px;color:var(--muted);margin-top:6px">Turn your ATP points into discount codes. New drops every week.</div>
+          </div>
+          <span style="background:#f5c042;color:#0a0a0a;padding:11px 18px;border-radius:6px;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap">See offers →</span>
+        </a>
+
         <div class="widget">
           <div class="widget-head"><span class="widget-title">🔥 Current Streak</span><span class="widget-action" data-atp-call="showTab" data-args='["streak"]'>Full view →</span></div>
           <div class="widget-body">
@@ -4236,7 +4251,35 @@ function loadRealProfileData() {
     loadFriends();
     loadStreak();
     loadAchievements();
+    loadOffersTeaser();
   }).catch(function(){});
+}
+
+// ── Offers teaser card (profile overview) ───────────────────
+// Pulls the most-featured active offer and surfaces it as a quick
+// link. Falls back to a generic "Browse offers" prompt so logged-in
+// members always see the entry point. Hides the card silently if
+// the offers tables aren't migrated yet.
+function loadOffersTeaser() {
+  var card = document.getElementById('profileOffersCard');
+  if (!card) return;
+  fetch('/api/offers/featured')
+    .then(function(r) { return r.json(); })
+    .then(function(d) {
+      var f = d && d.featured;
+      var eyeEl = document.getElementById('offersCardEyebrow');
+      var titleEl = document.getElementById('offersCardTitle');
+      var subEl = document.getElementById('offersCardSub');
+      if (f) {
+        if (eyeEl)   eyeEl.textContent   = '★ Featured · ' + (f.partner_name || 'Member offer');
+        if (titleEl) titleEl.textContent = f.title;
+        if (subEl)   subEl.textContent   = (f.discount_pct ? f.discount_pct + '% off · ' : '') +
+                                           (f.points_required > 0 ? f.points_required + ' points · ' : '') +
+                                           'Tap to redeem';
+      }
+      card.style.display = 'flex';
+    })
+    .catch(function() { /* offers table not migrated yet — hide silently */ });
 }
 
 // ── Activities catalogue (Theme 5 / #9 admin) ───────────────

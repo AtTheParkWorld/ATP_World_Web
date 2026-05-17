@@ -2032,6 +2032,63 @@ router.post('/migrate-partners', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-partner-offers ─────────────────────
+// Builds the two tables behind the new /offers.html member-facing
+// commercial page:
+//   partner_offers          — discounts, promos, and event tickets
+//                             posted by partners (or ATP itself).
+//   member_offer_redemptions — members converting points into
+//                             unique discount codes per offer.
+// Idempotent.
+router.post('/migrate-partner-offers', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    await query(`CREATE TABLE IF NOT EXISTS partner_offers (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      partner_id      UUID REFERENCES partners_directory(id) ON DELETE SET NULL,
+      title           VARCHAR(160) NOT NULL,
+      slug            VARCHAR(120) UNIQUE NOT NULL,
+      offer_type      VARCHAR(20) NOT NULL DEFAULT 'discount', -- 'discount' | 'event' | 'promo'
+      description     TEXT,
+      image_url       TEXT,
+      terms           TEXT,
+      discount_pct    INT,                              -- e.g. 15 (= 15% off)
+      points_required INT NOT NULL DEFAULT 0,           -- 0 = free claim, >0 = points-gated
+      event_date      TIMESTAMPTZ,                      -- offer_type='event'
+      event_location  VARCHAR(200),
+      event_price_aed INT,                              -- info display only (purchase happens off-site)
+      external_url    TEXT,                             -- where to redeem / buy ticket
+      starts_at       TIMESTAMPTZ,
+      ends_at         TIMESTAMPTZ,
+      is_featured     BOOLEAN NOT NULL DEFAULT false,
+      is_active       BOOLEAN NOT NULL DEFAULT true,
+      sort_order      INT NOT NULL DEFAULT 100,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_partner_offers_active ON partner_offers(is_active, sort_order)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_partner_offers_type ON partner_offers(offer_type, is_active)`);
+
+    await query(`CREATE TABLE IF NOT EXISTS member_offer_redemptions (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      member_id       UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      offer_id        UUID NOT NULL REFERENCES partner_offers(id) ON DELETE CASCADE,
+      code            VARCHAR(40) UNIQUE NOT NULL,
+      points_spent    INT NOT NULL DEFAULT 0,
+      status          VARCHAR(20) NOT NULL DEFAULT 'issued', -- 'issued' | 'used' | 'expired'
+      issued_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      used_at         TIMESTAMPTZ,
+      expires_at      TIMESTAMPTZ
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_redemptions_member ON member_offer_redemptions(member_id, issued_at DESC)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_redemptions_offer ON member_offer_redemptions(offer_id, status)`);
+
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/admin-reset-password ───────────────────────
 // Emergency password reset for an admin who's locked out of the panel
 // (e.g. magic-link email isn't delivering because FRONTEND_URL was

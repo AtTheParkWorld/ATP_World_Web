@@ -1600,6 +1600,8 @@
             <button class="partners-subtab active" data-partners-tab="inquiries" style="padding:7px 14px;font-size:12px;font-weight:700;background:rgba(122,194,49,.12);color:#7AC231;border:1px solid rgba(122,194,49,.3);border-radius:8px;cursor:pointer">Inquiries</button>
             <button class="partners-subtab" data-partners-tab="tiers" style="padding:7px 14px;font-size:12px;font-weight:700;background:transparent;color:#888;border:1px solid #2a2a2a;border-radius:8px;cursor:pointer">Tiers</button>
             <button class="partners-subtab" data-partners-tab="directory" style="padding:7px 14px;font-size:12px;font-weight:700;background:transparent;color:#888;border:1px solid #2a2a2a;border-radius:8px;cursor:pointer">Directory</button>
+            <button class="partners-subtab" data-partners-tab="offers" style="padding:7px 14px;font-size:12px;font-weight:700;background:transparent;color:#888;border:1px solid #2a2a2a;border-radius:8px;cursor:pointer">Offers</button>
+            <button class="partners-subtab" data-partners-tab="redemptions" style="padding:7px 14px;font-size:12px;font-weight:700;background:transparent;color:#888;border:1px solid #2a2a2a;border-radius:8px;cursor:pointer">Redemptions</button>
           </div>
         </div>
       </div>
@@ -1699,6 +1701,77 @@
             </div>
           </div>
           <div id="partnerDirectoryList"><div style="padding:14px;color:#555;text-align:center">Loading partners…</div></div>
+        </div>
+      </div>
+
+      <!-- OFFERS tab — member-facing perks managed here -->
+      <div class="admin-section partners-pane" id="partners-pane-offers" style="display:none">
+        <div class="admin-section-head">
+          <span class="admin-section-title">Member offers</span>
+          <button class="admin-btn admin-btn-primary" data-atp-call="newPartnerOffer" style="font-size:12px;padding:7px 14px">+ New offer</button>
+        </div>
+        <div class="admin-section-body">
+          <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6">
+            These appear on <a href="/offers.html" target="_blank" style="color:#7AC231">/offers</a> — the member-facing commercial page. Pick the offer type, set points required (or leave 0 for free claims), and the partner. Mark one as "featured" — it gets the hero spotlight.
+          </div>
+          <div id="partnerOfferFormWrap" style="display:none;background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:16px">
+            <input type="hidden" id="poEditId" value="">
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:10px">
+              <div><label class="admin-form-label" for="poTitle">Title *</label><input class="admin-form-input" type="text" id="poTitle" placeholder="20% off all running shoes at Sun & Sand Sports"></div>
+              <div>
+                <label class="admin-form-label" for="poType">Offer type</label>
+                <select class="admin-form-select" id="poType">
+                  <option value="discount">Discount code</option>
+                  <option value="event">Event / race ticket</option>
+                  <option value="promo">Promo / freebie</option>
+                </select>
+              </div>
+              <div><label class="admin-form-label" for="poSort">Sort order</label><input class="admin-form-input" type="number" id="poSort" value="100"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:10px">
+              <div><label class="admin-form-label" for="poPartner">Partner</label><select class="admin-form-select" id="poPartner"><option value="">— No partner / ATP direct —</option></select></div>
+              <div><label class="admin-form-label" for="poDiscount">Discount %</label><input class="admin-form-input" type="number" id="poDiscount" min="0" max="100" placeholder="20"></div>
+              <div><label class="admin-form-label" for="poPoints">Points required</label><input class="admin-form-input" type="number" id="poPoints" min="0" value="0"></div>
+            </div>
+            <div style="margin-bottom:10px"><label class="admin-form-label" for="poDescription">Description</label><textarea class="admin-form-input" id="poDescription" rows="2" placeholder="Use code on Sun & Sand Sports site. Stacks with sale items."></textarea></div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+              <div><label class="admin-form-label" for="poImage">Image URL (banner)</label><input class="admin-form-input" type="text" id="poImage" placeholder="https://..." style="font-family:monospace;font-size:12px"></div>
+              <div><label class="admin-form-label" for="poExternalUrl">External URL (where members go)</label><input class="admin-form-input" type="text" id="poExternalUrl" placeholder="https://sunandsandsports.com" style="font-family:monospace;font-size:12px"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
+              <div><label class="admin-form-label" for="poEventDate">Event date (if event)</label><input class="admin-form-input" type="datetime-local" id="poEventDate"></div>
+              <div><label class="admin-form-label" for="poEventLocation">Event location</label><input class="admin-form-input" type="text" id="poEventLocation" placeholder="Dubai Marina"></div>
+              <div><label class="admin-form-label" for="poEventPrice">Event price (AED)</label><input class="admin-form-input" type="number" id="poEventPrice" placeholder="250"></div>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+              <div><label class="admin-form-label" for="poStartsAt">Starts at</label><input class="admin-form-input" type="datetime-local" id="poStartsAt"></div>
+              <div><label class="admin-form-label" for="poEndsAt">Ends at</label><input class="admin-form-input" type="datetime-local" id="poEndsAt"></div>
+            </div>
+            <div style="margin-bottom:10px"><label class="admin-form-label" for="poTerms">Terms (fine print)</label><textarea class="admin-form-input" id="poTerms" rows="2" placeholder="One use per member. Cannot combine with other promos."></textarea></div>
+            <div style="display:flex;gap:14px;margin-bottom:14px">
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa"><input type="checkbox" id="poFeatured"> Featured (hero spotlight)</label>
+              <label style="display:flex;align-items:center;gap:6px;font-size:12px;color:#aaa"><input type="checkbox" id="poActive" checked> Active</label>
+            </div>
+            <div style="display:flex;gap:8px">
+              <button class="admin-btn admin-btn-primary" data-atp-call="savePartnerOffer" style="font-size:12px">Save</button>
+              <button class="admin-btn" data-atp-call="cancelPartnerOfferForm" style="font-size:12px">Cancel</button>
+            </div>
+          </div>
+          <div id="partnerOffersList"><div style="padding:14px;color:#555;text-align:center">Loading offers…</div></div>
+        </div>
+      </div>
+
+      <!-- REDEMPTIONS tab — read-only audit log -->
+      <div class="admin-section partners-pane" id="partners-pane-redemptions" style="display:none">
+        <div class="admin-section-head">
+          <span class="admin-section-title">Member redemptions</span>
+          <button class="admin-btn" data-atp-call="loadPartnerRedemptions" style="font-size:12px;padding:7px 14px">↻ Refresh</button>
+        </div>
+        <div class="admin-section-body">
+          <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6">
+            Every code your members generate appears here with the offer, points spent, and timestamp. Mark a code "used" once the partner confirms redemption — that closes the loop and tracks real-world conversions.
+          </div>
+          <div id="partnerRedemptionsList"><div style="padding:14px;color:#555;text-align:center">Loading redemptions…</div></div>
         </div>
       </div>
     </div>
