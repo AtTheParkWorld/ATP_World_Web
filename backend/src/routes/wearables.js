@@ -204,6 +204,8 @@ router.get('/providers', (req, res) => {
   res.json({
     base_url: baseUrl,
     frontend_url_env: process.env.FRONTEND_URL || null,
+    strava_webhook_verify_token_set: !!process.env.STRAVA_WEBHOOK_VERIFY_TOKEN,
+    strava_webhook_verify_token_length: (process.env.STRAVA_WEBHOOK_VERIFY_TOKEN || '').length,
     providers: providers.list().map(p => ({
       name: p.name,
       displayName: p.displayName,
