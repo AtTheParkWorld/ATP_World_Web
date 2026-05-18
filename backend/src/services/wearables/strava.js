@@ -25,7 +25,11 @@ function getAuthUrl(state, redirectUri) {
     client_id: process.env.STRAVA_CLIENT_ID,
     response_type: 'code',
     redirect_uri: redirectUri,
-    approval_prompt: 'auto',
+    // 'force' (not 'auto') ensures Strava always shows the permissions
+    // screen so the member can re-tick all scopes. Without this, a
+    // previously-approved member silently re-uses whatever scopes they
+    // ticked the first time — easy to miss "View private activities".
+    approval_prompt: 'force',
     scope: 'read,activity:read_all,profile:read_all',
     state,
   });
@@ -50,7 +54,10 @@ async function exchangeCode(code) {
     access_token: d.access_token,
     refresh_token: d.refresh_token,
     token_expires_at: new Date(d.expires_at * 1000).toISOString(),
-    scopes: 'read,activity:read_all,profile:read_all',
+    // Store the scopes Strava actually granted (member may have unchecked
+    // some on the consent screen), not the ones we asked for. Used by the
+    // admin Connections view to debug "OAuth ok but no data" cases.
+    scopes: d.scope || 'read,activity:read_all,profile:read_all',
   };
 }
 
