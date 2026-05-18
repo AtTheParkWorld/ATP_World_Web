@@ -187,12 +187,21 @@ async function _syncAllDue(maxAgeMin = 60) {
 }
 
 // ── GET /api/wearables/providers (public) ─────────────────────
+// Also surfaces the resolved redirect URIs for each provider — used by
+// admin + by founders during setup to verify the OAuth Authorization
+// Callback Domain matches what each provider's dev portal expects.
+// No secrets are leaked; redirect URIs are by definition public.
 router.get('/providers', (req, res) => {
+  const baseUrl = _publicBaseUrl(req);
   res.json({
+    base_url: baseUrl,
+    frontend_url_env: process.env.FRONTEND_URL || null,
     providers: providers.list().map(p => ({
       name: p.name,
       displayName: p.displayName,
       enabled: typeof p.enabled === 'function' ? p.enabled() : false,
+      redirect_uri: `${baseUrl}/api/wearables/callback/${p.name}`,
+      callback_domain: baseUrl.replace(/^https?:\/\//, ''),
     })),
     phoneNativeEnabled: true, // always available — uses the device sensors via the browser
   });
