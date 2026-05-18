@@ -543,13 +543,13 @@ router.post('/admin/resync/:id', authenticate, requireAdmin, async (req, res, ne
 // /athlete/activities calls so we can see exactly what Strava is
 // returning when sync seems to "succeed but find nothing." No tokens
 // are leaked in the response.
-router.get('/debug/strava-test', authenticate, requireAdmin, async (req, res, next) => {
+router.get('/debug/strava-test', authenticate, async (req, res, next) => {
   try {
     const { rows } = await query(
       `SELECT * FROM wearable_connections WHERE member_id=$1 AND provider='strava' AND status='active' LIMIT 1`,
       [req.member.id]
     );
-    if (!rows.length) return res.json({ error: 'No active Strava connection for this admin account' });
+    if (!rows.length) return res.json({ error: 'No active Strava connection for the calling account', hint: 'Make sure you are logged in as the same member account that connected Strava.' });
     const conn = rows[0];
 
     const out = {
