@@ -538,6 +538,75 @@ router.post('/admin/resync/:id', authenticate, requireAdmin, async (req, res, ne
   } catch (err) { next(err); }
 });
 
+// ── Diagnostic: live Strava probe for the calling admin's connection ──
+// Returns the stored scopes + token expiry + result of /athlete and
+// /athlete/activities calls so we can see exactly what Strava is
+// returning when sync seems to "succeed but find nothing." No tokens
+// are leaked in the response.
+router.get('/debug/strava-test', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT * FROM wearable_connections WHERE member_id=$1 AND provider='strava' AND status='active' LIMIT 1`,
+      [req.member.id]
+    );
+    if (!rows.length) return res.json({ error: 'No active Strava connection for this admin account' });
+    const conn = rows[0];
+
+    const out = {
+      connection: {
+        provider_user_id: conn.provider_user_id,
+        status: conn.status,
+        scopes: conn.scopes,
+        last_sync_at: conn.last_sync_at,
+        token_expires_at: conn.token_expires_at,
+        token_expires_in_minutes: conn.token_expires_at
+          ? Math.round((new Date(conn.token_expires_at).getTime() - Date.now()) / 60000)
+          : null,
+      },
+      tests: {},
+    };
+
+    // Test 1 — /athlete (basic call, no scope-gated data)
+    try {
+      const r = await fetch('https://www.strava.com/api/v3/athlete', {
+        headers: { Authorization: `Bearer ${conn.access_token}` },
+      });
+      const body = r.ok ? await r.json() : await r.text();
+      out.tests.athlete = {
+        status: r.status,
+        athlete_id: body && body.id ? body.id : null,
+        firstname: body && body.firstname ? body.firstname : null,
+        error: r.ok ? null : body,
+      };
+    } catch (e) { out.tests.athlete = { error: String(e.message) }; }
+
+    // Test 2 — /athlete/activities last 30 days
+    try {
+      const after = Math.floor(Date.now() / 1000 - 30 * 86400);
+      const r = await fetch(`https://www.strava.com/api/v3/athlete/activities?after=${after}&per_page=10`, {
+        headers: { Authorization: `Bearer ${conn.access_token}` },
+      });
+      const body = r.ok ? await r.json() : await r.text();
+      out.tests.activities = {
+        status: r.status,
+        count: Array.isArray(body) ? body.length : null,
+        sample: Array.isArray(body) ? body.slice(0, 3).map(a => ({
+          id: a.id,
+          name: a.name,
+          type: a.type,
+          start_date: a.start_date,
+          distance_m: a.distance,
+          private: a.private,
+          visibility: a.visibility,
+        })) : null,
+        error: r.ok ? null : body,
+      };
+    } catch (e) { out.tests.activities = { error: String(e.message) }; }
+
+    res.json(out);
+  } catch (err) { next(err); }
+});
+
 router.get('/admin/sync-log', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { rows } = await query(
