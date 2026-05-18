@@ -150,12 +150,24 @@ async function _ensureFreshToken(conn) {
 }
 
 // Pull workouts + today's daily metric for a single connection.
-async function _syncOne(conn) {
+// `opts.force = true` ignores last_sync_at and reaches back further —
+// used by the user-clicked "Sync now" button so a fresh connect picks
+// up older activities that fell outside the default narrow window.
+async function _syncOne(conn, opts = {}) {
   const adapter = providers.get(conn.provider);
   if (!adapter) return { workouts: 0, metrics: 0 };
   const fresh = await _ensureFreshToken(conn);
   if (!fresh) return { workouts: 0, metrics: 0 };
-  const since = fresh.last_sync_at ? Math.floor(new Date(fresh.last_sync_at).getTime() / 1000) - 3600 : null;
+  // Three lookback regimes:
+  //   - force: 90 days (manual backfill — "give me everything")
+  //   - first sync (no last_sync_at): 30 days (catches recent history)
+  //   - subsequent poll: 1h before last_sync_at (narrow, fast)
+  const sinceSec = opts.force
+    ? Math.floor(Date.now() / 1000) - (90 * 86400)
+    : fresh.last_sync_at
+      ? Math.floor(new Date(fresh.last_sync_at).getTime() / 1000) - 3600
+      : Math.floor(Date.now() / 1000) - (30 * 86400);
+  const since = sinceSec;
   let workouts = 0, metrics = 0;
   try {
     const wo = await adapter.fetchRecentWorkouts(fresh, since);
@@ -356,12 +368,15 @@ router.post('/disconnect/:provider', authenticate, async (req, res, next) => {
 });
 
 // ── POST /api/wearables/sync (auth) ────────────────────────────
+// Member-initiated "Sync now" — always does a force backfill (90 days)
+// since users hit this button precisely when they want all their data
+// pulled. Background polling uses the narrow window via _syncOne directly.
 router.post('/sync', authenticate, async (req, res, next) => {
   try {
     const { rows } = await query(`SELECT * FROM wearable_connections WHERE member_id=$1 AND status='active'`, [req.member.id]);
     let total = { workouts: 0, metrics: 0 };
     for (const c of rows) {
-      const r = await _syncOne(c);
+      const r = await _syncOne(c, { force: true });
       total.workouts += r.workouts;
       total.metrics  += r.metrics;
     }

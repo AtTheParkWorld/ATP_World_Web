@@ -93,7 +93,10 @@ function _mapType(t) {
 }
 
 async function fetchRecentWorkouts(conn, sinceUnixSec) {
-  const after = Math.floor(sinceUnixSec || (Date.now() / 1000 - 7 * 24 * 3600));
+  // Default fallback (30 days) is only used if the routes layer doesn't
+  // pass an explicit `sinceUnixSec`. The routes layer's _syncOne now
+  // always passes one — narrow for polls, wide for force-syncs.
+  const after = Math.floor(sinceUnixSec || (Date.now() / 1000 - 30 * 24 * 3600));
   const r = await fetch(`https://www.strava.com/api/v3/athlete/activities?after=${after}&per_page=50`, {
     headers: { Authorization: `Bearer ${conn.access_token}` },
   });
