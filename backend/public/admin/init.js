@@ -43,6 +43,7 @@ async function cancelSession(sessionId, sessionName) {
     if (name === 'ambassadors'){ renderAmbassadors(); }
     if (name === 'settings')   { loadSettingsSection(); }
     if (name === 'operations') { loadFailedShopifyRedemptions(); loadNewsletterAdmin(); }
+    if (name === 'wearables')  { if (typeof loadWearableConnections === 'function') loadWearableConnections(); }
   };
 })();
 

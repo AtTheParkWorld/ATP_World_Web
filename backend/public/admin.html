@@ -124,6 +124,10 @@
         Partners
         <span id="adminPartnersBadge" style="display:none;margin-left:auto;background:rgba(245,158,11,.18);color:#fbbf24;border:1px solid rgba(245,158,11,.4);font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px"></span>
       </div>
+      <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["wearables"]'>
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="6" height="10" rx="1"/><path d="M6 6h4M6 8h3"/></svg>
+        Wearables
+      </div>
     </div>
     <div class="admin-logout" data-atp-call="adminLogout">← Sign out</div>
   </nav>
@@ -1772,6 +1776,61 @@
             Every code your members generate appears here with the offer, points spent, and timestamp. Mark a code "used" once the partner confirms redemption — that closes the loop and tracks real-world conversions.
           </div>
           <div id="partnerRedemptionsList"><div style="padding:14px;color:#555;text-align:center">Loading redemptions…</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ WEARABLES SECTION ═══ -->
+    <div id="section-wearables" style="display:none">
+      <div class="admin-section" style="margin-bottom:18px">
+        <div class="admin-section-head">
+          <span class="admin-section-title">⌚ Wearables</span>
+          <div style="display:flex;gap:6px">
+            <button class="wearables-subtab active" data-wearables-tab="connections" style="padding:7px 14px;font-size:12px;font-weight:700;background:rgba(122,194,49,.12);color:#7AC231;border:1px solid rgba(122,194,49,.3);border-radius:8px;cursor:pointer">Connections</button>
+            <button class="wearables-subtab" data-wearables-tab="providers" style="padding:7px 14px;font-size:12px;font-weight:700;background:transparent;color:#888;border:1px solid #2a2a2a;border-radius:8px;cursor:pointer">Providers</button>
+            <button class="wearables-subtab" data-wearables-tab="synclog" style="padding:7px 14px;font-size:12px;font-weight:700;background:transparent;color:#888;border:1px solid #2a2a2a;border-radius:8px;cursor:pointer">Sync log</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- CONNECTIONS — who's connected to what -->
+      <div class="admin-section wearables-pane" id="wearables-pane-connections">
+        <div class="admin-section-head">
+          <span class="admin-section-title">Member device connections</span>
+          <button class="admin-btn" data-atp-call="loadWearableConnections" style="font-size:12px;padding:7px 14px">↻ Refresh</button>
+        </div>
+        <div class="admin-section-body">
+          <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6">
+            Every active wearable connection. Force-resync a specific member's device if their data hasn't updated — useful when they ping support about a missing workout.
+          </div>
+          <div id="wearableConnectionsList"><div style="padding:14px;color:#555;text-align:center">Loading connections…</div></div>
+        </div>
+      </div>
+
+      <!-- PROVIDERS — which integrations are live -->
+      <div class="admin-section wearables-pane" id="wearables-pane-providers" style="display:none">
+        <div class="admin-section-head">
+          <span class="admin-section-title">Provider status</span>
+        </div>
+        <div class="admin-section-body">
+          <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6">
+            Each provider needs its OAuth client_id + client_secret set as Render env vars to go live. Once a provider is enabled, members see a "Connect" button on their profile's Devices tab.
+          </div>
+          <div id="wearableProvidersGrid"><div style="padding:14px;color:#555;text-align:center">Loading providers…</div></div>
+        </div>
+      </div>
+
+      <!-- SYNC LOG — recent activity -->
+      <div class="admin-section wearables-pane" id="wearables-pane-synclog" style="display:none">
+        <div class="admin-section-head">
+          <span class="admin-section-title">Recent sync activity</span>
+          <button class="admin-btn" data-atp-call="loadWearableSyncLog" style="font-size:12px;padding:7px 14px">↻ Refresh</button>
+        </div>
+        <div class="admin-section-body">
+          <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6">
+            Last 200 sync events across all members and providers. Useful for debugging why a member's data isn't flowing.
+          </div>
+          <div id="wearableSyncLogList"><div style="padding:14px;color:#555;text-align:center">Loading log…</div></div>
         </div>
       </div>
     </div>

@@ -2089,6 +2089,111 @@ router.post('/migrate-partner-offers', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-wearables ──────────────────────────
+// Builds the wearables stack:
+//   wearable_connections     — one row per (member, provider) OAuth link.
+//   wearable_workouts        — every workout pulled from a provider OR
+//                              recorded by the phone-native tracker.
+//   wearable_daily_metrics   — one row per (member, provider, date) with
+//                              aggregate counters (steps/distance/calories).
+//   wearable_consent         — granular per-member toggles (leaderboard /
+//                              employer / partners / research).
+//   wearable_sync_log        — audit trail for each sync attempt + error.
+// Idempotent.
+router.post('/migrate-wearables', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    await query(`CREATE TABLE IF NOT EXISTS wearable_connections (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      member_id       UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      provider        VARCHAR(32) NOT NULL, -- 'strava' | 'fitbit' | 'polar' | 'withings' | 'phone'
+      provider_user_id VARCHAR(120),        -- the provider's id for this user
+      access_token    TEXT,
+      refresh_token   TEXT,
+      token_expires_at TIMESTAMPTZ,
+      scopes          TEXT,
+      status          VARCHAR(20) NOT NULL DEFAULT 'active', -- 'active' | 'needs_reauth' | 'disconnected'
+      last_sync_at    TIMESTAMPTZ,
+      last_error      TEXT,
+      connected_at    TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (member_id, provider)
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_wearable_conn_member ON wearable_connections(member_id, status)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_wearable_conn_provider ON wearable_connections(provider, status)`);
+
+    await query(`CREATE TABLE IF NOT EXISTS wearable_workouts (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      member_id       UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      provider        VARCHAR(32) NOT NULL,
+      provider_workout_id VARCHAR(120),
+      workout_type    VARCHAR(40),         -- 'run' | 'ride' | 'walk' | 'swim' | 'workout' | 'other'
+      started_at      TIMESTAMPTZ NOT NULL,
+      duration_s      INT,
+      distance_m      INT,
+      calories        INT,
+      avg_hr          INT,
+      max_hr          INT,
+      elevation_m     INT,
+      gps_polyline    TEXT,
+      session_id      UUID REFERENCES sessions(id) ON DELETE SET NULL, -- linked to an ATP session if relevant
+      raw             JSONB,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (provider, provider_workout_id)
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_workouts_member_time ON wearable_workouts(member_id, started_at DESC)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_workouts_started ON wearable_workouts(started_at DESC)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_workouts_type ON wearable_workouts(workout_type, started_at DESC)`);
+
+    await query(`CREATE TABLE IF NOT EXISTS wearable_daily_metrics (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      member_id       UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      provider        VARCHAR(32) NOT NULL,
+      metric_date     DATE NOT NULL,
+      steps           INT,
+      distance_m      INT,
+      active_calories INT,
+      total_calories  INT,
+      resting_hr      INT,
+      avg_hr          INT,
+      max_hr          INT,
+      sleep_min       INT,
+      vo2_max         NUMERIC(4,1),
+      raw             JSONB,
+      updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE (member_id, provider, metric_date)
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_metrics_member_date ON wearable_daily_metrics(member_id, metric_date DESC)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_metrics_date ON wearable_daily_metrics(metric_date DESC)`);
+
+    await query(`CREATE TABLE IF NOT EXISTS wearable_consent (
+      member_id       UUID PRIMARY KEY REFERENCES members(id) ON DELETE CASCADE,
+      share_leaderboard BOOLEAN NOT NULL DEFAULT true,
+      share_employer  BOOLEAN NOT NULL DEFAULT false,
+      share_partners  BOOLEAN NOT NULL DEFAULT false,
+      share_research  BOOLEAN NOT NULL DEFAULT false,
+      updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+
+    await query(`CREATE TABLE IF NOT EXISTS wearable_sync_log (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      member_id       UUID REFERENCES members(id) ON DELETE CASCADE,
+      provider        VARCHAR(32) NOT NULL,
+      kind            VARCHAR(20) NOT NULL, -- 'oauth' | 'poll' | 'webhook' | 'refresh' | 'disconnect'
+      status          VARCHAR(20) NOT NULL, -- 'ok' | 'error'
+      detail          TEXT,
+      workouts_added  INT DEFAULT 0,
+      metrics_added   INT DEFAULT 0,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_synclog_member_time ON wearable_sync_log(member_id, created_at DESC)`);
+
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/admin-reset-password ───────────────────────
 // Emergency password reset for an admin who's locked out of the panel
 // (e.g. magic-link email isn't delivering because FRONTEND_URL was

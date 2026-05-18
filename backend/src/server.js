@@ -286,6 +286,7 @@ const ROUTES = [
   ['streams',      require('./routes/streams')],
   ['partners',     require('./routes/partners')],
   ['offers',       require('./routes/offers')],
+  ['wearables',    require('./routes/wearables')],
 ];
 for (const [prefix, router] of ROUTES) {
   app.use('/api/'    + prefix, router);
@@ -329,6 +330,24 @@ if (require.main === module) {
     ║  Environment: ${process.env.NODE_ENV || 'development'}           ║
     ╚══════════════════════════════════════╝
     `);
+
+    // ── Wearables sync worker ─────────────────────────────────
+    // Polls non-webhook providers (Fitbit, Polar, Withings) for
+    // members whose last_sync_at is > 60 minutes old. Strava is
+    // webhook-driven so this is a safety-net + token-refresh loop
+    // for it. Runs every 15 minutes after a 60-second warmup.
+    const wearablesRouter = require('./routes/wearables');
+    if (typeof wearablesRouter.__syncWorker === 'function') {
+      const tick = async () => {
+        try {
+          const r = await wearablesRouter.__syncWorker(60);
+          if (r && (r.workouts || r.metrics)) {
+            console.log(`[wearables] synced ${r.connections} conns · ${r.workouts} new workouts · ${r.metrics} metrics`);
+          }
+        } catch (e) { console.error('[wearables] sync tick failed:', e.message); }
+      };
+      setTimeout(() => { tick(); setInterval(tick, 15 * 60 * 1000); }, 60 * 1000);
+    }
   });
 }
 
