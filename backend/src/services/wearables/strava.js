@@ -102,7 +102,15 @@ async function fetchRecentWorkouts(conn, sinceUnixSec) {
   });
   if (!r.ok) throw new Error(`Strava activities fetch failed: ${r.status}`);
   const list = await r.json();
-  return list.map(a => ({
+
+  // Strava's list endpoint omits the `calories` field — it's only on
+  // the per-activity detail endpoint. We enrich each activity with a
+  // single detail call to pull calories (and refresh anything else we
+  // can grab cheaply). Capped at 25 per sync to stay well under Strava's
+  // 100-req/15-min app limit even if multiple members sync at once.
+  const enriched = await _enrichWithCalories(conn, list, 25);
+
+  return enriched.map(a => ({
     provider_workout_id: String(a.id),
     workout_type: _mapType(a.type),
     started_at: a.start_date,
@@ -115,6 +123,37 @@ async function fetchRecentWorkouts(conn, sinceUnixSec) {
     gps_polyline: a.map?.summary_polyline || null,
     raw: a,
   }));
+}
+
+// Per-activity detail fetch to pull `calories` (missing from the list
+// endpoint). Sequential to avoid bursting Strava's rate limit. Failures
+// per-activity are swallowed — we just keep whatever we have.
+async function _enrichWithCalories(conn, list, maxDetails) {
+  const out = [];
+  let detailsUsed = 0;
+  for (const a of list) {
+    // Skip the detail call if we already have calories from the list
+    // (rare for newer activities) or a kilojoules fallback for cyclists.
+    if (a.calories || a.kilojoules || detailsUsed >= maxDetails) {
+      out.push(a);
+      continue;
+    }
+    try {
+      const r = await fetch(`https://www.strava.com/api/v3/activities/${a.id}?include_all_efforts=false`, {
+        headers: { Authorization: `Bearer ${conn.access_token}` },
+      });
+      detailsUsed++;
+      if (r.ok) {
+        const d = await r.json();
+        out.push({ ...a, calories: d.calories, kilojoules: d.kilojoules });
+      } else {
+        out.push(a);
+      }
+    } catch (e) {
+      out.push(a);
+    }
+  }
+  return out;
 }
 
 // Strava doesn't have a daily-summary endpoint — we derive daily metrics

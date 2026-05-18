@@ -75,7 +75,12 @@ async function _logSync(memberId, provider, kind, status, detail, counts) {
   } catch (e) { /* never let logging break the flow */ }
 }
 
-// Persist normalized workouts. Returns the count actually inserted.
+// Persist normalized workouts. Returns the count actually inserted or
+// meaningfully updated. We upsert (rather than skip on conflict) so that
+// a follow-up sync can backfill fields the initial pull didn't have —
+// e.g. Strava's `calories` only comes from the detail endpoint.
+// COALESCE keeps existing non-null values; never overwrites good data
+// with null from a later partial response.
 async function _saveWorkouts(memberId, provider, items) {
   let n = 0;
   for (const w of (items || [])) {
@@ -86,7 +91,16 @@ async function _saveWorkouts(memberId, provider, items) {
            (member_id, provider, provider_workout_id, workout_type, started_at,
             duration_s, distance_m, calories, avg_hr, max_hr, elevation_m, gps_polyline, raw)
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
-         ON CONFLICT (provider, provider_workout_id) DO NOTHING`,
+         ON CONFLICT (provider, provider_workout_id) DO UPDATE SET
+           workout_type = COALESCE(EXCLUDED.workout_type, wearable_workouts.workout_type),
+           duration_s   = COALESCE(EXCLUDED.duration_s,   wearable_workouts.duration_s),
+           distance_m   = COALESCE(EXCLUDED.distance_m,   wearable_workouts.distance_m),
+           calories     = COALESCE(EXCLUDED.calories,     wearable_workouts.calories),
+           avg_hr       = COALESCE(EXCLUDED.avg_hr,       wearable_workouts.avg_hr),
+           max_hr       = COALESCE(EXCLUDED.max_hr,       wearable_workouts.max_hr),
+           elevation_m  = COALESCE(EXCLUDED.elevation_m,  wearable_workouts.elevation_m),
+           gps_polyline = COALESCE(EXCLUDED.gps_polyline, wearable_workouts.gps_polyline),
+           raw          = COALESCE(EXCLUDED.raw,          wearable_workouts.raw)`,
         [memberId, provider, w.provider_workout_id, w.workout_type, w.started_at,
          w.duration_s, w.distance_m, w.calories, w.avg_hr, w.max_hr, w.elevation_m, w.gps_polyline,
          w.raw ? JSON.stringify(w.raw) : null]
