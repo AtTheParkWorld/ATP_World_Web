@@ -32,8 +32,9 @@ const strava = require('./strava');
 const fitbit = require('./fitbit');
 const polar  = require('./polar');
 const withings = require('./withings');
+const garmin = require('./garmin');
 
-const PROVIDERS = { strava, fitbit, polar, withings };
+const PROVIDERS = { strava, fitbit, polar, withings, garmin };
 
 function get(name) {
   return PROVIDERS[name] || null;

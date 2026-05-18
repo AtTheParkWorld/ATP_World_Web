@@ -110,6 +110,7 @@ function renderWearableProviders(list) {
     fitbit:   { vars: 'FITBIT_CLIENT_ID, FITBIT_CLIENT_SECRET',   url: 'https://dev.fitbit.com/apps/new' },
     polar:    { vars: 'POLAR_CLIENT_ID, POLAR_CLIENT_SECRET',     url: 'https://admin.polaraccesslink.com/' },
     withings: { vars: 'WITHINGS_CLIENT_ID, WITHINGS_CLIENT_SECRET', url: 'https://developer.withings.com/dashboard' },
+    garmin:   { vars: 'GARMIN_CLIENT_ID, GARMIN_CLIENT_SECRET (approval required)', url: 'https://developerportal.garmin.com/user/me/apps' },
   };
   el.innerHTML =
     '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">' +

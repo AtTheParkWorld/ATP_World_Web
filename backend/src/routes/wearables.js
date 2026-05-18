@@ -31,6 +31,7 @@
  */
 const router = require('express').Router();
 const jwt = require('jsonwebtoken');
+const crypto = require('crypto');
 const { query } = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const providers = require('../services/wearables');
@@ -48,13 +49,20 @@ function _redirectUri(req, providerName) {
   return `${_publicBaseUrl(req)}/api/wearables/callback/${providerName}`;
 }
 
-function _signState(memberId, providerName) {
-  return jwt.sign({ m: memberId, p: providerName, t: Date.now() }, process.env.JWT_SECRET, { expiresIn: '10m' });
+function _signState(memberId, providerName, extras = {}) {
+  return jwt.sign({ m: memberId, p: providerName, t: Date.now(), ...extras }, process.env.JWT_SECRET, { expiresIn: '10m' });
 }
 
 function _verifyState(state) {
   try { return jwt.verify(state, process.env.JWT_SECRET); }
   catch (e) { return null; }
+}
+
+// PKCE helper for OAuth 2.0 + PKCE providers (Garmin, future Apple ID, etc.)
+function _pkcePair() {
+  const verifier = crypto.randomBytes(32).toString('base64url');
+  const challenge = crypto.createHash('sha256').update(verifier).digest('base64url');
+  return { verifier, challenge };
 }
 
 async function _logSync(memberId, provider, kind, status, detail, counts) {
@@ -261,8 +269,16 @@ router.get('/me', authenticate, async (req, res, next) => {
 router.get('/connect/:provider', authenticate, (req, res) => {
   const adapter = providers.get(req.params.provider);
   if (!adapter || !adapter.enabled()) return res.status(400).json({ error: 'Provider not enabled' });
-  const state = _signState(req.member.id, adapter.name);
-  const url = adapter.getAuthUrl(state, _redirectUri(req, adapter.name));
+  // PKCE providers (Garmin, etc.) need a verifier persisted between
+  // connect + callback. We sign it into the state JWT so we don't need
+  // a server-side store. The challenge is sent to the provider; the
+  // verifier comes back via state on callback and proves we initiated.
+  let pkce = null;
+  if (adapter.usesPKCE) {
+    pkce = _pkcePair();
+  }
+  const state = _signState(req.member.id, adapter.name, pkce ? { cv: pkce.verifier } : {});
+  const url = adapter.getAuthUrl(state, _redirectUri(req, adapter.name), pkce ? pkce.challenge : null);
   if (req.query.redirect === '1') return res.redirect(url);
   res.json({ redirect_url: url });
 });
@@ -277,7 +293,7 @@ router.get('/callback/:provider', async (req, res, next) => {
     if (!code || !state) return res.status(400).send('Missing code or state');
     const decoded = _verifyState(state);
     if (!decoded || decoded.p !== adapter.name) return res.status(400).send('Invalid state');
-    const tokens = await adapter.exchangeCode(code, _redirectUri(req, adapter.name));
+    const tokens = await adapter.exchangeCode(code, _redirectUri(req, adapter.name), decoded.cv);
     await query(
       `INSERT INTO wearable_connections
          (member_id, provider, provider_user_id, access_token, refresh_token,
@@ -297,11 +313,20 @@ router.get('/callback/:provider', async (req, res, next) => {
     );
     _logSync(decoded.m, adapter.name, 'oauth', 'ok');
     // Kick off an initial sync; don't block the redirect on it.
+    // Garmin (and any future push-only provider) needs a backfill request
+    // instead of a poll — data then arrives via webhook over the next
+    // few minutes.
     setImmediate(async () => {
       try {
         const { rows } = await query(`SELECT * FROM wearable_connections WHERE member_id=$1 AND provider=$2`, [decoded.m, adapter.name]);
-        if (rows[0]) await _syncOne(rows[0]);
-      } catch (e) { /* logged inside _syncOne */ }
+        if (!rows[0]) return;
+        if (typeof adapter.requestBackfill === 'function') {
+          await adapter.requestBackfill(rows[0], 30);
+          _logSync(decoded.m, adapter.name, 'backfill', 'ok');
+        } else {
+          await _syncOne(rows[0]);
+        }
+      } catch (e) { _logSync(decoded.m, adapter.name, 'backfill', 'error', String(e.message || e)); }
     });
     res.redirect(`/profile.html?wearable=connected&provider=${adapter.name}#devices`);
   } catch (err) {
@@ -463,7 +488,24 @@ router.post('/webhooks/:provider', async (req, res) => {
         WHERE provider=$1 AND provider_user_id=$2 AND status='active' LIMIT 1`,
       [adapter.name, evt.provider_user_id]
     );
-    if (rows[0]) await _syncOne(rows[0]);
+    if (!rows[0]) return;
+    const conn = rows[0];
+    // Two paths: inline-payload providers (Garmin) ship the data with
+    // the webhook itself, so we save straight from evt; other providers
+    // (Strava) just notify and we re-fetch via _syncOne.
+    if (evt.inline_workouts || evt.inline_daily) {
+      let workouts = 0, metrics = 0;
+      if (Array.isArray(evt.inline_workouts) && evt.inline_workouts.length) {
+        workouts = await _saveWorkouts(conn.member_id, conn.provider, evt.inline_workouts);
+      }
+      if (evt.inline_daily) {
+        metrics = await _saveDailyMetric(conn.member_id, conn.provider, evt.inline_daily);
+      }
+      await query(`UPDATE wearable_connections SET last_sync_at=NOW(), last_error=NULL WHERE id=$1`, [conn.id]);
+      _logSync(conn.member_id, conn.provider, 'webhook', 'ok', null, { workouts, metrics });
+    } else {
+      await _syncOne(conn);
+    }
   } catch (e) { _logSync(null, req.params.provider, 'webhook', 'error', String(e.message || e)); }
 });
 
