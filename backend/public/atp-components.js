@@ -519,6 +519,13 @@
   }
 
   /* ── Mobile hamburger toggle ───────────────────────────────── */
+  // Tracks the menu state on <body> so the mobile-polish layer in
+  // atp.css can lock background scroll while the drawer is open
+  // (body.nav-locked { overflow: hidden }). Without scroll-lock, the
+  // underlying page scrolls when the user pans the menu — feels broken.
+  function _syncNavLock(open) {
+    document.body.classList.toggle('nav-locked', !!open);
+  }
   function handleHamburger(e) {
     var ham = e.target.closest('.hamburger');
     var nav = document.getElementById('nav');
@@ -526,6 +533,7 @@
       var open = nav.classList.toggle('mobile-open');
       ham.setAttribute('aria-expanded', String(open));
       ham.setAttribute('aria-label', open ? 'Close menu' : 'Open menu');
+      _syncNavLock(open);
       return;
     }
     // Click on a nav link closes the drawer
@@ -533,6 +541,7 @@
       nav.classList.remove('mobile-open');
       var h = nav.querySelector('.hamburger');
       if (h) { h.setAttribute('aria-expanded', 'false'); h.setAttribute('aria-label', 'Open menu'); }
+      _syncNavLock(false);
       return;
     }
     // Click outside the nav closes the drawer
@@ -540,6 +549,7 @@
       nav.classList.remove('mobile-open');
       var h2 = nav.querySelector('.hamburger');
       if (h2) { h2.setAttribute('aria-expanded', 'false'); h2.setAttribute('aria-label', 'Open menu'); }
+      _syncNavLock(false);
     }
   }
 

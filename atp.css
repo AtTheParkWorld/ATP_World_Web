@@ -835,3 +835,183 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
   backdrop-filter: blur(8px) !important;
   -webkit-backdrop-filter: blur(8px) !important;
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+ * MOBILE POLISH LAYER (v1.22 · 2026-05-19)
+ *
+ * High-impact, low-risk rules that affect every page using atp.css.
+ * Grouped by the problem they solve so future edits stay targeted.
+ * No per-page edits below — this layer is intentionally global.
+ * ═══════════════════════════════════════════════════════════════════ */
+
+/* — A · Horizontal overflow safety —
+   Stops a single stray element with width:100vw or a long unbreakable
+   string from forcing the whole page sideways on phones. The cost is
+   negligible on desktop (no scrollbar appears unless content needs it). */
+html, body { overflow-x: hidden; }
+body { max-width: 100vw; }
+
+/* — B · iOS Safari form-zoom prevention —
+   When an input has font-size < 16px, iOS auto-zooms the viewport on
+   focus and the user has to manually pinch out. Forcing 16px on mobile
+   form controls eliminates the jarring zoom. Desktop keeps the design's
+   smaller sizes via the breakpoint below. */
+@media (max-width: 900px) {
+  input,
+  textarea,
+  select,
+  .admin-form-input,
+  .admin-form-select {
+    font-size: 16px !important;
+  }
+}
+
+/* — C · Touch target minimums —
+   WCAG 2.1 recommends 44×44 CSS px minimum for tappable elements. Most
+   of our buttons hit this; smaller inline buttons (icon-only, pill
+   filters, social icons) get a min-height bump on mobile only. */
+@media (max-width: 900px) {
+  button,
+  .btn-primary,
+  .btn-ghost,
+  .atp-btn,
+  .o-filter,
+  .ptab,
+  .partners-subtab,
+  .wearables-subtab,
+  [role="button"] {
+    min-height: 44px;
+  }
+  /* Inputs too — tap-friendly height for date pickers etc. */
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  .admin-form-input,
+  .admin-form-select {
+    min-height: 44px;
+  }
+  /* Footer social buttons (currently 34px) → bump on mobile only */
+  .atp-social-btn {
+    width: 44px; height: 44px;
+  }
+}
+
+/* — D · Tap-highlight + selection polish —
+   The default grey flash on tap is ugly on dark themes. Replace with a
+   subtle green tint. Selection-color also gets the brand treatment. */
+* {
+  -webkit-tap-highlight-color: rgba(122, 194, 49, 0.20);
+}
+::selection {
+  background: rgba(122, 194, 49, 0.32);
+  color: #fff;
+}
+
+/* — E · Safe-area insets for notched phones —
+   iPhone X+ and most modern Androids reserve a notch + home-bar zone.
+   Pages with edge-to-edge content should respect these. We apply them
+   to the unified nav + footer + main-page padding. */
+@supports (padding: max(0px)) {
+  #nav {
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+  }
+  .atp-footer {
+    padding-left: max(var(--atp-space-5), env(safe-area-inset-left));
+    padding-right: max(var(--atp-space-5), env(safe-area-inset-right));
+    padding-bottom: max(var(--atp-space-5), env(safe-area-inset-bottom));
+  }
+}
+
+/* — F · Mobile nav refinements —
+   The existing hamburger toggle works; these tweaks make the open menu
+   feel native: full-height column, scroll-locked underlying page, and a
+   sane z-index so it sits above sticky page chrome. */
+@media (max-width: 900px) {
+  #nav { padding: 0 16px; }
+  #nav.mobile-open .nav-links {
+    z-index: 90;
+    max-height: calc(100vh - var(--nav-h, 68px));
+    overflow-y: auto;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  /* Lock background scroll while menu is open — JS adds .nav-locked
+     to <body> when toggling. If JS doesn't, this is just a no-op. */
+  body.nav-locked { overflow: hidden; }
+}
+
+/* — G · Modal mobile fit —
+   Legacy modals often used max-width:400px + 20px margin, which gets
+   too small on phones. Below 560px, take the full viewport with a small
+   safe-area-respecting margin. */
+@media (max-width: 560px) {
+  .modal-content,
+  .modal-card,
+  .auth-card,
+  .qr-modal-content,
+  .o-modal-card {
+    max-width: calc(100vw - 24px) !important;
+    width: calc(100vw - 24px) !important;
+    margin: 12px !important;
+    max-height: calc(100vh - 24px);
+    overflow-y: auto;
+  }
+}
+
+/* — H · Tables → horizontal scroll on small screens —
+   Wraps any plain admin/data table in an x-scrollable parent. Stops the
+   common "data table breaks the layout on mobile" issue without forcing
+   a stack-row redesign per page. */
+@media (max-width: 700px) {
+  table.admin-table,
+  table.atp-table,
+  .admin-section table,
+  table.data-table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    white-space: nowrap;
+  }
+}
+
+/* — I · Reduce edge padding on small screens —
+   Several pages hardcode 40px container padding which steals ~80px of
+   horizontal real estate on a 375px-wide phone. Below 560px, default
+   container padding tightens. Pages can override if needed. */
+@media (max-width: 560px) {
+  .atp-container,
+  main > section,
+  main > .content {
+    padding-left: 16px !important;
+    padding-right: 16px !important;
+  }
+}
+
+/* — J · Typographic scale collapse on phones —
+   Some hero headlines use clamp() already; for the ones that don't,
+   force a sane ceiling so a 7vw font doesn't push past the viewport. */
+@media (max-width: 560px) {
+  h1 { font-size: clamp(28px, 9vw, 44px); line-height: 1.05; }
+  h2 { font-size: clamp(22px, 7vw, 32px); line-height: 1.1; }
+  h3 { font-size: clamp(18px, 5.5vw, 24px); line-height: 1.15; }
+}
+
+/* — K · Sticky element fallback for iOS Safari —
+   iOS Safari respects `position: sticky` but the topbar's address-bar
+   collapse can cause jumps. `position: -webkit-sticky` first kept some
+   older versions working; modern iOS doesn't need it but it's harmless. */
+.profile-tabs-wrap,
+.atp-sticky {
+  position: -webkit-sticky;
+  position: sticky;
+}
+
+/* — L · Reduce hover-only affordances on touch devices —
+   Disable hover transitions on devices that can't hover at all
+   (touchscreens with no mouse). Prevents stuck hover states after a tap. */
+@media (hover: none) and (pointer: coarse) {
+  *:hover {
+    transform: none !important;
+  }
+  /* Don't disable color/background hover transitions — those are still
+     valid feedback patterns (e.g. for visited buttons mid-tap). */
+}
