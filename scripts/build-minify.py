@@ -44,6 +44,7 @@ JS_TARGETS = [
     'admin/partners.js',
     'admin/wearables.js',
     'admin/founder.js',
+    'admin/surveys.js',
     'admin/init.js',
 ]
 CSS_TARGETS = [
@@ -127,6 +128,7 @@ def main() -> None:
         'admin/partners.min.js',
         'admin/wearables.min.js',
         'admin/founder.min.js',
+        'admin/surveys.min.js',
         'admin/init.min.js',          # last so its hook into showAdminSection wraps everything else
     ]
     admin_bundle = ''

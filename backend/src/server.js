@@ -251,7 +251,15 @@ app.get('/partners', (req, res) => res.sendFile(path.join(__dirname, '../public/
 // Offers — member-facing commercial page (discounts, events, points redemption).
 app.get('/offers',   (req, res) => res.sendFile(path.join(__dirname, '../public/offers.html')));
 // Member feedback survey — Move 2 of the founder strategy.
-app.get('/member-feedback', (req, res) => res.sendFile(path.join(__dirname, '../public/member-feedback.html')));
+// Legacy URL redirects to the new generic /survey/:slug system; the
+// "member-voice" slug is seeded by migrate-surveys so the existing link
+// keeps working.
+app.get('/member-feedback', (req, res) => res.redirect(302, '/survey/member-voice'));
+
+// Surveys — generic admin-customizable feedback platform. Any active
+// survey's slug becomes a public URL; the single survey.html page
+// loads its definition by slug and renders dynamically.
+app.get('/survey/:slug', (req, res) => res.sendFile(path.join(__dirname, '../public/survey.html')));
 app.get('/',         (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 
 // ── API Routes ───────────────────────────────────────────────────────────────
@@ -291,6 +299,7 @@ const ROUTES = [
   ['wearables',    require('./routes/wearables')],
   ['founder',      require('./routes/founder')],
   ['member-feedback', require('./routes/memberFeedback')],
+  ['surveys',      require('./routes/surveys')],
 ];
 for (const [prefix, router] of ROUTES) {
   app.use('/api/'    + prefix, router);

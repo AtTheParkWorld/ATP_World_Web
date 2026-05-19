@@ -2233,6 +2233,186 @@ router.post('/migrate-member-feedback', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-surveys ────────────────────────────
+// Generic surveys platform — admin can create custom surveys with any
+// number of questions, share the URL with members, collect responses.
+// Replaces the Move-2-specific table from migrate-member-feedback with
+// a flexible 3-table model.
+// Idempotent. Also seeds the "Member Voice" (Move 2) survey on first run.
+router.post('/migrate-surveys', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    // 1. Surveys — top-level definitions
+    await query(`CREATE TABLE IF NOT EXISTS surveys (
+      id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      slug             VARCHAR(120) UNIQUE NOT NULL,
+      title            VARCHAR(200) NOT NULL,
+      intro            TEXT,
+      thank_you        TEXT,
+      status           VARCHAR(20) NOT NULL DEFAULT 'draft',  -- 'draft' | 'active' | 'closed'
+      collect_name     BOOLEAN NOT NULL DEFAULT true,
+      collect_email    BOOLEAN NOT NULL DEFAULT true,
+      response_count   INT NOT NULL DEFAULT 0,
+      created_by       UUID REFERENCES members(id) ON DELETE SET NULL,
+      created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_surveys_status ON surveys(status, slug)`);
+
+    // 2. Questions — belong to a survey, ordered
+    await query(`CREATE TABLE IF NOT EXISTS survey_questions (
+      id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      survey_id        UUID NOT NULL REFERENCES surveys(id) ON DELETE CASCADE,
+      sort_order       INT NOT NULL DEFAULT 100,
+      question_type    VARCHAR(30) NOT NULL,    -- 'text' | 'textarea' | 'single_choice' | 'multi_choice' | 'rating'
+      question_text    TEXT NOT NULL,
+      hint_text        TEXT,
+      options          JSONB NOT NULL DEFAULT '[]'::jsonb,   -- [{value, label}] for choice types
+      required         BOOLEAN NOT NULL DEFAULT false,
+      created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_questions_survey ON survey_questions(survey_id, sort_order)`);
+
+    // 3. Responses — one row per submitted response
+    await query(`CREATE TABLE IF NOT EXISTS survey_responses (
+      id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      survey_id        UUID NOT NULL REFERENCES surveys(id) ON DELETE CASCADE,
+      member_id        UUID REFERENCES members(id) ON DELETE SET NULL,
+      name             VARCHAR(120),
+      email            VARCHAR(255),
+      answers          JSONB NOT NULL DEFAULT '{}'::jsonb,   -- { question_id: answer }
+      source           VARCHAR(120),
+      user_agent       TEXT,
+      ip_hint          VARCHAR(120),
+      created_at       TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_responses_survey ON survey_responses(survey_id, created_at DESC)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_responses_member ON survey_responses(member_id)`);
+
+    // ── Seed the Move 2 "Member Voice" survey if not present ─────
+    const existing = await query(`SELECT id FROM surveys WHERE slug = 'member-voice' LIMIT 1`);
+    let surveysSeeded = 0;
+    if (!existing.rows.length) {
+      const { rows: created } = await query(
+        `INSERT INTO surveys (slug, title, intro, thank_you, status, collect_name, collect_email)
+         VALUES ($1,$2,$3,$4,'active', true, true)
+         RETURNING id`,
+        [
+          'member-voice',
+          'Help shape the next ATP',
+          'We\'re at a decision point. Before we add anything new, we want to hear from you. 5 short questions. Honest answers matter more than nice ones.',
+          'Thank you. Truly.\n\nThe next 90 days of ATP will be shaped by what you and other members said. We\'ll share what we heard — and what we\'re doing about it — soon.',
+        ]
+      );
+      const surveyId = created[0].id;
+      surveysSeeded++;
+
+      const seedQs = [
+        {
+          sort: 10, type: 'textarea',
+          text: 'What\'s the one thing about ATP you\'d be sad to lose if it disappeared tomorrow?',
+          hint: 'Be specific. "The Tuesday run with Sarah" beats "the community". Write what comes to mind.',
+          required: true,
+        },
+        {
+          sort: 20, type: 'multi_choice',
+          text: 'What do you actually use weekly?',
+          hint: 'Tick everything that\'s true for a typical week. No judgment.',
+          required: false,
+          options: [
+            { value: 'free_sessions',    label: 'Free outdoor sessions' },
+            { value: 'community_feed',   label: 'Community feed / posts' },
+            { value: 'streaks_points',   label: 'Streak / points tracker' },
+            { value: 'member_offers',    label: 'Partner offers / discounts' },
+            { value: 'store',            label: 'ATP store / shop' },
+            { value: 'blog',             label: 'Blog / articles' },
+            { value: 'live_stream',      label: 'Live / streaming sessions' },
+            { value: 'challenges',       label: 'Challenges' },
+            { value: 'wearables',        label: 'Strava / Fitbit sync' },
+            { value: 'referrals',        label: 'Inviting friends' },
+            { value: 'coaches_profiles', label: 'Looking at coach profiles' },
+            { value: 'profile_stats',    label: 'My profile / stats' },
+          ],
+        },
+        {
+          sort: 30, type: 'textarea',
+          text: 'If ATP charged you for one thing, what would you actually pay for?',
+          hint: 'Don\'t be diplomatic. Real money is involved.',
+          required: true,
+        },
+        {
+          sort: 40, type: 'single_choice',
+          text: 'How much per month would you pay for that?',
+          hint: 'Be honest. AED 0 is a valid answer.',
+          required: true,
+          options: [
+            { value: 'AED 0',      label: 'AED 0' },
+            { value: 'AED 1-30',   label: 'AED 1–30' },
+            { value: 'AED 31-75',  label: 'AED 31–75' },
+            { value: 'AED 76-150', label: 'AED 76–150' },
+            { value: 'AED 151+',   label: 'AED 151+' },
+          ],
+        },
+        {
+          sort: 50, type: 'textarea',
+          text: 'What would make you stop using ATP entirely?',
+          hint: 'Brutal honesty welcome. We\'d rather know now than discover it the hard way.',
+          required: true,
+        },
+        // Optional context questions
+        {
+          sort: 60, type: 'single_choice',
+          text: 'Which city are you in?',
+          hint: 'Helps us read your answers in context.',
+          required: false,
+          options: [
+            { value: 'Dubai',   label: 'Dubai' },
+            { value: 'Al Ain',  label: 'Al Ain' },
+            { value: 'Muscat',  label: 'Muscat' },
+            { value: 'Other',   label: 'Other' },
+          ],
+        },
+        {
+          sort: 70, type: 'single_choice',
+          text: 'Which tribe do you train with most?',
+          required: false,
+          options: [
+            { value: 'Better',   label: 'Better' },
+            { value: 'Faster',   label: 'Faster' },
+            { value: 'Stronger', label: 'Stronger' },
+            { value: 'Mix',      label: 'A bit of everything' },
+            { value: 'None',     label: 'No tribe yet' },
+          ],
+        },
+        {
+          sort: 80, type: 'single_choice',
+          text: 'How long have you been with ATP?',
+          required: false,
+          options: [
+            { value: '<1mo',   label: '< 1 month' },
+            { value: '1-3mo',  label: '1–3 months' },
+            { value: '3-6mo',  label: '3–6 months' },
+            { value: '6-12mo', label: '6–12 months' },
+            { value: '1-2y',   label: '1–2 years' },
+            { value: '2y+',    label: '2+ years' },
+          ],
+        },
+      ];
+      for (const q of seedQs) {
+        await query(
+          `INSERT INTO survey_questions (survey_id, sort_order, question_type, question_text, hint_text, options, required)
+           VALUES ($1, $2, $3, $4, $5, $6::jsonb, $7)`,
+          [surveyId, q.sort, q.type, q.text, q.hint || null, JSON.stringify(q.options || []), !!q.required]
+        );
+      }
+    }
+
+    res.json({ success: true, surveys_seeded: surveysSeeded });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/admin-reset-password ───────────────────────
 // Emergency password reset for an admin who's locked out of the panel
 // (e.g. magic-link email isn't delivering because FRONTEND_URL was

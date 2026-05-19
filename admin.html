@@ -132,6 +132,10 @@
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="3" width="6" height="10" rx="1"/><path d="M6 6h4M6 8h3"/></svg>
         Wearables
       </div>
+      <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["surveys"]'>
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 6h6M5 9h6M5 12h3"/></svg>
+        Surveys
+      </div>
     </div>
     <div class="admin-logout" data-atp-call="adminLogout">← Sign out</div>
   </nav>
@@ -1849,6 +1853,15 @@
           </div>
           <div id="wearableSyncLogList"><div style="padding:14px;color:#555;text-align:center">Loading log…</div></div>
         </div>
+      </div>
+    </div>
+
+    <!-- ═══ SURVEYS SECTION ═══ -->
+    <div id="section-surveys" style="display:none">
+      <div class="admin-page-title">📋 Surveys</div>
+      <div class="admin-page-sub">Create custom feedback forms with any questions you want. Each survey gets its own public URL like <code style="background:#0a0a0a;padding:2px 6px;border-radius:3px;color:#7AC231">/survey/your-slug</code> that you share with members.</div>
+      <div id="surveysBody" style="margin-top:16px">
+        <div style="padding:60px;text-align:center;color:#555">Loading surveys…</div>
       </div>
     </div>
   </main>

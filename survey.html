@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ATP Survey</title>
+  <meta name="description" content="Help shape ATP — short survey, honest answers welcome.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#7AC231;--green-dark:#5a9a1f;--green-light:#a8e055;
+  --black:#0a0a0a;--dark:#111111;--dark2:#1a1a1a;--dark3:#222222;
+  --muted:#888888;--light:#aaaaaa;--white:#ffffff;
+  --gold:#f5c042;
+  --ff-display:'Barlow Condensed',sans-serif;--ff-body:'DM Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100vh}
+body{font-family:var(--ff-body);background:radial-gradient(60% 80% at 20% 10%,rgba(122,194,49,.10) 0%,transparent 60%),radial-gradient(50% 70% at 80% 90%,rgba(245,192,66,.05) 0%,transparent 60%),var(--black);color:var(--white);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;min-height:100vh;-webkit-tap-highlight-color:rgba(122,194,49,.20)}
+button{cursor:pointer;font-family:inherit;background:none;border:none;color:inherit}
+input,textarea,select{font-family:inherit;font-size:16px}
+::selection{background:rgba(122,194,49,.32);color:#fff}
+
+.top{padding:20px 24px;display:flex;justify-content:space-between;align-items:center}
+.brand{display:flex;align-items:center;gap:10px;color:var(--green);font-weight:800;letter-spacing:.16em;font-size:11px;text-transform:uppercase}
+.brand::before{content:'';display:block;width:24px;height:2px;background:var(--green)}
+.progress-text{font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+.progress-bar{position:fixed;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.06);z-index:50}
+.progress-fill{height:100%;background:var(--green);width:0;transition:width .35s ease}
+
+.stage{display:none;flex:1;padding:40px 24px 80px;animation:fadeUp .4s ease}
+.stage.active{display:flex;flex-direction:column;justify-content:center}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.stage-inner{max-width:680px;margin:0 auto;width:100%}
+
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--green);margin-bottom:18px;display:inline-flex;align-items:center;gap:10px}
+.eyebrow::before{content:'';display:block;width:28px;height:2px;background:var(--green)}
+.qnum{font-size:13px;color:var(--green);font-weight:700;letter-spacing:.14em;margin-bottom:14px;display:inline-flex;align-items:center;gap:10px}
+.qnum::before{content:'';display:block;width:24px;height:2px;background:var(--green)}
+h1{font-family:var(--ff-display);font-size:clamp(40px,6vw,72px);font-weight:900;line-height:.95;text-transform:uppercase;letter-spacing:-.015em;margin-bottom:18px}
+h1 .acc{color:var(--green)}
+h2{font-family:var(--ff-display);font-size:clamp(28px,4vw,42px);font-weight:900;line-height:1.05;text-transform:uppercase;letter-spacing:-.005em;margin-bottom:14px}
+h2 .acc{color:var(--green)}
+.lead{font-size:17px;color:var(--light);line-height:1.6;font-weight:300;margin-bottom:32px;max-width:520px;white-space:pre-wrap}
+.hint{font-size:13px;color:var(--muted);margin-top:14px;line-height:1.55}
+.req{color:#ef4444;font-size:13px;margin-left:6px}
+
+.field{margin-top:24px}
+.text-input{width:100%;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px;color:#fff;font-size:16px;transition:border-color .2s,background .2s;font-family:inherit}
+.text-input:focus{outline:none;border-color:rgba(122,194,49,.4);background:rgba(122,194,49,.04)}
+textarea.text-input{min-height:140px;resize:vertical;line-height:1.55}
+.text-input::placeholder{color:#555}
+
+.check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.check-card{display:flex;align-items:center;gap:12px;padding:14px 18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;cursor:pointer;transition:border-color .2s,background .2s;font-size:14px;color:#fff}
+.check-card:hover{border-color:rgba(122,194,49,.32);background:rgba(122,194,49,.04)}
+.check-card.checked{border-color:rgba(122,194,49,.6);background:rgba(122,194,49,.10)}
+.check-card input{display:none}
+.check-card .box{width:22px;height:22px;border-radius:6px;border:2px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s}
+.check-card.checked .box{border-color:var(--green);background:var(--green);color:#0a0a0a}
+.check-card .box::after{content:'';opacity:0;font-weight:900;color:#0a0a0a;font-size:14px}
+.check-card.checked .box::after{content:'✓';opacity:1}
+
+.pick-grid{display:flex;gap:8px;flex-wrap:wrap}
+.pick-pill{display:inline-block;padding:11px 18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:99px;cursor:pointer;transition:all .2s;font-size:13px;color:var(--light);font-weight:500}
+.pick-pill:hover{border-color:rgba(122,194,49,.32);color:#fff}
+.pick-pill.checked{background:var(--green);color:#0a0a0a;border-color:var(--green);font-weight:700}
+.pick-pill input{display:none}
+
+.rating-row{display:flex;gap:8px;justify-content:flex-start;font-size:42px;color:#444;cursor:pointer}
+.rating-row .star{transition:color .15s,transform .1s;line-height:1;padding:2px}
+.rating-row .star:hover{transform:scale(1.1)}
+.rating-row .star.on{color:var(--gold)}
+
+.nav-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:36px}
+.btn-primary{background:var(--green);color:#0a0a0a;padding:16px 32px;border-radius:10px;font-size:14px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;display:inline-flex;align-items:center;gap:10px;transition:background .15s,transform .15s,box-shadow .2s;border:none;cursor:pointer;min-height:44px}
+.btn-primary:hover{background:var(--green-light);transform:translateY(-1px);box-shadow:0 10px 26px rgba(122,194,49,.32)}
+.btn-primary:disabled{background:rgba(255,255,255,.08);color:#555;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-ghost{background:none;color:var(--light);padding:14px 22px;font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border-radius:8px;transition:color .2s,background .2s;cursor:pointer;border:none;min-height:44px}
+.btn-ghost:hover{color:#fff;background:rgba(255,255,255,.05)}
+
+.final-celebrate{font-size:64px;margin-bottom:24px;animation:bounce 1.2s ease infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+.err-msg{color:#ef4444;font-size:12px;margin-top:8px}
+
+@media (max-width:600px){
+  .stage{padding:30px 18px 80px}
+  .check-grid{grid-template-columns:1fr}
+  .nav-row{flex-direction:column-reverse;align-items:stretch}
+  .nav-row .btn-primary{width:100%;justify-content:center}
+  .nav-row .btn-ghost{width:100%;text-align:center}
+  h1{font-size:36px}
+  h2{font-size:26px}
+}
+</style>
+</head>
+
+<body>
+
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+<div class="top">
+  <div class="brand">At The Park · Member Voice</div>
+  <div class="progress-text" id="progressText">Loading…</div>
+</div>
+
+<!-- Stage host — populated dynamically -->
+<main id="stageHost" style="flex:1;display:flex;flex-direction:column"></main>
+
+<script>
+(function(){
+  // Slug from URL pathname: /survey/:slug
+  var SLUG = window.location.pathname.replace(/^\/survey\/?/, '').replace(/\/$/, '') || 'member-voice';
+  var DRAFT_KEY = 'atp_survey_draft_' + SLUG;
+
+  var state = {
+    survey: null,
+    questions: [],
+    current: 0,        // stage index: 0=welcome, 1..N=questions, N+1=context, N+2=thanks
+    answers: {},       // { question_id: value }
+    name: '',
+    email: '',
+    submitting: false,
+  };
+
+  function $stage(){ return document.getElementById('stageHost'); }
+  function $progressFill(){ return document.getElementById('progressFill'); }
+  function $progressText(){ return document.getElementById('progressText'); }
+
+  function escapeHtml(s){
+    return String(s == null ? '' : s)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+
+  function loadDraft(){
+    try {
+      var raw = localStorage.getItem(DRAFT_KEY);
+      if (!raw) return;
+      var d = JSON.parse(raw);
+      if (d.answers) state.answers = d.answers;
+      if (d.name) state.name = d.name;
+      if (d.email) state.email = d.email;
+    } catch(e){}
+  }
+  function saveDraft(){
+    try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ answers: state.answers, name: state.name, email: state.email })); } catch(e){}
+  }
+  function clearDraft(){ try { localStorage.removeItem(DRAFT_KEY); } catch(e){} }
+
+  // ── BOOT ────────────────────────────────────────────────────
+  function boot(){
+    document.title = 'ATP Survey · loading…';
+    fetch('/api/surveys/public/' + encodeURIComponent(SLUG))
+      .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, status: r.status, body: d }; }); })
+      .then(function(out){
+        if (!out.ok) {
+          renderError(out.body && out.body.error ? out.body.error : 'Survey not found.');
+          return;
+        }
+        state.survey = out.body.survey;
+        state.questions = out.body.questions || [];
+        document.title = state.survey.title + ' · ATP';
+        loadDraft();
+        renderStage();
+      })
+      .catch(function(){ renderError('Couldn\'t load this survey. Check your connection and try again.'); });
+  }
+
+  // ── STAGE RENDERING ─────────────────────────────────────────
+  function totalStages(){
+    // welcome + N questions + (context if collect_name||collect_email) + thanks
+    var ctxStage = (state.survey.collect_name || state.survey.collect_email) ? 1 : 0;
+    return 1 + state.questions.length + ctxStage + 1;
+  }
+
+  function updateProgress(){
+    var total = totalStages() - 2; // exclude welcome + thanks from progress
+    var pos = Math.max(0, Math.min(total, state.current - 0));
+    var pct = Math.round(100 * Math.min(pos, total) / Math.max(1, total));
+    if (state.current === 0) pct = 0;
+    if (state.current === totalStages() - 1) pct = 100;
+    $progressFill().style.width = pct + '%';
+
+    if (state.current === 0) $progressText().textContent = 'Welcome';
+    else if (state.current === totalStages() - 1) $progressText().textContent = 'Done';
+    else if (state.current > state.questions.length) $progressText().textContent = 'About you';
+    else $progressText().textContent = 'Question ' + state.current + ' of ' + state.questions.length;
+  }
+
+  function renderStage(){
+    var host = $stage();
+    var idx = state.current;
+
+    // Welcome
+    if (idx === 0) {
+      host.innerHTML = stageWelcome();
+      wireButtons(host);
+      updateProgress();
+      return;
+    }
+    // Thanks (last)
+    if (idx === totalStages() - 1) {
+      host.innerHTML = stageThanks();
+      wireButtons(host);
+      updateProgress();
+      return;
+    }
+    // Context (collect name/email) — between questions and thanks
+    if (idx === state.questions.length + 1 && (state.survey.collect_name || state.survey.collect_email)) {
+      host.innerHTML = stageContext();
+      wireContext(host);
+      wireButtons(host);
+      updateProgress();
+      return;
+    }
+    // Question stages: indexes 1..N map to questions[0..N-1]
+    if (idx >= 1 && idx <= state.questions.length) {
+      var q = state.questions[idx - 1];
+      host.innerHTML = stageQuestion(q, idx);
+      wireQuestion(host, q);
+      wireButtons(host);
+      updateProgress();
+      return;
+    }
+    // If there's no context stage and we're past questions, jump to thanks
+    if (idx === state.questions.length + 1 && !state.survey.collect_name && !state.survey.collect_email) {
+      state.current = totalStages() - 1;
+      renderStage();
+      return;
+    }
+  }
+
+  function stageWelcome(){
+    var s = state.survey;
+    return '<section class="stage active"><div class="stage-inner">' +
+      '<div class="eyebrow">' + escapeHtml(state.questions.length) + ' short questions</div>' +
+      '<h1>' + escapeHtml(s.title) + '</h1>' +
+      (s.intro ? '<p class="lead">' + escapeHtml(s.intro) + '</p>' : '') +
+      '<p class="lead" style="color:var(--muted);font-size:14px">No login. ' + (s.collect_email ? 'Email optional. ' : '') + 'Takes about 3 minutes.</p>' +
+      '<div class="nav-row" style="justify-content:flex-start">' +
+        '<button class="btn-primary" data-act="next">Let\'s go →</button>' +
+      '</div>' +
+    '</div></section>';
+  }
+
+  function stageQuestion(q, idx){
+    var fieldHtml = '';
+    var existing = state.answers[q.id];
+
+    if (q.question_type === 'text') {
+      fieldHtml = '<input type="text" class="text-input" data-qid="' + q.id + '" placeholder="Your answer…" value="' + escapeHtml(existing || '') + '">';
+    } else if (q.question_type === 'textarea') {
+      fieldHtml = '<textarea class="text-input" data-qid="' + q.id + '" placeholder="Type your answer…">' + escapeHtml(existing || '') + '</textarea>';
+    } else if (q.question_type === 'single_choice') {
+      fieldHtml = '<div class="pick-grid" data-qid="' + q.id + '" data-multi="false">' +
+        (q.options || []).map(function(o){
+          var sel = existing === o.value ? ' checked' : '';
+          return '<label class="pick-pill' + (sel ? ' checked' : '') + '" data-val="' + escapeHtml(o.value) + '"><input type="radio">' + escapeHtml(o.label || o.value) + '</label>';
+        }).join('') +
+      '</div>';
+    } else if (q.question_type === 'multi_choice') {
+      var arr = Array.isArray(existing) ? existing : [];
+      fieldHtml = '<div class="check-grid" data-qid="' + q.id + '" data-multi="true">' +
+        (q.options || []).map(function(o){
+          var sel = arr.indexOf(o.value) !== -1 ? ' checked' : '';
+          return '<label class="check-card' + (sel ? ' checked' : '') + '" data-val="' + escapeHtml(o.value) + '"><input type="checkbox"><span class="box"></span><span>' + escapeHtml(o.label || o.value) + '</span></label>';
+        }).join('') +
+      '</div>';
+    } else if (q.question_type === 'rating') {
+      var rating = parseInt(existing, 10) || 0;
+      fieldHtml = '<div class="rating-row" data-qid="' + q.id + '">' +
+        [1,2,3,4,5].map(function(n){
+          return '<span class="star' + (n <= rating ? ' on' : '') + '" data-val="' + n + '">★</span>';
+        }).join('') +
+      '</div>';
+    }
+
+    return '<section class="stage active"><div class="stage-inner">' +
+      '<div class="qnum">Question ' + idx + ' of ' + state.questions.length + '</div>' +
+      '<h2>' + escapeHtml(q.question_text) + (q.required ? '<span class="req">*</span>' : '') + '</h2>' +
+      (q.hint_text ? '<p class="hint">' + escapeHtml(q.hint_text) + '</p>' : '') +
+      '<div class="field">' + fieldHtml + '</div>' +
+      '<div class="err-msg" id="qErr" style="display:none"></div>' +
+      '<div class="nav-row">' +
+        '<button class="btn-ghost" data-act="back">← Back</button>' +
+        '<button class="btn-primary" data-act="next">Continue →</button>' +
+      '</div>' +
+    '</div></section>';
+  }
+
+  function stageContext(){
+    var s = state.survey;
+    return '<section class="stage active"><div class="stage-inner">' +
+      '<div class="qnum">Almost done</div>' +
+      '<h2>A bit about <span class="acc">you</span>.</h2>' +
+      '<p class="hint">All optional. Only used if we want to follow up — never shared.</p>' +
+      (s.collect_name ? '<div class="field"><label style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">Your name</label>' +
+        '<input type="text" class="text-input" id="ctxName" placeholder="First name is enough" value="' + escapeHtml(state.name || '') + '">' +
+      '</div>' : '') +
+      (s.collect_email ? '<div class="field"><label style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">Email</label>' +
+        '<input type="email" class="text-input" id="ctxEmail" placeholder="you@example.com" value="' + escapeHtml(state.email || '') + '">' +
+      '</div>' : '') +
+      '<div class="nav-row">' +
+        '<button class="btn-ghost" data-act="back">← Back</button>' +
+        '<button class="btn-primary" id="submitBtn" data-act="submit">Send my answers →</button>' +
+      '</div>' +
+    '</div></section>';
+  }
+
+  function stageThanks(){
+    var thx = state.survey.thank_you || 'Thank you. We hear you.';
+    return '<section class="stage active"><div class="stage-inner" style="text-align:center">' +
+      '<div class="final-celebrate">🎯</div>' +
+      '<div class="eyebrow" style="justify-content:center">Got it</div>' +
+      '<h1>Thank you. <span class="acc">Truly.</span></h1>' +
+      '<p class="lead" style="margin-left:auto;margin-right:auto">' + escapeHtml(thx) + '</p>' +
+      '<div class="nav-row" style="justify-content:center;margin-top:20px">' +
+        '<a href="/" class="btn-primary">Back to ATP →</a>' +
+      '</div>' +
+    '</div></section>';
+  }
+
+  function renderError(msg){
+    $stage().innerHTML = '<section class="stage active"><div class="stage-inner" style="text-align:center">' +
+      '<div style="font-size:48px;margin-bottom:18px">😕</div>' +
+      '<h2>' + escapeHtml(msg) + '</h2>' +
+      '<p class="lead" style="margin-left:auto;margin-right:auto">If this is a mistake, send a note to <a href="mailto:general@atthepark.world" style="color:var(--green)">general@atthepark.world</a>.</p>' +
+    '</div></section>';
+    $progressText().textContent = 'Error';
+  }
+
+  // ── INTERACTION WIRING ──────────────────────────────────────
+  function wireQuestion(host, q){
+    if (q.question_type === 'text' || q.question_type === 'textarea') {
+      var input = host.querySelector('[data-qid="' + q.id + '"]');
+      input.addEventListener('input', function(){
+        state.answers[q.id] = input.value;
+        saveDraft();
+      });
+      // Autofocus
+      setTimeout(function(){ input.focus(); }, 100);
+    } else if (q.question_type === 'single_choice') {
+      host.querySelectorAll('.pick-pill').forEach(function(pill){
+        pill.addEventListener('click', function(){
+          host.querySelectorAll('.pick-pill').forEach(function(p){ p.classList.remove('checked'); });
+          pill.classList.add('checked');
+          state.answers[q.id] = pill.dataset.val;
+          saveDraft();
+        });
+      });
+    } else if (q.question_type === 'multi_choice') {
+      host.querySelectorAll('.check-card').forEach(function(card){
+        card.addEventListener('click', function(){
+          card.classList.toggle('checked');
+          state.answers[q.id] = Array.from(host.querySelectorAll('.check-card.checked')).map(function(c){ return c.dataset.val; });
+          saveDraft();
+        });
+      });
+    } else if (q.question_type === 'rating') {
+      host.querySelectorAll('.star').forEach(function(star){
+        star.addEventListener('click', function(){
+          var val = parseInt(star.dataset.val, 10);
+          state.answers[q.id] = val;
+          host.querySelectorAll('.star').forEach(function(s){
+            s.classList.toggle('on', parseInt(s.dataset.val, 10) <= val);
+          });
+          saveDraft();
+        });
+      });
+    }
+  }
+
+  function wireContext(host){
+    var n = host.querySelector('#ctxName');
+    var e = host.querySelector('#ctxEmail');
+    if (n) n.addEventListener('input', function(){ state.name = n.value; saveDraft(); });
+    if (e) e.addEventListener('input', function(){ state.email = e.value; saveDraft(); });
+  }
+
+  function wireButtons(host){
+    host.querySelectorAll('[data-act]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var a = btn.dataset.act;
+        if (a === 'next')      next();
+        else if (a === 'back') back();
+        else if (a === 'submit') submit();
+      });
+    });
+  }
+
+  function validateCurrent(){
+    if (state.current >= 1 && state.current <= state.questions.length) {
+      var q = state.questions[state.current - 1];
+      if (q.required) {
+        var v = state.answers[q.id];
+        var ok = !!v;
+        if (Array.isArray(v) && !v.length) ok = false;
+        if (typeof v === 'string' && !v.trim()) ok = false;
+        if (!ok) {
+          var err = document.getElementById('qErr');
+          if (err) { err.textContent = 'This one\'s required.'; err.style.display = 'block'; }
+          return false;
+        }
+      }
+    }
+    return true;
+  }
+
+  function next(){
+    if (!validateCurrent()) return;
+    state.current++;
+    renderStage();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+  function back(){
+    if (state.current <= 0) return;
+    state.current--;
+    renderStage();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function submit(){
+    if (state.submitting) return;
+    state.submitting = true;
+    var btn = document.getElementById('submitBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
+    fetch('/api/surveys/public/' + encodeURIComponent(SLUG) + '/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: state.name || '',
+        email: state.email || '',
+        answers: state.answers,
+        source: (document.referrer || '').slice(0, 120) || 'direct',
+      }),
+    })
+      .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, body: d }; }); })
+      .then(function(out){
+        if (!out.ok) throw new Error((out.body && out.body.error) || 'Failed');
+        clearDraft();
+        state.current = totalStages() - 1;
+        renderStage();
+      })
+      .catch(function(err){
+        renderError((err.message || 'Something glitched.') + ' Try refreshing, or send your answers to general@atthepark.world.');
+      })
+      .finally(function(){
+        state.submitting = false;
+        if (btn) { btn.disabled = false; btn.textContent = 'Send my answers →'; }
+      });
+  }
+
+  // ── Keyboard: Enter advances on text inputs (but textareas allow newlines) ─
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+      var primary = document.querySelector('.stage.active .btn-primary');
+      if (primary) { e.preventDefault(); primary.click(); }
+    }
+  });
+
+  boot();
+})();
+</script>
+
+</body>
+</html>
