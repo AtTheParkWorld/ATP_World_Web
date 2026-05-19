@@ -223,35 +223,21 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .story-card-name{font-size:13px;font-weight:600;color:var(--white);margin-bottom:8px}
 .story-card-quote{font-size:13px;line-height:1.65;color:var(--light);font-weight:300;font-style:italic}
 
-/* APP */
-.app-section{background:var(--dark2);padding:100px 40px;border-top:1px solid rgba(255,255,255,.06)}
-.app-inner{max-width:var(--max);margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:80px;align-items:center}
-.app-features{margin:28px 0;display:flex;flex-direction:column;gap:14px}
-.app-feature{display:flex;gap:14px;align-items:flex-start;padding:16px;background:rgba(255,255,255,.04);border-radius:var(--radius);border:1px solid rgba(255,255,255,.07)}
-.app-feature-icon{width:36px;height:36px;border-radius:var(--radius);background:rgba(122,194,49,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.app-feature-title{font-size:14px;font-weight:600;color:var(--white);margin-bottom:3px}
-.app-feature-desc{font-size:13px;color:var(--muted);line-height:1.55}
-.app-badges{display:flex;gap:10px;flex-wrap:wrap}
-.app-badge{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:var(--radius);padding:10px 18px;cursor:pointer;transition:border-color .2s}
-.app-badge:hover{border-color:var(--green)}
+/* APP — compact pre-footer banner.
+   Was a full ~600px section with two phone mockups mid-page; replaced
+   with a thin horizontal CTA strip that sits just before the footer.
+   Keeps the download surface visible without dominating the homepage. */
+.app-banner{background:linear-gradient(180deg,var(--dark) 0%,var(--dark2) 100%);padding:48px 40px;border-top:1px solid rgba(255,255,255,.06);border-bottom:1px solid rgba(255,255,255,.06)}
+.app-banner-inner{max-width:var(--max);margin:0 auto;display:grid;grid-template-columns:1.4fr 1fr;gap:40px;align-items:center}
+.app-banner-text .section-label{margin-bottom:10px}
+.app-banner-h{font-family:var(--ff-display);font-size:clamp(28px,3.4vw,40px);font-weight:900;line-height:1.05;text-transform:uppercase;letter-spacing:-.01em;color:var(--white);margin-bottom:10px}
+.app-banner-h .accent{color:var(--green)}
+.app-banner-sub{font-size:14px;color:var(--light);line-height:1.6;max-width:480px}
+.app-banner-badges{display:flex;gap:12px;justify-content:flex-end;flex-wrap:wrap;align-items:center}
+.app-badge{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);border-radius:var(--radius);padding:10px 18px;cursor:pointer;transition:border-color .2s,background .2s;text-decoration:none}
+.app-badge:hover{border-color:var(--green);background:rgba(122,194,49,.06)}
 .app-badge-text{font-size:11px;color:var(--muted);line-height:1.2}
 .app-badge-text strong{display:block;font-size:13px;color:var(--white);font-weight:600}
-.app-visual{position:relative;display:flex;justify-content:center;align-items:flex-end;gap:14px;padding-top:20px}
-.phone-mock{width:190px;background:rgba(255,255,255,.04);border-radius:28px;border:1px solid rgba(255,255,255,.1);overflow:hidden}
-.phone-mock.main{width:210px;z-index:2}
-.phone-mock-screen{aspect-ratio:9/19.5;background:#0d0d0d;display:flex;flex-direction:column;padding:28px 14px 18px;gap:10px}
-.phone-top{display:flex;justify-content:space-between;align-items:center}
-.phone-greeting{font-size:10px;color:var(--muted)}
-.phone-points{font-size:10px;font-weight:600;color:var(--green);background:rgba(122,194,49,.12);padding:3px 7px;border-radius:20px}
-.phone-h{font-family:var(--ff-display);font-size:20px;font-weight:800;color:var(--white);line-height:1.1}
-.phone-session-card{background:var(--green);border-radius:9px;padding:12px}
-.phone-session-time{font-size:9px;font-weight:700;color:rgba(255,255,255,.75);letter-spacing:.06em;text-transform:uppercase;margin-bottom:3px}
-.phone-session-name{font-family:var(--ff-display);font-size:16px;font-weight:800;color:var(--white);text-transform:uppercase;margin-bottom:4px}
-.phone-session-loc{font-size:9px;color:rgba(255,255,255,.7)}
-.phone-mini-cards{display:grid;grid-template-columns:1fr 1fr;gap:7px}
-.phone-mini{background:rgba(255,255,255,.06);border-radius:7px;padding:9px;border:1px solid rgba(255,255,255,.08)}
-.phone-mini-label{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:2px}
-.phone-mini-val{font-family:var(--ff-display);font-size:17px;font-weight:800;color:var(--green)}
 
 /* SHOP */
 .shop-section{padding:100px 40px;border-top:1px solid rgba(255,255,255,.06)}
@@ -383,7 +369,10 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
   .hero-bg-overlay{background:linear-gradient(180deg, rgba(10,10,10,.55) 0%, rgba(10,10,10,.78) 100%)}
   .hero-left{padding:60px 24px}
   .story-inner{grid-template-columns:1fr;gap:48px}
-  .app-inner{grid-template-columns:1fr;gap:48px}
+  .app-banner{padding:36px 22px}
+  .app-banner-inner{grid-template-columns:1fr;text-align:center;gap:22px}
+  .app-banner-badges{justify-content:center}
+  .app-banner-sub{margin-left:auto;margin-right:auto}
   .tribes-grid{grid-template-columns:1fr}
   .stories-grid{grid-template-columns:1fr}
   .nav-links{display:none}
@@ -841,28 +830,7 @@ a.product-card:hover{transform:translateY(-4px)}
   </div>
 </section>
 
-<!-- APP -->
-<section class="app-section" aria-labelledby="app-heading">
-  <div class="app-inner">
-    <div class="reveal">
-      <p class="section-label">The ATP app</p>
-      <h2 class="section-h2" id="app-heading">Your sessions.<br><span class="accent">Your streak.</span><br>Your community.</h2>
-      <div class="app-features">
-        <div class="app-feature"><div class="app-feature-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="#7AC231" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="2" width="12" height="14" rx="2"/><line x1="6" y1="6" x2="12" y2="6"/><line x1="6" y1="9" x2="12" y2="9"/><line x1="6" y1="12" x2="9" y2="12"/></svg></div><div><div class="app-feature-title">One-tap booking</div><div class="app-feature-desc">Browse the full calendar. Book any free session in seconds.</div></div></div>
-        <div class="app-feature"><div class="app-feature-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="#7AC231" stroke-width="1.8" stroke-linecap="round"><polygon points="9,2 11,7 16,7.5 12.5,11 13.5,16 9,13.5 4.5,16 5.5,11 2,7.5 7,7"/></svg></div><div><div class="app-feature-title">Streak &amp; points tracker</div><div class="app-feature-desc">Earn points every session. Redeem in the store. Keep your streak alive.</div></div></div>
-        <div class="app-feature"><div class="app-feature-icon"><svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="#7AC231" stroke-width="1.8" stroke-linecap="round"><circle cx="9" cy="9" r="7"/><path d="M9 5v4l3 2"/></svg></div><div><div class="app-feature-title">Live community feed</div><div class="app-feature-desc">Session recaps, milestones, events. Stay connected between sessions.</div></div></div>
-      </div>
-      <div class="app-badges">
-        <a class="app-badge" href="https://apps.apple.com/ae/app/attheparkworld/id6469771815" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 20 20" fill="white"><path d="M15.5 10.5c0-2.2 1.8-3.3 1.9-3.3-1-1.5-2.6-1.7-3.2-1.8-1.4-.1-2.7.8-3.4.8-.7 0-1.8-.8-2.9-.8-1.5 0-2.9.9-3.7 2.2-1.6 2.7-.4 6.8 1.1 9 .7 1.1 1.6 2.3 2.8 2.2 1.1 0 1.5-.7 2.9-.7 1.3 0 1.7.7 2.9.7 1.2 0 2-1.1 2.7-2.2.9-1.3 1.2-2.6 1.2-2.6-.1-.1-2.3-.9-2.3-3.5zm-2.1-6.5c.6-.7 1-1.7.9-2.7-.9 0-1.9.6-2.5 1.3-.6.6-1.1 1.6-.9 2.6.9.1 1.9-.5 2.5-1.2z"/></svg><div class="app-badge-text">Download on the<strong>App Store</strong></div></a>
-        <a class="app-badge" href="https://play.google.com/store/apps/details?id=com.atthepark.app" target="_blank" rel="noopener"><svg width="18" height="18" viewBox="0 0 20 20" fill="white"><path d="M3.2 1.5L11.7 10 3.2 18.5C2.7 18.2 2.5 17.7 2.5 17V3C2.5 2.3 2.7 1.8 3.2 1.5ZM14.5 7.5L5.8 2.5 13.2 10 14.5 12.5V7.5ZM5.8 17.5L14.5 12.5V7.5L5.8 17.5ZM15.5 11L17.3 10 15.5 9 14.5 12.5Z"/></svg><div class="app-badge-text">Get it on<strong>Google Play</strong></div></a>
-      </div>
-    </div>
-    <div class="app-visual reveal rd2" aria-hidden="true">
-      <div class="phone-mock"><div class="phone-mock-screen"><div class="phone-mini-cards"><div class="phone-mini"><div class="phone-mini-label">Streak</div><div class="phone-mini-val">14d</div></div><div class="phone-mini"><div class="phone-mini-label">Points</div><div class="phone-mini-val">280</div></div></div></div></div>
-      <div class="phone-mock main"><div class="phone-mock-screen"><div class="phone-top"><div class="phone-greeting">Good evening, Fredy</div><div class="phone-points">280 pts</div></div><div class="phone-h">What's<br>on today?</div><div class="phone-session-card"><div class="phone-session-time">Tonight · 7:00 PM</div><div class="phone-session-name">Community Run</div><div class="phone-session-loc">Dubai Marina · 12 spots left</div></div><div class="phone-session-card" style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08)"><div class="phone-session-time" style="color:#7AC231">Tomorrow · 7:00 PM</div><div class="phone-session-name" style="color:white">Cardio Calisthenics</div><div class="phone-session-loc">DIC Amphitheatre</div></div></div></div>
-    </div>
-  </div>
-</section>
+<!-- APP banner relocated to just before the footer (after Final CTA). -->
 
 <!-- COACHES STRIP -->
 <section class="coaches-strip-section" id="coaches-strip" aria-labelledby="coaches-strip-heading">
@@ -929,6 +897,30 @@ a.product-card:hover{transform:translateY(-4px)}
     <h2 id="cta-heading">Never.<br>Train.<br>Alone.</h2>
     <p>Join hundreds of people who show up every week — for free, for themselves, for each other.</p>
     <a href="community.html"><button class="btn-dark" data-atp-call="openAuth" data-args='["signup"]'>Join the community — it's free <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></button></a>
+  </div>
+</section>
+
+<!-- APP BANNER — compact pre-footer download CTA.
+     Moved from mid-page (was a 600px section with full phone mockups)
+     to a 140px banner at the bottom. Same conversion surface, fraction
+     of the page real estate. -->
+<section class="app-banner" aria-labelledby="app-heading">
+  <div class="app-banner-inner reveal">
+    <div class="app-banner-text">
+      <p class="section-label">Mobile app</p>
+      <h2 id="app-heading" class="app-banner-h">Take ATP <span class="accent">with you</span></h2>
+      <p class="app-banner-sub">Book sessions, track your streak, redeem points, and stay connected — anywhere you go.</p>
+    </div>
+    <div class="app-banner-badges">
+      <a class="app-badge" href="https://apps.apple.com/ae/app/attheparkworld/id6469771815" target="_blank" rel="noopener" aria-label="Download on the App Store">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="white" aria-hidden="true"><path d="M15.5 10.5c0-2.2 1.8-3.3 1.9-3.3-1-1.5-2.6-1.7-3.2-1.8-1.4-.1-2.7.8-3.4.8-.7 0-1.8-.8-2.9-.8-1.5 0-2.9.9-3.7 2.2-1.6 2.7-.4 6.8 1.1 9 .7 1.1 1.6 2.3 2.8 2.2 1.1 0 1.5-.7 2.9-.7 1.3 0 1.7.7 2.9.7 1.2 0 2-1.1 2.7-2.2.9-1.3 1.2-2.6 1.2-2.6-.1-.1-2.3-.9-2.3-3.5zm-2.1-6.5c.6-.7 1-1.7.9-2.7-.9 0-1.9.6-2.5 1.3-.6.6-1.1 1.6-.9 2.6.9.1 1.9-.5 2.5-1.2z"/></svg>
+        <div class="app-badge-text">Download on the<strong>App Store</strong></div>
+      </a>
+      <a class="app-badge" href="https://play.google.com/store/apps/details?id=com.atthepark.app" target="_blank" rel="noopener" aria-label="Get it on Google Play">
+        <svg width="18" height="18" viewBox="0 0 20 20" fill="white" aria-hidden="true"><path d="M3.2 1.5L11.7 10 3.2 18.5C2.7 18.2 2.5 17.7 2.5 17V3C2.5 2.3 2.7 1.8 3.2 1.5ZM14.5 7.5L5.8 2.5 13.2 10 14.5 12.5V7.5ZM5.8 17.5L14.5 12.5V7.5L5.8 17.5ZM15.5 11L17.3 10 15.5 9 14.5 12.5Z"/></svg>
+        <div class="app-badge-text">Get it on<strong>Google Play</strong></div>
+      </a>
+    </div>
   </div>
 </section>
 
