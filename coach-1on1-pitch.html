@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>1-on-1 Coaching · ATP Coach Pitch</title>
+  <meta name="description" content="ATP 1-on-1 coaching program — pitch deck for ATP coaches.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#7AC231;--green-dark:#5a9a1f;--green-light:#a8e055;
+  --black:#0a0a0a;--dark:#111111;--dark2:#1a1a1a;--dark3:#222222;
+  --muted:#888888;--light:#aaaaaa;--white:#ffffff;
+  --gold:#f5c042;
+  --ff-display:'Barlow Condensed',sans-serif;--ff-body:'DM Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:var(--ff-body);background:var(--black);color:var(--white);overflow:hidden;-webkit-font-smoothing:antialiased}
+img{display:block;max-width:100%}button{cursor:pointer;font-family:inherit;background:none;border:none;color:inherit}
+
+/* Slide system */
+.deck{position:relative;width:100vw;height:100vh;overflow:hidden}
+.slide{position:absolute;inset:0;display:flex;flex-direction:column;padding:60px 80px 80px;opacity:0;transform:translateX(40px);transition:opacity .35s ease,transform .35s ease;pointer-events:none;overflow:auto}
+.slide.active{opacity:1;transform:translateX(0);pointer-events:auto;z-index:2}
+
+/* Brand chrome */
+.slide-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:36px;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.slide-logo{display:flex;align-items:center;gap:10px;color:var(--green);font-weight:800;letter-spacing:.16em}
+.slide-logo::before{content:'';display:block;width:24px;height:2px;background:var(--green)}
+.slide-count{color:var(--muted);font-weight:600}
+
+/* Eyebrow */
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--green);margin-bottom:18px;display:inline-flex;align-items:center;gap:10px}
+.eyebrow::before{content:'';display:block;width:28px;height:2px;background:var(--green)}
+
+/* Typography */
+.h1{font-family:var(--ff-display);font-size:clamp(48px,7vw,96px);font-weight:900;line-height:.95;text-transform:uppercase;letter-spacing:-.015em;margin-bottom:24px}
+.h1 .acc{color:var(--green)}
+.h2{font-family:var(--ff-display);font-size:clamp(36px,4.5vw,58px);font-weight:900;line-height:1;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:18px}
+.h2 .acc{color:var(--green)}
+.h3{font-family:var(--ff-display);font-size:22px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;margin-bottom:8px}
+.lead{font-size:18px;color:var(--light);line-height:1.55;font-weight:300;max-width:780px;margin-bottom:18px}
+.body{font-size:15px;color:var(--light);line-height:1.65;max-width:780px}
+
+/* Footer nav */
+.deck-footer{position:absolute;bottom:0;left:0;right:0;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:linear-gradient(0deg,rgba(0,0,0,.85),transparent);z-index:10;pointer-events:none}
+.deck-nav{display:flex;gap:10px;pointer-events:auto}
+.deck-btn{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--white);transition:background .2s,border-color .2s}
+.deck-btn:hover{background:rgba(122,194,49,.18);border-color:rgba(122,194,49,.4)}
+.deck-progress{flex:1;display:flex;justify-content:center;gap:6px;pointer-events:none}
+.dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18);transition:background .2s,transform .2s}
+.dot.active{background:var(--green);transform:scale(1.4)}
+.deck-meta{font-size:11px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;pointer-events:auto}
+
+/* Slide 1 — Title */
+.slide-title{justify-content:center;background:radial-gradient(60% 80% at 20% 30%,rgba(122,194,49,.16) 0%,transparent 60%),radial-gradient(50% 70% at 80% 90%,rgba(122,194,49,.10) 0%,transparent 60%),var(--black)}
+.slide-title h1{font-family:var(--ff-display);font-size:clamp(60px,9vw,140px);font-weight:900;line-height:.9;text-transform:uppercase;letter-spacing:-.02em;margin-bottom:28px}
+.slide-title h1 .acc{color:var(--green)}
+.slide-title-eyebrow{font-size:13px;letter-spacing:.24em;font-weight:700;color:var(--green);margin-bottom:30px}
+.slide-title-sub{font-size:22px;font-weight:300;color:var(--light);max-width:680px;line-height:1.5;margin-bottom:50px}
+.slide-title-cta{display:inline-flex;align-items:center;gap:10px;background:var(--green);color:#0a0a0a;padding:18px 32px;border-radius:10px;font-weight:800;font-size:14px;letter-spacing:.06em;text-transform:uppercase}
+
+/* Two-column layouts */
+.row-2{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center;flex:1}
+.row-2-narrow{display:grid;grid-template-columns:1.2fr 1fr;gap:50px;align-items:center;flex:1}
+
+/* Stat block */
+.stat-block{background:var(--dark2);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:30px;margin-top:30px}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:24px}
+.stat{text-align:center}
+.stat-num{font-family:var(--ff-display);font-size:48px;font-weight:900;color:var(--green);line-height:1;letter-spacing:-.01em}
+.stat-label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:8px;font-weight:600}
+
+/* Feature list */
+.feat-list{display:flex;flex-direction:column;gap:18px;margin-top:30px}
+.feat{display:flex;gap:18px;align-items:flex-start}
+.feat-icon{width:44px;height:44px;border-radius:10px;background:rgba(122,194,49,.14);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px}
+.feat-text h4{font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:4px}
+.feat-text p{font-size:14px;color:var(--light);line-height:1.5}
+
+/* Flow steps */
+.flow{display:grid;grid-template-columns:repeat(4,1fr);gap:18px;margin-top:40px;align-items:start}
+.flow-step{background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:24px;position:relative}
+.flow-step::after{content:'→';position:absolute;right:-22px;top:50%;transform:translateY(-50%);color:var(--green);font-size:24px;font-weight:900}
+.flow-step:last-child::after{display:none}
+.flow-num{font-family:var(--ff-display);font-size:14px;font-weight:900;color:var(--green);letter-spacing:.12em;margin-bottom:10px}
+.flow-icon{font-size:36px;margin-bottom:14px}
+.flow-step h4{font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:8px;letter-spacing:.02em}
+.flow-step p{font-size:13px;color:var(--light);line-height:1.5}
+
+/* UI mockup container */
+.mock{background:var(--dark);border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:14px;box-shadow:0 20px 60px rgba(0,0,0,.55);overflow:hidden}
+.mock-bar{display:flex;gap:6px;align-items:center;padding:4px 8px 12px;border-bottom:1px solid rgba(255,255,255,.05);margin-bottom:14px}
+.mock-bar i{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.14);display:block}
+.mock-bar i:nth-child(1){background:#ff6058}
+.mock-bar i:nth-child(2){background:#ffbd2e}
+.mock-bar i:nth-child(3){background:#28c93f}
+.mock-url{margin-left:14px;font-size:11px;color:var(--muted);background:rgba(255,255,255,.04);padding:4px 10px;border-radius:6px;font-family:monospace}
+
+/* Mock: coach profile fragment */
+.mock-coach-card{background:linear-gradient(135deg,rgba(122,194,49,.10),rgba(122,194,49,.02));border:1px solid rgba(122,194,49,.28);border-radius:14px;padding:20px;margin-bottom:14px}
+.mock-coach-row{display:flex;align-items:center;gap:14px}
+.mock-coach-avatar{width:56px;height:56px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:22px;font-weight:900;color:#0a0a0a;flex-shrink:0}
+.mock-coach-name{font-family:var(--ff-display);font-size:18px;font-weight:800;color:#fff;text-transform:uppercase}
+.mock-coach-role{font-size:11px;color:var(--green);letter-spacing:.12em;text-transform:uppercase;font-weight:700}
+.mock-offering{background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.mock-offering-text strong{display:block;font-size:13px;color:#fff;font-weight:600;margin-bottom:2px}
+.mock-offering-text small{font-size:11px;color:var(--muted)}
+.mock-offering-price{font-family:var(--ff-display);font-size:20px;font-weight:900;color:var(--green)}
+.mock-btn-primary{background:var(--green);color:#0a0a0a;padding:8px 16px;border-radius:6px;font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;border:none;cursor:pointer}
+
+/* Mock: booking modal */
+.mock-modal{background:var(--dark2);border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:22px;max-width:340px;margin:0 auto}
+.mock-modal-eyebrow{font-size:10px;color:var(--green);letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:8px}
+.mock-modal-title{font-family:var(--ff-display);font-size:20px;font-weight:800;color:#fff;text-transform:uppercase;margin-bottom:14px}
+.mock-time-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:14px}
+.mock-time{background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:8px;text-align:center;font-size:11px;color:#fff;font-weight:600}
+.mock-time.sel{background:var(--green);color:#0a0a0a;border-color:var(--green)}
+.mock-input{width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:6px;padding:8px 10px;font-size:11px;color:#fff;margin-bottom:8px;font-family:inherit}
+.mock-pay-bar{display:flex;justify-content:space-between;align-items:center;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)}
+.mock-pay-bar small{font-size:11px;color:var(--muted)}
+.mock-pay-bar strong{font-family:var(--ff-display);font-size:18px;font-weight:900;color:var(--green)}
+
+/* Mock: coach hub */
+.mock-tab-row{display:flex;gap:6px;margin-bottom:14px;flex-wrap:wrap}
+.mock-tab{font-size:10px;padding:6px 12px;border-radius:99px;color:var(--muted);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);font-weight:600;letter-spacing:.05em;text-transform:uppercase}
+.mock-tab.active{background:var(--green);color:#0a0a0a;border-color:var(--green)}
+.mock-stat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.mock-stat{background:var(--dark2);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;text-align:center}
+.mock-stat-num{font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--green);line-height:1}
+.mock-stat-lbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600;margin-top:4px}
+
+.mock-booking-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:8px;margin-bottom:6px}
+.mock-booking-row-text strong{display:block;font-size:12px;color:#fff;font-weight:600}
+.mock-booking-row-text small{font-size:10px;color:var(--muted)}
+.mock-booking-row-when{font-size:10px;color:var(--green);font-weight:600}
+
+/* Money diagram */
+.money-flow{display:grid;grid-template-columns:1.2fr 80px 1.5fr;gap:30px;align-items:center;margin-top:40px}
+.money-card{background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:24px;text-align:center}
+.money-card.green{background:linear-gradient(180deg,rgba(122,194,49,.12),rgba(122,194,49,.03));border-color:rgba(122,194,49,.32)}
+.money-card.gold{background:linear-gradient(180deg,rgba(245,192,66,.10),rgba(245,192,66,.02));border-color:rgba(245,192,66,.32)}
+.money-card .amount{font-family:var(--ff-display);font-size:54px;font-weight:900;color:#fff;line-height:1;letter-spacing:-.01em}
+.money-card.green .amount{color:var(--green)}
+.money-card.gold .amount{color:var(--gold)}
+.money-card .label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.1em;margin-top:8px;font-weight:600}
+.money-arrow{display:flex;justify-content:center;font-size:36px;color:var(--green);font-weight:900}
+.money-split{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+/* Cancellation table */
+.cancel-table{margin-top:30px;border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden}
+.cancel-row{display:grid;grid-template-columns:2fr 1fr 1fr;padding:18px 24px;border-bottom:1px solid rgba(255,255,255,.06);align-items:center}
+.cancel-row:last-child{border-bottom:none}
+.cancel-row.head{background:rgba(122,194,49,.06);font-size:11px;color:var(--green);letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+.cancel-row .when{font-size:15px;color:#fff;font-weight:500}
+.cancel-row .pct{font-family:var(--ff-display);font-size:24px;font-weight:900;text-align:center}
+.cancel-row .pct.green{color:var(--green)}
+.cancel-row .pct.amber{color:var(--gold)}
+.cancel-row .pct.red{color:#ff8a8a}
+
+/* CTA */
+.cta-block{margin-top:auto;padding:32px 36px;background:linear-gradient(120deg,rgba(122,194,49,.10),rgba(122,194,49,.02));border:1px solid rgba(122,194,49,.32);border-radius:16px;display:flex;justify-content:space-between;align-items:center;gap:24px}
+.cta-block h3{font-family:var(--ff-display);font-size:26px;font-weight:900;text-transform:uppercase;color:#fff;margin-bottom:6px}
+.cta-block p{font-size:14px;color:var(--light);max-width:480px}
+.cta-block button{background:var(--green);color:#0a0a0a;padding:14px 28px;border-radius:8px;font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
+
+/* Print export */
+@media print{
+  body{overflow:visible;background:white;color:black}
+  .deck{height:auto;width:auto;overflow:visible}
+  .slide{position:relative;opacity:1;transform:none;page-break-after:always;min-height:100vh;padding:40px}
+  .deck-footer{display:none}
+}
+
+/* Small viewports */
+@media (max-width:900px){
+  .slide{padding:30px 22px 80px}
+  .row-2,.row-2-narrow{grid-template-columns:1fr;gap:30px}
+  .flow{grid-template-columns:1fr 1fr;gap:14px}
+  .flow-step::after{display:none}
+  .stat-row{grid-template-columns:1fr 1fr}
+  .money-flow{grid-template-columns:1fr;gap:18px}
+  .money-arrow{transform:rotate(90deg)}
+}
+</style>
+</head>
+
+<body>
+<div class="deck" id="deck">
+
+  <!-- ═══ SLIDE 1 · TITLE ═══ -->
+  <section class="slide active slide-title">
+    <div class="slide-header">
+      <div class="slide-logo">AT THE PARK · COACH PROGRAM</div>
+      <div class="slide-count">v0.1 · For coaches</div>
+    </div>
+    <div style="max-width:920px;margin:auto">
+      <div class="slide-title-eyebrow">A new opportunity for ATP coaches</div>
+      <h1>Earn from your <span class="acc">expertise.</span></h1>
+      <p class="slide-title-sub">Start offering paid 1-on-1 online sessions to ATP members. You set the price. We handle everything else.</p>
+      <span class="slide-title-cta">For ATP coaches · For your review →</span>
+    </div>
+  </section>
+
+  <!-- ═══ SLIDE 2 · THE OPPORTUNITY ═══ -->
+  <section class="slide">
+    <div class="slide-header">
+      <div class="slide-logo">02 · The Opportunity</div>
+      <div class="slide-count">2 / 10</div>
+    </div>
+    <div class="row-2">
+      <div>
+        <div class="eyebrow">Why now</div>
+        <h2 class="h2">Turn your coaching <span class="acc">into income.</span></h2>
+        <p class="lead">You already coach our community for free, every week. Now members can also book you privately, on your terms, when you have the time.</p>
+        <div class="feat-list">
+          <div class="feat">
+            <div class="feat-icon">💰</div>
+            <div class="feat-text"><h4>You set the price</h4><p>AED 50 to AED 500 per session. Your call.</p></div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">📅</div>
+            <div class="feat-text"><h4>You set your availability</h4><p>Define your weekly open hours. Members book inside them.</p></div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">⚡</div>
+            <div class="feat-text"><h4>You keep 90%</h4><p>ATP takes 10% to cover platform costs. No hidden fees.</p></div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">🏦</div>
+            <div class="feat-text"><h4>Paid straight to your bank</h4><p>Automatic payouts every 7 days. No invoicing, no waiting.</p></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="stat-block">
+          <div style="font-size:11px;color:var(--green);letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:20px;text-align:center">What this could look like</div>
+          <div class="stat-row">
+            <div class="stat"><div class="stat-num">4</div><div class="stat-label">Sessions per week</div></div>
+            <div class="stat"><div class="stat-num">AED 200</div><div class="stat-label">Average price</div></div>
+            <div class="stat"><div class="stat-num">AED 720</div><div class="stat-label">Your take / week</div></div>
+            <div class="stat"><div class="stat-num">AED 2.9k</div><div class="stat-label">Your take / month</div></div>
+          </div>
+          <p style="font-size:12px;color:var(--muted);text-align:center;margin-top:20px;line-height:1.6">Numbers are illustrative. Your actual earnings depend on your price and how many slots you open.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SLIDE 3 · HOW IT WORKS ═══ -->
+  <section class="slide">
+    <div class="slide-header">
+      <div class="slide-logo">03 · How It Works</div>
+      <div class="slide-count">3 / 10</div>
+    </div>
+    <div class="eyebrow">Four steps. Repeat as you like.</div>
+    <h2 class="h2">Simple to start. <span class="acc">Simple to repeat.</span></h2>
+    <div class="flow">
+      <div class="flow-step">
+        <div class="flow-num">STEP 01</div>
+        <div class="flow-icon">⚙️</div>
+        <h4>Set up your offerings</h4>
+        <p>Title, duration, price. Define when you're available. Takes 5 minutes the first time.</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">STEP 02</div>
+        <div class="flow-icon">📲</div>
+        <h4>Member books a slot</h4>
+        <p>They pick from your open hours and pay upfront. You get an email and SMS.</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">STEP 03</div>
+        <div class="flow-icon">🎥</div>
+        <h4>Run the session</h4>
+        <p>Meet on your own Zoom or Google Meet link. ATP sends reminders to both of you.</p>
+      </div>
+      <div class="flow-step">
+        <div class="flow-num">STEP 04</div>
+        <div class="flow-icon">💳</div>
+        <h4>Get paid automatically</h4>
+        <p>Your 90% lands in your bank account 7 days later. No invoicing. No chasing.</p>
+      </div>
+    </div>
+    <div style="margin-top:auto;padding-top:40px">
+      <p style="font-size:13px;color:var(--muted);text-align:center;max-width:600px;margin:0 auto">Your private sessions appear <strong style="color:#fff">only on your coach profile</strong>. They never show up on the public sessions calendar — protecting the free community experience.</p>
+    </div>
+  </section>
+
+  <!-- ═══ SLIDE 4 · MEMBER VIEW — COACH PROFILE ═══ -->
+  <section class="slide">
+    <div class="slide-header">
+      <div class="slide-logo">04 · Member View · Coach Profile</div>
+      <div class="slide-count">4 / 10</div>
+    </div>
+    <div class="row-2">
+      <div>
+        <div class="eyebrow">What members will see</div>
+        <h2 class="h2">A new <span class="acc">"Book 1-on-1"</span> section on your profile.</h2>
+        <p class="lead">When a member opens your coach profile, they'll see your bio, photos, free sessions you teach — and now, your private offerings.</p>
+        <div class="feat-list">
+          <div class="feat">
+            <div class="feat-icon">👁️</div>
+            <div class="feat-text"><h4>Only visible if you opt in</h4><p>If you don't create offerings, members never see anything different. Zero pressure.</p></div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">🎯</div>
+            <div class="feat-text"><h4>Members already know you</h4><p>They've trained with you in free sessions. That trust converts to paid bookings.</p></div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">📍</div>
+            <div class="feat-text"><h4>Not on the public calendar</h4><p>Your paid slots only appear on your profile — never in /sessions.</p></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="mock">
+          <div class="mock-bar"><i></i><i></i><i></i><div class="mock-url">atthepark.world/coaches/sarah-k</div></div>
+          <div class="mock-coach-card">
+            <div class="mock-coach-row">
+              <div class="mock-coach-avatar">SK</div>
+              <div>
+                <div class="mock-coach-name">Sarah Khan</div>
+                <div class="mock-coach-role">Better Tribe · Running Coach</div>
+              </div>
+            </div>
+          </div>
+          <div style="font-size:11px;color:var(--green);letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin:18px 0 8px">Book a 1-on-1 with Sarah</div>
+          <div class="mock-offering">
+            <div class="mock-offering-text">
+              <strong>Running form deep-dive</strong>
+              <small>60 min · video call</small>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <span class="mock-offering-price">AED 250</span>
+              <button class="mock-btn-primary">Book →</button>
+            </div>
+          </div>
+          <div class="mock-offering">
+            <div class="mock-offering-text">
+              <strong>Pre-race tactics</strong>
+              <small>30 min · video call</small>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <span class="mock-offering-price">AED 150</span>
+              <button class="mock-btn-primary">Book →</button>
+            </div>
+          </div>
+          <div class="mock-offering">
+            <div class="mock-offering-text">
+              <strong>12-week marathon plan review</strong>
+              <small>90 min · video call</small>
+            </div>
+            <div style="display:flex;gap:10px;align-items:center">
+              <span class="mock-offering-price">AED 400</span>
+              <button class="mock-btn-primary">Book →</button>
+            </div>
+          </div>
+        </div>
+        <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:12px">Visual mockup. Real design will use ATP's existing coach profile style.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SLIDE 5 · MEMBER VIEW — BOOKING ═══ -->
+  <section class="slide">
+    <div class="slide-header">
+      <div class="slide-logo">05 · Member View · Booking Flow</div>
+      <div class="slide-count">5 / 10</div>
+    </div>
+    <div class="row-2">
+      <div>
+        <div class="eyebrow">3 taps to book</div>
+        <h2 class="h2">Members book in under <span class="acc">60 seconds.</span></h2>
+        <p class="lead">When a member taps "Book →" on your offering, they see a single screen with three things: time, message, and pay. That's it.</p>
+        <div class="feat-list">
+          <div class="feat">
+            <div class="feat-icon">1️⃣</div>
+            <div class="feat-text"><h4>Pick a time</h4><p>They see only your open slots — no overlapping conflicts possible.</p></div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">2️⃣</div>
+            <div class="feat-text"><h4>Add a note (optional)</h4><p>"I want to focus on form on the downhill" — you see this when they book.</p></div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">3️⃣</div>
+            <div class="feat-text"><h4>Pay with saved card</h4><p>Stripe handles it. They get confirmation. You get notified.</p></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="mock-modal">
+          <div class="mock-modal-eyebrow">Book · Running form deep-dive</div>
+          <div class="mock-modal-title">Pick a time</div>
+          <div style="font-size:10px;color:var(--muted);margin-bottom:6px;font-weight:600;letter-spacing:.06em;text-transform:uppercase">Wed 27 May</div>
+          <div class="mock-time-grid">
+            <div class="mock-time">9:00</div>
+            <div class="mock-time">10:00</div>
+            <div class="mock-time sel">11:00</div>
+            <div class="mock-time">17:00</div>
+            <div class="mock-time">18:00</div>
+            <div class="mock-time">19:00</div>
+          </div>
+          <input class="mock-input" type="text" placeholder="What do you want to focus on? (optional)" value="Marathon pacing in mile 18+">
+          <div class="mock-pay-bar">
+            <small>60 min · Wed 27 May, 11:00</small>
+            <strong>AED 250</strong>
+          </div>
+          <button class="mock-btn-primary" style="width:100%;margin-top:12px;padding:14px;font-size:13px">Confirm &amp; pay →</button>
+        </div>
+        <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:12px">After payment: instant confirmation email to both you and the member.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SLIDE 6 · COACH HUB ═══ -->
+  <section class="slide">
+    <div class="slide-header">
+      <div class="slide-logo">06 · Coach View · Your Hub</div>
+      <div class="slide-count">6 / 10</div>
+    </div>
+    <div class="row-2">
+      <div>
+        <div class="eyebrow">Your private dashboard</div>
+        <h2 class="h2">A simple hub <span class="acc">in your profile.</span></h2>
+        <p class="lead">Inside your existing coach profile, you'll get a new tab — your private command center.</p>
+        <div class="feat-list">
+          <div class="feat">
+            <div class="feat-icon">📋</div>
+            <div class="feat-text"><h4>Upcoming sessions</h4><p>All your booked sessions in one list, with member names and notes.</p></div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">📝</div>
+            <div class="feat-text"><h4>Manage your offerings</h4><p>Edit prices, titles, descriptions. Add new sessions any time.</p></div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">⏰</div>
+            <div class="feat-text"><h4>Set your hours</h4><p>Drag &amp; drop weekly availability. Take time off whenever.</p></div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">💼</div>
+            <div class="feat-text"><h4>See your earnings</h4><p>Live total for this month, all-time, and next payout date.</p></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="mock">
+          <div class="mock-bar"><i></i><i></i><i></i><div class="mock-url">atthepark.world/profile · Coach Hub</div></div>
+          <div class="mock-tab-row">
+            <span class="mock-tab active">Bookings</span>
+            <span class="mock-tab">Offerings</span>
+            <span class="mock-tab">Availability</span>
+            <span class="mock-tab">Earnings</span>
+          </div>
+          <div class="mock-stat-grid">
+            <div class="mock-stat"><div class="mock-stat-num">3</div><div class="mock-stat-lbl">This week</div></div>
+            <div class="mock-stat"><div class="mock-stat-num">12</div><div class="mock-stat-lbl">This month</div></div>
+            <div class="mock-stat"><div class="mock-stat-num">⭐4.9</div><div class="mock-stat-lbl">Rating</div></div>
+          </div>
+          <div style="font-size:11px;color:var(--green);letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin:14px 0 8px">Upcoming · Next 3</div>
+          <div class="mock-booking-row">
+            <div class="mock-booking-row-text">
+              <strong>Ahmed Hassan</strong>
+              <small>Running form · 60 min · "downhill technique"</small>
+            </div>
+            <div class="mock-booking-row-when">TODAY · 6 PM</div>
+          </div>
+          <div class="mock-booking-row">
+            <div class="mock-booking-row-text">
+              <strong>Maria Lopez</strong>
+              <small>Pre-race tactics · 30 min · "first 10k goal"</small>
+            </div>
+            <div class="mock-booking-row-when">FRI · 7 PM</div>
+          </div>
+          <div class="mock-booking-row">
+            <div class="mock-booking-row-text">
+              <strong>Vikram Singh</strong>
+              <small>Marathon plan review · 90 min</small>
+            </div>
+            <div class="mock-booking-row-when">SAT · 10 AM</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SLIDE 7 · EARNINGS ═══ -->
+  <section class="slide">
+    <div class="slide-header">
+      <div class="slide-logo">07 · Coach View · Earnings</div>
+      <div class="slide-count">7 / 10</div>
+    </div>
+    <div class="row-2">
+      <div>
+        <div class="eyebrow">Transparent. Always.</div>
+        <h2 class="h2">See your money <span class="acc">in real time.</span></h2>
+        <p class="lead">Every booking, every payout, every fee — visible to you. We don't hide a thing.</p>
+        <div class="feat-list">
+          <div class="feat">
+            <div class="feat-icon">📊</div>
+            <div class="feat-text"><h4>Live breakdown</h4><p>Gross earnings · ATP fee (10%) · Your net. Updated instantly.</p></div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">🏦</div>
+            <div class="feat-text"><h4>Rolling 7-day payouts</h4><p>Direct deposit to the bank you connected during sign-up.</p></div>
+          </div>
+          <div class="feat">
+            <div class="feat-icon">📄</div>
+            <div class="feat-text"><h4>Auto tax summary</h4><p>Year-end report you can hand to your accountant.</p></div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="mock">
+          <div class="mock-bar"><i></i><i></i><i></i><div class="mock-url">atthepark.world/profile · Earnings</div></div>
+          <div class="mock-tab-row">
+            <span class="mock-tab">Bookings</span>
+            <span class="mock-tab">Offerings</span>
+            <span class="mock-tab">Availability</span>
+            <span class="mock-tab active">Earnings</span>
+          </div>
+          <div style="background:linear-gradient(120deg,rgba(122,194,49,.16),rgba(122,194,49,.04));border:1px solid rgba(122,194,49,.32);border-radius:12px;padding:20px;margin-bottom:14px">
+            <div style="font-size:10px;color:var(--green);letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">May 2026 · 14 sessions</div>
+            <div style="font-family:var(--ff-display);font-size:42px;font-weight:900;color:var(--green);line-height:1">AED 2,520</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px">Net to you · Next payout in 4 days</div>
+          </div>
+          <div style="background:var(--dark2);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;margin-bottom:14px">
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0"><span style="color:var(--muted)">Gross earnings</span><strong style="color:#fff;font-weight:600">AED 2,800</strong></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0"><span style="color:var(--muted)">ATP platform fee (10%)</span><strong style="color:var(--muted);font-weight:600">− AED 280</strong></div>
+            <div style="display:flex;justify-content:space-between;font-size:11px;padding:4px 0;border-top:1px solid rgba(255,255,255,.06);margin-top:6px;padding-top:10px"><span style="color:#fff;font-weight:700">Net to your bank</span><strong style="color:var(--green);font-weight:700">AED 2,520</strong></div>
+          </div>
+          <div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:6px">Last payout</div>
+          <div class="mock-booking-row">
+            <div class="mock-booking-row-text">
+              <strong>May 12 → May 18 · 7 sessions</strong>
+              <small>Paid to bank ending •••• 4521</small>
+            </div>
+            <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;color:var(--green)">AED 1,170</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SLIDE 8 · MONEY FLOW ═══ -->
+  <section class="slide">
+    <div class="slide-header">
+      <div class="slide-logo">08 · The Money</div>
+      <div class="slide-count">8 / 10</div>
+    </div>
+    <div class="eyebrow">No hidden fees. No surprises.</div>
+    <h2 class="h2">How the money <span class="acc">moves.</span></h2>
+    <p class="lead">A single Stripe transaction handles everything. ATP never holds your money — it goes straight from member to bank.</p>
+    <div class="money-flow">
+      <div class="money-card">
+        <div class="amount">AED 250</div>
+        <div class="label">Member pays</div>
+      </div>
+      <div class="money-arrow">→</div>
+      <div class="money-split">
+        <div class="money-card green">
+          <div class="amount">AED 225</div>
+          <div class="label">To you · 90%</div>
+        </div>
+        <div class="money-card gold">
+          <div class="amount">AED 25</div>
+          <div class="label">To ATP · 10%</div>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:36px;display:grid;grid-template-columns:repeat(3,1fr);gap:20px">
+      <div style="background:var(--dark2);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:20px">
+        <h4 style="font-family:var(--ff-display);font-size:16px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:8px">No platform fees on you</h4>
+        <p style="font-size:13px;color:var(--light);line-height:1.5">The 10% is the only deduction. There's no monthly subscription, no listing fees, no withdrawal fees.</p>
+      </div>
+      <div style="background:var(--dark2);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:20px">
+        <h4 style="font-family:var(--ff-display);font-size:16px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:8px">Stripe handles the rest</h4>
+        <p style="font-size:13px;color:var(--light);line-height:1.5">Card processing fees (~3%) are paid by the member, not you. We use Stripe Connect — the same system used by Uber and Airbnb.</p>
+      </div>
+      <div style="background:var(--dark2);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:20px">
+        <h4 style="font-family:var(--ff-display);font-size:16px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:8px">Paid weekly</h4>
+        <p style="font-size:13px;color:var(--light);line-height:1.5">Every 7 days your earnings auto-deposit to your bank. No invoicing. No requesting payment.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SLIDE 9 · CANCELLATION ═══ -->
+  <section class="slide">
+    <div class="slide-header">
+      <div class="slide-logo">09 · Cancellation Policy</div>
+      <div class="slide-count">9 / 10</div>
+    </div>
+    <div class="eyebrow">Fair to both sides</div>
+    <h2 class="h2">If something <span class="acc">comes up.</span></h2>
+    <p class="lead">Members and coaches both deserve protection. Here's exactly how cancellations and no-shows work — automatic, no arguments.</p>
+    <div class="cancel-table">
+      <div class="cancel-row head">
+        <span>WHEN THE MEMBER CANCELS</span>
+        <span style="text-align:center">MEMBER GETS</span>
+        <span style="text-align:center">YOU GET</span>
+      </div>
+      <div class="cancel-row">
+        <span class="when">24+ hours before the session</span>
+        <span class="pct green">100%</span>
+        <span class="pct">0%</span>
+      </div>
+      <div class="cancel-row">
+        <span class="when">2 to 24 hours before</span>
+        <span class="pct amber">50%</span>
+        <span class="pct amber">50%</span>
+      </div>
+      <div class="cancel-row">
+        <span class="when">Under 2 hours · or no-show</span>
+        <span class="pct red">0%</span>
+        <span class="pct green">100%</span>
+      </div>
+      <div class="cancel-row" style="background:rgba(122,194,49,.04)">
+        <span class="when"><strong style="color:#fff">If YOU cancel</strong> · any time before</span>
+        <span class="pct green">100% + 10% credit</span>
+        <span class="pct red">0%</span>
+      </div>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-top:24px;text-align:center;max-width:680px;margin-left:auto;margin-right:auto;line-height:1.6">No-show repeated three times in a year triggers a 30-day suspension on the platform. We protect quality on both sides.</p>
+  </section>
+
+  <!-- ═══ SLIDE 10 · WHAT WE NEED ═══ -->
+  <section class="slide">
+    <div class="slide-header">
+      <div class="slide-logo">10 · What's Next</div>
+      <div class="slide-count">10 / 10</div>
+    </div>
+    <div class="eyebrow">Your honest feedback</div>
+    <h2 class="h2">What we want <span class="acc">from you.</span></h2>
+    <p class="lead">Before we build this, we want to know if it works for you. Real feedback shapes the real product.</p>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:40px">
+      <div style="background:var(--dark2);border:1px solid rgba(122,194,49,.32);border-radius:14px;padding:28px">
+        <div style="font-family:var(--ff-display);font-size:42px;font-weight:900;color:var(--green);margin-bottom:12px">01</div>
+        <h4 style="font-family:var(--ff-display);font-size:20px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:10px">Would you use it?</h4>
+        <p style="font-size:14px;color:var(--light);line-height:1.6">Honest answer. If "no," tell us what would change your mind.</p>
+      </div>
+      <div style="background:var(--dark2);border:1px solid rgba(122,194,49,.32);border-radius:14px;padding:28px">
+        <div style="font-family:var(--ff-display);font-size:42px;font-weight:900;color:var(--green);margin-bottom:12px">02</div>
+        <h4 style="font-family:var(--ff-display);font-size:20px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:10px">Is 10% fair?</h4>
+        <p style="font-size:14px;color:var(--light);line-height:1.6">It covers Stripe fees, hosting, support, marketing. But you tell us.</p>
+      </div>
+      <div style="background:var(--dark2);border:1px solid rgba(122,194,49,.32);border-radius:14px;padding:28px">
+        <div style="font-family:var(--ff-display);font-size:42px;font-weight:900;color:var(--green);margin-bottom:12px">03</div>
+        <h4 style="font-family:var(--ff-display);font-size:20px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:10px">What's missing?</h4>
+        <p style="font-size:14px;color:var(--light);line-height:1.6">Group sessions? Packages? Video on our platform? We're listening.</p>
+      </div>
+    </div>
+
+    <div class="cta-block">
+      <div>
+        <h3>Let's talk.</h3>
+        <p>Reply to this deck, message Fredy, or join the next coach call. We're shipping this only if you tell us to.</p>
+      </div>
+      <button>general@atthepark.world</button>
+    </div>
+  </section>
+
+  <!-- ═══ FOOTER NAV ═══ -->
+  <div class="deck-footer">
+    <div class="deck-nav">
+      <button class="deck-btn" id="prevBtn" aria-label="Previous">‹</button>
+      <button class="deck-btn" id="nextBtn" aria-label="Next">›</button>
+    </div>
+    <div class="deck-progress" id="progress"></div>
+    <div class="deck-meta">← → arrows · F11 for fullscreen · Ctrl+P to export PDF</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  var slides = document.querySelectorAll('.slide');
+  var progress = document.getElementById('progress');
+  var current = 0;
+  // Build dot indicators
+  slides.forEach(function(_, i){
+    var d = document.createElement('span');
+    d.className = 'dot' + (i === 0 ? ' active' : '');
+    d.addEventListener('click', function(){ go(i); });
+    progress.appendChild(d);
+  });
+  function go(i){
+    if (i < 0 || i >= slides.length) return;
+    slides[current].classList.remove('active');
+    progress.children[current].classList.remove('active');
+    current = i;
+    slides[current].classList.add('active');
+    progress.children[current].classList.add('active');
+  }
+  function next(){ go(current + 1); }
+  function prev(){ go(current - 1); }
+  document.getElementById('nextBtn').addEventListener('click', next);
+  document.getElementById('prevBtn').addEventListener('click', prev);
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft'  || e.key === 'PageUp') { e.preventDefault(); prev(); }
+    if (e.key === 'Home') go(0);
+    if (e.key === 'End')  go(slides.length - 1);
+  });
+  // Click anywhere advances (except on links/buttons)
+  document.addEventListener('click', function(e){
+    if (e.target.closest('a,button,input,.dot')) return;
+    if (e.target.closest('.deck-footer')) return;
+    next();
+  });
+})();
+</script>
+
+</body>
+</html>
