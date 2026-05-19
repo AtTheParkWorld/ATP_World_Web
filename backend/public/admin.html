@@ -75,7 +75,11 @@
       <div class="admin-version">Admin Panel v1.0</div>
     </div>
     <div class="admin-nav">
-      <div class="admin-nav-item active" data-atp-call="showAdminSection" data-args='["dashboard"]'>
+      <div class="admin-nav-item active" data-atp-call="showAdminSection" data-args='["founder"]' style="background:rgba(122,194,49,.08);border-left:3px solid #7AC231">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#7AC231" stroke-width="2"><path d="M8 1l2 4 5 .5-4 3.5 1 5L8 11l-4 3 1-5L1 5.5 6 5z"/></svg>
+        Founder
+      </div>
+      <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["dashboard"]'>
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>
         Dashboard
       </div>
@@ -135,8 +139,20 @@
   <!-- MAIN CONTENT -->
   <main id="main" class="admin-main" role="main">
 
+    <!-- FOUNDER DASHBOARD — the one page Fredy checks every morning.
+         Surfaces the 5 metrics that determine if ATP is alive: WAM (north
+         star), acquisition, activation funnel, cohort retention, churn
+         risk. Default landing tab — opens automatically on admin login. -->
+    <div id="section-founder">
+      <div class="admin-page-title">🌟 Founder Dashboard</div>
+      <div class="admin-page-sub">The one page to check every morning. Five answers: Is WAM growing? Are we acquiring? Do they activate? Do they retain? Who's about to leave?</div>
+      <div id="founderDashboardBody" style="margin-top:16px">
+        <div style="padding:60px;text-align:center;color:#555">Loading the numbers…</div>
+      </div>
+    </div>
+
     <!-- DASHBOARD -->
-    <div id="section-dashboard">
+    <div id="section-dashboard" style="display:none">
       <div class="admin-page-title">Dashboard</div>
       <div class="admin-page-sub">Welcome back. Here's a quick overview of ATP activity.</div>
       <div class="admin-stats-row">

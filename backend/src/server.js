@@ -287,6 +287,7 @@ const ROUTES = [
   ['partners',     require('./routes/partners')],
   ['offers',       require('./routes/offers')],
   ['wearables',    require('./routes/wearables')],
+  ['founder',      require('./routes/founder')],
 ];
 for (const [prefix, router] of ROUTES) {
   app.use('/api/'    + prefix, router);

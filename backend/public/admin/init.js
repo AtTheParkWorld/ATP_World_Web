@@ -44,7 +44,18 @@ async function cancelSession(sessionId, sessionName) {
     if (name === 'settings')   { loadSettingsSection(); }
     if (name === 'operations') { loadFailedShopifyRedemptions(); loadNewsletterAdmin(); }
     if (name === 'wearables')  { if (typeof loadWearableConnections === 'function') loadWearableConnections(); }
+    if (name === 'founder')    { if (typeof loadFounderDashboard === 'function') loadFounderDashboard(); }
   };
+
+  // Founder dashboard is the new default landing — auto-load it on admin
+  // login so the founder sees real numbers the moment they sign in. Fires
+  // after a tiny delay so getToken() has a chance to resolve from storage.
+  setTimeout(function() {
+    if (typeof loadFounderDashboard === 'function' && typeof getToken === 'function' && getToken()) {
+      var section = document.getElementById('section-founder');
+      if (section && section.style.display !== 'none') loadFounderDashboard();
+    }
+  }, 300);
 })();
 
 // ═══════════════════════════════════════════════════════════
