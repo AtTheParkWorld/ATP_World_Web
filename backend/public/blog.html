@@ -142,11 +142,49 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
 
 <section class="bl-hero">
   <div class="bl-hero-inner">
-    <div class="bl-hero-eyebrow">The ATP Journal</div>
-    <h1>Stories <span class="acc">from the pack</span></h1>
-    <p class="bl-hero-sub">Coach insights, member journeys, training breakdowns, and what's actually happening on the ground in Dubai, Al Ain and Muscat. Updated regularly.</p>
+    <div class="bl-hero-eyebrow" id="bl-hero-eyebrow">The ATP Journal</div>
+    <h1 id="bl-hero-title">Beyond the <span class="acc">workout</span></h1>
+    <p class="bl-hero-sub" id="bl-hero-sub">Coach insights, member journeys, training breakdowns, and what's actually happening on the ground in Dubai, Al Ain and Muscat. Updated regularly.</p>
   </div>
 </section>
+
+<!-- Hydrate hero copy from /api/cms/blog (admin → CMS → Blog Page). Falls
+     back to the static defaults above if the API is unreachable. -->
+<script>
+(function() {
+  fetch('/api/cms/blog')
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      if (!d || !d.content || !d.content.hero) return;
+      var h = d.content.hero;
+      if (h.eyebrow) {
+        var el = document.getElementById('bl-hero-eyebrow');
+        if (el) el.textContent = h.eyebrow;
+      }
+      if (h.title) {
+        // Title supports a trailing accent span via a sentinel: if the
+        // admin-saved title contains "<accent>...</accent>" we render that
+        // span as the green accent. Otherwise the whole string is plain.
+        var el = document.getElementById('bl-hero-title');
+        if (el) {
+          var m = /^(.*?)<accent>(.+?)<\/accent>(.*)$/i.exec(h.title);
+          if (m) {
+            el.innerHTML = (m[1] || '').replace(/[<>&]/g, '') +
+              '<span class="acc">' + m[2].replace(/[<>&]/g, '') + '</span>' +
+              (m[3] || '').replace(/[<>&]/g, '');
+          } else {
+            el.textContent = h.title;
+          }
+        }
+      }
+      if (h.subtitle) {
+        var el = document.getElementById('bl-hero-sub');
+        if (el) el.textContent = h.subtitle;
+      }
+    })
+    .catch(function(){ /* CMS unreachable — keep static defaults */ });
+})();
+</script>
 
 <section class="bl-filters" id="bl-filters" style="display:none">
   <div class="bl-chips" id="bl-chips">

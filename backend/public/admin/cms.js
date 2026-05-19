@@ -290,6 +290,20 @@ var CMS_SCHEMA = {
       }
     }
   },
+  blog: {
+    label: '📰 Blog Page',
+    sections: {
+      hero: {
+        label: 'Blog Hero',
+        desc: 'Banner at the top of /blog.html. The h1 below is the title members see when they land on the blog.',
+        fields: [
+          { key: 'eyebrow',  label: 'Small Eyebrow Label', type: 'text',     default: 'The ATP Journal' },
+          { key: 'title',    label: 'Headline (h1)',       type: 'text',     default: 'Beyond the workout', hint: 'Plain text. The current default is "Stories from the pack" but you can rename to anything.' },
+          { key: 'subtitle', label: 'Subtitle',            type: 'textarea', default: 'Coach insights, member journeys, training breakdowns, and what\'s actually happening on the ground in Dubai, Al Ain and Muscat. Updated regularly.' },
+        ]
+      }
+    }
+  },
   contacts: {
     label: '📞 Contacts Page',
     sections: {

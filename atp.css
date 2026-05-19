@@ -436,6 +436,63 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
   to   { transform: scaleX(1); }
 }
 
+/* ────────────────────────────────────────────────────────────────
+ * NAV ACTIONS (logged-in chrome: avatar + name + logout)
+ * Base styles used to live as duplicated rules in index/sessions/
+ * store CSS but were missing on 16 other pages — caused the avatar
+ * + name + logout to stack vertically with no layout. Centralized
+ * here so any page using <div id="atp-nav-host"> gets it for free.
+ * ──────────────────────────────────────────────────────────────── */
+.nav-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.nav-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-decoration: none;
+  color: inherit;
+}
+.nav-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--atp-green, #7AC231);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--ff-display, 'Barlow Condensed', sans-serif);
+  font-size: 14px;
+  font-weight: 800;
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  border: 2px solid transparent;
+  transition: border-color .2s, transform .2s;
+}
+.nav-user-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #fff;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.nav-logout {
+  font-size: 12px;
+  color: var(--atp-fg-muted, #888);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  transition: color .2s;
+  white-space: nowrap;
+}
+.nav-logout:hover { color: #fff; }
+
 /* Avatar hover (the nav-user link) */
 .nav-user:hover .nav-avatar {
   border-color: var(--atp-green) !important;
