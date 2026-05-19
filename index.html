@@ -93,9 +93,6 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .hero-right::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:4px;background:var(--green);z-index:3}
 /* Vertical column-divider stripe removed per founder request — the
    full-section video reads better without a hard line through the middle. */
-.hero-video-label{position:absolute;bottom:28px;right:28px;display:flex;align-items:center;gap:8px;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.75);background:rgba(10,10,10,.55);backdrop-filter:blur(8px);padding:7px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.12)}
-.hvl-dot{display:block;width:7px;height:7px;border-radius:50%;background:var(--green);animation:pulse-dot 1.8s ease-in-out infinite;flex-shrink:0}
-@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.75)}}
 /* LIVE MEMBER COUNTER */
 .live-counter{display:inline-flex;align-items:center;gap:12px;margin-bottom:28px}
 .lc-pulse{position:relative;width:10px;height:10px;flex-shrink:0}
@@ -590,11 +587,7 @@ a.product-card:hover{transform:translateY(-4px)}
   <div class="hero-right" aria-hidden="true">
     <!-- Decoration-only column. The hero video has moved up to be a
          direct child of .hero so it spans both columns; this panel is
-         now just the green frame + the live-sessions label. -->
-    <div class="hero-video-label">
-      <span class="hvl-dot"></span>
-      Live sessions · Dubai · Al Ain · Muscat
-    </div>
+         now just the green frame. (Label removed 2026-05-19 per founder.) -->
   </div>
   <div class="scroll-hint" aria-hidden="true">Scroll to explore</div>
 </section>
@@ -1044,11 +1037,18 @@ document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
       if (!r.ok) throw new Error("HTTP " + r.status + " " + r.statusText);
       return r.json();
     })
-    .then(function(data) {
-      if (!data || !data.products || !data.products.edges) {
-        throw new Error("Unexpected response: " + JSON.stringify(data).substring(0, 100));
+    .then(function(body) {
+      // Shopify GraphQL wraps the result in { data: {...}, extensions: {...} }.
+      // Earlier this block read body.products directly and always failed —
+      // every load fell into the catch and showed the placeholder card.
+      if (body && body.errors && body.errors.length) {
+        throw new Error("GraphQL: " + body.errors.map(function(e){ return e.message; }).join('; '));
       }
-      var products = data.products.edges.map(function(e) { return e.node; });
+      var d = body && body.data;
+      if (!d || !d.products || !d.products.edges) {
+        throw new Error("Unexpected response: " + JSON.stringify(body).substring(0, 120));
+      }
+      var products = d.products.edges.map(function(e) { return e.node; });
       if (!products.length) throw new Error("Zero products returned");
 
       track.innerHTML = products.map(function(p) {
@@ -1095,16 +1095,12 @@ document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
     })
     .catch(function(err) {
       console.error("ATP Shop carousel error:", err.message);
-      // Show error in page for debugging
       var track = document.getElementById("indexShopGrid");
-      if (track) {
-        track.innerHTML = '<a href="store.html" class="swf-card" style="min-width:200px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;gap:8px;border:1px dashed rgba(239,68,68,.3);border-radius:12px">' +
-          '<div style="font-size:11px;color:#ef4444;font-weight:700;text-transform:uppercase">Shopify Error</div>' +
-          '<div style="font-size:11px;color:#555;text-align:center;max-width:180px">' + err.message + '</div>' +
-          '<div style="font-size:12px;color:#7AC231;margin-top:4px">Browse store →</div>' +
-          '</a>';
-      }
-      // Fallback: show clickable placeholder cards
+      if (!track) return;
+      // Single fallback — clickable "Shop Now" placeholder that still
+      // routes members into the store even if Shopify is unreachable.
+      // (Previous version overwrote a useful error card with this one,
+      //  hiding diagnostic info from the page.)
       track.innerHTML = '<a href="store.html" class="swf-card" style="min-width:100%;display:flex;align-items:center;justify-content:center;min-height:200px;border:1px solid rgba(122,194,49,.2);border-radius:12px;background:rgba(122,194,49,.04)">' +
         '<div style="text-align:center"><div style="font-family:var(--ff-display);font-size:32px;font-weight:900;color:#7AC231;text-transform:uppercase;letter-spacing:.04em">Shop Now</div>' +
         '<div style="font-size:13px;color:#555;margin-top:6px">View all products →</div></div></a>';
