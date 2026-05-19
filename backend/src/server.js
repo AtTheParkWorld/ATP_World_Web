@@ -250,6 +250,8 @@ app.get('/legal',    (req, res) => res.sendFile(path.join(__dirname, '../public/
 app.get('/partners', (req, res) => res.sendFile(path.join(__dirname, '../public/partners.html')));
 // Offers — member-facing commercial page (discounts, events, points redemption).
 app.get('/offers',   (req, res) => res.sendFile(path.join(__dirname, '../public/offers.html')));
+// Member feedback survey — Move 2 of the founder strategy.
+app.get('/member-feedback', (req, res) => res.sendFile(path.join(__dirname, '../public/member-feedback.html')));
 app.get('/',         (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 
 // ── API Routes ───────────────────────────────────────────────────────────────
@@ -288,6 +290,7 @@ const ROUTES = [
   ['offers',       require('./routes/offers')],
   ['wearables',    require('./routes/wearables')],
   ['founder',      require('./routes/founder')],
+  ['member-feedback', require('./routes/memberFeedback')],
 ];
 for (const [prefix, router] of ROUTES) {
   app.use('/api/'    + prefix, router);

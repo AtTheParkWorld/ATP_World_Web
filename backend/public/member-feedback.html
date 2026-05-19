@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Help shape the next ATP · Member feedback</title>
+  <meta name="description" content="Three minutes of honesty that will shape the next 90 days of ATP. Tell us what you actually use, what you'd pay for, and what would make you leave.">
+  <meta property="og:title" content="Help shape the next ATP · 3 minutes of honesty">
+  <meta property="og:description" content="What do you use? What would you pay for? What would make you leave? Honest answers welcome.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#7AC231;--green-dark:#5a9a1f;--green-light:#a8e055;
+  --black:#0a0a0a;--dark:#111111;--dark2:#1a1a1a;--dark3:#222222;
+  --muted:#888888;--light:#aaaaaa;--white:#ffffff;
+  --gold:#f5c042;
+  --ff-display:'Barlow Condensed',sans-serif;--ff-body:'DM Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{min-height:100vh}
+body{font-family:var(--ff-body);background:radial-gradient(60% 80% at 20% 10%,rgba(122,194,49,.10) 0%,transparent 60%),radial-gradient(50% 70% at 80% 90%,rgba(245,192,66,.05) 0%,transparent 60%),var(--black);color:var(--white);-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;min-height:100vh;-webkit-tap-highlight-color:rgba(122,194,49,.20)}
+*{box-sizing:border-box}
+button{cursor:pointer;font-family:inherit;background:none;border:none;color:inherit}
+input,textarea,select{font-family:inherit;font-size:16px}
+::selection{background:rgba(122,194,49,.32);color:#fff}
+
+/* Top bar */
+.top{padding:20px 24px;display:flex;justify-content:space-between;align-items:center}
+.brand{display:flex;align-items:center;gap:10px;color:var(--green);font-weight:800;letter-spacing:.16em;font-size:11px;text-transform:uppercase}
+.brand::before{content:'';display:block;width:24px;height:2px;background:var(--green)}
+.progress-text{font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase}
+.progress-bar{position:fixed;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.06);z-index:50}
+.progress-fill{height:100%;background:var(--green);width:0;transition:width .35s ease}
+
+/* Stage system */
+.stage{display:none;flex:1;padding:40px 24px 80px;animation:fadeUp .4s ease}
+.stage.active{display:flex;flex-direction:column;justify-content:center}
+@keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.stage-inner{max-width:680px;margin:0 auto;width:100%}
+
+/* Typography */
+.eyebrow{font-size:11px;font-weight:700;letter-spacing:.2em;text-transform:uppercase;color:var(--green);margin-bottom:18px;display:inline-flex;align-items:center;gap:10px}
+.eyebrow::before{content:'';display:block;width:28px;height:2px;background:var(--green)}
+.qnum{font-size:13px;color:var(--green);font-weight:700;letter-spacing:.14em;margin-bottom:14px;display:inline-flex;align-items:center;gap:10px}
+.qnum::before{content:'';display:block;width:24px;height:2px;background:var(--green)}
+h1{font-family:var(--ff-display);font-size:clamp(40px,6vw,72px);font-weight:900;line-height:.95;text-transform:uppercase;letter-spacing:-.015em;margin-bottom:18px}
+h1 .acc{color:var(--green)}
+h2{font-family:var(--ff-display);font-size:clamp(28px,4vw,42px);font-weight:900;line-height:1.05;text-transform:uppercase;letter-spacing:-.005em;margin-bottom:14px}
+h2 .acc{color:var(--green)}
+.lead{font-size:17px;color:var(--light);line-height:1.6;font-weight:300;margin-bottom:32px;max-width:520px}
+.hint{font-size:13px;color:var(--muted);margin-top:14px}
+
+/* Form fields */
+.field{margin-top:24px}
+.text-input{width:100%;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px 18px;color:#fff;font-size:16px;transition:border-color .2s,background .2s}
+.text-input:focus{outline:none;border-color:rgba(122,194,49,.4);background:rgba(122,194,49,.04)}
+textarea.text-input{min-height:140px;resize:vertical;line-height:1.55}
+.text-input::placeholder{color:#555}
+
+/* Checkbox grid */
+.check-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.check-card{display:flex;align-items:center;gap:12px;padding:14px 18px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;cursor:pointer;transition:border-color .2s,background .2s;font-size:14px;color:#fff}
+.check-card:hover{border-color:rgba(122,194,49,.32);background:rgba(122,194,49,.04)}
+.check-card.checked{border-color:rgba(122,194,49,.6);background:rgba(122,194,49,.10);color:#fff}
+.check-card input{display:none}
+.check-card .box{width:22px;height:22px;border-radius:6px;border:2px solid rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:border-color .2s,background .2s}
+.check-card.checked .box{border-color:var(--green);background:var(--green);color:#0a0a0a}
+.check-card .box::after{content:'';opacity:0;font-weight:900}
+.check-card.checked .box::after{content:'✓';opacity:1;color:#0a0a0a;font-size:14px}
+
+/* Price band radio */
+.price-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.price-card{display:block;padding:18px 14px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;cursor:pointer;transition:border-color .2s,background .2s,transform .15s;text-align:center}
+.price-card:hover{border-color:rgba(122,194,49,.32);transform:translateY(-1px)}
+.price-card.checked{border-color:rgba(122,194,49,.6);background:rgba(122,194,49,.10)}
+.price-card input{display:none}
+.price-card .amount{font-family:var(--ff-display);font-size:24px;font-weight:900;color:#fff;line-height:1;letter-spacing:.01em}
+.price-card.checked .amount{color:var(--green)}
+.price-card .unit{font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;margin-top:6px;font-weight:600}
+
+/* Pick-one radios (city, tribe, tenure) */
+.pick-grid{display:flex;gap:8px;flex-wrap:wrap}
+.pick-pill{display:inline-block;padding:11px 18px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:99px;cursor:pointer;transition:all .2s;font-size:13px;color:var(--light);font-weight:500}
+.pick-pill:hover{border-color:rgba(122,194,49,.32);color:#fff}
+.pick-pill.checked{background:var(--green);color:#0a0a0a;border-color:var(--green);font-weight:700}
+.pick-pill input{display:none}
+
+/* Nav buttons */
+.nav-row{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-top:36px}
+.btn-primary{background:var(--green);color:#0a0a0a;padding:16px 32px;border-radius:10px;font-size:14px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;display:inline-flex;align-items:center;gap:10px;transition:background .15s,transform .15s,box-shadow .2s;border:none;cursor:pointer;min-height:44px}
+.btn-primary:hover{background:var(--green-light);transform:translateY(-1px);box-shadow:0 10px 26px rgba(122,194,49,.32)}
+.btn-primary:disabled{background:rgba(255,255,255,.08);color:#555;cursor:not-allowed;transform:none;box-shadow:none}
+.btn-ghost{background:none;color:var(--light);padding:14px 22px;font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border-radius:8px;transition:color .2s,background .2s;cursor:pointer;border:none;min-height:44px}
+.btn-ghost:hover{color:#fff;background:rgba(255,255,255,.05)}
+
+/* Final stage */
+.final-celebrate{font-size:64px;margin-bottom:24px;animation:bounce 1.2s ease infinite}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+
+@media (max-width:600px){
+  .stage{padding:30px 18px 80px}
+  .check-grid{grid-template-columns:1fr}
+  .price-grid{grid-template-columns:repeat(2,1fr)}
+  .nav-row{flex-direction:column-reverse;align-items:stretch}
+  .nav-row .btn-primary{width:100%;justify-content:center}
+  .nav-row .btn-ghost{width:100%;text-align:center}
+  h1{font-size:36px}
+  h2{font-size:26px}
+}
+</style>
+</head>
+
+<body>
+
+<!-- Top progress bar -->
+<div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+<!-- Brand strip -->
+<div class="top">
+  <div class="brand">At The Park · Member Voice</div>
+  <div class="progress-text" id="progressText">— · —</div>
+</div>
+
+<!-- ─── STAGE 0 · Welcome ─── -->
+<section class="stage active" data-stage="0">
+  <div class="stage-inner">
+    <div class="eyebrow">3 minutes of honesty</div>
+    <h1>Help us build the <span class="acc">next ATP.</span></h1>
+    <p class="lead">We're at a decision point. Before we add anything new, we want to hear from you. 5 short questions. Honest answers matter more than nice ones.</p>
+    <p class="lead" style="color:var(--muted);font-size:14px">No login. Email optional. Takes about 3 minutes.</p>
+    <div class="nav-row" style="justify-content:flex-start">
+      <button class="btn-primary" data-act="next">Let's go →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STAGE 1 · Q1 sad to lose ─── -->
+<section class="stage" data-stage="1">
+  <div class="stage-inner">
+    <div class="qnum">Question 1 of 5</div>
+    <h2>What's the <span class="acc">one thing</span> about ATP you'd be sad to lose if it disappeared tomorrow?</h2>
+    <p class="hint">Be specific. "The Tuesday run with Sarah" beats "the community". Free text — write what comes to mind.</p>
+    <div class="field">
+      <textarea class="text-input" id="q1" placeholder="The thing that would make you say 'wait, no — not that'..."></textarea>
+    </div>
+    <div class="nav-row">
+      <button class="btn-ghost" data-act="back">← Back</button>
+      <button class="btn-primary" data-act="next">Continue →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STAGE 2 · Q2 weekly use ─── -->
+<section class="stage" data-stage="2">
+  <div class="stage-inner">
+    <div class="qnum">Question 2 of 5</div>
+    <h2>What do you <span class="acc">actually use</span> weekly?</h2>
+    <p class="hint">Tick everything that's true for a typical week of yours. No judgment.</p>
+    <div class="field check-grid" id="q2Grid">
+      <label class="check-card" data-val="free_sessions"><input type="checkbox"><span class="box"></span><span>Free outdoor sessions</span></label>
+      <label class="check-card" data-val="community_feed"><input type="checkbox"><span class="box"></span><span>Community feed / posts</span></label>
+      <label class="check-card" data-val="streaks_points"><input type="checkbox"><span class="box"></span><span>Streak / points tracker</span></label>
+      <label class="check-card" data-val="member_offers"><input type="checkbox"><span class="box"></span><span>Partner offers / discounts</span></label>
+      <label class="check-card" data-val="store"><input type="checkbox"><span class="box"></span><span>ATP store / shop</span></label>
+      <label class="check-card" data-val="blog"><input type="checkbox"><span class="box"></span><span>Blog / articles</span></label>
+      <label class="check-card" data-val="live_stream"><input type="checkbox"><span class="box"></span><span>Live / streaming sessions</span></label>
+      <label class="check-card" data-val="challenges"><input type="checkbox"><span class="box"></span><span>Challenges</span></label>
+      <label class="check-card" data-val="wearables"><input type="checkbox"><span class="box"></span><span>Strava / Fitbit sync</span></label>
+      <label class="check-card" data-val="referrals"><input type="checkbox"><span class="box"></span><span>Inviting friends</span></label>
+      <label class="check-card" data-val="coaches_profiles"><input type="checkbox"><span class="box"></span><span>Looking at coach profiles</span></label>
+      <label class="check-card" data-val="profile_stats"><input type="checkbox"><span class="box"></span><span>My profile / stats</span></label>
+    </div>
+    <div class="field">
+      <input type="text" class="text-input" id="q2Other" placeholder="Anything else you use that's not on the list?">
+    </div>
+    <div class="nav-row">
+      <button class="btn-ghost" data-act="back">← Back</button>
+      <button class="btn-primary" data-act="next">Continue →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STAGE 3 · Q3 pay for ─── -->
+<section class="stage" data-stage="3">
+  <div class="stage-inner">
+    <div class="qnum">Question 3 of 5</div>
+    <h2>If ATP charged you for <span class="acc">one thing</span>, what would you actually pay for?</h2>
+    <p class="hint">Don't be diplomatic. Real money is involved.</p>
+    <div class="field">
+      <textarea class="text-input" id="q3" placeholder="If I'd reach for my wallet for one ATP thing, it would be..."></textarea>
+    </div>
+    <div class="nav-row">
+      <button class="btn-ghost" data-act="back">← Back</button>
+      <button class="btn-primary" data-act="next">Continue →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STAGE 4 · Q4 how much ─── -->
+<section class="stage" data-stage="4">
+  <div class="stage-inner">
+    <div class="qnum">Question 4 of 5</div>
+    <h2>How much <span class="acc">per month</span> would you pay for that?</h2>
+    <p class="hint">Be honest. AED 0 is a valid answer.</p>
+    <div class="field price-grid" id="q4Grid">
+      <label class="price-card" data-val="AED 0"><input type="radio" name="q4"><div class="amount">AED 0</div><div class="unit">Nothing</div></label>
+      <label class="price-card" data-val="AED 1-30"><input type="radio" name="q4"><div class="amount">1–30</div><div class="unit">AED / month</div></label>
+      <label class="price-card" data-val="AED 31-75"><input type="radio" name="q4"><div class="amount">31–75</div><div class="unit">AED / month</div></label>
+      <label class="price-card" data-val="AED 76-150"><input type="radio" name="q4"><div class="amount">76–150</div><div class="unit">AED / month</div></label>
+      <label class="price-card" data-val="AED 151+"><input type="radio" name="q4"><div class="amount">151+</div><div class="unit">AED / month</div></label>
+    </div>
+    <div class="nav-row">
+      <button class="btn-ghost" data-act="back">← Back</button>
+      <button class="btn-primary" data-act="next">Continue →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STAGE 5 · Q5 leave reason ─── -->
+<section class="stage" data-stage="5">
+  <div class="stage-inner">
+    <div class="qnum">Question 5 of 5</div>
+    <h2>What would make you <span class="acc">stop using ATP</span> entirely?</h2>
+    <p class="hint">Brutal honesty welcome. We'd rather know now than discover it the hard way.</p>
+    <div class="field">
+      <textarea class="text-input" id="q5" placeholder="The day I'd uninstall the app / stop showing up is the day..."></textarea>
+    </div>
+    <div class="nav-row">
+      <button class="btn-ghost" data-act="back">← Back</button>
+      <button class="btn-primary" data-act="next">Continue →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STAGE 6 · About you (optional context) ─── -->
+<section class="stage" data-stage="6">
+  <div class="stage-inner">
+    <div class="qnum">Almost done · A bit about you</div>
+    <h2>So we can <span class="acc">read your answers</span> in context.</h2>
+    <p class="hint">All optional. Name and email are only used if we want to follow up — never shared.</p>
+
+    <div class="field">
+      <label style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">Your name (optional)</label>
+      <input type="text" class="text-input" id="name" placeholder="First name is enough">
+    </div>
+
+    <div class="field">
+      <label style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">Email (optional, for follow-up only)</label>
+      <input type="email" class="text-input" id="email" placeholder="you@example.com">
+    </div>
+
+    <div class="field">
+      <label style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">Which city are you in?</label>
+      <div class="pick-grid" id="cityGrid">
+        <label class="pick-pill" data-val="Dubai"><input type="radio" name="city">Dubai</label>
+        <label class="pick-pill" data-val="Al Ain"><input type="radio" name="city">Al Ain</label>
+        <label class="pick-pill" data-val="Muscat"><input type="radio" name="city">Muscat</label>
+        <label class="pick-pill" data-val="Other"><input type="radio" name="city">Other</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">Which tribe do you train with most?</label>
+      <div class="pick-grid" id="tribeGrid">
+        <label class="pick-pill" data-val="Better"><input type="radio" name="tribe">Better</label>
+        <label class="pick-pill" data-val="Faster"><input type="radio" name="tribe">Faster</label>
+        <label class="pick-pill" data-val="Stronger"><input type="radio" name="tribe">Stronger</label>
+        <label class="pick-pill" data-val="Mix"><input type="radio" name="tribe">A bit of everything</label>
+        <label class="pick-pill" data-val="None"><input type="radio" name="tribe">No tribe yet</label>
+      </div>
+    </div>
+
+    <div class="field">
+      <label style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">How long have you been with ATP?</label>
+      <div class="pick-grid" id="tenureGrid">
+        <label class="pick-pill" data-val="<1mo"><input type="radio" name="tenure">&lt; 1 month</label>
+        <label class="pick-pill" data-val="1-3mo"><input type="radio" name="tenure">1–3 months</label>
+        <label class="pick-pill" data-val="3-6mo"><input type="radio" name="tenure">3–6 months</label>
+        <label class="pick-pill" data-val="6-12mo"><input type="radio" name="tenure">6–12 months</label>
+        <label class="pick-pill" data-val="1-2y"><input type="radio" name="tenure">1–2 years</label>
+        <label class="pick-pill" data-val="2y+"><input type="radio" name="tenure">2+ years</label>
+      </div>
+    </div>
+
+    <div class="nav-row">
+      <button class="btn-ghost" data-act="back">← Back</button>
+      <button class="btn-primary" id="submitBtn" data-act="submit">Send my answers →</button>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STAGE 7 · Thank you ─── -->
+<section class="stage" data-stage="7">
+  <div class="stage-inner" style="text-align:center">
+    <div class="final-celebrate">🎯</div>
+    <div class="eyebrow" style="justify-content:center">Massive help</div>
+    <h1>Thank you. <span class="acc">Truly.</span></h1>
+    <p class="lead" style="margin-left:auto;margin-right:auto">The next 90 days of ATP will be shaped by what you and 19 other members said. We'll share what we heard — and what we're doing about it — soon.</p>
+    <div class="nav-row" style="justify-content:center;margin-top:20px">
+      <a href="/" class="btn-primary">Back to ATP →</a>
+    </div>
+  </div>
+</section>
+
+<!-- ─── STAGE 8 · Error ─── -->
+<section class="stage" data-stage="error">
+  <div class="stage-inner" style="text-align:center">
+    <div style="font-size:48px;margin-bottom:18px">😕</div>
+    <h2>Something glitched.</h2>
+    <p class="lead" style="margin-left:auto;margin-right:auto" id="errMsg">Your answers couldn't be saved. Don't worry — try again in a sec, or send them direct to <a href="mailto:general@atthepark.world" style="color:var(--green)">general@atthepark.world</a>.</p>
+    <div class="nav-row" style="justify-content:center;margin-top:20px">
+      <button class="btn-primary" data-act="retry">Try again →</button>
+    </div>
+  </div>
+</section>
+
+<script>
+(function(){
+  var TOTAL_STAGES = 6; // 0-welcome, 1-5 questions, 6-context, 7-thanks (not counted in progress)
+  var current = 0;
+  var stages = document.querySelectorAll('.stage');
+  var progressFill = document.getElementById('progressFill');
+  var progressText = document.getElementById('progressText');
+  var STORAGE_KEY = 'atp_member_feedback_draft';
+
+  // ── Restore draft from localStorage ────────────────────────────
+  function loadDraft() {
+    try {
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if (!raw) return;
+      var d = JSON.parse(raw);
+      if (d.q1) document.getElementById('q1').value = d.q1;
+      if (d.q3) document.getElementById('q3').value = d.q3;
+      if (d.q5) document.getElementById('q5').value = d.q5;
+      if (d.q2Other) document.getElementById('q2Other').value = d.q2Other;
+      if (d.name) document.getElementById('name').value = d.name;
+      if (d.email) document.getElementById('email').value = d.email;
+      if (Array.isArray(d.q2)) {
+        d.q2.forEach(function(v){
+          var el = document.querySelector('#q2Grid [data-val="' + v + '"]');
+          if (el) { el.classList.add('checked'); el.querySelector('input').checked = true; }
+        });
+      }
+      ['q4','city','tribe','tenure'].forEach(function(k){
+        if (!d[k]) return;
+        var sel = '#' + (k==='q4'?'q4Grid':k+'Grid') + ' [data-val="' + d[k] + '"]';
+        var el = document.querySelector(sel);
+        if (el) { el.classList.add('checked'); el.querySelector('input').checked = true; }
+      });
+    } catch(e){}
+  }
+  function saveDraft() {
+    var d = collectAnswers();
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(d)); } catch(e){}
+  }
+
+  function show(idx) {
+    stages.forEach(function(s){ s.classList.remove('active'); });
+    var target = (idx === 'error')
+      ? document.querySelector('[data-stage="error"]')
+      : document.querySelector('[data-stage="' + idx + '"]');
+    if (target) target.classList.add('active');
+    if (typeof idx === 'number') {
+      current = idx;
+      var pct = Math.round(100 * Math.min(idx, TOTAL_STAGES) / TOTAL_STAGES);
+      progressFill.style.width = pct + '%';
+      progressText.textContent = idx === 0 ? 'Welcome' :
+                                 idx === 7 ? 'Done' :
+                                 idx === 6 ? 'About you' :
+                                 ('Question ' + idx + ' of 5');
+    } else {
+      progressText.textContent = 'Hmm…';
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function next() {
+    if (current === 6) return submit();
+    if (current === 7) return;
+    saveDraft();
+    show(current + 1);
+  }
+  function back() {
+    if (current <= 0) return;
+    show(current - 1);
+  }
+
+  function collectAnswers() {
+    var q2 = Array.from(document.querySelectorAll('#q2Grid .check-card.checked')).map(function(el){ return el.dataset.val; });
+    var q2Other = (document.getElementById('q2Other').value || '').trim();
+    if (q2Other) q2.push('OTHER: ' + q2Other);
+    var pickVal = function(sel){
+      var el = document.querySelector(sel + ' .pick-pill.checked, ' + sel + ' .price-card.checked');
+      return el ? el.dataset.val : null;
+    };
+    return {
+      q1_sad_to_lose: document.getElementById('q1').value,
+      q2_use_weekly: q2,
+      q3_pay_for: document.getElementById('q3').value,
+      q4_how_much: pickVal('#q4Grid'),
+      q5_leave_reason: document.getElementById('q5').value,
+      name: document.getElementById('name').value,
+      email: document.getElementById('email').value,
+      city: pickVal('#cityGrid'),
+      tribe: pickVal('#tribeGrid'),
+      member_since: pickVal('#tenureGrid'),
+      source: (document.referrer || '').slice(0, 60) || 'direct',
+      // Local copies for draft restore
+      q2: q2.filter(function(v){ return v.indexOf('OTHER:') !== 0; }),
+      q2Other: q2Other,
+    };
+  }
+
+  function submit() {
+    var btn = document.getElementById('submitBtn');
+    var data = collectAnswers();
+    btn.disabled = true;
+    btn.textContent = 'Sending…';
+    fetch('/api/member-feedback/submit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+      .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, body: d }; }); })
+      .then(function(out){
+        if (!out.ok) throw new Error((out.body && out.body.error) || 'Failed');
+        try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+        show(7);
+      })
+      .catch(function(err){
+        document.getElementById('errMsg').textContent = (err.message || 'Something glitched.') +
+          ' Don\'t worry — try again or send your answers to general@atthepark.world.';
+        show('error');
+      })
+      .finally(function(){
+        btn.disabled = false;
+        btn.textContent = 'Send my answers →';
+      });
+  }
+
+  // ── Wire checkbox/radio click states ───────────────────────────
+  document.querySelectorAll('#q2Grid .check-card').forEach(function(card){
+    card.addEventListener('click', function(){
+      card.classList.toggle('checked');
+      saveDraft();
+    });
+  });
+  ['q4Grid','cityGrid','tribeGrid','tenureGrid'].forEach(function(id){
+    document.querySelectorAll('#' + id + ' .pick-pill, #' + id + ' .price-card').forEach(function(card){
+      card.addEventListener('click', function(){
+        document.querySelectorAll('#' + id + ' .pick-pill, #' + id + ' .price-card').forEach(function(c){ c.classList.remove('checked'); });
+        card.classList.add('checked');
+        saveDraft();
+      });
+    });
+  });
+  // Text inputs auto-save draft on blur
+  ['q1','q3','q5','q2Other','name','email'].forEach(function(id){
+    var el = document.getElementById(id);
+    if (el) el.addEventListener('blur', saveDraft);
+  });
+
+  // ── Navigation buttons ─────────────────────────────────────────
+  document.addEventListener('click', function(e){
+    var btn = e.target.closest('[data-act]');
+    if (!btn) return;
+    var act = btn.dataset.act;
+    if (act === 'next')   next();
+    else if (act === 'back')  back();
+    else if (act === 'submit') submit();
+    else if (act === 'retry') submit();
+  });
+
+  // ── Keyboard: Enter advances ──────────────────────────────────
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Enter' && e.target.tagName !== 'TEXTAREA') {
+      var active = document.querySelector('.stage.active .btn-primary');
+      if (active) { e.preventDefault(); active.click(); }
+    }
+  });
+
+  // ── Boot ──────────────────────────────────────────────────────
+  loadDraft();
+  show(0);
+})();
+</script>
+
+</body>
+</html>

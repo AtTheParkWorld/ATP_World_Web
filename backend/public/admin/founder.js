@@ -265,11 +265,131 @@ function renderFounderDashboard(d) {
       ) +
     '</div>';
 
+  // ── Member feedback survey responses (Move 2) ────────────────
+  html +=
+    '<div id="founderFeedbackSection" style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:14px;padding:24px;margin-bottom:20px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px">' +
+        '<div>' +
+          '<div style="font-size:10px;color:#7AC231;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">🎯 Move 2 · Member voice survey</div>' +
+          '<div style="font-size:14px;color:#fff;font-weight:600">Share <a href="/member-feedback" target="_blank" style="color:#7AC231;text-decoration:none">atthepark.world/member-feedback</a> with the 20 members you talk to. Their answers land here.</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:6px">' +
+          '<button class="admin-btn" data-atp-call="loadFeedbackSummary" style="font-size:11px;padding:6px 14px">↻ Refresh</button>' +
+          '<a class="admin-btn" href="/api/member-feedback/admin/export" target="_blank" style="font-size:11px;padding:6px 14px;text-decoration:none">📥 Export CSV</a>' +
+        '</div>' +
+      '</div>' +
+      '<div id="feedbackSummaryBody"><div style="padding:20px;color:#555;text-align:center;font-size:13px">Loading responses…</div></div>' +
+    '</div>';
+
   // ── Footer: generated timestamp + refresh ────────────────────
   html +=
     '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 4px;font-size:11px;color:#555">' +
       '<span>Generated ' + new Date(d.generated_at).toLocaleString() + '</span>' +
       '<button class="admin-btn" data-atp-call="loadFounderDashboard" style="font-size:11px;padding:6px 14px">↻ Refresh</button>' +
+    '</div>';
+
+  host.innerHTML = html;
+
+  // Fire the feedback summary load after the main render so it doesn't
+  // block the dashboard paint
+  setTimeout(loadFeedbackSummary, 100);
+}
+
+// ── Member feedback summary loader ──────────────────────────────
+function loadFeedbackSummary() {
+  var host = document.getElementById('feedbackSummaryBody');
+  if (!host) return;
+  Promise.all([
+    fetch(ATP_API + '/member-feedback/admin/summary', { headers: { Authorization: 'Bearer ' + getToken() } }).then(function(r){ return r.json(); }),
+    fetch(ATP_API + '/member-feedback/admin/list?limit=15', { headers: { Authorization: 'Bearer ' + getToken() } }).then(function(r){ return r.json(); }),
+  ])
+    .then(function(out){
+      renderFeedbackSummary(out[0] || {}, (out[1] && out[1].responses) || []);
+    })
+    .catch(function(){
+      host.innerHTML = '<div style="padding:20px;color:#f87171;text-align:center;font-size:13px">Failed to load responses. Has the migration been run?</div>';
+    });
+}
+
+function renderFeedbackSummary(summary, responses) {
+  var host = document.getElementById('feedbackSummaryBody');
+  if (!host) return;
+  var t = summary.totals || {};
+  var goalProgress = Math.min(100, Math.round(100 * (t.total || 0) / 20));
+
+  var html = '';
+  // Progress bar — 20-response goal
+  html +=
+    '<div style="background:#0a0a0a;border:1px solid #1a1a1a;border-radius:10px;padding:18px;margin-bottom:14px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:10px">' +
+        '<div><div style="font-family:var(--ff-display,sans-serif);font-size:36px;font-weight:900;color:#7AC231;line-height:1">' + (t.total || 0) + '<span style="font-size:14px;color:#888;font-weight:500;font-family:inherit;margin-left:8px">/ 20 goal</span></div>' +
+        '<div style="font-size:11px;color:#888;margin-top:4px">' + (t.week || 0) + ' this week · ' + (t.day || 0) + ' today · ' + (t.unique_members || 0) + ' linked to a member</div></div>' +
+      '</div>' +
+      '<div style="height:6px;background:#1a1a1a;border-radius:3px;overflow:hidden"><div style="height:100%;width:' + goalProgress + '%;background:#7AC231;transition:width .3s"></div></div>' +
+    '</div>';
+
+  // Empty state
+  if (!t.total) {
+    html +=
+      '<div style="padding:30px;text-align:center;color:#555;font-size:13px;border:1px dashed #2a2a2a;border-radius:10px">' +
+        'No responses yet. Share <strong style="color:#7AC231">/member-feedback</strong> with the members you talk to.' +
+      '</div>';
+    host.innerHTML = html;
+    return;
+  }
+
+  // Aggregates row
+  html +=
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">' +
+      // Features used (Q2)
+      '<div style="background:#0a0a0a;border:1px solid #1a1a1a;border-radius:10px;padding:16px">' +
+        '<div style="font-size:10px;color:#888;letter-spacing:.12em;text-transform:uppercase;font-weight:600;margin-bottom:10px">What they use weekly</div>' +
+        (summary.q2_features_used || []).slice(0, 8).map(function(f){
+          var pct = t.total ? Math.round(100 * f.count / t.total) : 0;
+          return '<div style="margin-bottom:6px">' +
+            '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="color:#fff">' + _esc(f.feature) + '</span><span style="color:#888">' + f.count + ' · ' + pct + '%</span></div>' +
+            '<div style="height:4px;background:#1a1a1a;border-radius:2px"><div style="height:100%;width:' + pct + '%;background:#7AC231;border-radius:2px"></div></div>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+      // Willingness to pay (Q4)
+      '<div style="background:#0a0a0a;border:1px solid #1a1a1a;border-radius:10px;padding:16px">' +
+        '<div style="font-size:10px;color:#888;letter-spacing:.12em;text-transform:uppercase;font-weight:600;margin-bottom:10px">Willingness to pay per month</div>' +
+        (summary.q4_willingness_to_pay || []).map(function(b){
+          var pct = t.total ? Math.round(100 * b.count / t.total) : 0;
+          var color = b.band === 'AED 0' ? '#ef4444' : (b.band === 'AED 1-30' ? '#f59e0b' : '#7AC231');
+          return '<div style="margin-bottom:6px">' +
+            '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px"><span style="color:#fff">' + _esc(b.band) + '</span><span style="color:#888">' + b.count + ' · ' + pct + '%</span></div>' +
+            '<div style="height:4px;background:#1a1a1a;border-radius:2px"><div style="height:100%;width:' + pct + '%;background:' + color + ';border-radius:2px"></div></div>' +
+          '</div>';
+        }).join('') +
+      '</div>' +
+    '</div>';
+
+  // Recent responses table — the qualitative goldmine
+  html +=
+    '<div style="font-size:10px;color:#888;letter-spacing:.12em;text-transform:uppercase;font-weight:600;margin-bottom:10px">Latest responses (read every one)</div>' +
+    '<div style="display:flex;flex-direction:column;gap:8px">' +
+    responses.map(function(r){
+      var name = (r.name || r.first_name) ? _esc((r.name || (r.first_name + ' ' + (r.last_name || '')).trim())) : 'Anonymous';
+      var meta = [r.city, r.tribe, r.member_since].filter(Boolean).map(_esc).join(' · ');
+      return '<details style="background:#0a0a0a;border:1px solid #1a1a1a;border-radius:8px">' +
+        '<summary style="padding:12px 14px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:14px">' +
+          '<div><strong style="color:#fff;font-weight:600;font-size:13px">' + name + '</strong>' +
+            (meta ? '<span style="color:#666;font-size:11px;margin-left:10px">' + meta + '</span>' : '') + '</div>' +
+          '<div style="display:flex;align-items:center;gap:10px">' +
+            (r.q4_how_much ? '<span style="font-family:var(--ff-display,sans-serif);font-size:14px;font-weight:800;color:#7AC231">' + _esc(r.q4_how_much) + '</span>' : '') +
+            '<span style="font-size:10px;color:#666">' + new Date(r.created_at).toLocaleDateString() + '</span>' +
+          '</div>' +
+        '</summary>' +
+        '<div style="padding:0 14px 14px;font-size:13px;color:var(--light);line-height:1.6">' +
+          (r.q1_sad_to_lose ? '<div style="padding:10px 0;border-top:1px solid #1a1a1a"><span style="color:#7AC231;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:700">Sad to lose</span><br>' + _esc(r.q1_sad_to_lose) + '</div>' : '') +
+          (r.q2_use_weekly && r.q2_use_weekly.length ? '<div style="padding:10px 0;border-top:1px solid #1a1a1a"><span style="color:#7AC231;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:700">Uses weekly</span><br>' + r.q2_use_weekly.map(_esc).join(', ') + '</div>' : '') +
+          (r.q3_pay_for ? '<div style="padding:10px 0;border-top:1px solid #1a1a1a"><span style="color:#7AC231;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:700">Would pay for</span><br>' + _esc(r.q3_pay_for) + '</div>' : '') +
+          (r.q5_leave_reason ? '<div style="padding:10px 0;border-top:1px solid #1a1a1a"><span style="color:#7AC231;font-size:10px;letter-spacing:.1em;text-transform:uppercase;font-weight:700">Would leave if</span><br>' + _esc(r.q5_leave_reason) + '</div>' : '') +
+        '</div>' +
+      '</details>';
+    }).join('') +
     '</div>';
 
   host.innerHTML = html;

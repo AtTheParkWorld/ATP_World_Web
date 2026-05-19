@@ -2194,6 +2194,45 @@ router.post('/migrate-wearables', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-member-feedback ────────────────────
+// Move 2 of the founder strategy: 20 member conversations × 5 questions.
+// Founder shares /member-feedback.html with each member after the
+// chat; their answers land in member_feedback_responses for later
+// aggregation in the admin dashboard. Idempotent.
+router.post('/migrate-member-feedback', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    await query(`CREATE TABLE IF NOT EXISTS member_feedback_responses (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      -- Optional identification — anonymous responses are valid
+      name            VARCHAR(120),
+      email           VARCHAR(255),
+      member_id       UUID REFERENCES members(id) ON DELETE SET NULL,
+      -- Context fields
+      city            VARCHAR(60),
+      tribe           VARCHAR(20),
+      member_since    VARCHAR(20),
+      -- The 5 Move-2 questions
+      q1_sad_to_lose  TEXT,           -- "What's the one thing you'd be sad to lose?"
+      q2_use_weekly   JSONB,          -- multi-select array of features used
+      q3_pay_for      TEXT,           -- "What would you pay for, specifically?"
+      q4_how_much     VARCHAR(40),    -- price band (AED 0 / 1-30 / 31-75 / 76-150 / 150+)
+      q5_leave_reason TEXT,           -- "What would make you stop using ATP?"
+      -- Operational metadata
+      source          VARCHAR(60),    -- where the link was clicked from
+      user_agent      TEXT,
+      ip_hint         VARCHAR(120),   -- truncated IP for dedupe / spam
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_feedback_created ON member_feedback_responses(created_at DESC)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_feedback_member ON member_feedback_responses(member_id)`);
+
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/admin-reset-password ───────────────────────
 // Emergency password reset for an admin who's locked out of the panel
 // (e.g. magic-link email isn't delivering because FRONTEND_URL was
