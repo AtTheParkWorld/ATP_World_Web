@@ -774,6 +774,12 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
              silently when there's nothing pending. -->
         <div id="pendingFeedbackHost" style="margin-bottom:16px"></div>
 
+        <!-- Upcoming 1-on-1 sessions widget — shows paid coach sessions
+             the member is attending. Auto-hidden when empty. Includes
+             "Join stream" button when session is within 15 min + "Cancel"
+             with refund-policy reminder. -->
+        <div id="myOneOnOnesHost" style="margin-bottom:16px"></div>
+
         <!-- Feedback rating modal — opens when user taps a card above -->
         <div id="feedbackModal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px">
           <div id="feedbackModalCard" style="background:#111;border:1px solid rgba(245,192,66,.32);border-radius:14px;max-width:440px;width:100%;padding:28px;color:#fff;text-align:center"></div>
@@ -4351,7 +4357,116 @@ function loadRealProfileData() {
     loadOffersTeaser();
     loadWearables();
     loadPendingFeedback();
+    loadMyOneOnOnes();
   }).catch(function(){});
+}
+
+// ════════════════════════════════════════════════════════════════
+// MY 1-ON-1 SESSIONS WIDGET — upcoming paid coach sessions
+// ════════════════════════════════════════════════════════════════
+function loadMyOneOnOnes() {
+  var token = localStorage.getItem('atp_token') || '';
+  if (!token) return;
+  fetch('/api/coach-sessions/me/bookings', { headers: { Authorization: 'Bearer ' + token } })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var memberId = (window.ATP && window.ATP.getUser && window.ATP.getUser() || {}).id;
+      var all = (d && d.bookings) || [];
+      var now = Date.now();
+      // Only show bookings the caller is attending (member_id matches),
+      // status is active, and the session is upcoming or in-progress.
+      var upcoming = all.filter(function(b){
+        if (b.member_id !== memberId) return false;
+        if (['cancelled_by_member','cancelled_by_coach','completed','no_show'].indexOf(b.status) !== -1) return false;
+        // Keep sessions up to 4h after their scheduled start (in-progress window)
+        var endish = new Date(b.scheduled_at).getTime() + (b.duration_min || 60) * 60000 + 4 * 3600000;
+        return endish > now;
+      });
+      upcoming.sort(function(a, b){ return new Date(a.scheduled_at) - new Date(b.scheduled_at); });
+      renderMyOneOnOnes(upcoming);
+    })
+    .catch(function(){ /* table missing — silent */ });
+}
+
+function renderMyOneOnOnes(list) {
+  var host = document.getElementById('myOneOnOnesHost');
+  if (!host) return;
+  if (!list.length) { host.innerHTML = ''; return; }
+
+  var html = '<div style="background:#0f0f0f;border:1px solid rgba(245,192,66,.32);border-radius:var(--radius-lg);padding:18px 20px">' +
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">' +
+      '<div>' +
+        '<div style="font-size:11px;color:#f5c042;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:4px">★ Your 1-on-1 sessions</div>' +
+        '<div style="font-size:13px;color:var(--muted)">' + list.length + ' upcoming · paid coaching with verified ATP coaches</div>' +
+      '</div>' +
+    '</div>';
+
+  html += list.map(function(b){
+    var when = new Date(b.scheduled_at);
+    var minsUntil = Math.round((when.getTime() - Date.now()) / 60000);
+    var canJoin = minsUntil <= 15 && minsUntil > -1 * (b.duration_min || 60);
+    var coachName = ((b.coach_first_name || '') + ' ' + (b.coach_last_name || '')).trim();
+    var dateStr = when.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+    var timeStr = when.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
+    var streamUrl = b.stream_room_id ? '/stream-watch.html?room=' + encodeURIComponent(b.stream_room_id) : null;
+
+    return '<div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;margin-top:10px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">' +
+        '<div style="flex:1;min-width:200px">' +
+          '<div style="font-family:var(--ff-display);font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.02em;line-height:1.15">' +
+            (b.offering_title || '1-on-1 session').replace(/[<>&]/g, '') +
+          '</div>' +
+          '<div style="font-size:12px;color:var(--muted);margin-top:4px">with ' + coachName.replace(/[<>&]/g, '') + ' · ' + b.duration_min + ' min</div>' +
+          '<div style="font-size:13px;color:#f5c042;font-weight:600;margin-top:6px">' + dateStr + ' at ' + timeStr +
+            (minsUntil > 0 && minsUntil < 1440 ? ' <span style="color:#7AC231;font-size:11px;font-weight:500">· in ' + (minsUntil < 60 ? minsUntil + ' min' : Math.floor(minsUntil / 60) + 'h ' + (minsUntil % 60) + 'm') + '</span>' : '') +
+          '</div>' +
+          (b.member_note ? '<div style="font-size:11px;color:#aaa;margin-top:8px;font-style:italic;background:rgba(255,255,255,.03);padding:6px 10px;border-radius:4px">"' + (b.member_note || '').replace(/[<>&]/g, '') + '"</div>' : '') +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0">' +
+          (canJoin && streamUrl
+            ? '<a href="' + streamUrl + '" target="_blank" style="background:#ef4444;color:#fff;border-radius:6px;padding:10px 18px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;text-decoration:none;display:inline-flex;align-items:center;gap:6px;justify-content:center"><span style="font-size:14px">🎥</span> Join now</a>'
+            : '') +
+          '<button onclick="cancelMyOneOnOne(\'' + b.id + '\', ' + minsUntil + ', ' + b.price_paid_aed + ')" style="background:transparent;border:1px solid rgba(239,68,68,.3);color:#ff8a8a;border-radius:6px;padding:8px 14px;font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">Cancel</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  html += '</div>';
+  host.innerHTML = html;
+}
+
+function cancelMyOneOnOne(bookingId, minsUntil, priceAed) {
+  // Show the refund policy before cancelling so the member knows what
+  // they'll get back.
+  var refundPct, refundAed;
+  if (minsUntil >= 24 * 60) { refundPct = 100; refundAed = priceAed; }
+  else if (minsUntil >= 2 * 60) { refundPct = 50; refundAed = Math.round(priceAed * 0.5); }
+  else { refundPct = 0; refundAed = 0; }
+
+  var msg = 'Cancel this 1-on-1 session?\n\n';
+  if (refundPct === 100) msg += 'You\'ll get a full AED ' + refundAed + ' refund to your wallet (you cancelled 24+ hours before the session).';
+  else if (refundPct === 50) msg += 'You\'ll get AED ' + refundAed + ' back (50% — you cancelled 2-24h before). Coach keeps the rest.';
+  else msg += 'No refund (you cancelled less than 2 hours before). The coach keeps the full payment.';
+
+  if (!confirm(msg)) return;
+
+  var reason = prompt('Optional — tell the coach why (they\'ll see this):', '');
+  if (reason === null) return; // they hit Cancel on the prompt
+
+  var token = localStorage.getItem('atp_token') || '';
+  fetch('/api/coach-sessions/' + bookingId + '/cancel', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+    body: JSON.stringify({ reason: reason || null }),
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.error) { alert(d.error); return; }
+      alert('Cancelled · AED ' + (d.refund_aed || 0) + ' refunded to your wallet.');
+      loadMyOneOnOnes();
+    })
+    .catch(function(){ alert('Network glitch — try again.'); });
 }
 
 // ════════════════════════════════════════════════════════════════

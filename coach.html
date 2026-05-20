@@ -865,6 +865,9 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
   var WALLET = { balance_aed: 0 };
   var POINTS_BALANCE = 0;
   var POINTS_TO_USE = 0;
+  var IS_GIFT = false;
+  var GIFT_EMAIL = '';
+  var GIFT_MESSAGE = '';
 
   function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -920,6 +923,9 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     SELECTED_DATE = null;
     SELECTED_TIME = null;
     POINTS_TO_USE = 0;
+    IS_GIFT = false;
+    GIFT_EMAIL = '';
+    GIFT_MESSAGE = '';
     // Start the calendar on this month
     CALENDAR_MONTH = new Date();
     CALENDAR_MONTH.setDate(1);
@@ -959,12 +965,29 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     card.innerHTML =
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:16px">' +
         '<div>' +
-          '<div style="font-size:11px;color:#f5c042;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:4px">Book session</div>' +
+          '<div style="font-size:11px;color:#f5c042;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:4px">' + (IS_GIFT ? '🎁 Gift session' : 'Book session') + '</div>' +
           '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:22px;font-weight:800;text-transform:uppercase;line-height:1.1">' + esc(o.title) + '</div>' +
           '<div style="font-size:12px;color:#888;margin-top:4px">' + o.duration_min + ' min · AED ' + o.price_aed + '</div>' +
         '</div>' +
         '<button onclick="cpCloseBookingModal()" style="background:none;border:none;color:#888;font-size:22px;cursor:pointer;padding:4px 8px">×</button>' +
       '</div>' +
+
+      // Mode toggle — Book for me vs Gift to a friend
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:14px;background:rgba(255,255,255,.03);padding:4px;border-radius:8px">' +
+        '<button onclick="cpSetGiftMode(false)" style="padding:10px 12px;background:' + (!IS_GIFT ? '#f5c042' : 'transparent') + ';color:' + (!IS_GIFT ? '#0a0a0a' : '#888') + ';border:none;border-radius:6px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:11px;cursor:pointer;font-family:inherit">🙋 For me</button>' +
+        '<button onclick="cpSetGiftMode(true)" style="padding:10px 12px;background:' + (IS_GIFT ? '#f5c042' : 'transparent') + ';color:' + (IS_GIFT ? '#0a0a0a' : '#888') + ';border:none;border-radius:6px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:11px;cursor:pointer;font-family:inherit">🎁 Gift to a friend</button>' +
+      '</div>' +
+
+      // If gifting, show recipient picker first
+      (IS_GIFT
+        ? '<div style="margin-bottom:14px;background:rgba(245,192,66,.04);border:1px solid rgba(245,192,66,.2);border-radius:8px;padding:14px">' +
+            '<label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:6px">Recipient\'s ATP email *</label>' +
+            '<input type="email" id="cp-gift-email" placeholder="friend@example.com" value="' + esc(GIFT_EMAIL) + '" oninput="cpUpdateGiftEmail(this.value)" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:14px;font-family:inherit;margin-bottom:10px">' +
+            '<label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:6px">Personal message (optional)</label>' +
+            '<textarea id="cp-gift-message" rows="2" placeholder="For your marathon prep — you\'ve got this." oninput="cpUpdateGiftMessage(this.value)" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:13px;font-family:inherit;resize:vertical">' + esc(GIFT_MESSAGE) + '</textarea>' +
+            '<div style="font-size:11px;color:#888;margin-top:8px;line-height:1.4">They must already have an ATP account. They\'ll get an email + can redeem within 90 days.</div>' +
+          '</div>'
+        : '') +
 
       // Month calendar date picker
       renderCalendarHtml() +
@@ -1006,9 +1029,33 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
             ? '<div style="padding:12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:12px;color:#ff8a8a;margin-bottom:14px">⚠ Wallet balance too low. Need AED ' + walletDebit + ', you have AED ' + WALLET.balance_aed + '. Contact ATP to top up.</div>'
             : '') +
 
-          '<button onclick="cpConfirmBooking()" ' + (canAfford ? '' : 'disabled') + ' style="width:100%;background:' + (canAfford ? '#f5c042' : 'rgba(255,255,255,.1)') + ';color:' + (canAfford ? '#0a0a0a' : '#666') + ';border:none;border-radius:8px;padding:14px;font-weight:800;font-size:14px;letter-spacing:.05em;text-transform:uppercase;cursor:' + (canAfford ? 'pointer' : 'not-allowed') + '">Confirm booking →</button>'
+          // Block confirm if gifting without an email
+          (IS_GIFT && !(GIFT_EMAIL && GIFT_EMAIL.indexOf('@') > 0)
+            ? '<div style="padding:12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:12px;color:#ff8a8a;margin-bottom:14px">⚠ Add the recipient\'s email above to send as a gift.</div>'
+            : '') +
+
+          '<button onclick="cpConfirmBooking()" ' + (canAfford && (!IS_GIFT || (GIFT_EMAIL && GIFT_EMAIL.indexOf('@') > 0)) ? '' : 'disabled') + ' style="width:100%;background:' + (canAfford && (!IS_GIFT || (GIFT_EMAIL && GIFT_EMAIL.indexOf('@') > 0)) ? '#f5c042' : 'rgba(255,255,255,.1)') + ';color:' + (canAfford && (!IS_GIFT || (GIFT_EMAIL && GIFT_EMAIL.indexOf('@') > 0)) ? '#0a0a0a' : '#666') + ';border:none;border-radius:8px;padding:14px;font-weight:800;font-size:14px;letter-spacing:.05em;text-transform:uppercase;cursor:' + (canAfford && (!IS_GIFT || (GIFT_EMAIL && GIFT_EMAIL.indexOf('@') > 0)) ? 'pointer' : 'not-allowed') + '">' + (IS_GIFT ? '🎁 Send the gift →' : 'Confirm booking →') + '</button>'
         : '');
   }
+
+  window.cpSetGiftMode = function(on) {
+    IS_GIFT = !!on;
+    renderModal();
+  };
+  window.cpUpdateGiftEmail = function(v) {
+    GIFT_EMAIL = (v || '').trim();
+    // Don't re-render on every keystroke (would lose focus). Just update
+    // the confirm-button enabled state by toggling its disabled attr.
+    var btn = document.querySelector('#cp-book-modal-card button[onclick="cpConfirmBooking()"]');
+    if (btn) {
+      var ok = GIFT_EMAIL && GIFT_EMAIL.indexOf('@') > 0 && WALLET.balance_aed >= (SELECTED_OFFERING ? SELECTED_OFFERING.price_aed - Math.floor(POINTS_TO_USE / 10) : 0);
+      btn.disabled = !ok;
+      btn.style.background = ok ? '#f5c042' : 'rgba(255,255,255,.1)';
+      btn.style.color = ok ? '#0a0a0a' : '#666';
+      btn.style.cursor = ok ? 'pointer' : 'not-allowed';
+    }
+  };
+  window.cpUpdateGiftMessage = function(v) { GIFT_MESSAGE = v || ''; };
 
   // Convert a Date to a "YYYY-MM-DD" string using LOCAL components.
   // Avoids the timezone bug where .toISOString() converts to UTC, which
@@ -1179,6 +1226,11 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
       member_note: note,
       points_to_use: POINTS_TO_USE,
     };
+    if (IS_GIFT) {
+      body.is_gift = true;
+      body.gift_recipient_email = GIFT_EMAIL;
+      body.gift_message = GIFT_MESSAGE || null;
+    }
     var card = document.getElementById('cp-book-modal-card');
     card.style.opacity = 0.6;
     fetch('/api/coach-sessions/book', {
