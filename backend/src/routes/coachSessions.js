@@ -834,7 +834,7 @@ router.post('/:id/redeem-gift', authenticate, async (req, res, next) => {
       return res.status(400).json({ error: 'This booking is not a redeemable gift.' });
     }
     if (booking.gift_expires_at && new Date(booking.gift_expires_at) < new Date()) {
-      return res.status(400).json({ error: 'This gift has expired. The sender will be refunded.' });
+      return res.status(400).json({ error: 'This gift has expired. The coach has been paid for their reserved time.' });
     }
 
     // Conflict check at the chosen time
@@ -1061,4 +1061,97 @@ router.post('/admin/wallet-topup', authenticate, requireAdmin, async (req, res, 
   } catch (err) { next(err); }
 });
 
+// ── AUTO-EXPIRE GIFTS ──────────────────────────────────────────
+// Called hourly by cron. For every gift past its expiry that hasn't
+// been redeemed: mark status='gift_expired', credit the coach's
+// balance with the 90% payout (use-it-or-lose-it — sender does NOT
+// get refunded), and notify the sender. ATP keeps the 10% platform
+// fee that was already debited at gift purchase time.
+async function autoExpireGifts() {
+  const { transaction } = require('../db');
+  const { rows: expired } = await query(
+    `SELECT b.id, b.coach_id, b.payer_id, b.member_id, b.coach_payout_aed,
+            b.platform_fee_aed, b.price_paid_aed, b.offering_id,
+            o.title AS offering_title,
+            rm.first_name AS recipient_first
+       FROM coach_session_bookings b
+       LEFT JOIN coach_offerings o ON o.id = b.offering_id
+       LEFT JOIN members rm ON rm.id = b.member_id
+      WHERE b.is_gift = true
+        AND b.status = 'gift_pending_redemption'
+        AND b.gift_expires_at IS NOT NULL
+        AND b.gift_expires_at < NOW()`
+  );
+
+  for (const g of expired) {
+    try {
+      await transaction(async (client) => {
+        // Race-safe: only flip if still pending
+        const { rowCount } = await client.query(
+          `UPDATE coach_session_bookings
+              SET status='gift_expired', updated_at=NOW()
+            WHERE id=$1 AND status='gift_pending_redemption'`,
+          [g.id]
+        );
+        if (!rowCount) return; // already redeemed/processed
+
+        // Coach gets 90% — straight to balance (no scheduled session
+        // means no completion event, so we don't park it in pending).
+        // ATP keeps the 10% platform fee that was already in our pocket
+        // from the original wallet debit.
+        await client.query(
+          `INSERT INTO member_wallet (member_id) VALUES ($1) ON CONFLICT DO NOTHING`,
+          [g.coach_id]
+        );
+        await client.query(
+          `UPDATE member_wallet SET balance_aed = balance_aed + $1, updated_at = NOW()
+            WHERE member_id=$2`,
+          [g.coach_payout_aed, g.coach_id]
+        );
+        const { rows: cwr } = await client.query(
+          `SELECT balance_aed FROM member_wallet WHERE member_id=$1`,
+          [g.coach_id]
+        );
+        await client.query(
+          `INSERT INTO member_wallet_transactions
+             (member_id, amount_aed, balance_after, txn_type, reference_type, reference_id, description)
+           VALUES ($1, $2, $3, 'gift_expired_payout', 'coach_session_booking', $4, $5)`,
+          [g.coach_id, g.coach_payout_aed, cwr[0].balance_aed, g.id,
+           'Expired gift payout (90%): ' + (g.offering_title || 'session')]
+        );
+
+        // Notify sender: gift expired, no refund
+        try {
+          await client.query(
+            `INSERT INTO notifications (member_id, type, title, body, data)
+             VALUES ($1, 'coach_gift_expired',
+                     'Your gift expired',
+                     COALESCE($2, 'Your friend') || ' didn''t redeem the ' || COALESCE($3, 'session') || ' gift in 30 days. The coach has been paid for their reserved time.',
+                     $4::jsonb)`,
+            [g.payer_id, g.recipient_first, g.offering_title,
+             JSON.stringify({ booking_id: g.id })]
+          );
+        } catch (e) { /* notifications table missing — non-fatal */ }
+
+        // Also notify the recipient so they know it's gone
+        try {
+          await client.query(
+            `INSERT INTO notifications (member_id, type, title, body, data)
+             VALUES ($1, 'coach_gift_expired_recipient',
+                     'A gift expired',
+                     'You missed the 30-day window to redeem the ' || COALESCE($2, 'session') || ' gift. Sorry you didn''t make it!',
+                     $3::jsonb)`,
+            [g.member_id, g.offering_title, JSON.stringify({ booking_id: g.id })]
+          );
+        } catch (e) { /* non-fatal */ }
+      });
+      console.log(`[gifts] expired ${g.id} → coach ${g.coach_id} +AED ${g.coach_payout_aed}`);
+    } catch (e) {
+      console.error(`[gifts] failed to expire ${g.id}:`, e.message);
+    }
+  }
+  return { expired: expired.length };
+}
+
 module.exports = router;
+module.exports.autoExpireGifts = autoExpireGifts;

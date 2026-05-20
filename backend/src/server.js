@@ -370,6 +370,24 @@ if (require.main === module) {
       };
       setTimeout(() => { tick(); setInterval(tick, 15 * 60 * 1000); }, 60 * 1000);
     }
+
+    // ── Coach session background jobs ─────────────────────────
+    // Hourly: auto-complete ATP sessions 12h after they end (awards
+    // points + prompts feedback) and auto-expire unredeemed gifts past
+    // their 30-day window (coach 90% / ATP 10%, no refund to sender).
+    const coachSessionsRouter = require('./routes/coachSessions');
+    const { autoCompleteSessions } = require('./services/points');
+    const sessionsTick = async () => {
+      try { await autoCompleteSessions(); }
+      catch (e) { console.error('[sessions] auto-complete tick failed:', e.message); }
+      try {
+        if (typeof coachSessionsRouter.autoExpireGifts === 'function') {
+          const r = await coachSessionsRouter.autoExpireGifts();
+          if (r && r.expired) console.log(`[gifts] expired ${r.expired} unredeemed gifts`);
+        }
+      } catch (e) { console.error('[gifts] auto-expire tick failed:', e.message); }
+    };
+    setTimeout(() => { sessionsTick(); setInterval(sessionsTick, 60 * 60 * 1000); }, 90 * 1000);
   });
 }
 

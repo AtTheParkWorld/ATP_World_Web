@@ -1069,6 +1069,7 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
         '<label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin:14px 0 6px">Personal message (optional)</label>' +
         '<textarea id="cp-gift-message" rows="2" placeholder="For your marathon prep — you\'ve got this." oninput="cpUpdateGiftMessage(this.value)" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:13px;font-family:inherit;resize:vertical">' + esc(GIFT_MESSAGE) + '</textarea>' +
         '<div style="font-size:11px;color:#888;margin-top:10px;line-height:1.5">' + esc((GIFT_RECIPIENT.first_name || 'They')) + ' will pick their own time when they redeem. They have <strong style="color:#f5c042">30 days</strong> from now.</div>' +
+        '<div style="font-size:11px;color:#d97757;margin-top:8px;line-height:1.5;background:rgba(217,119,87,.06);border-left:2px solid rgba(217,119,87,.4);padding:8px 10px;border-radius:4px"><strong>Non-refundable:</strong> if ' + esc((GIFT_RECIPIENT.first_name || 'they')) + ' doesn\'t redeem within 30 days, the coach is paid for their reserved time.</div>' +
       '</div>';
     }
 
@@ -1345,7 +1346,7 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
               '<div style="background:rgba(245,192,66,.06);border:1px solid rgba(245,192,66,.32);border-radius:8px;padding:14px;font-size:13px;color:#fff;margin-bottom:18px">' +
                 b.duration_min + ' min · AED ' + b.price_paid_aed + ' · ' + esc(SELECTED_OFFERING.title) +
               '</div>' +
-              '<p style="font-size:12px;color:#888;margin-bottom:18px;line-height:1.5">If ' + esc(recipientName) + ' doesn\'t redeem in 30 days, you get the full amount refunded to your wallet automatically.</p>' +
+              '<p style="font-size:12px;color:#888;margin-bottom:18px;line-height:1.5">Heads up: this gift is non-refundable. If ' + esc(recipientName) + ' doesn\'t redeem within 30 days, the coach is paid for their reserved time. Give ' + esc(recipientName) + ' a nudge!</p>' +
               '<button onclick="cpCloseBookingModal()" style="background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;padding:12px 28px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">Done</button>' +
             '</div>';
         } else {
