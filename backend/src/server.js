@@ -260,6 +260,12 @@ app.get('/member-feedback', (req, res) => res.redirect(302, '/survey/member-voic
 // survey's slug becomes a public URL; the single survey.html page
 // loads its definition by slug and renders dynamically.
 app.get('/survey/:slug', (req, res) => res.sendFile(path.join(__dirname, '../public/survey.html')));
+
+// Corporate Wellness — B2B pitch deck for HR directors / wellness leads.
+// Founder shares this link in cold outreach. Also: /corporate/join/:token
+// for employee onboarding via a company-specific invite link.
+app.get('/corporate', (req, res) => res.sendFile(path.join(__dirname, '../public/corporate.html')));
+app.get('/corporate/join/:token', (req, res) => res.sendFile(path.join(__dirname, '../public/corporate-join.html')));
 app.get('/',         (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 
 // ── API Routes ───────────────────────────────────────────────────────────────
@@ -300,6 +306,8 @@ const ROUTES = [
   ['founder',      require('./routes/founder')],
   ['member-feedback', require('./routes/memberFeedback')],
   ['surveys',      require('./routes/surveys')],
+  ['coach-sessions', require('./routes/coachSessions')],
+  ['corporate',    require('./routes/corporate')],
 ];
 for (const [prefix, router] of ROUTES) {
   app.use('/api/'    + prefix, router);
