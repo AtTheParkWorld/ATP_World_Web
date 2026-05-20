@@ -1,6 +1,6 @@
 {
   "name": "atp-backend",
-  "version": "1.28.1",
+  "version": "1.29.0",
   "description": "At The Park — Backend API",
   "main": "src/server.js",
   "scripts": {

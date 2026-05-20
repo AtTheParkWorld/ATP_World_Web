@@ -861,6 +861,7 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
   var SELECTED_OFFERING = null;
   var SELECTED_DATE = null;
   var SELECTED_TIME = null;
+  var CALENDAR_MONTH = null;  // Date object for the displayed month
   var WALLET = { balance_aed: 0 };
   var POINTS_BALANCE = 0;
   var POINTS_TO_USE = 0;
@@ -919,6 +920,9 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     SELECTED_DATE = null;
     SELECTED_TIME = null;
     POINTS_TO_USE = 0;
+    // Start the calendar on this month
+    CALENDAR_MONTH = new Date();
+    CALENDAR_MONTH.setDate(1);
     // Load wallet + points
     Promise.all([
       fetch('/api/coach-sessions/wallet/me', { headers: authHeaders() }).then(function(r){ return r.json(); }),
@@ -946,7 +950,6 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     var card = document.getElementById('cp-book-modal-card');
     if (!card) return;
     var o = SELECTED_OFFERING;
-    var dateOptions = nextNDates(14);
     var timeOptions = SELECTED_DATE ? slotsForDate(SELECTED_DATE) : [];
     var maxPoints = Math.min(POINTS_BALANCE, o.price_aed * 10);
     var pointsValueAed = Math.floor(POINTS_TO_USE / 10);
@@ -963,20 +966,8 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
         '<button onclick="cpCloseBookingModal()" style="background:none;border:none;color:#888;font-size:22px;cursor:pointer;padding:4px 8px">×</button>' +
       '</div>' +
 
-      // Date picker
-      '<div style="margin-bottom:14px"><label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">1. Pick a date</label>' +
-        '<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px">' +
-          dateOptions.map(function(d){
-            var iso = d.toISOString().slice(0, 10);
-            var active = SELECTED_DATE && SELECTED_DATE.toISOString().slice(0, 10) === iso;
-            return '<button onclick="cpPickDate(\'' + iso + '\')" style="flex-shrink:0;background:' + (active ? '#f5c042' : 'rgba(255,255,255,.04)') + ';color:' + (active ? '#0a0a0a' : '#fff') + ';border:1px solid ' + (active ? '#f5c042' : 'rgba(255,255,255,.1)') + ';border-radius:8px;padding:8px 12px;cursor:pointer;text-align:center;min-width:60px;font-family:inherit">' +
-              '<div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:600">' + d.toLocaleDateString(undefined, {weekday:'short'}) + '</div>' +
-              '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:18px;font-weight:900;line-height:1.1">' + d.getDate() + '</div>' +
-              '<div style="font-size:9px;color:' + (active ? '#0a0a0a' : '#888') + '">' + d.toLocaleDateString(undefined, {month:'short'}) + '</div>' +
-            '</button>';
-          }).join('') +
-        '</div>' +
-      '</div>' +
+      // Month calendar date picker
+      renderCalendarHtml() +
 
       // Time picker (only if date selected)
       (SELECTED_DATE
@@ -1019,7 +1010,92 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
         : '');
   }
 
-  // Helper: next N days starting today
+  // Build month-calendar HTML for the booking modal. Days with coach
+  // availability are highlighted + clickable; everything else greyed.
+  function renderCalendarHtml() {
+    if (!CALENDAR_MONTH) return '';
+    var m = new Date(CALENDAR_MONTH);
+    var firstDow = m.getDay(); // 0 = Sun
+    var monthEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+    var today = new Date(); today.setHours(0,0,0,0);
+    var monthLabel = m.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+
+    // Pre-compute the set of day-of-week values that have availability
+    var availDows = new Set();
+    AVAILABILITY.forEach(function(a){ if (a.is_active !== false) availDows.add(a.day_of_week); });
+
+    // Prev/next buttons — disabled if going past today (no past-month) or 6 months ahead
+    var thisMonthStart = new Date(); thisMonthStart.setDate(1); thisMonthStart.setHours(0,0,0,0);
+    var maxMonth = new Date(); maxMonth.setMonth(maxMonth.getMonth() + 6); maxMonth.setDate(1);
+    var canPrev = m > thisMonthStart;
+    var canNext = m < maxMonth;
+
+    var html = '<div style="margin-bottom:14px"><label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">1. Pick a date</label>' +
+      '<div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px">' +
+        // Header
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
+          '<button ' + (canPrev ? 'onclick="cpCalNav(-1)"' : 'disabled') + ' style="background:none;border:none;color:' + (canPrev ? '#f5c042' : '#444') + ';font-size:20px;cursor:' + (canPrev ? 'pointer' : 'not-allowed') + ';padding:4px 10px">‹</button>' +
+          '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.02em">' + monthLabel + '</div>' +
+          '<button ' + (canNext ? 'onclick="cpCalNav(1)"' : 'disabled') + ' style="background:none;border:none;color:' + (canNext ? '#f5c042' : '#444') + ';font-size:20px;cursor:' + (canNext ? 'pointer' : 'not-allowed') + ';padding:4px 10px">›</button>' +
+        '</div>' +
+
+        // Weekday headers
+        '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px">' +
+          ['S','M','T','W','T','F','S'].map(function(d){
+            return '<div style="text-align:center;font-size:10px;color:#666;font-weight:700;letter-spacing:.04em">' + d + '</div>';
+          }).join('') +
+        '</div>' +
+
+        // Day grid
+        '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">';
+
+    // Leading blanks
+    for (var i = 0; i < firstDow; i++) html += '<div></div>';
+
+    // Days
+    for (var d = 1; d <= monthEnd; d++) {
+      var day = new Date(m.getFullYear(), m.getMonth(), d);
+      day.setHours(0,0,0,0);
+      var iso = day.toISOString().slice(0, 10);
+      var isPast = day < today;
+      var hasAvail = availDows.has(day.getDay()) && !isPast;
+      var isSelected = SELECTED_DATE && SELECTED_DATE.toISOString().slice(0, 10) === iso;
+      var isToday = day.getTime() === today.getTime();
+
+      var bg = isSelected ? '#f5c042' : (hasAvail ? 'rgba(122,194,49,.16)' : 'transparent');
+      var color = isSelected ? '#0a0a0a' : (hasAvail ? '#fff' : (isPast ? '#333' : '#555'));
+      var border = isSelected ? '#f5c042' : (hasAvail ? 'rgba(122,194,49,.5)' : 'transparent');
+      var cursor = hasAvail ? 'pointer' : 'not-allowed';
+      var onclick = hasAvail ? 'onclick="cpPickDate(\'' + iso + '\')"' : '';
+
+      html += '<div ' + onclick + ' style="position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:' + color + ';background:' + bg + ';border:1px solid ' + border + ';border-radius:6px;cursor:' + cursor + ';transition:background .15s">' +
+        d +
+        (isToday && !isSelected ? '<span style="position:absolute;bottom:3px;width:4px;height:4px;border-radius:50%;background:#f5c042"></span>' : '') +
+      '</div>';
+    }
+
+    html += '</div>' +
+
+        // Legend
+        '<div style="display:flex;gap:14px;justify-content:center;margin-top:12px;font-size:10px;color:#666">' +
+          '<span style="display:flex;align-items:center;gap:5px"><span style="display:block;width:10px;height:10px;background:rgba(122,194,49,.16);border:1px solid rgba(122,194,49,.5);border-radius:3px"></span>Available</span>' +
+          '<span style="display:flex;align-items:center;gap:5px"><span style="display:block;width:10px;height:10px;background:#f5c042;border-radius:3px"></span>Selected</span>' +
+          '<span style="display:flex;align-items:center;gap:5px"><span style="display:block;width:4px;height:4px;background:#f5c042;border-radius:50%"></span>Today</span>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+
+    return html;
+  }
+
+  window.cpCalNav = function(direction) {
+    if (!CALENDAR_MONTH) return;
+    CALENDAR_MONTH = new Date(CALENDAR_MONTH);
+    CALENDAR_MONTH.setMonth(CALENDAR_MONTH.getMonth() + direction);
+    renderModal();
+  };
+
+  // Helper: next N days starting today (legacy — kept in case anyone uses it)
   function nextNDates(n) {
     var arr = [];
     var d = new Date(); d.setHours(0,0,0,0);

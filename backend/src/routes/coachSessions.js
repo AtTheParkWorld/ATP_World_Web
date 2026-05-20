@@ -184,6 +184,44 @@ router.delete('/me/availability/:id', authenticate, _requireCoach, async (req, r
   } catch (err) { next(err); }
 });
 
+// PUT /me/availability/bulk — replace ALL weekly windows in one atomic op.
+// Powers the visual calendar grid: coach toggles cells, this endpoint
+// receives the resulting windows array, wipes the old set, inserts the new.
+// Body: { windows: [ { day_of_week, start_time, end_time }, ... ] }
+router.put('/me/availability/bulk', authenticate, _requireCoach, async (req, res, next) => {
+  const { transaction } = require('../db');
+  try {
+    const windows = Array.isArray(req.body?.windows) ? req.body.windows : null;
+    if (!windows) return res.status(400).json({ error: 'windows array required' });
+
+    // Validate every window before touching the DB. Reject the whole
+    // request if any one is malformed — atomic semantics.
+    for (const w of windows) {
+      if (typeof w.day_of_week !== 'number' || w.day_of_week < 0 || w.day_of_week > 6) {
+        return res.status(400).json({ error: 'day_of_week must be 0-6 in every window' });
+      }
+      if (!/^\d{2}:\d{2}(:\d{2})?$/.test(w.start_time || '') || !/^\d{2}:\d{2}(:\d{2})?$/.test(w.end_time || '')) {
+        return res.status(400).json({ error: 'start_time + end_time must be HH:MM in every window' });
+      }
+      if (w.start_time >= w.end_time) {
+        return res.status(400).json({ error: 'end_time must be after start_time' });
+      }
+    }
+
+    await transaction(async (client) => {
+      await client.query('DELETE FROM coach_availability WHERE coach_id=$1', [req.member.id]);
+      for (const w of windows) {
+        await client.query(
+          `INSERT INTO coach_availability (coach_id, day_of_week, start_time, end_time, timezone, is_active)
+           VALUES ($1, $2, $3, $4, $5, true)`,
+          [req.member.id, w.day_of_week, w.start_time, w.end_time, w.timezone || 'Asia/Dubai']
+        );
+      }
+    });
+    res.json({ success: true, windows_saved: windows.length });
+  } catch (err) { next(err); }
+});
+
 // Bank account capture (for monthly payout)
 router.get('/me/bank-account', authenticate, _requireCoach, async (req, res, next) => {
   try {

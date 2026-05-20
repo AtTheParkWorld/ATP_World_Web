@@ -4721,7 +4721,16 @@ function deleteOffering(e, btn) {
     .then(function(){ loadCoachOfferings(); });
 }
 
-// ── AVAILABILITY ──────────────────────────────────────────────
+// ── AVAILABILITY · Visual weekly grid ────────────────────────
+// Coach taps cells to mark when they're available. Cells = 1-hour
+// blocks from 6am to 10pm × 7 days of the week. On save, consecutive
+// cells in the same day are merged into one window before sending.
+// "Quick presets" let coaches one-tap common patterns (weekday evenings,
+// weekend mornings, etc.) and edit from there.
+var COACH_AVAIL_CELLS = new Set(); // keys: "dow-hour" e.g. "1-17"
+var COACH_AVAIL_DIRTY = false;
+var COACH_AVAIL_DRAG = null;      // { mode: 'add'|'remove', startCell }
+
 function loadCoachAvailability() {
   var host = document.getElementById('coachHubBody');
   if (!host) return;
@@ -4730,83 +4739,199 @@ function loadCoachAvailability() {
     .then(function(r){ return r.json(); })
     .then(function(d){
       var av = (d && d.availability) || [];
-      var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-      var html = '<div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5">Define which days + hours you\'re open for 1-on-1 bookings. Members can only book inside these windows.</div>' +
-        '<div id="availFormWrap"></div>' +
-        '<button class="btn-primary" data-atp-call="newAvailabilityForm" style="margin-bottom:14px;padding:8px 16px;font-size:12px;background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">+ Add time window</button>';
-      if (!av.length) {
-        html += '<div style="padding:40px;border:1px dashed rgba(255,255,255,.1);border-radius:10px;text-align:center;color:var(--muted)">No availability set. Add at least one window so members can book.</div>';
-      } else {
-        // Group by day for clean display
-        var byDay = {};
-        days.forEach(function(_, i){ byDay[i] = []; });
-        av.forEach(function(w){ byDay[w.day_of_week].push(w); });
-        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">';
-        days.forEach(function(name, i){
-          html += '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px">' +
-            '<div style="font-family:var(--ff-display);font-size:14px;font-weight:800;color:#fff;text-transform:uppercase;margin-bottom:8px">' + name + '</div>';
-          if (!byDay[i].length) {
-            html += '<div style="font-size:11px;color:#666">Closed</div>';
-          } else {
-            html += byDay[i].map(function(w){
-              return '<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#fff;margin-bottom:4px"><span>' + (w.start_time || '').slice(0, 5) + ' – ' + (w.end_time || '').slice(0, 5) + '</span>' +
-                '<button data-atp-call="deleteAvailability" data-args=\'["' + w.id + '"]\' style="background:none;border:none;color:#ff8a8a;cursor:pointer;font-size:14px;padding:2px 6px">×</button></div>';
-            }).join('');
-          }
-          html += '</div>';
-        });
-        html += '</div>';
-      }
-      host.innerHTML = html;
+      // Hydrate the cell set from existing windows
+      COACH_AVAIL_CELLS = new Set();
+      av.forEach(function(w){
+        if (!w.is_active) return;
+        var s = parseInt((w.start_time || '00:00').split(':')[0], 10);
+        var e = parseInt((w.end_time || '00:00').split(':')[0], 10);
+        // Round up end if start_time has minutes — for now we use whole hours
+        for (var h = s; h < e; h++) COACH_AVAIL_CELLS.add(w.day_of_week + '-' + h);
+      });
+      COACH_AVAIL_DIRTY = false;
+      renderAvailabilityGrid();
     });
 }
 
-function newAvailabilityForm() {
-  var wrap = document.getElementById('availFormWrap');
-  if (!wrap) return;
-  wrap.innerHTML =
-    '<div style="background:rgba(245,192,66,.04);border:1px solid rgba(245,192,66,.2);border-radius:10px;padding:16px;margin-bottom:14px">' +
-      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">' +
-        '<div><label style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:5px">Day</label>' +
-          '<select id="avDay" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:14px">' +
-            ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map(function(d, i){ return '<option value="' + i + '">' + d + '</option>'; }).join('') +
-          '</select></div>' +
-        '<div><label style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:5px">Start</label>' +
-          '<input id="avStart" type="time" value="17:00" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:14px;font-family:inherit"></div>' +
-        '<div><label style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:5px">End</label>' +
-          '<input id="avEnd" type="time" value="19:00" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:14px;font-family:inherit"></div>' +
+function renderAvailabilityGrid() {
+  var host = document.getElementById('coachHubBody');
+  if (!host) return;
+  var days = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+  var hours = [];
+  for (var h = 6; h <= 22; h++) hours.push(h);
+
+  // Calculate totals (visible to coach for sanity check)
+  var totalHours = COACH_AVAIL_CELLS.size;
+
+  var html =
+    '<div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5">' +
+      'Tap cells to mark when you\'re open for 1-on-1 bookings. Drag to select multiple. Tap a selected cell to clear it.' +
+    '</div>' +
+
+    // Quick presets
+    '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">' +
+      '<button data-atp-call="applyAvailPreset" data-args=\'["weekday-evenings"]\' style="padding:6px 12px;font-size:11px;font-weight:700;background:transparent;color:var(--light);border:1px solid rgba(255,255,255,.12);border-radius:6px;cursor:pointer">+ Weekday evenings (5-8pm)</button>' +
+      '<button data-atp-call="applyAvailPreset" data-args=\'["weekday-mornings"]\' style="padding:6px 12px;font-size:11px;font-weight:700;background:transparent;color:var(--light);border:1px solid rgba(255,255,255,.12);border-radius:6px;cursor:pointer">+ Weekday mornings (6-9am)</button>' +
+      '<button data-atp-call="applyAvailPreset" data-args=\'["weekend-mornings"]\' style="padding:6px 12px;font-size:11px;font-weight:700;background:transparent;color:var(--light);border:1px solid rgba(255,255,255,.12);border-radius:6px;cursor:pointer">+ Weekend mornings (7-11am)</button>' +
+      '<button data-atp-call="clearAvailability" style="padding:6px 12px;font-size:11px;font-weight:700;background:transparent;color:#ff8a8a;border:1px solid rgba(239,68,68,.3);border-radius:6px;cursor:pointer">Clear all</button>' +
+    '</div>' +
+
+    // The grid
+    '<div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px;margin-bottom:14px;overflow-x:auto">' +
+      '<div id="availGrid" style="display:grid;grid-template-columns:48px repeat(7, 1fr);gap:2px;min-width:560px;user-select:none">' +
+        // Header row
+        '<div></div>' +
+        days.map(function(d, i){
+          return '<div style="text-align:center;font-family:var(--ff-display);font-size:13px;font-weight:800;color:#fff;text-transform:uppercase;padding:6px 0;letter-spacing:.04em">' + d + '</div>';
+        }).join('') +
+
+        // Hour rows
+        hours.map(function(h){
+          var label = (h === 12 ? '12 PM' : h > 12 ? (h - 12) + ' PM' : h + ' AM');
+          return '<div style="text-align:right;font-size:10px;color:#666;padding:6px 6px 0 0;font-weight:600">' + label + '</div>' +
+            days.map(function(d, dow){
+              var key = dow + '-' + h;
+              var selected = COACH_AVAIL_CELLS.has(key);
+              return '<div class="av-cell" data-key="' + key + '" ' +
+                'style="height:32px;background:' + (selected ? 'rgba(245,192,66,.65)' : 'rgba(255,255,255,.03)') + ';border-radius:4px;cursor:pointer;transition:background .1s;border:1px solid ' + (selected ? 'rgba(245,192,66,.85)' : 'rgba(255,255,255,.06)') + '"></div>';
+            }).join('');
+        }).join('') +
       '</div>' +
-      '<div style="display:flex;gap:8px"><button data-atp-call="saveAvailability" style="padding:10px 18px;font-size:12px;background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">Add window</button>' +
-        '<button data-atp-call="cancelAvailabilityForm" style="padding:10px 18px;font-size:12px;background:transparent;border:1px solid rgba(255,255,255,.14);color:var(--light);border-radius:6px;cursor:pointer">Cancel</button></div>' +
+    '</div>' +
+
+    // Status + save bar
+    '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">' +
+      '<div style="font-size:12px;color:var(--muted)"><strong style="color:#f5c042">' + totalHours + ' hour' + (totalHours === 1 ? '' : 's') + '</strong> available per week' +
+        (COACH_AVAIL_DIRTY ? ' · <span style="color:#f59e0b">unsaved changes</span>' : '') +
+      '</div>' +
+      '<button data-atp-call="saveAvailabilityGrid" id="saveAvailBtn" ' + (COACH_AVAIL_DIRTY ? '' : 'disabled') + ' style="padding:10px 22px;font-size:12px;background:' + (COACH_AVAIL_DIRTY ? '#f5c042' : 'rgba(245,192,66,.2)') + ';color:' + (COACH_AVAIL_DIRTY ? '#0a0a0a' : '#888') + ';border:none;border-radius:6px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:' + (COACH_AVAIL_DIRTY ? 'pointer' : 'not-allowed') + '">' + (COACH_AVAIL_DIRTY ? 'Save changes' : 'Saved ✓') + '</button>' +
     '</div>';
+
+  host.innerHTML = html;
+  _wireAvailGrid();
 }
 
-function cancelAvailabilityForm() { var w = document.getElementById('availFormWrap'); if (w) w.innerHTML = ''; }
+function _wireAvailGrid() {
+  var grid = document.getElementById('availGrid');
+  if (!grid) return;
+  // Mouse + touch handlers for click + drag-to-select
+  function cellAt(target) { return target.classList && target.classList.contains('av-cell') ? target : null; }
 
-function saveAvailability() {
-  var body = {
-    day_of_week: parseInt(document.getElementById('avDay').value, 10),
-    start_time: document.getElementById('avStart').value,
-    end_time: document.getElementById('avEnd').value,
-  };
-  fetch('/api/coach-sessions/me/availability', {
-    method: 'POST',
+  grid.addEventListener('pointerdown', function(e){
+    var c = cellAt(e.target); if (!c) return;
+    e.preventDefault();
+    var key = c.dataset.key;
+    var isSelected = COACH_AVAIL_CELLS.has(key);
+    COACH_AVAIL_DRAG = { mode: isSelected ? 'remove' : 'add' };
+    _toggleCell(key, COACH_AVAIL_DRAG.mode);
+  });
+  grid.addEventListener('pointerover', function(e){
+    if (!COACH_AVAIL_DRAG) return;
+    var c = cellAt(e.target); if (!c) return;
+    _toggleCell(c.dataset.key, COACH_AVAIL_DRAG.mode);
+  });
+  document.addEventListener('pointerup', function(){
+    if (COACH_AVAIL_DRAG) {
+      COACH_AVAIL_DRAG = null;
+      // Re-render to update the count + save button state
+      renderAvailabilityGrid();
+    }
+  });
+}
+
+function _toggleCell(key, mode) {
+  if (mode === 'add' && !COACH_AVAIL_CELLS.has(key)) {
+    COACH_AVAIL_CELLS.add(key);
+    COACH_AVAIL_DIRTY = true;
+  } else if (mode === 'remove' && COACH_AVAIL_CELLS.has(key)) {
+    COACH_AVAIL_CELLS.delete(key);
+    COACH_AVAIL_DIRTY = true;
+  }
+  // Live-update the visual without full re-render (fast for drag)
+  var cell = document.querySelector('.av-cell[data-key="' + key + '"]');
+  if (cell) {
+    var on = COACH_AVAIL_CELLS.has(key);
+    cell.style.background = on ? 'rgba(245,192,66,.65)' : 'rgba(255,255,255,.03)';
+    cell.style.borderColor = on ? 'rgba(245,192,66,.85)' : 'rgba(255,255,255,.06)';
+  }
+}
+
+function applyAvailPreset(e, btn) {
+  var preset = JSON.parse(btn.getAttribute('data-args') || '[]')[0];
+  var hoursByDay = {};
+  if (preset === 'weekday-evenings') {
+    [1,2,3,4].forEach(function(dow){ hoursByDay[dow] = [17, 18, 19]; });  // Mon-Thu 5-8pm
+    [0].forEach(function(dow){ hoursByDay[dow] = [17, 18, 19]; });        // Also Sunday (UAE work week)
+  } else if (preset === 'weekday-mornings') {
+    [0,1,2,3,4].forEach(function(dow){ hoursByDay[dow] = [6, 7, 8]; });   // Sun-Thu 6-9am
+  } else if (preset === 'weekend-mornings') {
+    [5,6].forEach(function(dow){ hoursByDay[dow] = [7, 8, 9, 10]; });     // Fri-Sat 7-11am
+  }
+  Object.keys(hoursByDay).forEach(function(dow){
+    hoursByDay[dow].forEach(function(h){ COACH_AVAIL_CELLS.add(dow + '-' + h); });
+  });
+  COACH_AVAIL_DIRTY = true;
+  renderAvailabilityGrid();
+}
+
+function clearAvailability() {
+  if (!COACH_AVAIL_CELLS.size) return;
+  if (!confirm('Clear all availability? You\'ll need to set it up again before members can book.')) return;
+  COACH_AVAIL_CELLS = new Set();
+  COACH_AVAIL_DIRTY = true;
+  renderAvailabilityGrid();
+}
+
+// Convert selected cells back into consecutive-hour windows per day
+function _cellsToWindows() {
+  var windows = [];
+  for (var dow = 0; dow < 7; dow++) {
+    var hoursForDay = [];
+    for (var h = 6; h <= 22; h++) {
+      if (COACH_AVAIL_CELLS.has(dow + '-' + h)) hoursForDay.push(h);
+    }
+    if (!hoursForDay.length) continue;
+    hoursForDay.sort(function(a, b){ return a - b; });
+    var i = 0;
+    while (i < hoursForDay.length) {
+      var start = hoursForDay[i];
+      var end = start + 1;
+      while (i + 1 < hoursForDay.length && hoursForDay[i + 1] === hoursForDay[i] + 1) {
+        i++;
+        end = hoursForDay[i] + 1;
+      }
+      windows.push({
+        day_of_week: dow,
+        start_time: String(start).padStart(2, '0') + ':00',
+        end_time:   String(end).padStart(2, '0') + ':00',
+      });
+      i++;
+    }
+  }
+  return windows;
+}
+
+function saveAvailabilityGrid() {
+  if (!COACH_AVAIL_DIRTY) return;
+  var btn = document.getElementById('saveAvailBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  var windows = _cellsToWindows();
+  fetch('/api/coach-sessions/me/availability/bulk', {
+    method: 'PUT',
     headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _chToken() },
-    body: JSON.stringify(body),
+    body: JSON.stringify({ windows: windows }),
   })
     .then(function(r){ return r.json(); })
     .then(function(d){
-      if (d.error) { alert(d.error); return; }
-      loadCoachAvailability();
+      if (d.error) { alert(d.error); COACH_AVAIL_DIRTY = true; renderAvailabilityGrid(); return; }
+      COACH_AVAIL_DIRTY = false;
+      renderAvailabilityGrid();
+    })
+    .catch(function(){
+      alert('Save failed — try again.');
+      COACH_AVAIL_DIRTY = true;
+      renderAvailabilityGrid();
     });
-}
-
-function deleteAvailability(e, btn) {
-  var id = JSON.parse(btn.getAttribute('data-args') || '[]')[0];
-  fetch('/api/coach-sessions/me/availability/' + id, {
-    method: 'DELETE',
-    headers: { Authorization: 'Bearer ' + _chToken() },
-  }).then(function(){ loadCoachAvailability(); });
 }
 
 // ── BOOKINGS ──────────────────────────────────────────────────
