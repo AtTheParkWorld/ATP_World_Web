@@ -163,7 +163,7 @@ async function importMembers(filePath, options = {}) {
             [id, tokenHash, expiresAt]
           );
 
-          const baseUrl = (process.env.FRONTEND_URL || 'https://atpworldweb-production.up.railway.app').replace(/\/$/, '');
+          const baseUrl = (process.env.FRONTEND_URL || 'https://atp-world-web.onrender.com').replace(/\/$/, '');
           const magicUrl = `${baseUrl}/auth/verify?token=${rawToken}&email=${encodeURIComponent(m.email)}`;
           await emailService.sendMigrationClaim(
             { first_name: m.firstName, email: m.email, points_balance: m.points },

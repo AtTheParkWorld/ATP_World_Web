@@ -181,7 +181,7 @@ router.post('/magic-link', async (req, res, next) => {
     //   3. Hardcoded Railway URL as a last resort
     const baseUrl = (process.env.FRONTEND_URL ||
       `${req.protocol}://${req.get('host')}` ||
-      'https://atpworldweb-production.up.railway.app').replace(/\/$/, '');
+      'https://atp-world-web.onrender.com').replace(/\/$/, '');
     const magicUrl = `${baseUrl}/auth/verify?token=${rawToken}&email=${encodeURIComponent(email)}`;
     const result = await emailService.sendMagicLink(member, magicUrl);
 

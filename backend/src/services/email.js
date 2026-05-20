@@ -10,7 +10,7 @@ const FROM = {
 
 // Public site URL used in transactional emails. Falls back to the live
 // Railway URL if FRONTEND_URL isn't set so emailed links never break.
-const FRONTEND_URL = (process.env.FRONTEND_URL || 'https://atpworldweb-production.up.railway.app').replace(/\/$/, '');
+const FRONTEND_URL = (process.env.FRONTEND_URL || 'https://atp-world-web.onrender.com').replace(/\/$/, '');
 
 // ── EMAIL TEMPLATES ───────────────────────────────────────────
 function baseTemplate(content) {
@@ -419,7 +419,7 @@ async function sendSessionCancellation(member, session, refund) {
      ${reasonLine}
      ${refundLine}
      <p>You can browse upcoming sessions and rebook anytime.</p>
-     <a href="https://atpworldweb-production.up.railway.app/sessions.html" class="btn">Browse sessions</a>`
+     <a href="https://atp-world-web.onrender.com/sessions.html" class="btn">Browse sessions</a>`
   );
   await send(member.email, `Cancelled: ${session.name || 'Your ATP session'}`, html);
 }

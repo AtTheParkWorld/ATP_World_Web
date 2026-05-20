@@ -43,7 +43,7 @@ function resolveOrigin(req) {
   if (req.query.host && /^https:\/\//.test(req.query.host)) {
     return req.query.host.replace(/\/$/, '');
   }
-  return (process.env.FRONTEND_URL || 'https://atpworldweb-production.up.railway.app').replace(/\/$/, '');
+  return (process.env.FRONTEND_URL || 'https://atp-world-web.onrender.com').replace(/\/$/, '');
 }
 
 // Validate the shop domain Shopify echoes back so an attacker can't trick

@@ -64,7 +64,7 @@ app.use(helmet({
       "img-src":    ["'self'", "data:", "https://raw.githubusercontent.com",
                      "https://cdn.shopify.com",
                      "https://*.googleusercontent.com"],
-      "connect-src":["'self'", "https://atpworldweb-production.up.railway.app",
+      "connect-src":["'self'", "https://atp-world-web.onrender.com",
                      "https://*.myshopify.com"],
       "media-src":  ["'self'", "https:"],
       "frame-ancestors": ["'none'"],            // prevent clickjacking
@@ -78,7 +78,7 @@ app.use(helmet({
 // CORS — explicit allowlist instead of permissive defaults.
 const corsAllow = [
   process.env.FRONTEND_URL,
-  'https://atpworldweb-production.up.railway.app',
+  'https://atp-world-web.onrender.com',
   'http://localhost:3001',
   'http://127.0.0.1:5500',
   /\.github\.io$/,

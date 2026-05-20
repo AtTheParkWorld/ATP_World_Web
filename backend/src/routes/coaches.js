@@ -9,7 +9,7 @@ const emailService = require('../services/email');
 function _frontendBase(req) {
   return (process.env.FRONTEND_URL ||
     (req && `${req.protocol}://${req.get('host')}`) ||
-    'https://atpworldweb-production.up.railway.app').replace(/\/$/, '');
+    'https://atp-world-web.onrender.com').replace(/\/$/, '');
 }
 
 // ── Helpers ───────────────────────────────────────────────────
