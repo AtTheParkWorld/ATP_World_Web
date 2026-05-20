@@ -199,7 +199,18 @@ app.get('/api/docs', (req, res) => {
 // ── ROUTES ────────────────────────────────────────────────────
 // ── Static frontend (fallback while GitHub Pages rebuilds) ───────────────────
 const path = require('path');
-app.use(express.static(path.join(__dirname, '../public')));
+// HTML pages must never be cached (so deploys propagate immediately).
+// JS/CSS/assets get a sensible short cache. Bundles use content-hash
+// invalidation via ?cb=… cache-busters in the page templates.
+app.use(express.static(path.join(__dirname, '../public'), {
+  setHeaders: (res, filePath) => {
+    if (filePath.endsWith('.html')) {
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+    }
+  },
+}));
 app.get('/admin', (req, res) => {
   const fs = require('fs');
   const adminPath = require('path').join(__dirname, '../public/admin.html');
