@@ -2565,6 +2565,16 @@ router.post('/migrate-coach-sessions', async (req, res, next) => {
     await tryStep('8e. idx_feedback_coach', `CREATE INDEX IF NOT EXISTS idx_feedback_coach ON session_feedback(coach_id, is_public, created_at DESC)`);
     await tryStep('8f. idx_feedback_member', `CREATE INDEX IF NOT EXISTS idx_feedback_member ON session_feedback(member_id, created_at DESC)`);
 
+    // 9. Gift flow refinements — scheduled_at must be nullable so a
+    //    gifted booking can exist without a time until the recipient
+    //    picks one. ALTER ... DROP NOT NULL is idempotent in Postgres.
+    await tryStep('9. scheduled_at NULLable for unredeemed gifts',
+      `ALTER TABLE coach_session_bookings ALTER COLUMN scheduled_at DROP NOT NULL`);
+    // Index for finding expired-but-unredeemed gifts for the auto-refund cron
+    await tryStep('9b. idx_gift_expiry',
+      `CREATE INDEX IF NOT EXISTS idx_gift_expiry ON coach_session_bookings(gift_expires_at)
+         WHERE is_gift = true AND status = 'gift_pending_redemption'`);
+
     res.json({ success: true, steps });
   } catch (err) {
     // Return the full diagnostic trace + the failing step's details

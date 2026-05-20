@@ -404,11 +404,19 @@ router.post('/book', authenticate, async (req, res, next) => {
   try {
     const b = req.body || {};
     if (!b.offering_id) return res.status(400).json({ error: 'offering_id required' });
-    if (!b.scheduled_at) return res.status(400).json({ error: 'scheduled_at required' });
-    const scheduledAt = new Date(b.scheduled_at);
-    if (isNaN(scheduledAt.getTime())) return res.status(400).json({ error: 'scheduled_at must be ISO datetime' });
-    if (scheduledAt < new Date(Date.now() + 30 * 60 * 1000)) {
-      return res.status(400).json({ error: 'Sessions must be booked at least 30 minutes in advance.' });
+
+    const isGift = !!b.is_gift;
+
+    // For direct bookings (not gifts), scheduled_at is required.
+    // For gifts, the recipient picks the time later via /redeem-gift.
+    let scheduledAt = null;
+    if (!isGift) {
+      if (!b.scheduled_at) return res.status(400).json({ error: 'scheduled_at required' });
+      scheduledAt = new Date(b.scheduled_at);
+      if (isNaN(scheduledAt.getTime())) return res.status(400).json({ error: 'scheduled_at must be ISO datetime' });
+      if (scheduledAt < new Date(Date.now() + 30 * 60 * 1000)) {
+        return res.status(400).json({ error: 'Sessions must be booked at least 30 minutes in advance.' });
+      }
     }
 
     // Fetch the offering
@@ -419,33 +427,33 @@ router.post('/book', authenticate, async (req, res, next) => {
     if (!oRows.length) return res.status(404).json({ error: 'Offering not found or inactive.' });
     const offering = oRows[0];
 
-    // Resolve who attends (gift recipient or self)
+    // Resolve recipient (gifts) or self
     let attendingMemberId = req.member.id;
-    let isGift = false;
-    let giftRecipientEmail = null;
-    if (b.is_gift) {
-      if (!b.gift_recipient_email) return res.status(400).json({ error: 'gift_recipient_email required for gift' });
+    if (isGift) {
+      const recipientId = b.gift_recipient_id || null;
+      if (!recipientId) return res.status(400).json({ error: 'gift_recipient_id required for gift' });
       const { rows: gr } = await query(
-        `SELECT id FROM members WHERE LOWER(email)=LOWER($1) LIMIT 1`,
-        [b.gift_recipient_email]
+        `SELECT id FROM members WHERE id=$1 AND COALESCE(is_banned,false)=false LIMIT 1`,
+        [recipientId]
       );
-      if (!gr.length) return res.status(404).json({ error: 'Gift recipient must be an existing ATP member.' });
+      if (!gr.length) return res.status(404).json({ error: 'Recipient is not a valid ATP member.' });
       if (gr[0].id === req.member.id) return res.status(400).json({ error: 'Cannot gift to yourself.' });
       attendingMemberId = gr[0].id;
-      isGift = true;
-      giftRecipientEmail = b.gift_recipient_email;
     }
 
-    // No double-booking the same slot for the same coach
-    const { rows: conflicts } = await query(
-      `SELECT id FROM coach_session_bookings
-        WHERE coach_id=$1
-          AND status IN ('pending_payment','confirmed','in_progress')
-          AND scheduled_at < ($2::timestamptz + ($3 || ' minutes')::interval)
-          AND ($2::timestamptz < scheduled_at + (duration_min || ' minutes')::interval)`,
-      [offering.coach_id, scheduledAt.toISOString(), offering.duration_min]
-    );
-    if (conflicts.length) return res.status(409).json({ error: 'This slot is no longer available — please pick another.' });
+    // Conflict check is skipped for gifts (no time yet — recipient picks later).
+    if (!isGift) {
+      const { rows: conflicts } = await query(
+        `SELECT id FROM coach_session_bookings
+          WHERE coach_id=$1
+            AND status IN ('pending_payment','confirmed','in_progress')
+            AND scheduled_at IS NOT NULL
+            AND scheduled_at < ($2::timestamptz + ($3 || ' minutes')::interval)
+            AND ($2::timestamptz < scheduled_at + (duration_min || ' minutes')::interval)`,
+        [offering.coach_id, scheduledAt.toISOString(), offering.duration_min]
+      );
+      if (conflicts.length) return res.status(409).json({ error: 'This slot is no longer available — please pick another.' });
+    }
 
     // Compute payment
     const pricePaidAed = offering.price_aed;
@@ -503,9 +511,11 @@ router.post('/book', authenticate, async (req, res, next) => {
         );
       }
 
-      // Insert the booking
-      const giftExpires = isGift ? new Date(Date.now() + 90 * 24 * 3600 * 1000).toISOString() : null;
-      const status = isGift ? 'confirmed' : 'confirmed'; // both confirmed; gift just has unredeemed window
+      // Insert the booking. Gifts get status='gift_pending_redemption'
+      // with scheduled_at=NULL until the recipient picks a time. Direct
+      // bookings get 'confirmed' with the chosen time.
+      const giftExpires = isGift ? new Date(Date.now() + 30 * 24 * 3600 * 1000).toISOString() : null;
+      const status = isGift ? 'gift_pending_redemption' : 'confirmed';
       const { rows: br } = await client.query(
         `INSERT INTO coach_session_bookings
            (offering_id, coach_id, member_id, payer_id, scheduled_at, duration_min,
@@ -515,18 +525,43 @@ router.post('/book', authenticate, async (req, res, next) => {
          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING *`,
         [
           offering.id, offering.coach_id, attendingMemberId, req.member.id,
-          scheduledAt.toISOString(), offering.duration_min,
+          scheduledAt ? scheduledAt.toISOString() : null, offering.duration_min,
           pricePaidAed, platform_fee_aed, coach_payout_aed, pointsToUse,
           status, streamRoomId, b.member_note || null,
           isGift, b.gift_message || null, giftExpires,
         ]
       );
 
-      // Credit coach's wallet PENDING (moves to balance on session completion)
-      await client.query(
-        `UPDATE member_wallet SET pending_aed = pending_aed + $1, updated_at = NOW() WHERE member_id=$2`,
-        [coach_payout_aed, offering.coach_id]
-      );
+      // Credit coach's pending wallet for direct bookings only. For gifts,
+      // the coach's pending doesn't move until the recipient redeems +
+      // the session completes — protects the coach from "ghost earnings"
+      // on never-redeemed gifts.
+      if (!isGift) {
+        await client.query(
+          `UPDATE member_wallet SET pending_aed = pending_aed + $1, updated_at = NOW() WHERE member_id=$2`,
+          [coach_payout_aed, offering.coach_id]
+        );
+      }
+
+      // Notification to the recipient that a gift is waiting for them.
+      // Sender notification is the success response itself.
+      if (isGift) {
+        try {
+          const { rows: sender } = await client.query(
+            `SELECT first_name, last_name FROM members WHERE id=$1`,
+            [req.member.id]
+          );
+          const senderName = ((sender[0]?.first_name || '') + ' ' + (sender[0]?.last_name || '')).trim() || 'A friend';
+          await client.query(
+            `INSERT INTO notifications (member_id, type, title, body, data)
+             VALUES ($1, 'coach_gift_received',
+                     '🎁 You have a gift!',
+                     $2 || ' sent you a 1-on-1 session: ' || $3 || '. Redeem within 30 days from your profile.',
+                     $4::jsonb)`,
+            [attendingMemberId, senderName, offering.title, JSON.stringify({ booking_id: br[0].id })]
+          );
+        } catch (e) { /* notifications missing — non-fatal */ }
+      }
 
       return { booking: br[0], newPoints };
     });
@@ -739,6 +774,119 @@ router.post('/:id/complete', authenticate, async (req, res, next) => {
       } catch (e) { /* notifications missing — non-fatal */ }
     });
     res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/coach-sessions/me/gifts ─────────────────────────────
+// Gifts received by the caller that haven't been redeemed yet.
+// Powers the "Gifts to redeem" widget on the member profile.
+router.get('/me/gifts', authenticate, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT b.id, b.offering_id, b.coach_id, b.payer_id, b.gift_message,
+              b.gift_expires_at, b.duration_min, b.price_paid_aed, b.created_at,
+              o.title AS offering_title, o.description AS offering_description,
+              c.first_name AS coach_first_name, c.last_name AS coach_last_name,
+              c.avatar_url AS coach_avatar_url,
+              p.first_name AS sender_first_name, p.last_name AS sender_last_name,
+              p.avatar_url AS sender_avatar_url
+         FROM coach_session_bookings b
+         JOIN coach_offerings o ON o.id = b.offering_id
+         JOIN members c ON c.id = b.coach_id
+         JOIN members p ON p.id = b.payer_id
+        WHERE b.member_id = $1
+          AND b.is_gift = true
+          AND b.status = 'gift_pending_redemption'
+          AND (b.gift_expires_at IS NULL OR b.gift_expires_at > NOW())
+        ORDER BY b.created_at DESC`,
+      [req.member.id]
+    );
+    res.json({ gifts: rows });
+  } catch (err) {
+    if (err.code === '42P01') return res.json({ gifts: [] });
+    next(err);
+  }
+});
+
+// ── POST /api/coach-sessions/:id/redeem-gift ─────────────────────
+// Recipient picks a time to redeem a gifted booking. Same validation
+// as direct booking — must match coach availability + not conflict
+// with an existing slot.
+router.post('/:id/redeem-gift', authenticate, async (req, res, next) => {
+  const { transaction } = require('../db');
+  try {
+    const scheduledAt = req.body?.scheduled_at ? new Date(req.body.scheduled_at) : null;
+    if (!scheduledAt || isNaN(scheduledAt.getTime())) {
+      return res.status(400).json({ error: 'scheduled_at required (ISO datetime)' });
+    }
+    if (scheduledAt < new Date(Date.now() + 30 * 60 * 1000)) {
+      return res.status(400).json({ error: 'Pick a time at least 30 minutes from now.' });
+    }
+
+    const { rows: bRows } = await query(
+      `SELECT * FROM coach_session_bookings WHERE id=$1`,
+      [req.params.id]
+    );
+    if (!bRows.length) return res.status(404).json({ error: 'Gift not found' });
+    const booking = bRows[0];
+    if (booking.member_id !== req.member.id) return res.status(403).json({ error: 'Not your gift' });
+    if (!booking.is_gift || booking.status !== 'gift_pending_redemption') {
+      return res.status(400).json({ error: 'This booking is not a redeemable gift.' });
+    }
+    if (booking.gift_expires_at && new Date(booking.gift_expires_at) < new Date()) {
+      return res.status(400).json({ error: 'This gift has expired. The sender will be refunded.' });
+    }
+
+    // Conflict check at the chosen time
+    const { rows: conflicts } = await query(
+      `SELECT id FROM coach_session_bookings
+        WHERE coach_id=$1 AND id <> $2
+          AND status IN ('pending_payment','confirmed','in_progress')
+          AND scheduled_at IS NOT NULL
+          AND scheduled_at < ($3::timestamptz + ($4 || ' minutes')::interval)
+          AND ($3::timestamptz < scheduled_at + (duration_min || ' minutes')::interval)`,
+      [booking.coach_id, booking.id, scheduledAt.toISOString(), booking.duration_min]
+    );
+    if (conflicts.length) return res.status(409).json({ error: 'That slot just got taken. Pick another time.' });
+
+    await transaction(async (client) => {
+      await client.query(
+        `UPDATE coach_session_bookings
+            SET status='confirmed', scheduled_at=$1, gift_redeemed_at=NOW(), updated_at=NOW()
+          WHERE id=$2`,
+        [scheduledAt.toISOString(), booking.id]
+      );
+      // Now that the gift is actually scheduled, move the coach's
+      // payout into pending (this is what we deferred at gift purchase
+      // time so we wouldn't credit pending for never-redeemed gifts).
+      await client.query(
+        `INSERT INTO member_wallet (member_id) VALUES ($1) ON CONFLICT DO NOTHING`,
+        [booking.coach_id]
+      );
+      await client.query(
+        `UPDATE member_wallet SET pending_aed = pending_aed + $1, updated_at = NOW() WHERE member_id=$2`,
+        [booking.coach_payout_aed, booking.coach_id]
+      );
+
+      // Notify the sender that their gift was redeemed
+      try {
+        const { rows: recipient } = await client.query(
+          `SELECT first_name FROM members WHERE id=$1`,
+          [booking.member_id]
+        );
+        const recipientName = recipient[0]?.first_name || 'Your friend';
+        await client.query(
+          `INSERT INTO notifications (member_id, type, title, body, data)
+           VALUES ($1, 'coach_gift_redeemed',
+                   '🎉 Your gift was redeemed',
+                   $2 || ' booked their session for ' || TO_CHAR($3::timestamptz, 'Mon DD, HH24:MI'),
+                   $4::jsonb)`,
+          [booking.payer_id, recipientName, scheduledAt.toISOString(), JSON.stringify({ booking_id: booking.id })]
+        );
+      } catch (e) { /* non-fatal */ }
+    });
+
+    res.json({ success: true, scheduled_at: scheduledAt.toISOString() });
   } catch (err) { next(err); }
 });
 

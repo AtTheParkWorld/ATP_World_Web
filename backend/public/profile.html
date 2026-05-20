@@ -774,6 +774,17 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
              silently when there's nothing pending. -->
         <div id="pendingFeedbackHost" style="margin-bottom:16px"></div>
 
+        <!-- Gifts received but not yet redeemed — auto-populates from
+             /api/coach-sessions/me/gifts. Each card lets the member open
+             a modal, pick a time within the coach's availability, and
+             redeem. Auto-hidden when empty. -->
+        <div id="myGiftsHost" style="margin-bottom:16px"></div>
+
+        <!-- Gift redemption modal — calendar picker for the recipient -->
+        <div id="redeemGiftModal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;overflow-y:auto">
+          <div id="redeemGiftModalCard" style="background:#111;border:1px solid rgba(245,192,66,.32);border-radius:14px;max-width:460px;width:100%;padding:24px;color:#fff;max-height:90vh;overflow-y:auto"></div>
+        </div>
+
         <!-- Upcoming 1-on-1 sessions widget — shows paid coach sessions
              the member is attending. Auto-hidden when empty. Includes
              "Join stream" button when session is within 15 min + "Cancel"
@@ -4358,8 +4369,257 @@ function loadRealProfileData() {
     loadWearables();
     loadPendingFeedback();
     loadMyOneOnOnes();
+    loadMyGifts();
   }).catch(function(){});
 }
+
+// ════════════════════════════════════════════════════════════════
+// MY GIFTS — 1-on-1 sessions someone gifted me. Each shows a "Pick
+// your time" button that opens a calendar modal limited to the
+// coach's availability.
+// ════════════════════════════════════════════════════════════════
+
+var MY_GIFTS = [];
+var ACTIVE_GIFT = null;             // gift currently being redeemed
+var ACTIVE_GIFT_AVAILABILITY = [];  // coach availability for the active gift
+var ACTIVE_GIFT_DATE = null;        // local Date picked
+var ACTIVE_GIFT_TIME = null;        // "HH:MM" picked
+var ACTIVE_GIFT_MONTH = null;       // calendar view month
+
+function loadMyGifts() {
+  var token = localStorage.getItem('atp_token') || '';
+  if (!token) return;
+  fetch('/api/coach-sessions/me/gifts', { headers: { Authorization: 'Bearer ' + token } })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      MY_GIFTS = (d && d.gifts) || [];
+      renderMyGifts();
+    })
+    .catch(function(){ /* silent */ });
+}
+
+function renderMyGifts() {
+  var host = document.getElementById('myGiftsHost');
+  if (!host) return;
+  if (!MY_GIFTS.length) { host.innerHTML = ''; return; }
+  var esc = function(s){ return String(s == null ? '' : s).replace(/[<>&"]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]; }); };
+
+  function avatarHtml(name, url, size) {
+    size = size || 44;
+    if (url) return '<img src="' + esc(url) + '" alt="" style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;object-fit:cover;flex-shrink:0">';
+    var ini = String(name || '?').split(' ').map(function(p){ return p[0] || ''; }).join('').slice(0,2).toUpperCase();
+    return '<div style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:#f5c042;display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-weight:900;color:#0a0a0a;font-size:' + Math.round(size * 0.4) + 'px;flex-shrink:0">' + esc(ini) + '</div>';
+  }
+
+  var html = '<div style="background:linear-gradient(120deg,rgba(245,192,66,.10),rgba(245,192,66,.02));border:1px solid rgba(245,192,66,.32);border-radius:var(--radius-lg);padding:18px 20px">' +
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">' +
+      '<span style="font-size:24px">🎁</span>' +
+      '<div>' +
+        '<div style="font-size:11px;color:#f5c042;letter-spacing:.14em;text-transform:uppercase;font-weight:700">' + MY_GIFTS.length + ' gift' + (MY_GIFTS.length === 1 ? '' : 's') + ' for you</div>' +
+        '<div style="font-size:13px;color:var(--muted)">Pick a time to redeem — within 30 days</div>' +
+      '</div>' +
+    '</div>';
+
+  html += MY_GIFTS.map(function(g){
+    var senderName = ((g.sender_first_name || '') + ' ' + (g.sender_last_name || '')).trim();
+    var coachName = ((g.coach_first_name || '') + ' ' + (g.coach_last_name || '')).trim();
+    var daysLeft = g.gift_expires_at ? Math.ceil((new Date(g.gift_expires_at).getTime() - Date.now()) / 86400000) : null;
+    return '<div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;margin-bottom:8px">' +
+      '<div style="display:flex;gap:12px;margin-bottom:10px">' +
+        avatarHtml(senderName, g.sender_avatar_url, 44) +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:11px;color:#888;margin-bottom:2px">From <strong style="color:#fff">' + esc(senderName) + '</strong></div>' +
+          '<div style="font-family:var(--ff-display);font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.02em;line-height:1.15">' + esc(g.offering_title) + '</div>' +
+          '<div style="font-size:12px;color:var(--muted);margin-top:4px">with Coach ' + esc(coachName) + ' · ' + g.duration_min + ' min</div>' +
+        '</div>' +
+      '</div>' +
+      (g.gift_message ? '<div style="font-size:12px;color:#fff;font-style:italic;background:rgba(255,255,255,.04);padding:10px 12px;border-radius:6px;margin-bottom:10px;border-left:3px solid #f5c042">&ldquo;' + esc(g.gift_message) + '&rdquo;</div>' : '') +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">' +
+        '<div style="font-size:11px;color:' + (daysLeft != null && daysLeft <= 7 ? '#ef4444' : 'var(--muted)') + '">' +
+          (daysLeft != null ? (daysLeft <= 0 ? '⚠ Expires today' : daysLeft + ' day' + (daysLeft === 1 ? '' : 's') + ' left to redeem') : '') +
+        '</div>' +
+        '<button onclick="openRedeemGiftModal(\'' + g.id + '\')" style="background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;padding:10px 18px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">Pick your time →</button>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+
+  html += '</div>';
+  host.innerHTML = html;
+}
+
+function openRedeemGiftModal(giftId) {
+  ACTIVE_GIFT = MY_GIFTS.find(function(g){ return g.id === giftId; });
+  if (!ACTIVE_GIFT) return;
+  ACTIVE_GIFT_DATE = null;
+  ACTIVE_GIFT_TIME = null;
+  ACTIVE_GIFT_MONTH = new Date(); ACTIVE_GIFT_MONTH.setDate(1);
+  // Fetch coach availability
+  fetch('/api/coach-sessions/public/' + encodeURIComponent(ACTIVE_GIFT.coach_id) + '/offerings')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      ACTIVE_GIFT_AVAILABILITY = (d && d.availability) || [];
+      renderRedeemGiftModal();
+      document.getElementById('redeemGiftModal').style.display = 'flex';
+    })
+    .catch(function(){ alert('Could not load coach availability — try again.'); });
+}
+
+function closeRedeemGiftModal() {
+  document.getElementById('redeemGiftModal').style.display = 'none';
+  ACTIVE_GIFT = null;
+}
+
+function _giftLocalIso(d) {
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function _giftSlotsForDate(date) {
+  if (!date || !ACTIVE_GIFT) return [];
+  var dow = date.getDay();
+  var windows = ACTIVE_GIFT_AVAILABILITY.filter(function(a){ return a.day_of_week === dow; });
+  var slots = [];
+  var dur = ACTIVE_GIFT.duration_min || 60;
+  var step = 30;
+  windows.forEach(function(w){
+    var parseTime = function(t){ var p = t.split(':'); return parseInt(p[0],10)*60 + parseInt(p[1],10); };
+    var s = parseTime(w.start_time);
+    var e = parseTime(w.end_time);
+    var cur = s;
+    while (cur + dur <= e) {
+      slots.push(String(Math.floor(cur/60)).padStart(2,'0') + ':' + String(cur%60).padStart(2,'0'));
+      cur += step;
+    }
+  });
+  if (date.toDateString() === new Date().toDateString()) {
+    var nowMin = new Date().getHours()*60 + new Date().getMinutes() + 30;
+    slots = slots.filter(function(s){ var p = s.split(':'); return parseInt(p[0],10)*60 + parseInt(p[1],10) >= nowMin; });
+  }
+  return slots;
+}
+
+function renderRedeemGiftModal() {
+  var card = document.getElementById('redeemGiftModalCard');
+  if (!card || !ACTIVE_GIFT) return;
+  var esc = function(s){ return String(s == null ? '' : s).replace(/[<>&"]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]; }); };
+  var senderName = ((ACTIVE_GIFT.sender_first_name || '') + ' ' + (ACTIVE_GIFT.sender_last_name || '')).trim();
+  var giftExpiry = ACTIVE_GIFT.gift_expires_at ? new Date(ACTIVE_GIFT.gift_expires_at) : null;
+
+  // Build month calendar
+  var m = new Date(ACTIVE_GIFT_MONTH);
+  var firstDow = m.getDay();
+  var monthEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+  var today = new Date(); today.setHours(0,0,0,0);
+  var monthLabel = m.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+  var selectedIso = ACTIVE_GIFT_DATE ? _giftLocalIso(ACTIVE_GIFT_DATE) : null;
+  var availDows = new Set();
+  ACTIVE_GIFT_AVAILABILITY.forEach(function(a){ availDows.add(a.day_of_week); });
+  var thisMonth = new Date(); thisMonth.setDate(1); thisMonth.setHours(0,0,0,0);
+  var maxMonth = giftExpiry ? new Date(giftExpiry) : new Date(); if (!giftExpiry) maxMonth.setMonth(maxMonth.getMonth() + 2);
+  var canPrev = m > thisMonth;
+  var canNext = new Date(m.getFullYear(), m.getMonth() + 1, 1) <= maxMonth;
+
+  var calHtml = '<div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px;margin-bottom:14px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
+      '<button ' + (canPrev ? 'onclick="navRedeemMonth(-1)"' : 'disabled') + ' style="background:none;border:none;color:' + (canPrev?'#f5c042':'#444') + ';font-size:20px;cursor:' + (canPrev?'pointer':'not-allowed') + ';padding:4px 10px">‹</button>' +
+      '<div style="font-family:var(--ff-display);font-size:16px;font-weight:800;color:#fff;text-transform:uppercase">' + monthLabel + '</div>' +
+      '<button ' + (canNext ? 'onclick="navRedeemMonth(1)"' : 'disabled') + ' style="background:none;border:none;color:' + (canNext?'#f5c042':'#444') + ';font-size:20px;cursor:' + (canNext?'pointer':'not-allowed') + ';padding:4px 10px">›</button>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:4px">' +
+      ['S','M','T','W','T','F','S'].map(function(d){ return '<div style="text-align:center;font-size:10px;color:#666;font-weight:700">' + d + '</div>'; }).join('') +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(7,1fr);gap:4px">';
+
+  for (var i = 0; i < firstDow; i++) calHtml += '<div></div>';
+  for (var d = 1; d <= monthEnd; d++) {
+    var day = new Date(m.getFullYear(), m.getMonth(), d); day.setHours(0,0,0,0);
+    var iso = _giftLocalIso(day);
+    var isPast = day < today;
+    var isExpired = giftExpiry && day > giftExpiry;
+    var hasAvail = availDows.has(day.getDay()) && !isPast && !isExpired;
+    var isSelected = selectedIso === iso;
+    var bg = isSelected ? '#f5c042' : (hasAvail ? 'rgba(122,194,49,.16)' : 'transparent');
+    var color = isSelected ? '#0a0a0a' : (hasAvail ? '#fff' : (isPast || isExpired ? '#333' : '#555'));
+    var border = isSelected ? '#f5c042' : (hasAvail ? 'rgba(122,194,49,.5)' : 'transparent');
+    var onclick = hasAvail ? 'onclick="pickRedeemDate(\'' + iso + '\')"' : '';
+    calHtml += '<div ' + onclick + ' style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:' + color + ';background:' + bg + ';border:1px solid ' + border + ';border-radius:6px;cursor:' + (hasAvail?'pointer':'not-allowed') + '">' + d + '</div>';
+  }
+  calHtml += '</div></div>';
+
+  var timeOptions = ACTIVE_GIFT_DATE ? _giftSlotsForDate(ACTIVE_GIFT_DATE) : [];
+
+  card.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:18px">' +
+      '<div>' +
+        '<div style="font-size:11px;color:#f5c042;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:4px">🎁 Redeem your gift</div>' +
+        '<div style="font-family:var(--ff-display);font-size:20px;font-weight:800;color:#fff;text-transform:uppercase;line-height:1.1">' + esc(ACTIVE_GIFT.offering_title) + '</div>' +
+        '<div style="font-size:12px;color:#888;margin-top:4px">From ' + esc(senderName) + ' · ' + ACTIVE_GIFT.duration_min + ' min</div>' +
+      '</div>' +
+      '<button onclick="closeRedeemGiftModal()" style="background:none;border:none;color:#888;font-size:22px;cursor:pointer;padding:4px 8px">×</button>' +
+    '</div>' +
+    '<label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">1. Pick a date</label>' +
+    calHtml +
+    (ACTIVE_GIFT_DATE ?
+      '<label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">2. Pick a time</label>' +
+      (timeOptions.length === 0
+        ? '<div style="padding:14px;color:#888;font-size:12px;text-align:center;background:rgba(255,255,255,.02);border:1px dashed rgba(255,255,255,.08);border-radius:8px;margin-bottom:14px">Coach is closed on this day. Pick another date.</div>'
+        : '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px;margin-bottom:14px">' +
+            timeOptions.map(function(t){
+              var active = ACTIVE_GIFT_TIME === t;
+              return '<button onclick="pickRedeemTime(\'' + t + '\')" style="background:' + (active?'#f5c042':'rgba(255,255,255,.04)') + ';color:' + (active?'#0a0a0a':'#fff') + ';border:1px solid ' + (active?'#f5c042':'rgba(255,255,255,.1)') + ';border-radius:6px;padding:8px;cursor:pointer;font-weight:600;font-size:13px">' + t + '</button>';
+            }).join('') +
+          '</div>')
+      : '') +
+    (ACTIVE_GIFT_DATE && ACTIVE_GIFT_TIME
+      ? '<button onclick="confirmRedeemGift()" style="width:100%;background:#f5c042;color:#0a0a0a;border:none;border-radius:8px;padding:14px;font-weight:800;font-size:14px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer">Confirm &amp; redeem →</button>'
+      : '<div style="font-size:11px;color:#666;text-align:center;padding:10px">Pick a date and time to redeem</div>');
+}
+
+window.navRedeemMonth = function(direction) {
+  if (!ACTIVE_GIFT_MONTH) return;
+  ACTIVE_GIFT_MONTH = new Date(ACTIVE_GIFT_MONTH);
+  ACTIVE_GIFT_MONTH.setMonth(ACTIVE_GIFT_MONTH.getMonth() + direction);
+  renderRedeemGiftModal();
+};
+window.pickRedeemDate = function(iso) {
+  var p = iso.split('-');
+  ACTIVE_GIFT_DATE = new Date(parseInt(p[0],10), parseInt(p[1],10)-1, parseInt(p[2],10));
+  ACTIVE_GIFT_DATE.setHours(0,0,0,0);
+  ACTIVE_GIFT_TIME = null;
+  renderRedeemGiftModal();
+};
+window.pickRedeemTime = function(t) { ACTIVE_GIFT_TIME = t; renderRedeemGiftModal(); };
+
+window.confirmRedeemGift = function() {
+  if (!ACTIVE_GIFT || !ACTIVE_GIFT_DATE || !ACTIVE_GIFT_TIME) return;
+  var dt = new Date(ACTIVE_GIFT_DATE);
+  var p = ACTIVE_GIFT_TIME.split(':');
+  dt.setHours(parseInt(p[0],10), parseInt(p[1],10), 0, 0);
+  var token = localStorage.getItem('atp_token') || '';
+  var giftId = ACTIVE_GIFT.id;
+  fetch('/api/coach-sessions/' + giftId + '/redeem-gift', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+    body: JSON.stringify({ scheduled_at: dt.toISOString() }),
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.error) { alert(d.error); return; }
+      // Show success briefly + close
+      var card = document.getElementById('redeemGiftModalCard');
+      if (card) card.innerHTML =
+        '<div style="text-align:center;padding:30px 10px">' +
+          '<div style="font-size:48px;margin-bottom:14px">🎯</div>' +
+          '<div style="font-family:var(--ff-display);font-size:24px;font-weight:800;color:#fff;text-transform:uppercase;margin-bottom:8px">Redeemed!</div>' +
+          '<p style="font-size:13px;color:#aaa;line-height:1.55">Your session is booked for <strong style="color:#f5c042">' + new Date(d.scheduled_at).toLocaleDateString() + ' at ' + new Date(d.scheduled_at).toLocaleTimeString(undefined, {hour:'2-digit',minute:'2-digit'}) + '</strong>. The coach + sender have both been notified.</p>' +
+        '</div>';
+      setTimeout(function(){
+        closeRedeemGiftModal();
+        loadMyGifts();
+        loadMyOneOnOnes();
+      }, 1800);
+    })
+    .catch(function(){ alert('Network glitch — try again.'); });
+};
 
 // ════════════════════════════════════════════════════════════════
 // MY 1-ON-1 SESSIONS WIDGET — upcoming paid coach sessions

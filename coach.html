@@ -866,8 +866,10 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
   var POINTS_BALANCE = 0;
   var POINTS_TO_USE = 0;
   var IS_GIFT = false;
-  var GIFT_EMAIL = '';
+  var GIFT_RECIPIENT = null;        // selected member object
+  var GIFT_SEARCH_RESULTS = [];     // dropdown results
   var GIFT_MESSAGE = '';
+  var GIFT_SEARCH_TIMER = null;
 
   function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -924,7 +926,8 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     SELECTED_TIME = null;
     POINTS_TO_USE = 0;
     IS_GIFT = false;
-    GIFT_EMAIL = '';
+    GIFT_RECIPIENT = null;
+    GIFT_SEARCH_RESULTS = [];
     GIFT_MESSAGE = '';
     // Start the calendar on this month
     CALENDAR_MONTH = new Date();
@@ -978,22 +981,14 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
         '<button onclick="cpSetGiftMode(true)" style="padding:10px 12px;background:' + (IS_GIFT ? '#f5c042' : 'transparent') + ';color:' + (IS_GIFT ? '#0a0a0a' : '#888') + ';border:none;border-radius:6px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:11px;cursor:pointer;font-family:inherit">🎁 Gift to a friend</button>' +
       '</div>' +
 
-      // If gifting, show recipient picker first
+      // Gift mode UI: name search + avatar + message (no date/time —
+      // the recipient picks their own time when they redeem).
       (IS_GIFT
-        ? '<div style="margin-bottom:14px;background:rgba(245,192,66,.04);border:1px solid rgba(245,192,66,.2);border-radius:8px;padding:14px">' +
-            '<label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:6px">Recipient\'s ATP email *</label>' +
-            '<input type="email" id="cp-gift-email" placeholder="friend@example.com" value="' + esc(GIFT_EMAIL) + '" oninput="cpUpdateGiftEmail(this.value)" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:14px;font-family:inherit;margin-bottom:10px">' +
-            '<label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:6px">Personal message (optional)</label>' +
-            '<textarea id="cp-gift-message" rows="2" placeholder="For your marathon prep — you\'ve got this." oninput="cpUpdateGiftMessage(this.value)" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:13px;font-family:inherit;resize:vertical">' + esc(GIFT_MESSAGE) + '</textarea>' +
-            '<div style="font-size:11px;color:#888;margin-top:8px;line-height:1.4">They must already have an ATP account. They\'ll get an email + can redeem within 90 days.</div>' +
-          '</div>'
-        : '') +
+        ? renderGiftPicker()
+        : renderCalendarHtml()) +
 
-      // Month calendar date picker
-      renderCalendarHtml() +
-
-      // Time picker (only if date selected)
-      (SELECTED_DATE
+      // Time picker (only if date selected AND not gifting)
+      (!IS_GIFT && SELECTED_DATE
         ? '<div style="margin-bottom:14px"><label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">2. Pick a time</label>' +
           (timeOptions.length === 0
             ? '<div style="padding:14px;color:#888;font-size:12px;text-align:center;background:rgba(255,255,255,.02);border:1px dashed rgba(255,255,255,.08);border-radius:8px">Coach is closed on this day. Pick another date.</div>'
@@ -1006,14 +1001,20 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
           ) + '</div>'
         : '') +
 
-      // Member note
-      (SELECTED_DATE && SELECTED_TIME
-        ? '<div style="margin-bottom:14px"><label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">3. What do you want to focus on? (optional)</label>' +
-          '<textarea id="cp-note" rows="2" placeholder="Marathon pacing, running form, race-day strategy…" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:13px;font-family:inherit;resize:vertical"></textarea></div>' +
+      // Payment + confirm — shown when:
+      //   - gifting AND a recipient is selected, OR
+      //   - direct booking AND date+time are both picked
+      ((IS_GIFT && GIFT_RECIPIENT) || (!IS_GIFT && SELECTED_DATE && SELECTED_TIME)
+        ?
+          // Note field (direct booking only — gift recipient adds their own at redemption)
+          (!IS_GIFT
+            ? '<div style="margin-bottom:14px"><label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">3. What do you want to focus on? (optional)</label>' +
+              '<textarea id="cp-note" rows="2" placeholder="Marathon pacing, running form, race-day strategy…" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:13px;font-family:inherit;resize:vertical"></textarea></div>'
+            : '') +
 
           // Payment section
           '<div style="margin-bottom:14px;padding:14px;background:rgba(245,192,66,.04);border:1px solid rgba(245,192,66,.2);border-radius:8px">' +
-            '<div style="font-size:11px;color:#f5c042;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:10px">4. Payment</div>' +
+            '<div style="font-size:11px;color:#f5c042;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:10px">' + (IS_GIFT ? 'Payment' : '4. Payment') + '</div>' +
             '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#aaa"><span>Wallet balance available</span><strong style="color:#fff">AED ' + WALLET.balance_aed + '</strong></div>' +
             '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#aaa"><span>Points available</span><strong style="color:#fff">' + POINTS_BALANCE + ' pts (worth AED ' + Math.floor(POINTS_BALANCE / 10) + ')</strong></div>' +
             (maxPoints > 0 ?
@@ -1029,33 +1030,116 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
             ? '<div style="padding:12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:12px;color:#ff8a8a;margin-bottom:14px">⚠ Wallet balance too low. Need AED ' + walletDebit + ', you have AED ' + WALLET.balance_aed + '. Contact ATP to top up.</div>'
             : '') +
 
-          // Block confirm if gifting without an email
-          (IS_GIFT && !(GIFT_EMAIL && GIFT_EMAIL.indexOf('@') > 0)
-            ? '<div style="padding:12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:12px;color:#ff8a8a;margin-bottom:14px">⚠ Add the recipient\'s email above to send as a gift.</div>'
-            : '') +
-
-          '<button onclick="cpConfirmBooking()" ' + (canAfford && (!IS_GIFT || (GIFT_EMAIL && GIFT_EMAIL.indexOf('@') > 0)) ? '' : 'disabled') + ' style="width:100%;background:' + (canAfford && (!IS_GIFT || (GIFT_EMAIL && GIFT_EMAIL.indexOf('@') > 0)) ? '#f5c042' : 'rgba(255,255,255,.1)') + ';color:' + (canAfford && (!IS_GIFT || (GIFT_EMAIL && GIFT_EMAIL.indexOf('@') > 0)) ? '#0a0a0a' : '#666') + ';border:none;border-radius:8px;padding:14px;font-weight:800;font-size:14px;letter-spacing:.05em;text-transform:uppercase;cursor:' + (canAfford && (!IS_GIFT || (GIFT_EMAIL && GIFT_EMAIL.indexOf('@') > 0)) ? 'pointer' : 'not-allowed') + '">' + (IS_GIFT ? '🎁 Send the gift →' : 'Confirm booking →') + '</button>'
+          '<button onclick="cpConfirmBooking()" ' + (canAfford ? '' : 'disabled') + ' style="width:100%;background:' + (canAfford ? '#f5c042' : 'rgba(255,255,255,.1)') + ';color:' + (canAfford ? '#0a0a0a' : '#666') + ';border:none;border-radius:8px;padding:14px;font-weight:800;font-size:14px;letter-spacing:.05em;text-transform:uppercase;cursor:' + (canAfford ? 'pointer' : 'not-allowed') + '">' + (IS_GIFT ? '🎁 Send the gift →' : 'Confirm booking →') + '</button>'
         : '');
   }
 
   window.cpSetGiftMode = function(on) {
     IS_GIFT = !!on;
+    if (!on) { GIFT_RECIPIENT = null; GIFT_SEARCH_RESULTS = []; }
     renderModal();
   };
-  window.cpUpdateGiftEmail = function(v) {
-    GIFT_EMAIL = (v || '').trim();
-    // Don't re-render on every keystroke (would lose focus). Just update
-    // the confirm-button enabled state by toggling its disabled attr.
-    var btn = document.querySelector('#cp-book-modal-card button[onclick="cpConfirmBooking()"]');
-    if (btn) {
-      var ok = GIFT_EMAIL && GIFT_EMAIL.indexOf('@') > 0 && WALLET.balance_aed >= (SELECTED_OFFERING ? SELECTED_OFFERING.price_aed - Math.floor(POINTS_TO_USE / 10) : 0);
-      btn.disabled = !ok;
-      btn.style.background = ok ? '#f5c042' : 'rgba(255,255,255,.1)';
-      btn.style.color = ok ? '#0a0a0a' : '#666';
-      btn.style.cursor = ok ? 'pointer' : 'not-allowed';
-    }
-  };
   window.cpUpdateGiftMessage = function(v) { GIFT_MESSAGE = v || ''; };
+
+  // Avatar HTML helper — uses the member's avatar_url or falls back to
+  // initials in a green circle (matches the nav-avatar pattern).
+  function _avatarHtml(member, size) {
+    size = size || 40;
+    var ini = ((member.first_name || '?')[0] + (member.last_name || '')[0]).toUpperCase();
+    if (member.avatar_url) {
+      return '<img src="' + esc(member.avatar_url) + '" alt="" style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;object-fit:cover;flex-shrink:0">';
+    }
+    return '<div style="width:' + size + 'px;height:' + size + 'px;border-radius:50%;background:#7AC231;display:flex;align-items:center;justify-content:center;font-family:\'Barlow Condensed\',sans-serif;font-weight:900;color:#0a0a0a;font-size:' + Math.round(size * 0.4) + 'px;flex-shrink:0">' + ini + '</div>';
+  }
+
+  // Render the gift recipient picker — replaces the calendar in gift mode
+  function renderGiftPicker() {
+    if (GIFT_RECIPIENT) {
+      // Recipient already chosen — show as a card with Change button + message field
+      return '<div style="margin-bottom:14px;background:linear-gradient(120deg,rgba(245,192,66,.10),rgba(245,192,66,.02));border:1px solid rgba(245,192,66,.32);border-radius:10px;padding:14px">' +
+        '<label style="font-size:11px;color:#f5c042;letter-spacing:.08em;text-transform:uppercase;font-weight:700;display:block;margin-bottom:10px">🎁 Sending to</label>' +
+        '<div style="display:flex;align-items:center;gap:12px">' +
+          _avatarHtml(GIFT_RECIPIENT, 48) +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.02em;line-height:1.15">' + esc((GIFT_RECIPIENT.first_name || '') + ' ' + (GIFT_RECIPIENT.last_name || '')) + '</div>' +
+            '<div style="font-size:11px;color:#888;margin-top:2px">' + esc([GIFT_RECIPIENT.city_name, GIFT_RECIPIENT.tribe].filter(Boolean).join(' · ')) + '</div>' +
+          '</div>' +
+          '<button onclick="cpClearGiftRecipient()" style="background:transparent;border:1px solid rgba(255,255,255,.14);color:#aaa;border-radius:6px;padding:6px 12px;font-size:11px;cursor:pointer;font-family:inherit">Change</button>' +
+        '</div>' +
+        '<label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin:14px 0 6px">Personal message (optional)</label>' +
+        '<textarea id="cp-gift-message" rows="2" placeholder="For your marathon prep — you\'ve got this." oninput="cpUpdateGiftMessage(this.value)" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:13px;font-family:inherit;resize:vertical">' + esc(GIFT_MESSAGE) + '</textarea>' +
+        '<div style="font-size:11px;color:#888;margin-top:10px;line-height:1.5">' + esc((GIFT_RECIPIENT.first_name || 'They')) + ' will pick their own time when they redeem. They have <strong style="color:#f5c042">30 days</strong> from now.</div>' +
+      '</div>';
+    }
+
+    // Search mode
+    return '<div style="margin-bottom:14px"><label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">1. Search for an ATP member</label>' +
+      '<input type="text" id="cp-gift-search" placeholder="Start typing a name…" oninput="cpGiftSearch(this.value)" autocomplete="off" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:12px 14px;color:#fff;font-size:14px;font-family:inherit">' +
+      (GIFT_SEARCH_RESULTS.length === 0
+        ? '<div style="margin-top:8px;font-size:11px;color:#888">They must already be an ATP member to receive a gift.</div>'
+        : '<div style="margin-top:8px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:rgba(0,0,0,.3);max-height:280px;overflow-y:auto">' +
+            GIFT_SEARCH_RESULTS.map(function(m){
+              return '<div onclick="cpPickGiftRecipient(\'' + m.id + '\')" style="display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);transition:background .15s" onmouseover="this.style.background=\'rgba(245,192,66,.08)\'" onmouseout="this.style.background=\'transparent\'">' +
+                _avatarHtml(m, 36) +
+                '<div style="flex:1;min-width:0">' +
+                  '<div style="font-size:13px;color:#fff;font-weight:600">' + esc((m.first_name || '') + ' ' + (m.last_name || '')) + '</div>' +
+                  '<div style="font-size:11px;color:#888">' + esc([m.city_name, m.tribe].filter(Boolean).join(' · ') || 'ATP member') + '</div>' +
+                '</div>' +
+              '</div>';
+            }).join('') +
+          '</div>'
+      ) +
+    '</div>';
+  }
+
+  window.cpGiftSearch = function(q) {
+    clearTimeout(GIFT_SEARCH_TIMER);
+    if (!q || q.length < 2) {
+      GIFT_SEARCH_RESULTS = [];
+      // Update results inline without re-rendering the input (would lose focus)
+      _updateGiftSearchResults();
+      return;
+    }
+    GIFT_SEARCH_TIMER = setTimeout(function(){
+      fetch('/api/members/search?q=' + encodeURIComponent(q) + '&limit=10', { headers: authHeaders() })
+        .then(function(r){ return r.json(); })
+        .then(function(d){
+          GIFT_SEARCH_RESULTS = (d && d.members) || [];
+          _updateGiftSearchResults();
+        })
+        .catch(function(){});
+    }, 250);
+  };
+
+  // Patch only the results dropdown (not the input) so user can keep typing
+  function _updateGiftSearchResults() {
+    // Re-render the modal — the input has its value preserved via DOM
+    // because we don't include the value attribute (browser keeps user input)
+    var searchEl = document.getElementById('cp-gift-search');
+    var prev = searchEl ? searchEl.value : '';
+    renderModal();
+    var newEl = document.getElementById('cp-gift-search');
+    if (newEl) {
+      newEl.value = prev;
+      newEl.focus();
+      // Restore cursor to end
+      try { newEl.setSelectionRange(prev.length, prev.length); } catch(e){}
+    }
+  }
+
+  window.cpPickGiftRecipient = function(memberId) {
+    var m = GIFT_SEARCH_RESULTS.find(function(x){ return x.id === memberId; });
+    if (!m) return;
+    GIFT_RECIPIENT = m;
+    GIFT_SEARCH_RESULTS = [];
+    renderModal();
+  };
+  window.cpClearGiftRecipient = function() {
+    GIFT_RECIPIENT = null;
+    GIFT_SEARCH_RESULTS = [];
+    GIFT_MESSAGE = '';
+    renderModal();
+  };
 
   // Convert a Date to a "YYYY-MM-DD" string using LOCAL components.
   // Avoids the timezone bug where .toISOString() converts to UTC, which
@@ -1215,21 +1299,25 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
   window.cpUpdatePoints = function(v) { POINTS_TO_USE = parseInt(v, 10) || 0; renderModal(); };
 
   window.cpConfirmBooking = function() {
-    if (!SELECTED_DATE || !SELECTED_TIME) return;
-    var dt = new Date(SELECTED_DATE);
-    var parts = SELECTED_TIME.split(':');
-    dt.setHours(parseInt(parts[0],10), parseInt(parts[1],10), 0, 0);
-    var note = (document.getElementById('cp-note') || {}).value || '';
+    // Direct booking requires date + time. Gift requires only a recipient.
+    if (!IS_GIFT && (!SELECTED_DATE || !SELECTED_TIME)) return;
+    if (IS_GIFT && !GIFT_RECIPIENT) return;
     var body = {
       offering_id: SELECTED_OFFERING.id,
-      scheduled_at: dt.toISOString(),
-      member_note: note,
       points_to_use: POINTS_TO_USE,
     };
     if (IS_GIFT) {
       body.is_gift = true;
-      body.gift_recipient_email = GIFT_EMAIL;
+      body.gift_recipient_id = GIFT_RECIPIENT.id;
       body.gift_message = GIFT_MESSAGE || null;
+      // No scheduled_at — recipient picks it later
+    } else {
+      var dt = new Date(SELECTED_DATE);
+      var parts = SELECTED_TIME.split(':');
+      dt.setHours(parseInt(parts[0],10), parseInt(parts[1],10), 0, 0);
+      body.scheduled_at = dt.toISOString();
+      var note = (document.getElementById('cp-note') || {}).value || '';
+      body.member_note = note;
     }
     var card = document.getElementById('cp-book-modal-card');
     card.style.opacity = 0.6;
@@ -1245,19 +1333,34 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
           alert(out.body.error || 'Booking failed');
           return;
         }
-        // Success
+        // Success — different messaging for gifts
         var b = out.body.booking || {};
-        card.innerHTML =
-          '<div style="text-align:center;padding:20px 10px">' +
-            '<div style="font-size:48px;margin-bottom:14px">🎯</div>' +
-            '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:28px;font-weight:900;color:#fff;text-transform:uppercase;margin-bottom:10px">Booked!</div>' +
-            '<p style="font-size:14px;color:#aaa;margin-bottom:18px;line-height:1.5">Your session is locked in. The coach will get a notification. Meeting link will be in your profile + emailed 24h before.</p>' +
-            '<div style="background:rgba(122,194,49,.06);border:1px solid rgba(122,194,49,.32);border-radius:8px;padding:14px;font-size:13px;color:#fff;margin-bottom:18px">' +
-              new Date(b.scheduled_at).toLocaleDateString() + ' · ' + new Date(b.scheduled_at).toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'}) +
-              ' · ' + b.duration_min + ' min · AED ' + b.price_paid_aed +
-            '</div>' +
-            '<button onclick="cpCloseBookingModal()" style="background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;padding:12px 28px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">Done</button>' +
-          '</div>';
+        if (IS_GIFT) {
+          var recipientName = (GIFT_RECIPIENT && GIFT_RECIPIENT.first_name) || 'Your friend';
+          card.innerHTML =
+            '<div style="text-align:center;padding:20px 10px">' +
+              '<div style="font-size:48px;margin-bottom:14px">🎁</div>' +
+              '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:28px;font-weight:900;color:#fff;text-transform:uppercase;margin-bottom:10px">Gift sent!</div>' +
+              '<p style="font-size:14px;color:#aaa;margin-bottom:18px;line-height:1.55">' + esc(recipientName) + ' just got a notification + can see the gift on their profile. They have <strong style="color:#f5c042">30 days</strong> to pick a time and redeem.</p>' +
+              '<div style="background:rgba(245,192,66,.06);border:1px solid rgba(245,192,66,.32);border-radius:8px;padding:14px;font-size:13px;color:#fff;margin-bottom:18px">' +
+                b.duration_min + ' min · AED ' + b.price_paid_aed + ' · ' + esc(SELECTED_OFFERING.title) +
+              '</div>' +
+              '<p style="font-size:12px;color:#888;margin-bottom:18px;line-height:1.5">If ' + esc(recipientName) + ' doesn\'t redeem in 30 days, you get the full amount refunded to your wallet automatically.</p>' +
+              '<button onclick="cpCloseBookingModal()" style="background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;padding:12px 28px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">Done</button>' +
+            '</div>';
+        } else {
+          card.innerHTML =
+            '<div style="text-align:center;padding:20px 10px">' +
+              '<div style="font-size:48px;margin-bottom:14px">🎯</div>' +
+              '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:28px;font-weight:900;color:#fff;text-transform:uppercase;margin-bottom:10px">Booked!</div>' +
+              '<p style="font-size:14px;color:#aaa;margin-bottom:18px;line-height:1.5">Your session is locked in. The coach will get a notification. Meeting link will be in your profile + emailed 24h before.</p>' +
+              '<div style="background:rgba(122,194,49,.06);border:1px solid rgba(122,194,49,.32);border-radius:8px;padding:14px;font-size:13px;color:#fff;margin-bottom:18px">' +
+                new Date(b.scheduled_at).toLocaleDateString() + ' · ' + new Date(b.scheduled_at).toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'}) +
+                ' · ' + b.duration_min + ' min · AED ' + b.price_paid_aed +
+              '</div>' +
+              '<button onclick="cpCloseBookingModal()" style="background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;padding:12px 28px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">Done</button>' +
+            '</div>';
+        }
       })
       .catch(function(){ alert('Network error — try again.'); card.style.opacity = 1; });
   };

@@ -366,4 +366,31 @@ async function updateProfileCompletion(memberId) {
   }
 }
 
+// ── GET /api/members/search ─────────────────────────────────────
+// Member-to-member search for use cases like "gift a coach session to
+// another member". Returns minimal public info — never email, never
+// phone. Requires the caller to be an authenticated member so this
+// can't be scraped by random visitors.
+router.get('/search', authenticate, async (req, res, next) => {
+  try {
+    const q = String(req.query.q || '').trim();
+    if (q.length < 2) return res.json({ members: [] });
+    const limit = Math.min(20, parseInt(req.query.limit, 10) || 10);
+    const { rows } = await query(
+      `SELECT m.id, m.first_name, m.last_name, m.avatar_url, m.tribe,
+              c.name AS city_name
+         FROM members m
+         LEFT JOIN cities c ON c.id = m.city_id
+        WHERE COALESCE(m.is_banned, false) = false
+          AND m.id <> $1
+          AND (m.first_name ILIKE $2 OR m.last_name ILIKE $2
+               OR (m.first_name || ' ' || m.last_name) ILIKE $2)
+        ORDER BY m.last_active_at DESC NULLS LAST, m.first_name ASC
+        LIMIT $3`,
+      [req.member.id, '%' + q + '%', limit]
+    );
+    res.json({ members: rows });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
