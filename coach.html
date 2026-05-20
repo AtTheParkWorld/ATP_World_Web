@@ -1119,10 +1119,14 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     return arr;
   }
 
-  // Helper: time slots for a given date based on availability windows
+  // Helper: time slots for a given date based on availability windows.
+  // No is_active filter here — the public API already filters to active
+  // windows server-side, and doesn't echo that column in the response.
+  // Checking `a.is_active` would be `undefined` → falsy → would reject
+  // every window → "Coach is closed" on every clicked date.
   function slotsForDate(date) {
     var dow = date.getDay();
-    var windows = AVAILABILITY.filter(function(a){ return a.day_of_week === dow && a.is_active; });
+    var windows = AVAILABILITY.filter(function(a){ return a.day_of_week === dow; });
     var slots = [];
     var dur = SELECTED_OFFERING.duration_min;
     var step = 30; // 30-min granularity for now
