@@ -180,9 +180,14 @@ router.get('/members', async (req, res, next) => {
               m.phone, m.subscription_type, m.points_balance, m.is_ambassador,
               m.is_coach, m.is_admin, m.profile_complete_pct, m.joined_at, m.last_active_at,
               c.name AS city_name,
-              (SELECT COUNT(*) FROM bookings b WHERE b.member_id=m.id AND b.status='attended') AS sessions_count
+              (SELECT COUNT(*) FROM bookings b WHERE b.member_id=m.id AND b.status='attended') AS sessions_count,
+              -- Wallet balance for the coach-sessions feature. LEFT JOIN
+              -- with COALESCE so members who never had a wallet row show 0.
+              COALESCE(w.balance_aed, 0)::int AS wallet_balance_aed,
+              COALESCE(w.pending_aed, 0)::int AS wallet_pending_aed
        FROM members m
        LEFT JOIN cities c ON c.id=m.city_id
+       LEFT JOIN member_wallet w ON w.member_id=m.id
        WHERE ${where.join(' AND ')}
        ORDER BY m.joined_at DESC
        LIMIT $${idx} OFFSET $${idx+1}`,

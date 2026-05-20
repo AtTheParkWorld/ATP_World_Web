@@ -104,6 +104,11 @@ async function loadMembersAPI() {
           '<option value="premium"' +      (tier==='premium'      ? ' selected' : '') + '>⭐ Premium</option>' +
           '<option value="premium_plus"' + (tier==='premium_plus' ? ' selected' : '') + '>⭐⭐ Premium+</option>' +
         '</select>';
+      var walletBal = m.wallet_balance_aed || 0;
+      var walletPending = m.wallet_pending_aed || 0;
+      var walletDisplay = '<div style="font-family:var(--ff-display,sans-serif);font-size:14px;font-weight:800;color:' + (walletBal > 0 ? '#f5c042' : '#555') + ';line-height:1">AED ' + walletBal + '</div>' +
+        (walletPending > 0 ? '<div style="font-size:10px;color:#888;margin-top:1px">+' + walletPending + ' pending</div>' : '');
+      var memberLabel = (m.first_name || '') + ' ' + (m.last_name || '');
       return '<tr>'+
         '<td style="display:flex;align-items:center;gap:10px"><div class="admin-av">'+ini+'</div>'+
         '<div><div class="admin-member-name">'+name+'</div>'+
@@ -111,9 +116,11 @@ async function loadMembersAPI() {
         '<td style="color:#555;font-size:12px">'+joined+'</td>'+
         '<td style="color:#fff;font-size:13px;font-weight:600">'+(m.sessions_count||0)+'</td>'+
         '<td style="font-size:13px;font-weight:700;color:#7AC231">'+(m.points_balance||0)+'</td>'+
+        '<td>'+walletDisplay+'</td>'+
         '<td>'+tierSelect+'</td>'+
         '<td><span class="badge '+(isAmb?'badge-green':'badge-grey')+'">'+(isAmb?'Ambassador':'Member')+'</span></td>'+
         '<td>'+
+          '<button class="admin-btn" style="font-size:11px;padding:4px 10px;background:rgba(245,192,66,.14);color:#f5c042;border:1px solid rgba(245,192,66,.3);margin-right:4px" onclick="topupWallet(this.dataset.mid, this.dataset.name)" data-mid="'+m.id+'" data-name="'+memberLabel.replace(/"/g,'')+'">💰 Top up</button>'+
           (isAmb
             ? '<button class="admin-btn" style="font-size:11px;padding:4px 10px" onclick="removeAmbassador(this.dataset.mid)" data-mid="'+m.id+'">Remove Amb.</button>'
             : '<button class="admin-btn" style="font-size:11px;padding:4px 10px" onclick="makeAmbassador(this.dataset.mid)" data-mid="'+m.id+'">Make Amb.</button>'
@@ -155,3 +162,33 @@ async function setMemberTier(memberId, tier, selectEl) {
   }
 }
 
+
+// Wallet top-up — admin tool. Adds AED to a member's wallet (used during
+// testing the coach 1-on-1 flow, and as the manual fallback for any
+// payment-flow edge case). Stripe-driven self-service topup lands later.
+async function topupWallet(memberId, memberName) {
+  if (!memberId) return;
+  var promptLabel = '💰 Top up wallet for ' + (memberName || 'this member') + '\n\nAmount in AED:';
+  var input = window.prompt(promptLabel, '500');
+  if (input == null) return; // cancelled
+  var amount = parseInt(input.trim(), 10);
+  if (!amount || amount < 1) { showToast('❌ Amount must be a positive number', true); return; }
+  if (amount > 5000) {
+    if (!confirm('That\'s AED ' + amount + ' — large amount. Confirm?')) return;
+  }
+  var reason = window.prompt('Reason (e.g. "Test seed", "Refund for X"):', 'Test seed');
+  if (reason == null) return;
+  try {
+    var token = getToken();
+    var res = await fetch(ATP_API + '/coach-sessions/admin/wallet-topup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ member_id: memberId, amount_aed: amount, reason: reason || 'Admin top-up' }),
+    }).then(function(r){ return r.json(); });
+    if (res && res.error) throw new Error(res.error);
+    showToast('✅ Topped up AED ' + amount + ' for ' + (memberName || 'member'));
+    loadMembersAPI(); // refresh to show new balance
+  } catch (e) {
+    showToast('❌ ' + e.message, true);
+  }
+}
