@@ -2419,11 +2419,24 @@ router.post('/migrate-surveys', async (req, res, next) => {
 // Per the v0.2 pitch deck: ATP wallet payments, ATP streaming, monthly
 // bank payouts on the 1st, 10% platform fee always retained.
 router.post('/migrate-coach-sessions', async (req, res, next) => {
+  // Diagnostic wrapper — each CREATE runs in its own try/catch so when
+  // something fails we know exactly which statement. Returns the trace
+  // so we can debug from the curl response without server logs.
+  const steps = [];
+  const tryStep = async (name, sql) => {
+    try {
+      await query(sql);
+      steps.push({ step: name, ok: true });
+    } catch (err) {
+      steps.push({ step: name, ok: false, error: err.message, code: err.code, detail: err.detail || null, hint: err.hint || null });
+      throw err;
+    }
+  };
   try {
     const { setupKey } = req.body;
     if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
 
-    await query(`CREATE TABLE IF NOT EXISTS coach_offerings (
+    await tryStep('1. coach_offerings table', `CREATE TABLE IF NOT EXISTS coach_offerings (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       coach_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
       title VARCHAR(160) NOT NULL,
@@ -2435,9 +2448,9 @@ router.post('/migrate-coach-sessions', async (req, res, next) => {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_coach_offerings_coach ON coach_offerings(coach_id, is_active)`);
+    await tryStep('1b. idx_coach_offerings_coach', `CREATE INDEX IF NOT EXISTS idx_coach_offerings_coach ON coach_offerings(coach_id, is_active)`);
 
-    await query(`CREATE TABLE IF NOT EXISTS coach_availability (
+    await tryStep('2. coach_availability table', `CREATE TABLE IF NOT EXISTS coach_availability (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       coach_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
       day_of_week INT NOT NULL CHECK (day_of_week BETWEEN 0 AND 6),
@@ -2448,9 +2461,9 @@ router.post('/migrate-coach-sessions', async (req, res, next) => {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       CHECK (end_time > start_time)
     )`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_coach_avail_coach ON coach_availability(coach_id, day_of_week)`);
+    await tryStep('2b. idx_coach_avail_coach', `CREATE INDEX IF NOT EXISTS idx_coach_avail_coach ON coach_availability(coach_id, day_of_week)`);
 
-    await query(`CREATE TABLE IF NOT EXISTS coach_session_bookings (
+    await tryStep('3. coach_session_bookings table', `CREATE TABLE IF NOT EXISTS coach_session_bookings (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       offering_id UUID NOT NULL REFERENCES coach_offerings(id) ON DELETE RESTRICT,
       coach_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
@@ -2479,11 +2492,11 @@ router.post('/migrate-coach-sessions', async (req, res, next) => {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_bookings_coach ON coach_session_bookings(coach_id, scheduled_at DESC)`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_bookings_member ON coach_session_bookings(member_id, scheduled_at DESC)`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_bookings_status ON coach_session_bookings(status, scheduled_at)`);
+    await tryStep('3b. idx_bookings_coach', `CREATE INDEX IF NOT EXISTS idx_bookings_coach ON coach_session_bookings(coach_id, scheduled_at DESC)`);
+    await tryStep('3c. idx_bookings_member', `CREATE INDEX IF NOT EXISTS idx_bookings_member ON coach_session_bookings(member_id, scheduled_at DESC)`);
+    await tryStep('3d. idx_bookings_status', `CREATE INDEX IF NOT EXISTS idx_bookings_status ON coach_session_bookings(status, scheduled_at)`);
 
-    await query(`CREATE TABLE IF NOT EXISTS member_wallet (
+    await tryStep('4. member_wallet table', `CREATE TABLE IF NOT EXISTS member_wallet (
       member_id UUID PRIMARY KEY REFERENCES members(id) ON DELETE CASCADE,
       balance_aed INT NOT NULL DEFAULT 0,
       pending_aed INT NOT NULL DEFAULT 0,
@@ -2491,7 +2504,7 @@ router.post('/migrate-coach-sessions', async (req, res, next) => {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`);
 
-    await query(`CREATE TABLE IF NOT EXISTS member_wallet_transactions (
+    await tryStep('5. member_wallet_transactions table', `CREATE TABLE IF NOT EXISTS member_wallet_transactions (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       member_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
       amount_aed INT NOT NULL,
@@ -2502,9 +2515,9 @@ router.post('/migrate-coach-sessions', async (req, res, next) => {
       description TEXT,
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_wallet_txn_member ON member_wallet_transactions(member_id, created_at DESC)`);
+    await tryStep('5b. idx_wallet_txn_member', `CREATE INDEX IF NOT EXISTS idx_wallet_txn_member ON member_wallet_transactions(member_id, created_at DESC)`);
 
-    await query(`CREATE TABLE IF NOT EXISTS coach_bank_accounts (
+    await tryStep('6. coach_bank_accounts table', `CREATE TABLE IF NOT EXISTS coach_bank_accounts (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       coach_id UUID UNIQUE NOT NULL REFERENCES members(id) ON DELETE CASCADE,
       bank_name VARCHAR(120) NOT NULL,
@@ -2516,7 +2529,7 @@ router.post('/migrate-coach-sessions', async (req, res, next) => {
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`);
 
-    await query(`CREATE TABLE IF NOT EXISTS coach_monthly_payouts (
+    await tryStep('7. coach_monthly_payouts table', `CREATE TABLE IF NOT EXISTS coach_monthly_payouts (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       coach_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
       period_start DATE NOT NULL,
@@ -2529,9 +2542,9 @@ router.post('/migrate-coach-sessions', async (req, res, next) => {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       UNIQUE (coach_id, period_start)
     )`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_payouts_period ON coach_monthly_payouts(period_start DESC)`);
+    await tryStep('7b. idx_payouts_period', `CREATE INDEX IF NOT EXISTS idx_payouts_period ON coach_monthly_payouts(period_start DESC)`);
 
-    await query(`CREATE TABLE IF NOT EXISTS session_feedback (
+    await tryStep('8. session_feedback table', `CREATE TABLE IF NOT EXISTS session_feedback (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       member_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
       atp_session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
@@ -2546,11 +2559,20 @@ router.post('/migrate-coach-sessions', async (req, res, next) => {
         (atp_session_id IS NULL AND coach_booking_id IS NOT NULL)
       )
     )`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_feedback_coach ON session_feedback(coach_id, is_public, created_at DESC)`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_feedback_member ON session_feedback(member_id, created_at DESC)`);
+    await tryStep('8b. idx_feedback_coach', `CREATE INDEX IF NOT EXISTS idx_feedback_coach ON session_feedback(coach_id, is_public, created_at DESC)`);
+    await tryStep('8c. idx_feedback_member', `CREATE INDEX IF NOT EXISTS idx_feedback_member ON session_feedback(member_id, created_at DESC)`);
 
-    res.json({ success: true });
-  } catch (err) { next(err); }
+    res.json({ success: true, steps });
+  } catch (err) {
+    // Return the full diagnostic trace + the failing step's details
+    return res.status(500).json({
+      error: err.message,
+      code: err.code,
+      detail: err.detail || null,
+      hint: err.hint || null,
+      steps,
+    });
+  }
 });
 
 // ── POST /api/auth/migrate-corporate ──────────────────────────
@@ -2558,11 +2580,16 @@ router.post('/migrate-coach-sessions', async (req, res, next) => {
 // a company, employees self-register via private signup link, ATP
 // delivers monthly engagement reports.
 router.post('/migrate-corporate', async (req, res, next) => {
+  const steps = [];
+  const tryStep = async (name, sql) => {
+    try { await query(sql); steps.push({ step: name, ok: true }); }
+    catch (err) { steps.push({ step: name, ok: false, error: err.message, code: err.code, detail: err.detail || null, hint: err.hint || null }); throw err; }
+  };
   try {
     const { setupKey } = req.body;
     if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
 
-    await query(`CREATE TABLE IF NOT EXISTS corporate_accounts (
+    await tryStep('1. corporate_accounts', `CREATE TABLE IF NOT EXISTS corporate_accounts (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       company_name VARCHAR(200) NOT NULL,
       slug VARCHAR(120) UNIQUE NOT NULL,
@@ -2583,9 +2610,9 @@ router.post('/migrate-corporate', async (req, res, next) => {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_corp_status ON corporate_accounts(status, slug)`);
+    await tryStep('1b. idx_corp_status', `CREATE INDEX IF NOT EXISTS idx_corp_status ON corporate_accounts(status, slug)`);
 
-    await query(`CREATE TABLE IF NOT EXISTS corporate_employees (
+    await tryStep('2. corporate_employees', `CREATE TABLE IF NOT EXISTS corporate_employees (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       corporate_account_id UUID NOT NULL REFERENCES corporate_accounts(id) ON DELETE CASCADE,
       member_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
@@ -2595,10 +2622,10 @@ router.post('/migrate-corporate', async (req, res, next) => {
       is_active BOOLEAN NOT NULL DEFAULT true,
       UNIQUE (corporate_account_id, member_id)
     )`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_corp_emp_member ON corporate_employees(member_id)`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_corp_emp_account ON corporate_employees(corporate_account_id, is_active)`);
+    await tryStep('2b. idx_corp_emp_member', `CREATE INDEX IF NOT EXISTS idx_corp_emp_member ON corporate_employees(member_id)`);
+    await tryStep('2c. idx_corp_emp_account', `CREATE INDEX IF NOT EXISTS idx_corp_emp_account ON corporate_employees(corporate_account_id, is_active)`);
 
-    await query(`CREATE TABLE IF NOT EXISTS corporate_signup_tokens (
+    await tryStep('3. corporate_signup_tokens', `CREATE TABLE IF NOT EXISTS corporate_signup_tokens (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       corporate_account_id UUID NOT NULL REFERENCES corporate_accounts(id) ON DELETE CASCADE,
       token VARCHAR(120) UNIQUE NOT NULL,
@@ -2607,7 +2634,7 @@ router.post('/migrate-corporate', async (req, res, next) => {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`);
 
-    await query(`CREATE TABLE IF NOT EXISTS corporate_monthly_reports (
+    await tryStep('4. corporate_monthly_reports', `CREATE TABLE IF NOT EXISTS corporate_monthly_reports (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       corporate_account_id UUID NOT NULL REFERENCES corporate_accounts(id) ON DELETE CASCADE,
       period_start DATE NOT NULL,
@@ -2622,10 +2649,9 @@ router.post('/migrate-corporate', async (req, res, next) => {
       generated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       UNIQUE (corporate_account_id, period_start)
     )`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_corp_reports_period ON corporate_monthly_reports(corporate_account_id, period_start DESC)`);
+    await tryStep('4b. idx_corp_reports_period', `CREATE INDEX IF NOT EXISTS idx_corp_reports_period ON corporate_monthly_reports(corporate_account_id, period_start DESC)`);
 
-    // Corporate leads — track companies we're pitching before they sign
-    await query(`CREATE TABLE IF NOT EXISTS corporate_leads (
+    await tryStep('5. corporate_leads', `CREATE TABLE IF NOT EXISTS corporate_leads (
       id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
       company_name VARCHAR(200) NOT NULL,
       contact_name VARCHAR(160),
@@ -2643,10 +2669,12 @@ router.post('/migrate-corporate', async (req, res, next) => {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )`);
-    await query(`CREATE INDEX IF NOT EXISTS idx_corp_leads_stage ON corporate_leads(stage, next_action_date)`);
+    await tryStep('5b. idx_corp_leads_stage', `CREATE INDEX IF NOT EXISTS idx_corp_leads_stage ON corporate_leads(stage, next_action_date)`);
 
-    res.json({ success: true });
-  } catch (err) { next(err); }
+    res.json({ success: true, steps });
+  } catch (err) {
+    return res.status(500).json({ error: err.message, code: err.code, detail: err.detail || null, hint: err.hint || null, steps });
+  }
 });
 
 // ── POST /api/auth/admin-reset-password ───────────────────────
