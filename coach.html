@@ -353,7 +353,29 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     </div>
   </section>
 
+  <!-- ═══════════════════════════════════════════════════════════
+       BOOK A 1-ON-1 SESSION (Sprint 3)
+       Visible only when coach has active offerings + availability.
+       Loads from /api/coach-sessions/public/:coach_id/offerings via
+       JS at the bottom. Members tap an offering → modal flow:
+         pick time → optional note → review payment → confirm
+       Payment is from ATP wallet + optional points combo.
+  ════════════════════════════════════════════════════════════ -->
+  <section id="cp-1on1-section" style="display:none;background:linear-gradient(180deg,#0a0a0a,#0d0d0d);padding:60px 24px;border-top:1px solid rgba(245,192,66,.16)">
+    <div style="max-width:980px;margin:0 auto">
+      <div style="display:inline-flex;align-items:center;gap:10px;font-size:11px;color:#f5c042;letter-spacing:.18em;text-transform:uppercase;font-weight:700;margin-bottom:14px"><span style="display:block;width:24px;height:2px;background:#f5c042"></span>Premium 1-on-1</div>
+      <h2 style="font-family:'Barlow Condensed',sans-serif;font-size:clamp(32px,4.5vw,52px);font-weight:900;line-height:1;text-transform:uppercase;letter-spacing:-.01em;color:#fff;margin-bottom:12px">Book a <span style="color:#f5c042">1-on-1</span> with me</h2>
+      <p style="font-size:15px;color:#aaa;line-height:1.6;max-width:640px;margin-bottom:28px">Private online coaching, tailored to your goals. Pay from your ATP wallet (you can mix in points). Cancel up to 24h before for a full refund.</p>
+      <div id="cp-offerings-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>
+    </div>
+  </section>
+
 </main>
+
+<!-- Booking modal (Sprint 3) — empty shell; populated dynamically -->
+<div id="cp-book-modal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px;overflow-y:auto">
+  <div id="cp-book-modal-card" style="background:#111;border:1px solid rgba(245,192,66,.32);border-radius:16px;max-width:520px;width:100%;padding:28px;color:#fff;max-height:90vh;overflow-y:auto"></div>
+</div>
 
 <!-- Lightbox for gallery -->
 <div class="cp-lightbox" id="cp-lightbox" onclick="closeLightbox(event)">
@@ -815,6 +837,282 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     hide('cp-loading');
     show('cp-error');
   });
+})();
+</script>
+
+<!-- ════════════════════════════════════════════════════════════
+     Sprint 3: 1-on-1 booking flow
+     Loads offerings + availability for this coach, renders the
+     section if any are active, drives the booking modal.
+════════════════════════════════════════════════════════════ -->
+<script>
+(function(){
+  // Wait for the parent renderer to set window.__COACH_ID (or fall back
+  // to parsing the URL the same way the existing renderer does)
+  function getCoachId() {
+    // The main coach renderer caches the resolved coach.id here once
+    // load completes — including for slug-based URLs.
+    return window.__CP_COACH_ID || null;
+  }
+
+  var COACH_ID = null;
+  var OFFERINGS = [];
+  var AVAILABILITY = [];
+  var SELECTED_OFFERING = null;
+  var SELECTED_DATE = null;
+  var SELECTED_TIME = null;
+  var WALLET = { balance_aed: 0 };
+  var POINTS_BALANCE = 0;
+  var POINTS_TO_USE = 0;
+
+  function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  function authHeaders() {
+    var token = (typeof localStorage !== 'undefined' && localStorage.getItem('atp_token')) || '';
+    return token ? { Authorization: 'Bearer ' + token } : {};
+  }
+
+  function isLoggedIn() {
+    return !!(typeof localStorage !== 'undefined' && localStorage.getItem('atp_token'));
+  }
+
+  function load() {
+    COACH_ID = getCoachId();
+    if (!COACH_ID) return;
+    fetch('/api/coach-sessions/public/' + encodeURIComponent(COACH_ID) + '/offerings')
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        OFFERINGS = (d && d.offerings) || [];
+        AVAILABILITY = (d && d.availability) || [];
+        if (OFFERINGS.length > 0) renderSection();
+      })
+      .catch(function(){});
+  }
+
+  function renderSection() {
+    var sec = document.getElementById('cp-1on1-section');
+    var grid = document.getElementById('cp-offerings-grid');
+    if (!sec || !grid) return;
+    sec.style.display = 'block';
+    grid.innerHTML = OFFERINGS.map(function(o){
+      return '<div style="background:#161616;border:1px solid rgba(245,192,66,.2);border-radius:12px;padding:22px;display:flex;flex-direction:column;gap:12px;transition:border-color .2s" ' +
+        'onmouseover="this.style.borderColor=\'rgba(245,192,66,.6)\'" onmouseout="this.style.borderColor=\'rgba(245,192,66,.2)\'">' +
+        '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:20px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.02em;line-height:1.15">' + esc(o.title) + '</div>' +
+        '<div style="font-size:11px;color:#aaa;font-weight:600;letter-spacing:.08em;text-transform:uppercase">' + o.duration_min + ' min · video call · 1-on-1</div>' +
+        (o.description ? '<div style="font-size:13px;color:#888;line-height:1.55">' + esc(o.description) + '</div>' : '<div></div>') +
+        '<div style="display:flex;justify-content:space-between;align-items:center;margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)">' +
+          '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:30px;font-weight:900;color:#f5c042;line-height:1">AED ' + o.price_aed + '</div>' +
+          '<button onclick="cpOpenBookingModal(\'' + o.id + '\')" style="background:#f5c042;color:#0a0a0a;padding:10px 18px;border:none;border-radius:6px;font-weight:800;font-size:12px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer">Book →</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  // ── BOOKING MODAL ─────────────────────────────────────────
+  window.cpOpenBookingModal = function(offeringId) {
+    if (!isLoggedIn()) {
+      location.href = '/join?next=' + encodeURIComponent(location.pathname + location.search);
+      return;
+    }
+    SELECTED_OFFERING = OFFERINGS.find(function(o){ return o.id === offeringId; });
+    if (!SELECTED_OFFERING) return;
+    SELECTED_DATE = null;
+    SELECTED_TIME = null;
+    POINTS_TO_USE = 0;
+    // Load wallet + points
+    Promise.all([
+      fetch('/api/coach-sessions/wallet/me', { headers: authHeaders() }).then(function(r){ return r.json(); }),
+      fetch('/api/points/balance', { headers: authHeaders() }).then(function(r){ return r.json(); }),
+    ])
+      .then(function(out){
+        WALLET = (out[0] && out[0].wallet) || { balance_aed: 0 };
+        POINTS_BALANCE = (out[1] && out[1].balance) || 0;
+        renderModal();
+        document.getElementById('cp-book-modal').style.display = 'flex';
+      })
+      .catch(function(){
+        WALLET = { balance_aed: 0 };
+        POINTS_BALANCE = 0;
+        renderModal();
+        document.getElementById('cp-book-modal').style.display = 'flex';
+      });
+  };
+
+  window.cpCloseBookingModal = function() {
+    document.getElementById('cp-book-modal').style.display = 'none';
+  };
+
+  function renderModal() {
+    var card = document.getElementById('cp-book-modal-card');
+    if (!card) return;
+    var o = SELECTED_OFFERING;
+    var dateOptions = nextNDates(14);
+    var timeOptions = SELECTED_DATE ? slotsForDate(SELECTED_DATE) : [];
+    var maxPoints = Math.min(POINTS_BALANCE, o.price_aed * 10);
+    var pointsValueAed = Math.floor(POINTS_TO_USE / 10);
+    var walletDebit = Math.max(0, o.price_aed - pointsValueAed);
+    var canAfford = WALLET.balance_aed >= walletDebit;
+
+    card.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:16px">' +
+        '<div>' +
+          '<div style="font-size:11px;color:#f5c042;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:4px">Book session</div>' +
+          '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:22px;font-weight:800;text-transform:uppercase;line-height:1.1">' + esc(o.title) + '</div>' +
+          '<div style="font-size:12px;color:#888;margin-top:4px">' + o.duration_min + ' min · AED ' + o.price_aed + '</div>' +
+        '</div>' +
+        '<button onclick="cpCloseBookingModal()" style="background:none;border:none;color:#888;font-size:22px;cursor:pointer;padding:4px 8px">×</button>' +
+      '</div>' +
+
+      // Date picker
+      '<div style="margin-bottom:14px"><label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">1. Pick a date</label>' +
+        '<div style="display:flex;gap:6px;overflow-x:auto;padding-bottom:6px">' +
+          dateOptions.map(function(d){
+            var iso = d.toISOString().slice(0, 10);
+            var active = SELECTED_DATE && SELECTED_DATE.toISOString().slice(0, 10) === iso;
+            return '<button onclick="cpPickDate(\'' + iso + '\')" style="flex-shrink:0;background:' + (active ? '#f5c042' : 'rgba(255,255,255,.04)') + ';color:' + (active ? '#0a0a0a' : '#fff') + ';border:1px solid ' + (active ? '#f5c042' : 'rgba(255,255,255,.1)') + ';border-radius:8px;padding:8px 12px;cursor:pointer;text-align:center;min-width:60px;font-family:inherit">' +
+              '<div style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:600">' + d.toLocaleDateString(undefined, {weekday:'short'}) + '</div>' +
+              '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:18px;font-weight:900;line-height:1.1">' + d.getDate() + '</div>' +
+              '<div style="font-size:9px;color:' + (active ? '#0a0a0a' : '#888') + '">' + d.toLocaleDateString(undefined, {month:'short'}) + '</div>' +
+            '</button>';
+          }).join('') +
+        '</div>' +
+      '</div>' +
+
+      // Time picker (only if date selected)
+      (SELECTED_DATE
+        ? '<div style="margin-bottom:14px"><label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">2. Pick a time</label>' +
+          (timeOptions.length === 0
+            ? '<div style="padding:14px;color:#888;font-size:12px;text-align:center;background:rgba(255,255,255,.02);border:1px dashed rgba(255,255,255,.08);border-radius:8px">Coach is closed on this day. Pick another date.</div>'
+            : '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:6px">' +
+                timeOptions.map(function(t){
+                  var active = SELECTED_TIME === t;
+                  return '<button onclick="cpPickTime(\'' + t + '\')" style="background:' + (active ? '#f5c042' : 'rgba(255,255,255,.04)') + ';color:' + (active ? '#0a0a0a' : '#fff') + ';border:1px solid ' + (active ? '#f5c042' : 'rgba(255,255,255,.1)') + ';border-radius:6px;padding:8px;cursor:pointer;font-weight:600;font-size:13px;font-family:inherit">' + t + '</button>';
+                }).join('') +
+              '</div>'
+          ) + '</div>'
+        : '') +
+
+      // Member note
+      (SELECTED_DATE && SELECTED_TIME
+        ? '<div style="margin-bottom:14px"><label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">3. What do you want to focus on? (optional)</label>' +
+          '<textarea id="cp-note" rows="2" placeholder="Marathon pacing, running form, race-day strategy…" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:13px;font-family:inherit;resize:vertical"></textarea></div>' +
+
+          // Payment section
+          '<div style="margin-bottom:14px;padding:14px;background:rgba(245,192,66,.04);border:1px solid rgba(245,192,66,.2);border-radius:8px">' +
+            '<div style="font-size:11px;color:#f5c042;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:10px">4. Payment</div>' +
+            '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#aaa"><span>Wallet balance available</span><strong style="color:#fff">AED ' + WALLET.balance_aed + '</strong></div>' +
+            '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#aaa"><span>Points available</span><strong style="color:#fff">' + POINTS_BALANCE + ' pts (worth AED ' + Math.floor(POINTS_BALANCE / 10) + ')</strong></div>' +
+            (maxPoints > 0 ?
+              '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)">' +
+                '<label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:6px">Use points (1 pt = AED 0.10)</label>' +
+                '<input type="range" id="cp-points-slider" min="0" max="' + maxPoints + '" step="10" value="' + POINTS_TO_USE + '" oninput="cpUpdatePoints(this.value)" style="width:100%;cursor:pointer">' +
+                '<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-top:4px"><span>0 pts</span><strong style="color:#f5c042">Using: ' + POINTS_TO_USE + ' pts (AED ' + pointsValueAed + ')</strong><span>' + maxPoints + ' pts</span></div>' +
+              '</div>' : '') +
+            '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(245,192,66,.3);display:flex;justify-content:space-between;font-size:15px"><span style="color:#fff;font-weight:700">Wallet charge</span><strong style="color:#f5c042;font-family:\'Barlow Condensed\',sans-serif;font-size:22px;font-weight:900">AED ' + walletDebit + '</strong></div>' +
+          '</div>' +
+
+          (!canAfford
+            ? '<div style="padding:12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:12px;color:#ff8a8a;margin-bottom:14px">⚠ Wallet balance too low. Need AED ' + walletDebit + ', you have AED ' + WALLET.balance_aed + '. Contact ATP to top up.</div>'
+            : '') +
+
+          '<button onclick="cpConfirmBooking()" ' + (canAfford ? '' : 'disabled') + ' style="width:100%;background:' + (canAfford ? '#f5c042' : 'rgba(255,255,255,.1)') + ';color:' + (canAfford ? '#0a0a0a' : '#666') + ';border:none;border-radius:8px;padding:14px;font-weight:800;font-size:14px;letter-spacing:.05em;text-transform:uppercase;cursor:' + (canAfford ? 'pointer' : 'not-allowed') + '">Confirm booking →</button>'
+        : '');
+  }
+
+  // Helper: next N days starting today
+  function nextNDates(n) {
+    var arr = [];
+    var d = new Date(); d.setHours(0,0,0,0);
+    for (var i = 0; i < n; i++) {
+      var dd = new Date(d.getTime() + i * 86400000);
+      // Only include days that have availability
+      if (AVAILABILITY.some(function(a){ return a.day_of_week === dd.getDay() && a.is_active; })) {
+        arr.push(dd);
+      }
+    }
+    return arr;
+  }
+
+  // Helper: time slots for a given date based on availability windows
+  function slotsForDate(date) {
+    var dow = date.getDay();
+    var windows = AVAILABILITY.filter(function(a){ return a.day_of_week === dow && a.is_active; });
+    var slots = [];
+    var dur = SELECTED_OFFERING.duration_min;
+    var step = 30; // 30-min granularity for now
+    windows.forEach(function(w){
+      var s = parseTime(w.start_time);
+      var e = parseTime(w.end_time);
+      var cur = s;
+      while (cur + dur <= e) {
+        slots.push(minutesToTime(cur));
+        cur += step;
+      }
+    });
+    // Filter out past times for today
+    if (date.toDateString() === new Date().toDateString()) {
+      var nowMin = new Date().getHours() * 60 + new Date().getMinutes() + 30; // 30-min buffer
+      slots = slots.filter(function(s){ return parseTime(s) >= nowMin; });
+    }
+    return slots;
+  }
+  function parseTime(t) { var p = t.split(':'); return parseInt(p[0],10) * 60 + parseInt(p[1],10); }
+  function minutesToTime(m) { return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0'); }
+
+  window.cpPickDate = function(iso) {
+    SELECTED_DATE = new Date(iso + 'T00:00:00');
+    SELECTED_TIME = null;
+    renderModal();
+  };
+  window.cpPickTime = function(t) { SELECTED_TIME = t; renderModal(); };
+  window.cpUpdatePoints = function(v) { POINTS_TO_USE = parseInt(v, 10) || 0; renderModal(); };
+
+  window.cpConfirmBooking = function() {
+    if (!SELECTED_DATE || !SELECTED_TIME) return;
+    var dt = new Date(SELECTED_DATE);
+    var parts = SELECTED_TIME.split(':');
+    dt.setHours(parseInt(parts[0],10), parseInt(parts[1],10), 0, 0);
+    var note = (document.getElementById('cp-note') || {}).value || '';
+    var body = {
+      offering_id: SELECTED_OFFERING.id,
+      scheduled_at: dt.toISOString(),
+      member_note: note,
+      points_to_use: POINTS_TO_USE,
+    };
+    var card = document.getElementById('cp-book-modal-card');
+    card.style.opacity = 0.6;
+    fetch('/api/coach-sessions/book', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+      body: JSON.stringify(body),
+    })
+      .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, body: d }; }); })
+      .then(function(out){
+        card.style.opacity = 1;
+        if (!out.ok) {
+          alert(out.body.error || 'Booking failed');
+          return;
+        }
+        // Success
+        var b = out.body.booking || {};
+        card.innerHTML =
+          '<div style="text-align:center;padding:20px 10px">' +
+            '<div style="font-size:48px;margin-bottom:14px">🎯</div>' +
+            '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:28px;font-weight:900;color:#fff;text-transform:uppercase;margin-bottom:10px">Booked!</div>' +
+            '<p style="font-size:14px;color:#aaa;margin-bottom:18px;line-height:1.5">Your session is locked in. The coach will get a notification. Meeting link will be in your profile + emailed 24h before.</p>' +
+            '<div style="background:rgba(122,194,49,.06);border:1px solid rgba(122,194,49,.32);border-radius:8px;padding:14px;font-size:13px;color:#fff;margin-bottom:18px">' +
+              new Date(b.scheduled_at).toLocaleDateString() + ' · ' + new Date(b.scheduled_at).toLocaleTimeString(undefined, {hour:'2-digit', minute:'2-digit'}) +
+              ' · ' + b.duration_min + ' min · AED ' + b.price_paid_aed +
+            '</div>' +
+            '<button onclick="cpCloseBookingModal()" style="background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;padding:12px 28px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">Done</button>' +
+          '</div>';
+      })
+      .catch(function(){ alert('Network error — try again.'); card.style.opacity = 1; });
+  };
+
+  // Boot — wait for the main coach renderer to populate the page
+  setTimeout(load, 500);
+  setTimeout(load, 1500); // retry in case coach data loads slow
 })();
 </script>
 

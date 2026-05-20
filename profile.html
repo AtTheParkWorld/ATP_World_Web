@@ -1410,6 +1410,30 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
         <!-- Hidden file input for uploads -->
         <input type="file" id="coachUploadFile" accept="image/*,video/*" style="display:none">
+
+        <!-- ═══ 1-ON-1 COACHING HUB ═══════════════════════════════════
+             Sprint 3: coaches manage their paid private offerings here.
+             Sub-tabs cover Offerings, Availability, Bookings, Earnings.
+             Loaded on demand via the data-driven render functions below. -->
+        <div style="margin-top:30px;padding-top:24px;border-top:1px solid rgba(255,255,255,.08)">
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px;flex-wrap:wrap;gap:14px">
+            <div>
+              <div style="font-size:11px;color:#f5c042;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">★ 1-on-1 sessions</div>
+              <h2 style="font-family:var(--ff-display);font-size:24px;font-weight:800;color:#fff;text-transform:uppercase;margin:0">Your private coaching hub</h2>
+              <p style="font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;max-width:560px">Sell 1-on-1 sessions to ATP members. You set the price, you set the hours, ATP takes 10%, the rest credits to your ATP wallet — transferred to your bank on the 1st of every month.</p>
+            </div>
+          </div>
+
+          <!-- Sub-tab buttons -->
+          <div style="display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap">
+            <button class="ch-tab active" data-ch-tab="offerings" data-atp-call="showCoachHubTab" data-args='["offerings"]' style="padding:8px 16px;font-size:12px;font-weight:700;background:rgba(245,192,66,.12);color:#f5c042;border:1px solid rgba(245,192,66,.3);border-radius:8px;cursor:pointer">Offerings</button>
+            <button class="ch-tab" data-ch-tab="availability" data-atp-call="showCoachHubTab" data-args='["availability"]' style="padding:8px 16px;font-size:12px;font-weight:700;background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.1);border-radius:8px;cursor:pointer">Availability</button>
+            <button class="ch-tab" data-ch-tab="bookings" data-atp-call="showCoachHubTab" data-args='["bookings"]' style="padding:8px 16px;font-size:12px;font-weight:700;background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.1);border-radius:8px;cursor:pointer">Bookings</button>
+            <button class="ch-tab" data-ch-tab="earnings" data-atp-call="showCoachHubTab" data-args='["earnings"]' style="padding:8px 16px;font-size:12px;font-weight:700;background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.1);border-radius:8px;cursor:pointer">Earnings &amp; bank</button>
+          </div>
+
+          <div id="coachHubBody"><div style="padding:30px;color:var(--muted);text-align:center;font-size:13px">Loading…</div></div>
+        </div>
       </div>
 
     </div>
@@ -4550,6 +4574,415 @@ function loadOffersTeaser() {
     })
     .catch(function() { /* offers table not migrated yet — hide silently */ });
 }
+
+// ════════════════════════════════════════════════════════════════
+// COACH HUB — 1-on-1 sessions management (Sprint 3)
+// ════════════════════════════════════════════════════════════════
+
+var COACH_HUB_TAB = 'offerings';
+var COACH_HUB_OFFERINGS = [];
+
+function showCoachHubTab(tab) {
+  COACH_HUB_TAB = tab;
+  // Re-style sub-tab pills
+  document.querySelectorAll('.ch-tab').forEach(function(b){
+    var on = b.getAttribute('data-ch-tab') === tab;
+    b.style.background = on ? 'rgba(245,192,66,.12)' : 'transparent';
+    b.style.color      = on ? '#f5c042' : 'var(--muted)';
+    b.style.borderColor = on ? 'rgba(245,192,66,.3)' : 'rgba(255,255,255,.1)';
+    b.classList.toggle('active', on);
+  });
+  if (tab === 'offerings')    loadCoachOfferings();
+  else if (tab === 'availability') loadCoachAvailability();
+  else if (tab === 'bookings')     loadCoachBookings();
+  else if (tab === 'earnings')     loadCoachEarnings();
+}
+
+function _chEsc(s) {
+  return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+function _chToken() { return localStorage.getItem('atp_token') || ''; }
+
+// ── OFFERINGS ─────────────────────────────────────────────────
+function loadCoachOfferings() {
+  var host = document.getElementById('coachHubBody');
+  if (!host) return;
+  host.innerHTML = '<div style="padding:30px;color:var(--muted);text-align:center;font-size:13px">Loading offerings…</div>';
+  fetch('/api/coach-sessions/me/offerings', { headers: { Authorization: 'Bearer ' + _chToken() } })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      COACH_HUB_OFFERINGS = (d && d.offerings) || [];
+      renderCoachOfferings();
+    })
+    .catch(function(){ host.innerHTML = '<div style="padding:30px;color:#f87171;text-align:center;font-size:13px">Could not load. Make sure you\'re marked as a coach in the system.</div>'; });
+}
+
+function renderCoachOfferings() {
+  var host = document.getElementById('coachHubBody');
+  var list = COACH_HUB_OFFERINGS;
+  var html =
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px"><div style="font-size:12px;color:var(--muted)">' + list.length + ' offering' + (list.length === 1 ? '' : 's') + '</div>' +
+      '<button class="btn-primary" data-atp-call="newOfferingForm" style="padding:8px 16px;font-size:12px;background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">+ New offering</button>' +
+    '</div>' +
+    '<div id="offeringFormWrap"></div>';
+  if (!list.length) {
+    html += '<div style="padding:40px;border:1px dashed rgba(255,255,255,.1);border-radius:10px;text-align:center;color:var(--muted)">No offerings yet. Create your first 1-on-1 session — title, duration, price.</div>';
+  } else {
+    html += list.map(function(o){
+      return '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap">' +
+        '<div style="flex:1;min-width:200px">' +
+          '<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">' +
+            '<span style="font-family:var(--ff-display);font-size:16px;font-weight:800;color:#fff">' + _chEsc(o.title) + '</span>' +
+            (o.is_active ? '' : '<span style="font-size:9px;color:#666;background:rgba(255,255,255,.04);padding:2px 6px;border-radius:3px">HIDDEN</span>') +
+          '</div>' +
+          '<div style="font-size:12px;color:var(--muted)">' + o.duration_min + ' min · <strong style="color:#f5c042">AED ' + o.price_aed + '</strong> · You keep AED ' + Math.round(o.price_aed * 0.9) + ' (90%)</div>' +
+          (o.description ? '<div style="font-size:11px;color:#888;margin-top:6px;line-height:1.5">' + _chEsc(o.description) + '</div>' : '') +
+        '</div>' +
+        '<div style="display:flex;gap:6px">' +
+          '<button class="btn-ghost" data-atp-call="editOfferingForm" data-args=\'["' + o.id + '"]\' style="font-size:11px;padding:6px 12px;background:transparent;border:1px solid rgba(255,255,255,.14);color:var(--white);border-radius:6px;cursor:pointer">Edit</button>' +
+          '<button class="btn-ghost" data-atp-call="deleteOffering" data-args=\'["' + o.id + '"]\' style="font-size:11px;padding:6px 12px;background:transparent;border:1px solid rgba(239,68,68,.3);color:#ff8a8a;border-radius:6px;cursor:pointer">Delete</button>' +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+  host.innerHTML = html;
+}
+
+function newOfferingForm() { renderOfferingForm(null); }
+function editOfferingForm(e, btn) {
+  var id = JSON.parse(btn.getAttribute('data-args') || '[]')[0];
+  var o = COACH_HUB_OFFERINGS.find(function(x){ return x.id === id; });
+  if (o) renderOfferingForm(o);
+}
+
+function renderOfferingForm(o) {
+  var wrap = document.getElementById('offeringFormWrap');
+  if (!wrap) return;
+  var isEdit = !!o;
+  wrap.innerHTML =
+    '<div style="background:rgba(245,192,66,.04);border:1px solid rgba(245,192,66,.2);border-radius:10px;padding:16px;margin-bottom:14px">' +
+      '<div style="font-family:var(--ff-display);font-size:14px;font-weight:800;color:#f5c042;text-transform:uppercase;margin-bottom:12px">' + (isEdit ? 'Edit offering' : 'New offering') + '</div>' +
+      '<input type="hidden" id="offEditId" value="' + (o ? o.id : '') + '">' +
+      '<div style="margin-bottom:10px"><label style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:5px">Title *</label>' +
+        '<input id="offTitle" type="text" placeholder="60-min running form deep-dive" value="' + _chEsc(o ? o.title : '') + '" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:14px;font-family:inherit"></div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
+        '<div><label style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:5px">Duration (min)</label>' +
+          '<select id="offDuration" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:14px">' +
+            [30, 45, 60, 90].map(function(d){ return '<option value="' + d + '"' + (o && o.duration_min === d ? ' selected' : (!o && d === 60 ? ' selected' : '')) + '>' + d + ' minutes</option>'; }).join('') +
+          '</select>' +
+        '</div>' +
+        '<div><label style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:5px">Price (AED)</label>' +
+          '<input id="offPrice" type="number" min="50" max="500" placeholder="200" value="' + (o ? o.price_aed : '') + '" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:14px;font-family:inherit"></div>' +
+      '</div>' +
+      '<div style="margin-bottom:10px"><label style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:5px">Description (what members can expect)</label>' +
+        '<textarea id="offDesc" rows="2" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:13px;font-family:inherit;resize:vertical">' + _chEsc(o ? (o.description || '') : '') + '</textarea></div>' +
+      '<div style="display:flex;gap:14px;margin-bottom:12px;font-size:12px;color:var(--light)"><label style="display:flex;align-items:center;gap:6px;cursor:pointer"><input type="checkbox" id="offActive"' + (!o || o.is_active ? ' checked' : '') + '> Visible to members</label></div>' +
+      '<div style="display:flex;gap:8px"><button class="btn-primary" data-atp-call="saveOffering" style="padding:10px 18px;font-size:12px;background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">' + (isEdit ? 'Update' : 'Create') + ' offering</button>' +
+        '<button class="btn-ghost" data-atp-call="cancelOfferingForm" style="padding:10px 18px;font-size:12px;background:transparent;border:1px solid rgba(255,255,255,.14);color:var(--light);border-radius:6px;cursor:pointer">Cancel</button></div>' +
+    '</div>';
+}
+
+function cancelOfferingForm() { var w = document.getElementById('offeringFormWrap'); if (w) w.innerHTML = ''; }
+
+function saveOffering() {
+  var id = document.getElementById('offEditId').value;
+  var body = {
+    title: document.getElementById('offTitle').value.trim(),
+    duration_min: parseInt(document.getElementById('offDuration').value, 10),
+    price_aed: parseInt(document.getElementById('offPrice').value, 10),
+    description: document.getElementById('offDesc').value.trim() || null,
+    is_active: document.getElementById('offActive').checked,
+  };
+  if (!body.title) { alert('Title is required'); return; }
+  if (!body.price_aed || body.price_aed < 50 || body.price_aed > 500) { alert('Price must be AED 50-500'); return; }
+  var url = id ? '/api/coach-sessions/me/offerings/' + id : '/api/coach-sessions/me/offerings';
+  fetch(url, {
+    method: id ? 'PATCH' : 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _chToken() },
+    body: JSON.stringify(body),
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.error) { alert('Save failed: ' + d.error); return; }
+      cancelOfferingForm();
+      loadCoachOfferings();
+    });
+}
+
+function deleteOffering(e, btn) {
+  if (!confirm('Delete this offering? Existing bookings keep working but no new ones can be made.')) return;
+  var id = JSON.parse(btn.getAttribute('data-args') || '[]')[0];
+  fetch('/api/coach-sessions/me/offerings/' + id, {
+    method: 'DELETE',
+    headers: { Authorization: 'Bearer ' + _chToken() },
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(){ loadCoachOfferings(); });
+}
+
+// ── AVAILABILITY ──────────────────────────────────────────────
+function loadCoachAvailability() {
+  var host = document.getElementById('coachHubBody');
+  if (!host) return;
+  host.innerHTML = '<div style="padding:30px;color:var(--muted);text-align:center;font-size:13px">Loading…</div>';
+  fetch('/api/coach-sessions/me/availability', { headers: { Authorization: 'Bearer ' + _chToken() } })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var av = (d && d.availability) || [];
+      var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+      var html = '<div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.5">Define which days + hours you\'re open for 1-on-1 bookings. Members can only book inside these windows.</div>' +
+        '<div id="availFormWrap"></div>' +
+        '<button class="btn-primary" data-atp-call="newAvailabilityForm" style="margin-bottom:14px;padding:8px 16px;font-size:12px;background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">+ Add time window</button>';
+      if (!av.length) {
+        html += '<div style="padding:40px;border:1px dashed rgba(255,255,255,.1);border-radius:10px;text-align:center;color:var(--muted)">No availability set. Add at least one window so members can book.</div>';
+      } else {
+        // Group by day for clean display
+        var byDay = {};
+        days.forEach(function(_, i){ byDay[i] = []; });
+        av.forEach(function(w){ byDay[w.day_of_week].push(w); });
+        html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">';
+        days.forEach(function(name, i){
+          html += '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px">' +
+            '<div style="font-family:var(--ff-display);font-size:14px;font-weight:800;color:#fff;text-transform:uppercase;margin-bottom:8px">' + name + '</div>';
+          if (!byDay[i].length) {
+            html += '<div style="font-size:11px;color:#666">Closed</div>';
+          } else {
+            html += byDay[i].map(function(w){
+              return '<div style="display:flex;justify-content:space-between;align-items:center;font-size:12px;color:#fff;margin-bottom:4px"><span>' + (w.start_time || '').slice(0, 5) + ' – ' + (w.end_time || '').slice(0, 5) + '</span>' +
+                '<button data-atp-call="deleteAvailability" data-args=\'["' + w.id + '"]\' style="background:none;border:none;color:#ff8a8a;cursor:pointer;font-size:14px;padding:2px 6px">×</button></div>';
+            }).join('');
+          }
+          html += '</div>';
+        });
+        html += '</div>';
+      }
+      host.innerHTML = html;
+    });
+}
+
+function newAvailabilityForm() {
+  var wrap = document.getElementById('availFormWrap');
+  if (!wrap) return;
+  wrap.innerHTML =
+    '<div style="background:rgba(245,192,66,.04);border:1px solid rgba(245,192,66,.2);border-radius:10px;padding:16px;margin-bottom:14px">' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">' +
+        '<div><label style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:5px">Day</label>' +
+          '<select id="avDay" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:14px">' +
+            ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'].map(function(d, i){ return '<option value="' + i + '">' + d + '</option>'; }).join('') +
+          '</select></div>' +
+        '<div><label style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:5px">Start</label>' +
+          '<input id="avStart" type="time" value="17:00" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:14px;font-family:inherit"></div>' +
+        '<div><label style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:5px">End</label>' +
+          '<input id="avEnd" type="time" value="19:00" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:14px;font-family:inherit"></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px"><button data-atp-call="saveAvailability" style="padding:10px 18px;font-size:12px;background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">Add window</button>' +
+        '<button data-atp-call="cancelAvailabilityForm" style="padding:10px 18px;font-size:12px;background:transparent;border:1px solid rgba(255,255,255,.14);color:var(--light);border-radius:6px;cursor:pointer">Cancel</button></div>' +
+    '</div>';
+}
+
+function cancelAvailabilityForm() { var w = document.getElementById('availFormWrap'); if (w) w.innerHTML = ''; }
+
+function saveAvailability() {
+  var body = {
+    day_of_week: parseInt(document.getElementById('avDay').value, 10),
+    start_time: document.getElementById('avStart').value,
+    end_time: document.getElementById('avEnd').value,
+  };
+  fetch('/api/coach-sessions/me/availability', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _chToken() },
+    body: JSON.stringify(body),
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.error) { alert(d.error); return; }
+      loadCoachAvailability();
+    });
+}
+
+function deleteAvailability(e, btn) {
+  var id = JSON.parse(btn.getAttribute('data-args') || '[]')[0];
+  fetch('/api/coach-sessions/me/availability/' + id, {
+    method: 'DELETE',
+    headers: { Authorization: 'Bearer ' + _chToken() },
+  }).then(function(){ loadCoachAvailability(); });
+}
+
+// ── BOOKINGS ──────────────────────────────────────────────────
+function loadCoachBookings() {
+  var host = document.getElementById('coachHubBody');
+  if (!host) return;
+  host.innerHTML = '<div style="padding:30px;color:var(--muted);text-align:center;font-size:13px">Loading…</div>';
+  fetch('/api/coach-sessions/me/bookings', { headers: { Authorization: 'Bearer ' + _chToken() } })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var list = (d && d.bookings) || [];
+      var upcoming = list.filter(function(b){ return ['confirmed','pending_payment','in_progress'].includes(b.status) && new Date(b.scheduled_at) > new Date(Date.now() - 3600000); });
+      var past = list.filter(function(b){ return !upcoming.includes(b); });
+      var html = '<div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:10px">Upcoming · ' + upcoming.length + '</div>';
+      html += upcoming.length ? upcoming.map(_renderBookingRow).join('') :
+        '<div style="padding:24px;border:1px dashed rgba(255,255,255,.1);border-radius:10px;text-align:center;color:var(--muted);font-size:13px;margin-bottom:16px">Nothing booked yet. Once members book, they appear here.</div>';
+      html += '<div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin:20px 0 10px">Past · ' + past.length + '</div>';
+      html += past.length ? past.slice(0, 20).map(_renderBookingRow).join('') :
+        '<div style="padding:14px;color:var(--muted);font-size:13px;text-align:center">—</div>';
+      host.innerHTML = html;
+    });
+}
+
+function _renderBookingRow(b) {
+  var when = new Date(b.scheduled_at);
+  var member = (b.member_first_name || '') + ' ' + (b.member_last_name || '');
+  var statusColor = ({ completed:'#7AC231', confirmed:'#f5c042', cancelled_by_member:'#888', cancelled_by_coach:'#888', no_show:'#ef4444' })[b.status] || '#888';
+  var isUpcoming = ['confirmed','pending_payment','in_progress'].includes(b.status) && when > new Date(Date.now() - 3600000);
+  var streamUrl = b.stream_room_id ? '/stream-broadcast.html?room=' + b.stream_room_id : null;
+  return '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px;margin-bottom:8px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">' +
+      '<div style="flex:1;min-width:200px">' +
+        '<div style="font-family:var(--ff-display);font-size:14px;font-weight:800;color:#fff;text-transform:uppercase;margin-bottom:4px">' + _chEsc(b.offering_title) + '</div>' +
+        '<div style="font-size:12px;color:var(--light)">with ' + _chEsc(member) + (b.is_gift ? ' (gifted)' : '') + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:4px">' + when.toLocaleDateString() + ' · ' + when.toLocaleTimeString(undefined, {hour:'2-digit',minute:'2-digit'}) + ' · ' + b.duration_min + ' min</div>' +
+        (b.member_note ? '<div style="font-size:11px;color:#aaa;margin-top:6px;font-style:italic;background:rgba(255,255,255,.03);padding:6px 10px;border-radius:4px">"' + _chEsc(b.member_note) + '"</div>' : '') +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">' +
+        '<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:' + statusColor + ';background:rgba(255,255,255,.05);padding:3px 7px;border-radius:3px">' + b.status.replace(/_/g, ' ') + '</span>' +
+        '<span style="font-family:var(--ff-display);font-size:18px;font-weight:900;color:#f5c042">AED ' + b.coach_payout_aed + '</span>' +
+        (isUpcoming && streamUrl ? '<a href="' + streamUrl + '" target="_blank" style="font-size:11px;padding:6px 12px;background:#ef4444;color:#fff;border-radius:6px;text-decoration:none;font-weight:700">🎥 Go Live</a>' : '') +
+        (b.status === 'confirmed' && when < new Date() ? '<button data-atp-call="completeBooking" data-args=\'["' + b.id + '"]\' style="font-size:11px;padding:6px 12px;background:#7AC231;color:#0a0a0a;border:none;border-radius:6px;font-weight:700;cursor:pointer">Mark complete</button>' : '') +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function completeBooking(e, btn) {
+  if (!confirm('Mark this session as complete? Your earnings will move from pending to your wallet balance.')) return;
+  var id = JSON.parse(btn.getAttribute('data-args') || '[]')[0];
+  fetch('/api/coach-sessions/' + id + '/complete', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + _chToken() },
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.error) { alert(d.error); return; }
+    loadCoachBookings();
+  });
+}
+
+// ── EARNINGS + WALLET + BANK ──────────────────────────────────
+function loadCoachEarnings() {
+  var host = document.getElementById('coachHubBody');
+  if (!host) return;
+  host.innerHTML = '<div style="padding:30px;color:var(--muted);text-align:center;font-size:13px">Loading…</div>';
+  Promise.all([
+    fetch('/api/coach-sessions/wallet/me', { headers: { Authorization: 'Bearer ' + _chToken() } }).then(function(r){ return r.json(); }),
+    fetch('/api/coach-sessions/me/bank-account', { headers: { Authorization: 'Bearer ' + _chToken() } }).then(function(r){ return r.json(); }),
+  ]).then(function(out){
+    var w = (out[0] && out[0].wallet) || { balance_aed: 0, pending_aed: 0 };
+    var month = (out[0] && out[0].coach_earnings_this_month) || null;
+    var bank = (out[1] && out[1].bank_account) || null;
+    var txns = (out[0] && out[0].transactions) || [];
+    var html =
+      // Wallet hero
+      '<div style="display:grid;grid-template-columns:1.4fr 1fr;gap:14px;margin-bottom:14px">' +
+        '<div style="background:linear-gradient(120deg,rgba(245,192,66,.12),rgba(245,192,66,.02));border:1px solid rgba(245,192,66,.32);border-radius:14px;padding:24px">' +
+          '<div style="font-size:11px;color:#f5c042;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">Your ATP wallet</div>' +
+          '<div style="font-family:var(--ff-display);font-size:42px;font-weight:900;color:#f5c042;line-height:1">AED ' + (w.balance_aed || 0).toLocaleString() + '</div>' +
+          '<div style="font-size:12px;color:var(--muted);margin-top:8px">Available · Transfers to bank on 1st of next month</div>' +
+          (w.pending_aed > 0 ? '<div style="font-size:11px;color:var(--light);margin-top:6px">+ AED ' + w.pending_aed + ' pending (sessions not yet completed)</div>' : '') +
+        '</div>' +
+        '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px">' +
+          '<div style="font-size:11px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">This month</div>' +
+          '<div style="font-family:var(--ff-display);font-size:30px;font-weight:900;color:#fff;line-height:1">' + (month && month.session_count || 0) + '</div>' +
+          '<div style="font-size:12px;color:var(--muted);margin-top:6px">Sessions · AED ' + (month && month.gross_aed || 0).toLocaleString() + ' gross</div>' +
+        '</div>' +
+      '</div>';
+
+    // Bank account section
+    html += '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px;margin-bottom:14px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-family:var(--ff-display);font-size:14px;font-weight:800;color:#fff;text-transform:uppercase">🏦 Bank account for payouts</div>' +
+      (bank ? '<span style="font-size:9px;color:#7AC231;background:rgba(122,194,49,.14);padding:3px 8px;border-radius:3px;letter-spacing:.06em;text-transform:uppercase;font-weight:700">' + (bank.verified ? '✓ Verified' : 'Pending verification') + '</span>' : '<span style="font-size:11px;color:#ff8a8a">⚠ Not set up</span>') +
+      '</div>' +
+      (bank
+        ? '<div style="font-size:13px;color:var(--light)">' + _chEsc(bank.bank_name) + ' · <code style="background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;color:#7AC231">' + _chEsc(bank.iban_masked) + '</code> · ' + _chEsc(bank.account_holder_name) + '</div>' +
+          '<button data-atp-call="showBankForm" style="margin-top:10px;padding:6px 12px;font-size:11px;background:transparent;border:1px solid rgba(255,255,255,.14);color:var(--light);border-radius:6px;cursor:pointer">Update bank details</button>'
+        : '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Add your bank info so we can transfer your earnings on the 1st of every month.</div>' +
+          '<button data-atp-call="showBankForm" style="padding:8px 16px;font-size:12px;background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">+ Add bank account</button>'
+      ) +
+      '<div id="bankFormWrap"></div>' +
+    '</div>';
+
+    // Recent transactions
+    html += '<div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:10px">Recent transactions</div>';
+    if (!txns.length) {
+      html += '<div style="padding:14px;text-align:center;color:var(--muted);font-size:12px">No transactions yet.</div>';
+    } else {
+      html += '<div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden">';
+      html += txns.slice(0, 20).map(function(t){
+        var color = t.amount_aed >= 0 ? '#7AC231' : '#ff8a8a';
+        var sign = t.amount_aed >= 0 ? '+' : '';
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px">' +
+          '<div><div style="color:#fff">' + _chEsc(t.description || t.txn_type) + '</div><div style="font-size:11px;color:var(--muted)">' + new Date(t.created_at).toLocaleDateString() + ' · ' + t.txn_type.replace(/_/g, ' ') + '</div></div>' +
+          '<div style="font-family:var(--ff-display);font-size:16px;font-weight:900;color:' + color + '">' + sign + 'AED ' + t.amount_aed + '</div>' +
+        '</div>';
+      }).join('');
+      html += '</div>';
+    }
+    host.innerHTML = html;
+  });
+}
+
+function showBankForm() {
+  var wrap = document.getElementById('bankFormWrap');
+  if (!wrap) return;
+  wrap.innerHTML =
+    '<div style="background:rgba(245,192,66,.04);border:1px solid rgba(245,192,66,.2);border-radius:10px;padding:14px;margin-top:12px">' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
+        '<div><label style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:5px">Bank name *</label>' +
+          '<input id="bankName" type="text" placeholder="Emirates NBD" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:14px;font-family:inherit"></div>' +
+        '<div><label style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:5px">Account holder name *</label>' +
+          '<input id="bankHolder" type="text" placeholder="Full name on account" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:14px;font-family:inherit"></div>' +
+      '</div>' +
+      '<div style="margin-bottom:10px"><label style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:5px">IBAN *</label>' +
+        '<input id="bankIban" type="text" placeholder="AE07 0331 2345 6789 0123 456" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:14px;font-family:monospace"></div>' +
+      '<div style="margin-bottom:10px"><label style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:5px">SWIFT code (optional, for international)</label>' +
+        '<input id="bankSwift" type="text" placeholder="EBILAEAD" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:14px;font-family:monospace"></div>' +
+      '<div style="display:flex;gap:8px"><button data-atp-call="saveBank" style="padding:10px 18px;font-size:12px;background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">Save bank info</button>' +
+        '<button onclick="document.getElementById(\'bankFormWrap\').innerHTML=\'\'" style="padding:10px 18px;font-size:12px;background:transparent;border:1px solid rgba(255,255,255,.14);color:var(--light);border-radius:6px;cursor:pointer">Cancel</button></div>' +
+      '<div style="font-size:11px;color:var(--muted);margin-top:10px;line-height:1.5">Your bank info is stored encrypted and only used for the monthly payout transfer. ATP team reviews + verifies before the first transfer.</div>' +
+    '</div>';
+}
+
+function saveBank() {
+  var body = {
+    bank_name: document.getElementById('bankName').value.trim(),
+    account_holder_name: document.getElementById('bankHolder').value.trim(),
+    iban: document.getElementById('bankIban').value.trim(),
+    swift_code: document.getElementById('bankSwift').value.trim() || null,
+  };
+  if (!body.bank_name || !body.account_holder_name || !body.iban) { alert('All fields except SWIFT are required'); return; }
+  fetch('/api/coach-sessions/me/bank-account', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _chToken() },
+    body: JSON.stringify(body),
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.error) { alert(d.error); return; }
+      loadCoachEarnings();
+    });
+}
+
+// Trigger initial load when Coach tab is opened
+(function(){
+  document.addEventListener('click', function(e){
+    var t = e.target.closest('[data-tab="coach"]');
+    if (!t) return;
+    // Defer a tick so the panel becomes visible first
+    setTimeout(function(){
+      if (document.getElementById('panel-coach') && document.getElementById('panel-coach').classList.contains('active')) {
+        showCoachHubTab('offerings');
+      }
+    }, 50);
+  });
+})();
 
 // ── Activities catalogue (Theme 5 / #9 admin) ───────────────
 // Pulls the admin-managed list and renders the multi-select pills.
