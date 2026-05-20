@@ -27,46 +27,11 @@ function renderMembers(filter) {
 
 var _searchTimer = null;
 function filterMembers(q) {
+  // Single source of truth: loadMembersAPI reads the #memberSearch input
+  // and renders the full 8-column row (incl. Points, Wallet + Top up
+  // button). Don't duplicate the render here — it was producing a stale
+  // 5-column variant without the Top up button.
   clearTimeout(_searchTimer);
-  _searchTimer = setTimeout(function() {
-    // If logged in and search has content, hit real API
-    var token = getToken();
-    if (token && q && q.length > 1) {
-      var url = '/api/admin/members?limit=50&search=' + encodeURIComponent(q);
-      fetch(url, {headers:{'Authorization':'Bearer '+token}})
-        .then(function(r){return r.json();})
-        .then(function(data) {
-          if (!data.members) return;
-          var tbody = document.getElementById('membersTbody');
-          if (!tbody) return;
-          if (!data.members.length) {
-            tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:#444;padding:24px">No members found for "'+q+'"</td></tr>';
-            return;
-          }
-          tbody.innerHTML = data.members.map(function(m) {
-            var name = ((m.first_name||'')+' '+(m.last_name||'')).trim();
-            var ini  = ((m.first_name||'?')[0]+(m.last_name||'?')[0]).toUpperCase();
-            var joined = m.joined_at ? new Date(m.joined_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '—';
-            return '<tr>'+
-              '<td style="display:flex;align-items:center;gap:10px"><div class="admin-av">'+ini+'</div>'+
-              '<div><div class="admin-member-name">'+name+'</div>'+
-              '<div class="admin-member-email">'+m.member_number+' · '+m.email+'</div></div></td>'+
-              '<td style="color:#555;font-size:12px">'+joined+'</td>'+
-              '<td style="color:#fff;font-size:13px;font-weight:600">'+(m.sessions_count||0)+'</td>'+
-              '<td><span class="badge '+(m.is_banned?'badge-grey':'badge-green')+'">'+(m.is_banned?'Inactive':'Active')+'</span></td>'+
-              '<td><button class="admin-btn" onclick="makeAmbassador(this.dataset.mid)" data-mid="'+m.id+'">Make Ambassador</button></td>'+
-              '</tr>';
-          }).join('');
-          var lbl = document.querySelector('.admin-section-title span');
-          if (lbl) lbl.textContent = data.total.toLocaleString()+' total · showing '+data.members.length+' results';
-        }).catch(function(){});
-    } else if (!q || !q.length) {
-      // Empty search — reload full list
-      loadMembersAPI();
-    } else {
-      // Short query — filter local data
-      renderMembers(q);
-    }
-  }, 350); // 350ms debounce
+  _searchTimer = setTimeout(function() { loadMembersAPI(); }, 350);
 }
 
