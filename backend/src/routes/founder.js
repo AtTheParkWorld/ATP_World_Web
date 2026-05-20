@@ -44,6 +44,9 @@ router.get('/dashboard', authenticate, requireAdmin, async (req, res, next) => {
       churnRows,
       totalsRow,
       attendanceTrendRows,
+      topRatedCoachesRows,
+      topRatedSessionsRows,
+      ratingHealthRows,
     ] = await Promise.all([
       // ── 1) NORTH STAR — Weekly Active Members ──────────────────
       // WAM = distinct members who checked in within last 7 days.
@@ -231,6 +234,56 @@ router.get('/dashboard', authenticate, requireAdmin, async (req, res, next) => {
         GROUP BY DATE_TRUNC('day', checked_in_at)
         ORDER BY DATE_TRUNC('day', checked_in_at)
       `),
+
+      // ── 9) Top-rated coaches (PUBLIC feedback, all-time) ───────
+      // Min 3 ratings to make the average meaningful — single 5★ doesn't
+      // promote a coach above someone with 4.7 across 50 sessions.
+      query(`
+        SELECT m.id, m.first_name, m.last_name,
+               COUNT(sf.id)::int AS rating_count,
+               ROUND(AVG(sf.rating)::numeric, 2) AS avg_rating
+          FROM session_feedback sf
+          JOIN members m ON m.id = sf.coach_id
+         WHERE sf.is_public = true
+           AND sf.rating IS NOT NULL
+         GROUP BY m.id
+        HAVING COUNT(sf.id) >= 3
+         ORDER BY AVG(sf.rating) DESC, COUNT(sf.id) DESC
+         LIMIT 8
+      `).catch(() => ({ rows: [] })),
+
+      // ── 10) Top-rated SESSIONS (last 30d) ──────────────────────
+      // Avg rating per session in the recent window. Shows founder which
+      // session formats are landing — useful for repeating the winners.
+      query(`
+        SELECT s.id, s.title, s.scheduled_at,
+               s.session_category,
+               COUNT(sf.id)::int AS rating_count,
+               ROUND(AVG(sf.rating)::numeric, 2) AS avg_rating,
+               m.first_name AS coach_first_name, m.last_name AS coach_last_name
+          FROM session_feedback sf
+          JOIN sessions s ON s.id = sf.session_id
+          LEFT JOIN members m ON m.id = s.coach_id
+         WHERE sf.is_public = true
+           AND s.scheduled_at >= NOW() - INTERVAL '30 days'
+         GROUP BY s.id, m.first_name, m.last_name
+        HAVING COUNT(sf.id) >= 1
+         ORDER BY AVG(sf.rating) DESC, COUNT(sf.id) DESC
+         LIMIT 8
+      `).catch(() => ({ rows: [] })),
+
+      // ── 11) Overall rating health ──────────────────────────────
+      query(`
+        SELECT COUNT(*)::int                                  AS total_ratings,
+               COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '7 days')::int AS ratings_7d,
+               COUNT(*) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days')::int AS ratings_30d,
+               ROUND(AVG(rating)::numeric, 2)                 AS avg_rating_all,
+               ROUND(AVG(rating) FILTER (WHERE created_at >= NOW() - INTERVAL '30 days')::numeric, 2) AS avg_rating_30d,
+               COUNT(*) FILTER (WHERE rating = 5)::int        AS five_count,
+               COUNT(*) FILTER (WHERE rating <= 2)::int       AS low_count
+          FROM session_feedback
+         WHERE is_public = true
+      `).catch(() => ({ rows: [{}] })),
     ]);
 
     res.json({
@@ -249,6 +302,11 @@ router.get('/dashboard', authenticate, requireAdmin, async (req, res, next) => {
       churn_risk: churnRows.rows,
       totals: totalsRow.rows[0],
       attendance_trend: attendanceTrendRows.rows,
+      ratings: {
+        overall: (ratingHealthRows.rows && ratingHealthRows.rows[0]) || {},
+        top_coaches: topRatedCoachesRows.rows,
+        top_sessions: topRatedSessionsRows.rows,
+      },
     });
   } catch (err) { next(err); }
 });

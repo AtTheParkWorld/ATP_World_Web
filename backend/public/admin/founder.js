@@ -268,6 +268,87 @@ function renderFounderDashboard(d) {
   // (Member feedback survey section removed v1.29.3 — it duplicated the
   //  data in admin → Surveys → Member Voice. Single source of truth.)
 
+  // ── Ratings section — coaches + sessions ─────────────────────
+  // Post-session 1-5 star feedback (session_feedback table). Top-coach
+  // chart requires ≥3 ratings to qualify so a lone 5★ doesn't beat
+  // someone with 4.7 across 50 reviews. Sessions chart shows last 30d.
+  var ratings = d.ratings || {};
+  var overall = ratings.overall || {};
+  var topRatedCoaches = ratings.top_coaches || [];
+  var topRatedSessions = ratings.top_sessions || [];
+
+  // Headline row — overall rating health
+  html +=
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">' +
+      '<div style="background:linear-gradient(135deg,rgba(245,192,66,.12),rgba(245,192,66,.02));border:1px solid rgba(245,192,66,.32);border-radius:14px;padding:22px">' +
+        '<div style="font-size:10px;color:#f5c042;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">⭐ Average rating · all-time</div>' +
+        '<div style="font-family:var(--ff-display,sans-serif);font-size:48px;font-weight:900;color:#f5c042;line-height:1">' + (overall.avg_rating_all || '—') + (overall.avg_rating_all ? '<span style="font-size:18px;color:#888;font-weight:500;font-family:inherit"> / 5</span>' : '') + '</div>' +
+        '<div style="font-size:11px;color:#888;margin-top:6px">' + (overall.total_ratings || 0).toLocaleString() + ' ratings total</div>' +
+      '</div>' +
+      '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:14px;padding:22px">' +
+        '<div style="font-size:10px;color:#888;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">Last 30 days</div>' +
+        '<div style="font-family:var(--ff-display,sans-serif);font-size:36px;font-weight:900;color:#fff">' + (overall.avg_rating_30d || '—') + '</div>' +
+        '<div style="font-size:11px;color:#888;margin-top:6px">' + (overall.ratings_30d || 0) + ' ratings · ' + (overall.ratings_7d || 0) + ' this week</div>' +
+      '</div>' +
+      '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:14px;padding:22px">' +
+        '<div style="font-size:10px;color:#7AC231;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">5★ ratings</div>' +
+        '<div style="font-family:var(--ff-display,sans-serif);font-size:36px;font-weight:900;color:#7AC231">' + (overall.five_count || 0).toLocaleString() + '</div>' +
+        '<div style="font-size:11px;color:#888;margin-top:6px">' + (overall.total_ratings ? Math.round(100 * (overall.five_count || 0) / overall.total_ratings) : 0) + '% of all ratings</div>' +
+      '</div>' +
+      '<div style="background:#0f0f0f;border:1px solid ' + ((overall.low_count || 0) > 0 ? 'rgba(239,68,68,.32)' : '#1e1e1e') + ';border-radius:14px;padding:22px">' +
+        '<div style="font-size:10px;color:' + ((overall.low_count || 0) > 0 ? '#ef4444' : '#888') + ';letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">Low ratings · 1-2★</div>' +
+        '<div style="font-family:var(--ff-display,sans-serif);font-size:36px;font-weight:900;color:' + ((overall.low_count || 0) > 0 ? '#ef4444' : '#fff') + '">' + (overall.low_count || 0) + '</div>' +
+        '<div style="font-size:11px;color:#888;margin-top:6px">' + ((overall.low_count || 0) > 0 ? 'Worth investigating' : 'All clear') + '</div>' +
+      '</div>' +
+    '</div>';
+
+  // Top coaches + top sessions — side by side
+  html +=
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">' +
+      // Top-rated coaches
+      '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:14px;padding:24px">' +
+        '<div style="font-size:10px;color:#7AC231;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">🏆 Top-rated coaches</div>' +
+        '<div style="font-size:11px;color:#888;margin-bottom:14px">Public session feedback · min 3 ratings to qualify</div>' +
+        (topRatedCoaches.length === 0
+          ? '<div style="color:#555;padding:30px;text-align:center;font-size:13px;border:1px dashed #2a2a2a;border-radius:8px">No coaches with 3+ ratings yet. As members rate sessions, this fills up.</div>'
+          : topRatedCoaches.map(function(c, i){
+              var medal = i === 0 ? '🥇' : (i === 1 ? '🥈' : (i === 2 ? '🥉' : '⭐'));
+              return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #1a1a1a">' +
+                '<span style="font-size:18px;width:28px;text-align:center;flex-shrink:0">' + medal + '</span>' +
+                '<div style="flex:1;min-width:0">' +
+                  '<div style="font-size:13px;color:#fff;font-weight:600">' + _esc((c.first_name || '') + ' ' + (c.last_name || '')) + '</div>' +
+                  '<div style="font-size:11px;color:#888">' + (c.rating_count || 0) + ' ratings</div>' +
+                '</div>' +
+                '<div style="text-align:right;flex-shrink:0">' +
+                  '<div style="font-family:var(--ff-display,sans-serif);font-size:22px;font-weight:900;color:#f5c042;line-height:1">' + (c.avg_rating || '—') + '</div>' +
+                  '<div style="font-size:10px;color:#888">/ 5.00</div>' +
+                '</div>' +
+              '</div>';
+            }).join('')
+        ) +
+      '</div>' +
+      // Top-rated sessions
+      '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:14px;padding:24px">' +
+        '<div style="font-size:10px;color:#7AC231;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">⭐ Top-rated sessions · last 30 days</div>' +
+        '<div style="font-size:11px;color:#888;margin-bottom:14px">Format signal — which session types members loved</div>' +
+        (topRatedSessions.length === 0
+          ? '<div style="color:#555;padding:30px;text-align:center;font-size:13px;border:1px dashed #2a2a2a;border-radius:8px">No session ratings in the last 30 days yet.</div>'
+          : topRatedSessions.map(function(s){
+              return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #1a1a1a">' +
+                '<div style="flex:1;min-width:0">' +
+                  '<div style="font-size:13px;color:#fff;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + _esc(s.title || 'Untitled') + '</div>' +
+                  '<div style="font-size:11px;color:#888">' + new Date(s.scheduled_at).toLocaleDateString() + (s.coach_first_name ? ' · ' + _esc(s.coach_first_name) : '') + (s.session_category ? ' · ' + _esc(s.session_category) : '') + '</div>' +
+                '</div>' +
+                '<div style="text-align:right;flex-shrink:0">' +
+                  '<div style="font-family:var(--ff-display,sans-serif);font-size:22px;font-weight:900;color:#f5c042;line-height:1">' + (s.avg_rating || '—') + '</div>' +
+                  '<div style="font-size:10px;color:#888">' + (s.rating_count || 0) + ' rating' + ((s.rating_count || 0) === 1 ? '' : 's') + '</div>' +
+                '</div>' +
+              '</div>';
+            }).join('')
+        ) +
+      '</div>' +
+    '</div>';
+
   // ── Footer: generated timestamp + refresh ────────────────────
   html +=
     '<div style="display:flex;justify-content:space-between;align-items:center;padding:14px 4px;font-size:11px;color:#555">' +

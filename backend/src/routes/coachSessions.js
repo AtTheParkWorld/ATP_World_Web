@@ -713,9 +713,95 @@ router.post('/:id/complete', authenticate, async (req, res, next) => {
         `UPDATE coach_session_bookings SET status='completed', attendance_ended_at=COALESCE(attendance_ended_at, NOW()), updated_at=NOW() WHERE id=$1`,
         [booking.id]
       );
+      // Notify the member that the session ended + prompt feedback.
+      // Skip if they've already submitted feedback for this booking.
+      try {
+        const { rows: existing } = await client.query(
+          `SELECT 1 FROM session_feedback
+            WHERE member_id=$1 AND coach_booking_id=$2 LIMIT 1`,
+          [booking.member_id, booking.id]
+        );
+        if (!existing.length) {
+          // Pull the offering title for a nicer notification body
+          const { rows: oRows } = await client.query(
+            `SELECT title FROM coach_offerings WHERE id=$1`, [booking.offering_id]
+          );
+          const offeringTitle = oRows[0]?.title || '1-on-1 session';
+          await client.query(
+            `INSERT INTO notifications (member_id, type, title, body, data)
+             VALUES ($1, 'coach_session_feedback_request',
+                     'How was your session?',
+                     'Rate your ' || $2 || ' session — your coach reads every word.',
+                     $3::jsonb)`,
+            [booking.member_id, offeringTitle, JSON.stringify({ coach_booking_id: booking.id })]
+          );
+        }
+      } catch (e) { /* notifications missing — non-fatal */ }
     });
     res.json({ success: true });
   } catch (err) { next(err); }
+});
+
+// GET /api/coach-sessions/me/pending-feedback — sessions the caller
+// attended but hasn't rated yet. Powers the profile feedback prompt.
+// Returns up to 10 (free ATP sessions + paid 1-1 bookings interleaved).
+router.get('/me/pending-feedback', authenticate, async (req, res, next) => {
+  try {
+    // Free ATP sessions the caller attended in last 30 days without rating
+    const { rows: atpRows } = await query(
+      `SELECT 'session' AS kind,
+              s.id AS ref_id,
+              s.title AS title,
+              s.scheduled_at AS when_at,
+              s.coach_id AS coach_id,
+              m.first_name AS coach_first_name,
+              m.last_name AS coach_last_name
+         FROM bookings b
+         JOIN sessions s ON s.id = b.session_id
+         LEFT JOIN members m ON m.id = s.coach_id
+        WHERE b.member_id = $1
+          AND b.checked_in_at IS NOT NULL
+          AND s.status = 'completed'
+          AND s.scheduled_at >= NOW() - INTERVAL '30 days'
+          AND NOT EXISTS (
+            SELECT 1 FROM session_feedback sf
+             WHERE sf.member_id = b.member_id AND sf.session_id = s.id
+          )
+        ORDER BY s.scheduled_at DESC LIMIT 5`,
+      [req.member.id]
+    ).catch(() => ({ rows: [] }));
+
+    // Paid 1-1 bookings completed without rating
+    const { rows: paidRows } = await query(
+      `SELECT 'coach_booking' AS kind,
+              b.id AS ref_id,
+              o.title AS title,
+              b.scheduled_at AS when_at,
+              b.coach_id AS coach_id,
+              m.first_name AS coach_first_name,
+              m.last_name AS coach_last_name
+         FROM coach_session_bookings b
+         JOIN coach_offerings o ON o.id = b.offering_id
+         LEFT JOIN members m ON m.id = b.coach_id
+        WHERE b.member_id = $1
+          AND b.status = 'completed'
+          AND b.scheduled_at >= NOW() - INTERVAL '30 days'
+          AND NOT EXISTS (
+            SELECT 1 FROM session_feedback sf
+             WHERE sf.member_id = b.member_id AND sf.coach_booking_id = b.id
+          )
+        ORDER BY b.scheduled_at DESC LIMIT 5`,
+      [req.member.id]
+    ).catch(() => ({ rows: [] }));
+
+    const combined = atpRows.concat(paidRows)
+      .sort((a, b) => new Date(b.when_at) - new Date(a.when_at))
+      .slice(0, 10);
+    res.json({ pending: combined });
+  } catch (err) {
+    if (err.code === '42P01') return res.json({ pending: [] });
+    next(err);
+  }
 });
 
 // ── POST /api/coach-sessions/feedback ───────────────────────────

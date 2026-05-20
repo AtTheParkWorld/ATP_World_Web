@@ -768,6 +768,17 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
              as the wallet card but in compact mode so it's not too pushy. -->
         <div id="premiumBanner" style="margin-bottom:16px"></div>
 
+        <!-- Pending feedback prompt — auto-populates from
+             /api/coach-sessions/me/pending-feedback when the member
+             has attended a session but hasn't rated it yet. Hidden
+             silently when there's nothing pending. -->
+        <div id="pendingFeedbackHost" style="margin-bottom:16px"></div>
+
+        <!-- Feedback rating modal — opens when user taps a card above -->
+        <div id="feedbackModal" style="display:none;position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);align-items:center;justify-content:center;padding:20px">
+          <div id="feedbackModalCard" style="background:#111;border:1px solid rgba(245,192,66,.32);border-radius:14px;max-width:440px;width:100%;padding:28px;color:#fff;text-align:center"></div>
+        </div>
+
         <!-- Offers quick-access — surfaces a featured partner offer + a
              link to the full /offers.html. Populated by JS below; hides
              itself silently if there's nothing to show. -->
@@ -4339,7 +4350,153 @@ function loadRealProfileData() {
     loadAchievements();
     loadOffersTeaser();
     loadWearables();
+    loadPendingFeedback();
   }).catch(function(){});
+}
+
+// ════════════════════════════════════════════════════════════════
+// PENDING SESSION FEEDBACK — prompts members to rate sessions they
+// attended but haven't reviewed yet. Triggered automatically after a
+// session is auto-completed (free ATP sessions) or marked complete by
+// a coach (paid 1-1 sessions).
+// ════════════════════════════════════════════════════════════════
+
+var PENDING_FEEDBACK = [];
+
+function loadPendingFeedback() {
+  var token = localStorage.getItem('atp_token') || '';
+  if (!token) return;
+  fetch('/api/coach-sessions/me/pending-feedback', { headers: { Authorization: 'Bearer ' + token } })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      PENDING_FEEDBACK = (d && d.pending) || [];
+      renderPendingFeedback();
+    })
+    .catch(function(){ /* table missing — silent */ });
+}
+
+function renderPendingFeedback() {
+  var host = document.getElementById('pendingFeedbackHost');
+  if (!host) return;
+  if (!PENDING_FEEDBACK.length) { host.innerHTML = ''; return; }
+
+  var first = PENDING_FEEDBACK[0];
+  var remaining = PENDING_FEEDBACK.length - 1;
+  var coachName = (first.coach_first_name || '') + (first.coach_last_name ? ' ' + first.coach_last_name : '');
+  var when = first.when_at ? new Date(first.when_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) : '';
+  var title = (first.title || 'a session').replace(/[<>&]/g, '');
+
+  host.innerHTML =
+    '<div style="background:linear-gradient(120deg,rgba(245,192,66,.14),rgba(245,192,66,.04));border:1px solid rgba(245,192,66,.32);border-radius:var(--radius-lg);padding:18px 20px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;cursor:pointer" onclick="openFeedbackModal(0)">' +
+      '<div style="font-size:32px">⭐</div>' +
+      '<div style="flex:1;min-width:200px">' +
+        '<div style="font-size:11px;color:#f5c042;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:4px">How was it?</div>' +
+        '<div style="font-family:var(--ff-display);font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.02em;line-height:1.15;margin-bottom:4px">Rate &ldquo;' + title + '&rdquo;</div>' +
+        '<div style="font-size:12px;color:var(--muted)">' + when + (coachName ? ' · with ' + coachName.replace(/[<>&]/g, '') : '') + (remaining > 0 ? ' · +' + remaining + ' more pending' : '') + '</div>' +
+      '</div>' +
+      '<span style="background:#f5c042;color:#0a0a0a;padding:10px 18px;border-radius:6px;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase">Rate now →</span>' +
+    '</div>';
+}
+
+var CURRENT_FEEDBACK_IDX = 0;
+var CURRENT_RATING = 0;
+
+function openFeedbackModal(idx) {
+  CURRENT_FEEDBACK_IDX = idx || 0;
+  CURRENT_RATING = 0;
+  renderFeedbackModal();
+  document.getElementById('feedbackModal').style.display = 'flex';
+}
+
+function closeFeedbackModal() {
+  document.getElementById('feedbackModal').style.display = 'none';
+}
+
+function renderFeedbackModal() {
+  var item = PENDING_FEEDBACK[CURRENT_FEEDBACK_IDX];
+  if (!item) { closeFeedbackModal(); return; }
+  var card = document.getElementById('feedbackModalCard');
+  var coachName = (item.coach_first_name || '') + (item.coach_last_name ? ' ' + item.coach_last_name : '');
+  var title = (item.title || 'session').replace(/[<>&]/g, '');
+  var when = item.when_at ? new Date(item.when_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+
+  card.innerHTML =
+    '<div style="font-size:48px;margin-bottom:10px">🏃‍♀️</div>' +
+    '<div style="font-size:10px;color:#f5c042;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">' + (item.kind === 'coach_booking' ? '1-on-1 session' : 'Free community session') + '</div>' +
+    '<div style="font-family:var(--ff-display);font-size:22px;font-weight:800;color:#fff;text-transform:uppercase;margin-bottom:6px">' + title + '</div>' +
+    '<div style="font-size:12px;color:var(--muted);margin-bottom:20px">' + when + (coachName ? ' · ' + coachName.replace(/[<>&]/g, '') : '') + '</div>' +
+    // Star picker
+    '<div id="fbStars" style="display:flex;justify-content:center;gap:6px;font-size:42px;margin-bottom:16px;cursor:pointer">' +
+      [1,2,3,4,5].map(function(n){
+        return '<span class="fb-star" data-val="' + n + '" style="color:' + (n <= CURRENT_RATING ? '#f5c042' : '#444') + ';transition:color .15s,transform .1s;line-height:1;padding:2px;cursor:pointer">★</span>';
+      }).join('') +
+    '</div>' +
+    '<textarea id="fbComment" rows="3" placeholder="Optional — what worked? what would you change? (your coach reads every word)" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px;color:#fff;font-size:13px;font-family:inherit;resize:vertical;margin-bottom:16px"></textarea>' +
+    '<div style="display:flex;gap:8px;justify-content:center">' +
+      '<button onclick="submitFeedback()" id="fbSubmitBtn" ' + (CURRENT_RATING === 0 ? 'disabled' : '') + ' style="background:' + (CURRENT_RATING === 0 ? 'rgba(255,255,255,.1)' : '#f5c042') + ';color:' + (CURRENT_RATING === 0 ? '#666' : '#0a0a0a') + ';border:none;border-radius:6px;padding:12px 24px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:' + (CURRENT_RATING === 0 ? 'not-allowed' : 'pointer') + '">Send feedback →</button>' +
+      '<button onclick="skipFeedback()" style="background:transparent;color:var(--muted);border:1px solid rgba(255,255,255,.14);border-radius:6px;padding:12px 18px;font-size:12px;cursor:pointer">Skip</button>' +
+    '</div>' +
+    '<div style="margin-top:14px;font-size:11px;color:var(--muted)">' + (PENDING_FEEDBACK.length - CURRENT_FEEDBACK_IDX) + ' session' + (PENDING_FEEDBACK.length - CURRENT_FEEDBACK_IDX === 1 ? '' : 's') + ' awaiting your feedback</div>';
+
+  // Wire star clicks
+  document.querySelectorAll('.fb-star').forEach(function(s){
+    s.addEventListener('click', function(){
+      CURRENT_RATING = parseInt(s.dataset.val, 10);
+      renderFeedbackModal();
+    });
+  });
+}
+
+function submitFeedback() {
+  if (CURRENT_RATING === 0) return;
+  var item = PENDING_FEEDBACK[CURRENT_FEEDBACK_IDX];
+  if (!item) return;
+  var token = localStorage.getItem('atp_token') || '';
+  var comment = (document.getElementById('fbComment') || {}).value || '';
+  var body = {
+    rating: CURRENT_RATING,
+    comment: comment.trim() || null,
+  };
+  if (item.kind === 'coach_booking') body.coach_booking_id = item.ref_id;
+  else body.session_id = item.ref_id;
+
+  var btn = document.getElementById('fbSubmitBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+
+  fetch('/api/coach-sessions/feedback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + token },
+    body: JSON.stringify(body),
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d.error) { alert(d.error); if (btn) { btn.disabled = false; btn.textContent = 'Send feedback →'; } return; }
+      // Drop the rated item + show next, or close if all done
+      PENDING_FEEDBACK.splice(CURRENT_FEEDBACK_IDX, 1);
+      if (PENDING_FEEDBACK.length === 0) {
+        // Show thank-you screen briefly, then close
+        document.getElementById('feedbackModalCard').innerHTML =
+          '<div style="padding:30px 10px">' +
+            '<div style="font-size:48px;margin-bottom:14px">🎯</div>' +
+            '<div style="font-family:var(--ff-display);font-size:24px;font-weight:800;color:#fff;text-transform:uppercase;margin-bottom:8px">Thanks for the feedback</div>' +
+            '<p style="font-size:13px;color:var(--muted);line-height:1.5">You\'re all caught up. The coach reads every review.</p>' +
+          '</div>';
+        setTimeout(closeFeedbackModal, 1500);
+        renderPendingFeedback();
+      } else {
+        if (CURRENT_FEEDBACK_IDX >= PENDING_FEEDBACK.length) CURRENT_FEEDBACK_IDX = 0;
+        CURRENT_RATING = 0;
+        renderFeedbackModal();
+        renderPendingFeedback();
+      }
+    })
+    .catch(function(){ alert('Network glitch — try again.'); if (btn) { btn.disabled = false; btn.textContent = 'Send feedback →'; } });
+}
+
+function skipFeedback() {
+  // Just close the modal — server still has the pending feedback, so
+  // it'll show up next time. Lets the member dismiss without rating.
+  closeFeedbackModal();
 }
 
 // ── Wearables panel (Devices tab) ───────────────────────────

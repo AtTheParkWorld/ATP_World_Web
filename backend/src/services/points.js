@@ -203,8 +203,27 @@ async function autoCompleteSessions() {
         'UPDATE bookings SET points_awarded=$1 WHERE session_id=$2 AND member_id=$3',
         [b.points_reward, session.id, b.member_id]
       );
+      // Prompt the member to rate the session + coach. Skip if they
+      // already submitted feedback (would only happen via manual entry).
+      try {
+        const { rows: existing } = await query(
+          `SELECT 1 FROM session_feedback
+            WHERE member_id=$1 AND session_id=$2 LIMIT 1`,
+          [b.member_id, session.id]
+        );
+        if (!existing.length) {
+          await query(
+            `INSERT INTO notifications (member_id, type, title, body, data)
+             VALUES ($1, 'session_feedback_request',
+                     'How was ' || $2 || '?',
+                     'Tap to rate your coach + leave a comment. Takes 10 seconds.',
+                     $3::jsonb)`,
+            [b.member_id, session.name, JSON.stringify({ session_id: session.id })]
+          );
+        }
+      } catch (e) { /* notifications table missing — non-fatal */ }
     }
-    console.log(`Auto-completed session: ${session.name} (${bookings.length} members awarded points)`);
+    console.log(`Auto-completed session: ${session.name} (${bookings.length} members awarded points + feedback prompted)`);
   }
 }
 
