@@ -683,20 +683,20 @@ router.post('/:id/complete', authenticate, async (req, res, next) => {
 // ── POST /api/coach-sessions/feedback ───────────────────────────
 // Submit a 1-5 star + optional comment for either a free ATP session
 // or a paid 1-1 booking. Public/private depends on session type:
-//   - atp_session_id  → public (visible on coach profile)
+//   - session_id  → public (visible on coach profile)
 //   - coach_booking_id → private (visible in coach hub only)
 router.post('/feedback', authenticate, async (req, res, next) => {
   try {
     const b = req.body || {};
     const rating = parseInt(b.rating, 10);
     if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: 'rating must be 1-5' });
-    if (!b.atp_session_id && !b.coach_booking_id) return res.status(400).json({ error: 'atp_session_id or coach_booking_id required' });
-    if (b.atp_session_id && b.coach_booking_id) return res.status(400).json({ error: 'Provide one or the other, not both' });
+    if (!b.session_id && !b.coach_booking_id) return res.status(400).json({ error: 'session_id or coach_booking_id required' });
+    if (b.session_id && b.coach_booking_id) return res.status(400).json({ error: 'Provide one or the other, not both' });
 
     let coachId = null;
     let isPublic = true;
-    if (b.atp_session_id) {
-      const { rows } = await query(`SELECT coach_id FROM sessions WHERE id=$1`, [b.atp_session_id]);
+    if (b.session_id) {
+      const { rows } = await query(`SELECT coach_id FROM sessions WHERE id=$1`, [b.session_id]);
       if (!rows.length) return res.status(404).json({ error: 'Session not found' });
       coachId = rows[0].coach_id;
       isPublic = true;
@@ -711,9 +711,9 @@ router.post('/feedback', authenticate, async (req, res, next) => {
     // Upsert: members can update their own rating
     await query(
       `INSERT INTO session_feedback
-         (member_id, atp_session_id, coach_booking_id, coach_id, rating, comment, is_public)
+         (member_id, session_id, coach_booking_id, coach_id, rating, comment, is_public)
        VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [req.member.id, b.atp_session_id || null, b.coach_booking_id || null, coachId, rating, (b.comment || '').trim() || null, isPublic]
+      [req.member.id, b.session_id || null, b.coach_booking_id || null, coachId, rating, (b.comment || '').trim() || null, isPublic]
     );
     res.json({ success: true });
   } catch (err) { next(err); }

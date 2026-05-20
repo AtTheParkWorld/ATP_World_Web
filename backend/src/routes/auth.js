@@ -2544,23 +2544,26 @@ router.post('/migrate-coach-sessions', async (req, res, next) => {
     )`);
     await tryStep('7b. idx_payouts_period', `CREATE INDEX IF NOT EXISTS idx_payouts_period ON coach_monthly_payouts(period_start DESC)`);
 
-    await tryStep('8. session_feedback table', `CREATE TABLE IF NOT EXISTS session_feedback (
-      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-      member_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
-      atp_session_id UUID REFERENCES sessions(id) ON DELETE CASCADE,
-      coach_booking_id UUID REFERENCES coach_session_bookings(id) ON DELETE CASCADE,
-      coach_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
-      rating INT NOT NULL CHECK (rating BETWEEN 1 AND 5),
-      comment TEXT,
-      is_public BOOLEAN NOT NULL DEFAULT true,
-      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      CHECK (
-        (atp_session_id IS NOT NULL AND coach_booking_id IS NULL) OR
-        (atp_session_id IS NULL AND coach_booking_id IS NOT NULL)
-      )
-    )`);
-    await tryStep('8b. idx_feedback_coach', `CREATE INDEX IF NOT EXISTS idx_feedback_coach ON session_feedback(coach_id, is_public, created_at DESC)`);
-    await tryStep('8c. idx_feedback_member', `CREATE INDEX IF NOT EXISTS idx_feedback_member ON session_feedback(member_id, created_at DESC)`);
+    // session_feedback already exists from earlier features (bookings.js,
+    // sessions.js, coaches.js write/read it). Don't recreate — ALTER TABLE
+    // to add the columns this feature needs:
+    //   coach_booking_id  → ties feedback to a paid 1-on-1 booking
+    //   coach_id          → denormalized for fast coach-profile aggregates
+    //   is_public         → flag: ATP-session feedback (true, shown on
+    //                       coach profile) vs 1-on-1 feedback (false, only
+    //                       visible to coach + admin)
+    // Existing column `session_id` (FK to sessions.id) is reused; my new
+    // code in coachSessions.js reads/writes `session_id` not `atp_session_id`.
+    await tryStep('8. session_feedback.coach_booking_id', `ALTER TABLE session_feedback ADD COLUMN IF NOT EXISTS coach_booking_id UUID REFERENCES coach_session_bookings(id) ON DELETE CASCADE`);
+    await tryStep('8b. session_feedback.coach_id', `ALTER TABLE session_feedback ADD COLUMN IF NOT EXISTS coach_id UUID REFERENCES members(id) ON DELETE CASCADE`);
+    await tryStep('8c. session_feedback.is_public', `ALTER TABLE session_feedback ADD COLUMN IF NOT EXISTS is_public BOOLEAN NOT NULL DEFAULT true`);
+    // Backfill coach_id from sessions table for existing rows
+    await tryStep('8d. backfill coach_id from sessions', `UPDATE session_feedback sf
+       SET coach_id = s.coach_id
+       FROM sessions s
+       WHERE sf.session_id = s.id AND sf.coach_id IS NULL`);
+    await tryStep('8e. idx_feedback_coach', `CREATE INDEX IF NOT EXISTS idx_feedback_coach ON session_feedback(coach_id, is_public, created_at DESC)`);
+    await tryStep('8f. idx_feedback_member', `CREATE INDEX IF NOT EXISTS idx_feedback_member ON session_feedback(member_id, created_at DESC)`);
 
     res.json({ success: true, steps });
   } catch (err) {
