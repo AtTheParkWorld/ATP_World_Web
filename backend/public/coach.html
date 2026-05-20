@@ -1010,6 +1010,15 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
         : '');
   }
 
+  // Convert a Date to a "YYYY-MM-DD" string using LOCAL components.
+  // Avoids the timezone bug where .toISOString() converts to UTC, which
+  // in Dubai (UTC+4) silently shifts every cell to the previous day.
+  function _localIso(d) {
+    return d.getFullYear() + '-' +
+      String(d.getMonth() + 1).padStart(2, '0') + '-' +
+      String(d.getDate()).padStart(2, '0');
+  }
+
   // Build month-calendar HTML for the booking modal. Days with coach
   // availability are highlighted + clickable; everything else greyed.
   function renderCalendarHtml() {
@@ -1019,6 +1028,7 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     var monthEnd = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
     var today = new Date(); today.setHours(0,0,0,0);
     var monthLabel = m.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
+    var selectedIso = SELECTED_DATE ? _localIso(SELECTED_DATE) : null;
 
     // Pre-compute the set of day-of-week values that have availability
     var availDows = new Set();
@@ -1056,10 +1066,10 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     for (var d = 1; d <= monthEnd; d++) {
       var day = new Date(m.getFullYear(), m.getMonth(), d);
       day.setHours(0,0,0,0);
-      var iso = day.toISOString().slice(0, 10);
+      var iso = _localIso(day);             // local-day iso, NOT toISOString()
       var isPast = day < today;
       var hasAvail = availDows.has(day.getDay()) && !isPast;
-      var isSelected = SELECTED_DATE && SELECTED_DATE.toISOString().slice(0, 10) === iso;
+      var isSelected = selectedIso === iso;
       var isToday = day.getTime() === today.getTime();
 
       var bg = isSelected ? '#f5c042' : (hasAvail ? 'rgba(122,194,49,.16)' : 'transparent');
@@ -1136,7 +1146,17 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
   function minutesToTime(m) { return String(Math.floor(m/60)).padStart(2,'0') + ':' + String(m%60).padStart(2,'0'); }
 
   window.cpPickDate = function(iso) {
-    SELECTED_DATE = new Date(iso + 'T00:00:00');
+    // Parse the iso "YYYY-MM-DD" as a LOCAL date. Using `new Date(iso)`
+    // alone would interpret it as UTC midnight which silently shifts the
+    // day in non-UTC timezones — same root bug that broke the calendar.
+    var parts = (iso || '').split('-');
+    if (parts.length !== 3) return;
+    SELECTED_DATE = new Date(
+      parseInt(parts[0], 10),
+      parseInt(parts[1], 10) - 1,
+      parseInt(parts[2], 10)
+    );
+    SELECTED_DATE.setHours(0, 0, 0, 0);
     SELECTED_TIME = null;
     renderModal();
   };
