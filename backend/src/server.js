@@ -381,6 +381,12 @@ if (require.main === module) {
       try { await autoCompleteSessions(); }
       catch (e) { console.error('[sessions] auto-complete tick failed:', e.message); }
       try {
+        if (typeof coachSessionsRouter.sendGiftExpiryReminders === 'function') {
+          const r = await coachSessionsRouter.sendGiftExpiryReminders();
+          if (r && r.reminded) console.log(`[gifts] sent ${r.reminded} 7-day reminders`);
+        }
+      } catch (e) { console.error('[gifts] reminder tick failed:', e.message); }
+      try {
         if (typeof coachSessionsRouter.autoExpireGifts === 'function') {
           const r = await coachSessionsRouter.autoExpireGifts();
           if (r && r.expired) console.log(`[gifts] expired ${r.expired} unredeemed gifts`);

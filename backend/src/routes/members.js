@@ -377,10 +377,12 @@ router.get('/search', authenticate, async (req, res, next) => {
     if (q.length < 2) return res.json({ members: [] });
     const limit = Math.min(20, parseInt(req.query.limit, 10) || 10);
     const { rows } = await query(
-      `SELECT m.id, m.first_name, m.last_name, m.avatar_url, m.tribe,
+      `SELECT m.id, m.first_name, m.last_name, m.avatar_url,
+              t.name AS tribe,
               c.name AS city_name
          FROM members m
          LEFT JOIN cities c ON c.id = m.city_id
+         LEFT JOIN tribes t ON t.id = m.tribe_id
         WHERE COALESCE(m.is_banned, false) = false
           AND m.id <> $1
           AND (m.first_name ILIKE $2 OR m.last_name ILIKE $2

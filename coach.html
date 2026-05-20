@@ -868,6 +868,8 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
   var IS_GIFT = false;
   var GIFT_RECIPIENT = null;        // selected member object
   var GIFT_SEARCH_RESULTS = [];     // dropdown results
+  var GIFT_SEARCH_QUERY = '';       // current text in the input (for stale-response guard)
+  var GIFT_SEARCH_LOADING = false;
   var GIFT_MESSAGE = '';
   var GIFT_SEARCH_TIMER = null;
 
@@ -928,6 +930,8 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     IS_GIFT = false;
     GIFT_RECIPIENT = null;
     GIFT_SEARCH_RESULTS = [];
+    GIFT_SEARCH_QUERY = '';
+    GIFT_SEARCH_LOADING = false;
     GIFT_MESSAGE = '';
     // Start the calendar on this month
     CALENDAR_MONTH = new Date();
@@ -1036,7 +1040,12 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
 
   window.cpSetGiftMode = function(on) {
     IS_GIFT = !!on;
-    if (!on) { GIFT_RECIPIENT = null; GIFT_SEARCH_RESULTS = []; }
+    if (!on) {
+      GIFT_RECIPIENT = null;
+      GIFT_SEARCH_RESULTS = [];
+      GIFT_SEARCH_QUERY = '';
+      GIFT_SEARCH_LOADING = false;
+    }
     renderModal();
   };
   window.cpUpdateGiftMessage = function(v) { GIFT_MESSAGE = v || ''; };
@@ -1073,59 +1082,75 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
       '</div>';
     }
 
-    // Search mode
+    // Search mode — input + separate results container. Only the
+    // results container re-renders on keystroke, so the input never
+    // loses focus or cursor position.
     return '<div style="margin-bottom:14px"><label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">1. Search for an ATP member</label>' +
       '<input type="text" id="cp-gift-search" placeholder="Start typing a name…" oninput="cpGiftSearch(this.value)" autocomplete="off" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:12px 14px;color:#fff;font-size:14px;font-family:inherit">' +
-      (GIFT_SEARCH_RESULTS.length === 0
-        ? '<div style="margin-top:8px;font-size:11px;color:#888">They must already be an ATP member to receive a gift.</div>'
-        : '<div style="margin-top:8px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:rgba(0,0,0,.3);max-height:280px;overflow-y:auto">' +
-            GIFT_SEARCH_RESULTS.map(function(m){
-              return '<div onclick="cpPickGiftRecipient(\'' + m.id + '\')" style="display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);transition:background .15s" onmouseover="this.style.background=\'rgba(245,192,66,.08)\'" onmouseout="this.style.background=\'transparent\'">' +
-                _avatarHtml(m, 36) +
-                '<div style="flex:1;min-width:0">' +
-                  '<div style="font-size:13px;color:#fff;font-weight:600">' + esc((m.first_name || '') + ' ' + (m.last_name || '')) + '</div>' +
-                  '<div style="font-size:11px;color:#888">' + esc([m.city_name, m.tribe].filter(Boolean).join(' · ') || 'ATP member') + '</div>' +
-                '</div>' +
-              '</div>';
-            }).join('') +
-          '</div>'
-      ) +
+      '<div id="cp-gift-search-results">' + _renderGiftSearchResultsInner() + '</div>' +
+    '</div>';
+  }
+
+  // Inner-only HTML for the results dropdown — used both during
+  // initial render and during live keystroke updates.
+  function _renderGiftSearchResultsInner() {
+    if (GIFT_SEARCH_QUERY && GIFT_SEARCH_QUERY.length >= 2 && GIFT_SEARCH_LOADING) {
+      return '<div style="margin-top:8px;font-size:11px;color:#888">Searching…</div>';
+    }
+    if (!GIFT_SEARCH_QUERY || GIFT_SEARCH_QUERY.length < 2) {
+      return '<div style="margin-top:8px;font-size:11px;color:#888">Type at least 2 letters of their name. They must already be an ATP member.</div>';
+    }
+    if (GIFT_SEARCH_RESULTS.length === 0) {
+      return '<div style="margin-top:8px;font-size:11px;color:#888">No matches for "' + esc(GIFT_SEARCH_QUERY) + '". They may not be an ATP member yet.</div>';
+    }
+    return '<div style="margin-top:8px;border:1px solid rgba(255,255,255,.08);border-radius:8px;background:rgba(0,0,0,.3);max-height:280px;overflow-y:auto">' +
+      GIFT_SEARCH_RESULTS.map(function(m){
+        return '<div onclick="cpPickGiftRecipient(\'' + m.id + '\')" style="display:flex;align-items:center;gap:12px;padding:10px 14px;cursor:pointer;border-bottom:1px solid rgba(255,255,255,.04);transition:background .15s" onmouseover="this.style.background=\'rgba(245,192,66,.08)\'" onmouseout="this.style.background=\'transparent\'">' +
+          _avatarHtml(m, 36) +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:13px;color:#fff;font-weight:600">' + esc((m.first_name || '') + ' ' + (m.last_name || '')) + '</div>' +
+            '<div style="font-size:11px;color:#888">' + esc([m.city_name, m.tribe].filter(Boolean).join(' · ') || 'ATP member') + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('') +
     '</div>';
   }
 
   window.cpGiftSearch = function(q) {
+    GIFT_SEARCH_QUERY = q || '';
     clearTimeout(GIFT_SEARCH_TIMER);
     if (!q || q.length < 2) {
       GIFT_SEARCH_RESULTS = [];
-      // Update results inline without re-rendering the input (would lose focus)
-      _updateGiftSearchResults();
+      GIFT_SEARCH_LOADING = false;
+      _patchGiftSearchResults();
       return;
     }
+    GIFT_SEARCH_LOADING = true;
+    _patchGiftSearchResults();
     GIFT_SEARCH_TIMER = setTimeout(function(){
+      var sentQuery = q;
       fetch('/api/members/search?q=' + encodeURIComponent(q) + '&limit=10', { headers: authHeaders() })
         .then(function(r){ return r.json(); })
         .then(function(d){
+          // Ignore stale responses if the user kept typing
+          if (sentQuery !== GIFT_SEARCH_QUERY) return;
           GIFT_SEARCH_RESULTS = (d && d.members) || [];
-          _updateGiftSearchResults();
+          GIFT_SEARCH_LOADING = false;
+          _patchGiftSearchResults();
         })
-        .catch(function(){});
-    }, 250);
+        .catch(function(){
+          if (sentQuery !== GIFT_SEARCH_QUERY) return;
+          GIFT_SEARCH_LOADING = false;
+          _patchGiftSearchResults();
+        });
+    }, 220);
   };
 
-  // Patch only the results dropdown (not the input) so user can keep typing
-  function _updateGiftSearchResults() {
-    // Re-render the modal — the input has its value preserved via DOM
-    // because we don't include the value attribute (browser keeps user input)
-    var searchEl = document.getElementById('cp-gift-search');
-    var prev = searchEl ? searchEl.value : '';
-    renderModal();
-    var newEl = document.getElementById('cp-gift-search');
-    if (newEl) {
-      newEl.value = prev;
-      newEl.focus();
-      // Restore cursor to end
-      try { newEl.setSelectionRange(prev.length, prev.length); } catch(e){}
-    }
+  // Surgical update: only replaces the results container's innerHTML.
+  // The input element is untouched, so focus + cursor stay intact.
+  function _patchGiftSearchResults() {
+    var resultsEl = document.getElementById('cp-gift-search-results');
+    if (resultsEl) resultsEl.innerHTML = _renderGiftSearchResultsInner();
   }
 
   window.cpPickGiftRecipient = function(memberId) {
@@ -1133,11 +1158,15 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     if (!m) return;
     GIFT_RECIPIENT = m;
     GIFT_SEARCH_RESULTS = [];
+    GIFT_SEARCH_QUERY = '';
+    GIFT_SEARCH_LOADING = false;
     renderModal();
   };
   window.cpClearGiftRecipient = function() {
     GIFT_RECIPIENT = null;
     GIFT_SEARCH_RESULTS = [];
+    GIFT_SEARCH_QUERY = '';
+    GIFT_SEARCH_LOADING = false;
     GIFT_MESSAGE = '';
     renderModal();
   };

@@ -2570,10 +2570,14 @@ router.post('/migrate-coach-sessions', async (req, res, next) => {
     //    picks one. ALTER ... DROP NOT NULL is idempotent in Postgres.
     await tryStep('9. scheduled_at NULLable for unredeemed gifts',
       `ALTER TABLE coach_session_bookings ALTER COLUMN scheduled_at DROP NOT NULL`);
-    // Index for finding expired-but-unredeemed gifts for the auto-refund cron
+    // Index for finding expired-but-unredeemed gifts for the auto-payout cron
     await tryStep('9b. idx_gift_expiry',
       `CREATE INDEX IF NOT EXISTS idx_gift_expiry ON coach_session_bookings(gift_expires_at)
          WHERE is_gift = true AND status = 'gift_pending_redemption'`);
+    // Track when we've already sent the 7-day expiry nudge so we don't spam
+    await tryStep('9c. gift_reminder_sent_at column',
+      `ALTER TABLE coach_session_bookings
+         ADD COLUMN IF NOT EXISTS gift_reminder_sent_at TIMESTAMPTZ`);
 
     res.json({ success: true, steps });
   } catch (err) {

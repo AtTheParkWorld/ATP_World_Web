@@ -1063,20 +1063,22 @@ router.post('/admin/wallet-topup', authenticate, requireAdmin, async (req, res, 
 
 // ── AUTO-EXPIRE GIFTS ──────────────────────────────────────────
 // Called hourly by cron. For every gift past its expiry that hasn't
-// been redeemed: mark status='gift_expired', credit the coach's
-// balance with the 90% payout (use-it-or-lose-it — sender does NOT
-// get refunded), and notify the sender. ATP keeps the 10% platform
-// fee that was already debited at gift purchase time.
+// been redeemed: mark status='gift_expired' and credit the coach's
+// balance with the 90% payout (use-it-or-lose-it — sender is NOT
+// refunded). ATP keeps the 10% platform fee that was already debited
+// at gift purchase time. Sender is NOT notified — there's nothing
+// for them to do, and the coach payout detail isn't their concern.
+// The recipient gets one friendly nudge from us.
 async function autoExpireGifts() {
   const { transaction } = require('../db');
   const { rows: expired } = await query(
     `SELECT b.id, b.coach_id, b.payer_id, b.member_id, b.coach_payout_aed,
             b.platform_fee_aed, b.price_paid_aed, b.offering_id,
             o.title AS offering_title,
-            rm.first_name AS recipient_first
+            sm.first_name AS sender_first
        FROM coach_session_bookings b
        LEFT JOIN coach_offerings o ON o.id = b.offering_id
-       LEFT JOIN members rm ON rm.id = b.member_id
+       LEFT JOIN members sm ON sm.id = b.payer_id
       WHERE b.is_gift = true
         AND b.status = 'gift_pending_redemption'
         AND b.gift_expires_at IS NOT NULL
@@ -1120,28 +1122,17 @@ async function autoExpireGifts() {
            'Expired gift payout (90%): ' + (g.offering_title || 'session')]
         );
 
-        // Notify sender: gift expired, no refund
-        try {
-          await client.query(
-            `INSERT INTO notifications (member_id, type, title, body, data)
-             VALUES ($1, 'coach_gift_expired',
-                     'Your gift expired',
-                     COALESCE($2, 'Your friend') || ' didn''t redeem the ' || COALESCE($3, 'session') || ' gift in 30 days. The coach has been paid for their reserved time.',
-                     $4::jsonb)`,
-            [g.payer_id, g.recipient_first, g.offering_title,
-             JSON.stringify({ booking_id: g.id })]
-          );
-        } catch (e) { /* notifications table missing — non-fatal */ }
-
-        // Also notify the recipient so they know it's gone
+        // Gentle, friendly nudge to the recipient. No sender notification —
+        // there's nothing for them to do and the payout detail isn't their concern.
         try {
           await client.query(
             `INSERT INTO notifications (member_id, type, title, body, data)
              VALUES ($1, 'coach_gift_expired_recipient',
-                     'A gift expired',
-                     'You missed the 30-day window to redeem the ' || COALESCE($2, 'session') || ' gift. Sorry you didn''t make it!',
-                     $3::jsonb)`,
-            [g.member_id, g.offering_title, JSON.stringify({ booking_id: g.id })]
+                     '💛 Your gift slipped away',
+                     'Hey — the gift ' || COALESCE($2, 'a friend') || ' sent you (' || COALESCE($3, 'a coaching session') || ') just expired. Life gets busy, we get it! Next time, drop us a line and we''ll help you book.',
+                     $4::jsonb)`,
+            [g.member_id, g.sender_first, g.offering_title,
+             JSON.stringify({ booking_id: g.id })]
           );
         } catch (e) { /* non-fatal */ }
       });
@@ -1153,5 +1144,60 @@ async function autoExpireGifts() {
   return { expired: expired.length };
 }
 
+// ── 7-DAY GIFT EXPIRY REMINDER ─────────────────────────────────
+// Called hourly by cron alongside autoExpireGifts. For every gift
+// crossing the "7 days left" threshold today, send one nudge to the
+// recipient. Dedupe via a sent_reminder_at column so we don't spam.
+async function sendGiftExpiryReminders() {
+  const { transaction } = require('../db');
+  const { rows: due } = await query(
+    `SELECT b.id, b.coach_id, b.member_id, b.gift_expires_at,
+            o.title AS offering_title,
+            sm.first_name AS sender_first
+       FROM coach_session_bookings b
+       LEFT JOIN coach_offerings o ON o.id = b.offering_id
+       LEFT JOIN members sm ON sm.id = b.payer_id
+      WHERE b.is_gift = true
+        AND b.status = 'gift_pending_redemption'
+        AND b.gift_expires_at IS NOT NULL
+        AND b.gift_expires_at > NOW()
+        AND b.gift_expires_at < NOW() + INTERVAL '7 days'
+        AND b.gift_reminder_sent_at IS NULL`
+  ).catch((e) => {
+    // Column may not exist on first deploy — handled at migrate step.
+    console.error('[gifts] reminder query failed (need migration?):', e.message);
+    return { rows: [] };
+  });
+
+  for (const g of due) {
+    try {
+      await transaction(async (client) => {
+        const { rowCount } = await client.query(
+          `UPDATE coach_session_bookings
+              SET gift_reminder_sent_at = NOW()
+            WHERE id=$1 AND gift_reminder_sent_at IS NULL`,
+          [g.id]
+        );
+        if (!rowCount) return;
+        const daysLeft = Math.max(1, Math.ceil((new Date(g.gift_expires_at).getTime() - Date.now()) / 86400000));
+        await client.query(
+          `INSERT INTO notifications (member_id, type, title, body, data)
+           VALUES ($1, 'coach_gift_expiry_reminder',
+                   '⏰ Your gift expires in ' || $2 || ' day' || CASE WHEN $2 = 1 THEN '' ELSE 's' END,
+                   'Heads up! The ' || COALESCE($3, 'coaching session') || ' gift from ' || COALESCE($4, 'a friend') || ' is waiting for you. Pick a time before it''s gone.',
+                   $5::jsonb)`,
+          [g.member_id, daysLeft, g.offering_title, g.sender_first,
+           JSON.stringify({ booking_id: g.id })]
+        );
+      });
+      console.log(`[gifts] 7-day reminder sent for ${g.id}`);
+    } catch (e) {
+      console.error(`[gifts] failed to send reminder for ${g.id}:`, e.message);
+    }
+  }
+  return { reminded: due.length };
+}
+
 module.exports = router;
 module.exports.autoExpireGifts = autoExpireGifts;
+module.exports.sendGiftExpiryReminders = sendGiftExpiryReminders;
