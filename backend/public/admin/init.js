@@ -46,6 +46,7 @@ async function cancelSession(sessionId, sessionName) {
     if (name === 'wearables')  { if (typeof loadWearableConnections === 'function') loadWearableConnections(); }
     if (name === 'founder')    { if (typeof loadFounderDashboard === 'function') loadFounderDashboard(); }
     if (name === 'surveys')    { if (typeof loadSurveysSection === 'function') loadSurveysSection(); }
+    if (name === 'corporate')  { if (typeof loadCorporateSection === 'function') loadCorporateSection(); }
   };
 
   // Founder dashboard is the new default landing — auto-load it on admin

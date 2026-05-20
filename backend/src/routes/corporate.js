@@ -322,4 +322,75 @@ router.get('/admin/accounts/:id/engagement', authenticate, requireAdmin, async (
   }
 });
 
+// ════════════════════════════════════════════════════════════════
+// CORPORATE BUYER DASHBOARD — what the company HR sees
+// ════════════════════════════════════════════════════════════════
+
+// GET /api/corporate/buyer/:slug
+// Returns dashboard data for the corporate buyer. Public-ish — we
+// trust the slug as a soft secret (it's the company URL). Could be
+// auth-gated later with a corporate-side login.
+router.get('/buyer/:slug', async (req, res, next) => {
+  try {
+    const { rows: arows } = await query(
+      `SELECT * FROM corporate_accounts WHERE slug=$1 AND status='active' LIMIT 1`,
+      [req.params.slug]
+    );
+    if (!arows.length) return res.status(404).json({ error: 'Account not found or inactive' });
+    const account = arows[0];
+
+    // Employees + 30-day activity (anonymised — no member names)
+    const [totals, activity, weekly, departments] = await Promise.all([
+      query(`SELECT
+               COUNT(*)::int AS total_employees,
+               COUNT(*) FILTER (WHERE is_active=true)::int AS active_employees
+             FROM corporate_employees WHERE corporate_account_id=$1`, [account.id]),
+      query(`SELECT
+               COUNT(*) FILTER (WHERE b.checked_in_at >= NOW() - INTERVAL '7 days')::int AS checkins_7d,
+               COUNT(*) FILTER (WHERE b.checked_in_at >= NOW() - INTERVAL '30 days')::int AS checkins_30d,
+               COUNT(DISTINCT b.member_id) FILTER (WHERE b.checked_in_at >= NOW() - INTERVAL '7 days')::int AS unique_7d,
+               COUNT(DISTINCT b.member_id) FILTER (WHERE b.checked_in_at >= NOW() - INTERVAL '30 days')::int AS unique_30d
+             FROM corporate_employees e
+             JOIN bookings b ON b.member_id = e.member_id
+            WHERE e.corporate_account_id = $1 AND e.is_active = true`, [account.id]),
+      query(`SELECT TO_CHAR(DATE_TRUNC('week', b.checked_in_at), 'YYYY-MM-DD') AS week_start,
+                    COUNT(*)::int AS checkins,
+                    COUNT(DISTINCT b.member_id)::int AS unique_members
+             FROM corporate_employees e
+             JOIN bookings b ON b.member_id = e.member_id
+            WHERE e.corporate_account_id = $1
+              AND b.checked_in_at >= NOW() - INTERVAL '12 weeks'
+            GROUP BY DATE_TRUNC('week', b.checked_in_at)
+            ORDER BY DATE_TRUNC('week', b.checked_in_at)`, [account.id]),
+      query(`SELECT COALESCE(NULLIF(department,''), 'Unspecified') AS department,
+                    COUNT(*)::int AS employees,
+                    COUNT(*) FILTER (WHERE EXISTS (
+                      SELECT 1 FROM bookings b WHERE b.member_id = e.member_id
+                        AND b.checked_in_at >= NOW() - INTERVAL '30 days'
+                    ))::int AS active_30d
+             FROM corporate_employees e
+            WHERE e.corporate_account_id = $1 AND e.is_active = true
+            GROUP BY 1 ORDER BY employees DESC`, [account.id]),
+    ]);
+
+    res.json({
+      account: {
+        company_name: account.company_name,
+        slug: account.slug,
+        logo_url: account.logo_url,
+        start_date: account.start_date,
+        monthly_fee_aed: account.monthly_fee_aed,
+        employee_cap: account.employee_cap,
+      },
+      totals: totals.rows[0] || {},
+      activity: activity.rows[0] || {},
+      weekly_trend: weekly.rows,
+      by_department: departments.rows,
+    });
+  } catch (err) {
+    if (err.code === '42P01') return res.json({ account: null, totals: {}, activity: {}, weekly_trend: [], by_department: [] });
+    next(err);
+  }
+});
+
 module.exports = router;

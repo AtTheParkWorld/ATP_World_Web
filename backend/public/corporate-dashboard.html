@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Corporate Wellness Dashboard · ATP</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --green:#7AC231;--green-dark:#5a9a1f;--green-light:#a8e055;
+  --black:#0a0a0a;--dark:#111111;--dark2:#1a1a1a;
+  --muted:#888888;--light:#aaaaaa;--white:#ffffff;--gold:#f5c042;
+  --ff-display:'Barlow Condensed',sans-serif;--ff-body:'DM Sans',sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--ff-body);background:var(--black);color:var(--white);-webkit-font-smoothing:antialiased;min-height:100vh}
+.top{padding:24px 40px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px}
+.brand{display:flex;align-items:center;gap:10px;color:var(--green);font-weight:800;letter-spacing:.16em;font-size:11px;text-transform:uppercase}
+.brand::before{content:'';display:block;width:24px;height:2px;background:var(--green)}
+.main{max-width:1280px;margin:0 auto;padding:30px 40px 80px}
+h1{font-family:var(--ff-display);font-size:clamp(36px,5vw,56px);font-weight:900;line-height:1;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:8px}
+h1 .acc{color:var(--green)}
+.subtitle{font-size:14px;color:var(--muted);margin-bottom:30px}
+.section-label{font-size:10px;color:var(--green);font-weight:700;letter-spacing:.14em;text-transform:uppercase;margin-bottom:10px}
+
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.stat-card{background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:22px}
+.stat-card.green{background:linear-gradient(135deg,rgba(122,194,49,.10),rgba(122,194,49,.02));border-color:rgba(122,194,49,.32)}
+.stat-num{font-family:var(--ff-display);font-size:42px;font-weight:900;color:#fff;line-height:1;letter-spacing:-.01em;margin-bottom:6px}
+.stat-num.green{color:var(--green)}
+.stat-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.stat-meta{font-size:11px;color:var(--light);margin-top:8px}
+
+.panel{background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:24px;margin-bottom:18px}
+.panel h2{font-family:var(--ff-display);font-size:22px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:14px;letter-spacing:.02em}
+
+.trend-bars{display:flex;align-items:flex-end;gap:6px;height:140px;padding:20px 0;border-bottom:1px solid rgba(255,255,255,.06);margin-bottom:14px}
+.trend-bar{flex:1;background:linear-gradient(180deg,var(--green-light),var(--green));border-radius:4px 4px 0 0;min-height:6px;position:relative;cursor:pointer;transition:opacity .15s}
+.trend-bar:hover{opacity:.8}
+.trend-bar .v{position:absolute;top:-22px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:700;color:#fff;white-space:nowrap}
+.trend-week{font-size:10px;color:#666;text-align:center;flex:1}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+table th{padding:12px;text-align:left;color:#888;font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:600;border-bottom:1px solid rgba(255,255,255,.08)}
+table td{padding:12px;border-bottom:1px solid rgba(255,255,255,.04);color:#ccc}
+table tr:last-child td{border-bottom:none}
+.bar-mini{height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden;margin-top:4px;width:140px}
+.bar-mini-fill{height:100%;background:var(--green);border-radius:3px}
+
+.privacy-banner{background:linear-gradient(120deg,rgba(245,192,66,.08),rgba(245,192,66,.02));border:1px solid rgba(245,192,66,.32);border-radius:10px;padding:14px 18px;font-size:12px;color:var(--light);line-height:1.55;margin-bottom:24px}
+.privacy-banner strong{color:var(--gold)}
+
+@media (max-width:900px){
+  .stat-row{grid-template-columns:1fr 1fr}
+  .main{padding:20px}
+}
+</style>
+</head>
+<body>
+
+<div class="top">
+  <div class="brand">ATP × Corporate Wellness Dashboard</div>
+  <div id="topRight" style="font-size:12px;color:var(--muted)">Loading…</div>
+</div>
+
+<div class="main" id="main">
+  <div style="padding:60px;text-align:center;color:#555">Loading your dashboard…</div>
+</div>
+
+<script>
+(function(){
+  var SLUG = window.location.pathname.replace(/^\/corporate\/dashboard\/?/, '').replace(/\/$/, '');
+  if (!SLUG) { document.getElementById('main').innerHTML = '<div style="padding:60px;text-align:center;color:#f87171">Invalid URL — slug missing.</div>'; return; }
+
+  fetch('/api/corporate/buyer/' + encodeURIComponent(SLUG))
+    .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, body: d }; }); })
+    .then(function(out){
+      if (!out.ok || !out.body.account) {
+        document.getElementById('main').innerHTML = '<div style="padding:60px;text-align:center;color:#f87171">Dashboard not found. Check the URL with your ATP contact.</div>';
+        return;
+      }
+      render(out.body);
+    })
+    .catch(function(){ document.getElementById('main').innerHTML = '<div style="padding:60px;text-align:center;color:#f87171">Could not load.</div>'; });
+
+  function esc(s){ return String(s == null ? '' : s).replace(/[<>&"]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]; }); }
+
+  function render(d){
+    var a = d.account;
+    var t = d.totals || {};
+    var act = d.activity || {};
+    var participation = t.active_employees ? Math.round(100 * (act.unique_30d || 0) / t.active_employees) : 0;
+    var avgPerActive = act.unique_30d ? ((act.checkins_30d || 0) / act.unique_30d).toFixed(1) : '0';
+
+    document.getElementById('topRight').textContent = 'Generated ' + new Date().toLocaleString();
+    document.title = a.company_name + ' · ATP Corporate Dashboard';
+
+    var weekly = d.weekly_trend || [];
+    var maxW = Math.max.apply(null, weekly.map(function(w){ return w.checkins; }).concat([1]));
+
+    var html =
+      '<h1>' + esc(a.company_name) + ' × <span class="acc">ATP</span></h1>' +
+      '<p class="subtitle">Live wellness participation dashboard · Plan: AED ' + (a.monthly_fee_aed || 0).toLocaleString() + ' / month · Active since ' + (a.start_date ? new Date(a.start_date).toLocaleDateString() : '—') + '</p>' +
+
+      '<div class="privacy-banner">' +
+        '<strong>Privacy-first reporting:</strong> Numbers below are aggregated only. Individual employee names + their session details are never shown to the company — that data stays between the member and ATP. Department-level metrics surface only when 5+ employees are in a department (k-anonymity threshold).' +
+      '</div>' +
+
+      // Stats row
+      '<div class="section-label">This month · key metrics</div>' +
+      '<div class="stat-row">' +
+        '<div class="stat-card green"><div class="stat-num green">' + (t.active_employees || 0) + '</div><div class="stat-label">Enrolled employees</div><div class="stat-meta">of ' + (a.employee_cap || '—') + ' cap</div></div>' +
+        '<div class="stat-card"><div class="stat-num">' + (act.unique_30d || 0) + '</div><div class="stat-label">Active last 30 days</div><div class="stat-meta">' + participation + '% participation rate</div></div>' +
+        '<div class="stat-card"><div class="stat-num">' + (act.checkins_30d || 0) + '</div><div class="stat-label">Total session check-ins</div><div class="stat-meta">' + avgPerActive + ' avg per active employee</div></div>' +
+        '<div class="stat-card"><div class="stat-num">' + (act.checkins_7d || 0) + '</div><div class="stat-label">Check-ins this week</div><div class="stat-meta">' + (act.unique_7d || 0) + ' unique members</div></div>' +
+      '</div>' +
+
+      // Weekly trend
+      '<div class="panel">' +
+        '<h2>12-week participation trend</h2>' +
+        (weekly.length === 0
+          ? '<div style="padding:40px;text-align:center;color:#666;font-size:13px">No activity yet — share the invite link with your team to get started.</div>'
+          : '<div class="trend-bars">' +
+              weekly.map(function(w){
+                var h = Math.round(140 * w.checkins / maxW);
+                return '<div class="trend-bar" style="height:' + h + 'px" title="Week of ' + w.week_start + ': ' + w.checkins + ' check-ins, ' + w.unique_members + ' unique">' +
+                  '<span class="v">' + w.checkins + '</span>' +
+                '</div>';
+              }).join('') +
+            '</div>' +
+            '<div style="display:flex;gap:6px;font-size:10px;color:#666">' +
+              weekly.map(function(w){ return '<div class="trend-week">' + new Date(w.week_start).toLocaleDateString(undefined, {month:'short',day:'numeric'}) + '</div>'; }).join('') +
+            '</div>'
+        ) +
+      '</div>' +
+
+      // By department
+      '<div class="panel">' +
+        '<h2>Participation by department</h2>' +
+        '<div class="privacy-banner" style="margin-bottom:14px;background:rgba(255,255,255,.02);border-color:rgba(255,255,255,.08)">' +
+          'Only departments with <strong>5 or more enrolled employees</strong> are shown. Anything smaller is suppressed to protect individual privacy.' +
+        '</div>' +
+        '<table>' +
+          '<thead><tr><th>Department</th><th>Enrolled</th><th>Active (30d)</th><th>Participation</th></tr></thead>' +
+          '<tbody>' +
+          (d.by_department || []).filter(function(r){ return r.employees >= 5; }).map(function(r){
+            var pct = r.employees ? Math.round(100 * r.active_30d / r.employees) : 0;
+            return '<tr>' +
+              '<td style="color:#fff;font-weight:600">' + esc(r.department) + '</td>' +
+              '<td>' + r.employees + '</td>' +
+              '<td style="color:var(--green);font-weight:600">' + r.active_30d + '</td>' +
+              '<td>' + pct + '%<div class="bar-mini"><div class="bar-mini-fill" style="width:' + pct + '%"></div></div></td>' +
+            '</tr>';
+          }).join('') +
+          '</tbody>' +
+        '</table>' +
+        (d.by_department && d.by_department.filter(function(r){return r.employees >=5;}).length === 0
+          ? '<div style="padding:24px;text-align:center;color:#666;font-size:13px">No departments meet the 5-employee threshold yet.</div>'
+          : '') +
+      '</div>' +
+
+      // Footer
+      '<div style="margin-top:30px;padding-top:24px;border-top:1px solid rgba(255,255,255,.06);font-size:12px;color:var(--muted);text-align:center">' +
+        'Questions? Email <a href="mailto:partners@atthepark.world" style="color:var(--green)">partners@atthepark.world</a>. ' +
+        'Monthly summary PDF auto-emailed on the 1st of each month.' +
+      '</div>';
+
+    document.getElementById('main').innerHTML = html;
+  }
+})();
+</script>
+
+</body>
+</html>

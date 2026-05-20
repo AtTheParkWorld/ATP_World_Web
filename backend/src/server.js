@@ -266,6 +266,7 @@ app.get('/survey/:slug', (req, res) => res.sendFile(path.join(__dirname, '../pub
 // for employee onboarding via a company-specific invite link.
 app.get('/corporate', (req, res) => res.sendFile(path.join(__dirname, '../public/corporate.html')));
 app.get('/corporate/join/:token', (req, res) => res.sendFile(path.join(__dirname, '../public/corporate-join.html')));
+app.get('/corporate/dashboard/:slug', (req, res) => res.sendFile(path.join(__dirname, '../public/corporate-dashboard.html')));
 app.get('/',         (req, res) => res.sendFile(path.join(__dirname, '../public/index.html')));
 
 // ── API Routes ───────────────────────────────────────────────────────────────
