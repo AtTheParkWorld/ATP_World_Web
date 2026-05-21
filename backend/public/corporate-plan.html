@@ -1,0 +1,482 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ATP Corporative Wellness — 90-Day Launch Plan</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0a0a;--fg:#fff;--muted:#888;--dim:#555;
+    --green:#7AC231;--green-soft:rgba(122,194,49,.10);--green-border:rgba(122,194,49,.35);
+    --gold:#f5c042;--gold-soft:rgba(245,192,66,.10);--gold-border:rgba(245,192,66,.35);
+    --red:#ef4444;--red-soft:rgba(239,68,68,.10);--red-border:rgba(239,68,68,.35);
+    --card:rgba(255,255,255,.04);--border:rgba(255,255,255,.08);
+    --ff-display:"Bebas Neue", Inter, system-ui, sans-serif;
+    --ff-body:Inter, system-ui, sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:var(--bg);color:var(--fg);font-family:var(--ff-body);-webkit-font-smoothing:antialiased;line-height:1.55}
+  .container{max-width:1100px;margin:0 auto;padding:60px 32px}
+
+  header{margin-bottom:60px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;justify-content:space-between}
+  .logo{display:flex;align-items:center;gap:14px;font-family:var(--ff-display);font-size:28px;color:#fff;letter-spacing:.04em}
+  .logo-mark{
+    width:42px;height:42px;border-radius:50%;border:3px solid var(--green);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--ff-display);font-size:26px;line-height:1;color:var(--green);
+    padding-bottom:3px;
+  }
+  .logo-mark::before{content:"a"}
+  .doc-tag{font-size:11px;color:var(--gold);letter-spacing:.18em;text-transform:uppercase;font-weight:700;border:1px solid var(--gold-border);padding:6px 12px;border-radius:99px;background:var(--gold-soft)}
+
+  h1{font-family:var(--ff-display);font-size:clamp(48px,7vw,92px);line-height:.95;letter-spacing:-.01em;margin-bottom:18px;font-weight:400}
+  h1 .acc{color:var(--green)}
+  h2{font-family:var(--ff-display);font-size:clamp(34px,4vw,58px);line-height:1;margin-top:60px;margin-bottom:14px;font-weight:400}
+  h2 .num{color:var(--green);margin-right:14px}
+  h3{font-family:var(--ff-display);font-size:24px;line-height:1.1;margin:24px 0 10px;font-weight:400;color:#fff;letter-spacing:.02em}
+  p{font-size:16px;color:#ccc;margin-bottom:14px}
+  .lead{font-size:18px;color:#fff;margin-bottom:24px;max-width:760px}
+  .muted{color:var(--muted)}
+  .eyebrow{font-size:11px;color:var(--green);letter-spacing:.18em;text-transform:uppercase;font-weight:700;margin-bottom:18px;display:inline-flex;align-items:center;gap:10px}
+  .eyebrow::before{content:"";width:24px;height:1px;background:var(--green)}
+
+  .phase{
+    background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:32px 36px;margin-bottom:24px;position:relative;
+  }
+  .phase.green{background:linear-gradient(180deg,var(--green-soft) 0%,var(--card) 40%);border-color:var(--green-border)}
+  .phase.gold{background:linear-gradient(180deg,var(--gold-soft) 0%,var(--card) 40%);border-color:var(--gold-border)}
+  .phase-head{display:flex;align-items:baseline;gap:16px;margin-bottom:8px;flex-wrap:wrap}
+  .phase-num{font-family:var(--ff-display);font-size:64px;color:var(--green);line-height:1}
+  .phase.gold .phase-num{color:var(--gold)}
+  .phase-title{font-family:var(--ff-display);font-size:34px;color:#fff;line-height:1}
+  .phase-meta{font-size:12px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:16px}
+
+  .week-list{margin-top:18px;display:grid;gap:12px}
+  .week{
+    background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;
+    padding:16px 20px;
+  }
+  .week-title{font-family:var(--ff-display);font-size:18px;color:var(--green);margin-bottom:6px}
+  .phase.gold .week-title{color:var(--gold)}
+  .week ul{list-style:none;padding:0;margin:6px 0 0}
+  .week ul li{font-size:14px;color:#ddd;padding:3px 0;display:flex;gap:9px;line-height:1.5}
+  .week ul li::before{content:"·";color:var(--green);font-weight:700;flex-shrink:0}
+
+  .kpi-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-top:16px}
+  .kpi{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:8px;padding:14px 18px}
+  .kpi .val{font-family:var(--ff-display);font-size:36px;color:var(--green);line-height:1}
+  .kpi .lbl{font-size:11px;color:#aaa;letter-spacing:.1em;text-transform:uppercase;font-weight:700;margin-top:4px}
+
+  .kill-criteria{
+    background:var(--red-soft);border:1px solid var(--red-border);border-radius:10px;
+    padding:18px 22px;margin-top:16px;
+  }
+  .kill-criteria h3{color:var(--red);margin-top:0;margin-bottom:10px;font-family:var(--ff-display);font-size:18px}
+  .kill-criteria ul{list-style:none;padding:0;margin:0}
+  .kill-criteria ul li{font-size:13px;color:#ddd;padding:3px 0;display:flex;gap:8px;line-height:1.5}
+  .kill-criteria ul li::before{content:"⚠"}
+
+  .pill{display:inline-flex;align-items:center;gap:6px;background:var(--green-soft);color:var(--green);border:1px solid var(--green-border);border-radius:99px;padding:4px 12px;font-size:10px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-right:6px}
+  .pill.gold{background:var(--gold-soft);color:var(--gold);border-color:var(--gold-border)}
+
+  .summary-table{
+    width:100%;border-collapse:collapse;margin-top:16px;font-size:14px;
+    background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:10px;overflow:hidden;
+  }
+  .summary-table th{
+    text-align:left;padding:12px 16px;font-size:11px;color:var(--green);letter-spacing:.12em;text-transform:uppercase;font-weight:700;
+    border-bottom:1px solid var(--border);background:rgba(122,194,49,.04);
+  }
+  .summary-table td{padding:12px 16px;border-bottom:1px solid var(--border);color:#ddd}
+  .summary-table tr:last-child td{border-bottom:none}
+  .summary-table strong{color:#fff}
+
+  .footer{margin-top:80px;padding-top:32px;border-top:1px solid var(--border);font-size:13px;color:var(--muted);text-align:center}
+
+  @media print{
+    body{background:#fff;color:#000}
+    .phase{break-inside:avoid;border:1px solid #ddd;background:#fff}
+    .week{break-inside:avoid;background:#fafafa;border:1px solid #eee}
+    h1,h2,h3{color:#000}
+    p,li{color:#333}
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="logo">
+      <span class="logo-mark"></span>
+      <span>THE PARK</span>
+    </div>
+    <div class="doc-tag">Internal · 90-Day Plan · Confidential</div>
+  </header>
+
+  <div class="eyebrow">Execution plan · June – September 2026</div>
+  <h1>The <span class="acc">90 days</span><br>before launch.</h1>
+  <p class="lead">
+    A realistic execution plan to take ATP Corporative Wellness from concept (today) to first paying pilot (September 2026).
+    Designed to address the 10 failure modes identified in the pre-mortem. Lean, sequential, with explicit kill criteria
+    at each phase so the program can be paused or pivoted before it eats the founder's time.
+  </p>
+
+  <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:40px">
+    <span class="pill">No B2B sales hire yet</span>
+    <span class="pill">No expensive collateral</span>
+    <span class="pill">Founder-led sales</span>
+    <span class="pill gold">3 pilots by Oct 31</span>
+    <span class="pill gold">1 paid customer by Dec 1</span>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       PHASE 0 — Foundations (Weeks 1-3, mid-June to early-July)
+       ════════════════════════════════════════════════════════════ -->
+  <div class="phase">
+    <div class="phase-head">
+      <div class="phase-num">0</div>
+      <div>
+        <div class="phase-title">Foundations</div>
+        <div class="phase-meta">Weeks 1-3 · mid-June to early-July</div>
+      </div>
+    </div>
+    <p>Stop selling something we can't deliver. Build the minimum viable product + paperwork.
+       Talk to 15 HR leads to validate pricing, language, objections.</p>
+
+    <div class="week-list">
+      <div class="week">
+        <div class="week-title">Week 1 — Customer discovery</div>
+        <ul>
+          <li>Interview 15 HR / People leads in UAE (target: companies 50-500 employees)</li>
+          <li>Ask: current wellness spend, what's not working, what would make them switch</li>
+          <li>Validate "Pay as you move" vs fixed-fee preference; document objections verbatim</li>
+          <li>Identify the 3-5 ICP segments (e.g. mid-size tech, professional services, hospitality HQs)</li>
+        </ul>
+      </div>
+      <div class="week">
+        <div class="week-title">Week 2 — Product & dashboard build</div>
+        <ul>
+          <li>Build the HR dashboard MVP: company-scoped login, active employee count, sessions attended, leaderboard view, monthly PDF export</li>
+          <li>Build company onboarding flow: /corporate sign-up form, CSV upload + email domain auto-detect</li>
+          <li>Build company-scoped data isolation (no employee can see another company's data)</li>
+          <li>Ship the email magic-link enrollment flow for employees (re-use existing magic link infra)</li>
+        </ul>
+      </div>
+      <div class="week">
+        <div class="week-title">Week 3 — Legal + collateral</div>
+        <ul>
+          <li>Draft MSA + DPA template (UAE-compliant). Hire 1 lawyer for 4 hours; budget AED 5,000.</li>
+          <li>Get tax-deductibility verified by accountant (no marketing claims until confirmed)</li>
+          <li>Refresh the deck (this one) — remove any unverified claims</li>
+          <li>Build pilot dashboard demo with seed data — for sales demos</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="kill-criteria">
+      <h3>Kill criteria — abort the program if any of these by end of Week 3</h3>
+      <ul>
+        <li>Fewer than 10 HR leads agree to a discovery call → demand isn't there yet</li>
+        <li>HR consistently says "we already have Gympass / Wellhub" and won't consider alternatives</li>
+        <li>Lawyer flags major legal issues with handling employee health data under UAE PDPL</li>
+        <li>Dashboard build slips past Week 4 → infrastructure isn't B2B-ready</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       PHASE 1 — First Anchor Pilot (Weeks 4-7, July)
+       ════════════════════════════════════════════════════════════ -->
+  <div class="phase green">
+    <div class="phase-head">
+      <div class="phase-num">1</div>
+      <div>
+        <div class="phase-title">First anchor pilot</div>
+        <div class="phase-meta">Weeks 4-7 · July</div>
+      </div>
+    </div>
+    <p>Sign one company. Founder-led, hand-delivered. Goal isn't revenue; it's a real reference customer for slide 3 of the deck.</p>
+
+    <div class="week-list">
+      <div class="week">
+        <div class="week-title">Week 4 — Build the target list</div>
+        <ul>
+          <li>30-company outreach list: friendly CEOs/CHROs in your network first</li>
+          <li>Prioritise warm intros (current ATP members who work at HR-y places)</li>
+          <li>Tier the list: 10 "easy yeses", 10 "stretch", 10 "shots in the dark"</li>
+        </ul>
+      </div>
+      <div class="week">
+        <div class="week-title">Week 5 — Outreach blitz</div>
+        <ul>
+          <li>Personal email or WhatsApp to every name on the list. No mass-blast.</li>
+          <li>Subject line: "Free 30-day wellness pilot for [Company]"</li>
+          <li>One CTA only: 30-min coffee. No deck attached.</li>
+          <li>Daily target: 6 outreach + 2 follow-ups. Track in spreadsheet.</li>
+        </ul>
+      </div>
+      <div class="week">
+        <div class="week-title">Week 6 — Demos & objection handling</div>
+        <ul>
+          <li>Run 5-8 live demos using the dashboard MVP (NOT slides — let them play with it)</li>
+          <li>Collect every objection in a single doc. Look for patterns.</li>
+          <li>If pricing keeps coming up: A/B test fixed-fee (AED 1,500/month flat for 50 employees) vs pay-as-you-move</li>
+        </ul>
+      </div>
+      <div class="week">
+        <div class="week-title">Week 7 — Sign the first pilot</div>
+        <ul>
+          <li>Goal: 1 signed MSA for a 30-day free pilot starting in August</li>
+          <li>Ideal pilot: 50-150 employee company headquartered in Abu Dhabi or Dubai</li>
+          <li>If you can't get to "yes" with anyone by end of Week 7, the messaging is wrong — pause sales and re-interview</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi"><div class="val">30</div><div class="lbl">target companies</div></div>
+      <div class="kpi"><div class="val">15</div><div class="lbl">demos done</div></div>
+      <div class="kpi"><div class="val">1</div><div class="lbl">signed pilot</div></div>
+      <div class="kpi"><div class="val">0%</div><div class="lbl">churn — pilot is free</div></div>
+    </div>
+
+    <div class="kill-criteria">
+      <h3>Kill criteria — by end of July</h3>
+      <ul>
+        <li>0 signed pilots after 15 demos → message-market fit is wrong, rebuild</li>
+        <li>3+ companies decline citing existing Gympass/Wellhub contracts → competition is bigger problem than expected</li>
+        <li>Pilot signs but immediately wants custom features → not productized; pause to fix</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       PHASE 2 — Run + Learn (August)
+       ════════════════════════════════════════════════════════════ -->
+  <div class="phase">
+    <div class="phase-head">
+      <div class="phase-num">2</div>
+      <div>
+        <div class="phase-title">Run + learn</div>
+        <div class="phase-meta">Weeks 8-11 · August</div>
+      </div>
+    </div>
+    <p>Run the first pilot. Operate the unsexy parts: onboarding emails, kickoff session, dashboard tweaks, weekly check-ins.
+       Every failure is a learning, not a panic.</p>
+
+    <div class="week-list">
+      <div class="week">
+        <div class="week-title">Week 8 — Onboard the first 50</div>
+        <ul>
+          <li>Run pilot company's onboarding: CSV upload, welcome emails, magic-link verification</li>
+          <li>Run 1 kickoff company session — founder attends in person</li>
+          <li>Capture activation funnel: % opened email → % clicked → % completed signup → % attended first session</li>
+          <li>Goal: 40% activation by day 14 (industry benchmark for corporate wellness is 12%)</li>
+        </ul>
+      </div>
+      <div class="week">
+        <div class="week-title">Week 9 — Mid-pilot check-in</div>
+        <ul>
+          <li>Day-15 success call with HR contact: what's working, what's broken</li>
+          <li>Survey active employees (5 questions, anonymous)</li>
+          <li>Patch dashboard issues; ship the first wellness report PDF</li>
+        </ul>
+      </div>
+      <div class="week">
+        <div class="week-title">Week 10 — Quality control on community impact</div>
+        <ul>
+          <li>Monitor existing community: are corporate joiners crowding out original members?</li>
+          <li>If any session goes >20% over normal headcount, cap corporate enrollment OR add a duplicate session</li>
+          <li>Survey 20 long-standing members: how has the vibe changed?</li>
+        </ul>
+      </div>
+      <div class="week">
+        <div class="week-title">Week 11 — Pilot conversion pitch</div>
+        <ul>
+          <li>Day-30 results meeting with HR: present the impact report</li>
+          <li>Ask for paid conversion at Growth tier (AED 35/active/month)</li>
+          <li>Get a yes/no/maybe within 7 days</li>
+          <li>Whatever happens, capture a quote for the website: "ATP changed how our team thinks about wellness." — [HR Director, Company]</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="kill-criteria">
+      <h3>Kill criteria — by end of August</h3>
+      <ul>
+        <li>Pilot company activation &lt; 20% by day 15 → product isn't sticky enough</li>
+        <li>Existing community surveys show negative sentiment → corporate program is breaking B2C</li>
+        <li>Pilot company won't convert to paid AND can't articulate why → the value isn't real</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       PHASE 3 — Launch + Repeat (September)
+       ════════════════════════════════════════════════════════════ -->
+  <div class="phase gold">
+    <div class="phase-head">
+      <div class="phase-num">3</div>
+      <div>
+        <div class="phase-title">Launch + repeat</div>
+        <div class="phase-meta">Weeks 12-14 · September · OFFICIAL LAUNCH</div>
+      </div>
+    </div>
+    <p>Public launch with 1 paying customer as the proof point. Open enrollment for the next 9 founding-pilot slots.
+       Switch from founder-only outreach to a small inbound funnel.</p>
+
+    <div class="week-list">
+      <div class="week">
+        <div class="week-title">Week 12 — Public launch</div>
+        <ul>
+          <li>Publish the corporate deck publicly at /corporate-deck (already live)</li>
+          <li>Launch /corporate sign-up page with self-serve pilot application form</li>
+          <li>LinkedIn announcement from founder, tagged: "ATP Corporative Wellness — born in Abu Dhabi, now open"</li>
+          <li>Press release to local UAE business press (Khaleej Times, The National, Gulf News, Arabian Business)</li>
+        </ul>
+      </div>
+      <div class="week">
+        <div class="week-title">Week 13 — First case study</div>
+        <ul>
+          <li>Publish the anchor pilot case study (with their permission): photos, results, quotes</li>
+          <li>Add their logo to slide 3 of the deck (replacing the "Nike/Audi/Oracle" line)</li>
+          <li>Run a co-branded webinar with the anchor HR contact: "How we got 67% of our team active in 30 days"</li>
+        </ul>
+      </div>
+      <div class="week">
+        <div class="week-title">Week 14 — Sales engine v0.1</div>
+        <ul>
+          <li>Set up a simple CRM (Notion or Airtable, not Salesforce). Track pipeline.</li>
+          <li>Goal: 3 new pilots signed in Sept, 6 by end of Oct</li>
+          <li>Begin scoping 1 broker partnership (Daman or Sukoon) — even a referral fee deal works</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi"><div class="val">1</div><div class="lbl">paying customer</div></div>
+      <div class="kpi"><div class="val">3+</div><div class="lbl">pilots signed (Sept)</div></div>
+      <div class="kpi"><div class="val">1</div><div class="lbl">case study published</div></div>
+      <div class="kpi"><div class="val">15+</div><div class="lbl">inbound applications</div></div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════════════════════════════════════
+       SUMMARY TABLE
+       ════════════════════════════════════════════════════════════ -->
+  <h2><span class="num">▸</span> 90-day scorecard</h2>
+  <table class="summary-table">
+    <thead>
+      <tr>
+        <th>Milestone</th>
+        <th>Deadline</th>
+        <th>Success metric</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr><td><strong>HR discovery interviews</strong></td><td>End of June</td><td>15 calls done · ICP defined</td></tr>
+      <tr><td><strong>HR dashboard MVP shipped</strong></td><td>July 7</td><td>Live demo possible · company-scoped data isolation</td></tr>
+      <tr><td><strong>Legal templates ready</strong></td><td>July 14</td><td>MSA + DPA + tax-deductibility letter</td></tr>
+      <tr><td><strong>First pilot signed</strong></td><td>July 31</td><td>1 MSA signed for 30-day free pilot</td></tr>
+      <tr><td><strong>Pilot launched</strong></td><td>Aug 5</td><td>50+ employees enrolled, kickoff session run</td></tr>
+      <tr><td><strong>Mid-pilot activation</strong></td><td>Aug 20</td><td>40% of enrolled employees active</td></tr>
+      <tr><td><strong>First paying customer</strong></td><td>Sept 5</td><td>Pilot → paid conversion at Growth tier</td></tr>
+      <tr><td><strong>Public launch</strong></td><td>Sept 15</td><td>Press + LinkedIn + case study live</td></tr>
+      <tr><td><strong>3 pilots running</strong></td><td>Sept 30</td><td>Pipeline of 6-10 in qualification</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ════════════════════════════════════════════════════════════
+       RESOURCE PLAN
+       ════════════════════════════════════════════════════════════ -->
+  <h2><span class="num">▸</span> What it costs to run this plan</h2>
+  <p>Total estimated out-of-pocket cost across the 90 days: <strong style="color:var(--green)">AED 25,000 – 40,000</strong>.</p>
+
+  <table class="summary-table">
+    <thead>
+      <tr><th>Line item</th><th>Cost (AED)</th><th>Notes</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Lawyer (MSA + DPA + privacy review)</td><td>5,000 – 8,000</td><td>One-off. UAE corporate lawyer at AED 1,000/hr × 5-8 hours.</td></tr>
+      <tr><td>Accountant (tax-deductibility letter)</td><td>2,000 – 3,000</td><td>Critical: don't make tax claims in marketing without this.</td></tr>
+      <tr><td>Founder time on sales</td><td>opportunity cost</td><td>~20 hrs/week × 12 weeks. Not paying yourself = the biggest hidden cost.</td></tr>
+      <tr><td>Dashboard development</td><td>internal</td><td>Already on the team. ~2 weeks engineer-time.</td></tr>
+      <tr><td>Kickoff session (anchor pilot)</td><td>3,000 – 5,000</td><td>Coach fee + venue permit + light merch. Treat as marketing.</td></tr>
+      <tr><td>Press release distribution</td><td>2,000 – 4,000</td><td>Optional — could go organic via LinkedIn only.</td></tr>
+      <tr><td>Coffees + meetings buffer</td><td>2,000 – 3,000</td><td>30-40 founder coffees = it adds up in Dubai.</td></tr>
+      <tr><td>Photography / content for case study</td><td>3,000 – 5,000</td><td>Hire a freelance photographer for the kickoff session.</td></tr>
+      <tr><td>Tools (Notion / Airtable / scheduling)</td><td>500 – 1,000</td><td>Mostly free tier; cheap once you scale.</td></tr>
+      <tr><td>Contingency (15%)</td><td>3,000 – 6,000</td><td>Things will go wrong.</td></tr>
+    </tbody>
+  </table>
+
+  <!-- ════════════════════════════════════════════════════════════
+       RISK MATRIX
+       ════════════════════════════════════════════════════════════ -->
+  <h2><span class="num">▸</span> What we're betting on (and what could break)</h2>
+
+  <table class="summary-table">
+    <thead>
+      <tr><th>Bet</th><th>If wrong</th><th>Detection signal</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>UAE HR will buy outdoor wellness</strong></td>
+        <td>Switch to <em>insurance broker channel only</em> in Q4 — don't try to sell HR directly</td>
+        <td>0 signed pilots after 15 demos in July</td>
+      </tr>
+      <tr>
+        <td><strong>"Pay as you move" is a feature</strong></td>
+        <td>Switch to fixed-fee with "money-back guarantee" — same outcome, easier sale</td>
+        <td>3+ CFOs/HR cite variable cost as blocker</td>
+      </tr>
+      <tr>
+        <td><strong>Existing community survives corporate joiners</strong></td>
+        <td>Cap corporate participation per session OR run dedicated company-only sessions</td>
+        <td>Community survey sentiment drops, or session attendance grows >20% over normal</td>
+      </tr>
+      <tr>
+        <td><strong>Founder can balance B2C + B2B</strong></td>
+        <td>Hire a corporate sales lead in Q4 (target AED 15-20K/month base + commission)</td>
+        <td>Coach 1-on-1 metrics flatline OR community OKRs miss in August</td>
+      </tr>
+      <tr>
+        <td><strong>UAE summer doesn't kill the pilot</strong></td>
+        <td>Pause pilot intake July-Aug; relaunch in October. Use July-Aug for product + paperwork only.</td>
+        <td>Pilot company shows >50% attendance drop between July and August</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ════════════════════════════════════════════════════════════
+       WHAT TO IGNORE
+       ════════════════════════════════════════════════════════════ -->
+  <h2><span class="num">▸</span> What NOT to do in the first 90 days</h2>
+  <ul style="list-style:none;padding:0;margin-top:14px">
+    <li style="padding:8px 0;display:flex;gap:12px;color:#ddd;font-size:15px"><span style="color:var(--red);font-weight:700">✗</span> Don't hire a B2B sales rep yet — you need 5 customers before that pays off</li>
+    <li style="padding:8px 0;display:flex;gap:12px;color:#ddd;font-size:15px"><span style="color:var(--red);font-weight:700">✗</span> Don't build the HRIS API integration — Enterprise tier is a slide, not a real product yet</li>
+    <li style="padding:8px 0;display:flex;gap:12px;color:#ddd;font-size:15px"><span style="color:var(--red);font-weight:700">✗</span> Don't promise insurance partner discounts — soft "we're in conversation" language only</li>
+    <li style="padding:8px 0;display:flex;gap:12px;color:#ddd;font-size:15px"><span style="color:var(--red);font-weight:700">✗</span> Don't run a "Founders' Webinar Series" — webinars only matter once you have logos to put on them</li>
+    <li style="padding:8px 0;display:flex;gap:12px;color:#ddd;font-size:15px"><span style="color:var(--red);font-weight:700">✗</span> Don't spend on paid ads — 0% chance of finding ICP through Meta/Google ads at our scale</li>
+    <li style="padding:8px 0;display:flex;gap:12px;color:#ddd;font-size:15px"><span style="color:var(--red);font-weight:700">✗</span> Don't open in Saudi / Qatar / other GCC markets — focus is the only edge a 1-person company has</li>
+    <li style="padding:8px 0;display:flex;gap:12px;color:#ddd;font-size:15px"><span style="color:var(--red);font-weight:700">✗</span> Don't bundle corporate with the existing coach 1-on-1 marketplace — they compete for the same coach time</li>
+  </ul>
+
+  <!-- ════════════════════════════════════════════════════════════
+       FOOTER
+       ════════════════════════════════════════════════════════════ -->
+  <div class="footer">
+    Document v1.0 · Maintained by founder · ATP Corporative Wellness · Born in Abu Dhabi · Changing the world's fitness, one team at a time.
+    <br><br>
+    Public deck: <a href="/corporate-deck" style="color:var(--green)">/corporate-deck</a> · Sign-up form (TBD): <code>/corporate</code> · Contact: corporate@atthepark.world
+  </div>
+
+</div>
+
+</body>
+</html>
