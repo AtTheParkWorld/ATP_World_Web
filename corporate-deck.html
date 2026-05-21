@@ -43,27 +43,12 @@
     padding:0 24px;pointer-events:none;
   }
   .logo{
-    display:flex;align-items:center;gap:10px;font-family:var(--ff-display);
+    display:flex;align-items:center;gap:12px;font-family:var(--ff-display);
     font-size:22px;color:#fff;letter-spacing:.04em;font-weight:700;
   }
-  .logo-mark{
-    width:34px;height:34px;border-radius:50%;
-    border:3px solid var(--green);
-    display:flex;align-items:center;justify-content:center;
-    font-family:var(--ff-display);font-size:22px;line-height:1;
-    color:var(--green);font-weight:400;
-    /* Slightly oversize the glyph to match the brand mark */
-    padding-bottom:2px;
-  }
-  .logo-mark::before{content:"a"}
-  .logo-big{
-    width:120px;height:120px;border-radius:50%;
-    border:6px solid var(--green);
-    display:flex;align-items:center;justify-content:center;
-    font-family:var(--ff-display);font-size:84px;line-height:1;
-    color:var(--green);font-weight:400;padding-bottom:8px;
-    margin-bottom:20px;
-  }
+  .logo img{width:38px;height:38px;display:block}
+  .logo-big{display:block;margin-bottom:20px}
+  .logo-big img{width:140px;height:140px;display:block}
   .slide-num{font-size:11px;color:var(--muted);letter-spacing:.12em;font-weight:600}
 
   /* ── TYPE ──────────────────────────────────────────────────── */
@@ -243,17 +228,17 @@
 
 <div class="deck-header">
   <div class="logo">
-    <span class="logo-mark">a</span>
+    <img src="/atp-logo.svg" alt="ATP">
     <span>THE PARK</span>
   </div>
-  <div class="slide-num" id="slideNum">1 / 14</div>
+  <div class="slide-num" id="slideNum">1 / 15</div>
 </div>
 
 <div class="deck" id="deck">
 
   <!-- ═════════════════ 1. COVER ═════════════════════════════════ -->
   <section class="slide active">
-    <div class="logo-big"></div>
+    <div class="logo-big"><img src="/atp-logo.svg" alt="ATP"></div>
     <div class="eyebrow">Launching September 2026</div>
     <h1>ATP <span class="acc">Corporative</span><br>Wellness.</h1>
     <h1 style="font-size:clamp(32px,3.4vw,52px);color:#aaa;margin-top:-8px;font-weight:300">Change your workforce's fitness.<br>Pay as they move.</h1>
@@ -340,7 +325,53 @@
     </p>
   </section>
 
-  <!-- ═════════════════ 5. HOW A COMPANY ENROLLS ═════════════════ -->
+  <!-- ═════════════════ 5. WHY PAY IF IT'S FREE? ═════════════════ -->
+  <section class="slide">
+    <div class="eyebrow">The question you're thinking</div>
+    <h1>Yes. <span class="acc">So why pay?</span></h1>
+    <p class="lead">
+      ATP sessions are free for individuals — like Slack is free for individuals.
+      Companies pay for Slack Business because of admin, security, and the branded workspace —
+      not because the underlying chat is different.
+      <span class="lede-strong">ATP Corporative is the same pattern.</span>
+    </p>
+    <div class="grid-2" style="margin-top:24px;gap:18px">
+      <div class="card" style="padding:22px 26px">
+        <div class="eyebrow" style="color:var(--muted);margin-bottom:10px">Public ATP · always free</div>
+        <h3 style="font-family:var(--ff-display);font-size:22px;margin-bottom:12px">For individuals</h3>
+        <ul style="list-style:none;padding:0;margin:0">
+          <li style="font-size:13px;color:#bbb;padding:4px 0;display:flex;gap:8px"><span style="color:var(--muted)">·</span> Unlimited free outdoor sessions</li>
+          <li style="font-size:13px;color:#bbb;padding:4px 0;display:flex;gap:8px"><span style="color:var(--muted)">·</span> Public leaderboard</li>
+          <li style="font-size:13px;color:#bbb;padding:4px 0;display:flex;gap:8px"><span style="color:var(--muted)">·</span> Community feed + posts</li>
+          <li style="font-size:13px;color:#bbb;padding:4px 0;display:flex;gap:8px"><span style="color:var(--muted)">·</span> Standard session booking (first come, first served)</li>
+          <li style="font-size:13px;color:#bbb;padding:4px 0;display:flex;gap:8px"><span style="color:var(--muted)">·</span> Full price on partner events</li>
+        </ul>
+      </div>
+      <div class="card green" style="padding:22px 26px">
+        <div class="eyebrow" style="margin-bottom:10px">ATP Corporative · paid</div>
+        <h3 style="font-family:var(--ff-display);font-size:22px;margin-bottom:12px">Everything above, plus:</h3>
+        <ul style="list-style:none;padding:0;margin:0">
+          <li style="font-size:13px;color:#ddd;padding:4px 0;display:flex;gap:8px"><span style="color:var(--green)">✓</span> <strong>HR dashboard</strong> — engagement, calories, sessions, trends</li>
+          <li style="font-size:13px;color:#ddd;padding:4px 0;display:flex;gap:8px"><span style="color:var(--green)">✓</span> <strong>Company leaderboard</strong> + department rivalries</li>
+          <li style="font-size:13px;color:#ddd;padding:4px 0;display:flex;gap:8px"><span style="color:var(--green)">✓</span> <strong>Priority booking</strong> on popular sessions</li>
+          <li style="font-size:13px;color:#ddd;padding:4px 0;display:flex;gap:8px"><span style="color:var(--green)">✓</span> <strong>Discounts</strong> on partner events</li>
+          <li style="font-size:13px;color:#ddd;padding:4px 0;display:flex;gap:8px"><span style="color:var(--green)">✓</span> <strong>Co-branded</strong> check-ins + private sessions</li>
+          <li style="font-size:13px;color:#ddd;padding:4px 0;display:flex;gap:8px"><span style="color:var(--green)">✓</span> <strong>Monthly reports</strong> (PDF, ready for board pack)</li>
+          <li style="font-size:13px;color:#ddd;padding:4px 0;display:flex;gap:8px"><span style="color:var(--green)">✓</span> <strong>Tax + ESG documentation</strong></li>
+        </ul>
+      </div>
+    </div>
+    <div class="card gold" style="margin-top:20px;padding:18px 24px;text-align:center">
+      <p style="font-size:16px;color:#fff;line-height:1.5;margin:0">
+        <span style="color:var(--gold);font-weight:700">The product isn't access — it's the activation engine.</span>
+        Voluntary wellness benefits get <span class="lede-strong">12% utilization</span> when employees find them on their own.
+        With sponsored sign-up, dashboards and recognition, that jumps to <span class="lede-strong">40–60%</span>.
+        You're paying for the difference.
+      </p>
+    </div>
+  </section>
+
+  <!-- ═════════════════ 6. HOW A COMPANY ENROLLS ═════════════════ -->
   <section class="slide">
     <div class="eyebrow">How a company enrolls</div>
     <h1>4 steps. <span class="acc">~15 minutes.</span></h1>
@@ -540,20 +571,21 @@
     </p>
     <div class="grid-2" style="margin-top:20px;gap:18px">
       <div class="card green" style="padding:24px 26px">
-        <div class="eyebrow" style="margin-bottom:10px">Weekly packages</div>
-        <h3 style="font-family:var(--ff-display);font-size:24px;margin-bottom:14px">Private sessions, every week</h3>
+        <div class="eyebrow" style="margin-bottom:10px">Monthly subscription</div>
+        <h3 style="font-family:var(--ff-display);font-size:24px;margin-bottom:14px">Recurring private sessions</h3>
         <div style="display:flex;gap:18px;flex-wrap:wrap">
           <div style="flex:1;min-width:180px;background:rgba(0,0,0,.3);padding:14px 16px;border-radius:8px;border:1px solid var(--green-border)">
             <div style="font-size:11px;color:var(--green);letter-spacing:.12em;text-transform:uppercase;font-weight:700">1 session / week</div>
-            <div style="font-family:var(--ff-display);font-size:36px;color:#fff;line-height:1;margin-top:4px">AED&nbsp;2,000<small style="font-size:12px;color:var(--muted);font-family:var(--ff-body);font-weight:500"> /wk</small></div>
+            <div style="font-family:var(--ff-display);font-size:36px;color:#fff;line-height:1;margin-top:4px">AED&nbsp;2,000<small style="font-size:12px;color:var(--muted);font-family:var(--ff-body);font-weight:500"> /month</small></div>
+            <div style="font-size:10px;color:var(--muted);margin-top:4px">~4 sessions · AED 500 each</div>
           </div>
           <div style="flex:1;min-width:180px;background:rgba(0,0,0,.3);padding:14px 16px;border-radius:8px;border:1px solid var(--green-border)">
             <div style="font-size:11px;color:var(--green);letter-spacing:.12em;text-transform:uppercase;font-weight:700">2 sessions / week</div>
-            <div style="font-family:var(--ff-display);font-size:36px;color:#fff;line-height:1;margin-top:4px">AED&nbsp;3,500<small style="font-size:12px;color:var(--muted);font-family:var(--ff-body);font-weight:500"> /wk</small></div>
-            <div style="font-size:10px;color:var(--gold);margin-top:4px;font-weight:700">SAVE AED 500</div>
+            <div style="font-family:var(--ff-display);font-size:36px;color:#fff;line-height:1;margin-top:4px">AED&nbsp;3,500<small style="font-size:12px;color:var(--muted);font-family:var(--ff-body);font-weight:500"> /month</small></div>
+            <div style="font-size:10px;color:var(--gold);margin-top:4px;font-weight:700">~8 sessions · AED 437 each · SAVE 12%</div>
           </div>
         </div>
-        <p style="font-size:12px;color:#aaa;margin-top:10px;line-height:1.5">Pick the park · pick the coach · pick the activity. Up to 30 employees per session. Custom multi-month plans on request.</p>
+        <p style="font-size:12px;color:#aaa;margin-top:10px;line-height:1.5">Pick the park · pick the coach · pick the activity. Up to 30 employees per session. Pause or cancel monthly.</p>
       </div>
       <div class="card gold" style="padding:24px 26px">
         <div class="eyebrow" style="margin-bottom:10px;color:var(--gold)">Annual flagship</div>
@@ -606,7 +638,7 @@
           <li>All employee benefits (unlimited sessions, partner discounts, leaderboard)</li>
           <li>Live HR dashboard</li>
           <li>Monthly wellness report (PDF)</li>
-          <li>Private sessions available à la carte (AED 2,000/wk)</li>
+          <li>Private session subscription available (from AED 2,000/month for 1/week)</li>
         </ul>
       </div>
       <div class="price-card featured">
@@ -736,7 +768,7 @@
 </div>
 
 <div class="nav-hint">← → arrows · Space · or tap</div>
-<div class="progress"><div class="progress-bar" id="progressBar" style="width:7.1%"></div></div>
+<div class="progress"><div class="progress-bar" id="progressBar" style="width:6.67%"></div></div>
 
 <script>
   var slides = document.querySelectorAll('.slide');
