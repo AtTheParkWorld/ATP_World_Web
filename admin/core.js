@@ -87,13 +87,12 @@ document.getElementById('adminPass').addEventListener('keydown', function(e){
 // ── NAVIGATION ────────────────────────────────────────────────
 function showAdminSection(name, btn) {
   if (name === 'sessions') { loadCities(); loadCoaches(); loadTribes(); setTimeout(loadSessionsList, 300); }
-  // List MUST include every section id used in admin.html. Missing one
-  // means that section never gets hidden, so navigating away leaves it
-  // visible underneath the new section. 'settings' was added in Theme
-  // 5b and was missing from this list — fixed here.
-  ['dashboard','members','ambassadors','sessions','challenges','coaches','blog','analytics','content','settings','operations'].forEach(function(s){
-    var el = document.getElementById('section-'+s);
-    if (el) el.style.display = 'none';
+  // Hide EVERY section by id prefix — was a hardcoded list previously and
+  // kept drifting (founder/surveys/corporate/partners/wearables were
+  // missing as of v1.32.x, so all rendered on top of each other).
+  // Querying by the shared id prefix keeps this self-maintaining.
+  document.querySelectorAll('[id^="section-"]').forEach(function(el){
+    el.style.display = 'none';
   });
   var target = document.getElementById('section-'+name);
   if (target) target.style.display = 'block';
