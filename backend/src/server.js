@@ -237,6 +237,8 @@ app.get('/coach', (req, res) => {
   }
 });
 app.get('/join',     (req, res) => res.sendFile(path.join(__dirname, '../public/join.html')));
+// Corporate wellness pitch deck — clean URL for sharing with HR teams.
+app.get('/corporate-deck', (req, res) => res.sendFile(path.join(__dirname, '../public/corporate-deck.html')));
 // Magic-link verify landing page — emailed links (FRONTEND_URL/auth/verify?token=…)
 // resolve to this static page, which calls GET /api/auth/verify and stores the JWT.
 app.get('/auth/verify', (req, res) => res.sendFile(path.join(__dirname, '../public/auth-verify.html')));

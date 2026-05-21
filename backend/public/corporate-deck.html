@@ -1,0 +1,744 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ATP for Companies — Corporate Wellness 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0a0a;
+    --fg:#fff;
+    --muted:#888;
+    --dim:#555;
+    --green:#7AC231;
+    --green-soft:rgba(122,194,49,.10);
+    --green-border:rgba(122,194,49,.35);
+    --gold:#f5c042;
+    --gold-soft:rgba(245,192,66,.10);
+    --gold-border:rgba(245,192,66,.35);
+    --card:rgba(255,255,255,.04);
+    --border:rgba(255,255,255,.08);
+    --ff-display:"Bebas Neue", Inter, system-ui, sans-serif;
+    --ff-body:Inter, system-ui, sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:var(--bg);color:var(--fg);font-family:var(--ff-body);-webkit-font-smoothing:antialiased;overflow:hidden}
+  body{height:100vh;width:100vw}
+  .deck{position:relative;height:100vh;width:100vw}
+  .slide{
+    position:absolute;inset:0;display:none;
+    padding:6vh 8vw;
+    flex-direction:column;justify-content:center;
+    opacity:0;transition:opacity .35s ease;
+  }
+  .slide.active{display:flex;opacity:1}
+
+  /* ── HEADER (logo + slide nav) ─────────────────────────────── */
+  .deck-header{
+    position:fixed;top:0;left:0;right:0;height:60px;z-index:50;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:0 24px;pointer-events:none;
+  }
+  .logo{
+    display:flex;align-items:center;gap:10px;font-family:var(--ff-display);
+    font-size:22px;color:#fff;letter-spacing:.04em;font-weight:700;
+  }
+  .logo-mark{
+    width:28px;height:28px;border-radius:50%;border:2px solid var(--fg);
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--ff-display);font-size:18px;line-height:1;
+  }
+  .slide-num{font-size:11px;color:var(--muted);letter-spacing:.12em;font-weight:600}
+
+  /* ── TYPE ──────────────────────────────────────────────────── */
+  .eyebrow{
+    font-size:11px;color:var(--green);letter-spacing:.18em;
+    font-weight:700;text-transform:uppercase;margin-bottom:18px;
+    display:inline-flex;align-items:center;gap:10px;
+  }
+  .eyebrow::before{content:"";width:24px;height:1px;background:var(--green)}
+  h1{
+    font-family:var(--ff-display);font-size:clamp(48px,7vw,108px);
+    line-height:.95;letter-spacing:-.01em;font-weight:400;
+    margin-bottom:24px;
+  }
+  h1 .acc{color:var(--green)}
+  h1 .gold{color:var(--gold)}
+  h2{
+    font-family:var(--ff-display);font-size:clamp(38px,5vw,72px);
+    line-height:1;letter-spacing:-.005em;font-weight:400;
+    margin-bottom:18px;
+  }
+  h3{
+    font-family:var(--ff-display);font-size:clamp(22px,2.4vw,32px);
+    line-height:1.1;font-weight:400;margin-bottom:10px;color:var(--fg);
+  }
+  .lead{
+    font-size:clamp(16px,1.4vw,21px);color:#ccc;line-height:1.55;
+    max-width:760px;margin-bottom:24px;
+  }
+  .lede-strong{color:#fff;font-weight:600}
+  .muted{color:var(--muted)}
+  .strike{text-decoration:line-through;color:var(--dim)}
+
+  /* ── LAYOUT HELPERS ────────────────────────────────────────── */
+  .row{display:flex;gap:24px;flex-wrap:wrap}
+  .col{flex:1;min-width:0}
+  .grid-2{display:grid;grid-template-columns:repeat(2,1fr);gap:18px}
+  .grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+  .grid-4{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+
+  /* ── CARDS ─────────────────────────────────────────────────── */
+  .card{
+    background:var(--card);border:1px solid var(--border);
+    border-radius:12px;padding:22px 24px;
+  }
+  .card.gold{background:var(--gold-soft);border-color:var(--gold-border)}
+  .card.green{background:var(--green-soft);border-color:var(--green-border)}
+  .card .num{
+    font-family:var(--ff-display);font-size:48px;color:var(--green);
+    line-height:1;margin-bottom:8px;
+  }
+  .card.gold .num{color:var(--gold)}
+  .card h3{font-size:20px;margin-bottom:8px;color:#fff;font-family:var(--ff-display);letter-spacing:.02em}
+  .card p{font-size:13px;color:#bbb;line-height:1.55}
+  .card .price{
+    font-family:var(--ff-display);font-size:42px;color:#fff;line-height:1;
+    margin:6px 0 4px;
+  }
+  .card .price small{font-size:12px;color:var(--muted);font-family:var(--ff-body);font-weight:500;letter-spacing:.02em}
+  .card ul{list-style:none;padding:0;margin:10px 0 0}
+  .card ul li{
+    font-size:13px;color:#ddd;padding:4px 0;
+    display:flex;align-items:flex-start;gap:8px;line-height:1.5;
+  }
+  .card ul li::before{
+    content:"✓";color:var(--green);font-weight:700;flex-shrink:0;font-size:13px;
+  }
+
+  /* ── STEP PILLS (enrollment / signup flows) ────────────────── */
+  .steps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:24px}
+  .step{
+    background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:20px 18px;position:relative;
+  }
+  .step .step-num{
+    position:absolute;top:-12px;left:18px;
+    width:28px;height:28px;border-radius:50%;
+    background:var(--green);color:#0a0a0a;
+    display:flex;align-items:center;justify-content:center;
+    font-family:var(--ff-display);font-size:18px;font-weight:700;
+  }
+  .step h3{margin-top:6px;font-size:17px;color:#fff;font-family:var(--ff-display)}
+  .step p{font-size:12px;color:#aaa;line-height:1.5}
+
+  /* ── BIG NUMBERS ROW ───────────────────────────────────────── */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:24px;margin-top:32px}
+  .stat .val{
+    font-family:var(--ff-display);font-size:clamp(48px,5.5vw,80px);color:var(--green);line-height:1;
+  }
+  .stat .lbl{font-size:11px;color:#aaa;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-top:8px}
+
+  /* ── PILLS / TAGS ──────────────────────────────────────────── */
+  .pill{
+    display:inline-flex;align-items:center;gap:6px;
+    background:var(--green-soft);color:var(--green);
+    border:1px solid var(--green-border);border-radius:99px;
+    padding:6px 14px;font-size:11px;letter-spacing:.08em;
+    text-transform:uppercase;font-weight:700;
+  }
+  .pill.gold{background:var(--gold-soft);color:var(--gold);border-color:var(--gold-border)}
+
+  /* ── LEADERBOARD MOCK ──────────────────────────────────────── */
+  .lb{
+    background:var(--card);border:1px solid var(--border);border-radius:12px;
+    padding:18px;font-size:13px;
+  }
+  .lb-row{
+    display:grid;grid-template-columns:32px 1fr auto auto;gap:14px;
+    padding:9px 4px;border-bottom:1px solid var(--border);align-items:center;
+  }
+  .lb-row:last-child{border-bottom:none}
+  .lb-rank{
+    font-family:var(--ff-display);font-size:18px;color:var(--muted);text-align:center;
+  }
+  .lb-row.top1 .lb-rank{color:var(--gold)}
+  .lb-row.top1 .name{color:var(--gold);font-weight:600}
+  .lb-row.top2 .lb-rank,.lb-row.top3 .lb-rank{color:#bbb}
+  .lb-name{color:#fff;font-size:13px}
+  .lb-dept{color:#888;font-size:11px;margin-top:2px}
+  .lb-metric{font-family:var(--ff-display);font-size:18px;color:var(--green)}
+  .lb-sub{font-size:10px;color:var(--muted);margin-top:1px;text-align:right}
+
+  /* ── PRICING ROW ───────────────────────────────────────────── */
+  .pricing{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:20px}
+  .price-card{
+    background:var(--card);border:1px solid var(--border);border-radius:14px;
+    padding:24px 22px;position:relative;
+  }
+  .price-card.featured{border-color:var(--gold-border);background:linear-gradient(180deg,var(--gold-soft) 0%,var(--card) 60%)}
+  .price-card .tier{
+    font-family:var(--ff-display);font-size:24px;color:#fff;letter-spacing:.02em;margin-bottom:4px;
+  }
+  .price-card .range{font-size:11px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:14px}
+  .price-card .amount{
+    font-family:var(--ff-display);font-size:64px;color:var(--green);line-height:1;
+  }
+  .price-card.featured .amount{color:var(--gold)}
+  .price-card .per{font-size:11px;color:var(--muted);margin-top:2px;letter-spacing:.04em}
+  .price-card ul{list-style:none;padding:0;margin:16px 0 0}
+  .price-card ul li{font-size:13px;color:#ddd;padding:5px 0;display:flex;gap:8px;line-height:1.45}
+  .price-card ul li::before{content:"✓";color:var(--green);font-weight:700;flex-shrink:0}
+  .price-card.featured ul li::before{color:var(--gold)}
+  .badge-best{
+    position:absolute;top:-10px;right:18px;background:var(--gold);color:#0a0a0a;
+    padding:3px 10px;border-radius:99px;font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+  }
+
+  /* ── FOOTER / PROGRESS ─────────────────────────────────────── */
+  .progress{
+    position:fixed;bottom:0;left:0;right:0;height:3px;background:rgba(255,255,255,.04);z-index:50;
+  }
+  .progress-bar{height:100%;background:var(--green);transition:width .35s ease}
+  .nav-hint{
+    position:fixed;bottom:14px;right:20px;font-size:11px;color:var(--dim);z-index:50;
+    letter-spacing:.08em;pointer-events:none;
+  }
+
+  /* ── CONTACT SLIDE ─────────────────────────────────────────── */
+  .contact{display:grid;grid-template-columns:repeat(2,1fr);gap:18px;margin-top:24px;max-width:780px}
+  .contact-row{
+    display:flex;flex-direction:column;gap:4px;padding:18px 22px;
+    background:var(--card);border:1px solid var(--border);border-radius:10px;
+  }
+  .contact-row .l{font-size:10px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+  .contact-row .v{font-family:var(--ff-display);font-size:22px;color:#fff;line-height:1.2}
+
+  /* ── PRINT (each slide as a PDF page) ─────────────────────── */
+  @media print {
+    html, body { overflow: visible; height: auto; background: #0a0a0a; }
+    .deck-header, .progress, .nav-hint { display:none }
+    .slide{position:relative;display:flex !important;opacity:1 !important;page-break-after:always;height:100vh;width:100vw;break-inside:avoid;padding:6vh 8vw}
+    .slide:last-child{page-break-after:auto}
+  }
+</style>
+</head>
+<body>
+
+<div class="deck-header">
+  <div class="logo">
+    <span class="logo-mark">a</span>
+    <span>THE PARK</span>
+  </div>
+  <div class="slide-num" id="slideNum">1 / 14</div>
+</div>
+
+<div class="deck" id="deck">
+
+  <!-- ═════════════════ 1. COVER ═════════════════════════════════ -->
+  <section class="slide active">
+    <div class="eyebrow">Corporate Wellness · 2026</div>
+    <h1>ATP for <span class="acc">Companies.</span></h1>
+    <h1 style="font-size:clamp(36px,4vw,60px);color:#aaa;margin-top:-12px">Change your workforce's fitness.<br>Pay only for what works.</h1>
+    <p class="lead" style="margin-top:24px">
+      The largest free outdoor fitness community in the UAE — now built for your team.
+      No empty gym subsidies. No app installs. No annual lock-ins.
+      Your employees show up; you pay. They don't; you don't.
+    </p>
+    <div style="margin-top:8px"><span class="pill">UAE · Oman · 8 cities · 7,026 active members</span></div>
+  </section>
+
+  <!-- ═════════════════ 2. THE PROBLEM ═══════════════════════════ -->
+  <section class="slide">
+    <div class="eyebrow">The problem</div>
+    <h1>Gym subsidies <span class="acc">don't work.</span></h1>
+    <div class="row" style="margin-top:24px">
+      <div class="col">
+        <p class="lead">
+          UAE companies spend <span class="lede-strong">AED 5,000–10,000 per employee per year</span>
+          on gym memberships and traditional wellness benefits.
+          <br><br>
+          Industry data: <span class="lede-strong">average utilization is ~12%</span>.
+          88% of every dirham you spend is paying for a benefit no one uses.
+          <br><br>
+          Meanwhile, healthcare premiums keep climbing. Sedentary disease (diabetes, hypertension,
+          back pain) is the #1 driver of UAE corporate insurance claims.
+        </p>
+      </div>
+      <div class="col" style="max-width:420px">
+        <div class="card gold">
+          <div class="num" style="color:var(--gold)">88%</div>
+          <h3>of gym subsidies go unused</h3>
+          <p>Industry average across UAE corporate wellness benefits. Employees sign up, attend once, never return.</p>
+        </div>
+        <div class="card" style="margin-top:14px">
+          <div class="num">AED&nbsp;6.2K</div>
+          <h3>wasted per employee per year</h3>
+          <p>Average corporate wellness spend × the no-show rate. Across 200 employees, that's AED 1.24M annually.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════ 3. WHAT ATP IS TODAY ═════════════════════ -->
+  <section class="slide">
+    <div class="eyebrow">Who we are</div>
+    <h1>The largest <span class="acc">free</span> fitness<br>community in the UAE.</h1>
+    <p class="lead">
+      Founded in Dubai. 7,026 active members. 8 cities across UAE and Oman.
+      Free outdoor sessions every week — running, HIIT, yoga, boxing, calisthenics,
+      and more. We're the alternative to the indoor gym subscription model.
+    </p>
+    <div class="stats">
+      <div class="stat"><div class="val">7,026</div><div class="lbl">Members</div></div>
+      <div class="stat"><div class="val">8</div><div class="lbl">Cities</div></div>
+      <div class="stat"><div class="val">350+</div><div class="lbl">Avg attendance / session</div></div>
+      <div class="stat"><div class="val">10+</div><div class="lbl">Activity types</div></div>
+    </div>
+    <p class="lead" style="margin-top:32px;font-size:14px;color:#888">
+      Trusted by past partners including Nike, Audi, and Oracle. Now opening corporate enrollment.
+    </p>
+  </section>
+
+  <!-- ═════════════════ 4. THE THESIS ════════════════════════════ -->
+  <section class="slide">
+    <div class="eyebrow">The thesis</div>
+    <h1>Wellness moves <span class="acc">out</span> of the<br>gym, <span class="gold">into</span> the park.</h1>
+    <div class="grid-2" style="margin-top:30px">
+      <div class="card">
+        <div class="eyebrow" style="margin-bottom:10px;color:var(--dim)">The old model</div>
+        <h3 class="strike" style="font-family:var(--ff-display)">Pay AED 250/employee/month</h3>
+        <p>Whether they go or not. Locked annual contracts. Single venue (the office gym or one chain).
+           12% utilization. No data on actual outcomes.</p>
+      </div>
+      <div class="card green">
+        <div class="eyebrow" style="margin-bottom:10px">The ATP model</div>
+        <h3 style="font-family:var(--ff-display)">Pay AED 12–25 per active employee</h3>
+        <p>Active = checked into at least one session in the last 30 days. If they don't move, you don't pay.
+           Cancel any month. Live dashboard. Outdoor, public, community-driven.</p>
+      </div>
+    </div>
+    <p class="lead" style="margin-top:32px;font-size:18px;color:#fff;font-weight:600;text-align:center">
+      You only sponsor wellness that's <span style="color:var(--green)">actually happening</span>.
+    </p>
+  </section>
+
+  <!-- ═════════════════ 5. HOW A COMPANY ENROLLS ═════════════════ -->
+  <section class="slide">
+    <div class="eyebrow">How a company enrolls</div>
+    <h1>4 steps. <span class="acc">~15 minutes.</span></h1>
+    <p class="lead">No sales cycle. No contracts you need a lawyer for. Self-serve onboarding at <code style="background:#1a1a1a;padding:2px 8px;border-radius:4px;color:var(--green);font-family:monospace;font-size:.9em">atp-world-web.onrender.com/corporate</code></p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <h3>Fill 1 form</h3>
+        <p>Company name, headcount, HR contact, billing email, your company's email domain (e.g. @acme.com).</p>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <h3>Pick a tier</h3>
+        <p>Starter / Growth / Enterprise. Differences are mostly volume — bigger teams unlock private sessions + a CSM.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <h3>Onboard your team</h3>
+        <p>Upload a CSV of employee emails <em>or</em> enable auto-detect (anyone with @acme.com gets in automatically).</p>
+      </div>
+      <div class="step">
+        <div class="step-num">4</div>
+        <h3>We send welcome emails</h3>
+        <p>Each employee gets a personalised magic link. One tap → they're in. No password creation. No app store.</p>
+      </div>
+    </div>
+    <p class="lead" style="margin-top:30px;font-size:14px;color:var(--muted)">
+      First invoice arrives at the end of month 1, charged only for employees who actually checked into a session.
+    </p>
+  </section>
+
+  <!-- ═════════════════ 6. HOW AN EMPLOYEE SIGNS UP ══════════════ -->
+  <section class="slide">
+    <div class="eyebrow">How an employee signs up</div>
+    <h1>3 taps. <span class="acc">No app.</span> No password.</h1>
+    <div class="grid-3" style="margin-top:30px">
+      <div class="card">
+        <div class="num">1</div>
+        <h3 style="font-family:var(--ff-display)">Tap the welcome email</h3>
+        <p>Personalised magic link. Opens in any phone browser. Pre-filled with their name + work email.</p>
+      </div>
+      <div class="card">
+        <div class="num">2</div>
+        <h3 style="font-family:var(--ff-display)">Confirm preferences</h3>
+        <p>City, preferred sessions (run, yoga, HIIT), notification frequency. ~30 seconds.</p>
+      </div>
+      <div class="card">
+        <div class="num">3</div>
+        <h3 style="font-family:var(--ff-display)">Show up to a session</h3>
+        <p>Pick a session, get the QR code, check in. They're now an active member — the company counter ticks up.</p>
+      </div>
+    </div>
+    <div class="card green" style="margin-top:24px;padding:22px 28px">
+      <h3 style="margin-bottom:6px;font-family:var(--ff-display)">Already an ATP member?</h3>
+      <p style="font-size:14px;color:#ddd">Existing members get a single notification: "Your company joined ATP. Tap to link your benefits." One tap. They keep their history, streak, and points.</p>
+    </div>
+  </section>
+
+  <!-- ═════════════════ 7. WHAT EMPLOYEES GET ════════════════════ -->
+  <section class="slide">
+    <div class="eyebrow">For your employees</div>
+    <h1>Free workouts. Free coaching.<br><span class="acc">Free perks.</span></h1>
+    <div class="grid-3" style="margin-top:26px">
+      <div class="card">
+        <h3 style="font-family:var(--ff-display)">🏃 Unlimited outdoor sessions</h3>
+        <p>All 350+ ATP sessions per month, across 8 cities. Run clubs, HIIT, yoga, boxing, calisthenics, sunrise sessions, weekend hikes.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-family:var(--ff-display)">🎯 1 free coach 1-on-1 / month</h3>
+        <p>Worth AED 200 retail. Private session with any ATP coach — strength, mobility, goal planning, nutrition.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-family:var(--ff-display)">🎟️ Free entry to ATP partner events</h3>
+        <p>Branded runs, festivals, race events, charity walks — entry covered by their corporate membership.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-family:var(--ff-display)">💰 Monthly wallet credit</h3>
+        <p>AED 10 to spend at the ATP store (gear, supplements, gift sessions to friends), credited on the 1st of each month.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-family:var(--ff-display)">🏆 Company leaderboard</h3>
+        <p>See where they rank vs colleagues. Streaks. Calories burned. Sessions attended. Department vs department.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-family:var(--ff-display)">📱 Strava / Apple / Fitbit sync</h3>
+        <p>Optional. Connects in 30 seconds. Their outside workouts also count toward leaderboards and streaks.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════ 8. WHAT COMPANIES GET ════════════════════ -->
+  <section class="slide">
+    <div class="eyebrow">For HR & leadership</div>
+    <h1>The data you've <span class="acc">never had</span><br>about your team's health.</h1>
+    <div class="grid-2" style="margin-top:26px;gap:20px">
+      <div class="card">
+        <h3 style="font-family:var(--ff-display)">📊 Live aggregate dashboard</h3>
+        <p>Real-time participation %, sessions attended this week / month, total calories burned across the company, top movers, retention curve.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-family:var(--ff-display)">📈 Monthly wellness reports</h3>
+        <p>Auto-generated PDF emailed to HR + leadership. Trends, highlights, suggestions. Shareable in the board pack.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-family:var(--ff-display)">🏷️ Tax-deductible expense</h3>
+        <p>Recognised as a corporate wellness line item under UAE corporate tax rules (Federal Decree-Law 47). Documented for your auditor.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-family:var(--ff-display)">🛡️ Insurance partner network</h3>
+        <p>We broker introductions to Daman, Sukoon, AXA. Active wellness data can unlock premium reductions on renewal.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-family:var(--ff-display)">🎨 Co-branded sessions</h3>
+        <p>Your logo on session check-in screens. Optional weekly company-only slot at any park, any city.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-family:var(--ff-display)">💬 Dedicated CSM (Enterprise)</h3>
+        <p>For 250+ employees: a dedicated Customer Success Manager, quarterly reviews, custom challenge design.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════ 9. COMPANY LEADERBOARD ═══════════════════ -->
+  <section class="slide">
+    <div class="eyebrow">Key differentiator</div>
+    <h1>The Company <span class="gold">Leaderboard.</span></h1>
+    <div class="row" style="margin-top:20px;gap:32px">
+      <div class="col">
+        <p class="lead">
+          Gamification drives adoption better than any HR memo.
+          Live, public-within-your-company leaderboards across:
+        </p>
+        <ul style="list-style:none;padding:0;font-size:15px;color:#ddd;line-height:2;margin-bottom:20px">
+          <li>🥇 <strong>Sessions attended</strong> — weekly & all-time</li>
+          <li>🔥 <strong>Calories burned</strong> (via wearables sync)</li>
+          <li>⚡ <strong>Streak length</strong> — consecutive active weeks</li>
+          <li>🏅 <strong>Points earned</strong> — across check-ins, challenges, referrals</li>
+          <li>🏢 <strong>Department vs department</strong> rivalries</li>
+        </ul>
+        <p class="lead" style="font-size:14px;color:var(--muted)">
+          Quarterly: ATP runs the awards ceremony (digital or onsite).
+          "Mover of the Quarter", "Most Improved Team", "Streak King/Queen".
+        </p>
+      </div>
+      <div class="col" style="max-width:440px">
+        <div class="lb">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+            <div style="font-size:11px;color:var(--green);letter-spacing:.12em;text-transform:uppercase;font-weight:700">Acme Corp · This month</div>
+            <div style="font-size:10px;color:var(--muted)">Live</div>
+          </div>
+          <div class="lb-row top1">
+            <div class="lb-rank">1</div>
+            <div><div class="lb-name">Sarah K.</div><div class="lb-dept">Marketing · 18-week streak</div></div>
+            <div class="lb-metric">24</div>
+            <div class="lb-sub">sessions</div>
+          </div>
+          <div class="lb-row top2">
+            <div class="lb-rank">2</div>
+            <div><div class="lb-name">Omar R.</div><div class="lb-dept">Engineering · 12-week streak</div></div>
+            <div class="lb-metric">21</div>
+            <div class="lb-sub">sessions</div>
+          </div>
+          <div class="lb-row top3">
+            <div class="lb-rank">3</div>
+            <div><div class="lb-name">Priya M.</div><div class="lb-dept">Sales · 9-week streak</div></div>
+            <div class="lb-metric">19</div>
+            <div class="lb-sub">sessions</div>
+          </div>
+          <div class="lb-row">
+            <div class="lb-rank">4</div>
+            <div><div class="lb-name">James T.</div><div class="lb-dept">Operations</div></div>
+            <div class="lb-metric">17</div>
+            <div class="lb-sub">sessions</div>
+          </div>
+          <div class="lb-row">
+            <div class="lb-rank">5</div>
+            <div><div class="lb-name">Layla A.</div><div class="lb-dept">HR</div></div>
+            <div class="lb-metric">16</div>
+            <div class="lb-sub">sessions</div>
+          </div>
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid var(--border);font-size:11px;color:var(--muted);text-align:center">
+            Department leaders: 🥇 Marketing (avg 14.2) · 🥈 Engineering (12.8) · 🥉 Sales (11.5)
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════ 10. EXCLUSIVE COMPANY SESSIONS ═══════════ -->
+  <section class="slide">
+    <div class="eyebrow">Private bookings</div>
+    <h1>Exclusive <span class="acc">company sessions.</span></h1>
+    <p class="lead">
+      Bring your team out for a session no one else can join.
+      Onboarding, off-sites, team-building, milestone celebrations.
+      We bring the coach. You bring the team.
+    </p>
+    <div class="grid-3" style="margin-top:20px">
+      <div class="card">
+        <h3 style="font-family:var(--ff-display)">📍 Pick the park</h3>
+        <p>Any of 8 cities, any of 40+ ATP venues. Beach, park, rooftop, mountain hike. You name it.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-family:var(--ff-display)">🎨 Branded experience</h3>
+        <p>Your logo on session signage, check-in screens, leaderboard tablet. Optional branded merch for participants.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-family:var(--ff-display)">🏆 Custom challenges</h3>
+        <p>"Acme Summer Sprint", "Founders' 30 Days", "Team Everest". We design + run it. Includes prize fulfilment.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-family:var(--ff-display)">🗣️ Wellness talk + workout</h3>
+        <p>Optional: an ATP coach delivers a 15-min talk (sleep, recovery, nutrition) + 45-min active session.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-family:var(--ff-display)">📸 Content package</h3>
+        <p>Professional photos + a 60-sec recap video, delivered within 48h. Use on socials, recruiting decks, ESG reports.</p>
+      </div>
+      <div class="card gold">
+        <h3 style="font-family:var(--ff-display);color:var(--gold)">⭐ Included in your tier</h3>
+        <p>Starter: AED 2,000 / session at cost. Growth: 1 free per quarter. Enterprise: 1 free per month + branded challenge.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════ 11. PRICING ══════════════════════════════ -->
+  <section class="slide">
+    <div class="eyebrow">Pricing</div>
+    <h1>Pay per <span class="acc">active</span> employee.<br>Not per seat.</h1>
+    <p class="lead">
+      <span class="lede-strong">"Active" = checked into at least one session in the last 30 days.</span>
+      If an employee doesn't move, you don't pay for them.
+      Month-to-month. Cancel anytime.
+    </p>
+    <div class="pricing">
+      <div class="price-card">
+        <div class="tier">Starter</div>
+        <div class="range">10–50 employees</div>
+        <div class="amount">25</div>
+        <div class="per">AED / active employee / month</div>
+        <ul>
+          <li>All employee benefits (free sessions, coach 1-on-1, wallet)</li>
+          <li>Live HR dashboard + leaderboard</li>
+          <li>Monthly PDF report</li>
+          <li>Private sessions at cost (AED 2,000)</li>
+        </ul>
+      </div>
+      <div class="price-card featured">
+        <div class="badge-best">Most popular</div>
+        <div class="tier">Growth</div>
+        <div class="range">50–250 employees</div>
+        <div class="amount">18</div>
+        <div class="per">AED / active employee / month</div>
+        <ul>
+          <li>Everything in Starter</li>
+          <li><strong>1 free private session per quarter</strong></li>
+          <li>Co-branded check-in screens</li>
+          <li>Quarterly business review</li>
+          <li>Insurance partner intro</li>
+        </ul>
+      </div>
+      <div class="price-card">
+        <div class="tier">Enterprise</div>
+        <div class="range">250+ employees</div>
+        <div class="amount">12</div>
+        <div class="per">AED / active employee / month</div>
+        <ul>
+          <li>Everything in Growth</li>
+          <li><strong>1 free private session per month</strong></li>
+          <li>Custom branded challenge (designed + run by ATP)</li>
+          <li>Dedicated Customer Success Manager</li>
+          <li>API access for HRIS integration</li>
+        </ul>
+      </div>
+    </div>
+    <p class="lead" style="margin-top:24px;font-size:13px;color:var(--muted);text-align:center">
+      Invoiced monthly in arrears (you pay for what happened, not what you projected).
+      All prices VAT-exclusive. Larger orgs: ping us, custom plans available.
+    </p>
+  </section>
+
+  <!-- ═════════════════ 12. PILOT OFFER ══════════════════════════ -->
+  <section class="slide">
+    <div class="eyebrow">Pilot offer · risk-free</div>
+    <h1>First 10 companies:<br><span class="gold">60 days free.</span></h1>
+    <div class="row" style="margin-top:24px;gap:32px">
+      <div class="col">
+        <p class="lead">
+          We onboard your team end-to-end, ship the welcome emails,
+          run a kickoff outdoor session at a park near your office,
+          and stand up your live dashboard.
+          <br><br>
+          At day 60: <span class="lede-strong">you decide.</span>
+          Continue at the standard rate, or cancel — no charge for the trial period.
+          <br><br>
+          We're betting our reputation on this: if your team isn't actually moving more
+          by day 60, we don't want your money.
+        </p>
+      </div>
+      <div class="col" style="max-width:420px">
+        <div class="card gold" style="padding:28px">
+          <h3 style="font-family:var(--ff-display);font-size:26px;color:var(--gold);margin-bottom:14px">What's included in the pilot</h3>
+          <ul style="list-style:none;padding:0">
+            <li style="padding:6px 0;color:#ddd;display:flex;gap:10px"><span style="color:var(--gold)">✓</span> Full Growth tier benefits</li>
+            <li style="padding:6px 0;color:#ddd;display:flex;gap:10px"><span style="color:var(--gold)">✓</span> 1 free kickoff company session</li>
+            <li style="padding:6px 0;color:#ddd;display:flex;gap:10px"><span style="color:var(--gold)">✓</span> Personalized welcome emails to your team</li>
+            <li style="padding:6px 0;color:#ddd;display:flex;gap:10px"><span style="color:var(--gold)">✓</span> Live HR dashboard from day 1</li>
+            <li style="padding:6px 0;color:#ddd;display:flex;gap:10px"><span style="color:var(--gold)">✓</span> Day-30 + Day-60 success calls</li>
+            <li style="padding:6px 0;color:#ddd;display:flex;gap:10px"><span style="color:var(--gold)">✓</span> Day-60 wellness impact report (yours to keep regardless)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════ 13. WHY NOW ══════════════════════════════ -->
+  <section class="slide">
+    <div class="eyebrow">Why now</div>
+    <h1>The UAE just made<br>corporate wellness <span class="acc">strategic.</span></h1>
+    <div class="grid-2" style="margin-top:26px">
+      <div class="card">
+        <h3 style="font-family:var(--ff-display);color:var(--green)">🇦🇪 UAE National Wellness Strategy 2031</h3>
+        <p>Corporate workplace wellness is now an explicit pillar. Companies that lead get government recognition, ESG credits, and easier access to wellness-linked tax incentives.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-family:var(--ff-display);color:var(--green)">💼 Corporate Tax (Federal Decree-Law 47)</h3>
+        <p>Active wellness benefits are recognised deductible expenses. Spend on a benefit that's also a marketing differentiator, not a sunk cost.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-family:var(--ff-display);color:var(--green)">📉 Healthcare premium pressure</h3>
+        <p>UAE corporate health insurance premiums climbed 12% YoY in 2025. Active wellness data is the only proven lever to slow renewal increases.</p>
+      </div>
+      <div class="card">
+        <h3 style="font-family:var(--ff-display);color:var(--green)">🌍 ESG reporting requirements</h3>
+        <p>"Workforce health" is now a measured input for ADX/DFM-listed companies and most multinational ESG reports. ATP's monthly report fits the template.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═════════════════ 14. CONTACT ══════════════════════════════ -->
+  <section class="slide">
+    <div class="eyebrow">Next step · 30-min demo</div>
+    <h1>Let's get your team<br><span class="acc">moving.</span></h1>
+    <p class="lead">
+      Book a 30-min demo. We'll walk through your HR dashboard live with sample data,
+      design a kickoff plan for your team, and confirm if you qualify for the
+      <span style="color:var(--gold);font-weight:600">free 60-day pilot</span>.
+    </p>
+    <div class="contact">
+      <div class="contact-row">
+        <div class="l">Email</div>
+        <div class="v">corporate@atthepark.world</div>
+      </div>
+      <div class="contact-row">
+        <div class="l">Phone / WhatsApp</div>
+        <div class="v">+971 56 4451771</div>
+      </div>
+      <div class="contact-row">
+        <div class="l">Office</div>
+        <div class="v">Nshama Town Square<br>Al Zahra 2B-205, Dubai</div>
+      </div>
+      <div class="contact-row">
+        <div class="l">Socials</div>
+        <div class="v">@atthepark_world</div>
+      </div>
+    </div>
+    <p class="lead" style="margin-top:30px;font-size:13px;color:var(--muted)">
+      ATP World · Born in the UAE · Changing the world's fitness, one team at a time.
+    </p>
+  </section>
+
+</div>
+
+<div class="nav-hint">← → arrows · Space · or tap</div>
+<div class="progress"><div class="progress-bar" id="progressBar" style="width:7.1%"></div></div>
+
+<script>
+  var slides = document.querySelectorAll('.slide');
+  var current = 0;
+  var total = slides.length;
+  var slideNumEl = document.getElementById('slideNum');
+  var progressEl = document.getElementById('progressBar');
+
+  function show(i){
+    if (i < 0) i = 0;
+    if (i >= total) i = total - 1;
+    slides[current].classList.remove('active');
+    slides[i].classList.add('active');
+    current = i;
+    slideNumEl.textContent = (i+1) + ' / ' + total;
+    progressEl.style.width = ((i+1) / total * 100) + '%';
+    // Update hash for deep-linking
+    history.replaceState(null, '', '#' + (i+1));
+  }
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight' || e.key === ' ' || e.key === 'ArrowDown' || e.key === 'PageDown'){ e.preventDefault(); show(current+1); }
+    else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp' || e.key === 'PageUp'){ e.preventDefault(); show(current-1); }
+    else if (e.key === 'Home'){ show(0); }
+    else if (e.key === 'End'){ show(total-1); }
+  });
+  document.addEventListener('click', function(e){
+    // Right half click = next; left half = prev. Ignore if clicking links/interactive.
+    if (e.target.closest('a,button,input,textarea,select')) return;
+    var x = e.clientX;
+    if (x > window.innerWidth * 0.5) show(current+1);
+    else show(current-1);
+  });
+  // Deep link via hash on load
+  var initial = parseInt((location.hash || '').replace('#','').trim(), 10);
+  if (initial && initial >= 1 && initial <= total) show(initial - 1);
+</script>
+
+</body>
+</html>
