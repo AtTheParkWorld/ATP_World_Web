@@ -2694,6 +2694,48 @@ router.post('/migrate-corporate', async (req, res, next) => {
     )`);
     await tryStep('5b. idx_corp_leads_stage', `CREATE INDEX IF NOT EXISTS idx_corp_leads_stage ON corporate_leads(stage, next_action_date)`);
 
+    // ── Phase 1 extensions (Corporate v2) ─────────────────────────
+    // Pilot lifecycle + tier + email domain auto-link on accounts
+    await tryStep('6a. tier',                `ALTER TABLE corporate_accounts ADD COLUMN IF NOT EXISTS tier VARCHAR(40)`);
+    await tryStep('6b. pilot_started_at',    `ALTER TABLE corporate_accounts ADD COLUMN IF NOT EXISTS pilot_started_at TIMESTAMPTZ`);
+    await tryStep('6c. pilot_ends_at',       `ALTER TABLE corporate_accounts ADD COLUMN IF NOT EXISTS pilot_ends_at TIMESTAMPTZ`);
+    await tryStep('6d. email_domain',        `ALTER TABLE corporate_accounts ADD COLUMN IF NOT EXISTS email_domain VARCHAR(120)`);
+    await tryStep('6e. activated_at',        `ALTER TABLE corporate_accounts ADD COLUMN IF NOT EXISTS activated_at TIMESTAMPTZ`);
+    await tryStep('6f. idx_email_domain',    `CREATE INDEX IF NOT EXISTS idx_corp_email_domain ON corporate_accounts(LOWER(email_domain)) WHERE email_domain IS NOT NULL`);
+
+    // Employee roles + freeze + soft-delete + invitation tracking
+    await tryStep('7a. role',                `ALTER TABLE corporate_employees ADD COLUMN IF NOT EXISTS role VARCHAR(20) NOT NULL DEFAULT 'employee'`);
+    await tryStep('7b. frozen_at',           `ALTER TABLE corporate_employees ADD COLUMN IF NOT EXISTS frozen_at TIMESTAMPTZ`);
+    await tryStep('7c. deleted_at',          `ALTER TABLE corporate_employees ADD COLUMN IF NOT EXISTS deleted_at TIMESTAMPTZ`);
+    await tryStep('7d. invitation_email',    `ALTER TABLE corporate_employees ADD COLUMN IF NOT EXISTS invitation_email VARCHAR(255)`);
+    await tryStep('7e. invitation_sent_at',  `ALTER TABLE corporate_employees ADD COLUMN IF NOT EXISTS invitation_sent_at TIMESTAMPTZ`);
+    await tryStep('7f. invitation_token',    `ALTER TABLE corporate_employees ADD COLUMN IF NOT EXISTS invitation_token VARCHAR(120)`);
+    await tryStep('7g. idx_invitation_token',`CREATE INDEX IF NOT EXISTS idx_corp_emp_invite_token ON corporate_employees(invitation_token) WHERE invitation_token IS NOT NULL`);
+
+    // Corporate-exclusive + online session support
+    await tryStep('8a. session corporate_account_id',
+      `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS corporate_account_id UUID REFERENCES corporate_accounts(id) ON DELETE SET NULL`);
+    await tryStep('8b. session is_corporate_only',
+      `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS is_corporate_only BOOLEAN NOT NULL DEFAULT false`);
+    await tryStep('8c. session is_online',
+      `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS is_online BOOLEAN NOT NULL DEFAULT false`);
+    await tryStep('8d. session stream_url',
+      `ALTER TABLE sessions ADD COLUMN IF NOT EXISTS stream_url TEXT`);
+    await tryStep('8e. idx_session_corp',
+      `CREATE INDEX IF NOT EXISTS idx_sessions_corp_account ON sessions(corporate_account_id) WHERE corporate_account_id IS NOT NULL`);
+
+    // Audit log for corporate employee actions (best-in-class: who froze whom, when, why)
+    await tryStep('9a. corporate_audit_log table', `CREATE TABLE IF NOT EXISTS corporate_audit_log (
+      id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      corporate_account_id UUID NOT NULL REFERENCES corporate_accounts(id) ON DELETE CASCADE,
+      actor_member_id UUID REFERENCES members(id) ON DELETE SET NULL,
+      action VARCHAR(60) NOT NULL,
+      target_member_id UUID REFERENCES members(id) ON DELETE SET NULL,
+      details JSONB,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await tryStep('9b. idx_audit_account', `CREATE INDEX IF NOT EXISTS idx_corp_audit_account ON corporate_audit_log(corporate_account_id, created_at DESC)`);
+
     res.json({ success: true, steps });
   } catch (err) {
     return res.status(500).json({ error: err.message, code: err.code, detail: err.detail || null, hint: err.hint || null, steps });

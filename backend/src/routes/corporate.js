@@ -293,6 +293,238 @@ router.post('/admin/accounts/:id/token', authenticate, requireAdmin, async (req,
   } catch (err) { next(err); }
 });
 
+// ── Single account detail (Phase 1) ──────────────────────────
+router.get('/admin/accounts/:id', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { rows: arows } = await query(
+      `SELECT c.*,
+              (SELECT COUNT(*)::int FROM corporate_employees WHERE corporate_account_id=c.id AND deleted_at IS NULL) AS employee_count,
+              (SELECT COUNT(*)::int FROM corporate_employees WHERE corporate_account_id=c.id AND deleted_at IS NULL AND is_active=true AND frozen_at IS NULL) AS active_employee_count,
+              (SELECT token FROM corporate_signup_tokens WHERE corporate_account_id=c.id ORDER BY created_at DESC LIMIT 1) AS latest_token
+         FROM corporate_accounts c WHERE c.id=$1 LIMIT 1`,
+      [req.params.id]
+    );
+    if (!arows.length) return res.status(404).json({ error: 'Account not found' });
+    res.json({ account: arows[0] });
+  } catch (err) { next(err); }
+});
+
+// ── List employees of an account (Phase 1) ───────────────────
+router.get('/admin/accounts/:id/employees', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT e.id, e.member_id, e.department, e.joined_at, e.is_active,
+              e.role, e.frozen_at, e.invitation_email, e.invitation_sent_at,
+              m.first_name, m.last_name, m.email, m.avatar_url, m.last_active_at,
+              (SELECT COUNT(*)::int FROM bookings b
+                WHERE b.member_id = e.member_id
+                  AND b.checked_in_at >= NOW() - INTERVAL '30 days') AS checkins_30d,
+              (SELECT MAX(b.checked_in_at) FROM bookings b WHERE b.member_id = e.member_id) AS last_checkin_at
+         FROM corporate_employees e
+         JOIN members m ON m.id = e.member_id
+        WHERE e.corporate_account_id = $1 AND e.deleted_at IS NULL
+        ORDER BY e.frozen_at NULLS FIRST, m.last_active_at DESC NULLS LAST`,
+      [req.params.id]
+    );
+    res.json({ employees: rows });
+  } catch (err) {
+    if (err.code === '42P01') return res.json({ employees: [] });
+    next(err);
+  }
+});
+
+// ── Add a single employee to a company (Phase 1) ─────────────
+// Two modes:
+//  (a) Existing ATP member → looks up by email, links them
+//  (b) No matching member  → creates a stub member record + employee
+//      row with invitation_token (Phase 2 sends the actual email)
+router.post('/admin/accounts/:id/employees', authenticate, requireAdmin, async (req, res, next) => {
+  const { transaction } = require('../db');
+  try {
+    const b = req.body || {};
+    const email = String(b.email || '').trim().toLowerCase();
+    if (!email) return res.status(400).json({ error: 'email required' });
+    if (!email.includes('@')) return res.status(400).json({ error: 'invalid email' });
+
+    const result = await transaction(async (client) => {
+      // Confirm the account exists + grab employee_cap
+      const { rows: arows } = await client.query(
+        `SELECT id, employee_cap, company_name FROM corporate_accounts WHERE id=$1 LIMIT 1`,
+        [req.params.id]
+      );
+      if (!arows.length) { const e = new Error('Account not found'); e.statusCode = 404; throw e; }
+      const account = arows[0];
+
+      // Cap check
+      if (account.employee_cap) {
+        const { rows: cnt } = await client.query(
+          `SELECT COUNT(*)::int AS n FROM corporate_employees
+            WHERE corporate_account_id=$1 AND deleted_at IS NULL AND is_active=true`,
+          [account.id]
+        );
+        if (cnt[0].n >= account.employee_cap) {
+          const e = new Error(`Employee cap reached (${account.employee_cap})`); e.statusCode = 400; throw e;
+        }
+      }
+
+      // Look up existing member
+      const { rows: mrows } = await client.query(
+        `SELECT id, first_name, last_name FROM members WHERE LOWER(email)=$1 LIMIT 1`,
+        [email]
+      );
+
+      let memberId;
+      let memberCreated = false;
+      if (mrows.length) {
+        memberId = mrows[0].id;
+      } else {
+        // Create a stub member — invitation flow will let them complete signup
+        const { rows: created } = await client.query(
+          `INSERT INTO members (first_name, last_name, email, member_number, password_hash, email_verified)
+           VALUES ($1, $2, $3,
+                   'ATP-' || UPPER(SUBSTRING(MD5(RANDOM()::text) FROM 1 FOR 6)),
+                   'PENDING_INVITATION',
+                   false)
+           RETURNING id`,
+          [(b.first_name || '').trim() || 'New', (b.last_name || '').trim() || 'Employee', email]
+        );
+        memberId = created[0].id;
+        memberCreated = true;
+      }
+
+      // Generate an invitation token (used by Phase 2 email flow)
+      const inviteToken = crypto.randomBytes(18).toString('base64url');
+
+      // Insert the corporate_employee record (or revive a soft-deleted one)
+      const { rows: erows } = await client.query(
+        `INSERT INTO corporate_employees
+           (corporate_account_id, member_id, department, invitation_email, invitation_token, role)
+         VALUES ($1, $2, $3, $4, $5, $6)
+         ON CONFLICT (corporate_account_id, member_id) DO UPDATE SET
+           is_active = true,
+           frozen_at = NULL,
+           deleted_at = NULL,
+           department = EXCLUDED.department,
+           invitation_email = EXCLUDED.invitation_email,
+           invitation_token = COALESCE(corporate_employees.invitation_token, EXCLUDED.invitation_token),
+           role = EXCLUDED.role
+         RETURNING *`,
+        [account.id, memberId, (b.department || '').trim() || null, email, inviteToken, b.role || 'employee']
+      );
+
+      // Audit
+      try {
+        await client.query(
+          `INSERT INTO corporate_audit_log (corporate_account_id, actor_member_id, action, target_member_id, details)
+           VALUES ($1, $2, 'employee_added', $3, $4::jsonb)`,
+          [account.id, req.member.id, memberId, JSON.stringify({ email, member_created: memberCreated })]
+        );
+      } catch (e) { /* non-fatal */ }
+
+      return { employee: erows[0], member_created: memberCreated, invite_token: inviteToken };
+    });
+
+    res.json({ ...result, success: true });
+  } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
+    next(err);
+  }
+});
+
+// ── Update an employee (freeze / unfreeze / change department / role) ──
+router.patch('/admin/accounts/:id/employees/:eid', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    const sets = []; const params = [];
+    if ('department' in b)  { params.push(b.department || null); sets.push(`department = $${params.length}`); }
+    if ('role' in b)        { params.push(b.role || 'employee'); sets.push(`role = $${params.length}`); }
+    if ('frozen' in b) {
+      if (b.frozen) { sets.push(`frozen_at = NOW(), is_active = false`); }
+      else          { sets.push(`frozen_at = NULL, is_active = true`); }
+    }
+    if (!sets.length) return res.status(400).json({ error: 'no fields to update' });
+    params.push(req.params.eid);
+    params.push(req.params.id);
+    const { rows } = await query(
+      `UPDATE corporate_employees SET ${sets.join(', ')}
+        WHERE id = $${params.length - 1} AND corporate_account_id = $${params.length}
+        RETURNING *`,
+      params
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Employee not found' });
+
+    // Audit
+    try {
+      const action = ('frozen' in b) ? (b.frozen ? 'employee_frozen' : 'employee_unfrozen') : 'employee_updated';
+      await query(
+        `INSERT INTO corporate_audit_log (corporate_account_id, actor_member_id, action, target_member_id, details)
+         VALUES ($1, $2, $3, $4, $5::jsonb)`,
+        [req.params.id, req.member.id, action, rows[0].member_id, JSON.stringify(b)]
+      );
+    } catch (e) { /* non-fatal */ }
+
+    res.json({ employee: rows[0] });
+  } catch (err) { next(err); }
+});
+
+// ── Soft-delete an employee (preserves ATP membership) ────────
+// CRITICAL: the underlying members.id row stays intact.
+// We only mark the corporate_employees row as deleted_at NOW().
+// The member keeps their session history, points, profile, etc.
+router.delete('/admin/accounts/:id/employees/:eid', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `UPDATE corporate_employees
+          SET deleted_at = NOW(), is_active = false
+        WHERE id = $1 AND corporate_account_id = $2 AND deleted_at IS NULL
+        RETURNING member_id`,
+      [req.params.eid, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Employee not found or already removed' });
+
+    // Audit
+    try {
+      await query(
+        `INSERT INTO corporate_audit_log (corporate_account_id, actor_member_id, action, target_member_id, details)
+         VALUES ($1, $2, 'employee_removed', $3, $4::jsonb)`,
+        [req.params.id, req.member.id, rows[0].member_id, JSON.stringify({ reason: req.body?.reason || null })]
+      );
+    } catch (e) { /* non-fatal */ }
+
+    res.json({ success: true, note: 'Employee removed from company. ATP membership preserved.' });
+  } catch (err) { next(err); }
+});
+
+// ── Activate account (begin pilot) ────────────────────────────
+// Sets status=active + pilot_started_at=now + pilot_ends_at=now+30d
+// if it wasn't already activated.
+router.post('/admin/accounts/:id/activate', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `UPDATE corporate_accounts
+          SET status = 'active',
+              activated_at = COALESCE(activated_at, NOW()),
+              pilot_started_at = COALESCE(pilot_started_at, NOW()),
+              pilot_ends_at    = COALESCE(pilot_ends_at, NOW() + INTERVAL '30 days'),
+              updated_at = NOW()
+        WHERE id = $1
+        RETURNING *`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Account not found' });
+
+    try {
+      await query(
+        `INSERT INTO corporate_audit_log (corporate_account_id, actor_member_id, action, details)
+         VALUES ($1, $2, 'account_activated', $3::jsonb)`,
+        [req.params.id, req.member.id, JSON.stringify({ pilot_ends_at: rows[0].pilot_ends_at })]
+      );
+    } catch (e) { /* non-fatal */ }
+
+    res.json({ account: rows[0] });
+  } catch (err) { next(err); }
+});
+
 // Engagement snapshot — live computed for an account
 router.get('/admin/accounts/:id/engagement', authenticate, requireAdmin, async (req, res, next) => {
   try {
