@@ -412,9 +412,13 @@ function renderCorporateAccountDetail(a, employees, engagement) {
     // Add employee form (collapsed)
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
       '<div style="font-family:var(--ff-display,sans-serif);font-size:18px;font-weight:800;color:#fff">Employees (' + employees.length + ')</div>' +
-      '<button class="admin-btn admin-btn-primary" data-atp-call="newCorpEmployeeForm" style="font-size:12px;padding:7px 14px">+ Add employee</button>' +
+      '<div style="display:flex;gap:6px">' +
+        '<button class="admin-btn" data-atp-call="openCorpCsvUpload" style="font-size:12px;padding:7px 14px">📂 Upload CSV</button>' +
+        '<button class="admin-btn admin-btn-primary" data-atp-call="newCorpEmployeeForm" style="font-size:12px;padding:7px 14px">+ Add employee</button>' +
+      '</div>' +
     '</div>' +
     '<div id="corpEmpFormWrap"></div>' +
+    '<div id="corpCsvFormWrap"></div>' +
     // Employees table
     (employees.length ?
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;overflow:hidden">' +
@@ -436,7 +440,11 @@ function renderCorporateAccountDetail(a, employees, engagement) {
             '<div>' + statusBadge + '</div>' +
             '<div style="color:#fff;font-size:13px;font-weight:600">' + (e.checkins_30d || 0) + '</div>' +
             '<div style="color:#888;font-size:11px">' + lastSeen + '</div>' +
-            '<div style="display:flex;gap:4px">' +
+            '<div style="display:flex;gap:4px;flex-wrap:wrap">' +
+              // Resend invite is shown for everyone not-yet-joined (no joined_at OR invitation_email set + no last activity)
+              (!e.last_checkin_at && !e.frozen_at
+                ? '<button class="admin-btn" data-atp-call="resendCorpInvite" data-args=\'["' + e.id + '"]\' style="font-size:10px;padding:4px 8px;background:rgba(59,130,246,.10);color:#3b82f6;border:1px solid rgba(59,130,246,.3)">Resend</button>'
+                : '') +
               (e.frozen_at
                 ? '<button class="admin-btn" data-atp-call="unfreezeCorpEmployee" data-args=\'["' + e.id + '"]\' style="font-size:10px;padding:4px 8px;background:rgba(122,194,49,.10);color:#7AC231;border:1px solid rgba(122,194,49,.3)">Unfreeze</button>'
                 : '<button class="admin-btn" data-atp-call="freezeCorpEmployee" data-args=\'["' + e.id + '"]\' style="font-size:10px;padding:4px 8px;background:rgba(245,158,11,.10);color:#f59e0b;border:1px solid rgba(245,158,11,.3)">Freeze</button>') +
@@ -574,6 +582,104 @@ function copyInviteUrl(e, btn) {
     navigator.clipboard.writeText(url);
     showToast('✅ Invite link copied');
   } catch (e) { showToast('❌ Copy failed — copy manually', true); }
+}
+
+// ── PHASE 2: CSV bulk upload + resend invite ───────────────────
+function openCorpCsvUpload() {
+  var wrap = document.getElementById('corpCsvFormWrap');
+  if (!wrap) return;
+  wrap.innerHTML =
+    '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:16px;margin-bottom:14px">' +
+      '<div style="font-family:var(--ff-display,sans-serif);font-size:14px;font-weight:800;color:#7AC231;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Bulk upload from CSV</div>' +
+      '<div style="font-size:12px;color:#aaa;line-height:1.55;margin-bottom:12px">' +
+        'CSV must have a header row. Required column: <code style="background:#000;padding:2px 6px;border-radius:3px;color:#7AC231">email</code>. ' +
+        'Optional: <code style="background:#000;padding:2px 6px;border-radius:3px;color:#aaa">first_name</code>, ' +
+        '<code style="background:#000;padding:2px 6px;border-radius:3px;color:#aaa">last_name</code>, ' +
+        '<code style="background:#000;padding:2px 6px;border-radius:3px;color:#aaa">department</code>, ' +
+        '<code style="background:#000;padding:2px 6px;border-radius:3px;color:#aaa">role</code> (use "admin" to mark a Company Admin).' +
+      '</div>' +
+      '<div style="display:flex;gap:8px;margin-bottom:10px;align-items:flex-start;flex-wrap:wrap">' +
+        '<input type="file" id="csvFile" accept=".csv,text/csv" style="background:#0a0a0a;border:1px solid #2a2a2a;padding:8px;color:#ddd;border-radius:6px;font-size:12px">' +
+        '<button class="admin-btn" data-atp-call="pasteCsvSample" style="font-size:11px;padding:6px 10px">Paste sample</button>' +
+      '</div>' +
+      '<textarea id="csvText" placeholder="email,first_name,last_name,department&#10;sarah@acme.com,Sarah,Khalil,Marketing&#10;omar@acme.com,Omar,Riad,Engineering" style="width:100%;background:#0a0a0a;border:1px solid #2a2a2a;border-radius:6px;padding:12px;color:#ddd;font-family:monospace;font-size:12px;line-height:1.5;min-height:140px;resize:vertical"></textarea>' +
+      '<div style="display:flex;gap:8px;align-items:center;margin-top:10px;flex-wrap:wrap">' +
+        '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#aaa"><input type="checkbox" id="csvSendInvites" checked> Send invitation emails after upload</label>' +
+        '<div style="margin-left:auto;display:flex;gap:8px">' +
+          '<button class="admin-btn admin-btn-primary" data-atp-call="submitCorpCsv" style="font-size:12px">Upload</button>' +
+          '<button class="admin-btn" data-atp-call="cancelCorpCsvForm" style="font-size:12px">Cancel</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  var fileInput = document.getElementById('csvFile');
+  if (fileInput) {
+    fileInput.addEventListener('change', function() {
+      var f = this.files && this.files[0];
+      if (!f) return;
+      var reader = new FileReader();
+      reader.onload = function(){ document.getElementById('csvText').value = reader.result; };
+      reader.readAsText(f);
+    });
+  }
+}
+
+function pasteCsvSample() {
+  var ta = document.getElementById('csvText');
+  if (!ta) return;
+  ta.value = 'email,first_name,last_name,department,role\n' +
+             'sarah.k@acme.com,Sarah,Khalil,Marketing,employee\n' +
+             'omar.r@acme.com,Omar,Riad,Engineering,employee\n' +
+             'priya.m@acme.com,Priya,Mehta,Sales,admin';
+}
+
+function cancelCorpCsvForm() { var w = document.getElementById('corpCsvFormWrap'); if (w) w.innerHTML = ''; }
+
+function submitCorpCsv() {
+  if (!CORP_ACTIVE_ID) return;
+  var csv = (document.getElementById('csvText').value || '').trim();
+  if (!csv) { showToast('❌ Paste or upload a CSV first', true); return; }
+  var sendInvites = document.getElementById('csvSendInvites').checked;
+  fetch(ATP_API + '/corporate/admin/accounts/' + CORP_ACTIVE_ID + '/employees/csv', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
+    body: JSON.stringify({ csv: csv, send_invites: sendInvites }),
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res.error) { showToast('❌ ' + res.error, true); return; }
+      var s = res.summary || {};
+      var em = res.emails || {};
+      var msg = '✅ ' + (s.created + s.linked + s.soft_revived) + ' processed · ' + s.created + ' new · ' + s.linked + ' linked';
+      if (s.soft_revived) msg += ' · ' + s.soft_revived + ' restored';
+      if (s.skipped) msg += ' · ⚠ ' + s.skipped + ' skipped';
+      if (sendInvites) msg += ' · 📧 ' + em.sent + ' emailed';
+      showToast(msg);
+      if (s.errors && s.errors.length) {
+        console.warn('CSV errors:', s.errors);
+      }
+      cancelCorpCsvForm();
+      loadCorporateAccountDetail(CORP_ACTIVE_ID);
+    })
+    .catch(function(err){ showToast('❌ ' + err.message, true); });
+}
+
+function resendCorpInvite(e, btn) {
+  var eid = JSON.parse(btn.getAttribute('data-args') || '[]')[0];
+  if (!eid || !CORP_ACTIVE_ID) return;
+  fetch(ATP_API + '/corporate/admin/accounts/' + CORP_ACTIVE_ID + '/employees/' + eid + '/resend-invite', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + getToken() },
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res.error) { showToast('❌ ' + res.error, true); return; }
+      if (res.email_sent) showToast('✅ Invitation re-sent');
+      else {
+        showToast('⚠ Email not sent — invite URL copied to clipboard');
+        try { navigator.clipboard.writeText(res.invite_url); } catch (e) {}
+      }
+      loadCorporateAccountDetail(CORP_ACTIVE_ID);
+    });
 }
 
 function _esc(s) {

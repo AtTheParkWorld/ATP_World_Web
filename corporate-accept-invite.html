@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Accept your ATP Corporate invitation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0a0a;--fg:#fff;--muted:#888;--dim:#555;
+    --green:#7AC231;--green-soft:rgba(122,194,49,.10);--green-border:rgba(122,194,49,.35);
+    --gold:#f5c042;--card:rgba(255,255,255,.04);--border:rgba(255,255,255,.08);
+    --ff-display:"Bebas Neue",Inter,system-ui,sans-serif;
+    --ff-body:Inter,system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:var(--bg);color:var(--fg);font-family:var(--ff-body);min-height:100vh}
+  .wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:32px 20px}
+  .card{
+    background:var(--card);border:1px solid var(--border);border-radius:16px;
+    padding:40px;max-width:480px;width:100%;text-align:center;
+  }
+  .atp-logo{display:flex;align-items:center;justify-content:center;margin-bottom:8px}
+  .atp-logo img{height:36px;width:auto}
+  .eyebrow{font-size:11px;color:var(--green);letter-spacing:.18em;text-transform:uppercase;font-weight:700;margin:20px 0 14px}
+  h1{font-family:var(--ff-display);font-size:42px;line-height:.95;letter-spacing:-.01em;font-weight:400;margin-bottom:14px}
+  h1 .acc{color:var(--green)}
+  .lead{font-size:15px;color:#ccc;line-height:1.6;margin-bottom:24px}
+  .company-card{
+    background:var(--green-soft);border:1px solid var(--green-border);border-radius:10px;
+    padding:18px;margin-bottom:24px;display:flex;align-items:center;justify-content:center;gap:14px;
+  }
+  .company-logo{
+    width:48px;height:48px;border-radius:8px;background:#fff;padding:6px;
+    display:flex;align-items:center;justify-content:center;flex-shrink:0;
+  }
+  .company-logo img{max-width:100%;max-height:100%;object-fit:contain}
+  .company-name{font-family:var(--ff-display);font-size:22px;color:#fff;letter-spacing:.02em;text-align:left;line-height:1.1}
+  .company-tag{font-size:10px;color:var(--green);letter-spacing:.12em;text-transform:uppercase;font-weight:700;text-align:left}
+  .perks{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:18px 0 24px}
+  .perk{background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:8px;padding:12px 8px;font-size:11px;color:#aaa}
+  .perk .icon{font-size:24px;display:block;margin-bottom:4px}
+  .btn{
+    display:inline-block;width:100%;padding:16px 24px;background:var(--green);color:#0a0a0a;
+    border:none;border-radius:8px;font-family:var(--ff-display);font-size:18px;letter-spacing:.05em;
+    text-transform:uppercase;font-weight:700;cursor:pointer;text-decoration:none;
+  }
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .small{font-size:11px;color:var(--muted);margin-top:16px;line-height:1.5}
+  .error{
+    background:rgba(239,68,68,.10);border:1px solid rgba(239,68,68,.35);border-radius:8px;
+    padding:14px;color:#ef4444;font-size:13px;line-height:1.5;
+  }
+  .success{
+    background:rgba(122,194,49,.10);border:1px solid var(--green-border);border-radius:8px;
+    padding:14px;color:var(--green);font-size:13px;line-height:1.5;
+  }
+  #spinner{display:flex;justify-content:center;padding:40px 0;color:#555}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card" id="card">
+    <div class="atp-logo"><img src="/atp-logo-transparent.webp" alt="ATP"></div>
+    <div id="spinner">Loading invitation…</div>
+  </div>
+</div>
+
+<script>
+  var token = (new URLSearchParams(location.search)).get('token') || '';
+  var card = document.getElementById('card');
+
+  function renderError(msg) {
+    card.innerHTML =
+      '<div class="atp-logo"><img src="/atp-logo-transparent.webp" alt="ATP"></div>' +
+      '<div class="eyebrow">Invitation issue</div>' +
+      '<h1>Hmm.</h1>' +
+      '<div class="error">' + msg + '</div>' +
+      '<p class="small" style="margin-top:18px">If this is a mistake, email <a href="mailto:general@atthepark.com" style="color:var(--green)">general@atthepark.com</a> and we\'ll sort it.</p>';
+  }
+
+  function renderInvitation(data) {
+    var c = data.company || {};
+    var e = data.employee || {};
+    var first = e.first_name || 'there';
+    var alreadyTag = e.already_accepted
+      ? '<div class="success" style="margin-bottom:18px">You\'ve already accepted this invite. Click below to open your ATP profile.</div>'
+      : '';
+    var logo = c.logo_url
+      ? '<div class="company-logo"><img src="' + c.logo_url + '" alt=""></div>'
+      : '<div class="company-logo" style="background:#1a1a1a;color:var(--green);font-family:var(--ff-display);font-size:24px;font-weight:700">' + (c.name||'?').charAt(0) + '</div>';
+
+    card.innerHTML =
+      '<div class="atp-logo"><img src="/atp-logo-transparent.webp" alt="ATP"></div>' +
+      '<div class="eyebrow">You\'re invited</div>' +
+      '<h1>Hey ' + first + '. <span class="acc">Welcome.</span></h1>' +
+      '<p class="lead">' + c.name + ' just enrolled you in ATP — the UAE\'s largest free outdoor fitness community. One tap and you\'re in.</p>' +
+      '<div class="company-card">' +
+        logo +
+        '<div><div class="company-tag">Sponsored by</div><div class="company-name">' + c.name + '</div></div>' +
+      '</div>' +
+      alreadyTag +
+      '<div class="perks">' +
+        '<div class="perk"><span class="icon">🏃</span>Free outdoor sessions</div>' +
+        '<div class="perk"><span class="icon">💻</span>Live online workouts</div>' +
+        '<div class="perk"><span class="icon">🏆</span>Company leaderboard</div>' +
+      '</div>' +
+      '<button class="btn" id="acceptBtn">Accept &amp; continue →</button>' +
+      '<p class="small">' + (e.is_existing_member ? 'We\'ll link this to your existing ATP account.' : 'No app to install. Works on any phone or browser.') + '<br>' +
+      'By accepting, you agree to ATP\'s <a href="/terms" style="color:#888">Terms</a> and <a href="/privacy" style="color:#888">Privacy Policy</a>.</p>';
+
+    document.getElementById('acceptBtn').addEventListener('click', accept);
+  }
+
+  function accept() {
+    var btn = document.getElementById('acceptBtn');
+    btn.disabled = true;
+    btn.textContent = 'One moment…';
+    fetch('/api/corporate/public/invitation/' + encodeURIComponent(token) + '/accept', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+    })
+      .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, d: d }; }); })
+      .then(function(res){
+        if (!res.ok) {
+          renderError(res.d.error || 'Could not accept invitation.');
+          return;
+        }
+        try { localStorage.setItem('atp_token', res.d.token); } catch (e) {}
+        // Redirect to profile (logged in)
+        location.href = '/profile.html';
+      })
+      .catch(function(){
+        renderError('Network error. Please try again.');
+      });
+  }
+
+  if (!token) {
+    renderError('No invitation token provided. Check your email link and try again.');
+  } else {
+    fetch('/api/corporate/public/invitation/' + encodeURIComponent(token))
+      .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, d: d }; }); })
+      .then(function(res){
+        if (!res.ok) {
+          renderError(res.d.error || 'Could not load this invitation.');
+          return;
+        }
+        renderInvitation(res.d);
+      })
+      .catch(function(){ renderError('Network error. Please try again.'); });
+  }
+</script>
+</body>
+</html>

@@ -272,6 +272,35 @@ async function sendCoachThreadReply(envelope, payload) {
   }
 }
 
+// ── CORPORATE INVITATION ──────────────────────────────────────
+// Sent when an admin adds an employee to a company. Branded with
+// the company name; the magic link drops them on the accept-invite
+// landing page which calls /api/corporate/public/invitation/:token/accept.
+async function sendCorporateInvitation({ email, first_name, company_name, company_logo_url, invite_url, sender_name }) {
+  const safeFirst = escapeHtml(first_name || 'there');
+  const safeCo = escapeHtml(company_name || 'your company');
+  const safeSender = escapeHtml(sender_name || 'Your HR team');
+  const logoBlock = company_logo_url
+    ? `<div style="text-align:center;margin:8px 0 20px"><img src="${escapeHtml(company_logo_url)}" alt="${safeCo}" style="max-height:60px;max-width:200px;background:#fff;padding:8px;border-radius:8px"></div>`
+    : '';
+  const html = baseTemplate(`
+    ${logoBlock}
+    <h1>You're invited to ATP × ${safeCo}.</h1>
+    <p>Hi ${safeFirst},</p>
+    <p>${safeSender} just enrolled you in <strong style="color:#7AC231">At The Park</strong> — ${safeCo}'s new wellness program.</p>
+    <p>What you get:</p>
+    <div class="stat"><span class="stat-num">🏃</span><span class="stat-label">Free outdoor sessions</span></div>
+    <div class="stat"><span class="stat-num">💻</span><span class="stat-label">Live online workouts</span></div>
+    <div class="stat"><span class="stat-num">🏆</span><span class="stat-label">Company leaderboard</span></div>
+    <br><br>
+    <a href="${invite_url}" class="btn">Accept invite →</a>
+    <hr class="divider">
+    <p class="muted">One-tap accept. No app to install. Works on any phone or browser.
+    If you're already on ATP, this just links your existing account to ${safeCo} — no duplicate profile.</p>
+  `);
+  return send(email, `You're invited to ATP × ${company_name}`, html);
+}
+
 async function sendMagicLink(member, magicUrl) {
   const html = baseTemplate(`
     <h1>Your login link</h1>
@@ -444,4 +473,5 @@ module.exports = {
   sendCoachMessage,
   sendCoachThreadInitial,
   sendCoachThreadReply,
+  sendCorporateInvitation,
 };
