@@ -316,7 +316,7 @@ router.get('/admin/:id/responses', authenticate, requireAdmin, async (req, res, 
   try {
     const limit = Math.min(500, parseInt(req.query.limit, 10) || 100);
     const { rows } = await query(
-      `SELECT r.id, r.name, r.email, r.answers, r.created_at,
+      `SELECT r.id, r.name, r.email, r.member_id, r.answers, r.created_at,
               m.first_name, m.last_name
          FROM survey_responses r
          LEFT JOIN members m ON m.id = r.member_id
@@ -425,6 +425,71 @@ router.get('/admin/:id/export', authenticate, requireAdmin, async (req, res, nex
     if (err.code === '42P01') return res.status(404).send('Not migrated');
     next(err);
   }
+});
+
+// ── DELETE /api/surveys/admin/responses/:rid ───────────────────
+// Delete a single response by id. Decrements the survey's
+// response_count counter best-effort.
+router.delete('/admin/responses/:rid', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `DELETE FROM survey_responses WHERE id=$1 RETURNING survey_id`,
+      [req.params.rid]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Response not found' });
+    try {
+      await query(
+        `UPDATE surveys SET response_count = GREATEST(0, response_count - 1) WHERE id=$1`,
+        [rows[0].survey_id]
+      );
+    } catch (e) { /* non-fatal */ }
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/surveys/admin/:id/purge ──────────────────────────
+// Bulk delete responses by category. Body: { categories: ['anonymous','test'] }
+//   - anonymous: member_id IS NULL AND email IS NULL AND name IS NULL
+//   - test: email matches obvious test patterns (@example.com, @yopmail.com,
+//     test%, +test%) OR name ILIKE 'test%' OR is the founder's own email
+// Returns deleted_count and the rows so the admin can verify what got purged.
+router.post('/admin/:id/purge', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const categories = Array.isArray(req.body?.categories) ? req.body.categories : [];
+    if (!categories.length) return res.status(400).json({ error: 'categories[] required' });
+
+    const conditions = [];
+    if (categories.includes('anonymous')) {
+      conditions.push(`(member_id IS NULL AND email IS NULL AND name IS NULL)`);
+    }
+    if (categories.includes('test')) {
+      conditions.push(`(
+        email ILIKE '%@example.com'
+        OR email ILIKE '%@yopmail.com'
+        OR email ILIKE '%@mailinator.com'
+        OR email ILIKE 'test%'
+        OR email ILIKE '%+test@%'
+        OR name ILIKE 'test%'
+        OR name ILIKE '%test%'
+      )`);
+    }
+    if (!conditions.length) return res.status(400).json({ error: 'No valid categories. Use anonymous and/or test.' });
+
+    const whereSql = conditions.join(' OR ');
+    const { rows } = await query(
+      `DELETE FROM survey_responses
+        WHERE survey_id = $1 AND (${whereSql})
+        RETURNING id, name, email, member_id, created_at`,
+      [req.params.id]
+    );
+    try {
+      await query(
+        `UPDATE surveys SET response_count = GREATEST(0, response_count - $1) WHERE id=$2`,
+        [rows.length, req.params.id]
+      );
+    } catch (e) { /* non-fatal */ }
+    res.json({ deleted_count: rows.length, deleted: rows });
+  } catch (err) { next(err); }
 });
 
 module.exports = router;

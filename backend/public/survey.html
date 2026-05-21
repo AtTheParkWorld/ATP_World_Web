@@ -255,10 +255,13 @@ textarea.text-input{min-height:140px;resize:vertical;line-height:1.55}
     } else if (q.question_type === 'textarea') {
       fieldHtml = '<textarea class="text-input" data-qid="' + q.id + '" placeholder="Type your answer…">' + escapeHtml(existing || '') + '</textarea>';
     } else if (q.question_type === 'single_choice') {
+      // No <input> inside — it causes a double-click bubble (label click +
+      // synthesized input click) which breaks toggling. Data flows via
+      // data-val + JS state. The visual selection is purely CSS.
       fieldHtml = '<div class="pick-grid" data-qid="' + q.id + '" data-multi="false">' +
         (q.options || []).map(function(o){
           var sel = existing === o.value ? ' checked' : '';
-          return '<label class="pick-pill' + (sel ? ' checked' : '') + '" data-val="' + escapeHtml(o.value) + '"><input type="radio">' + escapeHtml(o.label || o.value) + '</label>';
+          return '<div class="pick-pill' + (sel ? ' checked' : '') + '" data-val="' + escapeHtml(o.value) + '">' + escapeHtml(o.label || o.value) + '</div>';
         }).join('') +
       '</div>';
     } else if (q.question_type === 'multi_choice') {
@@ -266,7 +269,7 @@ textarea.text-input{min-height:140px;resize:vertical;line-height:1.55}
       fieldHtml = '<div class="check-grid" data-qid="' + q.id + '" data-multi="true">' +
         (q.options || []).map(function(o){
           var sel = arr.indexOf(o.value) !== -1 ? ' checked' : '';
-          return '<label class="check-card' + (sel ? ' checked' : '') + '" data-val="' + escapeHtml(o.value) + '"><input type="checkbox"><span class="box"></span><span>' + escapeHtml(o.label || o.value) + '</span></label>';
+          return '<div class="check-card' + (sel ? ' checked' : '') + '" data-val="' + escapeHtml(o.value) + '"><span class="box"></span><span>' + escapeHtml(o.label || o.value) + '</span></div>';
         }).join('') +
       '</div>';
     } else if (q.question_type === 'rating') {

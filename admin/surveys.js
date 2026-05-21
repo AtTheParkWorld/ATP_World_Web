@@ -448,14 +448,27 @@ function renderSurveyResponses(survey, questions, summary, responses) {
 
   // Individual responses
   html += '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:18px">' +
-    '<div style="font-size:10px;color:#7AC231;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:12px">Latest responses (' + responses.length + ')</div>';
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">' +
+      '<div style="font-size:10px;color:#7AC231;letter-spacing:.12em;text-transform:uppercase;font-weight:700">Latest responses (' + responses.length + ')</div>' +
+      '<button class="admin-btn" data-atp-call="purgeSurveyResponses" data-args=\'["' + survey.id + '"]\' style="font-size:11px;padding:6px 12px;background:rgba(217,119,87,.10);color:#d97757;border:1px solid rgba(217,119,87,.3)">🧹 Purge test + anonymous</button>' +
+    '</div>';
   if (!responses.length) {
     html += '<div style="padding:30px;color:#555;text-align:center;font-size:13px">No responses yet.</div>';
   } else {
     html += responses.map(function(r){
       var name = r.name || (r.first_name && (r.first_name + ' ' + (r.last_name || '')).trim()) || 'Anonymous';
+      var isAnon = !r.name && !r.email && !r.member_id && !r.first_name;
+      var isTest = (r.email || '').match(/@(example\.com|yopmail\.com|mailinator\.com)$|^test/i)
+                || (r.name || '').match(/test/i);
+      var tag = isAnon ? '<span style="background:rgba(136,136,136,.14);color:#888;font-size:9px;padding:2px 7px;border-radius:99px;margin-left:8px;letter-spacing:.08em;text-transform:uppercase;font-weight:700">anonymous</span>'
+              : isTest ? '<span style="background:rgba(217,119,87,.14);color:#d97757;font-size:9px;padding:2px 7px;border-radius:99px;margin-left:8px;letter-spacing:.08em;text-transform:uppercase;font-weight:700">test</span>'
+              : '';
       return '<details style="background:#0a0a0a;border:1px solid #1a1a1a;border-radius:8px;margin-bottom:6px">' +
-        '<summary style="padding:12px 14px;cursor:pointer;list-style:none;display:flex;justify-content:space-between"><div><strong style="color:#fff;font-size:13px">' + _esc(name) + '</strong>' + (r.email ? '<span style="color:#666;font-size:11px;margin-left:10px">' + _esc(r.email) + '</span>' : '') + '</div><span style="font-size:10px;color:#666">' + new Date(r.created_at).toLocaleDateString() + '</span></summary>' +
+        '<summary style="padding:12px 14px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
+          '<div style="flex:1;min-width:0"><strong style="color:#fff;font-size:13px">' + _esc(name) + '</strong>' + tag + (r.email ? '<span style="color:#666;font-size:11px;margin-left:10px">' + _esc(r.email) + '</span>' : '') + '</div>' +
+          '<span style="font-size:10px;color:#666">' + new Date(r.created_at).toLocaleDateString() + '</span>' +
+          '<button class="admin-btn" data-atp-call="deleteSurveyResponse" data-args=\'["' + r.id + '","' + survey.id + '"]\' onclick="event.stopPropagation();event.preventDefault()" style="font-size:10px;padding:4px 10px;background:rgba(239,68,68,.10);color:#ef4444;border:1px solid rgba(239,68,68,.3)" title="Delete this response">✕ Delete</button>' +
+        '</summary>' +
         '<div style="padding:0 14px 14px;font-size:13px;line-height:1.6">' +
           questions.map(function(q){
             var a = r.answers && r.answers[q.id];
@@ -470,6 +483,42 @@ function renderSurveyResponses(survey, questions, summary, responses) {
   html += '</div>';
 
   host.innerHTML = html;
+}
+
+// Delete a single response. Refreshes the responses view on success.
+function deleteSurveyResponse(e, btn) {
+  var args = JSON.parse(btn.getAttribute('data-args') || '[]');
+  var responseId = args[0], surveyId = args[1];
+  if (!responseId || !surveyId) return;
+  if (!confirm('Delete this response? This cannot be undone.')) return;
+  fetch(ATP_API + '/surveys/admin/responses/' + responseId, {
+    method: 'DELETE',
+    headers: { Authorization: 'Bearer ' + getToken() },
+  }).then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d && d.error) throw new Error(d.error);
+      showToast('✅ Response deleted');
+      openSurveyResponses(null, { getAttribute: function(){ return JSON.stringify([surveyId]); } });
+    })
+    .catch(function(err){ showToast('❌ ' + err.message, true); });
+}
+
+// Bulk purge anonymous + test responses for this survey.
+function purgeSurveyResponses(e, btn) {
+  var surveyId = JSON.parse(btn.getAttribute('data-args') || '[]')[0];
+  if (!surveyId) return;
+  if (!confirm('Delete ALL anonymous AND test responses for this survey?\n\nAnonymous = no name, no email, no linked member.\nTest = email at example.com / yopmail.com / mailinator.com / starts with "test" / name contains "test".\n\nThis cannot be undone.')) return;
+  fetch(ATP_API + '/surveys/admin/' + surveyId + '/purge', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
+    body: JSON.stringify({ categories: ['anonymous', 'test'] }),
+  }).then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d && d.error) throw new Error(d.error);
+      showToast('✅ Purged ' + (d.deleted_count || 0) + ' response' + ((d.deleted_count === 1) ? '' : 's'));
+      openSurveyResponses(null, { getAttribute: function(){ return JSON.stringify([surveyId]); } });
+    })
+    .catch(function(err){ showToast('❌ ' + err.message, true); });
 }
 
 function _esc(s) {
