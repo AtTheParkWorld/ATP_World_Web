@@ -1,6 +1,22 @@
 // ATP-VERSION: 20260423-060755
 require('dotenv').config();
 
+// ── PRODUCTION ENV-VAR GUARDS ─────────────────────────────────
+// Fail fast if a critical env var is missing in production. Beats
+// the alternative — silently running with a fallback secret and
+// having every JWT-signing endpoint be forge-able.
+const REQUIRED_ENV = ['JWT_SECRET', 'DATABASE_URL', 'ADMIN_SETUP_KEY'];
+const _missingEnv = REQUIRED_ENV.filter(k => !process.env[k] || String(process.env[k]).trim() === '');
+if (_missingEnv.length) {
+  const msg = `[ATP] FATAL: missing required env vars: ${_missingEnv.join(', ')}`;
+  if ((process.env.NODE_ENV || 'development') === 'production') {
+    console.error(msg + ' — refusing to boot in production.');
+    process.exit(1);
+  } else {
+    console.warn(msg + ' — running in dev mode; some endpoints will fail.');
+  }
+}
+
 // ── SENTRY (Audit 3.5) ────────────────────────────────────────
 // Initialised BEFORE express so `Sentry.setupExpressErrorHandler()`
 // has the request handler ready to wrap. No-ops cleanly when

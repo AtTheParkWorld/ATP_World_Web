@@ -615,6 +615,13 @@ router.post('/admin/accounts/:id/employees/csv', authenticate, requireAdmin, asy
   try {
     const csvText = String(req.body?.csv || '').trim();
     if (!csvText) return res.status(400).json({ error: 'csv (raw text) required' });
+    // Cap CSV size to ~1MB (≈ 5000 employees) — anything larger is
+    // either a misuse or a DOS attempt. CPU cost of parsing scales
+    // linearly with size; the per-row INSERT cost dwarfs it anyway.
+    if (csvText.length > 1024 * 1024) return res.status(413).json({ error: 'CSV too large (max 1MB / ~5,000 rows)' });
+    // Hard cap on row count to bound transaction time.
+    const lineCount = (csvText.match(/\n/g) || []).length;
+    if (lineCount > 5000) return res.status(413).json({ error: 'Too many rows (max 5,000 per upload)' });
     const sendInvites = req.body?.send_invites !== false;
 
     // Parse CSV — simple, RFC-light (handles quoted fields with commas)
@@ -895,11 +902,17 @@ router.post('/public/invitation/:token/accept', async (req, res, next) => {
         [t.member_id]
       );
 
-      // Issue a JWT — same shape as the auth/login flow
+      // Issue a JWT — same shape as the auth/login flow. Hard-fail if
+      // JWT_SECRET is missing rather than fall back to a known string
+      // (a fallback would let anyone forge tokens once they spotted it
+      // in the open-source repo).
+      if (!process.env.JWT_SECRET) {
+        const e = new Error('Server misconfigured: JWT_SECRET unset'); e.statusCode = 500; throw e;
+      }
       const tokenJwt = jwt.sign(
         { id: t.member_id, email: t.invitation_email },
-        process.env.JWT_SECRET || 'dev-only-secret',
-        { expiresIn: '30d' }
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES_IN || '30d' }
       );
 
       try {
@@ -1338,6 +1351,13 @@ router.post('/company/:id/employees/csv', authenticate, _requireCompanyAdminFor,
   try {
     const csvText = String(req.body?.csv || '').trim();
     if (!csvText) return res.status(400).json({ error: 'csv (raw text) required' });
+    // Cap CSV size to ~1MB (≈ 5000 employees) — anything larger is
+    // either a misuse or a DOS attempt. CPU cost of parsing scales
+    // linearly with size; the per-row INSERT cost dwarfs it anyway.
+    if (csvText.length > 1024 * 1024) return res.status(413).json({ error: 'CSV too large (max 1MB / ~5,000 rows)' });
+    // Hard cap on row count to bound transaction time.
+    const lineCount = (csvText.match(/\n/g) || []).length;
+    if (lineCount > 5000) return res.status(413).json({ error: 'Too many rows (max 5,000 per upload)' });
     const sendInvites = req.body?.send_invites !== false;
     const lines = csvText.split(/\r?\n/).filter(l => l.trim());
     if (lines.length < 2) return res.status(400).json({ error: 'CSV needs a header row + at least 1 data row' });
@@ -1467,6 +1487,11 @@ router.patch('/company/:id/logo', authenticate, _requireCompanyAdminFor, async (
   try {
     const url = String(req.body?.logo_url || '').trim();
     if (!url) return res.status(400).json({ error: 'logo_url required' });
+    // Defence in depth: only https URLs (or data:image/png|jpeg|svg+xml for paste-uploads).
+    // Blocks javascript:, file:, vbscript:, blob:, etc.
+    const safe = /^https:\/\//i.test(url) || /^data:image\/(png|jpe?g|svg\+xml|webp);base64,/i.test(url);
+    if (!safe) return res.status(400).json({ error: 'logo_url must be https:// or data:image/...' });
+    if (url.length > 8192) return res.status(413).json({ error: 'logo_url too long (max 8KB)' });
     const { rows } = await query(
       `UPDATE corporate_accounts SET logo_url=$1, updated_at=NOW() WHERE id=$2 RETURNING logo_url`,
       [url, req.params.id]

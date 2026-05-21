@@ -1,0 +1,38 @@
+# ATP — At The Park · robots.txt
+# Public marketing pages are crawlable. Anything member/admin/corporate
+# scoped is explicitly disallowed so crawlers don't try to follow auth-
+# gated links or index dashboards.
+
+User-agent: *
+Allow: /
+Allow: /sessions.html
+Allow: /coaches
+Allow: /coaches.html
+Allow: /coach/
+Allow: /blog
+Allow: /blog.html
+Allow: /partners.html
+Allow: /privacy.html
+Allow: /terms.html
+Allow: /community.html
+Allow: /corporate-deck
+
+Disallow: /admin
+Disallow: /admin.html
+Disallow: /admin/
+Disallow: /api/
+Disallow: /company
+Disallow: /company-admin.html
+Disallow: /corporate-plan
+Disallow: /corporate-plan.html
+Disallow: /corporate/accept-invite
+Disallow: /corporate-accept-invite.html
+Disallow: /profile
+Disallow: /profile.html
+Disallow: /checkin.html
+Disallow: /coach-thread.html
+Disallow: /auth/
+Disallow: /survey/
+Disallow: /survey.html
+
+Sitemap: https://atp-world-web.onrender.com/sitemap.xml

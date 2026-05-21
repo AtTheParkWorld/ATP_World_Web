@@ -280,9 +280,18 @@ async function sendCorporateInvitation({ email, first_name, company_name, compan
   const safeFirst = escapeHtml(first_name || 'there');
   const safeCo = escapeHtml(company_name || 'your company');
   const safeSender = escapeHtml(sender_name || 'Your HR team');
-  const logoBlock = company_logo_url
+  // Validate logo URL scheme before embedding in <img src>. Falls back
+  // to no logo if the URL is anything other than https:// or data:image/.
+  const logoSafe = company_logo_url && (
+    /^https:\/\//i.test(company_logo_url) ||
+    /^data:image\/(png|jpe?g|svg\+xml|webp);base64,/i.test(company_logo_url)
+  );
+  const logoBlock = logoSafe
     ? `<div style="text-align:center;margin:8px 0 20px"><img src="${escapeHtml(company_logo_url)}" alt="${safeCo}" style="max-height:60px;max-width:200px;background:#fff;padding:8px;border-radius:8px"></div>`
     : '';
+  // Sanitize subject — strip CR/LF (email-header-injection vector) and
+  // cap length so a malicious company_name can't smuggle headers.
+  const subjectSafe = String(company_name || '').replace(/[\r\n]+/g, ' ').slice(0, 120);
   const html = baseTemplate(`
     ${logoBlock}
     <h1>You're invited to ATP × ${safeCo}.</h1>
@@ -298,7 +307,7 @@ async function sendCorporateInvitation({ email, first_name, company_name, compan
     <p class="muted">One-tap accept. No app to install. Works on any phone or browser.
     If you're already on ATP, this just links your existing account to ${safeCo} — no duplicate profile.</p>
   `);
-  return send(email, `You're invited to ATP × ${company_name}`, html);
+  return send(email, `You're invited to ATP × ${subjectSafe}`, html);
 }
 
 async function sendMagicLink(member, magicUrl) {
