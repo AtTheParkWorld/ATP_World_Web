@@ -764,6 +764,11 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
           </div>
         </div>
 
+        <!-- Corporate membership badge — shown when this member belongs to
+             a company via ATP Corporative. Populated from /api/corporate/me.
+             For Company Admins, includes a button to open /company. -->
+        <div id="corpCompanyHost" style="margin-bottom:16px"></div>
+
         <!-- Mini premium banner — only shows for free members. Same renderer
              as the wallet card but in compact mode so it's not too pushy. -->
         <div id="premiumBanner" style="margin-bottom:16px"></div>
@@ -4370,6 +4375,7 @@ function loadRealProfileData() {
     loadPendingFeedback();
     loadMyOneOnOnes();
     loadMyGifts();
+    loadMyCompanies();
   }).catch(function(){});
 }
 
@@ -4378,6 +4384,88 @@ function loadRealProfileData() {
 // your time" button that opens a calendar modal limited to the
 // coach's availability.
 // ════════════════════════════════════════════════════════════════
+
+// ── CORPORATE MEMBERSHIP BADGE (Phase 5) ─────────────────────
+// Shown on Overview when the member belongs to a company via ATP
+// Corporative. Loads from /api/corporate/me. For Company Admins,
+// surfaces a button to open the /company admin panel.
+var MY_COMPANIES = [];
+
+function loadMyCompanies() {
+  var token = localStorage.getItem('atp_token') || '';
+  if (!token) return;
+  fetch('/api/corporate/me', { headers: { Authorization: 'Bearer ' + token } })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      MY_COMPANIES = (d && d.memberships) || [];
+      renderMyCompanies();
+    })
+    .catch(function(){ /* silent — pre-migration or 401 */ });
+}
+
+function renderMyCompanies() {
+  var host = document.getElementById('corpCompanyHost');
+  if (!host) return;
+  if (!MY_COMPANIES.length) { host.innerHTML = ''; return; }
+  var esc = function(s){ return String(s == null ? '' : s).replace(/[<>&"]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]; }); };
+
+  host.innerHTML = MY_COMPANIES.map(function(m){
+    var isAdmin = m.role === 'admin';
+    var logo = m.logo_url
+      ? '<img src="' + esc(m.logo_url) + '" alt="" style="width:56px;height:56px;border-radius:10px;background:#fff;padding:6px;object-fit:contain;flex-shrink:0">'
+      : '<div style="width:56px;height:56px;border-radius:10px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-weight:900;color:var(--green);font-size:24px;flex-shrink:0">' + esc((m.company_name||'?').charAt(0).toUpperCase()) + '</div>';
+    var adminTag = isAdmin
+      ? '<span style="background:rgba(245,192,66,.14);color:#f5c042;font-size:9px;padding:2px 8px;border-radius:99px;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-left:8px">Company Admin</span>'
+      : '';
+    var deptBlock = isAdmin
+      ? ''
+      : '<div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+          '<span style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600">Department</span>' +
+          '<input id="corpDept-' + esc(m.employee_id) + '" value="' + esc(m.department || '') + '" placeholder="e.g. Marketing" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);border-radius:6px;padding:4px 10px;color:#fff;font-size:12px;font-family:inherit;max-width:200px">' +
+          '<button onclick="saveMyDepartment(\'' + esc(m.employee_id) + '\')" style="background:transparent;border:1px solid rgba(122,194,49,.4);color:var(--green);padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Save</button>' +
+        '</div>';
+
+    return '<div style="background:linear-gradient(120deg,rgba(122,194,49,.08),rgba(122,194,49,.02));border:1px solid rgba(122,194,49,.28);border-radius:var(--radius-lg);padding:18px 20px">' +
+      '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
+        logo +
+        '<div style="flex:1;min-width:0">' +
+          '<div style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);font-weight:700">Member of</div>' +
+          '<div style="display:flex;align-items:center;flex-wrap:wrap;margin-top:2px">' +
+            '<div style="font-family:var(--ff-display);font-size:24px;font-weight:900;color:#fff;letter-spacing:.02em">' + esc(m.company_name) + '</div>' +
+            adminTag +
+          '</div>' +
+          (m.department && !isAdmin ? '<div style="font-size:12px;color:var(--muted);margin-top:3px">' + esc(m.department) + '</div>' : '') +
+        '</div>' +
+        (isAdmin
+          ? '<a href="/company" style="background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;padding:10px 16px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;text-decoration:none;flex-shrink:0">Open admin panel →</a>'
+          : '') +
+      '</div>' +
+      deptBlock +
+    '</div>';
+  }).join('<div style="height:10px"></div>');
+}
+
+function saveMyDepartment(employeeId) {
+  var input = document.getElementById('corpDept-' + employeeId);
+  if (!input) return;
+  var dept = (input.value || '').trim();
+  var token = localStorage.getItem('atp_token') || '';
+  fetch('/api/corporate/me/department', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ employee_id: employeeId, department: dept }),
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      if (d && d.success) {
+        showToast && showToast('Department updated');
+        loadMyCompanies();
+      } else {
+        alert(d.error || 'Failed to update department');
+      }
+    })
+    .catch(function(){ alert('Network error'); });
+}
 
 var MY_GIFTS = [];
 var ACTIVE_GIFT = null;             // gift currently being redeemed

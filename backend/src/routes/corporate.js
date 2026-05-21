@@ -159,14 +159,19 @@ router.post('/public/join', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// GET /api/corporate/me — member checks their own corporate links
+// GET /api/corporate/me — member checks their own corporate links.
+// Now includes role + employee row id (so the UI can show CA badges
+// and offer a PATCH endpoint to edit department).
 router.get('/me', authenticate, async (req, res, next) => {
   try {
     const { rows } = await query(
-      `SELECT c.id, c.company_name, c.slug, c.logo_url, e.department, e.joined_at, e.is_active
+      `SELECT e.id AS employee_id, e.role, e.department, e.joined_at,
+              e.is_active, e.frozen_at,
+              c.id AS company_id, c.company_name, c.slug, c.logo_url, c.status
          FROM corporate_employees e
          JOIN corporate_accounts c ON c.id = e.corporate_account_id
-        WHERE e.member_id=$1 AND e.is_active=true`,
+        WHERE e.member_id=$1 AND e.deleted_at IS NULL AND e.is_active=true
+        ORDER BY e.joined_at DESC NULLS LAST`,
       [req.member.id]
     );
     res.json({ memberships: rows });
@@ -174,6 +179,26 @@ router.get('/me', authenticate, async (req, res, next) => {
     if (err.code === '42P01') return res.json({ memberships: [] });
     next(err);
   }
+});
+
+// PATCH /api/corporate/me/department — employee updates own department
+// (their HR added them; they can correct/refine). Doesn't allow role
+// or company changes — those are admin-side only.
+router.patch('/me/department', authenticate, async (req, res, next) => {
+  try {
+    const dept = String(req.body?.department || '').trim();
+    const employeeId = req.body?.employee_id;
+    if (!employeeId) return res.status(400).json({ error: 'employee_id required' });
+    const { rows } = await query(
+      `UPDATE corporate_employees
+          SET department = $1
+        WHERE id = $2 AND member_id = $3 AND deleted_at IS NULL
+        RETURNING id, department`,
+      [dept || null, employeeId, req.member.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Membership not found' });
+    res.json({ success: true, department: rows[0].department });
+  } catch (err) { next(err); }
 });
 
 // ════════════════════════════════════════════════════════════════
