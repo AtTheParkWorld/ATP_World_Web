@@ -994,4 +994,500 @@ router.get('/buyer/:slug', async (req, res, next) => {
   }
 });
 
+// ════════════════════════════════════════════════════════════════
+// PHASE 4 — COMPANY ADMIN PANEL (separate auth scope: company_admin)
+// ════════════════════════════════════════════════════════════════
+// HR people at customer companies log in with their normal ATP magic
+// link, then are routed to /company. Their corporate_employees row
+// must have role='admin' AND must be active+unfrozen+not-deleted.
+
+// Middleware: any-company admin (used by /me to list companies they admin)
+async function _requireAnyCompanyAdmin(req, res, next) {
+  try {
+    if (!req.member || !req.member.id) return res.status(401).json({ error: 'auth required' });
+    const { rows } = await query(
+      `SELECT corporate_account_id FROM corporate_employees
+        WHERE member_id=$1 AND role='admin'
+          AND deleted_at IS NULL AND is_active=true AND frozen_at IS NULL`,
+      [req.member.id]
+    );
+    if (!rows.length) return res.status(403).json({ error: 'You are not a Company Admin for any active company.' });
+    req.companyAdminFor = rows.map(r => r.corporate_account_id);
+    next();
+  } catch (err) {
+    if (err.code === '42P01') return res.status(503).json({ error: 'Corporate tables not migrated yet.' });
+    next(err);
+  }
+}
+
+// Middleware: admin OF the specific company in :id
+async function _requireCompanyAdminFor(req, res, next) {
+  try {
+    if (!req.member || !req.member.id) return res.status(401).json({ error: 'auth required' });
+    const companyId = req.params.id;
+    if (!companyId) return res.status(400).json({ error: 'company id required' });
+    const { rows } = await query(
+      `SELECT id FROM corporate_employees
+        WHERE member_id=$1 AND corporate_account_id=$2 AND role='admin'
+          AND deleted_at IS NULL AND is_active=true AND frozen_at IS NULL LIMIT 1`,
+      [req.member.id, companyId]
+    );
+    if (!rows.length) return res.status(403).json({ error: 'You are not an admin of this company.' });
+    next();
+  } catch (err) { next(err); }
+}
+
+// GET /api/company/me — list of companies the user admins
+router.get('/company/me', authenticate, _requireAnyCompanyAdmin, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT c.id, c.company_name, c.slug, c.logo_url, c.status, c.tier,
+              c.pilot_started_at, c.pilot_ends_at, c.employee_cap, c.monthly_fee_aed,
+              (SELECT COUNT(*)::int FROM corporate_employees
+                WHERE corporate_account_id=c.id AND deleted_at IS NULL) AS employee_count,
+              (SELECT COUNT(*)::int FROM corporate_employees
+                WHERE corporate_account_id=c.id AND deleted_at IS NULL
+                  AND is_active=true AND frozen_at IS NULL) AS active_employee_count
+         FROM corporate_accounts c
+        WHERE c.id = ANY($1::uuid[])
+        ORDER BY c.company_name`,
+      [req.companyAdminFor]
+    );
+    res.json({ companies: rows });
+  } catch (err) { next(err); }
+});
+
+// GET /api/company/:id — single company detail (CA-scoped)
+router.get('/company/:id', authenticate, _requireCompanyAdminFor, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT c.id, c.company_name, c.slug, c.logo_url, c.status, c.tier,
+              c.pilot_started_at, c.pilot_ends_at, c.employee_cap, c.monthly_fee_aed,
+              c.industry,
+              (SELECT COUNT(*)::int FROM corporate_employees
+                WHERE corporate_account_id=c.id AND deleted_at IS NULL) AS employee_count,
+              (SELECT COUNT(*)::int FROM corporate_employees
+                WHERE corporate_account_id=c.id AND deleted_at IS NULL
+                  AND is_active=true AND frozen_at IS NULL) AS active_employee_count
+         FROM corporate_accounts c WHERE c.id=$1 LIMIT 1`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Company not found' });
+    res.json({ company: rows[0] });
+  } catch (err) { next(err); }
+});
+
+// GET /api/company/:id/engagement — KPIs (same shape as admin engagement)
+router.get('/company/:id/engagement', authenticate, _requireCompanyAdminFor, async (req, res, next) => {
+  try {
+    const { rows: totals } = await query(
+      `SELECT
+         (SELECT COUNT(*) FROM corporate_employees WHERE corporate_account_id=$1 AND deleted_at IS NULL)::int AS total_employees,
+         (SELECT COUNT(*) FROM corporate_employees WHERE corporate_account_id=$1 AND deleted_at IS NULL AND is_active=true AND frozen_at IS NULL)::int AS active_employees`,
+      [req.params.id]
+    );
+    const { rows: act } = await query(
+      `SELECT
+         COUNT(*) FILTER (WHERE b.checked_in_at >= NOW() - INTERVAL '7 days')::int AS checkins_7d,
+         COUNT(*) FILTER (WHERE b.checked_in_at >= NOW() - INTERVAL '30 days')::int AS checkins_30d,
+         COUNT(DISTINCT b.member_id) FILTER (WHERE b.checked_in_at >= NOW() - INTERVAL '7 days')::int AS unique_7d,
+         COUNT(DISTINCT b.member_id) FILTER (WHERE b.checked_in_at >= NOW() - INTERVAL '30 days')::int AS unique_30d
+         FROM corporate_employees e
+         JOIN bookings b ON b.member_id = e.member_id
+        WHERE e.corporate_account_id = $1 AND e.is_active=true AND e.deleted_at IS NULL AND e.frozen_at IS NULL`,
+      [req.params.id]
+    );
+    res.json({ totals: totals[0], activity: act[0] });
+  } catch (err) { next(err); }
+});
+
+// GET /api/company/:id/employees — list (same shape as admin endpoint)
+router.get('/company/:id/employees', authenticate, _requireCompanyAdminFor, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT e.id, e.member_id, e.department, e.joined_at, e.is_active,
+              e.role, e.frozen_at, e.invitation_email, e.invitation_sent_at,
+              m.first_name, m.last_name, m.email, m.avatar_url, m.last_active_at,
+              (SELECT COUNT(*)::int FROM bookings b
+                WHERE b.member_id = e.member_id
+                  AND b.checked_in_at >= NOW() - INTERVAL '30 days') AS checkins_30d,
+              (SELECT MAX(b.checked_in_at) FROM bookings b WHERE b.member_id = e.member_id) AS last_checkin_at
+         FROM corporate_employees e
+         JOIN members m ON m.id = e.member_id
+        WHERE e.corporate_account_id = $1 AND e.deleted_at IS NULL
+        ORDER BY e.frozen_at NULLS FIRST, m.last_active_at DESC NULLS LAST`,
+      [req.params.id]
+    );
+    res.json({ employees: rows });
+  } catch (err) { next(err); }
+});
+
+// Helper: shared employee-add logic so both ATP admin + CA endpoints
+// produce identical results. Returns the result object the caller can
+// pass through directly to res.json().
+async function _addEmployeeShared(accountId, actorMemberId, body) {
+  const { transaction } = require('../db');
+  return await transaction(async (client) => {
+    const { rows: arows } = await client.query(
+      `SELECT id, employee_cap, company_name, logo_url FROM corporate_accounts WHERE id=$1 LIMIT 1`,
+      [accountId]
+    );
+    if (!arows.length) { const e = new Error('Account not found'); e.statusCode = 404; throw e; }
+    const account = arows[0];
+    if (account.employee_cap) {
+      const { rows: cnt } = await client.query(
+        `SELECT COUNT(*)::int AS n FROM corporate_employees
+          WHERE corporate_account_id=$1 AND deleted_at IS NULL AND is_active=true`,
+        [account.id]
+      );
+      if (cnt[0].n >= account.employee_cap) {
+        const e = new Error(`Employee cap reached (${account.employee_cap})`); e.statusCode = 400; throw e;
+      }
+    }
+    const email = String(body.email || '').trim().toLowerCase();
+    if (!email || !email.includes('@')) { const e = new Error('valid email required'); e.statusCode = 400; throw e; }
+
+    const { rows: mrows } = await client.query(
+      `SELECT id FROM members WHERE LOWER(email)=$1 LIMIT 1`, [email]
+    );
+    let memberId; let memberCreated = false;
+    if (mrows.length) memberId = mrows[0].id;
+    else {
+      const { rows: created } = await client.query(
+        `INSERT INTO members (first_name, last_name, email, member_number, password_hash, email_verified)
+         VALUES ($1, $2, $3,
+                 'ATP-' || UPPER(SUBSTRING(MD5(RANDOM()::text) FROM 1 FOR 6)),
+                 'PENDING_INVITATION', false)
+         RETURNING id`,
+        [(body.first_name || '').trim() || 'New', (body.last_name || '').trim() || 'Employee', email]
+      );
+      memberId = created[0].id; memberCreated = true;
+    }
+
+    const inviteToken = crypto.randomBytes(18).toString('base64url');
+    const { rows: erows } = await client.query(
+      `INSERT INTO corporate_employees
+         (corporate_account_id, member_id, department, invitation_email, invitation_token, role)
+       VALUES ($1, $2, $3, $4, $5, $6)
+       ON CONFLICT (corporate_account_id, member_id) DO UPDATE SET
+         is_active = true, frozen_at = NULL, deleted_at = NULL,
+         department = EXCLUDED.department,
+         invitation_email = EXCLUDED.invitation_email,
+         invitation_token = COALESCE(corporate_employees.invitation_token, EXCLUDED.invitation_token),
+         role = EXCLUDED.role
+       RETURNING *`,
+      [account.id, memberId, (body.department || '').trim() || null, email, inviteToken,
+       (body.role === 'admin' || body.role === 'ca') ? 'admin' : 'employee']
+    );
+
+    try {
+      await client.query(
+        `INSERT INTO corporate_audit_log (corporate_account_id, actor_member_id, action, target_member_id, details)
+         VALUES ($1, $2, 'employee_added', $3, $4::jsonb)`,
+        [account.id, actorMemberId, memberId, JSON.stringify({ email, member_created: memberCreated, via: 'company_admin_or_atp_admin' })]
+      );
+    } catch (e) {}
+
+    const emailResult = await _sendInvitation(client, erows[0], account, actorMemberId);
+
+    return {
+      employee: erows[0],
+      member_created: memberCreated,
+      invite_token: inviteToken,
+      invite_url: _buildInviteUrl(inviteToken),
+      email_sent: !!(emailResult && emailResult.ok),
+      email_reason: emailResult && !emailResult.ok ? emailResult.reason : null,
+    };
+  });
+}
+
+// POST /api/company/:id/employees — add single employee (CA)
+router.post('/company/:id/employees', authenticate, _requireCompanyAdminFor, async (req, res, next) => {
+  try {
+    const result = await _addEmployeeShared(req.params.id, req.member.id, req.body || {});
+    res.json({ ...result, success: true });
+  } catch (err) {
+    if (err.statusCode) return res.status(err.statusCode).json({ error: err.message });
+    next(err);
+  }
+});
+
+// PATCH /api/company/:id/employees/:eid (freeze/unfreeze, department)
+router.patch('/company/:id/employees/:eid', authenticate, _requireCompanyAdminFor, async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    const sets = []; const params = [];
+    if ('department' in b)  { params.push(b.department || null); sets.push(`department = $${params.length}`); }
+    if ('frozen' in b) {
+      if (b.frozen) sets.push(`frozen_at = NOW(), is_active = false`);
+      else          sets.push(`frozen_at = NULL, is_active = true`);
+    }
+    if (!sets.length) return res.status(400).json({ error: 'no fields to update' });
+    params.push(req.params.eid);
+    params.push(req.params.id);
+    const { rows } = await query(
+      `UPDATE corporate_employees SET ${sets.join(', ')}
+        WHERE id = $${params.length - 1} AND corporate_account_id = $${params.length}
+        RETURNING *`,
+      params
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Employee not found' });
+    try {
+      const action = ('frozen' in b) ? (b.frozen ? 'employee_frozen' : 'employee_unfrozen') : 'employee_updated';
+      await query(
+        `INSERT INTO corporate_audit_log (corporate_account_id, actor_member_id, action, target_member_id, details)
+         VALUES ($1, $2, $3, $4, $5::jsonb)`,
+        [req.params.id, req.member.id, action, rows[0].member_id, JSON.stringify({ ...b, via: 'company_admin' })]
+      );
+    } catch (e) {}
+    res.json({ employee: rows[0] });
+  } catch (err) { next(err); }
+});
+
+// DELETE /api/company/:id/employees/:eid (soft delete, preserves ATP membership)
+router.delete('/company/:id/employees/:eid', authenticate, _requireCompanyAdminFor, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `UPDATE corporate_employees
+          SET deleted_at = NOW(), is_active = false
+        WHERE id = $1 AND corporate_account_id = $2 AND deleted_at IS NULL
+        RETURNING member_id`,
+      [req.params.eid, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Employee not found or already removed' });
+    try {
+      await query(
+        `INSERT INTO corporate_audit_log (corporate_account_id, actor_member_id, action, target_member_id, details)
+         VALUES ($1, $2, 'employee_removed', $3, $4::jsonb)`,
+        [req.params.id, req.member.id, rows[0].member_id, JSON.stringify({ via: 'company_admin' })]
+      );
+    } catch (e) {}
+    res.json({ success: true, note: 'Employee removed from company. ATP membership preserved.' });
+  } catch (err) { next(err); }
+});
+
+// POST /api/company/:id/employees/:eid/resend-invite (CA)
+router.post('/company/:id/employees/:eid/resend-invite', authenticate, _requireCompanyAdminFor, async (req, res, next) => {
+  try {
+    const newToken = crypto.randomBytes(18).toString('base64url');
+    const { rows } = await query(
+      `UPDATE corporate_employees SET invitation_token = $1
+        WHERE id = $2 AND corporate_account_id = $3 AND deleted_at IS NULL
+        RETURNING *`,
+      [newToken, req.params.eid, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Employee not found' });
+    const emp = rows[0];
+    const { rows: arows } = await query(
+      `SELECT company_name, logo_url FROM corporate_accounts WHERE id=$1`, [req.params.id]
+    );
+    const { rows: mrows } = await query(`SELECT first_name FROM members WHERE id=$1`, [emp.member_id]);
+    const r = await emailService.sendCorporateInvitation({
+      email: emp.invitation_email,
+      first_name: mrows[0]?.first_name,
+      company_name: arows[0].company_name,
+      company_logo_url: arows[0].logo_url,
+      invite_url: _buildInviteUrl(newToken),
+      sender_name: null,
+    });
+    if (r && r.ok) await query(`UPDATE corporate_employees SET invitation_sent_at=NOW() WHERE id=$1`, [emp.id]);
+    try {
+      await query(
+        `INSERT INTO corporate_audit_log (corporate_account_id, actor_member_id, action, target_member_id, details)
+         VALUES ($1, $2, 'invitation_resent', $3, $4::jsonb)`,
+        [req.params.id, req.member.id, emp.member_id, JSON.stringify({ via: 'company_admin', email_ok: !!(r && r.ok) })]
+      );
+    } catch (e) {}
+    res.json({
+      success: true,
+      email_sent: !!(r && r.ok),
+      email_reason: r && !r.ok ? r.reason : null,
+      invite_url: _buildInviteUrl(newToken),
+    });
+  } catch (err) { next(err); }
+});
+
+// POST /api/company/:id/employees/csv (CA) — bulk upload
+router.post('/company/:id/employees/csv', authenticate, _requireCompanyAdminFor, async (req, res, next) => {
+  const { transaction } = require('../db');
+  try {
+    const csvText = String(req.body?.csv || '').trim();
+    if (!csvText) return res.status(400).json({ error: 'csv (raw text) required' });
+    const sendInvites = req.body?.send_invites !== false;
+    const lines = csvText.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) return res.status(400).json({ error: 'CSV needs a header row + at least 1 data row' });
+    function splitCsv(line) {
+      const out = []; let cur = ''; let inQ = false;
+      for (let i = 0; i < line.length; i++) {
+        const c = line[i];
+        if (c === '"' && line[i+1] === '"') { cur += '"'; i++; }
+        else if (c === '"') inQ = !inQ;
+        else if (c === ',' && !inQ) { out.push(cur); cur = ''; }
+        else cur += c;
+      }
+      out.push(cur);
+      return out.map(s => s.trim());
+    }
+    const header = splitCsv(lines[0]).map(h => h.toLowerCase());
+    const norm = (h) => h.replace(/[\s_-]+/g, '').replace(/name$/, '');
+    const colIdx = {
+      first_name: header.findIndex(h => ['firstname','first','givenname','fname'].includes(norm(h))),
+      last_name:  header.findIndex(h => ['lastname','last','surname','familyname','lname'].includes(norm(h))),
+      email:      header.findIndex(h => ['email','emailaddress','mail','workemail'].includes(norm(h))),
+      department: header.findIndex(h => ['department','dept','team','division'].includes(norm(h))),
+      role:       header.findIndex(h => ['role','accesslevel'].includes(norm(h))),
+    };
+    if (colIdx.email < 0) return res.status(400).json({ error: 'CSV must include an "email" column' });
+    const { rows: arows } = await query(`SELECT id, company_name, logo_url, employee_cap FROM corporate_accounts WHERE id=$1`, [req.params.id]);
+    const account = arows[0];
+    const summary = { created: 0, linked: 0, soft_revived: 0, skipped: 0, errors: [] };
+    const inviteEmployees = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cells = splitCsv(lines[i]);
+      const email = String(cells[colIdx.email] || '').trim().toLowerCase();
+      if (!email || !email.includes('@')) { summary.skipped++; summary.errors.push({ row: i+1, error: 'missing/invalid email' }); continue; }
+      const firstName = colIdx.first_name >= 0 ? (cells[colIdx.first_name] || '').trim() : '';
+      const lastName  = colIdx.last_name  >= 0 ? (cells[colIdx.last_name]  || '').trim() : '';
+      const dept      = colIdx.department >= 0 ? (cells[colIdx.department] || '').trim() : '';
+      const role      = colIdx.role       >= 0 ? (cells[colIdx.role]       || '').trim().toLowerCase() : '';
+      try {
+        const result = await transaction(async (client) => {
+          if (account.employee_cap) {
+            const { rows: cnt } = await client.query(
+              `SELECT COUNT(*)::int AS n FROM corporate_employees WHERE corporate_account_id=$1 AND deleted_at IS NULL AND is_active=true`, [account.id]);
+            if (cnt[0].n >= account.employee_cap) { const e = new Error(`cap reached (${account.employee_cap})`); e.code = 'CAP'; throw e; }
+          }
+          const { rows: mrows } = await client.query(`SELECT id FROM members WHERE LOWER(email)=$1 LIMIT 1`, [email]);
+          let memberId; let memberCreated = false;
+          if (mrows.length) memberId = mrows[0].id;
+          else {
+            const { rows: created } = await client.query(
+              `INSERT INTO members (first_name, last_name, email, member_number, password_hash, email_verified)
+               VALUES ($1, $2, $3,
+                       'ATP-' || UPPER(SUBSTRING(MD5(RANDOM()::text) FROM 1 FOR 6)),
+                       'PENDING_INVITATION', false) RETURNING id`,
+              [firstName || 'New', lastName || 'Employee', email]
+            );
+            memberId = created[0].id; memberCreated = true;
+          }
+          const { rows: existing } = await client.query(
+            `SELECT id, deleted_at FROM corporate_employees WHERE corporate_account_id=$1 AND member_id=$2 LIMIT 1`,
+            [account.id, memberId]
+          );
+          const wasSoftDeleted = existing.length && existing[0].deleted_at != null;
+          const inviteToken = crypto.randomBytes(18).toString('base64url');
+          const { rows: erows } = await client.query(
+            `INSERT INTO corporate_employees
+               (corporate_account_id, member_id, department, invitation_email, invitation_token, role)
+             VALUES ($1, $2, $3, $4, $5, $6)
+             ON CONFLICT (corporate_account_id, member_id) DO UPDATE SET
+               is_active = true, frozen_at = NULL, deleted_at = NULL,
+               department = COALESCE(EXCLUDED.department, corporate_employees.department),
+               invitation_email = EXCLUDED.invitation_email,
+               invitation_token = COALESCE(corporate_employees.invitation_token, EXCLUDED.invitation_token),
+               role = CASE WHEN EXCLUDED.role IN ('employee','admin') THEN EXCLUDED.role ELSE corporate_employees.role END
+             RETURNING *`,
+            [account.id, memberId, dept || null, email, inviteToken,
+             (role === 'admin' || role === 'ca') ? 'admin' : 'employee']
+          );
+          try {
+            await client.query(
+              `INSERT INTO corporate_audit_log (corporate_account_id, actor_member_id, action, target_member_id, details)
+               VALUES ($1, $2, 'employee_added_csv', $3, $4::jsonb)`,
+              [account.id, req.member.id, memberId, JSON.stringify({ email, member_created: memberCreated, soft_revived: wasSoftDeleted, via: 'company_admin' })]
+            );
+          } catch (e) {}
+          return { employee: erows[0], member_created: memberCreated, soft_revived: wasSoftDeleted };
+        });
+        if (result.member_created) summary.created++;
+        else if (result.soft_revived) summary.soft_revived++;
+        else summary.linked++;
+        if (sendInvites) inviteEmployees.push(result.employee);
+      } catch (err) {
+        summary.skipped++;
+        summary.errors.push({ row: i+1, email, error: err.message });
+        if (err.code === 'CAP') break;
+      }
+    }
+    const sendResults = { sent: 0, failed: 0 };
+    if (sendInvites && inviteEmployees.length) {
+      const batch = 5;
+      for (let i = 0; i < inviteEmployees.length; i += batch) {
+        const slice = inviteEmployees.slice(i, i + batch);
+        await Promise.all(slice.map(async (emp) => {
+          try {
+            const { rows: mrows } = await query(`SELECT first_name FROM members WHERE id=$1`, [emp.member_id]);
+            const r = await emailService.sendCorporateInvitation({
+              email: emp.invitation_email,
+              first_name: mrows[0]?.first_name,
+              company_name: account.company_name,
+              company_logo_url: account.logo_url,
+              invite_url: _buildInviteUrl(emp.invitation_token),
+              sender_name: null,
+            });
+            if (r && r.ok) { sendResults.sent++; await query(`UPDATE corporate_employees SET invitation_sent_at=NOW() WHERE id=$1`, [emp.id]); }
+            else sendResults.failed++;
+          } catch (e) { sendResults.failed++; }
+        }));
+      }
+    }
+    res.json({ success: true, summary, emails: sendResults });
+  } catch (err) { next(err); }
+});
+
+// PATCH /api/company/:id/logo (CA) — change company logo URL.
+// Same pattern as members avatar: accept a URL string. File upload
+// can be wired via existing avatar upload infrastructure in a follow-up.
+router.patch('/company/:id/logo', authenticate, _requireCompanyAdminFor, async (req, res, next) => {
+  try {
+    const url = String(req.body?.logo_url || '').trim();
+    if (!url) return res.status(400).json({ error: 'logo_url required' });
+    const { rows } = await query(
+      `UPDATE corporate_accounts SET logo_url=$1, updated_at=NOW() WHERE id=$2 RETURNING logo_url`,
+      [url, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Company not found' });
+    try {
+      await query(
+        `INSERT INTO corporate_audit_log (corporate_account_id, actor_member_id, action, details)
+         VALUES ($1, $2, 'logo_updated', $3::jsonb)`,
+        [req.params.id, req.member.id, JSON.stringify({ logo_url: url })]
+      );
+    } catch (e) {}
+    res.json({ success: true, logo_url: rows[0].logo_url });
+  } catch (err) { next(err); }
+});
+
+// GET /api/company/:id/leaderboard — ranked employees by sessions
+router.get('/company/:id/leaderboard', authenticate, _requireCompanyAdminFor, async (req, res, next) => {
+  try {
+    const window = req.query.window === '7d' ? 7 : (req.query.window === '90d' ? 90 : 30);
+    const { rows } = await query(
+      `SELECT e.member_id, m.first_name, m.last_name, m.avatar_url, e.department,
+              COUNT(b.id) FILTER (WHERE b.checked_in_at >= NOW() - ($2 || ' days')::interval) AS checkins,
+              MAX(b.checked_in_at) AS last_active
+         FROM corporate_employees e
+         JOIN members m ON m.id = e.member_id
+         LEFT JOIN bookings b ON b.member_id = e.member_id AND b.status IN ('attended','confirmed')
+        WHERE e.corporate_account_id = $1 AND e.deleted_at IS NULL AND e.is_active=true AND e.frozen_at IS NULL
+        GROUP BY e.member_id, m.first_name, m.last_name, m.avatar_url, e.department
+        ORDER BY checkins DESC NULLS LAST, last_active DESC NULLS LAST
+        LIMIT 100`,
+      [req.params.id, String(window)]
+    );
+    // Aggregate by department too
+    const { rows: byDept } = await query(
+      `SELECT COALESCE(NULLIF(e.department,''), 'Unspecified') AS department,
+              COUNT(DISTINCT e.member_id)::int AS members,
+              COUNT(b.id) FILTER (WHERE b.checked_in_at >= NOW() - ($2 || ' days')::interval)::int AS checkins
+         FROM corporate_employees e
+         LEFT JOIN bookings b ON b.member_id = e.member_id AND b.status IN ('attended','confirmed')
+        WHERE e.corporate_account_id = $1 AND e.deleted_at IS NULL AND e.is_active=true AND e.frozen_at IS NULL
+        GROUP BY 1 ORDER BY checkins DESC NULLS LAST`,
+      [req.params.id, String(window)]
+    );
+    res.json({ window_days: window, employees: rows, by_department: byDept });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ATP Corporative — Company Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0a0a;--fg:#fff;--muted:#888;--dim:#555;
+    --green:#7AC231;--green-soft:rgba(122,194,49,.10);--green-border:rgba(122,194,49,.35);
+    --gold:#f5c042;--gold-soft:rgba(245,192,66,.10);--gold-border:rgba(245,192,66,.35);
+    --red:#ef4444;--red-soft:rgba(239,68,68,.10);--red-border:rgba(239,68,68,.35);
+    --amber:#f59e0b;
+    --card:rgba(255,255,255,.04);--border:rgba(255,255,255,.08);
+    --ff-display:"Bebas Neue",Inter,system-ui,sans-serif;
+    --ff-body:Inter,system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{background:var(--bg);color:var(--fg);font-family:var(--ff-body);min-height:100vh}
+  .wrap{max-width:1280px;margin:0 auto;padding:24px 28px}
+  .topbar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:18px;margin-bottom:30px}
+  .topbar-left{display:flex;align-items:center;gap:18px}
+  .atp-mark{height:32px;width:auto;display:block}
+  .divider{width:1px;height:34px;background:var(--border)}
+  .company-id{display:flex;align-items:center;gap:14px}
+  .company-logo{width:48px;height:48px;border-radius:8px;background:#fff;padding:5px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .company-logo img{max-width:100%;max-height:100%;object-fit:contain}
+  .company-logo.placeholder{background:#1a1a1a;color:var(--green);font-family:var(--ff-display);font-size:24px;font-weight:700}
+  .company-name{font-family:var(--ff-display);font-size:24px;color:#fff;letter-spacing:.02em;line-height:1}
+  .company-tag{font-size:10px;color:var(--green);letter-spacing:.16em;text-transform:uppercase;font-weight:700;margin-top:4px}
+  .btn{background:transparent;border:1px solid var(--border);color:#ccc;padding:8px 14px;border-radius:8px;font-size:12px;cursor:pointer;font-weight:600;letter-spacing:.03em}
+  .btn:hover{border-color:var(--green-border);color:var(--green)}
+  .btn-primary{background:var(--green);color:#0a0a0a;border-color:var(--green)}
+  .btn-primary:hover{background:#5fa01f;border-color:#5fa01f;color:#0a0a0a}
+  .btn-danger{background:var(--red-soft);color:var(--red);border-color:var(--red-border)}
+  .btn-amber{background:rgba(245,158,11,.10);color:var(--amber);border-color:rgba(245,158,11,.3)}
+  .pilot-banner{
+    background:var(--gold-soft);border:1px solid var(--gold-border);border-radius:10px;
+    padding:14px 18px;margin-bottom:22px;font-size:13px;color:var(--gold);font-weight:600;
+    display:flex;align-items:center;gap:12px;
+  }
+  .pilot-banner.urgent{background:var(--red-soft);color:var(--red);border-color:var(--red-border)}
+  .tabs{display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap;border-bottom:1px solid var(--border);padding-bottom:0}
+  .tab{padding:10px 18px;font-size:12px;font-weight:700;background:transparent;color:var(--muted);border:none;border-bottom:2px solid transparent;cursor:pointer;letter-spacing:.06em;text-transform:uppercase}
+  .tab.active{color:var(--green);border-bottom-color:var(--green)}
+  .kpi-row{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:22px}
+  @media(max-width:900px){.kpi-row{grid-template-columns:repeat(2,1fr)}}
+  .kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:18px}
+  .kpi .lbl{font-size:10px;color:#888;letter-spacing:.12em;text-transform:uppercase;font-weight:600}
+  .kpi .val{font-family:var(--ff-display);font-size:32px;color:#fff;line-height:1.1;margin-top:8px}
+  .kpi.green .val{color:var(--green)} .kpi.green{border-color:var(--green-border)}
+  .kpi.gold .val{color:var(--gold)} .kpi.gold{border-color:var(--gold-border)}
+  .kpi.amber .val{color:var(--amber)} .kpi.amber{border-color:rgba(245,158,11,.35)}
+  .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:18px}
+  .panel-title{font-family:var(--ff-display);font-size:20px;color:#fff;letter-spacing:.02em;margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+  .table-head{display:grid;grid-template-columns:1.1fr 1.3fr 0.8fr 80px 80px 100px auto;gap:14px;padding:10px 14px;background:rgba(122,194,49,.04);font-size:10px;color:var(--green);letter-spacing:.12em;text-transform:uppercase;font-weight:700;border-radius:8px 8px 0 0;border:1px solid var(--border);border-bottom:none}
+  .table-row{display:grid;grid-template-columns:1.1fr 1.3fr 0.8fr 80px 80px 100px auto;gap:14px;padding:12px 14px;border-bottom:1px solid var(--border);background:rgba(0,0,0,.2);font-size:13px;align-items:center}
+  .table-row:last-child{border-radius:0 0 8px 8px;border-bottom:1px solid var(--border)}
+  .table-wrap{border:1px solid var(--border);border-radius:8px;overflow:hidden}
+  .empty-state{padding:48px;text-align:center;color:var(--dim);border:1px dashed var(--border);border-radius:10px}
+  .pill{display:inline-block;padding:3px 8px;border-radius:99px;font-size:9px;letter-spacing:.06em;text-transform:uppercase;font-weight:700}
+  .pill.active{background:var(--green-soft);color:var(--green)}
+  .pill.frozen{background:rgba(245,158,11,.14);color:var(--amber)}
+  .pill.invited{background:rgba(59,130,246,.14);color:#3b82f6}
+  .pill.admin{background:var(--gold-soft);color:var(--gold);margin-left:6px}
+  .form-input,.form-select,.form-textarea{
+    width:100%;background:rgba(0,0,0,.3);border:1px solid var(--border);border-radius:8px;
+    padding:10px 12px;color:#fff;font-family:inherit;font-size:13px;
+  }
+  .form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--green-border)}
+  .form-row{display:grid;grid-template-columns:1fr 1fr 2fr 1fr;gap:10px;margin-bottom:10px}
+  @media(max-width:700px){.form-row{grid-template-columns:1fr 1fr}}
+  .lb-row{display:grid;grid-template-columns:32px 1fr auto auto;gap:12px;padding:10px 14px;border-bottom:1px solid var(--border);align-items:center}
+  .lb-row:last-child{border-bottom:none}
+  .lb-rank{font-family:var(--ff-display);font-size:18px;color:var(--muted);text-align:center}
+  .lb-row.top1 .lb-rank{color:var(--gold)} .lb-row.top1 .lb-name{color:var(--gold);font-weight:600}
+  .lb-row.top2 .lb-rank,.lb-row.top3 .lb-rank{color:#ccc}
+  .toast{
+    position:fixed;bottom:24px;right:24px;background:#1a1a1a;border:1px solid var(--border);
+    border-radius:8px;padding:12px 18px;font-size:13px;z-index:100;
+    box-shadow:0 4px 20px rgba(0,0,0,.4);max-width:340px;display:none;
+  }
+  .toast.show{display:block;animation:slide-in .25s ease}
+  .toast.error{border-color:var(--red-border);color:var(--red)}
+  .toast.success{border-color:var(--green-border);color:var(--green)}
+  @keyframes slide-in{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .signin-card{
+    max-width:420px;margin:140px auto;padding:32px;background:var(--card);
+    border:1px solid var(--border);border-radius:14px;text-align:center;
+  }
+  .csv-form{background:rgba(122,194,49,.04);border:1px solid var(--green-border);border-radius:10px;padding:16px;margin-bottom:14px}
+  textarea.csv{font-family:monospace;font-size:12px;line-height:1.5;min-height:120px;resize:vertical}
+</style>
+</head>
+<body>
+<div class="wrap" id="app">
+  <div id="bootstrap" style="padding:80px 0;text-align:center;color:var(--muted)">Loading…</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  // ── STATE ─────────────────────────────────────────────────────
+  var CO = null;            // current company object
+  var TAB = 'dashboard';    // 'dashboard' | 'employees' | 'leaderboard' | 'settings'
+  var EMP_LIST = [];
+  var KPIS = { totals: {}, activity: {} };
+  var LB = { window_days: 30, employees: [], by_department: [] };
+  var LB_WIN = '30d';
+  var TOKEN = '';
+  try { TOKEN = localStorage.getItem('atp_token') || ''; } catch (e) {}
+
+  function token() { return TOKEN; }
+  function esc(s){ return String(s == null ? '' : s).replace(/[<>&"]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]; }); }
+  function showToast(msg, kind){ var t = document.getElementById('toast'); t.className = 'toast show ' + (kind || 'success'); t.textContent = msg; setTimeout(function(){ t.classList.remove('show'); }, 3500); }
+  function api(path, opts){
+    opts = opts || {};
+    opts.headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+    if (token()) opts.headers['Authorization'] = 'Bearer ' + token();
+    return fetch('/api/corporate' + path, opts).then(function(r){
+      return r.json().then(function(d){ return { ok: r.ok, status: r.status, d: d }; });
+    });
+  }
+
+  // ── SIGN-IN GATE ─────────────────────────────────────────────
+  function showSignIn(msg){
+    document.getElementById('app').innerHTML =
+      '<div class="signin-card">' +
+        '<img src="/atp-logo-transparent.webp" alt="ATP" style="height:32px;margin-bottom:18px">' +
+        '<div style="font-family:var(--ff-display);font-size:32px;letter-spacing:.02em;margin-bottom:8px">Company Admin</div>' +
+        '<p style="font-size:14px;color:var(--muted);line-height:1.6;margin-bottom:22px">' + (msg || 'Sign in with your ATP account to access your company\'s admin panel.') + '</p>' +
+        '<a href="/join.html" class="btn btn-primary" style="display:inline-block;text-decoration:none">Sign in to ATP</a>' +
+      '</div>';
+  }
+
+  // ── BOOTSTRAP ────────────────────────────────────────────────
+  function boot(){
+    if (!token()){ showSignIn(); return; }
+    api('/company/me').then(function(r){
+      if (!r.ok){
+        if (r.status === 401 || r.status === 403) showSignIn(r.d && r.d.error);
+        else showSignIn('Could not load company list. Try signing in again.');
+        return;
+      }
+      var companies = (r.d && r.d.companies) || [];
+      if (!companies.length){ showSignIn('You are not a Company Admin yet. Ask your HR contact at ATP to invite you.'); return; }
+      // Always use the first company. (Multi-company switcher: later phase.)
+      CO = companies[0];
+      loadAll();
+    }).catch(function(){ showSignIn('Network error.'); });
+  }
+
+  function loadAll(){
+    Promise.all([
+      api('/company/' + CO.id + '/engagement').then(function(r){ if (r.ok) KPIS = r.d; }),
+      api('/company/' + CO.id + '/employees').then(function(r){ if (r.ok) EMP_LIST = r.d.employees || []; }),
+    ]).then(function(){ render(); }).catch(function(e){ showToast('Load failed: ' + e.message, 'error'); });
+  }
+
+  function render(){
+    var app = document.getElementById('app');
+    var logoBlock = CO.logo_url
+      ? '<div class="company-logo"><img src="' + esc(CO.logo_url) + '"></div>'
+      : '<div class="company-logo placeholder">' + esc((CO.company_name||'?').charAt(0).toUpperCase()) + '</div>';
+    var pilotEnds = CO.pilot_ends_at ? new Date(CO.pilot_ends_at) : null;
+    var daysLeft = pilotEnds ? Math.ceil((pilotEnds.getTime() - Date.now()) / 86400000) : null;
+    var banner = '';
+    if (daysLeft != null && daysLeft > 0 && daysLeft <= 14) {
+      banner = '<div class="pilot-banner ' + (daysLeft <= 5 ? 'urgent' : '') + '">⏰ Pilot ends in ' + daysLeft + ' day' + (daysLeft === 1 ? '' : 's') + ' · Contact ATP to extend or convert to paid</div>';
+    } else if (daysLeft != null && daysLeft <= 0) {
+      banner = '<div class="pilot-banner urgent">⚠ Pilot expired ' + Math.abs(daysLeft) + ' days ago — contact ATP to reactivate</div>';
+    } else if (daysLeft != null) {
+      banner = '<div class="pilot-banner">⏰ Pilot ends ' + pilotEnds.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) + ' (' + daysLeft + ' days left)</div>';
+    }
+
+    app.innerHTML =
+      '<div class="topbar">' +
+        '<div class="topbar-left">' +
+          '<img src="/atp-logo-transparent.webp" alt="ATP" class="atp-mark">' +
+          '<div class="divider"></div>' +
+          '<div class="company-id">' + logoBlock +
+            '<div><div class="company-name">' + esc(CO.company_name) + '</div>' +
+              '<div class="company-tag">Company Admin · ' + esc(CO.status) + (CO.tier ? ' · ' + esc(CO.tier) : '') + '</div>' +
+            '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:8px"><button class="btn" onclick="signOut()">Sign out</button></div>' +
+      '</div>' +
+      banner +
+      '<div class="tabs" id="tabs">' +
+        tabBtn('dashboard', '📊 Dashboard') +
+        tabBtn('employees', '👥 Employees') +
+        tabBtn('leaderboard', '🏆 Leaderboard') +
+        tabBtn('settings', '⚙ Settings') +
+      '</div>' +
+      '<div id="tabBody"></div>';
+    renderTab();
+  }
+
+  function tabBtn(id, label){
+    return '<button class="tab' + (TAB === id ? ' active' : '') + '" onclick="setTab(\'' + id + '\')">' + label + '</button>';
+  }
+  function setTab(t){ TAB = t; render(); if (t === 'leaderboard') loadLeaderboard(); }
+
+  function renderTab(){
+    var body = document.getElementById('tabBody');
+    if (TAB === 'dashboard')   body.innerHTML = renderDashboard();
+    if (TAB === 'employees')   body.innerHTML = renderEmployees();
+    if (TAB === 'leaderboard') body.innerHTML = renderLeaderboard();
+    if (TAB === 'settings')    body.innerHTML = renderSettings();
+  }
+
+  function renderDashboard(){
+    var t = KPIS.totals || {}; var a = KPIS.activity || {};
+    var active = t.active_employees || 0;
+    var unique30 = a.unique_30d || 0;
+    var participation = active ? Math.round(100 * unique30 / active) : 0;
+    var inactive = Math.max(0, active - unique30);
+    return '' +
+      '<div class="kpi-row">' +
+        '<div class="kpi"><div class="lbl">Total enrolled</div><div class="val">' + (t.total_employees || 0) + '</div></div>' +
+        '<div class="kpi green"><div class="lbl">Active</div><div class="val">' + active + '</div></div>' +
+        '<div class="kpi green"><div class="lbl">Active 30d</div><div class="val">' + unique30 + ' <span style="font-size:14px;color:var(--muted);font-family:inherit;font-weight:500">/ ' + participation + '%</span></div></div>' +
+        '<div class="kpi amber"><div class="lbl">Inactive (>30d)</div><div class="val">' + inactive + '</div></div>' +
+        '<div class="kpi"><div class="lbl">Check-ins 30d</div><div class="val">' + (a.checkins_30d || 0) + '</div></div>' +
+      '</div>' +
+      '<div class="panel">' +
+        '<div class="panel-title">Welcome to your Company Admin</div>' +
+        '<p style="font-size:14px;color:#ccc;line-height:1.6">Use the tabs above to invite employees, see who\'s active, and compare departments on the leaderboard. ATP support is on <strong style="color:var(--green)">general@atthepark.com</strong> if anything looks off.</p>' +
+      '</div>';
+  }
+
+  function renderEmployees(){
+    var html = '<div class="panel">' +
+      '<div class="panel-title">' +
+        '<span>Employees (' + EMP_LIST.length + ')</span>' +
+        '<div style="display:flex;gap:6px">' +
+          '<button class="btn" onclick="toggleCsvForm()">📂 Upload CSV</button>' +
+          '<button class="btn btn-primary" onclick="toggleAddForm()">+ Add employee</button>' +
+        '</div>' +
+      '</div>' +
+      '<div id="addForm"></div>' +
+      '<div id="csvForm"></div>';
+
+    if (!EMP_LIST.length) {
+      html += '<div class="empty-state">No employees yet. Add your first one or upload a CSV.</div>';
+    } else {
+      html += '<div class="table-wrap">' +
+        '<div class="table-head"><div>Name</div><div>Email</div><div>Department</div><div>Status</div><div>30d</div><div>Last seen</div><div>Actions</div></div>';
+      EMP_LIST.forEach(function(e){
+        var name = ((e.first_name || '') + ' ' + (e.last_name || '')).trim() || '(no name)';
+        var status;
+        if (e.frozen_at) status = '<span class="pill frozen">Frozen</span>';
+        else if (e.invitation_sent_at && !e.last_checkin_at) status = '<span class="pill invited">Invited</span>';
+        else status = '<span class="pill active">Active</span>';
+        var roleTag = e.role === 'admin' ? '<span class="pill admin">CA</span>' : '';
+        var lastSeen = e.last_checkin_at ? new Date(e.last_checkin_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '—';
+        html += '<div class="table-row">' +
+          '<div style="color:#fff;font-weight:600">' + esc(name) + roleTag + '</div>' +
+          '<div style="color:#bbb;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(e.email || '') + '</div>' +
+          '<div style="color:#888;font-size:12px">' + esc(e.department || '—') + '</div>' +
+          '<div>' + status + '</div>' +
+          '<div style="color:#fff;font-weight:600">' + (e.checkins_30d || 0) + '</div>' +
+          '<div style="color:#888;font-size:11px">' + lastSeen + '</div>' +
+          '<div style="display:flex;gap:4px;flex-wrap:wrap">' +
+            (!e.last_checkin_at && !e.frozen_at ? '<button class="btn" style="font-size:10px;padding:4px 8px;color:#3b82f6;border-color:rgba(59,130,246,.3)" onclick="resendInvite(\'' + e.id + '\')">Resend</button>' : '') +
+            (e.frozen_at
+              ? '<button class="btn" style="font-size:10px;padding:4px 8px;color:var(--green);border-color:var(--green-border)" onclick="setFrozen(\'' + e.id + '\',false)">Unfreeze</button>'
+              : '<button class="btn btn-amber" style="font-size:10px;padding:4px 8px" onclick="setFrozen(\'' + e.id + '\',true)">Freeze</button>') +
+            '<button class="btn btn-danger" style="font-size:10px;padding:4px 8px" onclick="removeEmp(\'' + e.id + '\',\'' + esc(name).replace(/"/g,'&quot;') + '\')">Remove</button>' +
+          '</div>' +
+        '</div>';
+      });
+      html += '</div>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  function toggleAddForm(){
+    var host = document.getElementById('addForm');
+    if (host.innerHTML) { host.innerHTML = ''; return; }
+    host.innerHTML =
+      '<div class="csv-form">' +
+        '<div style="font-size:11px;color:var(--green);letter-spacing:.1em;text-transform:uppercase;font-weight:700;margin-bottom:10px">Invite a new employee</div>' +
+        '<div class="form-row">' +
+          '<div><label style="font-size:11px;color:var(--muted)">First name</label><input class="form-input" id="addFirst" placeholder="Sarah"></div>' +
+          '<div><label style="font-size:11px;color:var(--muted)">Last name</label><input class="form-input" id="addLast" placeholder="Khalil"></div>' +
+          '<div><label style="font-size:11px;color:var(--muted)">Work email *</label><input class="form-input" id="addEmail" placeholder="sarah@acme.com"></div>' +
+          '<div><label style="font-size:11px;color:var(--muted)">Department</label><input class="form-input" id="addDept" placeholder="Marketing"></div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">' +
+          '<label style="font-size:11px;color:#aaa;display:flex;align-items:center;gap:6px"><input type="checkbox" id="addIsAdmin"> Mark as Company Admin</label>' +
+          '<div style="margin-left:auto;display:flex;gap:6px">' +
+            '<button class="btn btn-primary" onclick="submitAdd()">Save + invite</button>' +
+            '<button class="btn" onclick="toggleAddForm()">Cancel</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+  }
+
+  function toggleCsvForm(){
+    var host = document.getElementById('csvForm');
+    if (host.innerHTML) { host.innerHTML = ''; return; }
+    host.innerHTML =
+      '<div class="csv-form">' +
+        '<div style="font-size:11px;color:var(--green);letter-spacing:.1em;text-transform:uppercase;font-weight:700;margin-bottom:10px">Bulk upload from CSV</div>' +
+        '<div style="font-size:12px;color:#aaa;margin-bottom:10px">Required column: <code style="background:#000;padding:2px 6px;border-radius:3px;color:var(--green)">email</code>. Optional: first_name, last_name, department, role.</div>' +
+        '<div style="display:flex;gap:8px;margin-bottom:8px"><input type="file" id="csvFile" accept=".csv,text/csv" style="background:rgba(0,0,0,.3);border:1px solid var(--border);padding:8px;color:#ddd;border-radius:6px;font-size:12px;flex:1"></div>' +
+        '<textarea class="form-textarea csv" id="csvText" placeholder="email,first_name,last_name,department&#10;sarah@acme.com,Sarah,Khalil,Marketing"></textarea>' +
+        '<div style="display:flex;align-items:center;margin-top:10px;flex-wrap:wrap;gap:10px">' +
+          '<label style="font-size:11px;color:#aaa;display:flex;align-items:center;gap:6px"><input type="checkbox" id="csvSend" checked> Send invitation emails</label>' +
+          '<div style="margin-left:auto;display:flex;gap:6px">' +
+            '<button class="btn btn-primary" onclick="submitCsv()">Upload</button>' +
+            '<button class="btn" onclick="toggleCsvForm()">Cancel</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    document.getElementById('csvFile').addEventListener('change', function(){
+      var f = this.files && this.files[0]; if (!f) return;
+      var r = new FileReader();
+      r.onload = function(){ document.getElementById('csvText').value = r.result; };
+      r.readAsText(f);
+    });
+  }
+
+  function submitAdd(){
+    var body = {
+      first_name: document.getElementById('addFirst').value.trim(),
+      last_name: document.getElementById('addLast').value.trim(),
+      email: document.getElementById('addEmail').value.trim(),
+      department: document.getElementById('addDept').value.trim(),
+      role: document.getElementById('addIsAdmin').checked ? 'admin' : 'employee',
+    };
+    if (!body.email) { showToast('Email required', 'error'); return; }
+    api('/company/' + CO.id + '/employees', { method:'POST', body: JSON.stringify(body) }).then(function(r){
+      if (!r.ok) { showToast('Failed: ' + (r.d.error || ''), 'error'); return; }
+      showToast(r.d.member_created ? 'New employee invited' : 'Existing member linked');
+      toggleAddForm(); loadAll();
+    });
+  }
+
+  function submitCsv(){
+    var csv = (document.getElementById('csvText').value || '').trim();
+    if (!csv) { showToast('Paste or upload a CSV first', 'error'); return; }
+    var send = document.getElementById('csvSend').checked;
+    api('/company/' + CO.id + '/employees/csv', { method:'POST', body: JSON.stringify({ csv: csv, send_invites: send }) }).then(function(r){
+      if (!r.ok) { showToast('Failed: ' + (r.d.error || ''), 'error'); return; }
+      var s = r.d.summary || {}; var em = r.d.emails || {};
+      var msg = (s.created + s.linked + s.soft_revived) + ' processed · ' + s.created + ' new · ' + s.linked + ' linked';
+      if (s.skipped) msg += ' · ' + s.skipped + ' skipped';
+      if (send) msg += ' · ' + em.sent + ' emailed';
+      showToast(msg);
+      toggleCsvForm(); loadAll();
+    });
+  }
+
+  function setFrozen(eid, frozen){
+    api('/company/' + CO.id + '/employees/' + eid, { method:'PATCH', body: JSON.stringify({ frozen: frozen }) }).then(function(r){
+      if (!r.ok) { showToast(r.d.error || 'Failed', 'error'); return; }
+      showToast(frozen ? 'Employee frozen' : 'Employee unfrozen'); loadAll();
+    });
+  }
+  function removeEmp(eid, name){
+    if (!confirm('Remove ' + name + ' from this company?\n\nTheir ATP membership stays intact — they keep their session history, points, profile.')) return;
+    api('/company/' + CO.id + '/employees/' + eid, { method:'DELETE' }).then(function(r){
+      if (!r.ok) { showToast(r.d.error || 'Failed', 'error'); return; }
+      showToast(r.d.note || 'Removed'); loadAll();
+    });
+  }
+  function resendInvite(eid){
+    api('/company/' + CO.id + '/employees/' + eid + '/resend-invite', { method:'POST' }).then(function(r){
+      if (!r.ok) { showToast(r.d.error || 'Failed', 'error'); return; }
+      if (r.d.email_sent) showToast('Invitation re-sent');
+      else { showToast('Email not sent — invite URL copied'); try { navigator.clipboard.writeText(r.d.invite_url); } catch(e){} }
+      loadAll();
+    });
+  }
+
+  // ── LEADERBOARD ─────────────────────────────────────────────
+  function renderLeaderboard(){
+    var emp = LB.employees || [];
+    var dept = LB.by_department || [];
+    var winBtn = function(w, label){ return '<button class="btn' + (LB_WIN === w ? ' btn-primary' : '') + '" style="font-size:11px;padding:5px 12px" onclick="changeLbWindow(\'' + w + '\')">' + label + '</button>'; };
+    var html = '<div style="display:flex;justify-content:flex-end;gap:6px;margin-bottom:14px">' +
+      winBtn('7d','7 days') + winBtn('30d','30 days') + winBtn('90d','90 days') + '</div>';
+    html += '<div style="display:grid;grid-template-columns:1.6fr 1fr;gap:18px">';
+    // Individual leaderboard
+    html += '<div class="panel"><div class="panel-title">Top movers</div>';
+    if (!emp.length) html += '<div class="empty-state" style="padding:30px">No activity in the last ' + LB.window_days + ' days yet.</div>';
+    else {
+      html += '<div class="table-wrap">' + emp.map(function(p, i){
+        var rank = i + 1;
+        var name = ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || '—';
+        var cls = rank === 1 ? 'top1' : (rank === 2 ? 'top2' : (rank === 3 ? 'top3' : ''));
+        return '<div class="lb-row ' + cls + '">' +
+          '<div class="lb-rank">' + rank + '</div>' +
+          '<div><div class="lb-name" style="font-size:13px;color:#fff;font-weight:600">' + esc(name) + '</div>' +
+            '<div style="font-size:11px;color:#888">' + esc(p.department || '—') + '</div></div>' +
+          '<div style="font-family:var(--ff-display);font-size:18px;color:var(--green)">' + (p.checkins || 0) + '</div>' +
+          '<div style="font-size:10px;color:#888">sessions</div>' +
+        '</div>';
+      }).join('') + '</div>';
+    }
+    html += '</div>';
+    // Departments
+    html += '<div class="panel"><div class="panel-title">Department leaderboard</div>';
+    if (!dept.length) html += '<div class="empty-state" style="padding:30px">No data yet.</div>';
+    else {
+      var maxC = Math.max.apply(null, dept.map(function(d){ return d.checkins || 0; }).concat([1]));
+      html += dept.map(function(d, i){
+        var pct = Math.round(100 * (d.checkins || 0) / maxC);
+        return '<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><strong style="color:#fff">' + esc(d.department) + '</strong><span style="color:var(--green);font-weight:700">' + (d.checkins || 0) + ' · ' + (d.members || 0) + ' members</span></div><div style="height:6px;background:rgba(255,255,255,.06);border-radius:3px;overflow:hidden"><div style="height:100%;width:' + pct + '%;background:var(--green);border-radius:3px"></div></div></div>';
+      }).join('');
+    }
+    html += '</div></div>';
+    return html;
+  }
+  function changeLbWindow(w){ LB_WIN = w; loadLeaderboard(); }
+  function loadLeaderboard(){
+    api('/company/' + CO.id + '/leaderboard?window=' + LB_WIN).then(function(r){
+      if (r.ok) { LB = r.d; renderTab(); }
+    });
+  }
+
+  // ── SETTINGS ────────────────────────────────────────────────
+  function renderSettings(){
+    return '<div class="panel">' +
+      '<div class="panel-title">Company branding</div>' +
+      '<div style="display:flex;align-items:center;gap:18px;margin-bottom:16px">' +
+        (CO.logo_url ? '<div class="company-logo" style="width:80px;height:80px"><img src="' + esc(CO.logo_url) + '"></div>' : '<div class="company-logo placeholder" style="width:80px;height:80px;font-size:38px">' + esc((CO.company_name||"?").charAt(0).toUpperCase()) + '</div>') +
+        '<div style="flex:1">' +
+          '<label style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:6px">Logo URL</label>' +
+          '<input class="form-input" id="logoUrl" value="' + esc(CO.logo_url || '') + '" placeholder="https://yourcompany.com/logo.png">' +
+          '<p style="font-size:11px;color:var(--muted);margin-top:6px">Paste a public URL to your company logo. Updates show on all employee profiles + ATP\'s admin panel within a minute.</p>' +
+        '</div>' +
+      '</div>' +
+      '<button class="btn btn-primary" onclick="saveLogo()">Save logo</button>' +
+    '</div>' +
+    '<div class="panel">' +
+      '<div class="panel-title">Company details</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:16px;font-size:13px">' +
+        '<div><div style="font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600">Status</div><div style="color:#fff;margin-top:4px">' + esc(CO.status) + '</div></div>' +
+        '<div><div style="font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600">Tier</div><div style="color:#fff;margin-top:4px">' + esc(CO.tier || '—') + '</div></div>' +
+        '<div><div style="font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600">Monthly fee</div><div style="color:#fff;margin-top:4px">AED ' + (CO.monthly_fee_aed || 0).toLocaleString() + '</div></div>' +
+        '<div><div style="font-size:10px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600">Employee cap</div><div style="color:#fff;margin-top:4px">' + (CO.employee_cap || '∞') + '</div></div>' +
+      '</div>' +
+      '<p style="font-size:12px;color:var(--muted);margin-top:14px">To change billing, tier, or cap, contact ATP at <a href="mailto:general@atthepark.com" style="color:var(--green)">general@atthepark.com</a>.</p>' +
+    '</div>';
+  }
+  function saveLogo(){
+    var url = (document.getElementById('logoUrl').value || '').trim();
+    if (!url) { showToast('URL required', 'error'); return; }
+    api('/company/' + CO.id + '/logo', { method:'PATCH', body: JSON.stringify({ logo_url: url }) }).then(function(r){
+      if (!r.ok) { showToast(r.d.error || 'Failed', 'error'); return; }
+      CO.logo_url = r.d.logo_url;
+      showToast('Logo updated');
+      render();
+    });
+  }
+
+  function signOut(){ try { localStorage.removeItem('atp_token'); } catch (e) {} location.href = '/'; }
+
+  // Expose functions globally for inline onclick handlers
+  window.setTab = setTab; window.signOut = signOut;
+  window.toggleAddForm = toggleAddForm; window.toggleCsvForm = toggleCsvForm;
+  window.submitAdd = submitAdd; window.submitCsv = submitCsv;
+  window.setFrozen = setFrozen; window.removeEmp = removeEmp; window.resendInvite = resendInvite;
+  window.changeLbWindow = changeLbWindow; window.saveLogo = saveLogo;
+
+  boot();
+</script>
+</body>
+</html>

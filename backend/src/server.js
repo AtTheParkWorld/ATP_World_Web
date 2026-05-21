@@ -244,6 +244,9 @@ app.get('/corporate-plan', (req, res) => res.sendFile(path.join(__dirname, '../p
 // Corporate invitation accept landing — employees click the magic link from the email,
 // land here, see company branding, tap accept, get logged in.
 app.get('/corporate/accept-invite', (req, res) => res.sendFile(path.join(__dirname, '../public/corporate-accept-invite.html')));
+// Company Admin panel — HR people at customer companies log in with their
+// magic-link ATP token, then manage their employees + see leaderboards.
+app.get('/company', (req, res) => res.sendFile(path.join(__dirname, '../public/company-admin.html')));
 // Magic-link verify landing page — emailed links (FRONTEND_URL/auth/verify?token=…)
 // resolve to this static page, which calls GET /api/auth/verify and stores the JWT.
 app.get('/auth/verify', (req, res) => res.sendFile(path.join(__dirname, '../public/auth-verify.html')));
