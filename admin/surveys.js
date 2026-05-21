@@ -150,9 +150,10 @@ function renderSurveyEditor(s, questions) {
       '</div>' +
       '<div style="margin-bottom:10px"><label class="admin-form-label">Intro</label><textarea class="admin-form-input" id="srvIntro" rows="2">' + _esc(s.intro || '') + '</textarea></div>' +
       '<div style="margin-bottom:10px"><label class="admin-form-label">Thank-you</label><textarea class="admin-form-input" id="srvThx" rows="2">' + _esc(s.thank_you || '') + '</textarea></div>' +
-      '<div style="display:flex;gap:14px;margin-bottom:12px;font-size:12px;color:#aaa">' +
+      '<div style="display:flex;gap:14px;margin-bottom:12px;font-size:12px;color:#aaa;flex-wrap:wrap">' +
         '<label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="srvName"' + (s.collect_name ? ' checked' : '') + '> Ask for name</label>' +
         '<label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="srvEmail"' + (s.collect_email ? ' checked' : '') + '> Ask for email</label>' +
+        '<label style="display:flex;align-items:center;gap:6px" title="Adds a Back to ATP button on the thank-you page. Turn off if the main site isn\'t public yet."><input type="checkbox" id="srvBackLink"' + (s.show_back_link !== false ? ' checked' : '') + '> Show "Back to ATP" link on thank-you</label>' +
       '</div>' +
       '<div style="display:flex;gap:8px">' +
         '<button class="admin-btn admin-btn-primary" data-atp-call="saveSurveyMetadata" data-args=\'["' + s.id + '"]\' style="font-size:12px">Save settings</button>' +
@@ -222,6 +223,7 @@ function saveSurveyMetadata(e, btn) {
     thank_you: document.getElementById('srvThx').value.trim(),
     collect_name: document.getElementById('srvName').checked,
     collect_email: document.getElementById('srvEmail').checked,
+    show_back_link: document.getElementById('srvBackLink').checked,
   };
   fetch(ATP_API + '/surveys/admin/' + id, {
     method: 'PATCH',

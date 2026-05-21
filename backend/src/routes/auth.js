@@ -2261,6 +2261,12 @@ router.post('/migrate-surveys', async (req, res, next) => {
     )`);
     await query(`CREATE INDEX IF NOT EXISTS idx_surveys_status ON surveys(status, slug)`);
 
+    // Per-survey toggle: hide the "Back to ATP →" button on the thank-you
+    // page. Defaults to true so future surveys auto-include the back-link.
+    // We turn it off for member-voice below (website not yet public).
+    await query(`ALTER TABLE surveys ADD COLUMN IF NOT EXISTS show_back_link BOOLEAN NOT NULL DEFAULT true`);
+    await query(`UPDATE surveys SET show_back_link = false WHERE slug = 'member-voice'`);
+
     // 2. Questions — belong to a survey, ordered
     await query(`CREATE TABLE IF NOT EXISTS survey_questions (
       id               UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

@@ -59,7 +59,8 @@ function _slugify(s) {
 router.get('/public/:slug', async (req, res, next) => {
   try {
     const { rows: surveys } = await query(
-      `SELECT id, slug, title, intro, thank_you, status, collect_name, collect_email, response_count
+      `SELECT id, slug, title, intro, thank_you, status, collect_name, collect_email,
+              COALESCE(show_back_link, true) AS show_back_link, response_count
          FROM surveys WHERE slug=$1 LIMIT 1`,
       [req.params.slug]
     );
@@ -201,7 +202,7 @@ router.get('/admin/:id', authenticate, requireAdmin, async (req, res, next) => {
 // PATCH /api/surveys/admin/:id — update survey metadata
 router.patch('/admin/:id', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const allowed = ['title','slug','intro','thank_you','status','collect_name','collect_email'];
+    const allowed = ['title','slug','intro','thank_you','status','collect_name','collect_email','show_back_link'];
     const sets = []; const params = [];
     for (const k of allowed) {
       if (k in (req.body || {})) {

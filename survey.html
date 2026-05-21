@@ -315,14 +315,19 @@ textarea.text-input{min-height:140px;resize:vertical;line-height:1.55}
 
   function stageThanks(){
     var thx = state.survey.thank_you || 'Thank you. We hear you.';
+    // Per-survey toggle. Default true so old responses still get the back-link;
+    // member-voice has it explicitly set to false (website not public yet).
+    var showBack = state.survey.show_back_link !== false;
     return '<section class="stage active"><div class="stage-inner" style="text-align:center">' +
       '<div class="final-celebrate">🎯</div>' +
       '<div class="eyebrow" style="justify-content:center">Got it</div>' +
       '<h1>Thank you. <span class="acc">Truly.</span></h1>' +
       '<p class="lead" style="margin-left:auto;margin-right:auto">' + escapeHtml(thx) + '</p>' +
-      '<div class="nav-row" style="justify-content:center;margin-top:20px">' +
-        '<a href="/" class="btn-primary">Back to ATP →</a>' +
-      '</div>' +
+      (showBack
+        ? '<div class="nav-row" style="justify-content:center;margin-top:20px">' +
+            '<a href="/" class="btn-primary">Back to ATP →</a>' +
+          '</div>'
+        : '') +
     '</div></section>';
   }
 
