@@ -20,6 +20,26 @@ router.get('/', optionalAuth, async (req, res, next) => {
     if (activity_id) { where.push(`s.activity_id = $${idx++}`);    params.push(activity_id); }
     if (activity)    { where.push(`a.slug = $${idx++}`);           params.push(activity); }
 
+    // Corporate-exclusive gate (Phase 3):
+    //  - Anonymous users never see corporate-only sessions
+    //  - Authenticated members only see corporate-only sessions for
+    //    companies they're an active member of
+    // The (NOT is_corporate_only) check is wrapped in COALESCE so
+    // pre-migration DBs (no column) treat it as false (i.e. show all).
+    if (req.member && req.member.id) {
+      where.push(
+        `(COALESCE(s.is_corporate_only,false) = false
+          OR s.corporate_account_id IN (
+            SELECT corporate_account_id FROM corporate_employees
+              WHERE member_id = $${idx} AND is_active=true AND deleted_at IS NULL AND frozen_at IS NULL
+          ))`
+      );
+      params.push(req.member.id);
+      idx++;
+    } else {
+      where.push(`COALESCE(s.is_corporate_only,false) = false`);
+    }
+
     // Theme 11 — return price_points + currency_code so the booking
     // modal can render the payment options. Falls back to the legacy
     // column set if migrate-paid-sessions hasn't run yet.
@@ -265,6 +285,11 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
       // ambassadors who are permitted to broadcast on it.
       is_streamable = false,
       assigned_ambassador_ids = [],
+      // Corporate-exclusive + online session support (Phase 3)
+      corporate_account_id = null,
+      is_corporate_only = false,
+      is_online = false,
+      stream_url = null,
     } = req.body;
 
     if (!name || !city_id || !scheduled_at || !location) {
@@ -363,6 +388,35 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
           await client.query('ROLLBACK TO SAVEPOINT set_streamable');
           if (e.code !== '42703') throw e;
         }
+        // Corporate-exclusive + online session fields (Phase 3) — same
+        // SAVEPOINT pattern so pre-migration DBs don't break creation.
+        await client.query('SAVEPOINT set_corp');
+        try {
+          await client.query(
+            `UPDATE sessions
+                SET corporate_account_id = $1,
+                    is_corporate_only = $2,
+                    is_online = $3,
+                    stream_url = $4
+              WHERE id = $5`,
+            [
+              is_corporate_only ? (corporate_account_id || null) : null,
+              !!is_corporate_only,
+              !!is_online,
+              is_online ? (stream_url || null) : null,
+              rows[0].id,
+            ]
+          );
+          rows[0].corporate_account_id = is_corporate_only ? (corporate_account_id || null) : null;
+          rows[0].is_corporate_only = !!is_corporate_only;
+          rows[0].is_online = !!is_online;
+          rows[0].stream_url = is_online ? (stream_url || null) : null;
+          await client.query('RELEASE SAVEPOINT set_corp');
+        } catch (e) {
+          await client.query('ROLLBACK TO SAVEPOINT set_corp');
+          if (e.code !== '42703') throw e;
+        }
+
         if (Array.isArray(assigned_ambassador_ids) && assigned_ambassador_ids.length) {
           await client.query('SAVEPOINT set_ambs');
           try {
@@ -622,6 +676,11 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
       // Live streaming per-session: toggle + assigned ambassadors
       is_streamable,
       assigned_ambassador_ids,
+      // Corporate-exclusive + online (Phase 3)
+      corporate_account_id,
+      is_corporate_only,
+      is_online,
+      stream_url,
     } = req.body;
 
     let rows;
@@ -689,6 +748,34 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
       try {
         await query(`UPDATE sessions SET intro_video_url=$1 WHERE id=$2`, [intro_video_url || null, id]);
         rows[0].intro_video_url = intro_video_url || null;
+      } catch (e) {
+        if (e.code !== '42703') throw e;
+      }
+    }
+
+    // Corporate-exclusive + online fields (Phase 3) — separate UPDATE.
+    // Pre-migration DBs (no corporate_account_id column) skip silently.
+    if (is_corporate_only !== undefined || is_online !== undefined || corporate_account_id !== undefined || stream_url !== undefined) {
+      try {
+        await query(
+          `UPDATE sessions
+              SET corporate_account_id = $1,
+                  is_corporate_only = $2,
+                  is_online = $3,
+                  stream_url = $4
+            WHERE id = $5`,
+          [
+            is_corporate_only ? (corporate_account_id || null) : null,
+            !!is_corporate_only,
+            !!is_online,
+            is_online ? (stream_url || null) : null,
+            id,
+          ]
+        );
+        rows[0].corporate_account_id = is_corporate_only ? (corporate_account_id || null) : null;
+        rows[0].is_corporate_only = !!is_corporate_only;
+        rows[0].is_online = !!is_online;
+        rows[0].stream_url = is_online ? (stream_url || null) : null;
       } catch (e) {
         if (e.code !== '42703') throw e;
       }

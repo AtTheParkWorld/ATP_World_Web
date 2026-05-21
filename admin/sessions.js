@@ -667,6 +667,16 @@ async function createSession() {
   if (intro_video_url === 'Uploading…') intro_video_url = null;
   var is_streamable = !!(document.getElementById('sIsStreamable') || {}).checked;
   var assigned_ambassador_ids = is_streamable ? SESSION_AMBS_PICK.slice() : [];
+  // Corporate-exclusive + online session fields (Phase 3)
+  var is_corporate_only = !!(document.getElementById('sIsCorporateOnly') || {}).checked;
+  var corporate_account_id = (document.getElementById('sCorporateAccountId') || {}).value || null;
+  var is_online = !!(document.getElementById('sIsOnline') || {}).checked;
+  var stream_url = (document.getElementById('sStreamUrl') || {}).value || null;
+  if (is_corporate_only && !corporate_account_id) {
+    msgEl.textContent = '❌ Pick a company for corporate-exclusive sessions';
+    msgEl.style.cssText = 'display:block;background:#2a1010;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+    return;
+  }
   var payload = {
     name, tribe_id, activity_id, city_id, description: desc, coach_id, location,
     intro_video_url,
@@ -682,6 +692,11 @@ async function createSession() {
     // Live streaming wiring
     is_streamable: is_streamable,
     assigned_ambassador_ids: assigned_ambassador_ids,
+    // Corporate / online (Phase 3)
+    is_corporate_only: is_corporate_only,
+    corporate_account_id: is_corporate_only ? corporate_account_id : null,
+    is_online: is_online,
+    stream_url: is_online ? stream_url : null,
   };
 
   var btnLabel = document.getElementById('sessionSubmitLabel');
@@ -739,6 +754,14 @@ function resetSessionForm() {
   var st = document.getElementById('sIsStreamable');
   if (st) { st.checked = false; delete st.dataset.userTouched; }
   var det = document.getElementById('sStreamingDetails'); if (det) det.style.display = 'none';
+  // Reset corporate / online controls (Phase 3).
+  ['sIsCorporateOnly','sIsOnline'].forEach(function(id){
+    var el = document.getElementById(id); if (el) el.checked = false;
+  });
+  var corpDet = document.getElementById('sCorporateDetails'); if (corpDet) corpDet.style.display = 'none';
+  var onlineDet = document.getElementById('sOnlineDetails'); if (onlineDet) onlineDet.style.display = 'none';
+  var corpSel = document.getElementById('sCorporateAccountId'); if (corpSel) corpSel.value = '';
+  var streamEl = document.getElementById('sStreamUrl'); if (streamEl) streamEl.value = '';
   SESSION_AMBS_PICK = [];
   if (typeof renderAmbassadorPicker === 'function') renderAmbassadorPicker();
   document.getElementById('sessionFormTitle').textContent = 'Create New Session';
@@ -806,6 +829,28 @@ function editSession(s) {
       renderAmbassadorPicker();
     }).catch(function(){});
   }
+
+  // Corporate / online fields (Phase 3) — prefill from cached session row.
+  var corpEl = document.getElementById('sIsCorporateOnly');
+  var onlineEl = document.getElementById('sIsOnline');
+  if (corpEl) corpEl.checked = !!s.is_corporate_only;
+  if (onlineEl) onlineEl.checked = !!s.is_online;
+  var streamEl = document.getElementById('sStreamUrl');
+  if (streamEl) streamEl.value = s.stream_url || '';
+  // Populate company dropdown — may load async; set value when ready.
+  if (s.is_corporate_only) {
+    loadCorporateAccountsForSession();
+    var corpSel = document.getElementById('sCorporateAccountId');
+    if (corpSel) {
+      var setVal = function(){
+        if (s.corporate_account_id) corpSel.value = s.corporate_account_id;
+      };
+      setVal();
+      setTimeout(setVal, 300);
+      setTimeout(setVal, 1000);
+    }
+  }
+  toggleCorporateSessionFields();
 
   document.getElementById('sessionFormTitle').textContent = 'Edit Session';
   document.getElementById('sessionSubmitLabel').textContent = '✓ Save Changes';
@@ -970,5 +1015,48 @@ async function setAmbassadorAPI(memberId, enabled) {
 var LOGO_SRC = "/atp-logo-transparent.png";
 document.getElementById('adminLogo').src = LOGO_SRC;
 document.getElementById('adminLogoNav').src = LOGO_SRC;
+
+// ── Phase 3: Corporate-exclusive session toggles ───────────────
+// Show/hide the company dropdown + stream URL depending on the
+// is_corporate_only / is_online checkboxes. Populate the dropdown
+// from /api/corporate/admin/accounts on first toggle.
+function toggleCorporateSessionFields() {
+  var corpOnly = !!(document.getElementById('sIsCorporateOnly') || {}).checked;
+  var online   = !!(document.getElementById('sIsOnline') || {}).checked;
+  var corpBox  = document.getElementById('sCorporateDetails');
+  var onlineBox= document.getElementById('sOnlineDetails');
+  if (corpBox)   corpBox.style.display   = corpOnly ? 'block' : 'none';
+  if (onlineBox) onlineBox.style.display = online   ? 'block' : 'none';
+  if (corpOnly) loadCorporateAccountsForSession();
+}
+window.toggleCorporateSessionFields = toggleCorporateSessionFields;
+
+var CORP_ACCOUNTS_CACHE = null;
+function loadCorporateAccountsForSession() {
+  var sel = document.getElementById('sCorporateAccountId');
+  if (!sel) return;
+  if (CORP_ACCOUNTS_CACHE) { _populateCorpSelect(sel, CORP_ACCOUNTS_CACHE); return; }
+  var token = getToken();
+  if (!token) return;
+  fetch('/api/corporate/admin/accounts', { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var accounts = ((d && d.accounts) || []).filter(function(a){ return a.status === 'active'; });
+      CORP_ACCOUNTS_CACHE = accounts;
+      _populateCorpSelect(sel, accounts);
+    })
+    .catch(function(){ /* silent — leave the placeholder option */ });
+}
+function _populateCorpSelect(sel, accounts) {
+  var current = sel.value;
+  sel.innerHTML = '<option value="">— Select an active company —</option>';
+  accounts.forEach(function(a){
+    var opt = document.createElement('option');
+    opt.value = a.id;
+    opt.textContent = a.company_name + (a.tier ? ' · ' + a.tier : '');
+    if (current === a.id) opt.selected = true;
+    sel.appendChild(opt);
+  });
+}
 
 

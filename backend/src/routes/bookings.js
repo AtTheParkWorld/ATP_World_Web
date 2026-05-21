@@ -86,6 +86,36 @@ router.post('/', authenticate, async (req, res, next) => {
       return res.status(400).json({ error: 'Session is no longer available for booking' });
     }
 
+    // Corporate-exclusive gate (Phase 3): only employees of the target
+    // company can book a corporate-only session. Check is_active +
+    // not frozen + not soft-deleted. Wrapped in try/catch so pre-migration
+    // DBs (no is_corporate_only column / no corporate_employees table)
+    // silently fall through to allow booking.
+    try {
+      const { rows: corpCheck } = await query(
+        `SELECT s.id, s.corporate_account_id, s.is_corporate_only
+           FROM sessions s WHERE s.id=$1 AND COALESCE(s.is_corporate_only,false)=true LIMIT 1`,
+        [session_id]
+      );
+      if (corpCheck.length) {
+        const cs = corpCheck[0];
+        if (!cs.corporate_account_id) {
+          return res.status(400).json({ error: 'Session is misconfigured. Contact ATP support.' });
+        }
+        const { rows: empCheck } = await query(
+          `SELECT id, is_active, frozen_at, deleted_at FROM corporate_employees
+            WHERE corporate_account_id=$1 AND member_id=$2 LIMIT 1`,
+          [cs.corporate_account_id, req.member.id]
+        );
+        if (!empCheck.length || empCheck[0].deleted_at || empCheck[0].frozen_at || !empCheck[0].is_active) {
+          return res.status(403).json({ error: 'This session is exclusive to a specific company. You do not have access.' });
+        }
+      }
+    } catch (e) {
+      if (e.code !== '42703' && e.code !== '42P01') throw e;
+      // Pre-migration: column or table missing — allow booking through.
+    }
+
     // Check existing booking — pending_payment counts as "in flight" so
     // we don't recreate; just return the existing pending booking + options.
     const { rows: existing } = await query(

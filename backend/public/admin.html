@@ -434,6 +434,32 @@
               </div>
             </div>
 
+            <!-- Corporate-exclusive — only members of the chosen company can see/book.
+                 Optionally mark as online (lives on a stream URL instead of a venue). -->
+            <div class="admin-form-group full" style="margin-top:8px;padding:14px;background:#0d1a0a;border-radius:10px;border:1px solid #1f3a0d">
+              <div style="font-family:var(--ff-display);font-size:13px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:8px">🏢 Corporate / Online (optional)</div>
+              <label style="display:flex;align-items:center;gap:10px;font-size:13px;color:#fff;cursor:pointer;margin-bottom:10px">
+                <input type="checkbox" id="sIsCorporateOnly" style="width:18px;height:18px;accent-color:#7AC231" onchange="toggleCorporateSessionFields()">
+                Corporate-exclusive (only this company's employees can book)
+              </label>
+              <div id="sCorporateDetails" style="display:none;margin-bottom:14px">
+                <label class="admin-form-label" for="sCorporateAccountId">Company *</label>
+                <select class="admin-form-select" id="sCorporateAccountId">
+                  <option value="">— Select an active company —</option>
+                </select>
+                <div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">Only employees of this company will see this session. Companies must be in <em>active</em> status to appear here.</div>
+              </div>
+              <label style="display:flex;align-items:center;gap:10px;font-size:13px;color:#fff;cursor:pointer;margin-bottom:10px">
+                <input type="checkbox" id="sIsOnline" style="width:18px;height:18px;accent-color:#7AC231" onchange="toggleCorporateSessionFields()">
+                Online session (live-streamed, no physical venue)
+              </label>
+              <div id="sOnlineDetails" style="display:none">
+                <label class="admin-form-label" for="sStreamUrl">Stream URL</label>
+                <input class="admin-form-input" type="url" id="sStreamUrl" placeholder="https://zoom.us/j/... or https://teams.microsoft.com/...">
+                <div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">Zoom / Teams / livestream link. Visible to booked members only.</div>
+              </div>
+            </div>
+
             <!-- Paid-session pricing — set EITHER currency price OR points price OR both.
                  Members will pick at booking time (Stripe checkout / wallet redemption).
                  Leave both at 0 for a free session. -->
