@@ -469,7 +469,7 @@ function renderSurveyResponses(survey, questions, summary, responses) {
         '<summary style="padding:12px 14px;cursor:pointer;list-style:none;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
           '<div style="flex:1;min-width:0"><strong style="color:#fff;font-size:13px">' + _esc(name) + '</strong>' + tag + (r.email ? '<span style="color:#666;font-size:11px;margin-left:10px">' + _esc(r.email) + '</span>' : '') + '</div>' +
           '<span style="font-size:10px;color:#666">' + new Date(r.created_at).toLocaleDateString() + '</span>' +
-          '<button class="admin-btn" data-atp-call="deleteSurveyResponse" data-args=\'["' + r.id + '","' + survey.id + '"]\' onclick="event.stopPropagation();event.preventDefault()" style="font-size:10px;padding:4px 10px;background:rgba(239,68,68,.10);color:#ef4444;border:1px solid rgba(239,68,68,.3)" title="Delete this response">✕ Delete</button>' +
+          '<button class="admin-btn" onclick="event.stopPropagation();event.preventDefault();deleteSurveyResponse(\'' + r.id + '\',\'' + survey.id + '\')" style="font-size:10px;padding:4px 10px;background:rgba(239,68,68,.10);color:#ef4444;border:1px solid rgba(239,68,68,.3)" title="Delete this response">✕ Delete</button>' +
         '</summary>' +
         '<div style="padding:0 14px 14px;font-size:13px;line-height:1.6">' +
           questions.map(function(q){
@@ -487,10 +487,10 @@ function renderSurveyResponses(survey, questions, summary, responses) {
   host.innerHTML = html;
 }
 
-// Delete a single response. Refreshes the responses view on success.
-function deleteSurveyResponse(e, btn) {
-  var args = JSON.parse(btn.getAttribute('data-args') || '[]');
-  var responseId = args[0], surveyId = args[1];
+// Delete a single response. Called directly from inline onclick (the
+// button uses stopPropagation to prevent <details> toggling, which
+// would also kill the data-atp-call delegation). Refreshes view on success.
+function deleteSurveyResponse(responseId, surveyId) {
   if (!responseId || !surveyId) return;
   if (!confirm('Delete this response? This cannot be undone.')) return;
   fetch(ATP_API + '/surveys/admin/responses/' + responseId, {
