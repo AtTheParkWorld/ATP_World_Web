@@ -321,6 +321,48 @@ async function sendMagicLink(member, magicUrl) {
   return send(member.email, 'Your ATP login link', html);
 }
 
+// ── PAID SESSION RECEIPT ──────────────────────────────────────
+// Sent immediately after a successful paid-session checkout. Acts as
+// proof of payment for the member (insurance reimbursement, expense
+// reports, etc.). Separate from the booking-confirmation email — that
+// one drives them back to ATP, this one is a static record.
+async function sendPaidSessionReceipt({ member, session, payment }) {
+  const sessionDate = session.scheduled_at
+    ? new Date(session.scheduled_at).toLocaleString('en-AE', {
+        weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Dubai',
+      })
+    : '—';
+  const amount = payment.amount != null ? Number(payment.amount).toFixed(2) : '0.00';
+  const currency = (payment.currency || 'AED').toUpperCase();
+  const paidAt = payment.paid_at
+    ? new Date(payment.paid_at).toLocaleString('en-AE', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Dubai' })
+    : new Date().toLocaleString('en-AE', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Dubai' });
+  const html = baseTemplate(`
+    <h1>Receipt — payment confirmed ✓</h1>
+    <p>Hi ${escapeHtml(member.first_name)}, here's your proof of payment for the session below. Keep this for your records.</p>
+    <div class="qr-box" style="text-align:left">
+      <div style="font-size:11px;color:#888;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:10px">Receipt details</div>
+      <table style="width:100%;font-size:14px;color:#ddd">
+        <tr><td style="padding:4px 0;color:#888">Amount paid</td><td style="text-align:right;color:#fff;font-weight:700;font-family:Arial,sans-serif">${escapeHtml(currency)} ${escapeHtml(amount)}</td></tr>
+        <tr><td style="padding:4px 0;color:#888">Paid on</td><td style="text-align:right;color:#fff">${escapeHtml(paidAt)}</td></tr>
+        <tr><td style="padding:4px 0;color:#888">Payment method</td><td style="text-align:right;color:#fff">${escapeHtml(payment.method || 'Stripe')}</td></tr>
+        ${payment.stripe_payment_intent_id ? `<tr><td style="padding:4px 0;color:#888">Order ref</td><td style="text-align:right;color:#fff;font-family:monospace;font-size:11px">${escapeHtml(payment.stripe_payment_intent_id)}</td></tr>` : ''}
+      </table>
+      <hr class="divider" style="margin:14px 0">
+      <div style="font-size:11px;color:#888;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:10px">Session</div>
+      <table style="width:100%;font-size:14px;color:#ddd">
+        <tr><td style="padding:4px 0;color:#888">Name</td><td style="text-align:right;color:#fff">${escapeHtml(session.name || 'ATP session')}</td></tr>
+        <tr><td style="padding:4px 0;color:#888">Date</td><td style="text-align:right;color:#fff">${escapeHtml(sessionDate)}</td></tr>
+        ${session.location ? `<tr><td style="padding:4px 0;color:#888">Location</td><td style="text-align:right;color:#fff">${escapeHtml(session.location)}</td></tr>` : ''}
+        <tr><td style="padding:4px 0;color:#888">Member</td><td style="text-align:right;color:#fff">${escapeHtml(member.first_name + ' ' + (member.last_name || ''))} · ${escapeHtml(member.member_number || '')}</td></tr>
+      </table>
+    </div>
+    <p class="muted">Issued by At The Park · This is an automated receipt. For corrections or refunds, reply to this email or write to <a href="mailto:general@atthepark.com" style="color:#7AC231">general@atthepark.com</a>.</p>
+  `);
+  return send(member.email, `Receipt — ${currency} ${amount} · ${session.name || 'ATP session'}`, html);
+}
+
 // ── BOOKING CONFIRMATION ──────────────────────────────────────
 async function sendBookingConfirmation(member, session, qrData, qrToken) {
   const sessionDate = new Date(session.scheduled_at).toLocaleString('en-AE', {
@@ -483,4 +525,5 @@ module.exports = {
   sendCoachThreadInitial,
   sendCoachThreadReply,
   sendCorporateInvitation,
+  sendPaidSessionReceipt,
 };

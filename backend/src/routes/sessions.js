@@ -509,18 +509,21 @@ router.post('/:id/checkin', authenticate, requireScanner, async (req, res, next)
       return res.status(400).json({ error: 'qr_token or member_id required' });
     }
 
-    // Get session — must not be completed yet (unless admin)
+    // Get session — must still be upcoming (non-admin). Once a
+    // session auto-completes (3h after end time) check-ins close.
     const { rows: sRows } = await query(
-      'SELECT id, status, points_reward FROM sessions WHERE id=$1',
+      'SELECT id, status, points_reward, is_online FROM sessions WHERE id=$1',
       [req.params.id]
     );
     if (!sRows.length) return res.status(404).json({ error: 'Session not found' });
     const session = sRows[0];
 
-    if (session.status === 'completed' && !req.member.is_admin) {
+    if (session.status !== 'upcoming' && !req.member.is_admin) {
       return res.status(403).json({
-        error: 'Session already completed. Only admin can check in now.',
-        code: 'SESSION_COMPLETED',
+        error: session.status === 'completed'
+          ? 'Session already completed. Check-ins closed.'
+          : 'Session is not available for check-in (status: ' + session.status + ').',
+        code: 'CHECKIN_CLOSED',
       });
     }
 

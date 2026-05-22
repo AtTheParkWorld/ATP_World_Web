@@ -183,4 +183,71 @@ router.post('/expire', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── GET /api/points/admin/ledger — Admin browse + filter ──────
+// Filter by member_id, reason, sign (added/removed), date range.
+// Returns paginated rows. CSV export available via .csv extension hint.
+router.get('/admin/ledger', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { member_id, reason, sign, from, to, format } = req.query;
+    const limit = Math.min(2000, parseInt(req.query.limit, 10) || 200);
+    const where = []; const params = [];
+    if (member_id) { params.push(member_id); where.push(`pl.member_id = $${params.length}`); }
+    if (reason)    { params.push(reason);    where.push(`pl.reason = $${params.length}`); }
+    if (sign === 'added')    where.push(`pl.amount > 0`);
+    if (sign === 'removed')  where.push(`pl.amount < 0`);
+    if (from) { params.push(from); where.push(`pl.created_at >= $${params.length}`); }
+    if (to)   { params.push(to);   where.push(`pl.created_at <  $${params.length}`); }
+    const whereSql = where.length ? 'WHERE ' + where.join(' AND ') : '';
+    params.push(limit);
+    const { rows } = await query(
+      `SELECT pl.id, pl.member_id, pl.amount, pl.balance, pl.reason, pl.description,
+              pl.created_at, pl.created_by, pl.reference_id,
+              m.first_name, m.last_name, m.email, m.member_number,
+              cb.first_name AS actor_first, cb.last_name AS actor_last
+         FROM points_ledger pl
+         JOIN members m ON m.id = pl.member_id
+         LEFT JOIN members cb ON cb.id = pl.created_by
+        ${whereSql}
+        ORDER BY pl.created_at DESC
+        LIMIT $${params.length}`,
+      params
+    );
+
+    if (format === 'csv') {
+      const esc = (v) => {
+        if (v == null) return '';
+        const s = String(v);
+        return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      };
+      const lines = ['created_at,member_number,first_name,last_name,email,amount,balance,reason,description,actor'];
+      for (const r of rows) {
+        lines.push([
+          r.created_at && new Date(r.created_at).toISOString(),
+          r.member_number, r.first_name, r.last_name, r.email,
+          r.amount, r.balance, r.reason, r.description,
+          ((r.actor_first || '') + ' ' + (r.actor_last || '')).trim(),
+        ].map(esc).join(','));
+      }
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="points-ledger-${new Date().toISOString().slice(0,10)}.csv"`);
+      return res.send(lines.join('\n'));
+    }
+
+    res.json({ rows, count: rows.length });
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/points/admin/reasons — distinct reasons (filter dropdown) ──
+router.get('/admin/reasons', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT reason, COUNT(*)::int AS count
+         FROM points_ledger
+        GROUP BY reason
+        ORDER BY count DESC`
+    );
+    res.json({ reasons: rows });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

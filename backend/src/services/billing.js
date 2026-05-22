@@ -293,7 +293,7 @@ async function _confirmSessionBooking(checkoutSession) {
     );
   }
 
-  // Best-effort email — don't fail the webhook if email is down.
+  // Best-effort emails — don't fail the webhook if email is down.
   try {
     await emailService.sendBookingConfirmation(
       { id: b.member_id, member_number: b.member_number, first_name: b.first_name, last_name: b.last_name, email: b.email },
@@ -301,6 +301,17 @@ async function _confirmSessionBooking(checkoutSession) {
       qrData, qrToken
     );
   } catch (e) { console.warn('[billing] booking confirmation email failed', e.message); }
+
+  // Paid-session receipt — separate email so members have a static
+  // proof-of-payment record for expense reports / insurance / corporate
+  // wellness reimbursements.
+  try {
+    await emailService.sendPaidSessionReceipt({
+      member: { first_name: b.first_name, last_name: b.last_name, email: b.email, member_number: b.member_number },
+      session: { name: b.session_name, scheduled_at: b.scheduled_at, location: b.location },
+      payment: { amount: amount / 100, currency, method: 'Stripe', paid_at: new Date().toISOString(), stripe_payment_intent_id: paymentIntent },
+    });
+  } catch (e) { console.warn('[billing] paid session receipt email failed', e.message); }
 }
 
 // Top-level webhook event router. Pulls the full subscription object

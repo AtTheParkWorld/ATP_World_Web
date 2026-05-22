@@ -235,7 +235,10 @@
       <div class="admin-section">
         <div class="admin-section-head">
           <span class="admin-section-title">All Members <span style="color:#444;font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;margin-left:8px">7,024 total</span></span>
-          <input type="search" id="memberSearch" placeholder="Search name, email, or ID…" style="background:#111;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:7px 14px;color:#fff;font-size:12px;font-family:var(--ff-body);width:240px" oninput="filterMembers(this.value)" aria-label="Search name, email, or ID…">
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="admin-btn" onclick="exportPointsLedger()" style="font-size:11px;padding:7px 12px;background:rgba(122,194,49,.10);color:#7AC231;border:1px solid rgba(122,194,49,.3)">📊 Export points ledger (CSV)</button>
+            <input type="search" id="memberSearch" placeholder="Search name, email, or ID…" style="background:#111;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:7px 14px;color:#fff;font-size:12px;font-family:var(--ff-body);width:240px" oninput="filterMembers(this.value)" aria-label="Search name, email, or ID…">
+          </div>
         </div>
         <div class="admin-section-body" style="padding:0">
           <table class="admin-table" id="membersTable">

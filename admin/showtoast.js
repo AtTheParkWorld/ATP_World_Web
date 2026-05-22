@@ -121,6 +121,7 @@ async function loadMembersAPI() {
         '<td><span class="badge '+(isAmb?'badge-green':'badge-grey')+'">'+(isAmb?'Ambassador':'Member')+'</span></td>'+
         '<td>'+
           '<button class="admin-btn" style="font-size:11px;padding:4px 10px;background:rgba(245,192,66,.14);color:#f5c042;border:1px solid rgba(245,192,66,.3);margin-right:4px" onclick="topupWallet(this.dataset.mid, this.dataset.name)" data-mid="'+m.id+'" data-name="'+memberLabel.replace(/"/g,'')+'">💰 Top up</button>'+
+          '<button class="admin-btn" style="font-size:11px;padding:4px 10px;background:rgba(122,194,49,.14);color:#7AC231;border:1px solid rgba(122,194,49,.3);margin-right:4px" onclick="adjustPoints(this.dataset.mid, this.dataset.name)" data-mid="'+m.id+'" data-name="'+memberLabel.replace(/"/g,'')+'">± Points</button>'+
           (isAmb
             ? '<button class="admin-btn" style="font-size:11px;padding:4px 10px" onclick="removeAmbassador(this.dataset.mid)" data-mid="'+m.id+'">Remove Amb.</button>'
             : '<button class="admin-btn" style="font-size:11px;padding:4px 10px" onclick="makeAmbassador(this.dataset.mid)" data-mid="'+m.id+'">Make Amb.</button>'
@@ -192,3 +193,71 @@ async function topupWallet(memberId, memberName) {
     showToast('❌ ' + e.message, true);
   }
 }
+
+// ── Adjust points — give or take. Hits /api/points/admin-adjust.
+// Negative numbers remove points (capped at 0 by the endpoint).
+// All adjustments land in points_ledger with the admin's id +
+// reason so they're traceable via /admin/ledger.
+async function adjustPoints(memberId, memberName) {
+  if (!memberId) return;
+  var input = window.prompt(
+    '± Points for ' + (memberName || 'this member') + '\n\n' +
+    'Enter a positive number to ADD points, or a negative number to REMOVE points.\n' +
+    'Examples:  50  →  add 50    ·    -25  →  remove 25',
+    ''
+  );
+  if (input == null) return;
+  var amount = parseInt(String(input).trim(), 10);
+  if (!amount || isNaN(amount)) { showToast('❌ Amount must be a non-zero integer', true); return; }
+  if (Math.abs(amount) > 5000) {
+    if (!confirm('That\'s ' + amount + ' points — large. Confirm?')) return;
+  }
+  var reason = window.prompt(
+    'Reason (one short phrase — appears in the audit log):\n\n' +
+    'Examples:  "Bonus for hosting", "Penalty for no-show", "Manual correction"',
+    'admin_adjustment'
+  );
+  if (reason == null) return;
+  reason = (reason || '').trim() || 'admin_adjustment';
+  // Trim reason to allowed format — alphanumeric + underscores.
+  var slugReason = reason.toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '').slice(0, 40) || 'admin_adjustment';
+  try {
+    var token = getToken();
+    var res = await fetch(ATP_API + '/points/admin-adjust', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ member_id: memberId, amount: amount, reason: slugReason, description: reason }),
+    }).then(function(r){ return r.json(); });
+    if (res && res.error) throw new Error(res.error);
+    showToast('✅ ' + (amount > 0 ? 'Added ' + amount : 'Removed ' + Math.abs(amount)) + ' pts for ' + (memberName || 'member'));
+    loadMembersAPI();
+  } catch (e) {
+    showToast('❌ ' + e.message, true);
+  }
+}
+window.adjustPoints = adjustPoints;
+
+// ── Export the full points ledger as CSV. Hits the admin endpoint
+// with format=csv and triggers a browser download.
+async function exportPointsLedger() {
+  var token = getToken();
+  if (!token) { showToast('❌ Sign in first', true); return; }
+  try {
+    var res = await fetch(ATP_API + '/points/admin/ledger?format=csv&limit=2000', {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    if (!res.ok) {
+      var err = await res.json().catch(function(){ return {}; });
+      throw new Error(err.error || ('HTTP ' + res.status));
+    }
+    var blob = await res.blob();
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url;
+    a.download = 'points-ledger-' + new Date().toISOString().slice(0,10) + '.csv';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+    showToast('✅ Ledger downloaded');
+  } catch (e) { showToast('❌ ' + e.message, true); }
+}
+window.exportPointsLedger = exportPointsLedger;

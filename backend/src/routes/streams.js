@@ -102,23 +102,30 @@ async function _canViewStreamAsync(member, stream) {
 async function _resolveBroadcasterEligibility(member, sessionId) {
   if (!sessionId) return { ok: false, error: 'session_id required — every stream is anchored to a session.' };
   const { rows } = await query(
-    `SELECT id, coach_id, is_streamable, name FROM sessions WHERE id=$1 LIMIT 1`,
+    `SELECT id, coach_id, is_streamable, is_online, name FROM sessions WHERE id=$1 LIMIT 1`,
     [sessionId]
   ).catch(() => ({ rows: [] }));
   if (!rows.length) return { ok: false, error: 'Session not found' };
   const session = rows[0];
-  if (!session.is_streamable && !member.is_admin) {
+  // Online sessions are streamable by default — they have no physical
+  // venue, the stream IS the session. is_streamable is only required
+  // for in-person sessions that the admin opted-in to broadcast.
+  if (!session.is_streamable && !session.is_online && !member.is_admin) {
     return { ok: false, error: 'This session is not enabled for streaming.' };
   }
   if (member.is_admin) return { ok: true, session };
   if (session.coach_id && session.coach_id === member.id) return { ok: true, session };
-  // Check if the member is a nominated ambassador for this session.
-  const { rows: amb } = await query(
-    `SELECT 1 FROM session_ambassadors WHERE session_id=$1 AND ambassador_id=$2 LIMIT 1`,
-    [sessionId, member.id]
-  ).catch(() => ({ rows: [] }));
-  if (amb.length) return { ok: true, session };
-  return { ok: false, error: 'Only the assigned coach or nominated ambassadors can stream this session.' };
+  // For ONLINE sessions the assigned coach is sufficient — ambassadors
+  // exist for in-person scanning, not stream hosting. For in-person
+  // streamable sessions, allow nominated ambassadors as before.
+  if (!session.is_online) {
+    const { rows: amb } = await query(
+      `SELECT 1 FROM session_ambassadors WHERE session_id=$1 AND ambassador_id=$2 LIMIT 1`,
+      [sessionId, member.id]
+    ).catch(() => ({ rows: [] }));
+    if (amb.length) return { ok: true, session };
+  }
+  return { ok: false, error: 'Only the assigned coach' + (session.is_online ? '' : ' or nominated ambassadors') + ' can stream this session.' };
 }
 
 // Broadcaster gate kept as a quick role check for entry to /stream-broadcast.
@@ -660,6 +667,61 @@ router.get('/admin/analytics', authenticate, requireAdmin, async (req, res, next
         avg_view_seconds: avgSeconds,
       },
     });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/streams/:sessionId/auto-checkin ─────────────────
+// Records a check-in for ONLINE sessions automatically when a member
+// joins the stream. No ambassador required (online sessions don't have
+// physical scanners). Idempotent — calling twice in the same session
+// doesn't double-credit. The session.status='upcoming' + is_online=true
+// gate means this can't be abused on in-person sessions.
+router.post('/:sessionId/auto-checkin', authenticate, async (req, res, next) => {
+  try {
+    const { rows: sRows } = await query(
+      `SELECT id, status, points_reward, name, is_online
+         FROM sessions WHERE id=$1 LIMIT 1`,
+      [req.params.sessionId]
+    );
+    if (!sRows.length) return res.status(404).json({ error: 'Session not found' });
+    const session = sRows[0];
+    if (!session.is_online) {
+      return res.status(400).json({ error: 'Auto check-in only available for online sessions.' });
+    }
+    if (session.status !== 'upcoming') {
+      return res.status(403).json({
+        error: 'Check-ins closed (session status: ' + session.status + ').',
+        code: 'CHECKIN_CLOSED',
+      });
+    }
+    // Lookup booking
+    const { rows: bRows } = await query(
+      `SELECT id, status FROM bookings WHERE session_id=$1 AND member_id=$2 LIMIT 1`,
+      [req.params.sessionId, req.member.id]
+    );
+    if (!bRows.length) {
+      return res.status(403).json({ error: 'No booking found. Book this session first.' });
+    }
+    const booking = bRows[0];
+    if (booking.status === 'attended') {
+      return res.json({ success: true, status: 'already_checked_in' });
+    }
+    if (booking.status === 'cancelled') {
+      return res.status(400).json({ error: 'Booking was cancelled.' });
+    }
+    await query(
+      `UPDATE bookings
+          SET status='attended', checked_in_at=NOW(),
+              checked_in_by=$1, check_in_method='auto_stream'
+        WHERE id=$2`,
+      [req.member.id, booking.id]
+    );
+    // Maintain last_session_at for the 30-day inactivity rule
+    await query(
+      `UPDATE members SET last_session_at = NOW() WHERE id = $1`,
+      [req.member.id]
+    ).catch(() => {});
+    res.json({ success: true, status: 'checked_in', method: 'auto_stream' });
   } catch (err) { next(err); }
 });
 

@@ -175,13 +175,16 @@ async function processExpiringPoints() {
 }
 
 // ── AUTO-COMPLETE SESSIONS ────────────────────────────────────
-// Called every hour by cron — completes sessions 12h after their end time
+// Called hourly by cron. Auto-completes sessions 3 hours after their
+// end time and awards points to attended-but-not-yet-credited members.
+// Once a session is 'completed', check-ins are no longer accepted
+// (gate enforced in /sessions/:id/checkin).
 async function autoCompleteSessions() {
   const { rows: sessions } = await query(
     `SELECT id, name FROM sessions
      WHERE status='upcoming'
        AND COALESCE(ends_at, scheduled_at + (duration_mins * INTERVAL '1 minute'))
-           < NOW() - INTERVAL '12 hours'`
+           < NOW() - INTERVAL '3 hours'`
   );
 
   for (const session of sessions) {
