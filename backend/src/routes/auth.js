@@ -48,12 +48,17 @@ async function getMemberByEmail(email) {
 // ── POST /api/auth/register ───────────────────────────────────
 router.post('/register', async (req, res, next) => {
   try {
-    const { first_name, last_name, email, phone, password,
-            referrer_id, referral_code } = req.body;
+    let { first_name, last_name, email, phone, password,
+          referrer_id, referral_code } = req.body;
 
     if (!first_name || !last_name || !email) {
       return res.status(400).json({ error: 'First name, last name and email are required' });
     }
+    // Normalise email to lowercase + trim before any persistence. The
+    // members.email UNIQUE constraint is case-sensitive in Postgres so
+    // case-mixed duplicates would slip past the LOWER() check below if
+    // we kept the raw casing.
+    email = String(email).trim().toLowerCase();
 
     // Duplicate check — email always, phone only if provided
     const existing = phone

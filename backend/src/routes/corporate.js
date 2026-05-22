@@ -639,7 +639,10 @@ router.post('/admin/accounts/:id/employees/csv', authenticate, requireAdmin, asy
       out.push(cur);
       return out.map(s => s.trim());
     }
-    const header = splitCsv(lines[0]).map(h => h.toLowerCase());
+    // Strip UTF-8 BOM that Excel + Google Sheets prepend to CSV exports —
+    // otherwise the first header reads as "﻿email" and column
+    // detection misses it.
+    const header = splitCsv(lines[0].replace(/^﻿/, '')).map(h => h.toLowerCase());
     const norm = (h) => h.replace(/[\s_-]+/g, '').replace(/name$/, '');
     const colIdx = {
       first_name: header.findIndex(h => ['firstname','first','givenname','fname'].includes(norm(h))),
@@ -1373,7 +1376,10 @@ router.post('/company/:id/employees/csv', authenticate, _requireCompanyAdminFor,
       out.push(cur);
       return out.map(s => s.trim());
     }
-    const header = splitCsv(lines[0]).map(h => h.toLowerCase());
+    // Strip UTF-8 BOM that Excel + Google Sheets prepend to CSV exports —
+    // otherwise the first header reads as "﻿email" and column
+    // detection misses it.
+    const header = splitCsv(lines[0].replace(/^﻿/, '')).map(h => h.toLowerCase());
     const norm = (h) => h.replace(/[\s_-]+/g, '').replace(/name$/, '');
     const colIdx = {
       first_name: header.findIndex(h => ['firstname','first','givenname','fname'].includes(norm(h))),

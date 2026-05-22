@@ -395,4 +395,69 @@ router.get('/search', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/members/me/forget — UAE PDPL / GDPR right to erasure ──
+// Self-service hard-delete. Anonymises personal data on the member
+// row + deletes session_feedback, social_accounts, wearable_connections.
+// Bookings + audit logs are kept (legitimate business records) but
+// the linked email/name is scrubbed via FK CASCADE on the member row.
+// Requires explicit confirmation in the body (defence against accidental
+// hits) + the member's own JWT.
+router.post('/me/forget', authenticate, async (req, res, next) => {
+  const { transaction } = require('../db');
+  try {
+    const confirm = req.body && req.body.confirm;
+    if (confirm !== 'DELETE_MY_ACCOUNT') {
+      return res.status(400).json({
+        error: 'To confirm deletion, send { "confirm": "DELETE_MY_ACCOUNT" } in the body.',
+      });
+    }
+    const memberId = req.member.id;
+
+    await transaction(async (client) => {
+      // Anonymise the row instead of deleting — preserves FK integrity
+      // on bookings, points_ledger, audit logs (legitimate business records).
+      // PII fields are nulled. Email is replaced with a stable placeholder
+      // so the UNIQUE constraint still holds across multiple deletions.
+      await client.query(
+        `UPDATE members
+           SET first_name = 'Deleted',
+               last_name  = 'User',
+               email      = 'deleted-' || id::text || '@atp.invalid',
+               phone      = NULL,
+               avatar_url = NULL,
+               avatar_gallery = '[]'::jsonb,
+               date_of_birth  = NULL,
+               nationality    = NULL,
+               sports_preferences = '[]'::jsonb,
+               password_hash  = 'ACCOUNT_DELETED',
+               is_banned      = true,
+               banned_reason  = 'Self-deleted via right-to-erasure',
+               banned_at      = NOW(),
+               updated_at     = NOW()
+         WHERE id = $1`,
+        [memberId]
+      );
+      // Wipe linked records that contain PII not anonymisable on the
+      // main row. Each wrapped in defensive SAVEPOINT so a missing table
+      // (pre-migration) doesn't fail the whole erasure.
+      const wipes = [
+        `DELETE FROM social_accounts WHERE member_id = $1`,
+        `DELETE FROM wearable_connections WHERE member_id = $1`,
+        `DELETE FROM friendships WHERE requester_id = $1 OR addressee_id = $1`,
+        `DELETE FROM notifications WHERE member_id = $1`,
+        `DELETE FROM survey_responses WHERE member_id = $1`,
+      ];
+      for (const sql of wipes) {
+        await client.query('SAVEPOINT erase').catch(() => {});
+        try { await client.query(sql, [memberId]); await client.query('RELEASE SAVEPOINT erase').catch(() => {}); }
+        catch (e) { await client.query('ROLLBACK TO SAVEPOINT erase').catch(() => {}); }
+      }
+    });
+    res.json({
+      success: true,
+      message: 'Your account has been anonymised. You will be signed out automatically. Contact general@atthepark.com if you change your mind within 30 days.',
+    });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

@@ -107,6 +107,20 @@ app.use(cors({
   maxAge: 600, // cache preflight 10min
 }));
 
+// ── HTTPS REDIRECT (production only) ─────────────────────────
+// Render terminates TLS at its edge and forwards over HTTP, setting
+// x-forwarded-proto=http|https. We trust the proxy header and 301 any
+// http request to https — belt-and-braces alongside HSTS from Helmet.
+if ((process.env.NODE_ENV || 'development') === 'production') {
+  app.set('trust proxy', 1);
+  app.use((req, res, next) => {
+    if (req.headers['x-forwarded-proto'] === 'https') return next();
+    // Allow /health over plain http so platform health checks work
+    if (req.path === '/health') return next();
+    res.redirect(301, 'https://' + req.headers.host + req.originalUrl);
+  });
+}
+
 // ── RATE LIMITING ────────────────────────────────────────────
 // Three buckets, increasingly strict toward auth:
 //   - global  300/15min   — broad protection
@@ -141,6 +155,19 @@ const authLimiter = rateLimit({
 app.use('/api/', globalLimiter);
 app.use('/api/', writeLimiter);
 app.use('/api/auth/', authLimiter);
+
+// ── MIGRATION-ENDPOINT GUARD ─────────────────────────────────
+// 45 /api/auth/migrate-* endpoints exist for one-off schema work.
+// Each is gated by ADMIN_SETUP_KEY, but they're still attack surface.
+// In production, require MIGRATIONS_ENABLED=true to even reach them.
+// Disable post-launch by un-setting the env var.
+app.use('/api/auth/', (req, res, next) => {
+  if (!/^\/api\/(?:v1\/)?auth\/migrate-/.test(req.originalUrl) &&
+      !/^\/auth\/migrate-/.test(req.url)) return next();
+  if ((process.env.NODE_ENV || 'development') !== 'production') return next();
+  if (process.env.MIGRATIONS_ENABLED === 'true') return next();
+  return res.status(403).json({ error: 'Migrations disabled. Set MIGRATIONS_ENABLED=true to run.' });
+});
 
 // ── MIDDLEWARE ────────────────────────────────────────────────
 // Body limits cut from 10mb → 1mb. Avatar/badge upload routes that
@@ -431,6 +458,32 @@ if (require.main === module) {
       } catch (e) { console.error('[gifts] auto-expire tick failed:', e.message); }
     };
     setTimeout(() => { sessionsTick(); setInterval(sessionsTick, 60 * 60 * 1000); }, 90 * 1000);
+
+    // ── Daily cleanup: stub corporate members that never accepted ───
+    // When a CA adds an employee with a new email, we create a stub
+    // members row with password_hash='PENDING_INVITATION'. If they
+    // never accept the invite within 90 days, the row is a zombie —
+    // counts in totals, never checks in, can't log in. Hard-delete.
+    const { query } = require('./db');
+    const stubCleanupTick = async () => {
+      try {
+        const { rowCount } = await query(
+          `DELETE FROM members
+            WHERE password_hash = 'PENDING_INVITATION'
+              AND email_verified = false
+              AND last_active_at IS NULL
+              AND created_at < NOW() - INTERVAL '90 days'
+              AND NOT EXISTS (
+                SELECT 1 FROM corporate_employees
+                 WHERE member_id = members.id
+                   AND joined_at IS NOT NULL
+              )`
+        );
+        if (rowCount) console.log(`[cleanup] removed ${rowCount} stale stub members (>90 days unaccepted)`);
+      } catch (e) { console.error('[cleanup] stub members:', e.message); }
+    };
+    // Run once 30min after boot, then every 24h.
+    setTimeout(() => { stubCleanupTick(); setInterval(stubCleanupTick, 24 * 60 * 60 * 1000); }, 30 * 60 * 1000);
   });
 }
 
