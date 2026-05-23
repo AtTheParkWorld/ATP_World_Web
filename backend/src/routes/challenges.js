@@ -95,6 +95,18 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
        prize_product_name || null, prize_product_image_url || null,
        winner_slots, prize_1st_points || 0, prize_2nd_points || 0, prize_3rd_points || 0]
     );
+    // Sync uploaded badge image into the linked achievement so it
+    // actually displays on the profile (achievements are what render).
+    // Skip silently if the link or column is missing.
+    if (badge_image && prize_badge_id) {
+      try {
+        await query(
+          `UPDATE achievements SET badge_image_url = $1, updated_at = NOW() WHERE id = $2`,
+          [badge_image, prize_badge_id]
+        );
+      } catch (e) { /* non-fatal */ }
+    }
+
     audit.log(req, 'challenge.created', 'challenge', rows[0].id, { title });
     res.status(201).json({ challenge: rows[0] });
   } catch (err) { next(err); }

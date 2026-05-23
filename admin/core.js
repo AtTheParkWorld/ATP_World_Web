@@ -86,7 +86,7 @@ document.getElementById('adminPass').addEventListener('keydown', function(e){
 
 // ── NAVIGATION ────────────────────────────────────────────────
 function showAdminSection(name, btn) {
-  if (name === 'sessions') { loadCities(); loadCoaches(); loadTribes(); setTimeout(loadSessionsList, 300); }
+  if (name === 'sessions') { loadCities(); loadCoaches(); loadTribes(); if (typeof loadSessionTemplates === 'function') loadSessionTemplates(); setTimeout(loadSessionsList, 300); }
   // Hide EVERY section by id prefix — was a hardcoded list previously and
   // kept drifting (founder/surveys/corporate/partners/wearables were
   // missing as of v1.32.x, so all rendered on top of each other).

@@ -1016,4 +1016,120 @@ router.patch('/series/cancel', authenticate, requireAdmin, async (req, res, next
   } catch (err) { next(err); }
 });
 
+// ════════════════════════════════════════════════════════════════
+// SESSION NAME TEMPLATES (Settings → curated list of names admin
+// picks from when creating new sessions). Selecting a template's
+// name auto-populates the form from the last session of that name.
+// ════════════════════════════════════════════════════════════════
+
+// Public list — used by /sessions.html filter dropdowns too
+router.get('/templates', async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, name, description, sort_order
+         FROM session_templates
+        WHERE is_active = true
+        ORDER BY sort_order ASC, name ASC`
+    );
+    res.json({ templates: rows });
+  } catch (err) {
+    if (err.code === '42P01') return res.json({ templates: [] });
+    next(err);
+  }
+});
+
+// Admin list — includes inactive
+router.get('/admin/templates', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, name, description, is_active, sort_order, created_at
+         FROM session_templates
+        ORDER BY is_active DESC, sort_order ASC, name ASC`
+    );
+    res.json({ templates: rows });
+  } catch (err) {
+    if (err.code === '42P01') return res.json({ templates: [] });
+    next(err);
+  }
+});
+
+router.post('/admin/templates', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const name = String(req.body?.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'name required' });
+    const { rows } = await query(
+      `INSERT INTO session_templates (name, description, sort_order, created_by)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [name, req.body?.description || null, parseInt(req.body?.sort_order, 10) || 100, req.member.id]
+    );
+    res.json({ template: rows[0] });
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'A template with this name already exists.' });
+    next(err);
+  }
+});
+
+router.patch('/admin/templates/:id', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const allowed = ['name', 'description', 'is_active', 'sort_order'];
+    const sets = []; const params = [];
+    for (const k of allowed) {
+      if (k in (req.body || {})) { params.push(req.body[k]); sets.push(`${k} = $${params.length}`); }
+    }
+    if (!sets.length) return res.status(400).json({ error: 'no fields to update' });
+    params.push(req.params.id);
+    const { rows } = await query(
+      `UPDATE session_templates SET ${sets.join(', ')}, updated_at = NOW()
+        WHERE id = $${params.length} RETURNING *`,
+      params
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Template not found' });
+    res.json({ template: rows[0] });
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'A template with this name already exists.' });
+    next(err);
+  }
+});
+
+router.delete('/admin/templates/:id', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    // Soft-deactivate rather than hard-delete (preserves audit of which
+    // template a session was originally created from, even if the
+    // template later gets retired).
+    const { rows } = await query(
+      `UPDATE session_templates SET is_active = false, updated_at = NOW()
+        WHERE id = $1 RETURNING id`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Template not found' });
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+// ── Auto-populate: last session details by template name ────
+// When the admin selects a template name in the create-session form,
+// this returns the most recent session with that name so the form can
+// pre-fill description, duration, capacity, points, location, tribe,
+// activity, category, etc. The actual date/time is intentionally NOT
+// returned — those must be set per-session.
+router.get('/admin/templates/last-details', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const name = String(req.query.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'name required' });
+    const { rows } = await query(
+      `SELECT s.name, s.description, s.duration_mins, s.capacity, s.points_reward,
+              s.location, s.location_maps_url, s.tribe_id, s.activity_id, s.city_id,
+              s.coach_id, s.session_category, s.sport_type, s.courts,
+              s.session_type, s.price, s.price_points, s.currency_code,
+              s.is_live_enabled, s.is_streamable, s.is_online, s.stream_url
+         FROM sessions s
+        WHERE LOWER(s.name) = LOWER($1)
+        ORDER BY s.created_at DESC
+        LIMIT 1`,
+      [name]
+    );
+    res.json({ defaults: rows[0] || null });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

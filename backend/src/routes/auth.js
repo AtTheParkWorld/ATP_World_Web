@@ -3109,6 +3109,29 @@ router.post('/migrate-member-tribe', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-session-templates ──────────────────
+// Creates the session_templates table — a curated list of session
+// names the admin can pick from. Selecting a template auto-populates
+// the new-session form from the last session created with that name.
+router.post('/migrate-session-templates', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    await query(`CREATE TABLE IF NOT EXISTS session_templates (
+      id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      name        VARCHAR(120) UNIQUE NOT NULL,
+      description TEXT,
+      is_active   BOOLEAN NOT NULL DEFAULT true,
+      sort_order  INT NOT NULL DEFAULT 100,
+      created_by  UUID REFERENCES members(id) ON DELETE SET NULL,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_session_templates_active ON session_templates(is_active, sort_order, name)`);
+    res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
 
 // ── POST /api/auth/grant-admin  (setup only) ──────────────────

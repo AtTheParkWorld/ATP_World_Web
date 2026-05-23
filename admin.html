@@ -332,7 +332,10 @@
           <div class="admin-form-grid">
             <div class="admin-form-group">
               <label class="admin-form-label" for="sName">Session Name *</label>
-              <input class="admin-form-input" type="text" id="sName" placeholder="e.g. Morning Run" aria-label="e.g. Morning Run">
+              <select class="admin-form-select" id="sName" onchange="onSessionTemplateChange()" aria-label="Pick a session name">
+                <option value="">— Pick a session name —</option>
+              </select>
+              <div style="font-size:11px;color:#666;margin-top:4px">Manage the list in <a href="#" onclick="showSection('settings');setTimeout(function(){showSettingsTab&&showSettingsTab(\'session_templates\')},120);return false" style="color:#7AC231">Settings → Session Names</a>. Picking a name auto-populates from the last session created with it.</div>
             </div>
             <div class="admin-form-group">
               <label class="admin-form-label" for="sCoach">Coach</label>
@@ -1276,6 +1279,10 @@
                 style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">💳 Membership</button>
         <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["countries"]'
                 style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">🌍 Countries</button>
+        <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["cities"]'
+                style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">📍 Cities</button>
+        <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["session_templates"]'
+                style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">📋 Session Names</button>
         <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["streaming"]'
                 style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">🎥 Streaming</button>
         <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["maintenance"]'
@@ -1492,6 +1499,12 @@
           </div>
         </div>
       </div>
+
+      <!-- Cities tab — populated by settings.js -->
+      <div class="settings-pane" id="settings-pane-cities" style="display:none"></div>
+
+      <!-- Session Names tab — admin-curated dropdown for session creation -->
+      <div class="settings-pane" id="settings-pane-session_templates" style="display:none"></div>
 
       <!-- Streaming tab — banner ads CRUD + live analytics dashboard -->
       <div class="settings-pane" id="settings-pane-streaming" style="display:none">

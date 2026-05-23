@@ -497,9 +497,24 @@ function duplicateSessionById(id) {
   var s = SESSIONS_CACHE[id];
   if (!s) return;
   resetSessionForm();
-  // Title hint
+  // Title hint — duplicate flow. With sName now a SELECT, just pick
+  // the same template name (no "(copy)" suffix — Postgres would reject
+  // it anyway since templates are a finite list).
+  if (typeof loadSessionTemplates === 'function') loadSessionTemplates(s.name);
   var nameEl = document.getElementById('sName');
-  if (nameEl) nameEl.value = (s.name || '') + ' (copy)';
+  if (nameEl && s.name) {
+    if (nameEl.tagName === 'SELECT') {
+      var present = Array.from(nameEl.options).some(function(o){ return o.value === s.name; });
+      if (!present) {
+        var o = document.createElement('option');
+        o.value = s.name; o.textContent = s.name + ' (legacy)';
+        nameEl.appendChild(o);
+      }
+      nameEl.value = s.name;
+    } else {
+      nameEl.value = s.name;
+    }
+  }
   // Common fields
   var setVal = function(elId, v){ var el = document.getElementById(elId); if (el) el.value = v == null ? '' : v; };
   setVal('sDesc',     s.description);
@@ -773,7 +788,22 @@ function cancelEditSession() { resetSessionForm(); }
 
 function editSession(s) {
   SESSION_EDIT_ID = s.id;
-  document.getElementById('sName').value = s.name || '';
+  // sName is now a SELECT — reload templates and make sure the
+  // current session's name exists as an option (as legacy if it
+  // isn't in the active template list).
+  if (typeof loadSessionTemplates === 'function') loadSessionTemplates(s.name);
+  var nameEl = document.getElementById('sName');
+  if (nameEl) {
+    if (nameEl.tagName === 'SELECT') {
+      var present = Array.from(nameEl.options).some(function(o){ return o.value === (s.name || ''); });
+      if (!present && s.name) {
+        var o = document.createElement('option');
+        o.value = s.name; o.textContent = s.name + ' (legacy)';
+        nameEl.appendChild(o);
+      }
+    }
+    nameEl.value = s.name || '';
+  }
   document.getElementById('sDesc').value = s.description || '';
   document.getElementById('sLoc').value = s.location || '';
   document.getElementById('sMaps').value = s.location_maps_url || '';
@@ -1058,5 +1088,79 @@ function _populateCorpSelect(sel, accounts) {
     sel.appendChild(opt);
   });
 }
+
+// ── SESSION NAME TEMPLATES ─────────────────────────────────────
+// Populate the #sName dropdown from /api/sessions/templates so admin
+// picks from a curated list. On change, fetch the last session created
+// with that name and auto-populate description/duration/etc.
+function loadSessionTemplates(preserveValue) {
+  var sel = document.getElementById('sName');
+  if (!sel || sel.tagName !== 'SELECT') return;
+  var current = preserveValue || sel.value || '';
+  fetch('/api/sessions/templates')
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var templates = (d && d.templates) || [];
+      sel.innerHTML = '<option value="">— Pick a session name —</option>' +
+        templates.map(function(t){
+          var safeName = String(t.name).replace(/"/g, '&quot;');
+          return '<option value="' + safeName + '">' + safeName + '</option>';
+        }).join('');
+      // Restore prior selection if it still exists in the new list
+      if (current) {
+        var match = Array.from(sel.options).find(function(o){ return o.value === current; });
+        if (match) sel.value = current;
+        else {
+          // Old name no longer in templates — add it as a one-off so
+          // editing existing sessions still works.
+          var legacyOpt = document.createElement('option');
+          legacyOpt.value = current; legacyOpt.textContent = current + ' (legacy)';
+          legacyOpt.selected = true;
+          sel.appendChild(legacyOpt);
+        }
+      }
+    })
+    .catch(function(){ /* silent */ });
+}
+window.loadSessionTemplates = loadSessionTemplates;
+
+// onChange handler — called from the sName <select> in admin.html.
+// Fetches last-known details for the picked name and pre-fills the form.
+async function onSessionTemplateChange() {
+  var sel = document.getElementById('sName');
+  if (!sel) return;
+  var name = sel.value;
+  if (!name) return;
+  // Only auto-populate on CREATE, not EDIT (editing an existing session
+  // shouldn't get its fields stomped when the user clicks the select).
+  if (typeof SESSION_EDIT_ID !== 'undefined' && SESSION_EDIT_ID) return;
+  try {
+    var token = getToken();
+    var res = await fetch('/api/sessions/admin/templates/last-details?name=' + encodeURIComponent(name), {
+      headers: { 'Authorization': 'Bearer ' + token }
+    });
+    var data = await res.json();
+    if (!data || !data.defaults) return;
+    var d = data.defaults;
+    var setVal = function(id, v){ var el = document.getElementById(id); if (el && (v != null)) el.value = v; };
+    setVal('sDesc',     d.description);
+    setVal('sLoc',      d.location);
+    setVal('sMaps',     d.location_maps_url);
+    setVal('sDuration', d.duration_mins || 60);
+    setVal('sCap',      d.capacity || 30);
+    setVal('sPoints',   d.points_reward || 10);
+    setVal('sType',     d.session_type || 'free');
+    if (d.city_id)   { var c = document.getElementById('sCity');     if (c) c.value = d.city_id; }
+    if (d.tribe_id)  { var t = document.getElementById('sTribe');    if (t) t.value = d.tribe_id; }
+    if (d.activity_id){ var a = document.getElementById('sActivity');if (a) a.value = d.activity_id; }
+    if (d.coach_id)  { var co = document.getElementById('sCoach');   if (co) co.value = d.coach_id; }
+    if (d.price)        setVal('sPrice',       Number(d.price).toFixed(2));
+    if (d.price_points) setVal('sPricePoints', d.price_points);
+    if (d.currency_code)setVal('sCurrency',    d.currency_code);
+    // Visual confirmation
+    if (typeof showToast === 'function') showToast('✅ Auto-populated from last "' + name + '"');
+  } catch (e) { /* silent — template details endpoint may not be deployed yet */ }
+}
+window.onSessionTemplateChange = onSessionTemplateChange;
 
 

@@ -7,7 +7,7 @@
 
 // ── Sub-tab switcher ─────────────────────────────────────────
 function showSettingsTab(tab) {
-  ['announcements','activities','achievements','config','plans','countries','maintenance'].forEach(function(t){
+  ['announcements','activities','achievements','config','plans','countries','cities','session_templates','streaming','maintenance'].forEach(function(t){
     var pane = document.getElementById('settings-pane-' + t);
     if (pane) pane.style.display = (t === tab) ? 'block' : 'none';
   });
@@ -24,7 +24,234 @@ function showSettingsTab(tab) {
   else if (tab === 'countries')    loadCountriesAdmin();
   else if (tab === 'streaming')    loadStreamingAdmin();
   else if (tab === 'maintenance')  loadMaintenanceTab();
+  else if (tab === 'session_templates') loadSessionTemplatesAdmin();
+  else if (tab === 'cities')       loadCitiesAdmin();
 }
+
+// ── SESSION NAME TEMPLATES ─────────────────────────────────────
+function loadSessionTemplatesAdmin() {
+  var host = document.getElementById('settings-pane-session_templates');
+  if (!host) return;
+  host.innerHTML = '<div class="admin-section" style="padding:18px"><div style="color:#888">Loading session names…</div></div>';
+  var token = getToken();
+  fetch('/api/sessions/admin/templates', { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(function(r){ return r.json(); })
+    .then(function(d){ renderSessionTemplatesAdmin((d && d.templates) || []); })
+    .catch(function(){ host.innerHTML = '<div class="admin-section" style="padding:18px;color:#f87171">Failed. Run migrate-session-templates first.</div>'; });
+}
+
+function renderSessionTemplatesAdmin(list) {
+  var host = document.getElementById('settings-pane-session_templates');
+  if (!host) return;
+  var esc = function(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+  host.innerHTML =
+    '<div class="admin-section">' +
+      '<div class="admin-section-head">' +
+        '<span class="admin-section-title">Session names — admin-curated list</span>' +
+        '<button class="admin-btn admin-btn-primary" onclick="newSessionTemplate()" style="font-size:12px;padding:7px 14px">+ Add name</button>' +
+      '</div>' +
+      '<div class="admin-section-body">' +
+        '<div style="font-size:13px;color:#888;line-height:1.55;margin-bottom:12px">Names admins can pick when creating new sessions. Selecting a name on the create-session form auto-populates description, duration, capacity, points, location, etc. from the most recent session of that name.</div>' +
+        '<div id="sessionTemplateFormWrap"></div>' +
+        (list.length
+          ? '<table style="width:100%;border-collapse:collapse">' +
+              '<thead><tr style="font-size:11px;color:#666;text-align:left;border-bottom:1px solid #1a1a1a">' +
+                '<th style="padding:10px">Status</th><th style="padding:10px">Name</th><th style="padding:10px">Description</th><th style="padding:10px;text-align:right">Sort</th><th style="padding:10px"></th>' +
+              '</tr></thead><tbody>' +
+              list.map(function(t){
+                var badge = t.is_active
+                  ? '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(122,194,49,.15);color:#7AC231">Active</span>'
+                  : '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.06);color:#666">Off</span>';
+                return '<tr style="border-bottom:1px solid #111;font-size:13px">' +
+                  '<td style="padding:10px">' + badge + '</td>' +
+                  '<td style="padding:10px;color:#fff;font-weight:600">' + esc(t.name) + '</td>' +
+                  '<td style="padding:10px;color:#aaa">' + esc(t.description || '—') + '</td>' +
+                  '<td style="padding:10px;text-align:right;color:#aaa">' + (t.sort_order || 100) + '</td>' +
+                  '<td style="padding:10px;text-align:right;white-space:nowrap">' +
+                    '<button class="admin-btn" style="font-size:11px;padding:5px 10px;margin-right:4px" onclick="editSessionTemplate(\'' + t.id + '\')">Edit</button>' +
+                    (t.is_active
+                      ? '<button class="admin-btn admin-btn-danger" style="font-size:11px;padding:5px 10px" onclick="deactivateSessionTemplate(\'' + t.id + '\')">Disable</button>'
+                      : '<button class="admin-btn" style="font-size:11px;padding:5px 10px;color:#7AC231;border-color:rgba(122,194,49,.3)" onclick="reactivateSessionTemplate(\'' + t.id + '\')">Enable</button>') +
+                  '</td>' +
+                '</tr>';
+              }).join('') +
+            '</tbody></table>'
+          : '<div style="padding:18px;color:#666;text-align:center">No templates yet. Click + Add name to create one.</div>') +
+      '</div>' +
+    '</div>';
+}
+
+var _SESSION_TEMPLATES_CACHE = [];
+function newSessionTemplate() { _showSessionTemplateForm(null); }
+function editSessionTemplate(id) {
+  fetch('/api/sessions/admin/templates', { headers: { 'Authorization': 'Bearer ' + getToken() } })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      _SESSION_TEMPLATES_CACHE = (d && d.templates) || [];
+      var t = _SESSION_TEMPLATES_CACHE.find(function(x){ return x.id === id; });
+      if (t) _showSessionTemplateForm(t);
+    });
+}
+function _showSessionTemplateForm(t) {
+  var wrap = document.getElementById('sessionTemplateFormWrap');
+  if (!wrap) return;
+  var isEdit = !!t;
+  var esc = function(s){ return String(s == null ? '' : s).replace(/"/g, '&quot;'); };
+  wrap.innerHTML =
+    '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:14px;margin-bottom:14px">' +
+      '<input type="hidden" id="stEditId" value="' + (t ? t.id : '') + '">' +
+      '<div style="display:grid;grid-template-columns:2fr 3fr 80px;gap:10px;margin-bottom:10px">' +
+        '<div><label class="admin-form-label">Name *</label><input class="admin-form-input" id="stName" placeholder="Morning Run" value="' + (t ? esc(t.name) : '') + '"></div>' +
+        '<div><label class="admin-form-label">Description (optional)</label><input class="admin-form-input" id="stDesc" value="' + (t ? esc(t.description || '') : '') + '"></div>' +
+        '<div><label class="admin-form-label">Sort</label><input class="admin-form-input" type="number" id="stSort" value="' + (t ? (t.sort_order || 100) : 100) + '"></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px">' +
+        '<button class="admin-btn admin-btn-primary" onclick="saveSessionTemplate()" style="font-size:12px">' + (isEdit ? 'Save changes' : 'Create') + '</button>' +
+        '<button class="admin-btn" onclick="document.getElementById(\'sessionTemplateFormWrap\').innerHTML=\'\'" style="font-size:12px">Cancel</button>' +
+      '</div>' +
+    '</div>';
+}
+function saveSessionTemplate() {
+  var id = document.getElementById('stEditId').value;
+  var body = {
+    name: (document.getElementById('stName').value || '').trim(),
+    description: (document.getElementById('stDesc').value || '').trim() || null,
+    sort_order: parseInt(document.getElementById('stSort').value, 10) || 100,
+  };
+  if (!body.name) { showToast('Name required', true); return; }
+  var url = id ? ('/api/sessions/admin/templates/' + id) : '/api/sessions/admin/templates';
+  var method = id ? 'PATCH' : 'POST';
+  fetch(url, {
+    method: method,
+    headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + getToken() },
+    body: JSON.stringify(body),
+  }).then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res.error) { showToast('❌ ' + res.error, true); return; }
+      showToast('✅ Saved');
+      document.getElementById('sessionTemplateFormWrap').innerHTML = '';
+      loadSessionTemplatesAdmin();
+    });
+}
+function deactivateSessionTemplate(id) {
+  if (!confirm('Disable this name? Existing sessions keep it; admins just won\'t see it in the dropdown.')) return;
+  fetch('/api/sessions/admin/templates/' + id, { method: 'DELETE', headers: { 'Authorization':'Bearer ' + getToken() } })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res.error) { showToast('❌ ' + res.error, true); return; }
+      showToast('✅ Disabled'); loadSessionTemplatesAdmin();
+    });
+}
+function reactivateSessionTemplate(id) {
+  fetch('/api/sessions/admin/templates/' + id, {
+    method: 'PATCH',
+    headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + getToken() },
+    body: JSON.stringify({ is_active: true }),
+  }).then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res.error) { showToast('❌ ' + res.error, true); return; }
+      showToast('✅ Enabled'); loadSessionTemplatesAdmin();
+    });
+}
+window.newSessionTemplate = newSessionTemplate;
+window.editSessionTemplate = editSessionTemplate;
+window.saveSessionTemplate = saveSessionTemplate;
+window.deactivateSessionTemplate = deactivateSessionTemplate;
+window.reactivateSessionTemplate = reactivateSessionTemplate;
+
+// ── CITIES ADMIN ───────────────────────────────────────────────
+var ATP_CITIES_CACHE = [];
+function loadCitiesAdmin() {
+  var host = document.getElementById('settings-pane-cities');
+  if (!host) return;
+  fetch('/api/cities')
+    .then(function(r){ return r.json(); })
+    .then(function(d){ ATP_CITIES_CACHE = (d && d.cities) || []; renderCitiesAdmin(ATP_CITIES_CACHE); })
+    .catch(function(){ host.innerHTML = '<div class="admin-section" style="padding:18px;color:#f87171">Failed.</div>'; });
+}
+function renderCitiesAdmin(list) {
+  var host = document.getElementById('settings-pane-cities');
+  if (!host) return;
+  var esc = function(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); };
+  var grouped = {};
+  list.forEach(function(c){ var k = (c.country || 'UAE'); (grouped[k] = grouped[k] || []).push(c); });
+  var html =
+    '<div class="admin-section">' +
+      '<div class="admin-section-head">' +
+        '<span class="admin-section-title">Cities</span>' +
+        '<button class="admin-btn admin-btn-primary" onclick="newCity()" style="font-size:12px;padding:7px 14px">+ Add city</button>' +
+      '</div>' +
+      '<div class="admin-section-body">' +
+        '<div id="cityFormWrap"></div>';
+  Object.keys(grouped).sort().forEach(function(country){
+    html += '<div style="margin-bottom:14px">' +
+      '<div style="font-size:11px;color:#7AC231;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">' + esc(country) + ' · ' + grouped[country].length + '</div>' +
+      grouped[country].map(function(c){
+        return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:6px;margin-bottom:4px">' +
+          '<div style="flex:1;color:#fff;font-size:13px">' + esc(c.name) + '</div>' +
+          '<button class="admin-btn" style="font-size:10px;padding:4px 8px" onclick="editCity(\'' + c.id + '\')">Edit</button>' +
+          '<button class="admin-btn admin-btn-danger" style="font-size:10px;padding:4px 8px" onclick="deleteCity(\'' + c.id + '\',\'' + esc(c.name) + '\')">Delete</button>' +
+        '</div>';
+      }).join('') +
+    '</div>';
+  });
+  html += '</div></div>';
+  host.innerHTML = html;
+}
+function newCity() { _showCityForm(null); }
+function editCity(id) {
+  var c = ATP_CITIES_CACHE.find(function(x){ return x.id === id; });
+  if (c) _showCityForm(c);
+}
+function _showCityForm(c) {
+  var wrap = document.getElementById('cityFormWrap');
+  if (!wrap) return;
+  var esc = function(s){ return String(s == null ? '' : s).replace(/"/g, '&quot;'); };
+  wrap.innerHTML =
+    '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:14px;margin-bottom:14px">' +
+      '<input type="hidden" id="cityEditId" value="' + (c ? c.id : '') + '">' +
+      '<div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">' +
+        '<div><label class="admin-form-label">City name *</label><input class="admin-form-input" id="cityName" placeholder="Dubai" value="' + (c ? esc(c.name) : '') + '"></div>' +
+        '<div><label class="admin-form-label">Country *</label><input class="admin-form-input" id="cityCountry" placeholder="UAE" value="' + (c ? esc(c.country || 'UAE') : 'UAE') + '"></div>' +
+      '</div>' +
+      '<div style="display:flex;gap:8px">' +
+        '<button class="admin-btn admin-btn-primary" onclick="saveCity()" style="font-size:12px">' + (c ? 'Save' : 'Create') + '</button>' +
+        '<button class="admin-btn" onclick="document.getElementById(\'cityFormWrap\').innerHTML=\'\'" style="font-size:12px">Cancel</button>' +
+      '</div>' +
+    '</div>';
+}
+function saveCity() {
+  var id = document.getElementById('cityEditId').value;
+  var body = {
+    name: (document.getElementById('cityName').value || '').trim(),
+    country: (document.getElementById('cityCountry').value || 'UAE').trim(),
+  };
+  if (!body.name) { showToast('City name required', true); return; }
+  var url = id ? ('/api/cities/' + id) : '/api/cities';
+  var method = id ? 'PATCH' : 'POST';
+  fetch(url, {
+    method: method,
+    headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + getToken() },
+    body: JSON.stringify(body),
+  }).then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res.error) { showToast('❌ ' + res.error, true); return; }
+      showToast('✅ Saved');
+      document.getElementById('cityFormWrap').innerHTML = '';
+      loadCitiesAdmin();
+    });
+}
+function deleteCity(id, name) {
+  if (!confirm('Delete "' + name + '"? Only allowed if no sessions or members are linked.')) return;
+  fetch('/api/cities/' + id, { method: 'DELETE', headers: { 'Authorization':'Bearer ' + getToken() } })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res.error) { showToast('❌ ' + res.error, true); return; }
+      showToast('✅ Deleted'); loadCitiesAdmin();
+    });
+}
+window.newCity = newCity; window.editCity = editCity;
+window.saveCity = saveCity; window.deleteCity = deleteCity;
 
 function loadSettingsSection() {
   // Default to announcements + lazy-load all three so re-tabbing is instant
