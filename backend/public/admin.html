@@ -403,7 +403,7 @@
             </div>
             <div class="admin-form-group full">
               <label class="admin-form-label" for="sDesc">Description</label>
-              <input class="admin-form-input" type="text" id="sDesc" placeholder="Brief session description (optional)" aria-label="Brief session description (optional)">
+              <textarea class="admin-form-input" id="sDesc" rows="5" placeholder="What to expect, what to bring, who it's for. Multiple paragraphs OK — line breaks are preserved." aria-label="Session description" style="resize:vertical;min-height:96px;line-height:1.55"></textarea>
             </div>
             <!-- Hover-preview video: shows on the public /sessions card
                  when a member moves the cursor over it. Optional. -->
@@ -682,7 +682,7 @@
             </div>
             <div class="admin-form-group full">
               <label class="admin-form-label" for="cDesc">Description</label>
-              <input class="admin-form-input" type="text" id="cDesc" placeholder="Challenge description for members..." aria-label="Challenge description for members...">
+              <textarea class="admin-form-input" id="cDesc" rows="5" placeholder="What's the challenge, how to win, rules + prizes. Multiple paragraphs OK — line breaks are preserved." aria-label="Challenge description" style="resize:vertical;min-height:96px;line-height:1.55"></textarea>
             </div>
           </div>
 
@@ -1300,7 +1300,7 @@
             <div id="announcementFormWrap" style="display:none;background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:16px">
               <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:12px" id="announcementFormTitle">New announcement</div>
               <input type="hidden" id="anEditId" value="">
-              <div style="margin-bottom:10px"><label class="admin-form-label" for="anMessage">Message *</label><input class="admin-form-input" type="text" id="anMessage" placeholder="e.g. Saturday Bootcamp at Kite Beach 7am — RSVP now"></div>
+              <div style="margin-bottom:10px"><label class="admin-form-label" for="anMessage">Message *</label><textarea class="admin-form-input" id="anMessage" rows="4" placeholder="e.g. Saturday Bootcamp at Kite Beach 7am — RSVP now. Multiple paragraphs OK." style="resize:vertical;min-height:80px;line-height:1.55"></textarea></div>
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
                 <div><label class="admin-form-label" for="anKind">Kind</label><select class="admin-form-select" id="anKind"><option value="info">ℹ️ Info</option><option value="event">📣 Event</option><option value="promo">🎁 Promo</option></select></div>
                 <div><label class="admin-form-label" for="anPriority">Priority</label><input class="admin-form-input" type="number" id="anPriority" value="0" min="0" max="999"></div>

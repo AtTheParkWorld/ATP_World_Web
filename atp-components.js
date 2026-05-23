@@ -473,7 +473,7 @@
               : (item.kind === 'promo') ? '🎁'
               : 'ℹ️';
     var inner = '<span class="badge">' + icon + ' ' + label + '</span>' +
-                '<span>' + escapeHtml(item.message) + '</span>';
+                '<span style="white-space:pre-wrap">' + escapeHtml(item.message) + '</span>';
     if (item.link_url) {
       inner += ' <a href="' + escapeHtml(item.link_url) + '">More →</a>';
     }

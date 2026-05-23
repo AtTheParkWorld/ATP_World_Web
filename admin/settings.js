@@ -115,7 +115,7 @@ function _showSessionTemplateForm(t) {
       '<input type="hidden" id="stEditId" value="' + (t ? t.id : '') + '">' +
       '<div style="display:grid;grid-template-columns:2fr 3fr 80px;gap:10px;margin-bottom:10px">' +
         '<div><label class="admin-form-label">Name *</label><input class="admin-form-input" id="stName" placeholder="Morning Run" value="' + esc(initialName) + '"></div>' +
-        '<div><label class="admin-form-label">Description (optional)</label><input class="admin-form-input" id="stDesc" value="' + esc(initialDesc) + '"></div>' +
+        '<div><label class="admin-form-label">Description (optional)</label><textarea class="admin-form-input" id="stDesc" rows="3" style="resize:vertical;min-height:64px;line-height:1.55">' + esc(initialDesc) + '</textarea></div>' +
         '<div><label class="admin-form-label">Sort</label><input class="admin-form-input" type="number" id="stSort" value="' + initialSort + '"></div>' +
       '</div>' +
       '<div style="display:flex;gap:8px">' +
