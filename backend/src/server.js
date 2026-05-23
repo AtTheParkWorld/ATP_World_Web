@@ -407,6 +407,28 @@ app.use((err, req, res, next) => {
 // When imported by tests (Supertest/Vitest do `require('../src/server')`)
 // we just want the configured Express app, not a live listening server.
 const PORT = process.env.PORT || 3000;
+// ── AUTO-MIGRATE on boot (idempotent) ─────────────────────────
+// Any small schema add-on that's purely "CREATE TABLE IF NOT EXISTS"
+// can run at startup instead of a one-shot curl. The bigger migrations
+// (members backfill, etc.) still need the explicit /migrate-* routes.
+async function _ensureBootSchema() {
+  const { query } = require('./db');
+  // Session name templates (Phase 1.35.1)
+  try {
+    await query(`CREATE TABLE IF NOT EXISTS session_templates (
+      id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      name        VARCHAR(120) UNIQUE NOT NULL,
+      description TEXT,
+      is_active   BOOLEAN NOT NULL DEFAULT true,
+      sort_order  INT NOT NULL DEFAULT 100,
+      created_by  UUID REFERENCES members(id) ON DELETE SET NULL,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_session_templates_active ON session_templates(is_active, sort_order, name)`);
+  } catch (e) { console.warn('[boot] session_templates schema check:', e.message); }
+}
+
 if (require.main === module) {
   app.listen(PORT, () => {
     console.log(`
@@ -416,6 +438,7 @@ if (require.main === module) {
     ║  Environment: ${process.env.NODE_ENV || 'development'}           ║
     ╚══════════════════════════════════════╝
     `);
+    _ensureBootSchema().then(() => console.log('[boot] schema ensured'));
 
     // ── Wearables sync worker ─────────────────────────────────
     // Polls non-webhook providers (Fitbit, Polar, Withings) for
