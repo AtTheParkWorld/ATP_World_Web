@@ -73,11 +73,16 @@ function adminLogin() {
 
 
 function adminLogout() {
+  // Clear the JWT token + any cached form drafts so the next login
+  // starts clean. Without this, an expired token stays in localStorage
+  // and every API call keeps failing with 'Token expired'.
+  try {
+    localStorage.removeItem('atp_token');
+    localStorage.removeItem('atp_st_draft');
+  } catch (e) {}
   adminLoggedIn = false;
-  document.getElementById('adminWrap').style.display = 'none';
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('adminUser').value = '';
-  document.getElementById('adminPass').value = '';
+  // Hard-reload to /admin so the page boots fresh with no stale state.
+  location.href = '/admin';
 }
 
 document.getElementById('adminPass').addEventListener('keydown', function(e){
