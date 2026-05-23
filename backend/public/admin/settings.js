@@ -97,17 +97,31 @@ function _showSessionTemplateForm(t) {
   if (!wrap) return;
   var isEdit = !!t;
   var esc = function(s){ return String(s == null ? '' : s).replace(/"/g, '&quot;'); };
+  // Auto-recover an unsaved draft (e.g. after the user got bounced by
+  // an expired token and had to sign back in).
+  var draft = null;
+  if (!isEdit) {
+    try { draft = JSON.parse(localStorage.getItem('atp_st_draft') || 'null'); } catch (e) {}
+  }
+  var initialName = t ? t.name : (draft && draft.name) || '';
+  var initialDesc = t ? (t.description || '') : (draft && draft.description) || '';
+  var initialSort = t ? (t.sort_order || 100) : (draft && draft.sort_order) || 100;
+  var draftBanner = (draft && !isEdit)
+    ? '<div style="background:rgba(245,192,66,.10);border:1px solid rgba(245,192,66,.32);border-radius:6px;padding:8px 12px;font-size:11px;color:#f5c042;margin-bottom:10px">⏪ Recovered an unsaved draft. Click <strong>Discard draft</strong> to start fresh.</div>'
+    : '';
   wrap.innerHTML =
     '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:14px;margin-bottom:14px">' +
+      draftBanner +
       '<input type="hidden" id="stEditId" value="' + (t ? t.id : '') + '">' +
       '<div style="display:grid;grid-template-columns:2fr 3fr 80px;gap:10px;margin-bottom:10px">' +
-        '<div><label class="admin-form-label">Name *</label><input class="admin-form-input" id="stName" placeholder="Morning Run" value="' + (t ? esc(t.name) : '') + '"></div>' +
-        '<div><label class="admin-form-label">Description (optional)</label><input class="admin-form-input" id="stDesc" value="' + (t ? esc(t.description || '') : '') + '"></div>' +
-        '<div><label class="admin-form-label">Sort</label><input class="admin-form-input" type="number" id="stSort" value="' + (t ? (t.sort_order || 100) : 100) + '"></div>' +
+        '<div><label class="admin-form-label">Name *</label><input class="admin-form-input" id="stName" placeholder="Morning Run" value="' + esc(initialName) + '"></div>' +
+        '<div><label class="admin-form-label">Description (optional)</label><input class="admin-form-input" id="stDesc" value="' + esc(initialDesc) + '"></div>' +
+        '<div><label class="admin-form-label">Sort</label><input class="admin-form-input" type="number" id="stSort" value="' + initialSort + '"></div>' +
       '</div>' +
       '<div style="display:flex;gap:8px">' +
         '<button class="admin-btn admin-btn-primary" onclick="saveSessionTemplate()" style="font-size:12px">' + (isEdit ? 'Save changes' : 'Create') + '</button>' +
         '<button class="admin-btn" onclick="document.getElementById(\'sessionTemplateFormWrap\').innerHTML=\'\'" style="font-size:12px">Cancel</button>' +
+        (draft && !isEdit ? '<button class="admin-btn" onclick="(function(){ try { localStorage.removeItem(\'atp_st_draft\'); } catch(e){} document.getElementById(\'stName\').value=\'\'; document.getElementById(\'stDesc\').value=\'\'; document.getElementById(\'stSort\').value=100; })()" style="font-size:12px;color:#f87171">Discard draft</button>' : '') +
       '</div>' +
     '</div>';
 }
@@ -119,19 +133,33 @@ function saveSessionTemplate() {
     sort_order: parseInt(document.getElementById('stSort').value, 10) || 100,
   };
   if (!body.name) { showToast('Name required', true); return; }
+  // Stash a draft so a 401 / network failure doesn't wipe what they typed.
+  try { localStorage.setItem('atp_st_draft', JSON.stringify(body)); } catch(e){}
   var url = id ? ('/api/sessions/admin/templates/' + id) : '/api/sessions/admin/templates';
   var method = id ? 'PATCH' : 'POST';
   fetch(url, {
     method: method,
     headers: { 'Content-Type':'application/json', 'Authorization':'Bearer ' + getToken() },
     body: JSON.stringify(body),
-  }).then(function(r){ return r.json(); })
-    .then(function(res){
-      if (res.error) { showToast('❌ ' + res.error, true); return; }
-      showToast('✅ Saved');
-      document.getElementById('sessionTemplateFormWrap').innerHTML = '';
-      loadSessionTemplatesAdmin();
-    });
+  }).then(function(r){
+    if (r.status === 401 || r.status === 403) {
+      // Session expired — keep the form values, show a clear prompt.
+      if (confirm('Your admin session expired. Sign in again to keep this name?\n\nWe saved a draft locally, so you won\'t lose it.')) {
+        location.href = '/admin';
+      }
+      throw new Error('_session_expired_');
+    }
+    return r.json();
+  }).then(function(res){
+    if (res.error) { showToast('❌ ' + res.error, true); return; }
+    showToast('✅ Saved');
+    try { localStorage.removeItem('atp_st_draft'); } catch(e){}
+    document.getElementById('sessionTemplateFormWrap').innerHTML = '';
+    loadSessionTemplatesAdmin();
+  }).catch(function(err){
+    if (err && err.message === '_session_expired_') return;
+    showToast('❌ ' + (err && err.message || 'Network error'), true);
+  });
 }
 function deactivateSessionTemplate(id) {
   if (!confirm('Disable this name? Existing sessions keep it; admins just won\'t see it in the dropdown.')) return;
