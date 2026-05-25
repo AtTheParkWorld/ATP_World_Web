@@ -56,7 +56,7 @@ function renderSessionTemplatesAdmin(list) {
         (list.length
           ? '<table style="width:100%;border-collapse:collapse">' +
               '<thead><tr style="font-size:11px;color:#666;text-align:left;border-bottom:1px solid #1a1a1a">' +
-                '<th style="padding:10px">Status</th><th style="padding:10px">Name</th><th style="padding:10px">Description</th><th style="padding:10px;text-align:right">Sort</th><th style="padding:10px"></th>' +
+                '<th style="padding:10px">Status</th><th style="padding:10px">Name</th><th style="padding:10px">Description</th><th style="padding:10px;text-align:right" title="Lower = appears first in lists">Display order</th><th style="padding:10px"></th>' +
               '</tr></thead><tbody>' +
               list.map(function(t){
                 var badge = t.is_active
@@ -116,7 +116,7 @@ function _showSessionTemplateForm(t) {
       '<div style="display:grid;grid-template-columns:2fr 3fr 80px;gap:10px;margin-bottom:10px">' +
         '<div><label class="admin-form-label">Name *</label><input class="admin-form-input" id="stName" placeholder="Morning Run" value="' + esc(initialName) + '"></div>' +
         '<div><label class="admin-form-label">Description (optional)</label><textarea class="admin-form-input" id="stDesc" rows="3" style="resize:vertical;min-height:64px;line-height:1.55">' + esc(initialDesc) + '</textarea></div>' +
-        '<div><label class="admin-form-label">Sort</label><input class="admin-form-input" type="number" id="stSort" value="' + initialSort + '"></div>' +
+        '<div><label class="admin-form-label" title="Lower numbers appear first in lists. Default 100 leaves room to insert items above/below.">Display order <span style="color:#666;font-weight:400;font-size:10px">(lower = first)</span></label><input class="admin-form-input" type="number" id="stSort" value="' + initialSort + '" title="Lower = appears first"></div>' +
       '</div>' +
       '<div style="display:flex;gap:8px">' +
         '<button class="admin-btn admin-btn-primary" onclick="saveSessionTemplate()" style="font-size:12px">' + (isEdit ? 'Save changes' : 'Create') + '</button>' +
@@ -783,7 +783,7 @@ function renderPlansAdmin(list) {
       '<thead><tr style="font-size:11px;color:#666;text-align:left;border-bottom:1px solid #1a1a1a">' +
         '<th style="padding:10px">Status</th><th style="padding:10px">Name</th>' +
         '<th style="padding:10px">Price</th><th style="padding:10px">Stripe price id</th>' +
-        '<th style="padding:10px;text-align:right">Sort</th><th style="padding:10px"></th>' +
+        '<th style="padding:10px;text-align:right" title="Lower = appears first in lists">Display order</th><th style="padding:10px"></th>' +
       '</tr></thead><tbody>' +
       list.map(function(p){
         var name = (p.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -955,7 +955,7 @@ function renderCountriesAdmin(list) {
         '<th style="padding:10px">Currency</th>' +
         '<th style="padding:10px">Symbol</th>' +
         '<th style="padding:10px;text-align:right">pts / unit</th>' +
-        '<th style="padding:10px;text-align:right">Sort</th>' +
+        '<th style="padding:10px;text-align:right" title="Lower = appears first in lists">Display order</th>' +
         '<th style="padding:10px"></th>' +
       '</tr></thead><tbody>' +
       list.map(function(c){

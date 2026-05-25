@@ -1367,7 +1367,7 @@
                   </select>
                 </div>
                 <div><label class="admin-form-label" for="actIcon">Icon (emoji)</label><input class="admin-form-input" type="text" id="actIcon" placeholder="🏃" maxlength="4"></div>
-                <div><label class="admin-form-label" for="actSort">Sort order</label><input class="admin-form-input" type="number" id="actSort" value="100" min="0" max="9999"></div>
+                <div><label class="admin-form-label" for="actSort" title="Lower numbers appear first in lists. Default 100 leaves room to insert items above/below.">Display order <span style="color:#666;font-weight:400;font-size:10px">(lower = first)</span></label><input class="admin-form-input" type="number" id="actSort" value="100" min="0" max="9999" title="Lower = appears first"></div>
               </div>
               <div style="display:flex;gap:8px">
                 <button class="admin-btn admin-btn-primary" data-atp-call="saveActivity" style="font-size:12px">Save</button>
@@ -1405,7 +1405,7 @@
                 <div><label class="admin-form-label" for="achCriteriaType">Trigger</label><select class="admin-form-select" id="achCriteriaType"><option value="manual">Manual award only</option><option value="sessions">Sessions attended</option><option value="streak">Current streak (days)</option><option value="referrals">Active referrals</option></select></div>
                 <div><label class="admin-form-label" for="achCriteriaValue">Threshold</label><input class="admin-form-input" type="number" id="achCriteriaValue" value="0" min="0"></div>
                 <div><label class="admin-form-label" for="achPoints">Points reward</label><input class="admin-form-input" type="number" id="achPoints" value="0" min="0"></div>
-                <div><label class="admin-form-label" for="achSort">Sort</label><input class="admin-form-input" type="number" id="achSort" value="100" min="0"></div>
+                <div><label class="admin-form-label" for="achSort" title="Lower numbers appear first in lists. Default 100 leaves room to insert items above/below.">Display order <span style="color:#666;font-weight:400;font-size:10px">(lower = first)</span></label><input class="admin-form-input" type="number" id="achSort" value="100" min="0" title="Lower = appears first"></div>
               </div>
               <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#aaa;margin-bottom:14px"><input type="checkbox" id="achActive" checked> Active</label>
               <div style="display:flex;gap:8px">
@@ -1434,7 +1434,7 @@
               <input type="hidden" id="planEditId" value="">
               <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">
                 <div><label class="admin-form-label" for="planName">Name *</label><input class="admin-form-input" type="text" id="planName" placeholder="e.g. ATP Premium"></div>
-                <div><label class="admin-form-label" for="planSort">Sort order</label><input class="admin-form-input" type="number" id="planSort" value="100" min="0"></div>
+                <div><label class="admin-form-label" for="planSort" title="Lower numbers appear first in lists. Default 100 leaves room to insert items above/below.">Display order <span style="color:#666;font-weight:400;font-size:10px">(lower = first)</span></label><input class="admin-form-input" type="number" id="planSort" value="100" min="0" title="Lower = appears first"></div>
               </div>
               <div style="margin-bottom:10px"><label class="admin-form-label" for="planTagline">Tagline</label><input class="admin-form-input" type="text" id="planTagline" placeholder="e.g. Unlimited bookings + premium-only events"></div>
               <div style="margin-bottom:10px"><label class="admin-form-label" for="planDescription">Description (HTML allowed)</label><textarea class="admin-form-input" id="planDescription" rows="2" placeholder="Optional longer description shown on the upgrade page"></textarea></div>
@@ -1512,7 +1512,7 @@
                 <div><label class="admin-form-label" for="countryCurrencyCode">Currency *</label><input class="admin-form-input" type="text" id="countryCurrencyCode" maxlength="8" placeholder="AED" style="text-transform:uppercase"></div>
                 <div><label class="admin-form-label" for="countryCurrencySymbol">Symbol</label><input class="admin-form-input" type="text" id="countryCurrencySymbol" maxlength="8" placeholder="AED"></div>
                 <div><label class="admin-form-label" for="countryAtp">ATP per 1 unit</label><input class="admin-form-input" type="number" id="countryAtp" min="1" placeholder="28"></div>
-                <div><label class="admin-form-label" for="countrySort">Sort</label><input class="admin-form-input" type="number" id="countrySort" value="100" min="0"></div>
+                <div><label class="admin-form-label" for="countrySort" title="Lower numbers appear first in lists. Default 100 leaves room to insert items above/below.">Display order <span style="color:#666;font-weight:400;font-size:10px">(lower = first)</span></label><input class="admin-form-input" type="number" id="countrySort" value="100" min="0" title="Lower = appears first"></div>
               </div>
               <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#aaa;margin-bottom:14px"><input type="checkbox" id="countryActive" checked> Active</label>
               <div style="display:flex;gap:8px">
@@ -1742,7 +1742,7 @@
                 <input class="admin-form-input" type="number" id="ptPrice" min="0" placeholder="1500000">
                 <div style="font-size:10px;color:#666;margin-top:4px">In fils/cents. 1500000 = AED 15,000. Leave 0 for "Custom".</div>
               </div>
-              <div><label class="admin-form-label" for="ptSort">Sort order</label><input class="admin-form-input" type="number" id="ptSort" value="100"></div>
+              <div><label class="admin-form-label" for="ptSort" title="Lower numbers appear first in lists.">Display order <span style="color:#666;font-weight:400;font-size:10px">(lower = first)</span></label><input class="admin-form-input" type="number" id="ptSort" value="100" title="Lower = appears first"></div>
             </div>
             <div style="margin-bottom:10px"><label class="admin-form-label" for="ptTagline">Tagline (1 line)</label><input class="admin-form-input" type="text" id="ptTagline" placeholder="Activate the community at sessions + events."></div>
             <div style="margin-bottom:10px"><label class="admin-form-label" for="ptDescription">Description (longer pitch)</label><textarea class="admin-form-input" id="ptDescription" rows="2"></textarea></div>
@@ -1777,7 +1777,7 @@
             <input type="hidden" id="pdEditId" value="">
             <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">
               <div><label class="admin-form-label" for="pdName">Partner name *</label><input class="admin-form-input" type="text" id="pdName" placeholder="Dusit Thani"></div>
-              <div><label class="admin-form-label" for="pdSort">Sort order</label><input class="admin-form-input" type="number" id="pdSort" value="100"></div>
+              <div><label class="admin-form-label" for="pdSort" title="Lower numbers appear first in lists.">Display order <span style="color:#666;font-weight:400;font-size:10px">(lower = first)</span></label><input class="admin-form-input" type="number" id="pdSort" value="100" title="Lower = appears first"></div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
               <div><label class="admin-form-label" for="pdLogo">Logo URL (or /api/cms/media/...)</label><input class="admin-form-input" type="text" id="pdLogo" placeholder="https://..." style="font-family:monospace;font-size:12px"></div>
@@ -1822,7 +1822,7 @@
                   <option value="promo">Promo / freebie</option>
                 </select>
               </div>
-              <div><label class="admin-form-label" for="poSort">Sort order</label><input class="admin-form-input" type="number" id="poSort" value="100"></div>
+              <div><label class="admin-form-label" for="poSort" title="Lower numbers appear first in lists.">Display order <span style="color:#666;font-weight:400;font-size:10px">(lower = first)</span></label><input class="admin-form-input" type="number" id="poSort" value="100" title="Lower = appears first"></div>
             </div>
             <div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:10px">
               <div><label class="admin-form-label" for="poPartner">Partner</label><select class="admin-form-select" id="poPartner"><option value="">— No partner / ATP direct —</option></select></div>
