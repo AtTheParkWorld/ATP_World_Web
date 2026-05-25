@@ -49,8 +49,20 @@ router.patch('/profile', authenticate, async (req, res, next) => {
       'nationality','city_id','country_id','tribe_id','sports_preferences',
       'top_size','bottom_size','padel_level','volleyball_level',
     ];
+    // JSONB columns on the members table. node-pg passes raw JS
+    // arrays as Postgres arrays (text[]) by default, which fails on
+    // JSONB columns with 'invalid input syntax for type json'. Stringify
+    // these fields so they round-trip cleanly.
+    const JSONB_COLS = new Set(['sports_preferences']);
     const updates = {};
-    allowed.forEach(f => { if (req.body[f] !== undefined) updates[f] = req.body[f]; });
+    allowed.forEach(f => {
+      if (req.body[f] === undefined) return;
+      let v = req.body[f];
+      if (JSONB_COLS.has(f) && (Array.isArray(v) || (v !== null && typeof v === 'object'))) {
+        v = JSON.stringify(v);
+      }
+      updates[f] = v;
+    });
 
     if (!Object.keys(updates).length) {
       return res.status(400).json({ error: 'No valid fields to update' });
