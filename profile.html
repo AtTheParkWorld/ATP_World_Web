@@ -1499,7 +1499,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             <div class="sub-desc">All sessions included</div>
           </div>
         </div>
-        <button class="upgrade-btn">⭐ Become a Supporter</button>
+        <button class="upgrade-btn" data-atp-call="handleSubCardCta">⭐ Become a Supporter</button>
       </div>
 
       <!-- Referral sub-card removed — code + share buttons now live in the
@@ -2241,6 +2241,26 @@ function _renderManageCard(m) {
 }
 
 // Plans modal — fetches /api/billing/plans, lists each, click subscribes.
+// Sub-card CTA dispatcher (v1.39.4). The button changes label based on
+// the member's current tier so the click action must follow:
+//   free          → open plans modal
+//   premium       → open plans modal (pre-scrolled to Founding Supporter)
+//   premium_plus  → open Stripe customer portal to manage
+function handleSubCardCta() {
+  var m = CURRENT_MEMBER || {};
+  var sub = (m.subscription_type || '').toLowerCase();
+  if (sub === 'premium_plus') {
+    try { openCustomerPortal(); } catch (e) { console.warn('openCustomerPortal failed', e); }
+    return;
+  }
+  // Free OR premium → open the plans modal. (For premium members, the
+  // modal lists ALL plans so they can pick Founding Supporter from the
+  // grid.)
+  try { openPremiumPlansModal(); }
+  catch (e) { console.warn('openPremiumPlansModal failed', e); }
+}
+window.handleSubCardCta = handleSubCardCta;
+
 function openPremiumPlansModal() {
   var existing = document.getElementById('premiumPlansOverlay');
   if (existing) existing.remove();
