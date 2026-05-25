@@ -413,6 +413,7 @@ const PORT = process.env.PORT || 3000;
 // (members backfill, etc.) still need the explicit /migrate-* routes.
 async function _ensureBootSchema() {
   const { query } = require('./db');
+
   // Session name templates (Phase 1.35.1)
   try {
     await query(`CREATE TABLE IF NOT EXISTS session_templates (
@@ -427,6 +428,49 @@ async function _ensureBootSchema() {
     )`);
     await query(`CREATE INDEX IF NOT EXISTS idx_session_templates_active ON session_templates(is_active, sort_order, name)`);
   } catch (e) { console.warn('[boot] session_templates schema check:', e.message); }
+
+  // Challenges prize / entry-cost columns (was a stranded migration)
+  try {
+    await query(`ALTER TABLE challenges
+      ADD COLUMN IF NOT EXISTS status                  VARCHAR(20) NOT NULL DEFAULT 'active',
+      ADD COLUMN IF NOT EXISTS entry_cost_points       INT NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS prize_type              VARCHAR(20) NOT NULL DEFAULT 'points',
+      ADD COLUMN IF NOT EXISTS prize_badge_id          UUID,
+      ADD COLUMN IF NOT EXISTS prize_product_name      TEXT,
+      ADD COLUMN IF NOT EXISTS prize_product_image_url TEXT,
+      ADD COLUMN IF NOT EXISTS winner_slots            INT NOT NULL DEFAULT 1,
+      ADD COLUMN IF NOT EXISTS prize_1st_points        INT NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS prize_2nd_points        INT NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS prize_3rd_points        INT NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS closed_at               TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS closed_by               UUID REFERENCES members(id) ON DELETE SET NULL,
+      ADD COLUMN IF NOT EXISTS cancelled_at            TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS cancelled_by            UUID REFERENCES members(id) ON DELETE SET NULL`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_challenges_status ON challenges (status, ends_at)`);
+    // Constrain winner_slots to 1–3 (idempotent — drops then recreates).
+    await query(`ALTER TABLE challenges DROP CONSTRAINT IF EXISTS challenges_winner_slots_check`);
+    await query(`ALTER TABLE challenges ADD CONSTRAINT challenges_winner_slots_check CHECK (winner_slots IN (1, 2, 3))`);
+    // Optional FK to achievements for badge prizes — wrapped in a
+    // PL/pgSQL block so duplicate constraints don't error.
+    await query(`DO $$ BEGIN
+      IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_name='achievements') THEN
+        BEGIN
+          ALTER TABLE challenges ADD CONSTRAINT challenges_prize_badge_fk
+            FOREIGN KEY (prize_badge_id) REFERENCES achievements(id) ON DELETE SET NULL;
+        EXCEPTION WHEN duplicate_object THEN NULL;
+        END;
+      END IF;
+    END $$`);
+    // Participant ledger additions — track entry payment + winning rank
+    await query(`ALTER TABLE challenge_participants
+      ADD COLUMN IF NOT EXISTS entry_paid_points     INT NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS prize_awarded_points  INT NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS prize_awarded_badge   BOOLEAN NOT NULL DEFAULT false,
+      ADD COLUMN IF NOT EXISTS prize_awarded_at      TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS winning_rank          INT,
+      ADD COLUMN IF NOT EXISTS withdrew_at           TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS refund_status         VARCHAR(20)`);
+  } catch (e) { console.warn('[boot] challenges schema check:', e.message); }
 }
 
 if (require.main === module) {
