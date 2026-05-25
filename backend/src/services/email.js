@@ -111,10 +111,33 @@ async function send(to, subject, html) {
 }
 
 // ── WELCOME EMAIL ─────────────────────────────────────────────
-async function sendWelcome(member) {
+// `opts.welcome` is an optional object returned by welcomeDiscount.issueWelcomeDiscount()
+// containing { code, expires_at, percentage, expiry_days }. When present
+// (i.e. Shopify is configured + the code was created OK), we embed a
+// prominent discount block. When absent, the email gracefully omits it.
+async function sendWelcome(member, opts) {
+  const w = (opts && opts.welcome) || null;
+  let discountBlock = '';
+  if (w && w.code) {
+    const expiresStr = w.expires_at
+      ? new Date(w.expires_at).toLocaleDateString('en-AE', { day:'numeric', month:'short', year:'numeric' })
+      : null;
+    const pct = w.percentage || 20;
+    discountBlock = `
+      <div class="qr-box" style="background:linear-gradient(120deg,rgba(245,192,66,.16),rgba(245,192,66,.04));border:1px solid rgba(245,192,66,.4);text-align:center">
+        <div style="font-size:11px;color:#f5c042;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:8px">🎁 Welcome gift</div>
+        <h2 style="font-size:22px;color:#fff;text-transform:uppercase;margin-bottom:6px">${pct}% off your first ATP store order</h2>
+        <p style="margin:0 0 12px;color:#ddd;font-size:13px">Use this code at checkout. Single-use, valid${expiresStr ? ' until <strong style="color:#f5c042">' + escapeHtml(expiresStr) + '</strong>' : ''}.</p>
+        <div class="qr-token" style="background:rgba(0,0,0,.4);display:inline-block;padding:14px 26px;border-radius:8px;margin-bottom:6px;color:#f5c042;font-size:22px;letter-spacing:.12em">${escapeHtml(w.code)}</div>
+        <br>
+        <a href="${FRONTEND_URL}/store.html" class="btn" style="margin-top:8px">Shop ATP gear →</a>
+      </div>
+    `;
+  }
   const html = baseTemplate(`
-    <h1>Welcome, ${member.first_name}! 🎉</h1>
+    <h1>Welcome, ${escapeHtml(member.first_name)}! 🎉</h1>
     <p>You are now an official ATP member. Every session is free. The community is waiting.</p>
+    ${discountBlock}
     <p>Here's what you can do right now:</p>
     <div class="stat">
       <span class="stat-num">📅</span>
@@ -131,7 +154,7 @@ async function sendWelcome(member) {
     <br>
     <a href="${FRONTEND_URL}/sessions.html" class="btn">Book your first session →</a>
     <hr class="divider">
-    <p class="muted">Your member number is <strong style="color:#7AC231">${member.member_number}</strong>. 
+    <p class="muted">Your member number is <strong style="color:#7AC231">${escapeHtml(member.member_number || '')}</strong>.
     Keep this safe — it's on your check-in QR code.</p>
   `);
   await send(member.email, 'Welcome to At The Park 🌿', html);

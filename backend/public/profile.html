@@ -769,6 +769,10 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
              For Company Admins, includes a button to open /company. -->
         <div id="corpCompanyHost" style="margin-bottom:16px"></div>
 
+        <!-- Welcome-discount banner — shown to brand-new members who haven't
+             used their first-order code yet. Populated by renderWelcomeDiscount(). -->
+        <div id="welcomeDiscountHost" style="margin-bottom:16px"></div>
+
         <!-- Mini premium banner — only shows for free members. Same renderer
              as the wallet card but in compact mode so it's not too pushy. -->
         <div id="premiumBanner" style="margin-bottom:16px"></div>
@@ -4376,7 +4380,57 @@ function loadRealProfileData() {
     loadMyOneOnOnes();
     loadMyGifts();
     loadMyCompanies();
+    renderWelcomeDiscount(m);
   }).catch(function(){});
+}
+
+// ── WELCOME DISCOUNT BANNER (v1.37) ───────────────────────────
+// Shows a one-time 20% off code to brand-new members. Hidden once the
+// code's been used (welcome_discount_used_at) or expired
+// (welcome_discount_expires_at < now). Member can copy the code with
+// one tap and jump straight to /store.html.
+function renderWelcomeDiscount(m) {
+  var host = document.getElementById('welcomeDiscountHost');
+  if (!host) return;
+  if (!m || !m.welcome_discount_code) { host.innerHTML = ''; return; }
+  if (m.welcome_discount_used_at) { host.innerHTML = ''; return; }
+  var expires = m.welcome_discount_expires_at ? new Date(m.welcome_discount_expires_at) : null;
+  if (expires && expires.getTime() < Date.now()) { host.innerHTML = ''; return; }
+  var daysLeft = expires ? Math.max(0, Math.ceil((expires.getTime() - Date.now()) / 86400000)) : null;
+  var esc = function(s){ return String(s == null ? '' : s).replace(/[<>&"]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]; }); };
+  host.innerHTML =
+    '<div style="background:linear-gradient(120deg,rgba(245,192,66,.12),rgba(245,192,66,.02));border:1px solid rgba(245,192,66,.32);border-radius:var(--radius-lg);padding:18px 20px;position:relative">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">' +
+        '<div style="flex:1;min-width:240px">' +
+          '<div style="font-size:11px;color:#f5c042;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:4px">🎁 Welcome gift</div>' +
+          '<div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:#fff;line-height:1.1">20% off your first order</div>' +
+          '<div style="font-size:12px;color:var(--muted);margin-top:4px">' +
+            (daysLeft != null
+              ? (daysLeft <= 7
+                  ? '<span style="color:#ef4444;font-weight:600">⏰ ' + daysLeft + ' day' + (daysLeft === 1 ? '' : 's') + ' left</span>'
+                  : 'Valid for ' + daysLeft + ' more days')
+              : 'Use it any time') +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;gap:10px">' +
+          '<code id="welcomeDiscountCode" style="background:rgba(0,0,0,.5);color:#f5c042;font-family:monospace;font-size:15px;padding:10px 14px;border-radius:6px;letter-spacing:.1em;font-weight:700">' + esc(m.welcome_discount_code) + '</code>' +
+          '<button onclick="copyWelcomeDiscount()" style="background:transparent;border:1px solid rgba(245,192,66,.4);color:#f5c042;padding:9px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Copy</button>' +
+          '<a href="/store.html" style="background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;padding:10px 14px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;text-decoration:none">Shop →</a>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+}
+function copyWelcomeDiscount() {
+  var el = document.getElementById('welcomeDiscountCode');
+  if (!el) return;
+  var code = el.textContent.trim();
+  try {
+    navigator.clipboard.writeText(code);
+    if (typeof showToast === 'function') showToast('✅ Code copied');
+    else alert('Code copied: ' + code);
+  } catch (e) {
+    alert('Code: ' + code);
+  }
 }
 
 // ════════════════════════════════════════════════════════════════

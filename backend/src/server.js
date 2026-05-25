@@ -434,6 +434,15 @@ const PORT = process.env.PORT || 3000;
 async function _ensureBootSchema() {
   const { query } = require('./db');
 
+  // Welcome discount tracking on members (v1.37)
+  try {
+    await query(`ALTER TABLE members
+      ADD COLUMN IF NOT EXISTS welcome_discount_code      VARCHAR(40),
+      ADD COLUMN IF NOT EXISTS welcome_discount_issued_at TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS welcome_discount_used_at   TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS welcome_discount_expires_at TIMESTAMPTZ`);
+  } catch (e) { console.warn('[boot] welcome_discount columns:', e.message); }
+
   // Session name templates (Phase 1.35.1)
   try {
     await query(`CREATE TABLE IF NOT EXISTS session_templates (

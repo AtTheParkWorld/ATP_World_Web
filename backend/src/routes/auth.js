@@ -6,6 +6,7 @@ const { v4: uuidv4 } = require('uuid');
 const { query, transaction } = require('../db');
 const emailService = require('../services/email');
 const referrals    = require('../services/referrals');
+const welcomeDiscount = require('../services/welcomeDiscount');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 
 // ── HELPERS ───────────────────────────────────────────────────
@@ -115,8 +116,19 @@ router.post('/register', async (req, res, next) => {
       if (code) member.referral_code = code;
     } catch (_) { /* best-effort */ }
 
-    // Send welcome email
-    await emailService.sendWelcome(member);
+    // Issue the welcome discount (Shopify) BEFORE the email so the
+    // email can include the code. Best-effort — registration must not
+    // fail if Shopify is down.
+    let welcome = null;
+    try { welcome = await welcomeDiscount.issueWelcomeDiscount(member); }
+    catch (e) { console.warn('[register] welcome discount failed:', e.message); }
+    if (welcome && welcome.code) {
+      member.welcome_discount_code = welcome.code;
+      member.welcome_discount_expires_at = welcome.expires_at;
+    }
+
+    // Send welcome email (now with the discount code baked in)
+    await emailService.sendWelcome(member, { welcome });
 
     res.status(201).json({ token, member });
   } catch (err) { next(err); }
@@ -366,7 +378,15 @@ router.post('/google', async (req, res, next) => {
           return newRows[0];
         });
         member = result;
-        await emailService.sendWelcome(member);
+        // Issue welcome discount before the email (best-effort)
+        let welcome = null;
+        try { welcome = await welcomeDiscount.issueWelcomeDiscount(member); }
+        catch (e) { console.warn('[google-signup] welcome discount failed:', e.message); }
+        if (welcome && welcome.code) {
+          member.welcome_discount_code = welcome.code;
+          member.welcome_discount_expires_at = welcome.expires_at;
+        }
+        await emailService.sendWelcome(member, { welcome });
       }
     }
 
@@ -3129,6 +3149,60 @@ router.post('/migrate-session-templates', async (req, res, next) => {
     )`);
     await query(`CREATE INDEX IF NOT EXISTS idx_session_templates_active ON session_templates(is_active, sort_order, name)`);
     res.json({ success: true });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/admin-issue-welcome-discount ───────────────
+// Issue a welcome discount to one specific member (admin tool —
+// useful for re-sending if the original was missed, or one-off
+// gifts). Calls the same service used by registration.
+router.post('/admin-issue-welcome-discount', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const memberId = req.body?.member_id;
+    if (!memberId) return res.status(400).json({ error: 'member_id required' });
+    const { rows } = await query(
+      `SELECT id, first_name, last_name, email, member_number, welcome_discount_code
+         FROM members WHERE id=$1 LIMIT 1`,
+      [memberId]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Member not found' });
+    const result = await welcomeDiscount.issueWelcomeDiscount(rows[0]);
+    res.json({ ok: true, member: { id: rows[0].id, email: rows[0].email }, result });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/admin-backfill-welcome-discounts ────────────
+// Bulk-issue welcome discounts to all existing members who don't yet
+// have one. Throttled (100 members per call) to avoid Shopify rate
+// limits — call repeatedly until processed=0. setupKey-gated so it
+// can be run via curl when needed without a logged-in admin.
+router.post('/admin-backfill-welcome-discounts', async (req, res, next) => {
+  try {
+    const { setupKey, limit } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    const batch = Math.min(200, parseInt(limit, 10) || 100);
+    const { rows } = await query(
+      `SELECT id, first_name, last_name, email, member_number
+         FROM members
+        WHERE welcome_discount_code IS NULL
+          AND is_banned = false
+          AND email IS NOT NULL
+        ORDER BY joined_at DESC NULLS LAST
+        LIMIT $1`,
+      [batch]
+    );
+    const results = { processed: 0, succeeded: 0, skipped: 0, errors: [] };
+    for (const m of rows) {
+      results.processed++;
+      try {
+        const r = await welcomeDiscount.issueWelcomeDiscount(m);
+        if (r && r.code && !r.skipped) results.succeeded++;
+        else results.skipped++;
+      } catch (e) {
+        results.errors.push({ member: m.email, error: e.message });
+      }
+    }
+    res.json({ remaining_estimate: 'call again until processed=0', ...results });
   } catch (err) { next(err); }
 });
 

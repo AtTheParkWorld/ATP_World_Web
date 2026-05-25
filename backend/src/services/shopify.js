@@ -170,8 +170,78 @@ async function deactivateDiscountCode(discountCodeNodeId) {
   return data && data.discountCodeBasicUpdate;
 }
 
+/**
+ * Create a PERCENTAGE-OFF discount code (e.g. 20% off first order).
+ * Used by the welcome-pack flow: every new ATP member gets a one-time
+ * 20% off code at signup. Single-use, optional expiry.
+ *
+ * @param {{ code: string, percentage: number, expiresAt?: Date|string, title?: string, usageLimit?: number }} opts
+ *   - percentage: 1-100 (we send it to Shopify as 0.0-1.0 internally)
+ *   - usageLimit: defaults to 1 (single-use). Set to null for unlimited
+ *     (don't — abuse risk). The appliesOncePerCustomer guard is also on.
+ * @returns {Promise<{ id: string, code: string }>}
+ */
+async function createPercentageDiscountCode({ code, percentage, expiresAt, title, usageLimit = 1 }) {
+  if (!code) throw new Error('createPercentageDiscountCode: code required');
+  if (!percentage || percentage <= 0 || percentage > 100) {
+    throw new Error('createPercentageDiscountCode: percentage must be 1-100');
+  }
+  const startsAt = new Date().toISOString();
+  const endsAt = expiresAt ? new Date(expiresAt).toISOString() : null;
+  const query = `
+    mutation atpCreatePercentageDiscount($input: DiscountCodeBasicInput!) {
+      discountCodeBasicCreate(basicCodeDiscount: $input) {
+        codeDiscountNode {
+          id
+          codeDiscount {
+            ... on DiscountCodeBasic {
+              title
+              codes(first: 1) { nodes { code } }
+              startsAt
+              endsAt
+            }
+          }
+        }
+        userErrors { field message }
+      }
+    }
+  `;
+  const input = {
+    title: title || ('ATP welcome — ' + code),
+    code,
+    startsAt,
+    endsAt,
+    usageLimit: usageLimit || 1,
+    appliesOncePerCustomer: true,
+    customerSelection: { all: true },
+    customerGets: {
+      value: {
+        percentage: Number(percentage) / 100,   // 20 → 0.2
+      },
+      items: { all: true },
+    },
+  };
+  const data = await _adminGraphQL(query, { input });
+  const result = data && data.discountCodeBasicCreate;
+  if (!result) throw new Error('Shopify: empty discountCodeBasicCreate response (percentage)');
+  if (result.userErrors && result.userErrors.length) {
+    const msgs = result.userErrors.map((u) => u.field + ': ' + u.message).join('; ');
+    const e = new Error('Shopify rejected percentage discount: ' + msgs);
+    e.code = 'SHOPIFY_USER_ERROR';
+    e.userErrors = result.userErrors;
+    throw e;
+  }
+  const node = result.codeDiscountNode;
+  if (!node || !node.id) throw new Error('Shopify: no codeDiscountNode in percentage response');
+  return {
+    id:   node.id,
+    code: (node.codeDiscount && node.codeDiscount.codes && node.codeDiscount.codes.nodes[0] && node.codeDiscount.codes.nodes[0].code) || code,
+  };
+}
+
 module.exports = {
   isConfigured,
   createDiscountCode,
+  createPercentageDiscountCode,
   deactivateDiscountCode,
 };
