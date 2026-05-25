@@ -1504,13 +1504,15 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
            Overview hero + My Tribe tab so the same UI isn't duplicated three
            times. -->
 
-      <!-- Theme 9 / #33 — Featured best-seller from Shopify, replaces
-           the old static Quick Stats card. Lazy-loaded by
-           loadStoreBestSellers() with a hard 8s timeout; on failure
-           the card hides itself silently. -->
-      <div class="sub-card" id="bestSellerCard" style="display:none">
-        <div class="sub-card-label">🛒 Best Seller</div>
-        <div id="bestSellerBody"><div style="padding:14px 0;color:var(--muted);font-size:13px;text-align:center">Loading…</div></div>
+      <!-- Featured this week — auto-rotating carousel pulled from the
+           Shopify 'featured' collection. Replaces the old Best Seller
+           card. Hides silently when the collection is empty/unreachable.
+           Populated by loadFeaturedSidebarCarousel() in profile.html. -->
+      <div class="sub-card" id="featuredSidebarCard" style="display:none">
+        <div class="sub-card-label">🛒 Featured this week</div>
+        <div id="featuredSidebarBody">
+          <div style="padding:14px 0;color:var(--muted);font-size:13px;text-align:center">Loading…</div>
+        </div>
       </div>
     </aside>
   </div>
@@ -2427,7 +2429,12 @@ var ATP_SHOPIFY_TOKEN  = '31a1a5554b7f2fdaf2aa4dc44e13a127';
 var ATP_SHOPIFY_DOMAIN = 'atp-store-7903.myshopify.com';
 var __atpBestSellersLoaded = false;
 
+// Legacy best-seller loader — kept as a no-op so existing call sites
+// don't error. The sidebar card was renamed to 'featuredSidebarCard'
+// and is now powered by loadFeaturedSidebarCarousel().
 function loadStoreBestSellers() {
+  loadFeaturedSidebarCarousel();
+  return; // skip the legacy body below
   if (__atpBestSellersLoaded) return;
   var card = document.getElementById('bestSellerCard');
   var body = document.getElementById('bestSellerBody');
@@ -2747,20 +2754,34 @@ function copyReferralCode() {
 // the rebrand from "Copy link" → "Copy code" is consistent across the app.
 function copyReferral() { return copyReferralCode(); }
 
+// Resolve the actual button element for data-atp-call handlers that
+// have NO data-args. When data-args is absent, the dispatcher calls
+// fn(btn) — so the FIRST argument is the button (and `this` is also
+// the button). This helper normalises across both forms.
+function _atpResolveBtn(self, a, b) {
+  // 'this' is set to btn by fn.apply(btn, ...) — most reliable.
+  if (self && self.classList && self.dataset) return self;
+  if (b && b.classList && b.dataset) return b;
+  if (a && a.classList && a.dataset) return a;
+  return null;
+}
+
 // Activities multi-select — toggle individual pill
-function togglePill(e, btn){
+function togglePill(a, b){
+  var btn = _atpResolveBtn(this, a, b);
   if (btn) btn.classList.toggle("sel");
-  else if (e && e.target) (e.target.closest('.sport-pill') || {}).classList?.toggle("sel");
   updateProfileCompletion();
 }
 // Padel + Volleyball single-select within their group (data-padel / data-volley)
-function setPadel(e, btn){
-  document.querySelectorAll('.padel-btn[data-padel]').forEach(function(b){ b.classList.remove("sel"); });
+function setPadel(a, b){
+  var btn = _atpResolveBtn(this, a, b);
+  document.querySelectorAll('.padel-btn[data-padel]').forEach(function(x){ x.classList.remove("sel"); });
   if (btn && btn.dataset && btn.dataset.padel) btn.classList.add("sel");
   updateProfileCompletion();
 }
-function setVolley(e, btn){
-  document.querySelectorAll('.padel-btn[data-volley]').forEach(function(b){ b.classList.remove("sel"); });
+function setVolley(a, b){
+  var btn = _atpResolveBtn(this, a, b);
+  document.querySelectorAll('.padel-btn[data-volley]').forEach(function(x){ x.classList.remove("sel"); });
   if (btn && btn.dataset && btn.dataset.volley) btn.classList.add("sel");
   updateProfileCompletion();
 }
@@ -2907,6 +2928,9 @@ function saveProfile(){
         var m = (res && res.member) ? res.member : res;
         if (m && m.id) applyMemberToPage(m);
       }).catch(function(){});
+      // Return to Overview so the member sees their refreshed profile
+      // immediately instead of staying on the edit form.
+      try { showTab('overview'); } catch (e) {}
     });
   }).catch(function(){ showMessage('Connection error — please try again'); });
 }
@@ -4495,6 +4519,83 @@ function renderFeaturedStore(col, products) {
       '<div style="display:grid;grid-template-columns:repeat(' + Math.min(products.length, 4) + ',1fr);gap:10px">' + cards + '</div>' +
     '</div>';
 }
+
+// ── SIDEBAR FEATURED CAROUSEL (v1.39.2) ───────────────────────
+// Replaces the old #bestSellerCard. Pulls products from the Shopify
+// 'featured' collection (same as the Overview grid) and rotates one
+// at a time every 5 seconds. Tap a dot to jump, or hover-pause.
+var FEATURED_SIDEBAR_PRODUCTS = [];
+var FEATURED_SIDEBAR_INDEX = 0;
+var FEATURED_SIDEBAR_TIMER = null;
+var FEATURED_SIDEBAR_PAUSED = false;
+
+async function loadFeaturedSidebarCarousel() {
+  var card = document.getElementById('featuredSidebarCard');
+  var body = document.getElementById('featuredSidebarBody');
+  if (!card || !body) return;
+  var gql = '{ collectionByHandle(handle:"featured") { title products(first:4) { edges { node { id title handle priceRange { minVariantPrice { amount currencyCode } } images(first:1) { edges { node { url } } } } } } } }';
+  try {
+    var res = await fetch('https://' + FEATURED_SHOPIFY_DOMAIN + '/api/2025-01/graphql.json', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'X-Shopify-Storefront-Access-Token': FEATURED_SHOPIFY_TOKEN, Accept:'application/json' },
+      body: JSON.stringify({ query: gql }),
+    });
+    var data = await res.json();
+    var col = data && data.data && data.data.collectionByHandle;
+    var prods = (col && col.products && col.products.edges) || [];
+    if (!prods.length) { card.style.display = 'none'; return; }
+    FEATURED_SIDEBAR_PRODUCTS = prods.map(function(e){ return e.node; }).slice(0, 4);
+    FEATURED_SIDEBAR_INDEX = 0;
+    card.style.display = 'block';
+    renderFeaturedSidebarSlide();
+    _startFeaturedSidebarTimer();
+    // Pause when the cursor is over the card, resume on leave
+    card.addEventListener('mouseenter', function(){ FEATURED_SIDEBAR_PAUSED = true; });
+    card.addEventListener('mouseleave', function(){ FEATURED_SIDEBAR_PAUSED = false; });
+  } catch (e) { card.style.display = 'none'; }
+}
+
+function _startFeaturedSidebarTimer() {
+  if (FEATURED_SIDEBAR_TIMER) clearInterval(FEATURED_SIDEBAR_TIMER);
+  FEATURED_SIDEBAR_TIMER = setInterval(function(){
+    if (FEATURED_SIDEBAR_PAUSED) return;
+    if (!FEATURED_SIDEBAR_PRODUCTS.length) return;
+    FEATURED_SIDEBAR_INDEX = (FEATURED_SIDEBAR_INDEX + 1) % FEATURED_SIDEBAR_PRODUCTS.length;
+    renderFeaturedSidebarSlide();
+  }, 5000);
+}
+
+function renderFeaturedSidebarSlide() {
+  var body = document.getElementById('featuredSidebarBody');
+  if (!body || !FEATURED_SIDEBAR_PRODUCTS.length) return;
+  var esc = function(s){ return String(s == null ? '' : s).replace(/[<>&"]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]; }); };
+  var p = FEATURED_SIDEBAR_PRODUCTS[FEATURED_SIDEBAR_INDEX];
+  var img = p.images && p.images.edges[0] && p.images.edges[0].node.url;
+  var price = p.priceRange && p.priceRange.minVariantPrice;
+  var priceStr = price ? (price.currencyCode + ' ' + Math.round(Number(price.amount))) : '';
+  var dots = FEATURED_SIDEBAR_PRODUCTS.map(function(_, i){
+    var active = i === FEATURED_SIDEBAR_INDEX;
+    return '<span onclick="jumpFeaturedSidebar(' + i + ')" style="width:' + (active ? '20' : '6') + 'px;height:6px;border-radius:3px;background:' + (active ? 'var(--green)' : 'rgba(255,255,255,.18)') + ';transition:all .3s;cursor:pointer"></span>';
+  }).join('');
+  body.innerHTML =
+    '<a href="/store.html#product/' + esc(p.handle || '') + '" style="display:block;text-decoration:none;color:inherit">' +
+      (img
+        ? '<div style="aspect-ratio:1/1;background:#0a0a0a;border-radius:8px;overflow:hidden;margin-bottom:10px"><img src="' + esc(img) + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'\'"></div>'
+        : '<div style="aspect-ratio:1/1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:42px;border-radius:8px;margin-bottom:10px">🎽</div>') +
+      '<div style="font-size:13px;color:#fff;font-weight:600;line-height:1.3;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(p.title || '') + '</div>' +
+      '<div style="font-size:13px;color:var(--green);font-weight:700;margin-bottom:10px">' + esc(priceStr) + '</div>' +
+    '</a>' +
+    '<div style="display:flex;justify-content:center;gap:6px;align-items:center;height:8px">' + dots + '</div>';
+}
+
+function jumpFeaturedSidebar(i) {
+  if (!FEATURED_SIDEBAR_PRODUCTS.length) return;
+  FEATURED_SIDEBAR_INDEX = i % FEATURED_SIDEBAR_PRODUCTS.length;
+  renderFeaturedSidebarSlide();
+  // Reset timer so the user doesn't see another switch 0.5s after they click
+  _startFeaturedSidebarTimer();
+}
+window.jumpFeaturedSidebar = jumpFeaturedSidebar;
 
 // ── WELCOME DISCOUNT BANNER (v1.37) ───────────────────────────
 // Shows a one-time 20% off code to brand-new members. Hidden once the
