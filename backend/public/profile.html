@@ -712,13 +712,16 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
   </div>
 
   <!-- STATS BAR -->
+  <!-- Defaults to 0 across the board until /api/auth/me + downstream
+       loaders fill them in. New joiners with no activity see all zeros
+       (was previously seeded with mock numbers 127 / 14 / 280 / 12 / 8 / 3). -->
   <div class="profile-stats-bar">
-    <div class="pstat"><div class="pstat-num">127</div><div class="pstat-label">Sessions</div></div>
-    <div class="pstat"><div class="pstat-num" id="statStreak">14</div><div class="pstat-label">Day Streak</div></div>
-    <div class="pstat"><div class="pstat-num">280</div><div class="pstat-label">ATP Points</div></div>
-    <div class="pstat"><div class="pstat-num">12</div><div class="pstat-label">Referred</div></div>
-    <div class="pstat"><div class="pstat-num">8</div><div class="pstat-label">Achievements</div></div>
-    <div class="pstat"><div class="pstat-num">3</div><div class="pstat-label">Challenges</div></div>
+    <div class="pstat"><div class="pstat-num" id="statSessions">0</div><div class="pstat-label">Sessions</div></div>
+    <div class="pstat"><div class="pstat-num" id="statStreak">0</div><div class="pstat-label">Day Streak</div></div>
+    <div class="pstat"><div class="pstat-num" id="statPoints">0</div><div class="pstat-label">ATP Points</div></div>
+    <div class="pstat"><div class="pstat-num" id="statReferred">0</div><div class="pstat-label">Referred</div></div>
+    <div class="pstat"><div class="pstat-num" id="statAchievements">0</div><div class="pstat-label">Achievements</div></div>
+    <div class="pstat"><div class="pstat-num" id="statChallenges">0</div><div class="pstat-label">Challenges</div></div>
   </div>
 
   <!-- TABS -->
