@@ -779,10 +779,13 @@
         <div class="admin-section-head">
           <span class="admin-section-title">All Challenges <span id="challengeCount" style="color:#444;font-size:11px;font-weight:400;margin-left:8px"></span></span>
           <div style="display:flex;gap:8px">
-            <select class="admin-form-select" id="challengeFilter" onchange="loadChallengesList()" style="width:140px;padding:6px 10px;font-size:12px">
+            <select class="admin-form-select" id="challengeFilter" onchange="loadChallengesList()" style="width:160px;padding:6px 10px;font-size:12px">
               <option value="">All</option>
               <option value="published">Published</option>
-              <option value="draft">Drafts</option>
+              <option value="draft">Unpublished</option>
+              <option value="active">Active</option>
+              <option value="closed">Closed</option>
+              <option value="cancelled">Cancelled</option>
             </select>
           </div>
         </div>

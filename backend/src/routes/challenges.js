@@ -23,6 +23,11 @@ router.get('/', optionalAuth, async (req, res, next) => {
 
     const whereClause = where.length ? 'WHERE ' + where.join(' AND ') : '';
     const memberId = req.member?.id;
+    // Admin admin-view (all=true) wants most-recently-created first.
+    // Public/member view keeps starts_at ASC so upcoming surfaces.
+    const orderBy = (isAdmin && all === 'true')
+      ? 'ORDER BY c.created_at DESC NULLS LAST, c.starts_at DESC'
+      : 'ORDER BY c.starts_at ASC';
 
     const { rows } = await query(
       `SELECT c.*,
@@ -33,7 +38,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
        FROM challenges c
        LEFT JOIN cities ci ON ci.id=c.city_id
        ${whereClause}
-       ORDER BY c.starts_at ASC`,
+       ${orderBy}`,
       params
     );
     res.json({ challenges: rows });

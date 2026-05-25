@@ -212,7 +212,16 @@ async function loadChallengesList() {
     var data = await res.json();
     var challenges = data.challenges || [];
     if (filter === 'published') challenges = challenges.filter(function(c){return c.is_published;});
-    if (filter === 'draft') challenges = challenges.filter(function(c){return !c.is_published;});
+    if (filter === 'draft')     challenges = challenges.filter(function(c){return !c.is_published;});
+    if (filter === 'active')    challenges = challenges.filter(function(c){return (c.status||'active') === 'active';});
+    if (filter === 'closed')    challenges = challenges.filter(function(c){return c.status === 'closed';});
+    if (filter === 'cancelled') challenges = challenges.filter(function(c){return c.status === 'cancelled';});
+    // Always sort by most recently created first.
+    challenges.sort(function(a, b){
+      var ta = a.created_at ? new Date(a.created_at).getTime() : 0;
+      var tb = b.created_at ? new Date(b.created_at).getTime() : 0;
+      return tb - ta;
+    });
     if (countEl) countEl.textContent = challenges.length + ' challenges';
     if (!challenges.length) {
       container.innerHTML = '<div style="text-align:center;color:#444;padding:24px">No challenges yet</div>';
