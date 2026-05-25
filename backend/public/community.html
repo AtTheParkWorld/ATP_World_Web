@@ -1036,7 +1036,7 @@ function renderChallenges() {
           '<div class="challenge-avatars">'+avs.map(function(a){return '<div class="challenge-av">'+a+'</div>';}).join('')+'</div>'+
           '<span class="challenge-count">'+c.participants+' joined</span>'+
         '</div>'+
-        '<button class="challenge-join-btn '+joinedClass+'" onclick="joinChallenge('+c.id+')" '+(c.done>=c.target&&c.joined?'disabled':'')+'>'+joinLabel+'</button>'+
+        '<button class="challenge-join-btn '+joinedClass+'" onclick="joinChallenge(\''+String(c.id).replace(/\'/g,"\\\'")+'\', this)" '+(c.done>=c.target&&c.joined?'disabled':'')+'>'+joinLabel+'</button>'+
       '</div>'+
     '</div>';
   }).join("");
