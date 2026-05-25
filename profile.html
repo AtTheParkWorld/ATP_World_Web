@@ -644,9 +644,16 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
         </button>
         <button class="pf-btn" data-atp-call="showTab" data-args='["notifications"]'>
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1a5 5 0 015 5v3l1.5 2.5H1.5L3 9V6a5 5 0 015-5z"/><path d="M6.5 13.5a1.5 1.5 0 003 0"/></svg>
-          <span id="notifCount" style="display:none;background:var(--green);color:#fff;width:18px;height:18px;border-radius:50%;font-size:10px;display:inline-flex;align-items:center;justify-content:center">3</span>
+          <span id="notifCount" style="display:none;background:var(--green);color:#fff;width:18px;height:18px;border-radius:50%;font-size:10px;align-items:center;justify-content:center">0</span>
         </button>
-        <button class="pf-btn" data-atp-call="showTab" data-args='["friends"]'>Friend requests <span style="background:rgba(122,194,49,.15);color:var(--green);padding:1px 7px;border-radius:10px;font-size:11px;margin-left:2px">2</span></button>
+        <button class="pf-btn" data-atp-call="showTab" data-args='["friends"]'>Friend requests <span id="friendReqCount" style="display:none;background:rgba(122,194,49,.15);color:var(--green);padding:1px 7px;border-radius:10px;font-size:11px;margin-left:2px">0</span></button>
+        <!-- Manage Coach Profile — only shown if isCoach=true. Lives here
+             (next to Edit Profile) instead of in the role-banner-card to
+             save vertical space. Toggled in renderRoleBanner(). -->
+        <button class="pf-btn" id="manageCoachBtn" data-atp-call="showTab" data-args='["coach"]' style="display:none">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zm-6 7a6 6 0 0112 0H2z"/></svg>
+          Manage Coach
+        </button>
         <button class="pf-btn primary" data-atp-call="showTab" data-args='["edit"]'>
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 2l3 3-9 9H2v-3l9-9z"/></svg>
           Edit Profile
@@ -1553,6 +1560,9 @@ function showTab(name, btn) {
   }
   // Theme 14 — lazy-load own posts when the My Posts tab opens
   if (name === 'myposts') { try { loadMyPosts(); } catch(e) {} }
+  // Clear the unread-notif badge when the member opens the Notifications
+  // tab (also marks all server-side as read).
+  if (name === 'notifications') { try { markAllRead(); } catch(e) {} }
   window.scrollTo({top:document.querySelector(".profile-tabs-wrap").offsetTop - 80, behavior:"smooth"});
 }
 
@@ -3130,9 +3140,31 @@ function applyMemberToPage(m) {
   var subName = document.getElementById('subName');
   if (subName) {
     var sub2 = (m.subscription_type || 'free').toLowerCase();
-    subName.textContent = sub2 === 'premium_plus' ? 'Premium+'
-                       : sub2 === 'premium'      ? 'Premium'
-                       :                           'Free';
+    // Show the NEXT tier the member could move to (upsell label).
+    // Top-tier members see their achievement badge instead.
+    //   free          → 'ATP Supporter'   (you could become one)
+    //   premium       → 'Founding Supporter' (you could level up)
+    //   premium_plus  → 'ATP FOUNDING SUPPORTER' (badge of honour)
+    subName.textContent = sub2 === 'premium_plus' ? 'ATP Founding Supporter'
+                       : sub2 === 'premium'      ? 'Founding Supporter'
+                       :                           'ATP Supporter';
+  }
+  // Also adapt the upgrade button so the CTA matches the tier shown
+  // above. Top-tier members see "Manage" instead of an upgrade prompt.
+  var subDesc = document.querySelector('.sub-card .sub-desc');
+  var upgradeBtn = document.querySelector('.sub-card .upgrade-btn');
+  if (subDesc && upgradeBtn) {
+    var sub3 = (m.subscription_type || 'free').toLowerCase();
+    if (sub3 === 'premium_plus') {
+      subDesc.textContent = 'Thank you for keeping ATP alive.';
+      upgradeBtn.textContent = '⭐⭐ Manage subscription';
+    } else if (sub3 === 'premium') {
+      subDesc.textContent = 'Want to go further? Become a Founding Supporter.';
+      upgradeBtn.textContent = '⭐⭐ Become a Founding Supporter';
+    } else {
+      subDesc.textContent = 'Help keep every session free for everyone.';
+      upgradeBtn.textContent = '⭐ Become a Supporter';
+    }
   }
 
   // Theme 10 / #36 — render premium card now that subscription_type is known
@@ -3282,13 +3314,16 @@ function renderRoleBanner(opts) {
 
   banner.style.display = 'block';
 
+  // Surface the "Manage Coach" button next to Edit Profile (moved out of
+  // the role banner to save vertical space). Toggled on/off here.
+  var manageCoachBtn = document.getElementById('manageCoachBtn');
+  if (manageCoachBtn) manageCoachBtn.style.display = opts.isCoach ? '' : 'none';
+
   if (opts.isCoach) {
-    card.className = 'role-banner-card';
-    icon.textContent  = '🎽';
-    title.textContent = 'Coach mode active';
-    sub.textContent   = 'Members can find you in the public Coaches directory and book your sessions.';
-    actions.innerHTML =
-      '<a class="pf-btn primary" data-atp-call="showTab" data-args=\'["coach"]\'>Manage coach profile</a>';
+    // Coach mode — banner is now redundant since the action button lives
+    // up in the topbar. Hide the whole banner row.
+    banner.style.display = 'none';
+    return;
   } else if (opts.isAmb) {
     card.className = 'role-banner-card amber';
     icon.textContent  = '⭐';
@@ -4363,6 +4398,13 @@ function loadFriends() {
         meta: 'Wants to connect',
       };
     });
+    // Sync the topbar badge with the real pending count. Hide at 0.
+    var reqBadge = document.getElementById('friendReqCount');
+    if (reqBadge) {
+      var n = FRIENDS_REQUESTS.length;
+      reqBadge.textContent = n;
+      reqBadge.style.display = n > 0 ? 'inline-block' : 'none';
+    }
     renderFriends();
   }).catch(function(){});
 }
