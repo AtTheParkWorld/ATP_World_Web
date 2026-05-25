@@ -773,6 +773,10 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
              used their first-order code yet. Populated by renderWelcomeDiscount(). -->
         <div id="welcomeDiscountHost" style="margin-bottom:16px"></div>
 
+        <!-- Featured store products — pulls from Shopify collection 'featured'.
+             Silently hides if the collection is empty or unreachable. -->
+        <div id="featuredStoreHost" style="margin-bottom:16px"></div>
+
         <!-- Mini premium banner — only shows for free members. Same renderer
              as the wallet card but in compact mode so it's not too pushy. -->
         <div id="premiumBanner" style="margin-bottom:16px"></div>
@@ -4381,7 +4385,63 @@ function loadRealProfileData() {
     loadMyGifts();
     loadMyCompanies();
     renderWelcomeDiscount(m);
+    loadFeaturedStore();
   }).catch(function(){});
+}
+
+// ── FEATURED STORE WIDGET (v1.38) ─────────────────────────────
+// Pulls products from the Shopify collection with handle 'featured'.
+// Founder creates the collection in Shopify admin (Products → Collections
+// → New → handle: featured) and adds 1-4 products. The card auto-
+// populates here. Hidden silently if no collection or no products.
+var FEATURED_SHOPIFY_DOMAIN = 'atp-store-7903.myshopify.com';
+var FEATURED_SHOPIFY_TOKEN  = '31a1a5554b7f2fdaf2aa4dc44e13a127';
+
+async function loadFeaturedStore() {
+  var host = document.getElementById('featuredStoreHost');
+  if (!host) return;
+  var gql = '{ collectionByHandle(handle:"featured") { title products(first:4) { edges { node { id title handle priceRange { minVariantPrice { amount currencyCode } } images(first:1) { edges { node { url } } } } } } } }';
+  try {
+    var res = await fetch('https://' + FEATURED_SHOPIFY_DOMAIN + '/api/2025-01/graphql.json', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'X-Shopify-Storefront-Access-Token': FEATURED_SHOPIFY_TOKEN, Accept:'application/json' },
+      body: JSON.stringify({ query: gql }),
+    });
+    var data = await res.json();
+    var col = data && data.data && data.data.collectionByHandle;
+    var prods = (col && col.products && col.products.edges) || [];
+    if (!prods.length) { host.innerHTML = ''; return; }
+    renderFeaturedStore(col, prods.map(function(e){ return e.node; }));
+  } catch (e) { /* silent — Shopify down or collection missing */ host.innerHTML = ''; }
+}
+
+function renderFeaturedStore(col, products) {
+  var host = document.getElementById('featuredStoreHost');
+  if (!host) return;
+  var esc = function(s){ return String(s == null ? '' : s).replace(/[<>&"]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]; }); };
+  var cards = products.slice(0, 4).map(function(p){
+    var img = p.images && p.images.edges[0] && p.images.edges[0].node.url;
+    var price = p.priceRange && p.priceRange.minVariantPrice;
+    var priceStr = price ? (price.currencyCode + ' ' + Math.round(Number(price.amount))) : '';
+    return '<a href="/store.html#product/' + esc(p.handle || '') + '" style="display:block;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden;text-decoration:none;color:inherit;transition:transform .2s,border-color .2s" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.borderColor=\'rgba(122,194,49,.3)\'" onmouseout="this.style.transform=\'\';this.style.borderColor=\'rgba(255,255,255,.06)\'">' +
+      (img ? '<div style="aspect-ratio:1/1;background:#0a0a0a"><img src="' + esc(img) + '" alt="" style="width:100%;height:100%;object-fit:cover"></div>' : '<div style="aspect-ratio:1/1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:32px">🎽</div>') +
+      '<div style="padding:10px 12px">' +
+        '<div style="font-size:12px;color:#fff;font-weight:600;line-height:1.3;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(p.title || '') + '</div>' +
+        '<div style="font-size:11px;color:var(--green);font-weight:700">' + esc(priceStr) + '</div>' +
+      '</div>' +
+    '</a>';
+  }).join('');
+  host.innerHTML =
+    '<div style="background:linear-gradient(120deg,rgba(122,194,49,.06),rgba(122,194,49,.01));border:1px solid rgba(122,194,49,.20);border-radius:var(--radius-lg);padding:18px 20px">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">' +
+        '<div>' +
+          '<div style="font-size:11px;color:var(--green);letter-spacing:.14em;text-transform:uppercase;font-weight:700">🛍️ Featured this week</div>' +
+          '<div style="font-family:var(--ff-display);font-size:20px;font-weight:800;color:#fff;line-height:1.1;margin-top:2px">' + esc(col.title || 'ATP Store') + '</div>' +
+        '</div>' +
+        '<a href="/store.html" style="background:var(--green);color:#0a0a0a;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;text-transform:uppercase;letter-spacing:.05em">Shop all →</a>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:repeat(' + Math.min(products.length, 4) + ',1fr);gap:10px">' + cards + '</div>' +
+    '</div>';
 }
 
 // ── WELCOME DISCOUNT BANNER (v1.37) ───────────────────────────

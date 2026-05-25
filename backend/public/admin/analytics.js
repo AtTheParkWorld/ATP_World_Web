@@ -198,9 +198,101 @@ async function loadAnalytics() {
       '</div>';
     }).join('') || '<div style="color:#333;font-size:12px">No sessions yet</div>';
 
+    // ── v1.38: pull the bigger analytics object (age, coach, ambassador) ──
+    try {
+      var rich = await fetch(ATP_API+'/admin/analytics', { headers:{'Authorization':'Bearer '+token} }).then(r=>r.json());
+      renderAgeBreakdown((rich.demographics && rich.demographics.age_mix) || []);
+      renderAgeParticipation(rich.participation_by_age || []);
+      renderCoachDelivery(rich.coach_delivery || []);
+      renderAmbassadorCheckins(rich.ambassador_checkins || []);
+    } catch (e) { console.warn('Analytics v1.38 fetch:', e.message); }
+
   } catch(e) {
     console.warn('Analytics error:', e.message);
   }
+}
+
+// ── v1.38 renderers ──────────────────────────────────────────
+var _esc = function(s){ return String(s == null ? '' : s).replace(/[<>&"]/g, function(c){ return {'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]; }); };
+
+function renderAgeBreakdown(ages) {
+  var el = document.getElementById('ageBreakdownList');
+  if (!el) return;
+  if (!ages.length) { el.innerHTML = '<div style="color:#333;font-size:12px;padding:12px 0">No age data yet — members haven\'t set DOB</div>'; return; }
+  var maxC = Math.max.apply(null, ages.map(function(a){return a.count;})) || 1;
+  el.innerHTML = ages.map(function(a){
+    var pct = Math.round((a.count / maxC) * 100);
+    return '<div style="margin-bottom:10px">' +
+      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">' +
+        '<span style="color:#ccc">' + _esc(a.range) + '</span>' +
+        '<span style="color:#7AC231;font-weight:700">' + a.count + '</span>' +
+      '</div>' +
+      '<div style="height:5px;background:#1a1a1a;border-radius:3px">' +
+        '<div style="width:' + pct + '%;height:100%;background:#7AC231;border-radius:3px"></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderAgeParticipation(rows) {
+  var el = document.getElementById('ageParticipationList');
+  if (!el) return;
+  if (!rows.length) { el.innerHTML = '<div style="color:#333;font-size:12px;padding:12px 0">No participation data yet</div>'; return; }
+  el.innerHTML = rows.map(function(r){
+    var pct = Math.round(Number(r.participation_pct || 0));
+    var barColor = pct >= 50 ? '#7AC231' : (pct >= 25 ? '#f5c042' : '#f87171');
+    return '<div style="margin-bottom:12px">' +
+      '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">' +
+        '<span style="color:#ccc">' + _esc(r.bracket) + '</span>' +
+        '<span style="color:' + barColor + ';font-weight:700">' + pct + '% · ' + r.active_members + ' / ' + r.total_members + '</span>' +
+      '</div>' +
+      '<div style="height:6px;background:#1a1a1a;border-radius:3px">' +
+        '<div style="width:' + pct + '%;height:100%;background:' + barColor + ';border-radius:3px"></div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function renderCoachDelivery(rows) {
+  var el = document.getElementById('coachDeliveryList');
+  if (!el) return;
+  if (!rows.length) { el.innerHTML = '<div style="color:#333;font-size:12px;padding:12px 0">No completed coach sessions yet</div>'; return; }
+  el.innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 100px 100px 110px;gap:12px;padding:8px 14px;font-size:10px;color:#666;letter-spacing:.1em;text-transform:uppercase;font-weight:700;border-bottom:1px solid #1a1a1a">' +
+      '<div>Coach</div><div style="text-align:right">Sessions</div><div style="text-align:right">Hours</div><div style="text-align:right">Attendees</div>' +
+    '</div>' +
+    rows.map(function(c, i){
+      var name = ((c.first_name||'') + ' ' + (c.last_name||'')).trim() || '(unknown)';
+      var medal = i < 3 ? ['🥇','🥈','🥉'][i] + ' ' : '';
+      return '<div style="display:grid;grid-template-columns:1fr 100px 100px 110px;gap:12px;padding:10px 14px;border-bottom:1px solid #111;font-size:13px;align-items:center">' +
+        '<div style="color:#fff">' + medal + _esc(name) + '</div>' +
+        '<div style="text-align:right;color:#fff;font-weight:700">' + (c.sessions_delivered || 0) + '</div>' +
+        '<div style="text-align:right;color:#7AC231;font-weight:700">' + Number(c.hours_delivered || 0).toFixed(1) + 'h</div>' +
+        '<div style="text-align:right;color:#aaa">' + (c.total_attendees || 0) + '</div>' +
+      '</div>';
+    }).join('');
+}
+
+function renderAmbassadorCheckins(rows) {
+  var el = document.getElementById('ambassadorCheckinsList');
+  if (!el) return;
+  if (!rows.length) { el.innerHTML = '<div style="color:#333;font-size:12px;padding:12px 0">No check-ins recorded yet</div>'; return; }
+  el.innerHTML =
+    '<div style="display:grid;grid-template-columns:1fr 120px 110px 110px;gap:12px;padding:8px 14px;font-size:10px;color:#666;letter-spacing:.1em;text-transform:uppercase;font-weight:700;border-bottom:1px solid #1a1a1a">' +
+      '<div>Ambassador / Admin</div><div style="text-align:right">Total check-ins</div><div style="text-align:right">Last 30d</div><div style="text-align:right">Sessions</div>' +
+    '</div>' +
+    rows.map(function(a, i){
+      var name = ((a.first_name||'') + ' ' + (a.last_name||'')).trim() || '(unknown)';
+      var medal = i < 3 ? ['🥇','🥈','🥉'][i] + ' ' : '';
+      var role = a.is_admin ? '<span style="font-size:9px;background:rgba(245,192,66,.14);color:#f5c042;padding:2px 7px;border-radius:99px;margin-left:6px;letter-spacing:.06em;text-transform:uppercase;font-weight:700">Admin</span>'
+              : '<span style="font-size:9px;background:rgba(122,194,49,.14);color:#7AC231;padding:2px 7px;border-radius:99px;margin-left:6px;letter-spacing:.06em;text-transform:uppercase;font-weight:700">Ambassador</span>';
+      return '<div style="display:grid;grid-template-columns:1fr 120px 110px 110px;gap:12px;padding:10px 14px;border-bottom:1px solid #111;font-size:13px;align-items:center">' +
+        '<div style="color:#fff">' + medal + _esc(name) + role + '</div>' +
+        '<div style="text-align:right;color:#7AC231;font-weight:700;font-size:15px">' + (a.checkins_total || 0) + '</div>' +
+        '<div style="text-align:right;color:#fff">' + (a.checkins_30d || 0) + '</div>' +
+        '<div style="text-align:right;color:#aaa">' + (a.sessions_scanned || 0) + '</div>' +
+      '</div>';
+    }).join('');
 }
 
 // ═══════════════════════════════════════════════════════════

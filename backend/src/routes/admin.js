@@ -145,13 +145,98 @@ router.get('/analytics', async (req, res, next) => {
        GROUP BY c.name`),
     ]);
 
+    // ── Extra metrics (v1.38) ──────────────────────────────────
+    // Participation % by age bracket — what % of members in each age
+    // bracket attended at least one session in the last 90 days. Tells
+    // us which age groups are most engaged.
+    const participationByAge = await query(`
+      WITH bracketed AS (
+        SELECT m.id,
+          CASE
+            WHEN EXTRACT(YEAR FROM AGE(m.date_of_birth)) < 25 THEN 'Under 25'
+            WHEN EXTRACT(YEAR FROM AGE(m.date_of_birth)) BETWEEN 25 AND 34 THEN '25–34'
+            WHEN EXTRACT(YEAR FROM AGE(m.date_of_birth)) BETWEEN 35 AND 44 THEN '35–44'
+            WHEN EXTRACT(YEAR FROM AGE(m.date_of_birth)) BETWEEN 45 AND 54 THEN '45–54'
+            ELSE '55+' END AS bracket
+          FROM members m
+          WHERE m.date_of_birth IS NOT NULL AND m.is_banned=false
+      )
+      SELECT b.bracket,
+             COUNT(DISTINCT b.id)::int AS total_members,
+             COUNT(DISTINCT b.id) FILTER (
+               WHERE EXISTS (
+                 SELECT 1 FROM bookings bk
+                  WHERE bk.member_id = b.id
+                    AND bk.status='attended'
+                    AND bk.checked_in_at >= NOW() - INTERVAL '90 days'
+               )
+             )::int AS active_members,
+             ROUND(
+               100.0 * COUNT(DISTINCT b.id) FILTER (
+                 WHERE EXISTS (
+                   SELECT 1 FROM bookings bk
+                    WHERE bk.member_id = b.id
+                      AND bk.status='attended'
+                      AND bk.checked_in_at >= NOW() - INTERVAL '90 days'
+                 )
+               ) / NULLIF(COUNT(DISTINCT b.id), 0),
+             1) AS participation_pct
+        FROM bracketed b
+       GROUP BY b.bracket
+       ORDER BY
+         CASE b.bracket
+           WHEN 'Under 25' THEN 1
+           WHEN '25–34' THEN 2
+           WHEN '35–44' THEN 3
+           WHEN '45–54' THEN 4
+           ELSE 5 END
+    `).catch(() => ({ rows: [] }));
+
+    // Coach delivery stats — total sessions + total hours delivered.
+    // Only counts COMPLETED sessions (so points are credited / session
+    // actually happened). Hours = sum of duration_mins / 60.
+    const coachDelivery = await query(`
+      SELECT m.id, m.first_name, m.last_name, m.avatar_url,
+             COUNT(s.id)::int AS sessions_delivered,
+             ROUND(SUM(COALESCE(s.duration_mins, 60)) / 60.0, 1) AS hours_delivered,
+             COUNT(b.id) FILTER (WHERE b.status='attended')::int AS total_attendees
+        FROM members m
+        JOIN sessions s ON s.coach_id = m.id
+        LEFT JOIN bookings b ON b.session_id = s.id
+       WHERE s.status='completed'
+         AND m.is_banned=false
+       GROUP BY m.id, m.first_name, m.last_name, m.avatar_url
+       ORDER BY hours_delivered DESC NULLS LAST, sessions_delivered DESC
+       LIMIT 30
+    `).catch(() => ({ rows: [] }));
+
+    // Ambassador check-ins — who checked in the most members
+    // (bookings.checked_in_by tracks the scanner identity).
+    const ambassadorCheckins = await query(`
+      SELECT m.id, m.first_name, m.last_name, m.avatar_url, m.is_ambassador, m.is_admin,
+             COUNT(b.id)::int AS checkins_total,
+             COUNT(b.id) FILTER (WHERE b.checked_in_at >= NOW() - INTERVAL '30 days')::int AS checkins_30d,
+             COUNT(DISTINCT b.session_id)::int AS sessions_scanned
+        FROM members m
+        JOIN bookings b ON b.checked_in_by = m.id
+       WHERE m.is_banned = false
+         AND (m.is_ambassador = true OR m.is_admin = true)
+       GROUP BY m.id, m.first_name, m.last_name, m.avatar_url, m.is_ambassador, m.is_admin
+       ORDER BY checkins_total DESC
+       LIMIT 25
+    `).catch(() => ({ rows: [] }));
+
     res.json({
-      member_growth:      memberGrowth.rows,
-      session_attendance: sessionAttendance.rows,
-      points_flow:        pointsFlow.rows,
-      demographics:       demographics.rows[0],
-      top_sessions:       topSessions.rows,
-      city_breakdown:     cityBreakdown.rows,
+      member_growth:        memberGrowth.rows,
+      session_attendance:   sessionAttendance.rows,
+      points_flow:          pointsFlow.rows,
+      demographics:         demographics.rows[0],
+      top_sessions:         topSessions.rows,
+      city_breakdown:       cityBreakdown.rows,
+      // v1.38 additions
+      participation_by_age: participationByAge.rows,
+      coach_delivery:       coachDelivery.rows,
+      ambassador_checkins:  ambassadorCheckins.rows,
     });
   } catch (err) { next(err); }
 });
