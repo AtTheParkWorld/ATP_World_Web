@@ -1536,15 +1536,17 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
     <!-- SIDEBAR -->
     <aside class="profile-sidebar">
       <div class="sub-card">
-        <div class="sub-card-label">Subscription</div>
+        <!-- v1.40.1 — label reframed to community-first, icon removed,
+             status shows current tier (Free / Premium / Premium+),
+             button shows the next-tier CTA and routes to /plans.html. -->
+        <div class="sub-card-label">Support the Community</div>
         <div class="sub-free">
-          <div class="sub-icon">🎽</div>
           <div>
             <div class="sub-name" id="subName">Free</div>
-            <div class="sub-desc">All sessions included</div>
+            <div class="sub-desc" id="subDesc">Help keep every session free for everyone.</div>
           </div>
         </div>
-        <button class="upgrade-btn" data-atp-call="handleSubCardCta">⭐ Become a Supporter</button>
+        <button class="upgrade-btn" id="upgradeBtn" onclick="window.location.href='/plans.html'">⭐ Upgrade to Premium</button>
       </div>
 
       <!-- Referral sub-card removed — code + share buttons now live in the
@@ -3268,33 +3270,39 @@ function applyMemberToPage(m) {
       (sub === 'premium' ? ' premium' : '') +
       (sub === 'premium_plus' ? ' premium-plus' : '');
   }
+  // v1.40.1 — sub-card now shows the CURRENT subscription status in
+  // the title slot, and the button label shows the NEXT upgrade target.
+  // Premium+ members see 'Thank you' instead of a CTA. Click on the
+  // button always navigates to /plans.html (no more confusing modal).
+  var sub2 = (m.subscription_type || 'free').toLowerCase();
   var subName = document.getElementById('subName');
   if (subName) {
-    var sub2 = (m.subscription_type || 'free').toLowerCase();
-    // Show the NEXT tier the member could move to (upsell label).
-    // Top-tier members see their achievement badge instead.
-    //   free          → 'ATP Supporter'   (you could become one)
-    //   premium       → 'Founding Supporter' (you could level up)
-    //   premium_plus  → 'ATP FOUNDING SUPPORTER' (badge of honour)
-    subName.textContent = sub2 === 'premium_plus' ? 'ATP Founding Supporter'
-                       : sub2 === 'premium'      ? 'Founding Supporter'
-                       :                           'ATP Supporter';
+    subName.textContent = sub2 === 'premium_plus' ? 'Premium +'
+                       : sub2 === 'premium'      ? 'Premium'
+                       :                           'Free';
   }
-  // Also adapt the upgrade button so the CTA matches the tier shown
-  // above. Top-tier members see "Manage" instead of an upgrade prompt.
-  var subDesc = document.querySelector('.sub-card .sub-desc');
-  var upgradeBtn = document.querySelector('.sub-card .upgrade-btn');
+  var subDesc   = document.getElementById('subDesc');
+  var upgradeBtn = document.getElementById('upgradeBtn');
   if (subDesc && upgradeBtn) {
-    var sub3 = (m.subscription_type || 'free').toLowerCase();
-    if (sub3 === 'premium_plus') {
-      subDesc.textContent = 'Thank you for keeping ATP alive.';
-      upgradeBtn.textContent = '⭐⭐ Manage subscription';
-    } else if (sub3 === 'premium') {
-      subDesc.textContent = 'Want to go further? Become a Founding Supporter.';
-      upgradeBtn.textContent = '⭐⭐ Become a Founding Supporter';
+    if (sub2 === 'premium_plus') {
+      // Already at the top tier — say thank you instead of selling
+      subDesc.textContent = 'You are part of the inner circle keeping this movement alive.';
+      upgradeBtn.textContent = '💚 Thank you';
+      upgradeBtn.disabled = true;
+      upgradeBtn.style.opacity = '0.7';
+      upgradeBtn.style.cursor = 'default';
+    } else if (sub2 === 'premium') {
+      subDesc.textContent = 'Go further — upgrade to Premium + and unlock the founding-supporter perks.';
+      upgradeBtn.textContent = '⭐⭐ Upgrade to Premium +';
+      upgradeBtn.disabled = false;
+      upgradeBtn.style.opacity = '';
+      upgradeBtn.style.cursor = '';
     } else {
       subDesc.textContent = 'Help keep every session free for everyone.';
-      upgradeBtn.textContent = '⭐ Become a Supporter';
+      upgradeBtn.textContent = '⭐ Upgrade to Premium';
+      upgradeBtn.disabled = false;
+      upgradeBtn.style.opacity = '';
+      upgradeBtn.style.cursor = '';
     }
   }
 
