@@ -7,8 +7,8 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Membership Plans · At The Park</title>
-  <meta name="description" content="ATP membership plans — Free for Life, Premium, and Premium Plus. Pick the tribe that matches how you train.">
+  <title>Support ATP · Keep it free for everyone</title>
+  <meta name="description" content="ATP is free forever. The community keeps growing because Supporters choose to back it. Become a Supporter or a Founding Supporter and keep this movement alive.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -174,9 +174,9 @@ footer p{font-size:12px;color:var(--muted);margin:0}
 <main>
   <section class="plans-hero">
     <div class="plans-hero-inner">
-      <div class="plans-eyebrow">Membership</div>
-      <h1>Train <span class="accent">free.</span> Forever.</h1>
-      <p class="plans-hero-sub">ATP is free for life — no card, no trial, no expiry. Upgrade only if you want premium sessions and bonus perks. The whole community trains together either way.</p>
+      <div class="plans-eyebrow">Be part of the movement</div>
+      <h1>Train free. <span class="accent">Always.</span></h1>
+      <p class="plans-hero-sub">ATP started in a park with one promise: never train alone. Every session has been free since day one — and will stay that way. The reason this community keeps growing is the people who choose to back what we do. Pick the way you want to support.</p>
 
       <!-- Monthly / Yearly toggle. Auto-hides if no plan has an annual SKU. -->
       <div class="plans-toggle-wrap" id="plansToggleWrap">
@@ -191,12 +191,12 @@ footer p{font-size:12px;color:var(--muted);margin:0}
 
   <section class="plans-grid-wrap">
     <div class="plans-grid" id="plansGrid">
-      <div class="plans-loading">Loading membership plans…</div>
+      <div class="plans-loading">Loading…</div>
     </div>
 
     <div class="plans-trust">
-      <div class="plans-trust-headline">Train with the UAE's biggest fitness community</div>
-      <p class="plans-trust-sub">Every plan, free or paid, gets you the same access to sessions, coaches, and the points wallet. Premium just adds the extras.</p>
+      <div class="plans-trust-headline">The UAE's biggest free fitness community — and you can help keep it that way</div>
+      <p class="plans-trust-sub">Every member, free or supporter, gets the same sessions, coaches, and points wallet. The community runs on the people who choose to back it. Here's what your support unlocks — and what it makes possible for everyone else.</p>
       <div class="plans-trust-row">
         <div class="plans-trust-item"><strong>7,000+</strong><span>Members</span></div>
         <div class="plans-trust-item"><strong>19</strong><span>Activities</span></div>
@@ -206,22 +206,26 @@ footer p{font-size:12px;color:var(--muted);margin:0}
     </div>
 
     <div class="plans-faq">
-      <h2>Common questions</h2>
+      <h2>Honest answers</h2>
       <details class="faq-item" open>
-        <summary>Is Free for Life really free?</summary>
-        <p>Yes — forever. No card, no trial that expires, no hidden fees. Free members can book any session, earn points, and join the community. Premium is optional for members who want extra perks.</p>
+        <summary>Is ATP really free forever?</summary>
+        <p>Yes. No card to register. No trial that quietly turns into a charge. No fee that appears later. Every session, every coach, every park — free to anyone who shows up. That's the founding promise and we're not changing it.</p>
       </details>
       <details class="faq-item">
-        <summary>Can I cancel Premium anytime?</summary>
-        <p>Yes. Cancel anytime from your profile — you keep Premium access until the end of the billing period, then you roll back to Free. No cancellation fee, no questions asked.</p>
+        <summary>Then why support it?</summary>
+        <p>Sessions cost money to run — coaches, permits, kit, content, the platform you're using right now. We keep them free by being lean and by the people who choose to support. You're not buying a service. You're keeping a community alive for thousands of others. The perks you get as a Supporter are our way of saying thanks.</p>
       </details>
       <details class="faq-item">
-        <summary>What's the difference between Premium and Premium Plus?</summary>
-        <p>Premium gets you the premium-only sessions and 2× points on every check-in. Premium Plus adds a monthly 1-on-1 coach call, exclusive member events, and partner perks across the city (gyms, cafés, recovery centres).</p>
+        <summary>Can I stop supporting anytime?</summary>
+        <p>Yes. Cancel from your profile in two clicks — no email back-and-forth, no retention call. You stay a Supporter until the end of the period you've already paid for, then roll back to a regular member. No hard feelings, no penalty. Come back when you're ready.</p>
       </details>
       <details class="faq-item">
-        <summary>Do I need to be Premium to book a session?</summary>
-        <p>No. Every member — Free or Premium — can book every regular session. Premium just unlocks the premium-only sessions on top.</p>
+        <summary>What's the difference between Supporter and Founding Supporter?</summary>
+        <p>Supporter gets the Supporter-only sessions + 2× points on every check-in + a badge on your profile. Founding Supporter adds a monthly 1-on-1 coach call, invites to private supporter events, and partner perks across the city (gyms, cafés, recovery centres). Founding Supporter is also limited — we cap it during this phase so it stays personal.</p>
+      </details>
+      <details class="faq-item">
+        <summary>Do I need to support to book a session?</summary>
+        <p>No. Every member — supporting or not — books every regular session. Supporters just unlock a few extra sessions on top, and get first access when new ones drop.</p>
       </details>
       <details class="faq-item">
         <summary>How do referrals interact with plans?</summary>
@@ -388,7 +392,12 @@ footer p{font-size:12px;color:var(--muted);margin:0}
       return '<button class="plan-cta secondary" disabled title="Stripe price id not set">Coming soon</button>';
     }
     var nm = String(plan.name || '').toLowerCase();
-    var primary = nm === 'premium' ? 'Get Premium →' : nm.indexOf('plus') >= 0 ? 'Go Premium Plus →' : 'Upgrade →';
+    // Reframe: this isn't "upgrade", it's "support". Same product, honest copy.
+    var primary = nm.indexOf('plus') >= 0
+      ? 'Become a Founding Supporter →'
+      : nm === 'premium'
+        ? 'Become a Supporter →'
+        : 'Support ATP →';
     return '<button class="plan-cta primary" data-cta-checkout data-plan-id="' + esc(plan.id) +
            '" data-interval="' + (useAnnual ? 'year' : 'month') + '">' + primary + '</button>';
   }

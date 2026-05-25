@@ -1490,7 +1490,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             <div class="sub-desc">All sessions included</div>
           </div>
         </div>
-        <button class="upgrade-btn">⭐ Upgrade to Premium</button>
+        <button class="upgrade-btn">⭐ Become a Supporter</button>
       </div>
 
       <!-- Referral sub-card removed — code + share buttons now live in the
@@ -1971,9 +1971,11 @@ function renderTribe(el) {
     var activeBadge = m.active
       ? '<span class="tribe-badge" style="background:rgba(122,194,49,.14);color:var(--green);border:1px solid rgba(122,194,49,.35)">Active</span>'
       : '<span class="tribe-badge" style="background:rgba(239,68,68,.12);color:#ef4444;border:1px solid rgba(239,68,68,.35)">Inactive</span>';
-    var typeBadge = (m.subscription_type === 'premium')
-      ? '<span class="tribe-badge" style="background:rgba(255,196,0,.14);color:#ffc400;border:1px solid rgba(255,196,0,.35);margin-left:6px">Premium</span>'
-      : '<span class="tribe-badge" style="background:rgba(122,194,49,.10);color:var(--green);border:1px solid rgba(122,194,49,.25);margin-left:6px">Free</span>';
+    var typeBadge = (m.subscription_type === 'premium_plus')
+      ? '<span class="tribe-badge" style="background:rgba(255,196,0,.14);color:#ffc400;border:1px solid rgba(255,196,0,.35);margin-left:6px">★★ Founding Supporter</span>'
+      : (m.subscription_type === 'premium')
+      ? '<span class="tribe-badge" style="background:rgba(255,196,0,.14);color:#ffc400;border:1px solid rgba(255,196,0,.35);margin-left:6px">★ Supporter</span>'
+      : '<span class="tribe-badge" style="background:rgba(122,194,49,.10);color:var(--green);border:1px solid rgba(122,194,49,.25);margin-left:6px">Member</span>';
     var lastAttended = m.last_session_at
       ? 'Last attended ' + new Date(m.last_session_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
       : 'Hasn\u2019t attended yet';
@@ -2132,13 +2134,15 @@ function bookFriendSession(sessionId, btnEl) {
 //   premium → status card with renewal date + "Manage subscription" → Customer Portal
 
 function _atpPremiumBenefits() {
-  // The default benefits if no plan-level features are loaded yet. Keep
-  // these aligned with the actual product perks (sessions, points, etc.)
+  // Reframed copy (v1.39) — leads with the community-first reason to
+  // support, then surfaces the thank-you perks. Keep these aligned with
+  // what's actually delivered server-side.
   return [
-    'Unlimited session bookings — no weekly cap',
-    'Premium-only sessions and special events',
-    '2× points on every check-in (Theme 3)',
-    'Priority Ambassador support + early access to new tribes',
+    'You keep ATP free for everyone else — the real win',
+    'A Supporter badge on your profile + at sessions',
+    '2× points on every check-in — earn faster, redeem sooner',
+    'Unlimited bookings + first access to new sessions',
+    'Supporter-only events: monthly social, partner workshops, recovery sessions',
   ];
 }
 
@@ -2167,20 +2171,21 @@ function _renderUpgradeCard(compact) {
   var bullets = benefits.map(function(b){
     return '<li style="padding:4px 0;color:rgba(255,255,255,.85);font-size:13px;display:flex;gap:8px;align-items:flex-start"><span style="color:var(--green);font-weight:700">✓</span><span>' + b + '</span></li>';
   }).join('');
-  var heading = compact ? 'Unlock Premium' : 'Upgrade to ATP Premium';
+  // Reframed: community-first ("help keep this free"), perks second.
+  var heading = compact ? 'Help keep ATP free' : 'Back the community';
   var sub     = compact
-    ? 'More sessions, more points, more perks.'
-    : 'Get unlimited bookings, premium-only sessions, and 2× points on every check-in.';
+    ? 'The community runs on the people who support it. Join them.'
+    : 'ATP stays free for everyone because some members choose to support it. Become a Supporter — and we\'ll say thank you with a few extras.';
   var listMarkup = compact
     ? ''
     : '<ul style="list-style:none;padding:0;margin:14px 0 18px">' + bullets + '</ul>';
   return '<div style="background:linear-gradient(135deg,#0f2a08,#0a1a06);border:1px solid rgba(122,194,49,.3);border-radius:14px;padding:' + (compact ? '18px' : '24px') + ';position:relative;overflow:hidden">' +
-    '<div style="position:absolute;top:-20px;right:-12px;font-family:var(--ff-display);font-size:90px;font-weight:900;color:rgba(122,194,49,.06);line-height:1;pointer-events:none;user-select:none">PRO</div>' +
-    '<div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(122,194,49,.85);margin-bottom:6px">⭐ Premium</div>' +
+    '<div style="position:absolute;top:-20px;right:-12px;font-family:var(--ff-display);font-size:90px;font-weight:900;color:rgba(122,194,49,.06);line-height:1;pointer-events:none;user-select:none">★</div>' +
+    '<div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(122,194,49,.85);margin-bottom:6px">⭐ Be a Supporter</div>' +
     '<div style="font-family:var(--ff-display);font-size:' + (compact ? '20px' : '26px') + ';font-weight:900;color:var(--white);margin-bottom:6px;text-transform:uppercase">' + heading + '</div>' +
-    '<div style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:' + (compact ? '12' : '4') + 'px">' + sub + '</div>' +
+    '<div style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:' + (compact ? '12' : '4') + 'px;line-height:1.55">' + sub + '</div>' +
     listMarkup +
-    '<button type="button" class="atp-btn atp-btn--primary" data-atp-call="openPremiumPlansModal" style="font-size:13px;padding:10px 20px">See plans →</button>' +
+    '<button type="button" class="atp-btn atp-btn--primary" data-atp-call="openPremiumPlansModal" style="font-size:13px;padding:10px 20px">Become a Supporter →</button>' +
   '</div>';
 }
 
@@ -2200,16 +2205,21 @@ function _renderManageCard(m) {
   var accent = isPlus ? '#ffc400' : '#7AC231';
   var accentBg = isPlus ? '#1a1500' : '#0f2a08';
   var accentRgba = isPlus ? '255,196,0' : '122,194,49';
-  var label = isPlus ? '⭐⭐ Premium+ Member' : '⭐ Premium Member';
-  var monogram = isPlus ? 'PRO+' : 'PRO';
+  // Reframed: 'Premium Member' → 'Supporter' / 'Founding Supporter'
+  var label = isPlus ? '⭐⭐ Founding Supporter' : '⭐ ATP Supporter';
+  var monogram = isPlus ? '★+' : '★';
+  var thanksLine = isPlus
+    ? 'You’re part of the inner circle keeping this movement alive.'
+    : 'Because of you, every session stays free for everyone else.';
   return '<div style="background:linear-gradient(135deg,' + accentBg + ',#0a1a06);border:1px solid rgba(' + accentRgba + ',.4);border-radius:14px;padding:22px;position:relative;overflow:hidden">' +
-    '<div style="position:absolute;top:-18px;right:-10px;font-family:var(--ff-display);font-size:' + (isPlus ? '60' : '80') + 'px;font-weight:900;color:rgba(' + accentRgba + ',.07);line-height:1;pointer-events:none;user-select:none">' + monogram + '</div>' +
+    '<div style="position:absolute;top:-18px;right:-10px;font-family:var(--ff-display);font-size:' + (isPlus ? '70' : '90') + 'px;font-weight:900;color:rgba(' + accentRgba + ',.07);line-height:1;pointer-events:none;user-select:none">' + monogram + '</div>' +
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px">' +
       '<div>' +
         '<div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(' + accentRgba + ',.95);margin-bottom:6px">' + label + '</div>' +
-        '<div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--white);text-transform:uppercase">You\u2019re in.</div>' +
-        '<div style="font-size:12px;color:' + (statusLabel === 'past_due' ? '#f59e0b' : accent) + ';margin-top:4px;text-transform:capitalize">Status: ' + statusLabel.replace(/_/g, ' ') + '</div>' +
-        (renewsLine ? '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + renewsLine + '</div>' : '') +
+        '<div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--white);text-transform:uppercase">Thank you.</div>' +
+        '<div style="font-size:12px;color:rgba(255,255,255,.75);margin-top:6px;line-height:1.55;max-width:340px">' + thanksLine + '</div>' +
+        '<div style="font-size:11px;color:' + (statusLabel === 'past_due' ? '#f59e0b' : accent) + ';margin-top:10px;text-transform:capitalize">Status: ' + statusLabel.replace(/_/g, ' ') + '</div>' +
+        (renewsLine ? '<div style="font-size:11px;color:var(--muted);margin-top:2px">' + renewsLine + '</div>' : '') +
       '</div>' +
       '<button type="button" class="atp-btn atp-btn--ghost" data-atp-call="openCustomerPortal" style="font-size:12px;padding:8px 14px;white-space:nowrap">Manage</button>' +
     '</div>' +
@@ -2226,9 +2236,9 @@ function openPremiumPlansModal() {
   wrap.innerHTML =
     '<div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.14);border-radius:16px;padding:28px;max-width:560px;width:100%;max-height:90vh;overflow-y:auto;position:relative">' +
       '<button type="button" onclick="document.getElementById(\'premiumPlansOverlay\').remove()" style="position:absolute;top:12px;right:14px;background:rgba(0,0,0,.5);border:none;color:#fff;font-size:22px;cursor:pointer;width:32px;height:32px;border-radius:50%">×</button>' +
-      '<div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:6px">⭐ Premium plans</div>' +
-      '<h2 style="font-family:var(--ff-display);font-size:24px;font-weight:900;margin:0 0 6px;text-transform:uppercase">Pick your plan</h2>' +
-      '<div style="font-size:13px;color:var(--muted);margin-bottom:20px">Cancel anytime — billed securely by Stripe.</div>' +
+      '<div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:6px">⭐ Support ATP</div>' +
+      '<h2 style="font-family:var(--ff-display);font-size:24px;font-weight:900;margin:0 0 6px;text-transform:uppercase">Pick how you want to support</h2>' +
+      '<div style="font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.55">Every session stays free because some members choose to support. Cancel anytime — billed securely by Stripe.</div>' +
       '<div id="premiumPlansList"><div style="padding:30px;text-align:center;color:var(--muted);font-size:13px">Loading\u2026</div></div>' +
     '</div>';
   wrap.addEventListener('click', function(ev){ if (ev.target === wrap) wrap.remove(); });
