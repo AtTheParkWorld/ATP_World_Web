@@ -1683,20 +1683,10 @@ function getSessionsData() {
 }
 var SESSIONS = getSessionsData();
 
-var ACHIEVEMENTS = [
-  {icon:"🔥",name:"First Session",desc:"Attend your first ATP session",unlocked:true},
-  {icon:"🏃",name:"5-Day Streak",desc:"5 consecutive days",unlocked:true},
-  {icon:"💪",name:"10 Sessions",desc:"Complete 10 sessions",unlocked:true},
-  {icon:"🌟",name:"Community Star",desc:"Refer 5 friends",unlocked:true},
-  {icon:"🏆",name:"50 Sessions",desc:"Complete 50 sessions",unlocked:true},
-  {icon:"🔥",name:"30-Day Streak",desc:"30 consecutive days",unlocked:true},
-  {icon:"🎽",name:"Gear Up",desc:"First store purchase",unlocked:true},
-  {icon:"👥",name:"Tribe Leader",desc:"Refer 10 friends",unlocked:true},
-  {icon:"🚀",name:"100 Sessions",desc:"Complete 100 sessions",unlocked:false},
-  {icon:"⚡",name:"60-Day Streak",desc:"60 consecutive days",unlocked:false},
-  {icon:"🌍",name:"3 Cities",desc:"Session in all 3 cities",unlocked:false},
-  {icon:"👑",name:"Co-Founder Fan",desc:"10 years of ATP",unlocked:false},
-];
+// Empty by default — loadAchievements() populates from /api/achievements/me
+// on page boot. New joiners see the 'No achievements yet' empty state
+// rendered by renderAchievements() instead of fake mock badges.
+var ACHIEVEMENTS = [];
 
 var TRIBE = [
   {init:"J",name:"Jay Ashar",joined:"Jan 2024",sessions:127,active:true},
