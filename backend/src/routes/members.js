@@ -46,8 +46,8 @@ router.patch('/profile', authenticate, async (req, res, next) => {
   try {
     const allowed = [
       'first_name','last_name','phone','date_of_birth','gender',
-      'nationality','city_id','country_id','sports_preferences','top_size',
-      'bottom_size','padel_level',
+      'nationality','city_id','country_id','tribe_id','sports_preferences',
+      'top_size','bottom_size','padel_level','volleyball_level',
     ];
     const updates = {};
     allowed.forEach(f => { if (req.body[f] !== undefined) updates[f] = req.body[f]; });

@@ -443,6 +443,14 @@ async function _ensureBootSchema() {
       ADD COLUMN IF NOT EXISTS welcome_discount_expires_at TIMESTAMPTZ`);
   } catch (e) { console.warn('[boot] welcome_discount columns:', e.message); }
 
+  // Volleyball level column (added to Edit Profile in v1.39.0) — stranded
+  // because PATCH /api/members/profile tried to update it but the column
+  // didn't exist, throwing a DB error that surfaced as "Connection error"
+  // to the user.
+  try {
+    await query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS volleyball_level VARCHAR(20)`);
+  } catch (e) { console.warn('[boot] volleyball_level column:', e.message); }
+
   // Session name templates (Phase 1.35.1)
   try {
     await query(`CREATE TABLE IF NOT EXISTS session_templates (

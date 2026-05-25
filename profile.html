@@ -780,9 +780,11 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
              used their first-order code yet. Populated by renderWelcomeDiscount(). -->
         <div id="welcomeDiscountHost" style="margin-bottom:16px"></div>
 
-        <!-- Featured store products — pulls from Shopify collection 'featured'.
-             Silently hides if the collection is empty or unreachable. -->
-        <div id="featuredStoreHost" style="margin-bottom:16px"></div>
+        <!-- Featured products grid removed from Overview in v1.39.3 — the
+             sidebar carousel (#featuredSidebarCard) replaces it so the same
+             content doesn't render twice. Host kept as an empty stub in
+             case we want to restore the bigger grid later. -->
+        <div id="featuredStoreHost" style="display:none"></div>
 
         <!-- Mini premium banner — only shows for free members. Same renderer
              as the wallet card but in compact mode so it's not too pushy. -->
@@ -2932,7 +2934,13 @@ function saveProfile(){
       // immediately instead of staying on the edit form.
       try { showTab('overview'); } catch (e) {}
     });
-  }).catch(function(){ showMessage('Connection error — please try again'); });
+  }).catch(function(err){
+    // Surface the actual error so it's debuggable instead of always saying
+    // 'Connection error'. Console keeps the stack for support.
+    console.error('[saveProfile] failed:', err);
+    var msg = (err && err.message) ? err.message : 'Connection error';
+    showMessage('Save failed: ' + msg);
+  });
 }
 
 function showMessage(msg){
@@ -4461,7 +4469,9 @@ function loadRealProfileData() {
     loadMyGifts();
     loadMyCompanies();
     renderWelcomeDiscount(m);
-    loadFeaturedStore();
+    // loadFeaturedStore() — removed in v1.39.3; the sidebar carousel
+    // (loadFeaturedSidebarCarousel, called via loadStoreBestSellers
+    // shim) replaces it.
   }).catch(function(){});
 }
 
