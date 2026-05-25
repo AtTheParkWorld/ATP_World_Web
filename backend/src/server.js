@@ -242,6 +242,26 @@ app.get('/api/docs', (req, res) => {
 // ── ROUTES ────────────────────────────────────────────────────
 // ── Static frontend (fallback while GitHub Pages rebuilds) ───────────────────
 const path = require('path');
+// ── Apple Pay domain verification ─────────────────────────────
+// Apple Pay needs every domain that hosts Stripe Checkout (or any
+// Stripe payment element) to be verified. Stripe gives you a file
+// from their dashboard ("Apple Pay Domains" → register domain → copy
+// content). Paste that content into the STRIPE_APPLE_PAY_DOMAIN_VERIFICATION
+// env var on Render and this route serves it correctly.
+// Reference: https://docs.stripe.com/payments/payment-methods/pmd-registration
+app.get('/.well-known/apple-developer-merchantid-domain-association', (req, res) => {
+  const content = process.env.STRIPE_APPLE_PAY_DOMAIN_VERIFICATION;
+  if (!content) {
+    return res.status(404).type('text/plain').send(
+      'Apple Pay verification file not configured.\n' +
+      'Set STRIPE_APPLE_PAY_DOMAIN_VERIFICATION env var on Render with the\n' +
+      'content from https://dashboard.stripe.com/settings/payment_methods\n' +
+      '(Apple Pay → Add a domain → copy the file contents).'
+    );
+  }
+  res.type('text/plain').send(content);
+});
+
 // HTML pages must never be cached (so deploys propagate immediately).
 // JS/CSS/assets get a sensible short cache. Bundles use content-hash
 // invalidation via ?cb=… cache-busters in the page templates.

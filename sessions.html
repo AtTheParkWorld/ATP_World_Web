@@ -148,7 +148,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 .modal-meta-row{display:flex;flex-wrap:wrap;align-items:center;gap:8px;color:var(--light)}
 .modal-meta-row span{display:inline-flex;align-items:center;gap:4px}
 .modal-meta-sep{color:rgba(255,255,255,.18);font-weight:700}
-.modal-meta-desc{margin-top:10px;font-style:italic;font-size:12px;color:var(--muted);line-height:1.5}
+.modal-meta-desc{margin-top:10px;font-style:italic;font-size:12px;color:var(--muted);line-height:1.5;white-space:pre-wrap;word-break:break-word}
 .form-group{margin-bottom:16px}
 .form-group label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
 .form-group input{width:100%;background:var(--dark3);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:13px 16px;color:var(--white);font-size:14px;font-family:var(--ff-body);transition:border-color .2s}
@@ -747,7 +747,7 @@ function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId)
       '<span class="modal-meta-sep">·</span>' +
       '<span>🎽 ' + escapeHtml(coach) + '</span>' +
     '</div>' +
-    (desc ? '<p class="modal-meta-desc">' + escapeHtml(desc) + '</p>' : '');
+    (desc ? '<p class="modal-meta-desc" style="white-space:pre-wrap;line-height:1.55">' + escapeHtml(desc) + '</p>' : '');
   document.getElementById('modalForm').style.display = 'block';
   document.getElementById('confirmPanel').style.display = 'none';
 
@@ -1052,9 +1052,9 @@ function openPaymentChooserModal(booking, opts, memberName, memberEmail) {
         'padding:18px 20px;border-radius:12px;border:1px solid rgba(255,255,255,.08);' +
         'background:#161616;color:#fff;cursor:pointer;text-align:left;font-family:inherit">' +
         '<div>' +
-          '<div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:4px">💳 Pay with card</div>' +
+          '<div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:4px">💳 Apple Pay · Google Pay · Card</div>' +
           '<div style="font-family:var(--ff-display);font-size:22px;font-weight:900">' + ccy + ' ' + price.toFixed(2) + '</div>' +
-          '<div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px">Secure checkout via Stripe</div>' +
+          '<div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px">One-tap checkout via Stripe — wallets supported</div>' +
         '</div>' +
         '<span style="font-size:22px;color:rgba(255,255,255,.4)">›</span>' +
       '</button>';
