@@ -410,11 +410,11 @@
             <div class="admin-form-group full">
               <label class="admin-form-label" for="sIntroVideo">Hover-Preview Video (optional)</label>
               <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-                <input class="admin-form-input" type="text" id="sIntroVideo" placeholder="/api/cms/media/... or paste a URL" style="flex:1;min-width:280px">
+                <input class="admin-form-input" type="text" id="sIntroVideo" placeholder="Paste URL or upload below" style="flex:1;min-width:280px">
                 <button type="button" class="admin-btn" style="font-size:11px;padding:9px 16px;white-space:nowrap" onclick="pickSessionIntroVideo()">📁 Upload</button>
-                <span style="font-size:11px;color:#666">Recommended: <strong style="color:#aaa">1080×1920 px</strong> (9:16, &lt;5MB)</span>
               </div>
-              <input type="file" id="sIntroVideoFile" accept="video/*" style="display:none" onchange="handleSessionIntroUpload(this)">
+              <div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">📐 Portrait <strong style="color:#aaa">1080 × 1920&nbsp;px</strong> (9:16) · MP4 (H.264) or WebM · 3–8 sec, &lt; 5&nbsp;MB · muted-autoplay friendly.</div>
+              <input type="file" id="sIntroVideoFile" accept="video/mp4,video/webm" style="display:none" onchange="handleSessionIntroUpload(this)">
             </div>
 
             <!-- 🎥 Live streaming for this session ─ admin-controlled.
@@ -723,9 +723,13 @@
               <div class="admin-form-grid">
                 <div class="admin-form-group"><label class="admin-form-label" for="cPrizeProductName">Product name</label><input class="admin-form-input" type="text" id="cPrizeProductName" placeholder="e.g. Garmin Forerunner 165"></div>
                 <div class="admin-form-group">
-                  <label class="admin-form-label" for="cPrizeProductImage">Product image URL</label>
-                  <input class="admin-form-input" type="url" id="cPrizeProductImage" placeholder="https://…">
-                  <div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">📐 Square <strong style="color:#aaa">600 × 600&nbsp;px</strong>, JPG or PNG, &lt; 200&nbsp;KB.</div>
+                  <label class="admin-form-label" for="cPrizeProductImage">Product image</label>
+                  <div style="display:flex;gap:8px;align-items:center">
+                    <input class="admin-form-input" type="url" id="cPrizeProductImage" placeholder="Paste URL or upload below" style="flex:1">
+                    <input type="file" id="cPrizeProductImageFile" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="atpUpload('cPrizeProductImageFile','cPrizeProductImage','image',2)">
+                    <button type="button" class="admin-btn" style="font-size:11px;padding:9px 14px;white-space:nowrap" onclick="document.getElementById('cPrizeProductImageFile').click()">📁 Upload</button>
+                  </div>
+                  <div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">📐 Square <strong style="color:#aaa">600 × 600&nbsp;px</strong> (1:1) · JPG / PNG / WebP · &lt; 200&nbsp;KB.</div>
                 </div>
               </div>
             </div>
@@ -1397,9 +1401,13 @@
               </div>
               <div style="margin-bottom:10px"><label class="admin-form-label" for="achDesc">Description</label><input class="admin-form-input" type="text" id="achDesc" placeholder="What does the member need to do?"></div>
               <div style="margin-bottom:10px">
-                <label class="admin-form-label" for="achBadge">Badge image URL (optional)</label>
-                <input class="admin-form-input" type="url" id="achBadge" placeholder="https://… PNG/SVG/WebP">
-                <div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">📐 Recommended: <strong style="color:#aaa">256 × 256&nbsp;px</strong>, PNG or SVG with transparent background, &lt; 50&nbsp;KB. Displayed at 48&nbsp;px.</div>
+                <label class="admin-form-label" for="achBadge">Badge image (optional)</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <input class="admin-form-input" type="url" id="achBadge" placeholder="Paste URL or upload below" style="flex:1">
+                  <input type="file" id="achBadgeFile" accept="image/png,image/svg+xml,image/webp" style="display:none" onchange="atpUpload('achBadgeFile','achBadge','image',1)">
+                  <button type="button" class="admin-btn" style="font-size:11px;padding:9px 14px;white-space:nowrap" onclick="document.getElementById('achBadgeFile').click()">📁 Upload</button>
+                </div>
+                <div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">📐 Square <strong style="color:#aaa">256 × 256&nbsp;px</strong> (1:1) · PNG or SVG with transparent background · &lt; 50&nbsp;KB. Displayed at 48&nbsp;px.</div>
               </div>
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px">
                 <div><label class="admin-form-label" for="achCriteriaType">Trigger</label><select class="admin-form-select" id="achCriteriaType"><option value="manual">Manual award only</option><option value="sessions">Sessions attended</option><option value="streak">Current streak (days)</option><option value="referrals">Active referrals</option></select></div>
@@ -1576,9 +1584,13 @@
                 <div><label class="admin-form-label" for="streamAdWeight">Weight</label><input class="admin-form-input" type="number" id="streamAdWeight" value="1" min="1"><div style="font-size:10px;color:#666;margin-top:4px">Higher = shown more often.</div></div>
               </div>
               <div style="margin-bottom:10px">
-                <label class="admin-form-label" for="streamAdImage">Image URL *</label>
-                <input class="admin-form-input" type="text" id="streamAdImage" placeholder="https://… or /api/cms/media/<id>">
-                <div style="font-size:10px;color:#666;margin-top:4px">Recommended: 1600×200 px (landscape banner). Use the Media Library to upload first, paste the short ref here.</div>
+                <label class="admin-form-label" for="streamAdImage">Image *</label>
+                <div style="display:flex;gap:8px;align-items:center">
+                  <input class="admin-form-input" type="text" id="streamAdImage" placeholder="Paste URL or upload below" style="flex:1">
+                  <input type="file" id="streamAdImageFile" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="atpUpload('streamAdImageFile','streamAdImage','image',2)">
+                  <button type="button" class="admin-btn" style="font-size:11px;padding:9px 14px;white-space:nowrap" onclick="document.getElementById('streamAdImageFile').click()">📁 Upload</button>
+                </div>
+                <div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">📐 Landscape banner <strong style="color:#aaa">1600 × 200&nbsp;px</strong> (8:1) · JPG / PNG / WebP · &lt; 200&nbsp;KB.</div>
               </div>
               <div style="margin-bottom:10px">
                 <label class="admin-form-label" for="streamAdClick">Click URL</label>
@@ -1780,7 +1792,15 @@
               <div><label class="admin-form-label" for="pdSort" title="Lower numbers appear first in lists.">Display order <span style="color:#666;font-weight:400;font-size:10px">(lower = first)</span></label><input class="admin-form-input" type="number" id="pdSort" value="100" title="Lower = appears first"></div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-              <div><label class="admin-form-label" for="pdLogo">Logo URL (or /api/cms/media/...)</label><input class="admin-form-input" type="text" id="pdLogo" placeholder="https://..." style="font-family:monospace;font-size:12px"></div>
+              <div>
+                <label class="admin-form-label" for="pdLogo">Partner logo</label>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <input class="admin-form-input" type="text" id="pdLogo" placeholder="Paste URL or upload" style="font-family:monospace;font-size:12px;flex:1">
+                  <input type="file" id="pdLogoFile" accept="image/png,image/svg+xml,image/webp" style="display:none" onchange="atpUpload('pdLogoFile','pdLogo','image',1)">
+                  <button type="button" class="admin-btn" style="font-size:11px;padding:8px 12px;white-space:nowrap" onclick="document.getElementById('pdLogoFile').click()">📁</button>
+                </div>
+                <div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">📐 Square <strong style="color:#aaa">400 × 400&nbsp;px</strong> (1:1) · PNG or SVG with transparent BG · &lt; 100&nbsp;KB.</div>
+              </div>
               <div><label class="admin-form-label" for="pdWebsite">Website URL</label><input class="admin-form-input" type="text" id="pdWebsite" placeholder="https://..." style="font-family:monospace;font-size:12px"></div>
             </div>
             <div style="margin-bottom:10px"><label class="admin-form-label" for="pdTier">Tier</label><select class="admin-form-select" id="pdTier"><option value="">No tier</option></select></div>
@@ -1831,7 +1851,15 @@
             </div>
             <div style="margin-bottom:10px"><label class="admin-form-label" for="poDescription">Description</label><textarea class="admin-form-input" id="poDescription" rows="2" placeholder="Use code on Sun & Sand Sports site. Stacks with sale items."></textarea></div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
-              <div><label class="admin-form-label" for="poImage">Image URL (banner)</label><input class="admin-form-input" type="text" id="poImage" placeholder="https://..." style="font-family:monospace;font-size:12px"></div>
+              <div>
+                <label class="admin-form-label" for="poImage">Banner image</label>
+                <div style="display:flex;gap:6px;align-items:center">
+                  <input class="admin-form-input" type="text" id="poImage" placeholder="Paste URL or upload" style="font-family:monospace;font-size:12px;flex:1">
+                  <input type="file" id="poImageFile" accept="image/jpeg,image/png,image/webp" style="display:none" onchange="atpUpload('poImageFile','poImage','image',2)">
+                  <button type="button" class="admin-btn" style="font-size:11px;padding:8px 12px;white-space:nowrap" onclick="document.getElementById('poImageFile').click()">📁</button>
+                </div>
+                <div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">📐 Landscape <strong style="color:#aaa">1200 × 600&nbsp;px</strong> (2:1) · JPG / WebP · &lt; 250&nbsp;KB.</div>
+              </div>
               <div><label class="admin-form-label" for="poExternalUrl">External URL (where members go)</label><input class="admin-form-input" type="text" id="poExternalUrl" placeholder="https://sunandsandsports.com" style="font-family:monospace;font-size:12px"></div>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">

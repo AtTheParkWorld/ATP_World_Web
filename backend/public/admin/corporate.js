@@ -268,7 +268,15 @@ function newCorporateAccountForm() {
         '<div><label class="admin-form-label">Start date</label><input class="admin-form-input" type="date" id="accStart"></div>' +
         '<div><label class="admin-form-label">End date</label><input class="admin-form-input" type="date" id="accEnd"></div>' +
       '</div>' +
-      '<div style="margin-bottom:10px"><label class="admin-form-label">Company logo URL <span style="color:#666;font-weight:400">(https:// or data:image/...)</span></label><input class="admin-form-input" id="accLogoUrl" placeholder="https://acme.com/logo.png"></div>' +
+      '<div style="margin-bottom:10px">' +
+        '<label class="admin-form-label">Company logo</label>' +
+        '<div style="display:flex;gap:8px;align-items:center">' +
+          '<input class="admin-form-input" id="accLogoUrl" placeholder="Paste URL or upload" style="flex:1">' +
+          '<input type="file" id="accLogoUrlFile" accept="image/png,image/svg+xml,image/webp" style="display:none" onchange="atpUpload(\'accLogoUrlFile\',\'accLogoUrl\',\'image\',1)">' +
+          '<button type="button" class="admin-btn" style="font-size:11px;padding:9px 14px;white-space:nowrap" onclick="document.getElementById(\'accLogoUrlFile\').click()">📁 Upload</button>' +
+        '</div>' +
+        '<div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">📐 Square <strong style="color:#aaa">256 × 256&nbsp;px</strong> (1:1) · PNG or SVG with transparent BG · &lt; 100&nbsp;KB.</div>' +
+      '</div>' +
       '<div style="margin-bottom:10px"><label class="admin-form-label">Notes</label><textarea class="admin-form-input" id="accNotes" rows="2"></textarea></div>' +
       '<div style="display:flex;gap:8px">' +
         '<button class="admin-btn admin-btn-primary" data-atp-call="saveCorporateAccount" style="font-size:12px">Create account + signup token</button>' +
@@ -705,8 +713,13 @@ function editCorporateLogo(e, btn) {
   wrap.innerHTML =
     '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:16px;margin-bottom:14px">' +
       '<div style="font-family:var(--ff-display,sans-serif);font-size:14px;font-weight:800;color:#7AC231;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Company logo</div>' +
-      '<label class="admin-form-label">Logo URL <span style="color:#666;font-weight:400">(https:// or data:image/…;base64)</span></label>' +
-      '<input class="admin-form-input" id="corpLogoInput" placeholder="https://acme.com/logo.png" value="' + _esc(current) + '">' +
+      '<label class="admin-form-label">Company logo</label>' +
+      '<div style="display:flex;gap:8px;align-items:center">' +
+        '<input class="admin-form-input" id="corpLogoInput" placeholder="Paste URL or upload" value="' + _esc(current) + '" style="flex:1">' +
+        '<input type="file" id="corpLogoInputFile" accept="image/png,image/svg+xml,image/webp" style="display:none" onchange="atpUpload(\'corpLogoInputFile\',\'corpLogoInput\',\'image\',1)">' +
+        '<button type="button" class="admin-btn" style="font-size:11px;padding:9px 14px;white-space:nowrap" onclick="document.getElementById(\'corpLogoInputFile\').click()">📁 Upload</button>' +
+      '</div>' +
+      '<div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">📐 Square <strong style="color:#aaa">256 × 256&nbsp;px</strong> (1:1) · PNG or SVG with transparent BG · &lt; 100&nbsp;KB.</div>' +
       '<div style="display:flex;gap:8px;margin-top:10px">' +
         '<button class="admin-btn admin-btn-primary" data-atp-call="saveCorporateLogo" data-args=\'["' + id + '"]\' style="font-size:12px">Save logo</button>' +
         (current ? '<button class="admin-btn" data-atp-call="saveCorporateLogo" data-args=\'["' + id + '","clear"]\' style="font-size:12px">Remove logo</button>' : '') +

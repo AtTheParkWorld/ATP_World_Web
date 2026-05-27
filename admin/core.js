@@ -115,6 +115,58 @@ function showAdminSection(name, btn) {
   if (name === 'dashboard') { loadDashboardAPI(); loadDashboardWidgets && loadDashboardWidgets(); }
 }
 
+// ── GENERIC MEDIA UPLOAD HELPER ────────────────────────────────
+// Wires a hidden <input type="file"> + a visible "📁 Upload" button to
+// a URL text input. On file pick, base64-encodes the file, POSTs it to
+// /api/cms/upload, then drops the returned short URL (/api/cms/media/<id>)
+// into the URL field. Used by every image/video/badge/logo field in the
+// admin panel — saves admins from having to host images elsewhere first.
+//
+// HTML pattern (all three IDs are explicit, no naming convention required):
+//   <input id="myUrl" type="text">
+//   <input id="myFile" type="file" accept="image/*" style="display:none"
+//          onchange="atpUpload('myFile','myUrl','image',2)">
+//   <button onclick="document.getElementById('myFile').click()">📁 Upload</button>
+function atpUpload(fileInputId, urlFieldId, kind, maxMB) {
+  var input = document.getElementById(fileInputId);
+  var urlField = document.getElementById(urlFieldId);
+  if (!input || !urlField) return;
+  var f = input.files && input.files[0];
+  if (!f) return;
+  var limit = (maxMB || 5) * 1024 * 1024;
+  if (f.size > limit) {
+    if (typeof showToast === 'function') showToast('❌ File too large (max ' + (maxMB || 5) + 'MB).', true);
+    input.value = '';
+    return;
+  }
+  var token = (typeof getToken === 'function') ? getToken() : (localStorage.getItem('atp_token') || '');
+  var prev = urlField.value;
+  urlField.value = 'Uploading…';
+  var reader = new FileReader();
+  reader.onload = function() {
+    fetch(ATP_API + '/cms/upload', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ data_url: reader.result, filename: f.name, kind: kind || 'image' }),
+    }).then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); })
+      .then(function(res){
+        if (!res.ok || !res.body || !res.body.success) {
+          urlField.value = prev;
+          if (typeof showToast === 'function') showToast('❌ ' + ((res.body && res.body.error) || 'Upload failed'), true);
+          return;
+        }
+        urlField.value = res.body.url;
+        if (typeof showToast === 'function') showToast('✅ Uploaded — Save to apply');
+      })
+      .catch(function(e){
+        urlField.value = prev;
+        if (typeof showToast === 'function') showToast('❌ ' + e.message, true);
+      })
+      .finally(function(){ input.value = ''; });
+  };
+  reader.readAsDataURL(f);
+}
+
 // ── DATA ──────────────────────────────────────────────────────
 var MEMBERS_DATA = []; // Populated from API
 

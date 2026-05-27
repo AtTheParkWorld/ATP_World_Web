@@ -1497,7 +1497,9 @@ router.patch('/company/:id/logo', authenticate, _requireCompanyAdminFor, async (
     // Blocks javascript:, file:, vbscript:, blob:, etc.
     const safe = /^https:\/\//i.test(url) || /^data:image\/(png|jpe?g|svg\+xml|webp);base64,/i.test(url);
     if (!safe) return res.status(400).json({ error: 'logo_url must be https:// or data:image/...' });
-    if (url.length > 8192) return res.status(413).json({ error: 'logo_url too long (max 8KB)' });
+    // Allow up to ~1.4MB so a ~1MB binary file uploaded as base64 fits.
+    // logo_url is a TEXT column so this still costs zero unless a logo is set.
+    if (url.length > 1_400_000) return res.status(413).json({ error: 'Logo too large (max ~1MB binary). Compress it first.' });
     const { rows } = await query(
       `UPDATE corporate_accounts SET logo_url=$1, updated_at=NOW() WHERE id=$2 RETURNING logo_url`,
       [url, req.params.id]

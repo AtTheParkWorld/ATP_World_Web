@@ -455,9 +455,13 @@
       '<div style="display:flex;align-items:center;gap:18px;margin-bottom:16px">' +
         (CO.logo_url ? '<div class="company-logo" style="width:80px;height:80px"><img src="' + esc(CO.logo_url) + '"></div>' : '<div class="company-logo placeholder" style="width:80px;height:80px;font-size:38px">' + esc((CO.company_name||"?").charAt(0).toUpperCase()) + '</div>') +
         '<div style="flex:1">' +
-          '<label style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:6px">Logo URL</label>' +
-          '<input class="form-input" id="logoUrl" value="' + esc(CO.logo_url || '') + '" placeholder="https://yourcompany.com/logo.png">' +
-          '<p style="font-size:11px;color:var(--muted);margin-top:6px">Paste a public URL to your company logo. Updates show on all employee profiles + ATP\'s admin panel within a minute.</p>' +
+          '<label style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:6px">Logo</label>' +
+          '<div style="display:flex;gap:8px;align-items:center">' +
+            '<input class="form-input" id="logoUrl" value="' + esc(CO.logo_url || '') + '" placeholder="Paste URL or upload" style="flex:1">' +
+            '<input type="file" id="logoFile" accept="image/png,image/svg+xml,image/webp,image/jpeg" style="display:none" onchange="handleLogoFile(this)">' +
+            '<button class="btn" type="button" onclick="document.getElementById(\'logoFile\').click()" style="white-space:nowrap">📁 Upload</button>' +
+          '</div>' +
+          '<div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5">📐 Square <strong style="color:#ccc">256 × 256&nbsp;px</strong> (1:1) · PNG / SVG / WebP / JPG with transparent BG preferred · &lt; 1&nbsp;MB. Paste a public URL or upload a file — updates show on all employee profiles + ATP\'s admin panel within a minute.</div>' +
         '</div>' +
       '</div>' +
       '<button class="btn btn-primary" onclick="saveLogo()">Save logo</button>' +
@@ -472,6 +476,16 @@
       '</div>' +
       '<p style="font-size:12px;color:var(--muted);margin-top:14px">To change billing, tier, or cap, contact ATP at <a href="mailto:general@atthepark.com" style="color:var(--green)">general@atthepark.com</a>.</p>' +
     '</div>';
+  }
+  function handleLogoFile(input){
+    var f = input && input.files && input.files[0]; if (!f) return;
+    if (f.size > 1024 * 1024) { showToast('Image too large — must be under 1 MB', 'error'); input.value=''; return; }
+    var reader = new FileReader();
+    reader.onload = function(){
+      document.getElementById('logoUrl').value = reader.result;
+      showToast('Image loaded — click "Save logo" to apply');
+    };
+    reader.readAsDataURL(f);
   }
   function saveLogo(){
     var url = (document.getElementById('logoUrl').value || '').trim();
@@ -491,7 +505,7 @@
   window.toggleAddForm = toggleAddForm; window.toggleCsvForm = toggleCsvForm;
   window.submitAdd = submitAdd; window.submitCsv = submitCsv;
   window.setFrozen = setFrozen; window.removeEmp = removeEmp; window.resendInvite = resendInvite;
-  window.changeLbWindow = changeLbWindow; window.saveLogo = saveLogo;
+  window.changeLbWindow = changeLbWindow; window.saveLogo = saveLogo; window.handleLogoFile = handleLogoFile;
 
   boot();
 </script>
