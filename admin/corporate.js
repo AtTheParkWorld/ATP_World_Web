@@ -303,8 +303,8 @@ function saveCorporateAccount() {
   };
   var rawLogo = document.getElementById('accLogoUrl').value.trim();
   if (rawLogo) {
-    if (!/^https:\/\//i.test(rawLogo) && !/^data:image\/(png|jpe?g|svg\+xml|webp);base64,/i.test(rawLogo)) {
-      showToast('❌ Logo URL must start with https:// or data:image/…;base64', true); return;
+    if (!/^https:\/\//i.test(rawLogo) && !/^data:image\/(png|jpe?g|svg\+xml|webp);base64,/i.test(rawLogo) && !/^\/api\/cms\/media\//.test(rawLogo)) {
+      showToast('❌ Logo must be https:// , data:image/…;base64, or an /api/cms/media/… upload', true); return;
     }
     body.logo_url = rawLogo;
   }
@@ -734,8 +734,8 @@ function saveCorporateLogo(e, btn) {
   var id = args[0], mode = args[1];
   if (!id) return;
   var url = mode === 'clear' ? null : (document.getElementById('corpLogoInput').value || '').trim();
-  if (url && !/^https:\/\//i.test(url) && !/^data:image\/(png|jpe?g|svg\+xml|webp);base64,/i.test(url)) {
-    showToast('❌ Must be https:// or data:image/…;base64', true); return;
+  if (url && !/^https:\/\//i.test(url) && !/^data:image\/(png|jpe?g|svg\+xml|webp);base64,/i.test(url) && !/^\/api\/cms\/media\//.test(url)) {
+    showToast('❌ Must be https:// , data:image/…;base64, or an /api/cms/media/… upload', true); return;
   }
   fetch(ATP_API + '/corporate/admin/accounts/' + id, {
     method: 'PATCH',
