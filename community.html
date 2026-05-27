@@ -42,7 +42,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .hamburger span{display:block;width:22px;height:2px;background:var(--white);border-radius:2px}
 
 /* PAGE HERO */
-.page-hero{padding:calc(var(--nav-h)+60px) 40px 52px;background:var(--dark2);border-bottom:1px solid rgba(255,255,255,.06);position:relative}
+.page-hero{padding:calc(var(--nav-h) + 96px) 40px 52px;background:var(--dark2);border-bottom:1px solid rgba(255,255,255,.06);position:relative}
 .page-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--green)}
 .page-hero-inner{max-width:var(--max);margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:end}
 .page-hero-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:14px;display:flex;align-items:center;gap:10px}
@@ -205,7 +205,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .challenge-icon-wrap{width:50px;height:50px;border-radius:12px;background:rgba(122,194,49,.1);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
 .challenge-info{flex:1}
 .challenge-title{font-family:var(--ff-display);font-size:20px;font-weight:800;text-transform:uppercase;color:var(--white);line-height:1;margin-bottom:4px}
-.challenge-desc{font-size:13px;color:var(--muted);line-height:1.5}
+.challenge-desc{font-size:13px;color:var(--muted);line-height:1.5;white-space:pre-wrap;word-break:break-word}
 .challenge-meta-row{display:flex;gap:12px;margin-top:10px;flex-wrap:wrap}
 .challenge-tag{font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:3px 10px;border-radius:20px;background:rgba(255,255,255,.05);color:var(--muted)}
 .challenge-tag.weekly{background:rgba(96,165,250,.1);color:#60a5fa}
@@ -1012,10 +1012,10 @@ function renderChallenges() {
     var avs = ["J","V","G","H","S"].slice(0,Math.min(5,Math.floor(c.participants/20)+2));
     return '<div class="challenge-card'+(c.joined?" active-c":"")+'">'+
       '<div class="challenge-head">'+
-        '<div class="challenge-icon-wrap">'+c.icon+'</div>'+
+        '<div class="challenge-icon-wrap">'+escapeHtml(c.icon)+'</div>'+
         '<div class="challenge-info">'+
-          '<div class="challenge-title">'+c.title+'</div>'+
-          '<div class="challenge-desc">'+c.desc+'</div>'+
+          '<div class="challenge-title">'+escapeHtml(c.title)+'</div>'+
+          '<div class="challenge-desc">'+escapeHtml(c.desc)+'</div>'+
           '<div class="challenge-meta-row">'+
             '<span class="challenge-tag '+c.type+'">'+c.type.charAt(0).toUpperCase()+c.type.slice(1)+'</span>'+
             '<span class="challenge-tag">'+c.metric+': '+c.target.toLocaleString()+' '+c.unit+'</span>'+
@@ -1036,7 +1036,7 @@ function renderChallenges() {
           '<div class="challenge-avatars">'+avs.map(function(a){return '<div class="challenge-av">'+a+'</div>';}).join('')+'</div>'+
           '<span class="challenge-count">'+c.participants+' joined</span>'+
         '</div>'+
-        '<button class="challenge-join-btn '+joinedClass+'" onclick="joinChallenge('+c.id+')" '+(c.done>=c.target&&c.joined?'disabled':'')+'>'+joinLabel+'</button>'+
+        '<button class="challenge-join-btn '+joinedClass+'" onclick="joinChallenge(\''+String(c.id).replace(/\'/g,"\\\'")+'\', this)" '+(c.done>=c.target&&c.joined?'disabled':'')+'>'+joinLabel+'</button>'+
       '</div>'+
     '</div>';
   }).join("");
