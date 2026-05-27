@@ -268,6 +268,7 @@ function newCorporateAccountForm() {
         '<div><label class="admin-form-label">Start date</label><input class="admin-form-input" type="date" id="accStart"></div>' +
         '<div><label class="admin-form-label">End date</label><input class="admin-form-input" type="date" id="accEnd"></div>' +
       '</div>' +
+      '<div style="margin-bottom:10px"><label class="admin-form-label">Company logo URL <span style="color:#666;font-weight:400">(https:// or data:image/...)</span></label><input class="admin-form-input" id="accLogoUrl" placeholder="https://acme.com/logo.png"></div>' +
       '<div style="margin-bottom:10px"><label class="admin-form-label">Notes</label><textarea class="admin-form-input" id="accNotes" rows="2"></textarea></div>' +
       '<div style="display:flex;gap:8px">' +
         '<button class="admin-btn admin-btn-primary" data-atp-call="saveCorporateAccount" style="font-size:12px">Create account + signup token</button>' +
@@ -292,6 +293,13 @@ function saveCorporateAccount() {
     end_date: document.getElementById('accEnd').value || null,
     notes: document.getElementById('accNotes').value.trim(),
   };
+  var rawLogo = document.getElementById('accLogoUrl').value.trim();
+  if (rawLogo) {
+    if (!/^https:\/\//i.test(rawLogo) && !/^data:image\/(png|jpe?g|svg\+xml|webp);base64,/i.test(rawLogo)) {
+      showToast('❌ Logo URL must start with https:// or data:image/…;base64', true); return;
+    }
+    body.logo_url = rawLogo;
+  }
   if (!body.company_name || !body.monthly_fee_aed) { showToast('❌ Company + monthly fee required', true); return; }
   fetch(ATP_API + '/corporate/admin/accounts', {
     method: 'POST',
@@ -385,7 +393,10 @@ function renderCorporateAccountDetail(a, employees, engagement) {
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:10px">' +
       '<div style="display:flex;align-items:center;gap:14px">' +
         '<button class="admin-btn" data-atp-call="showCorporateTab" data-args=\'["accounts"]\' style="font-size:11px;padding:6px 12px">← All accounts</button>' +
-        (a.logo_url ? '<img src="' + _esc(a.logo_url) + '" alt="logo" style="width:48px;height:48px;border-radius:8px;background:#fff;padding:4px;object-fit:contain">' : '<div style="width:48px;height:48px;border-radius:8px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-family:var(--ff-display,sans-serif);font-size:22px;color:#7AC231;font-weight:700">' + _esc((a.company_name||'?').charAt(0).toUpperCase()) + '</div>') +
+        '<div style="position:relative">' +
+          (a.logo_url ? '<img src="' + _esc(a.logo_url) + '" alt="logo" style="width:48px;height:48px;border-radius:8px;background:#fff;padding:4px;object-fit:contain">' : '<div style="width:48px;height:48px;border-radius:8px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-family:var(--ff-display,sans-serif);font-size:22px;color:#7AC231;font-weight:700">' + _esc((a.company_name||'?').charAt(0).toUpperCase()) + '</div>') +
+          '<button title="Edit logo" data-atp-call="editCorporateLogo" data-args=\'["' + a.id + '"]\' style="position:absolute;bottom:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:#7AC231;color:#0a0a0a;border:2px solid #0a0a0a;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;padding:0">✎</button>' +
+        '</div>' +
         '<div>' +
           '<div style="font-family:var(--ff-display,sans-serif);font-size:24px;font-weight:800;color:#fff;line-height:1.1">' + _esc(a.company_name) + '</div>' +
           '<div style="font-size:11px;color:#888;margin-top:3px"><span style="color:' + statusColor + ';text-transform:uppercase;font-weight:700;letter-spacing:.06em">' + _esc(a.status) + '</span>' +
@@ -400,6 +411,7 @@ function renderCorporateAccountDetail(a, employees, engagement) {
         '<a class="admin-btn" href="/corporate/dashboard/' + a.slug + '" target="_blank" style="font-size:11px;padding:6px 12px;text-decoration:none">📊 Buyer view</a>' +
       '</div>' +
     '</div>' +
+    '<div id="corpLogoEditWrap"></div>' +
     pilotBanner +
     // KPI strip
     '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">' +
@@ -680,6 +692,51 @@ function resendCorpInvite(e, btn) {
       }
       loadCorporateAccountDetail(CORP_ACTIVE_ID);
     });
+}
+
+// ── LOGO MANAGEMENT (admin) ────────────────────────────────────
+function editCorporateLogo(e, btn) {
+  var id = JSON.parse(btn.getAttribute('data-args') || '[]')[0];
+  if (!id) return;
+  var wrap = document.getElementById('corpLogoEditWrap');
+  if (!wrap) return;
+  if (wrap.innerHTML) { wrap.innerHTML = ''; return; }
+  var current = (CORP_ACTIVE_ACCOUNT && CORP_ACTIVE_ACCOUNT.logo_url) || '';
+  wrap.innerHTML =
+    '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:16px;margin-bottom:14px">' +
+      '<div style="font-family:var(--ff-display,sans-serif);font-size:14px;font-weight:800;color:#7AC231;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Company logo</div>' +
+      '<label class="admin-form-label">Logo URL <span style="color:#666;font-weight:400">(https:// or data:image/…;base64)</span></label>' +
+      '<input class="admin-form-input" id="corpLogoInput" placeholder="https://acme.com/logo.png" value="' + _esc(current) + '">' +
+      '<div style="display:flex;gap:8px;margin-top:10px">' +
+        '<button class="admin-btn admin-btn-primary" data-atp-call="saveCorporateLogo" data-args=\'["' + id + '"]\' style="font-size:12px">Save logo</button>' +
+        (current ? '<button class="admin-btn" data-atp-call="saveCorporateLogo" data-args=\'["' + id + '","clear"]\' style="font-size:12px">Remove logo</button>' : '') +
+        '<button class="admin-btn" onclick="document.getElementById(\'corpLogoEditWrap\').innerHTML=\'\'" style="font-size:12px">Cancel</button>' +
+      '</div>' +
+      '<div style="margin-top:8px;font-size:11px;color:#666;line-height:1.5">Updates appear in the ATP admin panel, the company-admin panel (/company), and the public buyer dashboard within seconds.</div>' +
+    '</div>';
+}
+
+function saveCorporateLogo(e, btn) {
+  var args = JSON.parse(btn.getAttribute('data-args') || '[]');
+  var id = args[0], mode = args[1];
+  if (!id) return;
+  var url = mode === 'clear' ? null : (document.getElementById('corpLogoInput').value || '').trim();
+  if (url && !/^https:\/\//i.test(url) && !/^data:image\/(png|jpe?g|svg\+xml|webp);base64,/i.test(url)) {
+    showToast('❌ Must be https:// or data:image/…;base64', true); return;
+  }
+  fetch(ATP_API + '/corporate/admin/accounts/' + id, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
+    body: JSON.stringify({ logo_url: url }),
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res.error) { showToast('❌ ' + res.error, true); return; }
+      showToast(mode === 'clear' ? '✅ Logo removed' : '✅ Logo updated');
+      var w = document.getElementById('corpLogoEditWrap'); if (w) w.innerHTML = '';
+      loadCorporateAccountDetail(id);
+    })
+    .catch(function(err){ showToast('❌ ' + (err.message || 'Failed'), true); });
 }
 
 function _esc(s) {
