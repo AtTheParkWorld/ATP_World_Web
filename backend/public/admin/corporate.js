@@ -402,7 +402,7 @@ function renderCorporateAccountDetail(a, employees, engagement) {
       '<div style="display:flex;align-items:center;gap:14px">' +
         '<button class="admin-btn" data-atp-call="showCorporateTab" data-args=\'["accounts"]\' style="font-size:11px;padding:6px 12px">← All accounts</button>' +
         '<div style="position:relative">' +
-          (a.logo_url ? '<img src="' + _esc(a.logo_url) + '" alt="logo" style="width:48px;height:48px;border-radius:8px;background:#fff;padding:4px;object-fit:contain">' : '<div style="width:48px;height:48px;border-radius:8px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-family:var(--ff-display,sans-serif);font-size:22px;color:#7AC231;font-weight:700">' + _esc((a.company_name||'?').charAt(0).toUpperCase()) + '</div>') +
+          (a.logo_url ? '<img src="' + _esc(a.logo_url) + '" alt="logo" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\';" style="width:48px;height:48px;border-radius:8px;background:linear-gradient(45deg,#1a1a1a 25%,#222 25%,#222 50%,#1a1a1a 50%,#1a1a1a 75%,#222 75%);background-size:8px 8px;padding:4px;object-fit:contain;border:1px solid rgba(255,255,255,.08)"><div style="display:none;width:48px;height:48px;border-radius:8px;background:#1a1a1a;align-items:center;justify-content:center;font-family:var(--ff-display,sans-serif);font-size:11px;color:#ef4444;font-weight:700">404</div>' : '<div style="width:48px;height:48px;border-radius:8px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-family:var(--ff-display,sans-serif);font-size:22px;color:#7AC231;font-weight:700">' + _esc((a.company_name||'?').charAt(0).toUpperCase()) + '</div>') +
           '<button title="Edit logo" data-atp-call="editCorporateLogo" data-args=\'["' + a.id + '"]\' style="position:absolute;bottom:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:#7AC231;color:#0a0a0a;border:2px solid #0a0a0a;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;padding:0">✎</button>' +
         '</div>' +
         '<div>' +
@@ -714,12 +714,18 @@ function editCorporateLogo(e, btn) {
     '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:16px;margin-bottom:14px">' +
       '<div style="font-family:var(--ff-display,sans-serif);font-size:14px;font-weight:800;color:#7AC231;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Company logo</div>' +
       '<label class="admin-form-label">Company logo</label>' +
-      '<div style="display:flex;gap:8px;align-items:center">' +
-        '<input class="admin-form-input" id="corpLogoInput" placeholder="Paste URL or upload" value="' + _esc(current) + '" style="flex:1">' +
-        '<input type="file" id="corpLogoInputFile" accept="image/png,image/svg+xml,image/webp" style="display:none" onchange="atpUpload(\'corpLogoInputFile\',\'corpLogoInput\',\'image\',1)">' +
-        '<button type="button" class="admin-btn" style="font-size:11px;padding:9px 14px;white-space:nowrap" onclick="document.getElementById(\'corpLogoInputFile\').click()">📁 Upload</button>' +
+      '<div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">' +
+        // Live preview — checkered BG reveals both light and dark logos
+        '<div id="corpLogoPreview" style="width:80px;height:80px;flex-shrink:0;border-radius:8px;background:linear-gradient(45deg,#1a1a1a 25%,#222 25%,#222 50%,#1a1a1a 50%,#1a1a1a 75%,#222 75%);background-size:12px 12px;border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;overflow:hidden;padding:6px"></div>' +
+        '<div style="flex:1;display:flex;flex-direction:column;gap:6px">' +
+          '<div style="display:flex;gap:8px;align-items:center">' +
+            '<input class="admin-form-input" id="corpLogoInput" placeholder="Paste URL or upload" value="' + _esc(current) + '" style="flex:1" oninput="refreshCorpLogoPreview()">' +
+            '<input type="file" id="corpLogoInputFile" accept="image/png,image/svg+xml,image/webp" style="display:none" onchange="atpUpload(\'corpLogoInputFile\',\'corpLogoInput\',\'image\',1);setTimeout(refreshCorpLogoPreview,800);">' +
+            '<button type="button" class="admin-btn" style="font-size:11px;padding:9px 14px;white-space:nowrap" onclick="document.getElementById(\'corpLogoInputFile\').click()">📁 Upload</button>' +
+          '</div>' +
+          '<div style="font-size:11px;color:#666;line-height:1.5">📐 Square <strong style="color:#aaa">256 × 256&nbsp;px</strong> (1:1) · PNG or SVG with transparent BG · &lt; 100&nbsp;KB. <strong style="color:#7AC231">Preview shows on a checkered background</strong> so both light and dark logos are visible.</div>' +
+        '</div>' +
       '</div>' +
-      '<div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">📐 Square <strong style="color:#aaa">256 × 256&nbsp;px</strong> (1:1) · PNG or SVG with transparent BG · &lt; 100&nbsp;KB.</div>' +
       '<div style="display:flex;gap:8px;margin-top:10px">' +
         '<button class="admin-btn admin-btn-primary" data-atp-call="saveCorporateLogo" data-args=\'["' + id + '"]\' style="font-size:12px">Save logo</button>' +
         (current ? '<button class="admin-btn" data-atp-call="saveCorporateLogo" data-args=\'["' + id + '","clear"]\' style="font-size:12px">Remove logo</button>' : '') +
@@ -727,6 +733,30 @@ function editCorporateLogo(e, btn) {
       '</div>' +
       '<div style="margin-top:8px;font-size:11px;color:#666;line-height:1.5">Updates appear in the ATP admin panel, the company-admin panel (/company), and the public buyer dashboard within seconds.</div>' +
     '</div>';
+  refreshCorpLogoPreview();
+}
+
+// Refresh the live preview inside the logo editor whenever the URL field
+// changes (typing, paste, or auto-fill after upload). Renders the image
+// on a checkered background so logos with transparent BG (both light and
+// dark variants) are visible. If the image 404s or the URL is invalid,
+// shows a red "404" badge so the admin notices instantly.
+function refreshCorpLogoPreview() {
+  var el = document.getElementById('corpLogoPreview');
+  var input = document.getElementById('corpLogoInput');
+  if (!el || !input) return;
+  var url = (input.value || '').trim();
+  if (!url) {
+    el.innerHTML = '<span style="font-size:10px;color:#666;text-align:center;line-height:1.3">No logo<br>yet</span>';
+    return;
+  }
+  var img = new Image();
+  img.style.cssText = 'max-width:100%;max-height:100%;object-fit:contain';
+  img.onload = function() { el.innerHTML = ''; el.appendChild(img); };
+  img.onerror = function() {
+    el.innerHTML = '<span style="font-size:10px;color:#ef4444;font-weight:700;text-align:center;line-height:1.3">Image<br>404</span>';
+  };
+  img.src = url;
 }
 
 function saveCorporateLogo(e, btn) {
