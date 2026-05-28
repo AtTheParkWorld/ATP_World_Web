@@ -1113,3 +1113,21 @@ img, video {
     min-height: 44px;
   }
 }
+
+/* — P · Compact nav auth buttons on phones —
+   Most pages keep the "Log in" / "Join free" buttons in the top bar on
+   mobile (next to the logo + hamburger). They're sized for desktop
+   (13px font, 20-22px padding) which crowds a 390px bar and makes them
+   look oversized. Shrink them on phones so the whole nav fits on one
+   line. Higher specificity (#nav …) than section O's :where() rule, so
+   this min-height wins — the nav stays a tidy single row. */
+@media (max-width: 600px) {
+  #nav .btn-primary,
+  #nav .btn-ghost {
+    font-size: 12px;
+    padding: 8px 13px;
+    min-height: 0;
+    letter-spacing: 0;
+  }
+  #nav .nav-inner { gap: 10px; }
+}
