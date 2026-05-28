@@ -166,6 +166,9 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
 /* ── STATS BAR ── */
 .profile-stats-bar{max-width:1200px;margin:0 auto;padding:0 40px 28px;display:grid;grid-template-columns:repeat(6,1fr);gap:1px;background:rgba(255,255,255,.06);border-radius:var(--radius-lg);overflow:hidden}
+.coach-stats-bar{grid-template-columns:repeat(5,1fr)}
+@media(max-width:900px){.coach-stats-bar{grid-template-columns:repeat(3,1fr)}}
+@media(max-width:560px){.coach-stats-bar{grid-template-columns:repeat(2,1fr)}}
 .pstat{background:var(--dark2);padding:20px 16px;text-align:center}
 .pstat-num{font-family:var(--ff-display);font-size:30px;font-weight:900;color:var(--green);line-height:1;margin-bottom:4px}
 .pstat-label{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
@@ -1327,7 +1330,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
         </div>
 
         <!-- COACH STATS — added Inquiries (30d) -->
-        <div class="profile-stats-bar" style="grid-template-columns:repeat(5,1fr);margin-bottom:20px;padding:0">
+        <div class="profile-stats-bar coach-stats-bar" style="margin-bottom:20px;padding:0">
           <div class="pstat"><div class="pstat-num" id="coachStatSessions">0</div><div class="pstat-label">Sessions Coached</div></div>
           <div class="pstat"><div class="pstat-num" id="coachStatStudents">0</div><div class="pstat-label">Total Students</div></div>
           <div class="pstat"><div class="pstat-num" id="coachStatRating">—</div><div class="pstat-label">Avg Rating</div></div>

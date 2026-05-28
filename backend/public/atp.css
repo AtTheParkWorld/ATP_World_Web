@@ -1072,3 +1072,44 @@ body { max-width: 100vw; }
   /* Don't disable color/background hover transitions — those are still
      valid feedback patterns (e.g. for visited buttons mid-tap). */
 }
+
+/* — M · Kill iOS auto-zoom on input focus —
+   iOS Safari zooms the whole page when a focused form control has a
+   font-size below 16px. Many of our inputs are 12-14px for density on
+   desktop, which makes mobile users get an unwanted zoom-in on every
+   tap. Force 16px on phones; the visual density loss is acceptable and
+   the no-zoom UX win is large. Covers every control type. */
+@media (max-width: 560px) {
+  input:not([type=checkbox]):not([type=radio]):not([type=range]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* — N · Media never overflows its container —
+   A pasted <img>/<video>/<iframe> with intrinsic width wider than the
+   viewport is the #1 cause of horizontal scroll on phones. Belt-and-
+   braces alongside the html/body overflow-x guard above. */
+img, video, iframe, svg, canvas {
+  max-width: 100%;
+}
+img, video {
+  height: auto;
+}
+
+/* — O · Minimum touch targets for primary actions —
+   WCAG 2.1 AA / Apple HIG want tap targets ≈44px. We deliberately scope
+   this to the main CTA/submit classes (not bare <button>) so compact UI
+   like quantity steppers, filter chips and icon buttons keep their tight
+   sizing. :where() = zero specificity, so any component that already sets
+   its own height wins. Coarse-pointer only, so desktop density is intact. */
+@media (hover: none) and (pointer: coarse) {
+  :where(
+    .btn-primary, .btn-ghost, .atp-btn--primary, .atp-btn--lg,
+    button[type=submit], input[type=submit],
+    .cta, .pf-btn-primary, .upgrade-btn
+  ) {
+    min-height: 44px;
+  }
+}
