@@ -218,6 +218,27 @@ router.delete('/tribes/admin/:id', authenticate, requireAdmin, async (req, res, 
   } catch (err) { next(err); }
 });
 
+// Public session-name templates — used by the admin session form's
+// "Pick a session name" dropdown + /sessions.html filters.
+// MUST be registered before GET '/:id' below: '/templates' is a single
+// path segment, so the '/:id' route would otherwise capture it (id =
+// "templates") and 500 on the UUID cast. This is what disconnected the
+// dropdown from the names managed in Settings → Session Names.
+router.get('/templates', async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, name, description, sort_order
+         FROM session_templates
+        WHERE is_active = true
+        ORDER BY sort_order ASC, name ASC`
+    );
+    res.json({ templates: rows });
+  } catch (err) {
+    if (err.code === '42P01') return res.json({ templates: [] });
+    next(err);
+  }
+});
+
 // ── GET /api/sessions/:id ─────────────────────────────────────
 router.get('/:id', optionalAuth, async (req, res, next) => {
   try {
@@ -1079,22 +1100,6 @@ router.patch('/series/cancel', authenticate, requireAdmin, async (req, res, next
 // picks from when creating new sessions). Selecting a template's
 // name auto-populates the form from the last session of that name.
 // ════════════════════════════════════════════════════════════════
-
-// Public list — used by /sessions.html filter dropdowns too
-router.get('/templates', async (req, res, next) => {
-  try {
-    const { rows } = await query(
-      `SELECT id, name, description, sort_order
-         FROM session_templates
-        WHERE is_active = true
-        ORDER BY sort_order ASC, name ASC`
-    );
-    res.json({ templates: rows });
-  } catch (err) {
-    if (err.code === '42P01') return res.json({ templates: [] });
-    next(err);
-  }
-});
 
 // Admin list — includes inactive
 router.get('/admin/templates', authenticate, requireAdmin, async (req, res, next) => {
