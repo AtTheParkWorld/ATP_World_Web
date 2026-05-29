@@ -415,7 +415,21 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
   border-color: var(--atp-green-line);
 }
 
-/* Nav links */
+/* Nav links —
+   The base container rule (horizontal flex, no bullets) used to live
+   only in each page's own CSS. Pages that forgot it (offers, partners,
+   legal, the stream pages) rendered the injected <ul class="nav-links">
+   as a default vertical bulleted list. Centralized here so the shared
+   nav component is self-sufficient. Page <style> still overrides (it
+   loads after this external sheet), so per-page gaps/spacing win. */
+.nav-links {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
 .nav-links a {
   transition: color var(--atp-dur) var(--atp-ease);
   position: relative;
@@ -510,6 +524,11 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
  * ──────────────────────────────────────────────────────────── */
 
 @media (max-width: 900px) {
+  /* Fallback for pages that didn't define their own mobile nav switch
+     (offers, partners, legal, stream*): collapse the link list to the
+     hamburger. Pages with their own rule override these. */
+  .nav-links { display: none; }
+  .hamburger { display: flex; }
   .hamburger {
     background: transparent;
     border: none;
