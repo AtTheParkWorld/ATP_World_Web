@@ -330,6 +330,9 @@ app.get('/store',    (req, res) => res.sendFile(path.join(__dirname, '../public/
 app.get('/checkin',  (req, res) => res.sendFile(path.join(__dirname, '../public/checkin.html')));
 // Combined legal page — privacy + terms + refund in one place, deep-linkable.
 app.get('/legal',    (req, res) => res.sendFile(path.join(__dirname, '../public/legal.html')));
+// For Business hub — routes visitors to Corporate Wellness or Brand
+// Partnerships. Linked from the global nav ("Partners & Corporate").
+app.get('/business', (req, res) => res.sendFile(path.join(__dirname, '../public/business.html')));
 // Partners — B2B landing page (sponsorship tiers + lead-gen form).
 app.get('/partners', (req, res) => res.sendFile(path.join(__dirname, '../public/partners.html')));
 // Offers — member-facing commercial page (discounts, events, points redemption).

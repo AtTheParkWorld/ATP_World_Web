@@ -26,6 +26,7 @@
     { key: 'plans',     label: 'Membership',   href: 'plans.html' },
     { key: 'offers',    label: 'Offers',       href: 'offers.html' },
     { key: 'coaches',   label: 'Our coaches',  href: 'coaches.html' },
+    { key: 'business',  label: 'Partners & Corporate', href: 'business.html' },
   ];
 
   var LOGO_SRC = '/atp-logo-transparent.webp';
@@ -669,9 +670,13 @@
               '<li><a href="blog.html">Blog</a></li>' +
               '<li><a href="store.html">Store</a></li>' +
             '</ul></div>' +
+            '<div class="atp-footer-col"><h4>For Business</h4><ul>' +
+              '<li><a href="business.html">Partners &amp; Corporate</a></li>' +
+              '<li><a href="corporate">Corporate wellness</a></li>' +
+              '<li><a href="partners.html">Brand partnerships</a></li>' +
+            '</ul></div>' +
             '<div class="atp-footer-col"><h4>Help</h4><ul>' +
               '<li><a href="contacts.html">Contact us</a></li>' +
-              '<li><a href="partners.html">For Partners</a></li>' +
               '<li><a href="legal.html#privacy">Privacy</a></li>' +
               '<li><a href="legal.html#terms">Terms</a></li>' +
             '</ul></div>' +
