@@ -1361,7 +1361,11 @@ function setView(view) {
     calBtn.classList.add('active');
     // also hide day filter row
     document.querySelector('.day-filters').style.display = 'none';
-    renderCalendar();
+    // The list load already populates CAL_REAL_SESSIONS (same upcoming
+    // set). Render from it; only fetch if it's still empty (e.g. the user
+    // opened the calendar before the list finished loading).
+    if (CAL_REAL_SESSIONS && CAL_REAL_SESSIONS.length) renderCalendar();
+    else loadCalendarSessions();
   } else {
     grid.style.display = '';
     document.querySelector('.sessions-toolbar > div').querySelector('.sessions-count').style.display = '';
@@ -1373,20 +1377,23 @@ function setView(view) {
 }
 
 // ── CALENDAR ENGINE ───────────────────────────────────────────────
-var CAL_SESSIONS = [
-  {name:"Community Run",     tribe:"faster",   dow:1, time:"7:00 PM",  coach:"Hugo",      loc:"Dubai Marina Walk"},
-  {name:"Cardio Calisthenics",tribe:"stronger",dow:2, time:"7:00 PM",  coach:"Valentina", loc:"DIC Amphitheatre"},
-  {name:"Traditional Yoga",  tribe:"better",   dow:3, time:"7:00 PM",  coach:"Manju",     loc:"DIC Amphitheatre"},
-  {name:"Open Water Swim",   tribe:"faster",   dow:3, time:"6:30 AM",  coach:"ATP Coach", loc:"JBR Beach"},
-  {name:"Kickboxing",        tribe:"stronger", dow:5, time:"7:00 PM",  coach:"Shodhan",   loc:"Skydive Dubai"},
-  {name:"Sound Healing",     tribe:"better",   dow:6, time:"8:00 AM",  coach:"Manju",     loc:"DIC Amphitheatre"},
-  {name:"Military Bootcamp", tribe:"stronger", dow:6, time:"7:00 AM",  coach:"ATP Coach", loc:"Al Formal Park"},
-  {name:"Group Cycling",     tribe:"faster",   dow:4, time:"6:30 AM",  coach:"Hugo",      loc:"Dubai Marina"},
-  {name:"Pilates & Yoga",    tribe:"better",   dow:0, time:"8:00 AM",  coach:"Valentina", loc:"DIC Amphitheatre"},
-  {name:"CrossTraining",     tribe:"stronger", dow:1, time:"7:00 AM",  coach:"Shodhan",   loc:"Skydive Dubai"},
-  {name:"Dance Fitness",     tribe:"stronger", dow:4, time:"7:00 PM",  coach:"ATP Coach", loc:"DIC Amphitheatre"},
-  {name:"Morning Run",       tribe:"faster",   dow:5, time:"6:30 AM",  coach:"Hugo",      loc:"Dubai Marina Walk"},
-];
+// Real upcoming sessions for the calendar, fetched independently of the
+// list view's filters/pagination so the calendar always reflects the
+// true schedule. (This replaces a hardcoded demo array that projected 12
+// fake sessions onto every week of EVERY month — which is why phantom
+// sessions appeared in months with nothing actually scheduled.)
+var CAL_REAL_SESSIONS = [];
+
+function loadCalendarSessions() {
+  return fetch('/api/sessions?status=upcoming&limit=200')
+    .then(function(r){ return r.json(); })
+    .then(function(d){ CAL_REAL_SESSIONS = (d && d.sessions) || []; renderCalendar(); })
+    .catch(function(){ CAL_REAL_SESSIONS = []; renderCalendar(); });
+}
+
+// Local-date key (YYYY-M-D) used to bucket sessions onto the day they
+// actually fall on (in the viewer's timezone).
+function _calDateKey(dt){ return dt.getFullYear() + '-' + (dt.getMonth()+1) + '-' + dt.getDate(); }
 
 var calDate = new Date();
 calDate.setDate(1);
@@ -1412,28 +1419,45 @@ function renderCalendar() {
     html += '<div class="cal-day other-month"><div class="cal-day-num">'+prevDate.getDate()+'</div></div>';
   }
 
+  // Bucket the real sessions by the local date they fall on.
+  var byDate = {};
+  (CAL_REAL_SESSIONS || []).forEach(function(s){
+    if (!s.scheduled_at) return;
+    var key = _calDateKey(new Date(s.scheduled_at));
+    (byDate[key] = byDate[key] || []).push(s);
+  });
+  Object.keys(byDate).forEach(function(k){
+    byDate[k].sort(function(a,b){ return new Date(a.scheduled_at) - new Date(b.scheduled_at); });
+  });
+
   // Days of this month
   var DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
   for(var d=1; d<=daysInMonth; d++) {
-    var dow    = new Date(year, month, d).getDay();
+    var cellDate = new Date(year, month, d);
+    var dow    = cellDate.getDay();
     var isToday = (today.getDate()===d && today.getMonth()===month && today.getFullYear()===year);
-    var daySessions = CAL_SESSIONS.filter(function(s){ return s.dow === dow; });
+    var daySessions = byDate[_calDateKey(cellDate)] || [];
     var cls = 'cal-day' + (isToday?' today':'') + (daySessions.length>0?' has-session':'');
     var dots = '';
     var maxShow = 2;
     daySessions.slice(0, maxShow).forEach(function(s) {
       var dayName = DAY_NAMES[dow];
+      var time  = formatSessionTime(s.scheduled_at);
+      var tribe = s.tribe_slug || '';
+      var coach = s.coach_name || 'ATP Coach';
+      var nm    = s.name || 'Session';
+      var loc   = s.location || '';
       // Build onclick as a data attribute to avoid quoting hell
-      var dotEl = '<div class="cal-session-dot '+s.tribe+'" '
-        + (s.id ? 'data-id="'+String(s.id).replace(/"/g,'&quot;')+'" ' : '')
-        + 'data-name="'+s.name.replace(/"/g,'&quot;')+'" '
-        + 'data-tribe="'+s.tribe+'" '
-        + 'data-daytime="'+dayName+' &middot; '+s.time+'" '
-        + 'data-coach="'+s.coach+'" '
-        + 'data-loc="'+s.loc.replace(/"/g,'&quot;')+'" '
+      var dotEl = '<div class="cal-session-dot '+tribe+'" '
+        + 'data-id="'+String(s.id).replace(/"/g,'&quot;')+'" '
+        + 'data-name="'+nm.replace(/"/g,'&quot;')+'" '
+        + 'data-tribe="'+tribe+'" '
+        + 'data-daytime="'+dayName+' &middot; '+time+'" '
+        + 'data-coach="'+String(coach).replace(/"/g,'&quot;')+'" '
+        + 'data-loc="'+loc.replace(/"/g,'&quot;')+'" '
         + 'data-day="'+dayName+'" '
-        + 'data-time="'+s.time+'">'
-        + s.time + ' ' + s.name + '</div>';
+        + 'data-time="'+time+'">'
+        + escapeHtml(time + ' ' + nm) + '</div>';
       dots += dotEl;
     });
     if(daySessions.length > maxShow) {
@@ -1450,9 +1474,17 @@ function renderCalendar() {
   }
 
   document.getElementById('calGrid').innerHTML = html;
+}
 
-  // Attach click handlers via event delegation (avoids quoting issues)
-  document.getElementById('calGrid').addEventListener('click', function(e) {
+// Bind the calendar click delegation ONCE (was previously re-added on
+// every renderCalendar() call, stacking a fresh listener each month nav
+// → the modal could fire multiple times). One delegated handler on the
+// grid covers all current + future day cells.
+(function _bindCalGridOnce(){
+  var grid = document.getElementById('calGrid');
+  if (!grid || grid._clickBound) return;
+  grid._clickBound = true;
+  grid.addEventListener('click', function(e) {
     var dot = e.target.closest('.cal-session-dot');
     if(!dot) return;
     e.stopPropagation();
@@ -1467,8 +1499,8 @@ function renderCalendar() {
       dot.dataset.time,
       dot.dataset.id || null
     );
-  }, { once: false });
-}
+  });
+})();
 
 function calPrev() {
   calDate.setMonth(calDate.getMonth() - 1);
@@ -1754,22 +1786,10 @@ function _wireSessionHoverPreview() {
 }
 
 function renderCalendarFromSessions(sessions) {
-  // Convert API sessions → CAL_SESSIONS shape
-  var mapped = sessions.map(function(s) {
-    var d = new Date(s.scheduled_at);
-    return {
-      id:     s.id,
-      name:   s.name,
-      tribe:  normalizeTribe(s.tribe_slug),
-      dow:    d.getDay(),
-      time:   formatSessionTime(s.scheduled_at),
-      coach:  (s.coach_name && s.coach_name.trim()) ? s.coach_name.trim() : 'ATP Coach',
-      loc:    s.location || s.city_name || 'TBC',
-      desc:   s.description || '',
-      scheduled_at: s.scheduled_at
-    };
-  });
-  CAL_SESSIONS = mapped;
+  // Feed the real upcoming sessions straight to the calendar store. The
+  // calendar buckets them by their actual scheduled_at date (no more
+  // day-of-week projection that cloned sessions into every future month).
+  CAL_REAL_SESSIONS = sessions || [];
   if (document.getElementById('calView') && document.getElementById('calView').classList.contains('visible')) {
     renderCalendar();
   }
