@@ -417,6 +417,32 @@
               <input type="file" id="sIntroVideoFile" accept="video/mp4,video/webm" style="display:none" onchange="handleSessionIntroUpload(this)">
             </div>
 
+            <!-- 🤝 Session sponsor "Powered by" — optional. If set, the
+                 sponsor logo (clickable) appears on the session card, the
+                 booking confirmation, and the confirmation email. Adds
+                 value to partnership packages. -->
+            <div class="admin-form-group full" style="margin-top:8px;padding:14px;background:#13110a;border-radius:10px;border:1px solid #3a330d">
+              <div style="font-family:var(--ff-display);font-size:13px;font-weight:800;text-transform:uppercase;color:#f5c042;margin-bottom:4px">🤝 Session Sponsor — "Powered by"</div>
+              <div style="font-size:11px;color:#888;margin-bottom:12px;line-height:1.5">Attach a sponsoring brand to this session. Shows on the session card, booking confirmation, and email — extra exposure for partnership deals. Leave blank for no sponsor.</div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
+                <div>
+                  <label class="admin-form-label" for="sSponsorName">Sponsor name</label>
+                  <input class="admin-form-input" type="text" id="sSponsorName" placeholder="e.g. Sun &amp; Sand Sports">
+                </div>
+                <div>
+                  <label class="admin-form-label" for="sSponsorUrl">Click-through link</label>
+                  <input class="admin-form-input" type="url" id="sSponsorUrl" placeholder="https://sponsor.com">
+                </div>
+              </div>
+              <label class="admin-form-label" for="sSponsorLogo">Sponsor logo</label>
+              <div style="display:flex;gap:8px;align-items:center">
+                <input class="admin-form-input" type="text" id="sSponsorLogo" placeholder="Paste URL or upload" style="flex:1">
+                <input type="file" id="sSponsorLogoFile" accept="image/png,image/svg+xml,image/webp,image/jpeg" style="display:none" onchange="atpUpload('sSponsorLogoFile','sSponsorLogo','image',1)">
+                <button type="button" class="admin-btn" style="font-size:11px;padding:9px 14px;white-space:nowrap" onclick="document.getElementById('sSponsorLogoFile').click()">📁 Upload</button>
+              </div>
+              <div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">📐 Landscape <strong style="color:#aaa">240 × 80&nbsp;px</strong> (3:1) · PNG or SVG with transparent background · &lt; 100&nbsp;KB. Displayed ~44px tall on a dark card.</div>
+            </div>
+
             <!-- 🎥 Live streaming for this session ─ admin-controlled.
                  If toggled on, the assigned coach + nominated ambassadors
                  can broadcast from /stream-broadcast. Members who have

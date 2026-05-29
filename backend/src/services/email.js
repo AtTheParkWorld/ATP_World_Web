@@ -382,6 +382,7 @@ async function sendPaidSessionReceipt({ member, session, payment }) {
       </table>
     </div>
     <p class="muted">Issued by At The Park · This is an automated receipt. For corrections or refunds, reply to this email or write to <a href="mailto:general@atthepark.com" style="color:#7AC231">general@atthepark.com</a>.</p>
+    ${_sponsorBlockHtml(session)}
   `);
   return send(member.email, `Receipt — ${currency} ${amount} · ${session.name || 'ATP session'}`, html);
 }
@@ -392,6 +393,8 @@ async function sendBookingConfirmation(member, session, qrData, qrToken) {
     weekday: 'long', day: 'numeric', month: 'long',
     hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Dubai',
   });
+
+  const sponsorHtml = _sponsorBlockHtml(session);
 
   const html = baseTemplate(`
     <h1>You're booked! ✅</h1>
@@ -418,8 +421,33 @@ async function sendBookingConfirmation(member, session, qrData, qrToken) {
       Need to cancel? Free sessions can be cancelled any time before the session starts.
       ${session.session_type === 'paid' ? 'Paid sessions: cancel at least 12 hours before.' : ''}
     </p>
+    ${sponsorHtml}
   `);
   await send(member.email, `Booking confirmed: ${session.session_name || session.name}`, html);
+}
+
+// Build the "Powered by <sponsor>" block for emails. Returns '' when the
+// session has no sponsor logo. Logo + optional click-through link are
+// validated/escaped; /api/cms/media refs are made absolute so they load
+// in email clients. data: URLs are passed through (most clients block
+// them, but https + cms-media refs are the common path).
+function _sponsorBlockHtml(session) {
+  const logo = String(session.sponsor_logo_url || '').trim();
+  if (!logo) return '';
+  let src = logo;
+  if (/^\/api\/cms\/media\//.test(src)) src = FRONTEND_URL + src;
+  else if (!/^https:\/\//i.test(src) && !/^data:image\//i.test(src)) return '';
+  const name = escapeHtml(session.sponsor_name || 'our partner');
+  const link = String(session.sponsor_url || '').trim();
+  const img = `<img src="${escapeHtml(src)}" alt="${name}" style="max-height:44px;max-width:160px;width:auto;height:auto;display:inline-block">`;
+  const inner = /^https?:\/\//i.test(link)
+    ? `<a href="${escapeHtml(link)}" target="_blank" rel="noopener" style="text-decoration:none">${img}</a>`
+    : img;
+  return `
+    <div style="margin-top:26px;padding-top:20px;border-top:1px solid #222;text-align:center">
+      <p style="margin:0 0 10px;color:#777;font-size:11px;letter-spacing:.14em;text-transform:uppercase">Powered by</p>
+      ${inner}
+    </div>`;
 }
 
 // ── MIGRATION MAGIC LINK ──────────────────────────────────────

@@ -227,13 +227,28 @@ async function _confirmSessionBooking(checkoutSession) {
   const { rows } = await query(
     `SELECT b.id, b.status, b.member_id, b.session_id,
             s.name AS session_name, s.scheduled_at, s.location,
+            s.sponsor_name, s.sponsor_logo_url, s.sponsor_url,
             m.member_number, m.first_name, m.last_name, m.email
      FROM bookings b
      JOIN sessions s ON s.id = b.session_id
      JOIN members m  ON m.id = b.member_id
      WHERE b.id = $1`,
     [bookingId]
-  );
+  ).catch(async (e) => {
+    // Pre-migration fallback: sponsor_* columns don't exist yet.
+    if (e.code === '42703') {
+      return query(
+        `SELECT b.id, b.status, b.member_id, b.session_id,
+                s.name AS session_name, s.scheduled_at, s.location,
+                NULL AS sponsor_name, NULL AS sponsor_logo_url, NULL AS sponsor_url,
+                m.member_number, m.first_name, m.last_name, m.email
+         FROM bookings b
+         JOIN sessions s ON s.id = b.session_id
+         JOIN members m  ON m.id = b.member_id
+         WHERE b.id = $1`, [bookingId]);
+    }
+    throw e;
+  });
   if (!rows.length) {
     console.warn('[billing] session_booking for unknown booking', bookingId);
     return;
@@ -297,7 +312,8 @@ async function _confirmSessionBooking(checkoutSession) {
   try {
     await emailService.sendBookingConfirmation(
       { id: b.member_id, member_number: b.member_number, first_name: b.first_name, last_name: b.last_name, email: b.email },
-      { name: b.session_name, scheduled_at: b.scheduled_at, location: b.location },
+      { name: b.session_name, scheduled_at: b.scheduled_at, location: b.location,
+        sponsor_name: b.sponsor_name, sponsor_logo_url: b.sponsor_logo_url, sponsor_url: b.sponsor_url },
       qrData, qrToken
     );
   } catch (e) { console.warn('[billing] booking confirmation email failed', e.message); }
@@ -308,7 +324,8 @@ async function _confirmSessionBooking(checkoutSession) {
   try {
     await emailService.sendPaidSessionReceipt({
       member: { first_name: b.first_name, last_name: b.last_name, email: b.email, member_number: b.member_number },
-      session: { name: b.session_name, scheduled_at: b.scheduled_at, location: b.location },
+      session: { name: b.session_name, scheduled_at: b.scheduled_at, location: b.location,
+        sponsor_name: b.sponsor_name, sponsor_logo_url: b.sponsor_logo_url, sponsor_url: b.sponsor_url },
       payment: { amount: amount / 100, currency, method: 'Stripe', paid_at: new Date().toISOString(), stripe_payment_intent_id: paymentIntent },
     });
   } catch (e) { console.warn('[billing] paid session receipt email failed', e.message); }

@@ -687,6 +687,11 @@ async function createSession() {
   var corporate_account_id = (document.getElementById('sCorporateAccountId') || {}).value || null;
   var is_online = !!(document.getElementById('sIsOnline') || {}).checked;
   var stream_url = (document.getElementById('sStreamUrl') || {}).value || null;
+  // Sponsor "Powered by" (partnership packages)
+  var sponsor_name = ((document.getElementById('sSponsorName') || {}).value || '').trim() || null;
+  var sponsor_logo_url = ((document.getElementById('sSponsorLogo') || {}).value || '').trim() || null;
+  if (sponsor_logo_url === 'Uploading…') sponsor_logo_url = null;
+  var sponsor_url = ((document.getElementById('sSponsorUrl') || {}).value || '').trim() || null;
   if (is_corporate_only && !corporate_account_id) {
     msgEl.textContent = '❌ Pick a company for corporate-exclusive sessions';
     msgEl.style.cssText = 'display:block;background:#2a1010;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
@@ -712,6 +717,10 @@ async function createSession() {
     corporate_account_id: is_corporate_only ? corporate_account_id : null,
     is_online: is_online,
     stream_url: is_online ? stream_url : null,
+    // Sponsor "Powered by"
+    sponsor_name: sponsor_name,
+    sponsor_logo_url: sponsor_logo_url,
+    sponsor_url: sponsor_url,
   };
 
   var btnLabel = document.getElementById('sessionSubmitLabel');
@@ -777,6 +786,10 @@ function resetSessionForm() {
   var onlineDet = document.getElementById('sOnlineDetails'); if (onlineDet) onlineDet.style.display = 'none';
   var corpSel = document.getElementById('sCorporateAccountId'); if (corpSel) corpSel.value = '';
   var streamEl = document.getElementById('sStreamUrl'); if (streamEl) streamEl.value = '';
+  // Reset sponsor "Powered by" fields.
+  ['sSponsorName','sSponsorLogo','sSponsorUrl'].forEach(function(id){
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
   SESSION_AMBS_PICK = [];
   if (typeof renderAmbassadorPicker === 'function') renderAmbassadorPicker();
   document.getElementById('sessionFormTitle').textContent = 'Create New Session';
@@ -820,6 +833,10 @@ function editSession(s) {
   if (s.tribe_id) document.getElementById('sTribe').value = s.tribe_id;
   var introEl = document.getElementById('sIntroVideo');
   if (introEl) introEl.value = s.intro_video_url || '';
+  // Sponsor "Powered by" fields
+  if (document.getElementById('sSponsorName')) document.getElementById('sSponsorName').value = s.sponsor_name || '';
+  if (document.getElementById('sSponsorLogo')) document.getElementById('sSponsorLogo').value = s.sponsor_logo_url || '';
+  if (document.getElementById('sSponsorUrl'))  document.getElementById('sSponsorUrl').value  = s.sponsor_url || '';
   // Activity: re-filter the dropdown to the selected tribe, then pick the
   // saved activity. Wrapped in setTimeout so it runs after the activities
   // catalogue resolves on first edit-open.

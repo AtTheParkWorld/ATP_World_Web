@@ -465,6 +465,10 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
         <div class="confirm-email-note">📧 A copy has been sent to your email. Your QR code is also saved in <a href="profile.html" style="color:var(--green)">My Profile → Sessions</a>.</div>
       </div>
 
+      <!-- Sponsor "Powered by" — populated by showConfirmation() when the
+           session has a sponsor. Empty otherwise. -->
+      <div id="confirmSponsor"></div>
+
       <div class="loop-actions">
         <a class="loop-btn loop-btn-cal" id="calBtn" href="#" target="_blank" rel="noopener">
           <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="12" height="11" rx="2"/><line x1="5" y1="1" x2="5" y2="5"/><line x1="11" y1="1" x2="11" y2="5"/><line x1="2" y1="7" x2="14" y2="7"/><line x1="5" y1="10" x2="5" y2="10" stroke-width="2.5"/><line x1="8" y1="10" x2="8" y2="10" stroke-width="2.5"/></svg> Add to Calendar
@@ -748,7 +752,8 @@ function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId)
       '<span class="modal-meta-sep">·</span>' +
       '<span>🎽 ' + escapeHtml(coach) + '</span>' +
     '</div>' +
-    (desc ? '<p class="modal-meta-desc" style="white-space:pre-wrap;line-height:1.55">' + escapeHtml(desc) + '</p>' : '');
+    (desc ? '<p class="modal-meta-desc" style="white-space:pre-wrap;line-height:1.55">' + escapeHtml(desc) + '</p>' : '') +
+    _sponsorStripHtml(sFull, 'modal');
   document.getElementById('modalForm').style.display = 'block';
   document.getElementById('confirmPanel').style.display = 'none';
 
@@ -1144,6 +1149,13 @@ function showConfirmation(name, email, apiQrData, apiQrToken) {
   document.getElementById('modalForm').style.display = 'none';
   document.getElementById('confirmPanel').style.display = 'block';
 
+  // ── SPONSOR "Powered by" on the confirmation ──
+  var spHost = document.getElementById('confirmSponsor');
+  if (spHost) {
+    var sFullC = (window._atpSessions || []).find(function(x){ return x.id === s.id; }) || null;
+    spHost.innerHTML = _sponsorStripHtml(sFullC, 'confirm');
+  }
+
   // ── GENERATE QR CODE ──
   // Use API-provided QR data if available, otherwise generate locally
   if (apiQrData && apiQrToken) {
@@ -1533,6 +1545,34 @@ function normalizeTribe(slug) {
 // Keep a shared store of API sessions so filters + calendar + modal stay in sync
 window._atpSessions = [];
 
+// Build the "Powered by <sponsor>" strip for a session. Returns '' when
+// there's no sponsor logo. variant: 'card' (compact) | 'modal' | 'confirm'.
+// The logo links out to sponsor_url in a new tab; on cards we stop the
+// click from bubbling to the card's open-modal handler.
+function _sponsorStripHtml(s, variant) {
+  if (!s) return '';
+  var logo = (s.sponsor_logo_url || '').trim();
+  if (!logo) return '';
+  var ok = /^https:\/\//i.test(logo) || /^data:image\//i.test(logo) || /^\/api\/cms\/media\//.test(logo);
+  if (!ok) return '';
+  var name = escapeHtml(s.sponsor_name || 'our partner');
+  var link = (s.sponsor_url || '').trim();
+  var maxH = variant === 'card' ? 24 : 40;
+  var maxW = variant === 'card' ? 110 : 170;
+  var img = '<img src="' + escapeHtml(logo) + '" alt="' + name + '" loading="lazy" ' +
+            'style="max-height:' + maxH + 'px;max-width:' + maxW + 'px;width:auto;height:auto;object-fit:contain;vertical-align:middle">';
+  var stop = variant === 'card' ? ' onclick="event.stopPropagation()"' : '';
+  var inner = /^https?:\/\//i.test(link)
+    ? '<a href="' + escapeHtml(link) + '" target="_blank" rel="noopener sponsored"' + stop + ' style="display:inline-flex;align-items:center;text-decoration:none">' + img + '</a>'
+    : img;
+  var align = variant === 'card' ? 'flex-start' : 'center';
+  var mt = variant === 'card' ? '10px' : '16px';
+  return '<div class="sc-sponsor" style="display:flex;align-items:center;gap:8px;justify-content:' + align +
+         ';margin-top:' + mt + ';padding-top:10px;border-top:1px solid rgba(255,255,255,.07)">' +
+         '<span style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#888)">Powered by</span>' +
+         inner + '</div>';
+}
+
 function renderSessionsGrid(sessions) {
   var grid = document.getElementById('sessionsGrid');
   if (!grid) return;
@@ -1605,7 +1645,8 @@ function renderSessionsGrid(sessions) {
       '<p class="sc-tribe ' + tribe + '">' + escapeHtml(tribeLabel) + '</p>' +
       '<h3 class="sc-name">' + escapeHtml(s.name) + '</h3>' +
       '<p class="sc-time">' + escapeHtml(dayTime) + '</p>' +
-      '<p class="sc-loc">' + escapeHtml(loc) + escapeHtml(cityTag) + '</p>';
+      '<p class="sc-loc">' + escapeHtml(loc) + escapeHtml(cityTag) + '</p>' +
+      _sponsorStripHtml(s, 'card');
 
     article.addEventListener('click', function() {
       openModal(s.name, tribe, dayTime, coach, loc, desc, dayName, time, s.id);

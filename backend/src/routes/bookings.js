@@ -58,6 +58,7 @@ router.post('/', authenticate, async (req, res, next) => {
       `SELECT s.id, s.name, s.scheduled_at, s.location, s.session_type,
               s.price, s.price_points, s.currency_code,
               s.capacity, s.status, s.points_reward,
+              s.sponsor_name, s.sponsor_logo_url, s.sponsor_url,
               t.name AS tribe_name, c.name AS city_name
        FROM sessions s
        LEFT JOIN tribes t ON t.id=s.tribe_id
@@ -65,12 +66,13 @@ router.post('/', authenticate, async (req, res, next) => {
        WHERE s.id=$1`,
       [session_id]
     ).catch(async (e) => {
-      // Pre-migration fallback: price_points / currency_code don't exist yet.
+      // Pre-migration fallback: price_points / currency_code / sponsor_* don't exist yet.
       if (e.code === '42703') {
         return query(
           `SELECT s.id, s.name, s.scheduled_at, s.location, s.session_type,
                   s.price, 0 AS price_points, NULL AS currency_code,
                   s.capacity, s.status, s.points_reward,
+                  NULL AS sponsor_name, NULL AS sponsor_logo_url, NULL AS sponsor_url,
                   t.name AS tribe_name, c.name AS city_name
            FROM sessions s
            LEFT JOIN tribes t ON t.id=s.tribe_id
@@ -234,11 +236,23 @@ router.post('/:id/pay-with-points', authenticate, async (req, res, next) => {
   try {
     const { rows } = await query(
       `SELECT b.id, b.status, b.session_id, b.member_id,
-              s.name, s.scheduled_at, s.location, s.price_points
+              s.name, s.scheduled_at, s.location, s.price_points,
+              s.sponsor_name, s.sponsor_logo_url, s.sponsor_url
        FROM bookings b JOIN sessions s ON s.id = b.session_id
        WHERE b.id = $1 AND b.member_id = $2`,
       [req.params.id, req.member.id]
-    );
+    ).catch(async (e) => {
+      // Pre-migration fallback: sponsor_* columns don't exist yet.
+      if (e.code === '42703') {
+        return query(
+          `SELECT b.id, b.status, b.session_id, b.member_id,
+                  s.name, s.scheduled_at, s.location, s.price_points,
+                  NULL AS sponsor_name, NULL AS sponsor_logo_url, NULL AS sponsor_url
+           FROM bookings b JOIN sessions s ON s.id = b.session_id
+           WHERE b.id = $1 AND b.member_id = $2`, [req.params.id, req.member.id]);
+      }
+      throw e;
+    });
     if (!rows.length) return res.status(404).json({ error: 'Booking not found' });
     const b = rows[0];
     if (b.status !== 'pending_payment') {
@@ -289,7 +303,8 @@ router.post('/:id/pay-with-points', authenticate, async (req, res, next) => {
     // Send confirmation outside the transaction (network call).
     await emailService.sendBookingConfirmation(
       result.member,
-      { name: b.name, scheduled_at: b.scheduled_at, location: b.location },
+      { name: b.name, scheduled_at: b.scheduled_at, location: b.location,
+        sponsor_name: b.sponsor_name, sponsor_logo_url: b.sponsor_logo_url, sponsor_url: b.sponsor_url },
       result.qrData, result.qrToken
     ).catch(function(){ /* email failure shouldn't reverse booking */ });
 

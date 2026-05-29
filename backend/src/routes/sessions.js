@@ -5,6 +5,28 @@ const streak       = require('../services/streak');
 const referrals    = require('../services/referrals');
 const achievements = require('../services/achievements');
 
+// Sponsor "Powered by" — validate the admin-supplied logo + click URLs.
+// Logo: https:// , data:image/...;base64 , or an /api/cms/media/<id>
+// upload ref. Click URL: https?:// only (no javascript:/data:). Returns
+// a clean { sponsor_name, sponsor_logo_url, sponsor_url } object; bad
+// values are dropped to null rather than throwing.
+function _sanitizeSponsor(body) {
+  const name = (body.sponsor_name == null ? '' : String(body.sponsor_name)).trim().slice(0, 120) || null;
+  let logo = (body.sponsor_logo_url == null ? '' : String(body.sponsor_logo_url)).trim();
+  let url  = (body.sponsor_url == null ? '' : String(body.sponsor_url)).trim();
+  const logoOk = /^https:\/\//i.test(logo)
+    || /^data:image\/(png|jpe?g|svg\+xml|webp);base64,/i.test(logo)
+    || /^\/api\/cms\/media\//.test(logo);
+  if (!logoOk) logo = '';
+  if (logo.length > 1_400_000) logo = ''; // ~1MB binary as data URL
+  if (!/^https?:\/\//i.test(url)) url = '';
+  return {
+    sponsor_name: name,
+    sponsor_logo_url: logo || null,
+    sponsor_url: url || null,
+  };
+}
+
 // ── GET /api/sessions ─────────────────────────────────────────
 router.get('/', optionalAuth, async (req, res, next) => {
   try {
@@ -52,6 +74,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
                 s.capacity, s.points_reward, s.status, s.is_live_enabled,
                 s.session_category, s.sport_type, s.courts, s.cancellation_reason,
                 s.city_id, s.coach_id, s.activity_id, s.intro_video_url,
+                s.sponsor_name, s.sponsor_logo_url, s.sponsor_url,
                 t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
                 a.name AS activity_name, a.slug AS activity_slug, a.icon AS activity_icon,
                 c.name AS city_name,
@@ -81,6 +104,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
                 s.capacity, s.points_reward, s.status, s.is_live_enabled,
                 s.session_category, s.sport_type, s.courts, s.cancellation_reason,
                 s.city_id, s.coach_id, s.activity_id, NULL AS intro_video_url,
+                NULL AS sponsor_name, NULL AS sponsor_logo_url, NULL AS sponsor_url,
                 t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
                 a.name AS activity_name, a.slug AS activity_slug, a.icon AS activity_icon,
                 c.name AS city_name,
@@ -290,6 +314,10 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
       is_corporate_only = false,
       is_online = false,
       stream_url = null,
+      // Sponsor "Powered by" (partnership packages) — optional per session
+      sponsor_name = null,
+      sponsor_logo_url = null,
+      sponsor_url = null,
     } = req.body;
 
     if (!name || !city_id || !scheduled_at || !location) {
@@ -372,6 +400,23 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
             await client.query('RELEASE SAVEPOINT set_intro');
           } catch (e) {
             await client.query('ROLLBACK TO SAVEPOINT set_intro');
+            if (e.code !== '42703') throw e;
+          }
+        }
+        // Sponsor "Powered by" — same defensive SAVEPOINT pattern so a
+        // pre-migration DB (no sponsor_* columns) doesn't break creation.
+        {
+          const sp = _sanitizeSponsor(req.body);
+          await client.query('SAVEPOINT set_sponsor');
+          try {
+            await client.query(
+              `UPDATE sessions SET sponsor_name=$1, sponsor_logo_url=$2, sponsor_url=$3 WHERE id=$4`,
+              [sp.sponsor_name, sp.sponsor_logo_url, sp.sponsor_url, rows[0].id]
+            );
+            Object.assign(rows[0], sp);
+            await client.query('RELEASE SAVEPOINT set_sponsor');
+          } catch (e) {
+            await client.query('ROLLBACK TO SAVEPOINT set_sponsor');
             if (e.code !== '42703') throw e;
           }
         }
@@ -751,6 +796,19 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
       try {
         await query(`UPDATE sessions SET intro_video_url=$1 WHERE id=$2`, [intro_video_url || null, id]);
         rows[0].intro_video_url = intro_video_url || null;
+      } catch (e) {
+        if (e.code !== '42703') throw e;
+      }
+    }
+
+    // Sponsor "Powered by" — separate UPDATE, only when the admin sent at
+    // least one sponsor field. Pre-migration DBs (no sponsor_* cols) skip.
+    if (req.body.sponsor_name !== undefined || req.body.sponsor_logo_url !== undefined || req.body.sponsor_url !== undefined) {
+      const sp = _sanitizeSponsor(req.body);
+      try {
+        await query(`UPDATE sessions SET sponsor_name=$1, sponsor_logo_url=$2, sponsor_url=$3 WHERE id=$4`,
+          [sp.sponsor_name, sp.sponsor_logo_url, sp.sponsor_url, id]);
+        Object.assign(rows[0], sp);
       } catch (e) {
         if (e.code !== '42703') throw e;
       }

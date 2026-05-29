@@ -451,6 +451,18 @@ async function _ensureBootSchema() {
     await query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS volleyball_level VARCHAR(20)`);
   } catch (e) { console.warn('[boot] volleyball_level column:', e.message); }
 
+  // Session sponsor / "Powered by" (v1.41.x) — lets admins attach a
+  // sponsoring brand to a session: a logo, a click-through URL, and an
+  // optional display name. Surfaces on the session card, booking
+  // confirmation, and confirmation email — extra value for partnership
+  // packages.
+  try {
+    await query(`ALTER TABLE sessions
+      ADD COLUMN IF NOT EXISTS sponsor_name     VARCHAR(120),
+      ADD COLUMN IF NOT EXISTS sponsor_logo_url  TEXT,
+      ADD COLUMN IF NOT EXISTS sponsor_url       TEXT`);
+  } catch (e) { console.warn('[boot] sessions sponsor columns:', e.message); }
+
   // Session name templates (Phase 1.35.1)
   try {
     await query(`CREATE TABLE IF NOT EXISTS session_templates (
