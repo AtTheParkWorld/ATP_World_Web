@@ -493,10 +493,24 @@ function editSessionById(id) {
 // to pick new days/times. Stays in CREATE mode (SESSION_EDIT_ID = null) so
 // hitting Save spawns a brand-new session row instead of overwriting the
 // original.
-function duplicateSessionById(id) {
+async function duplicateSessionById(id) {
   var s = SESSIONS_CACHE[id];
   if (!s) return;
   resetSessionForm();
+
+  // Re-load the dependent dropdowns and AWAIT them before pre-selecting
+  // values. Without this, a quick click after opening the Sessions section
+  // could land before the async loads finish — the dropdowns would still
+  // be empty and `select.value = id` would silently fail (which is why
+  // coach, tribe and city were "not transferring").
+  try {
+    await Promise.all([
+      (typeof loadCoaches === 'function' ? loadCoaches() : Promise.resolve()),
+      (typeof loadTribes === 'function' ? loadTribes() : Promise.resolve()),
+      (typeof loadCities === 'function' ? loadCities() : Promise.resolve()),
+    ]);
+  } catch (e) { /* dropdowns may be partially loaded; we still try to set values */ }
+
   // Title hint — duplicate flow. With sName now a SELECT, just pick
   // the same template name (no "(copy)" suffix — Postgres would reject
   // it anyway since templates are a finite list).
@@ -531,6 +545,10 @@ function duplicateSessionById(id) {
   if (s.tribe_id) document.getElementById('sTribe').value = s.tribe_id;
   var introEl = document.getElementById('sIntroVideo');
   if (introEl) introEl.value = s.intro_video_url || '';
+  // Sponsor "Powered by" — carry the partnership over to the duplicate.
+  setVal('sSponsorName', s.sponsor_name);
+  setVal('sSponsorLogo', s.sponsor_logo_url);
+  setVal('sSponsorUrl',  s.sponsor_url);
   // Activity (cascading on tribe — defer so the dropdown is populated first)
   setTimeout(function(){
     if (typeof filterActivitiesByTribe === 'function') filterActivitiesByTribe();
@@ -557,7 +575,7 @@ function duplicateSessionById(id) {
   if (subBtn) subBtn.textContent = '✓ Create copy';
   var section = document.getElementById('sessionFormSection');
   if (section) section.scrollIntoView({behavior:'smooth'});
-  if (typeof showToast === 'function') showToast('📋 Duplicated — set days & times for the new session');
+  if (typeof showToast === 'function') showToast('📋 Duplicated — pick days &amp; times; everything else is pre-filled');
 }
 
 
@@ -729,6 +747,11 @@ async function createSession() {
 
   try {
     var token = getToken();
+    if (!token) {
+      msgEl.textContent = '🔒 Your admin session expired. Reload the page and sign in again, then re-open the duplicate.';
+      msgEl.style.cssText = 'display:block;background:#2a1010;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+      return;
+    }
     var url = isEdit
       ? '/api/sessions/' + SESSION_EDIT_ID
       : '/api/sessions';
@@ -738,6 +761,11 @@ async function createSession() {
       method, headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
       body: JSON.stringify(payload)
     });
+    if (res.status === 401) {
+      msgEl.textContent = '🔒 Your admin session expired. Reload the page and sign in again — your form values are still here.';
+      msgEl.style.cssText = 'display:block;background:#2a1010;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+      return;
+    }
     var data = await res.json();
 
     if (data.sessions || data.session) {
@@ -799,8 +827,19 @@ function resetSessionForm() {
 
 function cancelEditSession() { resetSessionForm(); }
 
-function editSession(s) {
+async function editSession(s) {
   SESSION_EDIT_ID = s.id;
+  // Make sure the dependent dropdowns (coach / tribe / city) are
+  // populated BEFORE we try to pre-select their values. Without this,
+  // a quick edit click after a section reload would race the loaders
+  // and silently fail to set the dropdown values.
+  try {
+    await Promise.all([
+      (typeof loadCoaches === 'function' ? loadCoaches() : Promise.resolve()),
+      (typeof loadTribes === 'function' ? loadTribes() : Promise.resolve()),
+      (typeof loadCities === 'function' ? loadCities() : Promise.resolve()),
+    ]);
+  } catch (e) { /* partial loads still better than nothing */ }
   // sName is now a SELECT — reload templates and make sure the
   // current session's name exists as an option (as legacy if it
   // isn't in the active template list).
