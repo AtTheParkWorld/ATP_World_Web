@@ -282,9 +282,9 @@ async function loadCoaches() {
 }
 
 // Ambassadors picker for the session form. Loaded once per page session
-// since the roster changes rarely. Used by the "Nominated ambassadors"
-// multi-select that only shows when "Allow this session to be streamed
-// live" is on.
+// since the roster changes rarely. Always visible — admins assign
+// ambassadors to ANY session (streamed or not) so they can scan members
+// in at check-in. Streaming, when enabled, uses the same assigned set.
 var ALL_AMBASSADORS = [];
 var SESSION_AMBS_PICK = []; // mirror of currently picked ambassador ids
 async function loadAmbassadorsForSession() {
@@ -699,7 +699,10 @@ async function createSession() {
   var intro_video_url = (document.getElementById('sIntroVideo') || {}).value || null;
   if (intro_video_url === 'Uploading…') intro_video_url = null;
   var is_streamable = !!(document.getElementById('sIsStreamable') || {}).checked;
-  var assigned_ambassador_ids = is_streamable ? SESSION_AMBS_PICK.slice() : [];
+  // Ambassador assignment is INDEPENDENT of streaming — admins assign
+  // ambassadors to any session (streamed or not) so they can scan
+  // check-ins. Always persist whatever was picked.
+  var assigned_ambassador_ids = SESSION_AMBS_PICK.slice();
   // Corporate-exclusive + online session fields (Phase 3)
   var is_corporate_only = !!(document.getElementById('sIsCorporateOnly') || {}).checked;
   var corporate_account_id = (document.getElementById('sCorporateAccountId') || {}).value || null;
