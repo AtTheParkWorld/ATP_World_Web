@@ -431,6 +431,17 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
   padding: 0;
 }
 .nav-links a {
+  /* Canonical nav link typography — was previously declared per page,
+     which left 7 pages (offers, partners, business, legal, the 3 stream
+     pages) inheriting the browser default (16px / normal weight / no
+     spacing) and rendering visibly bigger than Index. These properties
+     bring them in line; per-page rules still override (same values),
+     so no working page is affected. */
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: .04em;
+  color: var(--atp-fg-muted, #aaa);
+  text-decoration: none;
   transition: color var(--atp-dur) var(--atp-ease);
   position: relative;
 }
