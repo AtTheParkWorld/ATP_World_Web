@@ -431,42 +431,165 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
   padding: 0;
 }
 
-/* ── Fade-reveal nav-links on logo hover (desktop only) ─────────
-   On fine-pointer devices, the link list is hidden by default and
-   fades in when the cursor enters the ATP logo. Stays visible while
-   the cursor is on the links, and a small grace delay on the hide
-   bridges the gap between the logo and the link list. Keyboard users
-   reveal it via :focus-within (Tab anywhere into the nav).
-   Mobile (≤900px) is untouched — the hamburger flow keeps working. */
+/* ════════════════════════════════════════════════════════════════
+ * NAV IGNITION — premium page-load reveal
+ *
+ * On each page load the nav comes alive in four coordinated beats:
+ *
+ *   1. The ATP logo ignites — fades + scales in with a brief green
+ *      halo, signalling the start of the sequence.
+ *   2. A glowing ATP-green streak emerges from the logo and travels
+ *      smoothly across the navbar. Two layers: a sharp bright "fuse"
+ *      head + a soft trailing halo that dissipates behind it.
+ *   3. Each <li> in .nav-links lights up the instant the streak
+ *      passes over it — a brief brightness flare that settles into
+ *      the standard text colour. Timing is staggered via :nth-child.
+ *   4. The auth chunk (.nav-actions) fades in at the tail so the
+ *      whole row feels "powered up" at the end.
+ *
+ * Everything uses GPU-friendly properties (transform / opacity /
+ * filter). Runs once with animation-fill-mode: both. Skipped
+ * wholesale under prefers-reduced-motion. Hover affordance on the
+ * logo is preserved for ongoing interaction. */
+
+/* Containerize the nav-inner so the streak's 100cqw translation
+   resolves to the nav's own width, not the viewport. */
+.nav-inner { position: relative; container-type: inline-size; }
+
+/* — Logo ignites first ─────────────────────────────────────── */
+.nav-logo {
+  opacity: 0;
+  animation: nav-logo-ignite .55s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+@keyframes nav-logo-ignite {
+  0%   { opacity: 0; transform: scale(.92);
+         filter: drop-shadow(0 0 0 rgba(122,194,49,0)); }
+  60%  { opacity: 1; transform: scale(1.02);
+         filter: drop-shadow(0 0 18px rgba(122,194,49,.85)); }
+  100% { opacity: 1; transform: scale(1);
+         filter: drop-shadow(0 0 0 rgba(122,194,49,0)); }
+}
+
+/* — Streak: bright "fuse" head sweeping left → right ───────── */
+.nav-inner::after {
+  content: '';
+  position: absolute;
+  left: 0; bottom: 0;
+  width: 220px; height: 2px;
+  background: linear-gradient(90deg,
+    rgba(122,194,49,0)    0%,
+    rgba(122,194,49,0)   18%,
+    rgba(122,194,49,.20) 48%,
+    rgba(122,194,49,.55) 74%,
+    rgba(122,194,49,1)   95%,
+    #d6ff8a              100%);
+  border-radius: 99px;
+  pointer-events: none;
+  transform: translateX(-240px);
+  opacity: 0;
+  z-index: 2;
+  animation: nav-trail-sweep 2s cubic-bezier(.22, .61, .36, 1) .5s both;
+  will-change: transform, opacity;
+}
+
+/* — Streak halo: soft, wider, blurred trail behind the head ── */
+.nav-inner::before {
+  content: '';
+  position: absolute;
+  left: 0; bottom: -9px;
+  width: 280px; height: 22px;
+  background: radial-gradient(ellipse at 78% center,
+    rgba(122,194,49,.45) 0%,
+    rgba(122,194,49,.18) 32%,
+    rgba(122,194,49,0)   65%);
+  filter: blur(6px);
+  pointer-events: none;
+  transform: translateX(-300px);
+  opacity: 0;
+  z-index: 1;
+  animation: nav-trail-halo 2s cubic-bezier(.22, .61, .36, 1) .5s both;
+  will-change: transform, opacity;
+}
+
+@keyframes nav-trail-sweep {
+  0%   { transform: translateX(-240px); opacity: 0; }
+  6%   { opacity: 1; }
+  88%  { opacity: 1; }
+  100% { transform: translateX(100cqw);  opacity: 0; }
+}
+@keyframes nav-trail-halo {
+  0%   { transform: translateX(-300px); opacity: 0; }
+  10%  { opacity: .85; }
+  88%  { opacity: .45; }
+  100% { transform: translateX(calc(100cqw - 40px)); opacity: 0; }
+}
+
+/* — Each link ignites as the streak passes ────────────────── */
+.nav-links li {
+  opacity: 0;
+  transform: translateY(-3px);
+  animation: nav-li-flare .55s cubic-bezier(.4, 0, .2, 1) both;
+}
+/* Stagger delays so the flare keys to the streak's horizontal
+   position. The constants below time-line up with the 2s sweep
+   that starts at .5s. */
+.nav-links li:nth-child(1) { animation-delay: .80s; }
+.nav-links li:nth-child(2) { animation-delay: .95s; }
+.nav-links li:nth-child(3) { animation-delay: 1.10s; }
+.nav-links li:nth-child(4) { animation-delay: 1.25s; }
+.nav-links li:nth-child(5) { animation-delay: 1.40s; }
+.nav-links li:nth-child(6) { animation-delay: 1.55s; }
+.nav-links li:nth-child(7) { animation-delay: 1.70s; }
+.nav-links li:nth-child(8) { animation-delay: 1.85s; }
+.nav-links li:nth-child(9) { animation-delay: 2.00s; }
+@keyframes nav-li-flare {
+  0%   { opacity: 0; transform: translateY(-3px);
+         filter: brightness(2.2) drop-shadow(0 0 10px rgba(122,194,49,.9)); }
+  35%  { opacity: 1; transform: translateY(0);
+         filter: brightness(1.5) drop-shadow(0 0 6px  rgba(122,194,49,.55)); }
+  100% { opacity: 1; transform: translateY(0);
+         filter: brightness(1)   drop-shadow(0 0 0   rgba(122,194,49,0)); }
+}
+
+/* — Auth chunk joins at the end ────────────────────────────── */
+.nav-actions {
+  opacity: 0;
+  animation: nav-actions-fade .55s cubic-bezier(.4, 0, .2, 1) 2.05s both;
+}
+@keyframes nav-actions-fade {
+  from { opacity: 0; transform: translateX(6px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+/* Hover affordance on the logo — preserved from the previous
+   iteration. Desktop only; transitions don't fight the ignite
+   animation because the latter runs first then settles. */
 @media (hover: hover) and (pointer: fine) {
-  .nav-links {
-    opacity: 0;
-    visibility: hidden;
-    transform: translateY(-4px);
-    transition:
-      opacity .35s cubic-bezier(.4,0,.2,1),
-      transform .35s cubic-bezier(.4,0,.2,1),
-      visibility 0s linear .55s;
-  }
-  .nav-logo:hover + .nav-links,
-  .nav-links:hover,
-  .nav-inner:focus-within .nav-links {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
-    transition:
-      opacity .35s cubic-bezier(.4,0,.2,1),
-      transform .35s cubic-bezier(.4,0,.2,1),
-      visibility 0s linear 0s;
-  }
-  /* Subtle affordance on the logo so the hover behaviour feels intentional */
   .nav-logo {
-    transition: transform .25s ease, filter .25s ease;
     cursor: pointer;
+    transition: transform .25s ease, filter .25s ease;
   }
   .nav-logo:hover {
     transform: scale(1.04);
     filter: drop-shadow(0 0 14px rgba(122,194,49,.35));
+  }
+}
+
+/* Accessibility — anyone who's opted out of motion gets the final
+   state instantly. No streak, no flares, no logo ignite. */
+@media (prefers-reduced-motion: reduce) {
+  .nav-logo,
+  .nav-links li,
+  .nav-actions {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
+  .nav-inner::before,
+  .nav-inner::after {
+    animation: none !important;
+    display: none !important;
   }
 }
 .nav-links a {
