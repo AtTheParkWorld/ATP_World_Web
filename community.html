@@ -59,7 +59,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .comm-tabs-bar{background:var(--dark2);border-bottom:1px solid rgba(255,255,255,.07);position:sticky;top:var(--nav-h);z-index:50}
 .comm-tabs-inner{max-width:var(--max);margin:0 auto;padding:0 40px;display:flex;gap:0;overflow-x:auto;scrollbar-width:none}
 .comm-tabs-inner::-webkit-scrollbar{display:none}
-.comm-tab{font-size:13px;font-weight:600;color:var(--muted);padding:16px 20px;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;white-space:nowrap;transition:color .2s,border-color .2s}
+.comm-tab{font-size:13px;font-weight:600;color:var(--muted);padding:16px 20px;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;white-space:nowrap;transition:color .2s,border-color .2s;text-decoration:none;display:inline-flex;align-items:center;gap:6px}
 .comm-tab:hover{color:var(--light)}
 .comm-tab.active{color:var(--white);border-bottom-color:var(--green)}
 
@@ -176,24 +176,8 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .lb-chg.same{color:var(--muted)}
 .lb-you{background:rgba(122,194,49,.05)!important;border-left:2px solid var(--green)}
 
-/* ── BLOG ── */
-.blog-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:16px}
-.blog-card{background:var(--dark2);border-radius:var(--radius-lg);overflow:hidden;border:1px solid rgba(255,255,255,.07);cursor:pointer;transition:transform .2s,border-color .2s}
-.blog-card:hover{transform:translateY(-3px);border-color:rgba(122,194,49,.25)}
-.blog-card-img{aspect-ratio:16/9;background:var(--dark3);overflow:hidden}
-.blog-card-img img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .4s}
-.blog-card:hover .blog-card-img img{transform:scale(1.04)}
-.blog-card-img-ph{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:32px;background:linear-gradient(135deg,var(--dark3),#1a2a12)}
-.blog-card-body{padding:16px}
-.blog-cat{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green);margin-bottom:8px}
-.blog-title{font-family:var(--ff-display);font-size:20px;font-weight:800;color:var(--white);line-height:1.1;margin-bottom:6px;text-transform:uppercase}
-.blog-excerpt{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px}
-.blog-meta{display:flex;align-items:center;justify-content:space-between}
-.blog-author{font-size:11px;color:var(--muted)}
-.blog-read{font-size:11px;font-weight:700;color:var(--green)}
-.blog-featured{grid-column:1/-1}
-.blog-featured .blog-card-img{aspect-ratio:21/9}
-.blog-featured .blog-title{font-size:28px}
+/* The local Blog tab was removed — the "Blog" link in the comm-tabs
+   now routes to /blog.html instead of rendering an in-page panel. */
 
 /* ── CHALLENGES ── */
 .challenge-filter{display:flex;gap:8px;margin-bottom:20px}
@@ -243,7 +227,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .5s,transform .5s}
 .reveal.visible{opacity:1;transform:none}
 
-@media(max-width:900px){.nav-links{display:none}.hamburger{display:flex}.comm-layout{grid-template-columns:1fr;padding:24px 16px 80px}.comm-sidebar{position:static}.page-hero-inner{grid-template-columns:1fr}.page-hero-stats{display:none}.blog-grid{grid-template-columns:1fr}.comm-tabs-inner{padding:0 16px}.page-hero{padding-left:24px;padding-right:24px}}
+@media(max-width:900px){.nav-links{display:none}.hamburger{display:flex}.comm-layout{grid-template-columns:1fr;padding:24px 16px 80px}.comm-sidebar{position:static}.page-hero-inner{grid-template-columns:1fr}.page-hero-stats{display:none}.comm-tabs-inner{padding:0 16px}.page-hero{padding-left:24px;padding-right:24px}}
 @media(max-width:560px){.page-hero{padding:calc(var(--nav-h) + 72px) 18px 36px}.page-hero h1{font-size:clamp(40px,12vw,56px)}.page-hero-sub{font-size:15px}.comm-tab{font-size:13px;padding:12px 14px}}
 
 /* ══ AUTH MODAL ══════════════════════════════════════════════ */
@@ -343,7 +327,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
       <button class="comm-tab active" data-atp-call="showTab" data-args='["feed"]'>Feed</button>
       <button class="comm-tab" data-atp-call="showTab" data-args='["leaderboard"]'>Leaderboard</button>
       <button class="comm-tab" data-atp-call="showTab" data-args='["challenges"]'>Challenges</button>
-      <button class="comm-tab" data-atp-call="showTab" data-args='["blog"]'>Blog</button>
+      <a class="comm-tab" href="blog.html">Blog</a>
     </div>
   </div>
 
@@ -415,11 +399,8 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
         <div id="challengesContainer"></div>
       </div>
 
-      <!-- ── BLOG ── -->
-      <!-- MOCK: no GET /api/blog endpoint yet -->
-      <div class="comm-panel" id="tab-blog">
-        <div class="blog-grid" id="blogGrid"></div>
-      </div>
+      <!-- Blog moved out — the "Blog" link in the comm-tabs above now
+           routes to /blog.html, the canonical reading surface. -->
 
     </div>
 
@@ -540,14 +521,9 @@ var CHALLENGES = [
   {id:6,icon:"👟",title:"Step Master",desc:"Log 70,000 steps total this month. Every walk counts.",type:"monthly",metric:"Steps",target:70000,unit:"steps",participants:312,joined:false,done:0},
 ];
 
-var BLOG_POSTS = [
-  {cat:"Training",title:"Why Consistency Beats Intensity Every Time",excerpt:"The science behind showing up — even on the days you don't feel like it.",author:"Coach Manju",date:"Apr 14",img:"",featured:true},
-  {cat:"Community",title:"7,000 Members: How ATP Grew Without Spending a Dirham on Ads",excerpt:"Word of mouth, sweat, and a park in Abu Dhabi. The real story.",author:"Fredy Martins",date:"Apr 10",img:""},
-  {cat:"Nutrition",title:"What to Eat Before a 6AM Bootcamp",excerpt:"Quick, effective fuel that won't slow you down.",author:"Coach Sarah",date:"Apr 8",img:""},
-  {cat:"Running",title:"Your First 5K: A 6-Week ATP Plan",excerpt:"Complete beginner to race-ready in 42 days.",author:"Coach Jay",date:"Apr 5",img:""},
-  {cat:"Recovery",title:"The 20-Minute Post-Session Routine That Changes Everything",excerpt:"Foam rolling, breathwork, and why cold water matters.",author:"Coach Manju",date:"Apr 2",img:""},
-  {cat:"Padel",title:"ATP Padel Night: What to Expect at Your First Session",excerpt:"Beginner-friendly, high-energy, and always a good time.",author:"Fredy Martins",date:"Mar 28",img:""},
-];
+// BLOG_POSTS + renderBlog were removed when the in-page Blog tab was
+// replaced by a link to /blog.html (the canonical blog surface). The
+// real blog is rendered by blog.html from the /api/blog endpoint.
 
 // ── RENDER POSTS ─────────────────────────────────────────────
 var mediaFiles = [];
@@ -1154,33 +1130,10 @@ function renderSidebarChallenges() {
   }).join("") || '<div style="font-size:13px;color:var(--muted)">No active challenges. <a href="#" onclick="showTab(\'challenges\');return false" style="color:var(--green)">Browse →</a></div>';
 }
 
-// ── BLOG ─────────────────────────────────────────────────────
-function renderBlog() {
-  var catColors = {Training:"#60a5fa",Community:"#4ade80",Nutrition:"#fb923c",Running:"#f472b6",Recovery:"#a78bfa",Padel:"#fbbf24"};
-  document.getElementById("blogGrid").innerHTML = BLOG_POSTS.map(function(post, i) {
-    var featured = i===0 ? " blog-featured" : "";
-    var col = catColors[post.cat] || "var(--green)";
-    return '<div class="blog-card'+featured+'">'+
-      '<div class="blog-card-img">'+
-        '<div class="blog-card-img-ph">'+["🏃","👥","🥑","🏅","💪","🎾"][i % 6]+'</div>'+
-      '</div>'+
-      '<div class="blog-card-body">'+
-        '<div class="blog-cat" style="color:'+col+'">'+post.cat+'</div>'+
-        '<div class="blog-title">'+post.title+'</div>'+
-        '<div class="blog-excerpt">'+post.excerpt+'</div>'+
-        '<div class="blog-meta">'+
-          '<span class="blog-author">'+post.author+' · '+post.date+'</span>'+
-          '<span class="blog-read">Read →</span>'+
-        '</div>'+
-      '</div>'+
-    '</div>';
-  }).join("");
-}
-
 // ── INIT ─────────────────────────────────────────────────────
 // Feed, leaderboard and challenges are loaded from the backend
-// by the boot() block below. Blog stays mocked (no API yet).
-renderBlog();
+// by the boot() block below. The Blog tab now links straight to
+// /blog.html (the canonical blog surface) — no in-page render.
 
 setTimeout(function(){
   document.querySelectorAll(".reveal").forEach(function(el){revObs.observe(el);});
