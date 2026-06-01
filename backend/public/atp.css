@@ -432,6 +432,81 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
 }
 
 /* ════════════════════════════════════════════════════════════════
+ * ATP CTA HOVER — premium 3D lift + ambient green glow
+ *
+ * Subtle hover effect for every primary / secondary action button
+ * across the site. Behaviour: on cursor-enter the button lifts ~2px
+ * with a soft 3D tilt and gains a layered green glow (1px outline +
+ * coloured drop shadow + ambient bloom). The spring-curve transition
+ * gives a brief "wave" overshoot + settle for the premium feel. On
+ * cursor-leave it returns smoothly along the same curve.
+ *
+ * Two ways to opt in:
+ *   1. Add .btn-atp-hover to any element (the reusable modifier).
+ *   2. Use one of the existing canonical CTA classes — the rule
+ *      already targets them so no per-page wiring is needed.
+ *
+ * Constraints honoured:
+ *   · Desktop hover only (@media hover/pointer). Touch keeps clean.
+ *   · GPU-accelerated: transform + box-shadow only. No layout shift.
+ *   · No JS. No changes to text, colour, padding, or border-radius.
+ *   · prefers-reduced-motion drops the lift but keeps the glow.
+ *
+ * Glow uses #A6FF00 (a brighter chartreuse than the brand body
+ * green #7AC231) so the halo reads as energy, not a static fill. */
+
+@media (hover: hover) and (pointer: fine) {
+  .btn-atp-hover,
+  .btn-primary, .btn-ghost, .btn-dark,
+  .atp-btn, .atp-btn--primary, .atp-btn--lg, .atp-btn--ghost,
+  .b-cta, .b-cta-primary, .b-cta-ghost, .b-card-btn,
+  .pf-btn-primary, .upgrade-btn,
+  .find-session-btn {
+    /* Spring ease on transform delivers the brief "wave" settle */
+    transition:
+      transform .42s cubic-bezier(.34, 1.56, .64, 1),
+      box-shadow .35s cubic-bezier(.4, 0, .2, 1) !important;
+    transform-origin: center center;
+    transform-style: preserve-3d;
+    will-change: transform, box-shadow;
+  }
+  .btn-atp-hover:hover,
+  .btn-primary:hover, .btn-ghost:hover, .btn-dark:hover,
+  .atp-btn:hover, .atp-btn--primary:hover, .atp-btn--lg:hover, .atp-btn--ghost:hover,
+  .b-cta:hover, .b-cta-primary:hover, .b-cta-ghost:hover, .b-card-btn:hover,
+  .pf-btn-primary:hover, .upgrade-btn:hover,
+  .find-session-btn:hover {
+    transform: perspective(820px) translateY(-2px) rotateX(-3deg) !important;
+    box-shadow:
+      0 0 0 1px   rgba(166, 255, 0, .18),
+      0 10px 26px -6px rgba(166, 255, 0, .42),
+      0 0 32px   rgba(166, 255, 0, .22) !important;
+  }
+  /* Active press — sit back into the surface for a tactile click */
+  .btn-atp-hover:active,
+  .btn-primary:active, .btn-ghost:active, .btn-dark:active,
+  .atp-btn:active, .atp-btn--primary:active, .atp-btn--lg:active, .atp-btn--ghost:active,
+  .b-cta:active, .b-cta-primary:active, .b-cta-ghost:active, .b-card-btn:active,
+  .pf-btn-primary:active, .upgrade-btn:active,
+  .find-session-btn:active {
+    transform: perspective(820px) translateY(0) rotateX(-1deg) !important;
+    transition-duration: .12s !important;
+  }
+}
+
+/* Reduced-motion: keep the glow (a visual affordance), drop the lift. */
+@media (prefers-reduced-motion: reduce) {
+  .btn-atp-hover:hover,
+  .btn-primary:hover, .btn-ghost:hover, .btn-dark:hover,
+  .atp-btn:hover, .atp-btn--primary:hover, .atp-btn--lg:hover, .atp-btn--ghost:hover,
+  .b-cta:hover, .b-cta-primary:hover, .b-cta-ghost:hover, .b-card-btn:hover,
+  .pf-btn-primary:hover, .upgrade-btn:hover,
+  .find-session-btn:hover {
+    transform: none !important;
+  }
+}
+
+/* ════════════════════════════════════════════════════════════════
  * NAV IGNITION — hover-triggered reveal, hover-latched visibility
  *
  * Default state: the link list is hidden. When the cursor enters
