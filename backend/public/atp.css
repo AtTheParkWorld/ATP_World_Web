@@ -430,6 +430,45 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
   margin: 0;
   padding: 0;
 }
+
+/* ── Fade-reveal nav-links on logo hover (desktop only) ─────────
+   On fine-pointer devices, the link list is hidden by default and
+   fades in when the cursor enters the ATP logo. Stays visible while
+   the cursor is on the links, and a small grace delay on the hide
+   bridges the gap between the logo and the link list. Keyboard users
+   reveal it via :focus-within (Tab anywhere into the nav).
+   Mobile (≤900px) is untouched — the hamburger flow keeps working. */
+@media (hover: hover) and (pointer: fine) {
+  .nav-links {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-4px);
+    transition:
+      opacity .35s cubic-bezier(.4,0,.2,1),
+      transform .35s cubic-bezier(.4,0,.2,1),
+      visibility 0s linear .55s;
+  }
+  .nav-logo:hover + .nav-links,
+  .nav-links:hover,
+  .nav-inner:focus-within .nav-links {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+    transition:
+      opacity .35s cubic-bezier(.4,0,.2,1),
+      transform .35s cubic-bezier(.4,0,.2,1),
+      visibility 0s linear 0s;
+  }
+  /* Subtle affordance on the logo so the hover behaviour feels intentional */
+  .nav-logo {
+    transition: transform .25s ease, filter .25s ease;
+    cursor: pointer;
+  }
+  .nav-logo:hover {
+    transform: scale(1.04);
+    filter: drop-shadow(0 0 14px rgba(122,194,49,.35));
+  }
+}
 .nav-links a {
   /* Canonical nav link typography — was previously declared per page,
      which left 7 pages (offers, partners, business, legal, the 3 stream
