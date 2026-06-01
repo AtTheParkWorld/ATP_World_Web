@@ -1045,9 +1045,10 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             <span class="widget-action" id="wearablesSyncBtn" style="cursor:pointer">↻ Sync now</span>
           </div>
           <div class="widget-body">
-            <div style="font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6">
+            <div style="font-size:13px;color:var(--muted);margin-bottom:6px;line-height:1.6">
               Sync your watch / tracker to verify activity, climb the leaderboards, and unlock points for steps + workouts. Disconnect anytime.
             </div>
+            <div id="wearablesSyncStatus" style="font-size:11px;color:var(--muted);margin-bottom:14px;min-height:14px;line-height:1.4" aria-live="polite"></div>
             <div id="wearableProvidersList" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px"></div>
           </div>
         </div>
@@ -1621,6 +1622,12 @@ function showTab(name, btn) {
   // Clear the unread-notif badge when the member opens the Notifications
   // tab (also marks all server-side as read).
   if (name === 'notifications') { try { markAllRead(); } catch(e) {} }
+  // Devices: auto-sync every time the member opens the section. The
+  // pairing is persistent on the server (OAuth tokens stay valid); we
+  // just pull fresh data + push a sync request so the metrics reflect
+  // the latest workouts. On failure, the status line + the Sync Now
+  // button surface a clear retry path.
+  if (name === 'devices') { try { openDevicesTab(); } catch(e) {} }
   // Close the hamburger menu if it's open
   var menu = document.getElementById('profileMenu');
   if (menu) menu.classList.remove('open');
@@ -5361,24 +5368,106 @@ function skipFeedback() {
 // verified leaderboard. Defers heavy network calls until the user
 // opens the Devices tab so the rest of the profile stays snappy.
 var _WEARABLES_LOADED = false;
+var _WEARABLES_DATA = null;
+var _wearableSyncState = 'idle'; // 'idle' | 'syncing' | 'ok' | 'error'
+
 function loadWearables(force) {
-  if (_WEARABLES_LOADED && !force) return;
+  if (_WEARABLES_LOADED && !force) return Promise.resolve(_WEARABLES_DATA);
   var token = localStorage.getItem('atp_token') || '';
-  if (!token) return;
-  fetch('/api/wearables/me', { headers: { Authorization: 'Bearer ' + token } })
+  if (!token) return Promise.resolve(null);
+  // Wire up handlers once + always
+  _wireWearableHandlers();
+  return fetch('/api/wearables/me', { headers: { Authorization: 'Bearer ' + token } })
     .then(function(r){ return r.json(); })
     .then(function(d){
       _WEARABLES_LOADED = true;
+      _WEARABLES_DATA = d;
       renderWearableProviders(d.connections || [], d.available || []);
       renderWearableWeek(d.week || {}, d.today || {});
       renderWearableWorkouts(d.recent_workouts || []);
       renderWearableConsent(d.consent || {});
+      return d;
     })
-    .catch(function(){ /* table not migrated yet — silent */ });
-  // Leaderboard call in parallel
+    .catch(function(){ /* table not migrated yet — silent */ return null; });
+  // (leaderboard fetched separately in openDevicesTab)
+}
+
+// Called whenever the member opens the Devices tab. Pulls fresh /me data,
+// then — if there's at least one active connection — triggers a server
+// sync so the metrics reflect the latest activity. On sync failure, the
+// status line flips to "Sync failed — try again" and the manual Sync
+// Now button is highlighted so the member can retry.
+function openDevicesTab() {
   loadWearableLeaderboard();
-  // Wire up handlers once
   _wireWearableHandlers();
+  loadWearables(true).then(function(d){
+    var hasActive = !!(d && d.connections && d.connections.some(function(c){ return c.status === 'active'; }));
+    if (hasActive) autoSyncWearables();
+    else _setWearableSyncState('idle');
+  });
+}
+
+// Server-side sync triggered automatically when the Devices tab opens
+// (or manually via the "↻ Sync now" button). Always followed by a
+// fresh /me reload so the UI shows the latest data.
+function autoSyncWearables() {
+  var token = localStorage.getItem('atp_token') || '';
+  if (!token) return Promise.resolve();
+  _setWearableSyncState('syncing');
+  return fetch('/api/wearables/sync', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + token },
+  })
+    .then(function(r){
+      if (!r.ok) throw new Error('sync_' + r.status);
+      return r.json().catch(function(){ return {}; });
+    })
+    .then(function(){
+      _setWearableSyncState('ok');
+      return loadWearables(true);
+    })
+    .catch(function(){ _setWearableSyncState('error'); });
+}
+
+function _setWearableSyncState(state) {
+  _wearableSyncState = state;
+  var btn    = document.getElementById('wearablesSyncBtn');
+  var status = document.getElementById('wearablesSyncStatus');
+  if (!btn) return;
+  if (state === 'syncing') {
+    btn.textContent = '⏳ Syncing…';
+    btn.style.opacity = '0.55';
+    btn.style.pointerEvents = 'none';
+    if (status) { status.textContent = 'Auto-syncing your connected devices…'; status.style.color = 'var(--muted)'; }
+  } else if (state === 'ok') {
+    btn.textContent = '↻ Sync now';
+    btn.style.opacity = '1';
+    btn.style.pointerEvents = '';
+    if (status) {
+      status.textContent = '✓ Synced just now';
+      status.style.color = 'var(--green)';
+      // fade the success message after a few seconds so the line stays clean
+      setTimeout(function(){
+        var s = document.getElementById('wearablesSyncStatus');
+        if (s && s.textContent.indexOf('✓ Synced') === 0) s.textContent = '';
+      }, 4000);
+    }
+  } else if (state === 'error') {
+    btn.textContent = '↻ Try again';
+    btn.style.opacity = '1';
+    btn.style.pointerEvents = '';
+    btn.style.color = '#f5c042';
+    if (status) {
+      status.textContent = '⚠ Auto-sync failed — tap "↻ Try again" or check your connection.';
+      status.style.color = '#f5c042';
+    }
+  } else { // idle
+    btn.textContent = '↻ Sync now';
+    btn.style.opacity = '1';
+    btn.style.pointerEvents = '';
+    btn.style.color = '';
+    if (status) status.textContent = '';
+  }
 }
 
 function renderWearableProviders(connections, available) {
@@ -5525,12 +5614,9 @@ function _wireWearableHandlers() {
 
   var syncBtn = document.getElementById('wearablesSyncBtn');
   if (syncBtn) syncBtn.addEventListener('click', function(){
-    var token = localStorage.getItem('atp_token') || '';
-    syncBtn.textContent = 'Syncing…';
-    fetch('/api/wearables/sync', { method: 'POST', headers: { Authorization: 'Bearer ' + token } })
-      .then(function(r){ return r.json(); })
-      .then(function(){ loadWearables(true); syncBtn.textContent = '↻ Sync now'; })
-      .catch(function(){ syncBtn.textContent = '↻ Sync now'; });
+    // Reuse the same sync path the auto-sync uses, so the manual button
+    // gets identical success/error feedback.
+    autoSyncWearables();
   });
 
   var sel = document.getElementById('wearableLeaderboardMetric');

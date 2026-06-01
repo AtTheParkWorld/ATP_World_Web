@@ -389,12 +389,36 @@ router.post('/sync', authenticate, async (req, res, next) => {
   try {
     const { rows } = await query(`SELECT * FROM wearable_connections WHERE member_id=$1 AND status='active'`, [req.member.id]);
     let total = { workouts: 0, metrics: 0 };
+    const provider_results = [];
+    let any_ok = false;
     for (const c of rows) {
-      const r = await _syncOne(c, { force: true });
-      total.workouts += r.workouts;
-      total.metrics  += r.metrics;
+      try {
+        const r = await _syncOne(c, { force: true });
+        total.workouts += r.workouts;
+        total.metrics  += r.metrics;
+        provider_results.push({ provider: c.provider, ok: true, ...r });
+        any_ok = true;
+      } catch (e) {
+        // Partial success: log + report this provider as failed, keep
+        // going so a single broken integration (e.g. expired refresh
+        // token, provider outage) doesn't sink the whole sync.
+        console.warn('[wearables] sync failed for', c.provider, '-', e.message);
+        provider_results.push({ provider: c.provider, ok: false, error: e.message });
+      }
     }
-    res.json({ success: true, ...total, providers_synced: rows.length });
+    if (!rows.length) {
+      // No active connections — return 200 with the empty result so the
+      // client can render "nothing to sync" gracefully.
+      return res.json({ success: true, workouts: 0, metrics: 0, providers_synced: 0, provider_results: [] });
+    }
+    // 207 = Multi-Status when partial; 200 when all worked; 502 when all failed.
+    const status = any_ok ? (provider_results.every(p => p.ok) ? 200 : 207) : 502;
+    res.status(status).json({
+      success: any_ok,
+      ...total,
+      providers_synced: provider_results.filter(p => p.ok).length,
+      provider_results,
+    });
   } catch (err) { next(err); }
 });
 
