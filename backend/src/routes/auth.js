@@ -7,7 +7,24 @@ const { query, transaction } = require('../db');
 const emailService = require('../services/email');
 const referrals    = require('../services/referrals');
 const welcomeDiscount = require('../services/welcomeDiscount');
-const { authenticate, requireAdmin } = require('../middleware/auth');
+const { authenticate, requireAdmin, requireMaintenanceSecret } = require('../middleware/auth');
+
+// ── MAINTENANCE GATE ─────────────────────────────────────────
+// SECURITY (audit #10): every /migrate-*, /seed-*, /admin-backfill-*
+// route is irreversible on first run and would otherwise be callable
+// from the open internet. We mount the maintenance gate here, before
+// any of those routes are declared, so the gate runs first regardless
+// of route order in this file. The middleware short-circuits with 503
+// when MAINTENANCE_SECRET is unset (fail-closed) and 404 when the
+// header doesn't match — both deny without leaking route existence.
+router.use((req, res, next) => {
+  // Match prefixes for destructive / setup-only endpoints. Anything
+  // beginning with these labels requires the maintenance secret.
+  if (/^\/(migrate-|seed-|admin-backfill-|grant-admin|dedup-|admin-reset-)/.test(req.path)) {
+    return requireMaintenanceSecret(req, res, next);
+  }
+  next();
+});
 
 // ── HELPERS ───────────────────────────────────────────────────
 function generateJWT(memberId) {
@@ -3208,20 +3225,23 @@ router.post('/admin-backfill-welcome-discounts', async (req, res, next) => {
 
 module.exports = router;
 
-// ── POST /api/auth/grant-admin  (setup only) ──────────────────
-router.post('/grant-admin', async (req, res, next) => {
-  try {
-    const { email, setupKey } = req.body;
-    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
-      return res.status(401).json({ error: 'Invalid setup key' });
-    }
-    const { rows } = await query(
-      `UPDATE members SET is_admin=true WHERE LOWER(email)=LOWER($1) RETURNING id, email, first_name`,
-      [email]
-    );
-    if (!rows.length) return res.status(404).json({ error: 'Member not found' });
-    res.json({ success: true, member: rows[0] });
-  } catch (err) { next(err); }
+// ── POST /api/auth/grant-admin  (REMOVED — audit #10) ─────────
+// This route used to UPDATE members SET is_admin=true based on a
+// `setupKey` body field. With ADMIN_SETUP_KEY leaking through env or
+// logs, an attacker could silently promote any account. The route is
+// now gone: admin status is granted only via direct DB statement
+// (psql) by an operator with cluster access. Anything still calling
+// the route receives 410 Gone so legacy callers see a clear failure
+// rather than a silent 404.
+//
+// The maintenance gate above ALSO covers /grant-admin, so unauthorized
+// callers get 404 before reaching this handler — defense in depth.
+router.post('/grant-admin', (req, res) => {
+  console.warn('[security] /api/auth/grant-admin call rejected (route disabled). IP:', req.ip);
+  res.status(410).json({
+    error: 'This endpoint has been disabled. Grant admin access via direct database update.',
+    code:  'GONE',
+  });
 });
 
 // ── POST /api/auth/seed-sessions  (setup only) ───────────────

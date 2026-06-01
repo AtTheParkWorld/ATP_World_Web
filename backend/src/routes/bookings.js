@@ -142,64 +142,136 @@ router.post('/', authenticate, async (req, res, next) => {
       return res.status(409).json({ error: 'You already have a booking for this session' });
     }
 
-    // Check capacity
-    if (session.capacity) {
-      const { rows: countRows } = await query(
-        `SELECT COUNT(*) AS cnt FROM bookings
-         WHERE session_id=$1 AND status IN ('confirmed','pending_payment')`,
-        [session_id]
-      );
-      if (parseInt(countRows[0].cnt) >= session.capacity) {
-        // Add to waiting list
-        const { rows: posRows } = await query(
-          `SELECT COALESCE(MAX(position),0)+1 AS next_pos
-           FROM waiting_list WHERE session_id=$1`,
-          [session_id]
-        );
-        await query(
-          `INSERT INTO waiting_list (member_id, session_id, position)
-           VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`,
-          [req.member.id, session_id, posRows[0].next_pos]
-        );
-        return res.status(202).json({
-          status: 'waitlisted',
-          position: posRows[0].next_pos,
-          message: `Session is full. You are #${posRows[0].next_pos} on the waiting list.`,
-        });
-      }
-    }
-
     const { rows: mRows } = await query(
       'SELECT id, member_number, first_name, last_name, email, points_balance FROM members WHERE id=$1',
       [req.member.id]
     );
     const member = mRows[0];
 
-    // Paid session — create a pending booking and return payment options.
-    // Note: bookings.qr_code is NOT NULL and qr_token is NOT NULL UNIQUE
-    // in the legacy schema. Pending bookings don't have a real QR yet
-    // (it's generated on payment confirmation), so we insert a
-    // placeholder JSON marker + a fresh random token to satisfy the
-    // constraints. Both get overwritten by pay-with-points / Stripe
-    // webhook with the real values.
-    if (pricing.is_paid) {
-      const placeholderToken = 'pend_' + crypto.randomBytes(12).toString('hex');
-      const placeholderQr    = JSON.stringify({ pending: true, session: session.name });
-      const { rows } = await query(
-        `INSERT INTO bookings (member_id, session_id, qr_code, qr_token, status)
-         VALUES ($1,$2,$3,$4,'pending_payment')
-         ON CONFLICT (member_id, session_id)
-           DO UPDATE SET status='pending_payment', cancelled_at=NULL,
-                         qr_code=EXCLUDED.qr_code, qr_token=EXCLUDED.qr_token,
-                         payment_method=NULL, payment_amount=NULL,
-                         payment_currency=NULL, points_paid=NULL,
-                         stripe_session_id=NULL, paid_at=NULL
-         RETURNING *`,
-        [req.member.id, session_id, placeholderQr, placeholderToken]
+    // ──────────────────────────────────────────────────────────────
+    // SECURITY (audit #7 — booking capacity TOCTOU race)
+    //
+    // The pre-fix flow did: count bookings → if cnt < cap, insert.
+    // Two concurrent requests both saw `cnt = cap - 1`, both inserted,
+    // and the session went over capacity. There is no UNIQUE constraint
+    // that would catch this (the unique key is member_id+session_id,
+    // which prevents one member double-booking but not capacity
+    // overflow across distinct members).
+    //
+    // Fix: SELECT … FOR UPDATE on the session row at the start of a
+    // transaction. Concurrent attempts to book the SAME session
+    // serialise on the row lock; each request sees the true count and
+    // either claims a seat or falls through to the waitlist. The lock
+    // is released on commit/rollback at the end of the transaction.
+    //
+    // The waitlist position assignment is inside the same transaction
+    // so two concurrent waitlisters can't be assigned the same
+    // position either.
+    // ──────────────────────────────────────────────────────────────
+    const txResult = await transaction(async (client) => {
+      // Re-fetch the session row with a row lock. Even though we already
+      // have the session data in `session`, we need this query for its
+      // side effect (the lock) — Postgres serialises any other tx that
+      // also tries `SELECT … FOR UPDATE` on this row until we commit.
+      const { rows: lockRows } = await client.query(
+        `SELECT id, capacity, status FROM sessions WHERE id=$1 FOR UPDATE`,
+        [session_id]
       );
+      if (!lockRows.length) {
+        const e = new Error('Session not found'); e.status = 404; throw e;
+      }
+      if (lockRows[0].status !== 'upcoming') {
+        const e = new Error('Session is no longer available for booking');
+        e.status = 400; throw e;
+      }
+
+      // Re-check the existing booking inside the lock so the
+      // ON-CONFLICT path stays consistent with the count.
+      const { rows: existingInTx } = await client.query(
+        'SELECT id, status FROM bookings WHERE member_id=$1 AND session_id=$2',
+        [req.member.id, session_id]
+      );
+      if (existingInTx.length && existingInTx[0].status !== 'cancelled' &&
+          existingInTx[0].status !== 'pending_payment') {
+        const e = new Error('You already have a booking for this session');
+        e.status = 409; throw e;
+      }
+
+      const cap = lockRows[0].capacity;
+      if (cap) {
+        const { rows: countRows } = await client.query(
+          `SELECT COUNT(*) AS cnt FROM bookings
+            WHERE session_id=$1 AND status IN ('confirmed','pending_payment')`,
+          [session_id]
+        );
+        const cnt = parseInt(countRows[0].cnt, 10);
+        if (cnt >= cap) {
+          // Capacity exhausted — move to waiting list. Position
+          // assignment inside the same transaction so two concurrent
+          // waitlist attempts get sequential positions.
+          const { rows: posRows } = await client.query(
+            `SELECT COALESCE(MAX(position),0)+1 AS next_pos
+               FROM waiting_list WHERE session_id=$1 FOR UPDATE`,
+            [session_id]
+          );
+          await client.query(
+            `INSERT INTO waiting_list (member_id, session_id, position)
+               VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`,
+            [req.member.id, session_id, posRows[0].next_pos]
+          );
+          return { kind: 'waitlisted', position: posRows[0].next_pos };
+        }
+      }
+
+      // Capacity available — insert / upsert the booking.
+      if (pricing.is_paid) {
+        // Paid path: create pending booking + return payment options.
+        // bookings.qr_code is NOT NULL and qr_token is NOT NULL UNIQUE,
+        // so we insert a placeholder JSON + random token; both get
+        // overwritten on payment success.
+        const placeholderToken = 'pend_' + crypto.randomBytes(12).toString('hex');
+        const placeholderQr    = JSON.stringify({ pending: true, session: session.name });
+        const { rows: ins } = await client.query(
+          `INSERT INTO bookings (member_id, session_id, qr_code, qr_token, status)
+            VALUES ($1,$2,$3,$4,'pending_payment')
+            ON CONFLICT (member_id, session_id)
+              DO UPDATE SET status='pending_payment', cancelled_at=NULL,
+                            qr_code=EXCLUDED.qr_code, qr_token=EXCLUDED.qr_token,
+                            payment_method=NULL, payment_amount=NULL,
+                            payment_currency=NULL, points_paid=NULL,
+                            stripe_session_id=NULL, paid_at=NULL
+            RETURNING *`,
+          [req.member.id, session_id, placeholderQr, placeholderToken]
+        );
+        return { kind: 'pending_payment', row: ins[0] };
+      }
+
+      // Free path: insert as confirmed straight away.
+      const qrToken = crypto.randomBytes(16).toString('hex');
+      const qrData  = _buildQrPayload(member, session, qrToken);
+      const { rows: ins } = await client.query(
+        `INSERT INTO bookings (member_id, session_id, qr_code, qr_token, status)
+          VALUES ($1,$2,$3,$4,'confirmed')
+          ON CONFLICT (member_id, session_id)
+            DO UPDATE SET status='confirmed', qr_code=$3, qr_token=$4, cancelled_at=NULL
+          RETURNING *`,
+        [req.member.id, session_id, qrData, qrToken]
+      );
+      return { kind: 'confirmed', row: ins[0], qrData, qrToken };
+    });
+
+    if (txResult.kind === 'waitlisted') {
       return res.status(202).json({
-        booking: rows[0],
-        status: 'pending_payment',
+        status: 'waitlisted',
+        position: txResult.position,
+        message: `Session is full. You are #${txResult.position} on the waiting list.`,
+      });
+    }
+
+    if (txResult.kind === 'pending_payment') {
+      return res.status(202).json({
+        booking: txResult.row,
+        status:  'pending_payment',
         payment_options: {
           ...pricing,
           points_balance:    member.points_balance || 0,
@@ -208,23 +280,15 @@ router.post('/', authenticate, async (req, res, next) => {
       });
     }
 
-    // Free session — original flow.
-    const qrToken = crypto.randomBytes(16).toString('hex');
-    const qrData = _buildQrPayload(member, session, qrToken);
+    // Confirmed → send confirmation email outside the tx (network).
+    await emailService.sendBookingConfirmation(member, session, txResult.qrData, txResult.qrToken)
+      .catch(function(){ /* email failure shouldn't reverse a confirmed booking */ });
 
-    const { rows } = await query(
-      `INSERT INTO bookings (member_id, session_id, qr_code, qr_token, status)
-       VALUES ($1,$2,$3,$4,'confirmed')
-       ON CONFLICT (member_id, session_id)
-         DO UPDATE SET status='confirmed', qr_code=$3, qr_token=$4, cancelled_at=NULL
-       RETURNING *`,
-      [req.member.id, session_id, qrData, qrToken]
-    );
-
-    await emailService.sendBookingConfirmation(member, session, qrData, qrToken);
-
-    res.status(201).json({ booking: rows[0], qrData, qrToken });
-  } catch (err) { next(err); }
+    res.status(201).json({ booking: txResult.row, qrData: txResult.qrData, qrToken: txResult.qrToken });
+  } catch (err) {
+    if (err && err.status) return res.status(err.status).json({ error: err.message });
+    next(err);
+  }
 });
 
 // ── POST /api/bookings/:id/pay-with-points ─────────────────────
@@ -362,6 +426,20 @@ router.post('/:id/checkout', authenticate, async (req, res, next) => {
     const dt = b.scheduled_at ? new Date(b.scheduled_at).toLocaleDateString('en-AE',
       { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Dubai' })
       : '';
+    // SECURITY / RELIABILITY (audit #6 — Stripe idempotency)
+    // ----------------------------------------------------------------
+    // We pass an Idempotency-Key so that retries from the same user (or
+    // accidental duplicate POSTs from the browser) return the SAME
+    // Stripe Checkout Session instead of opening a new one and charging
+    // twice. Stripe stores idempotency keys for 24h — within that
+    // window the request body must match exactly, which it will because
+    // amount/currency/customer are all derived from the same booking
+    // row. Outside the window a fresh session is created naturally.
+    //
+    // Key shape: `bk_checkout_<bookingId>`. The booking id is a uuid so
+    // it's unique per checkout flow and per member (we authorise the
+    // booking belongs to req.member.id above).
+    const idempotencyKey = `bk_checkout_${b.id}`;
     const session = await stripeLib.checkout.sessions.create({
       mode: 'payment',
       customer: customerId,
@@ -385,7 +463,7 @@ router.post('/:id/checkout', authenticate, async (req, res, next) => {
         member_id:  req.member.id,
         session_id: b.session_id,
       },
-    });
+    }, { idempotencyKey });
 
     // Stash the session id on the booking so we can dedup on webhook arrival.
     await query(

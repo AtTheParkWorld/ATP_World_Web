@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { query, transaction } = require('../db');
-const { authenticate, requireAdmin } = require('../middleware/auth');
+const { authenticate, requireAdmin, requireMaintenanceSecret, _safeEqual } = require('../middleware/auth');
 
 // ── GET /api/points/balance ───────────────────────────────────
 router.get('/balance', authenticate, async (req, res, next) => {
@@ -131,12 +131,31 @@ router.post('/admin-adjust', authenticate, requireAdmin, async (req, res, next) 
 });
 
 // ── POST /api/points/expire — System job: expire old points ──
-// Called by a cron job
+// Called by a cron job.
+//
+// SECURITY (audit #10): the previous version did a naive `!==`
+// compare against ADMIN_SETUP_KEY in the `x-internal-key` header.
+// Two problems: (1) string equality is timing-attack vulnerable and
+// (2) ADMIN_SETUP_KEY was also reused by the (now removed)
+// grant-admin route, so one leak compromised two surfaces.
+//
+// New behaviour: route is gated by the shared maintenance secret
+// (X-Maintenance-Secret), compared in constant time. Cron jobs must
+// be updated to send MAINTENANCE_SECRET; the legacy x-internal-key
+// header is accepted *only* as a transitional fallback (also
+// constant-time compared) and will be removed once Render's cron
+// envs are rotated.
 router.post('/expire', async (req, res, next) => {
   try {
-    // Only callable internally or by admin
-    const secret = req.headers['x-internal-key'];
-    if (secret !== process.env.ADMIN_SETUP_KEY) {
+    const maintHeader  = String(req.headers['x-maintenance-secret'] || '');
+    const legacyHeader = String(req.headers['x-internal-key'] || '');
+    const expectedMaint  = process.env.MAINTENANCE_SECRET || '';
+    const expectedLegacy = process.env.ADMIN_SETUP_KEY || '';
+    const ok =
+      (expectedMaint  && _safeEqual(maintHeader,  expectedMaint))  ||
+      (expectedLegacy && _safeEqual(legacyHeader, expectedLegacy));
+    if (!ok) {
+      console.warn('[security] /api/points/expire rejected (bad/missing secret). IP:', req.ip);
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
