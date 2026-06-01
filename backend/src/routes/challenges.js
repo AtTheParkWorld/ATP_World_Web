@@ -56,6 +56,72 @@ router.get('/', optionalAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// GET /api/challenges/:id/my-progress — transparent breakdown of how the
+// member's wearable data maps onto a device-based challenge. Shows the
+// window, every workout inside it (with its contribution), every workout
+// just outside it (so a member who synced runs in May for a June
+// challenge can see "these don't count yet"), and the current stored
+// progress. Used by the member-side debug button + helpful when
+// support investigates "why is my progress 0?".
+router.get('/:id/my-progress', authenticate, async (req, res, next) => {
+  try {
+    const { rows: cRows } = await query(
+      `SELECT id, title, metric, device_metric, target, unit, starts_at, ends_at, status
+         FROM challenges WHERE id = $1`,
+      [req.params.id]
+    );
+    if (!cRows.length) return res.status(404).json({ error: 'Challenge not found' });
+    const c = cRows[0];
+    const isDevice = challengeProgress.isDeviceMetric(c.device_metric || c.metric);
+    if (!isDevice) {
+      return res.json({ challenge: c, requires_device: false, message: 'Not a device-tracked challenge.' });
+    }
+    // Force a fresh recompute and read back the stored progress.
+    let recomputed = null;
+    try {
+      recomputed = await challengeProgress.recomputeForChallenge(req.member.id, c);
+    } catch (e) {
+      recomputed = { error: e.message };
+    }
+    // Pull the in-window + just-outside workouts so the member sees
+    // exactly what does/doesn't count.
+    const { rows: inWindow } = await query(
+      `SELECT id, provider, workout_type, started_at, duration_s, distance_m, calories
+         FROM wearable_workouts
+        WHERE member_id = $1
+          AND started_at >= $2 AND started_at <= $3
+        ORDER BY started_at DESC`,
+      [req.member.id, c.starts_at, c.ends_at]
+    );
+    const { rows: nearWindow } = await query(
+      `SELECT id, provider, workout_type, started_at, duration_s, distance_m, calories
+         FROM wearable_workouts
+        WHERE member_id = $1
+          AND (started_at < $2 OR started_at > $3)
+          AND started_at >= ($2::timestamptz - INTERVAL '30 days')
+          AND started_at <= ($3::timestamptz + INTERVAL '30 days')
+        ORDER BY started_at DESC
+        LIMIT 25`,
+      [req.member.id, c.starts_at, c.ends_at]
+    );
+    const { rows: pRows } = await query(
+      `SELECT progress, completed, joined_at FROM challenge_participants WHERE challenge_id=$1 AND member_id=$2`,
+      [req.params.id, req.member.id]
+    );
+    res.json({
+      challenge: c,
+      requires_device: true,
+      joined: pRows.length > 0,
+      participant: pRows[0] || null,
+      window: { starts_at: c.starts_at, ends_at: c.ends_at },
+      recomputed,
+      workouts_in_window: inWindow,
+      workouts_near_window_excluded: nearWindow,
+      server_now: new Date().toISOString(),
+    });
+  } catch (err) { next(err); }
+});
+
 // GET /api/challenges/:id/leaderboard
 router.get('/:id/leaderboard', optionalAuth, async (req, res, next) => {
   try {
@@ -227,7 +293,8 @@ router.post('/:id/join', authenticate, async (req, res, next) => {
 
     // Device-based challenge? Recompute the member's progress now so any
     // wearable activity already inside the window counts from join time.
-    // Best-effort — never fail the join because of a recompute hiccup.
+    // Best-effort — never fail the join because of a recompute hiccup,
+    // but DO log so we can see why it failed.
     let initial_progress = 0;
     let requires_device  = false;
     if (challengeProgress.isDeviceMetric(c.device_metric || c.metric)) {
@@ -235,7 +302,10 @@ router.post('/:id/join', authenticate, async (req, res, next) => {
       try {
         const r = await challengeProgress.recomputeForChallenge(req.member.id, c);
         if (r && typeof r.progress === 'number') initial_progress = r.progress;
-      } catch (e) { /* swallow — sync will catch up later */ }
+      } catch (e) {
+        console.warn('[challenges.join] initial recompute failed for member',
+          req.member.id, 'challenge', c.id, '-', e.message);
+      }
     }
 
     res.status(201).json({
