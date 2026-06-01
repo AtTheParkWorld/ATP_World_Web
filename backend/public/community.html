@@ -1055,17 +1055,87 @@ function joinChallenge(id, btn) {
     // Already joined — no leave endpoint; surface progress only
     return;
   }
+  // Device-based challenge? Make sure the member has at least one
+  // active paired device before joining. If not, surface a modal that
+  // routes them to /profile → Devices to connect one. They can also
+  // choose to join anyway (their progress just stays at 0 until they
+  // pair a device).
+  if (c.requiresDevice) {
+    _checkPairedDevice().then(function(hasDevice){
+      if (hasDevice) {
+        _actuallyJoinChallenge(c, btn);
+      } else {
+        _openDevicePromptModal(c, btn);
+      }
+    }).catch(function(){
+      // Couldn't check — fall back to joining (better than blocking).
+      _actuallyJoinChallenge(c, btn);
+    });
+    return;
+  }
+  _actuallyJoinChallenge(c, btn);
+}
+
+function _actuallyJoinChallenge(c, btn) {
   if (btn) { btn.disabled = true; btn.textContent = 'Joining…'; }
   apiPost('/challenges/' + c.id + '/join')
-    .then(function(){
+    .then(function(resp){
       c.joined = true;
       c.participants = (c.participants || 0) + 1;
+      // Server may have backfilled progress from existing wearable data
+      // when the challenge window already overlapped a recent workout.
+      if (resp && typeof resp.initial_progress === 'number') {
+        c.done = resp.initial_progress;
+      }
       renderChallenges();
     })
     .catch(function(err){
       if (btn) { btn.disabled = false; btn.textContent = 'Join Challenge'; }
       alert('Could not join challenge: ' + (err && err.message ? err.message : 'Please try again.'));
     });
+}
+
+// Returns a Promise<bool> — true if the member has at least one active
+// wearable_connection. We hit /api/wearables/me which already returns
+// the connection list. Falls back to "unknown → false" on any error.
+function _checkPairedDevice() {
+  return apiGet('/wearables/me').then(function(d){
+    var conns = (d && d.connections) || [];
+    return conns.some(function(x){ return x && x.status === 'active'; });
+  }).catch(function(){ return false; });
+}
+
+// Modal shown when a member tries to join a device-based challenge
+// without a paired device. Two CTAs: connect a device (→ profile) or
+// join anyway. Closes on overlay click or ESC.
+function _openDevicePromptModal(c, btn) {
+  var existing = document.getElementById('chalDeviceModal');
+  if (existing) existing.remove();
+  var unit = (c.unit || 'units').toString();
+  var wrap = document.createElement('div');
+  wrap.id = 'chalDeviceModal';
+  wrap.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(8px);z-index:600;display:flex;align-items:center;justify-content:center;padding:20px;animation:fadeIn .2s ease';
+  wrap.innerHTML =
+    '<div style="background:#0d0d0d;border:1px solid rgba(122,194,49,.32);border-radius:16px;padding:32px 32px 28px;max-width:520px;width:100%;position:relative;text-align:center">' +
+      '<button type="button" id="chalDeviceClose" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#888;font-size:26px;cursor:pointer;line-height:1">×</button>' +
+      '<div style="font-size:38px;margin-bottom:14px">⌚</div>' +
+      '<h2 style="font-family:var(--ff-display,sans-serif);font-size:26px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;color:#fff;line-height:1.1;margin-bottom:10px">Pair a device to track this challenge</h2>' +
+      '<p style="font-size:14px;color:#bbb;line-height:1.6;margin-bottom:18px">"' + (c.title || c.name || 'This challenge').replace(/</g,'&lt;') + '" is validated against ' + unit + ' from a paired device — Strava, Fitbit, Polar, Apple Health or your phone. <strong style="color:#7AC231">Connect one to get full credit on the leaderboard.</strong></p>' +
+      '<p style="font-size:12px;color:#888;line-height:1.5;margin-bottom:24px">You can still join now — your progress just stays at 0 until a device is paired and synced.</p>' +
+      '<div style="display:flex;gap:10px;flex-wrap:wrap;justify-content:center">' +
+        '<a href="/profile.html#devices" id="chalDeviceConnect" style="display:inline-flex;align-items:center;gap:8px;background:#7AC231;color:#0a0a0a;padding:12px 20px;border-radius:8px;font-weight:700;font-size:13px;text-decoration:none;letter-spacing:.02em">Connect a device →</a>' +
+        '<button type="button" id="chalDeviceContinue" style="background:transparent;border:1px solid rgba(255,255,255,.2);color:#fff;padding:12px 20px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer">Join anyway</button>' +
+      '</div>' +
+    '</div>';
+  wrap.addEventListener('click', function(ev){ if (ev.target === wrap) wrap.remove(); });
+  document.body.appendChild(wrap);
+  document.getElementById('chalDeviceClose').addEventListener('click', function(){ wrap.remove(); });
+  document.getElementById('chalDeviceContinue').addEventListener('click', function(){
+    wrap.remove();
+    _actuallyJoinChallenge(c, btn);
+  });
+  var esc = function(e){ if (e.key === 'Escape') { wrap.remove(); document.removeEventListener('keydown', esc); } };
+  document.addEventListener('keydown', esc);
 }
 
 function renderSidebarChallenges() {
@@ -1435,6 +1505,7 @@ async function loadChallenges() {
         joined:       !!c.joined,
         done:         parseInt(c.my_progress) || 0,
         pointsReward: parseInt(c.points_reward) || 0,
+        requiresDevice: !!c.requires_device,
       };
     });
     CHALLENGES = list;

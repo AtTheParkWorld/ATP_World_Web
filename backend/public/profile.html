@@ -6544,6 +6544,25 @@ authLoadUser();
 if(atpUser) renderAuthNav(atpUser);
 checkAmbassadorRole();
 
+// Hash-routed initial tab — lets a deep link like /profile.html#devices
+// land directly on the right section. Used by the challenges flow on
+// community.html to nudge unpaired members to the Devices tab.
+(function _initTabFromHash(){
+  var raw = (location.hash || '').replace(/^#/, '').trim();
+  if (!raw) return;
+  // Whitelist the known tab keys so a hostile hash can't trigger
+  // unexpected behaviour.
+  var known = ['overview','sessions','community','challenges','offers','wallet',
+               'achievements','devices','friends','myposts','notifications','feedback','settings'];
+  if (known.indexOf(raw) === -1) return;
+  try { showTab(raw); } catch(e) {}
+})();
+window.addEventListener('hashchange', function(){
+  var raw = (location.hash || '').replace(/^#/, '').trim();
+  if (!raw) return;
+  try { showTab(raw); } catch(e) {}
+});
+
 // Auth modal click + Escape handlers are owned by ATPComponents now —
 // the per-page #authOverlay element is gone, so the legacy listeners
 // would have errored on init.

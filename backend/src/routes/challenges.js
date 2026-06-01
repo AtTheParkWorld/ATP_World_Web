@@ -3,6 +3,17 @@ const router = require('express').Router();
 const { query, transaction } = require('../db');
 const { authenticate, requireAdmin, optionalAuth } = require('../middleware/auth');
 const audit = require('../services/audit');
+const challengeProgress = require('../services/challengeProgress');
+
+// Decorate a row coming out of the SELECT (or any plain object) with a
+// `requires_device` flag — true when the challenge's metric is one we
+// validate against wearable data. The community client uses this to
+// nudge the member to connect a device at the join step.
+function _decorate(row) {
+  if (!row) return row;
+  row.requires_device = challengeProgress.isDeviceMetric(row.device_metric || row.metric);
+  return row;
+}
 
 // GET /api/challenges — list (admin sees all, members see published active ones)
 router.get('/', optionalAuth, async (req, res, next) => {
@@ -41,7 +52,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
        ${orderBy}`,
       params
     );
-    res.json({ challenges: rows });
+    res.json({ challenges: rows.map(_decorate) });
   } catch (err) { next(err); }
 });
 
@@ -157,9 +168,13 @@ router.patch('/:id', authenticate, requireAdmin, async (req, res, next) => {
 // POST /api/challenges/:id/join — Theme 6 / #15: charge entry fee in ATP points
 router.post('/:id/join', authenticate, async (req, res, next) => {
   try {
-    // Pull the challenge — must be active, not closed/cancelled, in window
+    // Pull the challenge — must be active, not closed/cancelled, in window.
+    // Also pull the device-metric fields so we can recompute progress
+    // immediately after joining (catches any wearable activity that
+    // already falls within the challenge window).
     const { rows: cRows } = await query(
-      `SELECT id, status, entry_cost_points, ends_at, title
+      `SELECT id, status, entry_cost_points, ends_at, title,
+              metric, device_metric, starts_at, target
        FROM challenges WHERE id=$1`,
       [req.params.id]
     );
@@ -210,7 +225,25 @@ router.post('/:id/join', authenticate, async (req, res, next) => {
       );
     });
 
-    res.status(201).json({ message: 'Joined challenge', entry_paid_points: fee });
+    // Device-based challenge? Recompute the member's progress now so any
+    // wearable activity already inside the window counts from join time.
+    // Best-effort — never fail the join because of a recompute hiccup.
+    let initial_progress = 0;
+    let requires_device  = false;
+    if (challengeProgress.isDeviceMetric(c.device_metric || c.metric)) {
+      requires_device = true;
+      try {
+        const r = await challengeProgress.recomputeForChallenge(req.member.id, c);
+        if (r && typeof r.progress === 'number') initial_progress = r.progress;
+      } catch (e) { /* swallow — sync will catch up later */ }
+    }
+
+    res.status(201).json({
+      message: 'Joined challenge',
+      entry_paid_points: fee,
+      requires_device,
+      initial_progress,
+    });
   } catch (err) {
     if (err.status) return res.status(err.status).json({ error: err.message });
     next(err);
