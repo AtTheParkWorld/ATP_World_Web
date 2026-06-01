@@ -432,35 +432,42 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
 }
 
 /* ════════════════════════════════════════════════════════════════
- * NAV IGNITION — premium page-load reveal
+ * NAV IGNITION — hover-triggered reveal, hover-latched visibility
  *
- * On each page load the nav comes alive in four coordinated beats:
+ * Default state: the link list is hidden. When the cursor enters
+ * the ATP logo, the ignite sequence fires:
  *
- *   1. The ATP logo ignites — fades + scales in with a brief green
- *      halo, signalling the start of the sequence.
- *   2. A glowing ATP-green streak emerges from the logo and travels
- *      smoothly across the navbar. Two layers: a sharp bright "fuse"
- *      head + a soft trailing halo that dissipates behind it.
- *   3. Each <li> in .nav-links lights up the instant the streak
- *      passes over it — a brief brightness flare that settles into
- *      the standard text colour. Timing is staggered via :nth-child.
- *   4. The auth chunk (.nav-actions) fades in at the tail so the
- *      whole row feels "powered up" at the end.
+ *   1. The logo flares — brief green halo + scale pulse.
+ *   2. A glowing green streak emerges from the logo and travels
+ *      across the navbar — sharp fuse head + soft trailing halo.
+ *   3. Each .nav-links <li> lights up the instant the streak
+ *      passes over it, via staggered :nth-child animation-delay.
  *
- * Everything uses GPU-friendly properties (transform / opacity /
- * filter). Runs once with animation-fill-mode: both. Skipped
- * wholesale under prefers-reduced-motion. Hover affordance on the
- * logo is preserved for ongoing interaction. */
+ * Once revealed the links STAY visible while the cursor is anywhere
+ * on the nav (#nav:has(:hover)) — so you can move from logo to a
+ * link and click it without it disappearing. The moment the cursor
+ * leaves the nav entirely, everything fades back out with a small
+ * grace delay so a quick re-entry doesn't snap.
+ *
+ * Key architectural detail:
+ *   · The ignite ANIMATIONS fire only on .nav-logo:hover (via :has()).
+ *     Moving between revealed links doesn't re-trigger the stagger.
+ *   · The "stay visible" state is a separate transition latch driven
+ *     by #nav:has(:hover) and :focus-within. The animation's end
+ *     state seamlessly hands off to this latched state.
+ *
+ * GPU-only properties (transform / opacity / filter). Streak's
+ * 100cqw end-point resolves to the nav's own width via the inline
+ * container query on .nav-inner. Skipped under prefers-reduced-motion. */
 
 /* Containerize the nav-inner so the streak's 100cqw translation
    resolves to the nav's own width, not the viewport. */
 .nav-inner { position: relative; container-type: inline-size; }
 
-/* — Logo ignites first ─────────────────────────────────────── */
-.nav-logo {
-  opacity: 0;
-  animation: nav-logo-ignite .55s cubic-bezier(.34, 1.56, .64, 1) both;
-}
+/* — Logo: cursor affordance only. Ignite animation is wired under
+     .nav-inner:has(.nav-logo:hover) below so it triggers on hover,
+     not on page load. */
+.nav-logo { cursor: pointer; }
 @keyframes nav-logo-ignite {
   0%   { opacity: 0; transform: scale(.92);
          filter: drop-shadow(0 0 0 rgba(122,194,49,0)); }
@@ -488,7 +495,6 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
   transform: translateX(-240px);
   opacity: 0;
   z-index: 2;
-  animation: nav-trail-sweep 2s cubic-bezier(.22, .61, .36, 1) .5s both;
   will-change: transform, opacity;
 }
 
@@ -507,8 +513,21 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
   transform: translateX(-300px);
   opacity: 0;
   z-index: 1;
-  animation: nav-trail-halo 2s cubic-bezier(.22, .61, .36, 1) .5s both;
   will-change: transform, opacity;
+}
+
+/* Both streak layers fire only when the LOGO is hovered.
+   :has() lets the rule target the parent's pseudo-elements based on
+   the logo's hover state without touching DOM order. */
+.nav-inner:has(.nav-logo:hover)::after {
+  animation: nav-trail-sweep 1.9s cubic-bezier(.22, .61, .36, 1) both;
+}
+.nav-inner:has(.nav-logo:hover)::before {
+  animation: nav-trail-halo  1.9s cubic-bezier(.22, .61, .36, 1) both;
+}
+/* And the logo flares the same moment */
+.nav-inner:has(.nav-logo:hover) .nav-logo {
+  animation: nav-logo-ignite .55s cubic-bezier(.34, 1.56, .64, 1) both;
 }
 
 @keyframes nav-trail-sweep {
@@ -524,24 +543,42 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
   100% { transform: translateX(calc(100cqw - 40px)); opacity: 0; }
 }
 
-/* — Each link ignites as the streak passes ────────────────── */
+/* — Default: links hidden, with a graceful out-transition.
+     transition-delay buys a grace period so the cursor can travel
+     from the logo to the link list without an early hide. */
 .nav-links li {
   opacity: 0;
   transform: translateY(-3px);
+  pointer-events: none;
+  transition:
+    opacity .35s cubic-bezier(.4, 0, .2, 1),
+    transform .35s cubic-bezier(.4, 0, .2, 1);
+  transition-delay: .25s;
+}
+/* — Latched VISIBLE state — kept on while the cursor is anywhere
+     on the nav (or while keyboard focus is inside it). This is the
+     "stay-visible-after-the-streak-passes" half of the design. */
+#nav:has(:hover) .nav-links li,
+#nav:focus-within .nav-links li {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+/* — Ignite STAGGER — only fires on direct logo hover. Moving the
+     cursor between revealed links doesn't re-fire this. */
+.nav-inner:has(.nav-logo:hover) .nav-links li {
   animation: nav-li-flare .55s cubic-bezier(.4, 0, .2, 1) both;
 }
-/* Stagger delays so the flare keys to the streak's horizontal
-   position. The constants below time-line up with the 2s sweep
-   that starts at .5s. */
-.nav-links li:nth-child(1) { animation-delay: .80s; }
-.nav-links li:nth-child(2) { animation-delay: .95s; }
-.nav-links li:nth-child(3) { animation-delay: 1.10s; }
-.nav-links li:nth-child(4) { animation-delay: 1.25s; }
-.nav-links li:nth-child(5) { animation-delay: 1.40s; }
-.nav-links li:nth-child(6) { animation-delay: 1.55s; }
-.nav-links li:nth-child(7) { animation-delay: 1.70s; }
-.nav-links li:nth-child(8) { animation-delay: 1.85s; }
-.nav-links li:nth-child(9) { animation-delay: 2.00s; }
+.nav-inner:has(.nav-logo:hover) .nav-links li:nth-child(1) { animation-delay: .30s; }
+.nav-inner:has(.nav-logo:hover) .nav-links li:nth-child(2) { animation-delay: .44s; }
+.nav-inner:has(.nav-logo:hover) .nav-links li:nth-child(3) { animation-delay: .58s; }
+.nav-inner:has(.nav-logo:hover) .nav-links li:nth-child(4) { animation-delay: .72s; }
+.nav-inner:has(.nav-logo:hover) .nav-links li:nth-child(5) { animation-delay: .86s; }
+.nav-inner:has(.nav-logo:hover) .nav-links li:nth-child(6) { animation-delay: 1.00s; }
+.nav-inner:has(.nav-logo:hover) .nav-links li:nth-child(7) { animation-delay: 1.14s; }
+.nav-inner:has(.nav-logo:hover) .nav-links li:nth-child(8) { animation-delay: 1.28s; }
+.nav-inner:has(.nav-logo:hover) .nav-links li:nth-child(9) { animation-delay: 1.42s; }
 @keyframes nav-li-flare {
   0%   { opacity: 0; transform: translateY(-3px);
          filter: brightness(2.2) drop-shadow(0 0 10px rgba(122,194,49,.9)); }
@@ -551,46 +588,24 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
          filter: brightness(1)   drop-shadow(0 0 0   rgba(122,194,49,0)); }
 }
 
-/* — Auth chunk joins at the end ────────────────────────────── */
-.nav-actions {
-  opacity: 0;
-  animation: nav-actions-fade .55s cubic-bezier(.4, 0, .2, 1) 2.05s both;
-}
-@keyframes nav-actions-fade {
-  from { opacity: 0; transform: translateX(6px); }
-  to   { opacity: 1; transform: translateX(0); }
-}
+/* .nav-actions stays visible at all times — the auth chunk
+   (avatar/name/logout or Log in / Join free) is always reachable,
+   even when the link list is hidden. */
 
-/* Hover affordance on the logo — preserved from the previous
-   iteration. Desktop only; transitions don't fight the ignite
-   animation because the latter runs first then settles. */
-@media (hover: hover) and (pointer: fine) {
-  .nav-logo {
-    cursor: pointer;
-    transition: transform .25s ease, filter .25s ease;
-  }
-  .nav-logo:hover {
-    transform: scale(1.04);
-    filter: drop-shadow(0 0 14px rgba(122,194,49,.35));
-  }
-}
-
-/* Accessibility — anyone who's opted out of motion gets the final
-   state instantly. No streak, no flares, no logo ignite. */
+/* Accessibility — reduced-motion users keep the hover-reveal
+   pattern but drop the spectacle. No streak, no flares, no scale
+   pulse: links snap to visible on hover and snap to hidden on leave. */
 @media (prefers-reduced-motion: reduce) {
-  .nav-logo,
-  .nav-links li,
-  .nav-actions {
+  .nav-links li { transition-duration: 0s; transition-delay: 0s; }
+  .nav-inner:has(.nav-logo:hover) .nav-logo,
+  .nav-inner:has(.nav-logo:hover) .nav-links li {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
     filter: none !important;
   }
   .nav-inner::before,
-  .nav-inner::after {
-    animation: none !important;
-    display: none !important;
-  }
+  .nav-inner::after { display: none !important; }
 }
 .nav-links a {
   /* Canonical nav link typography — was previously declared per page,
