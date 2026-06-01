@@ -103,28 +103,143 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 .sessions-main{padding:48px 40px 100px;max-width:var(--max);margin:0 auto}
 .sessions-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;gap:16px;flex-wrap:wrap}
 .sessions-count{font-size:13px;color:var(--muted)}
-.sessions-count strong{color:var(--white);font-weight:600}
-.day-filters{display:flex;gap:6px;flex-wrap:wrap}
-.day-btn{font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--muted);cursor:pointer;transition:all .2s;letter-spacing:.03em}
-.day-btn.active,.day-btn:hover{border-color:var(--green);color:var(--green);background:rgba(122,194,49,.08)}
-.sessions-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.sessions-count strong{color:var(--white);font-weight:700}
+
+/* Day-of-week filter chips with glow on active */
+.day-filters{display:flex;gap:8px;flex-wrap:wrap}
+.day-btn{
+  font-size:11.5px;font-weight:700;padding:8px 16px;border-radius:99px;
+  border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.02);
+  color:var(--light);cursor:pointer;letter-spacing:.06em;text-transform:uppercase;
+  transition:transform .2s, color .2s, border-color .25s, background .25s, box-shadow .25s;
+}
+.day-btn:hover{color:#fff;border-color:rgba(255,255,255,.18);transform:translateY(-1px)}
+.day-btn.active{
+  color:#0a0a0a;background:var(--green);border-color:var(--green);
+  box-shadow:0 0 0 6px rgba(122,194,49,.10), 0 8px 18px -6px rgba(122,194,49,.4);
+}
+
+/* List grid — 2 columns gives each card more room to breathe */
+.sessions-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}
+@media(max-width:980px){.sessions-grid{grid-template-columns:1fr}}
 .empty-state{grid-column:1/-1;text-align:center;padding:80px 20px;color:var(--muted)}
 .empty-state h3{font-family:var(--ff-display);font-size:28px;font-weight:900;text-transform:uppercase;color:var(--white);margin-bottom:8px}
-.session-card{background:var(--dark2);border-radius:var(--radius-lg);padding:24px;border:1px solid rgba(255,255,255,.06);cursor:pointer;transition:border-color .25s,transform .2s;position:relative;overflow:hidden}
-.session-card::before{content:'';position:absolute;top:0;left:0;width:3px;height:100%;background:var(--green);opacity:0;transition:opacity .25s}
-.session-card:hover{border-color:rgba(122,194,49,.3);transform:translateY(-3px)}
-.session-card:hover::before{opacity:1}
-.sc-tribe{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
-.sc-tribe.better{color:#a8e055}
-.sc-tribe.faster{color:#7AC231}
-.sc-tribe.stronger{color:#f59e0b}
-.sc-name{font-family:var(--ff-display);font-size:26px;font-weight:900;text-transform:uppercase;color:var(--white);margin-bottom:6px;line-height:1}
-.sc-time{font-size:13px;font-weight:600;color:var(--green);margin-bottom:4px;display:flex;align-items:center;gap:6px}
-.sc-time::before{content:'';display:block;width:6px;height:6px;border-radius:50%;background:var(--green)}
-.sc-coach{font-size:13px;color:var(--muted);margin-bottom:8px}
-.sc-loc{font-size:12px;color:var(--light);display:flex;align-items:center;gap:5px}
-.sc-loc::before{content:"◈";color:var(--green);font-size:10px}
-.sc-free{position:absolute;top:16px;right:16px;font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 10px;border-radius:20px;background:rgba(122,194,49,.12);color:var(--green);border:1px solid rgba(122,194,49,.2)}
+/* ── SESSION CARD — depth-layered, cursor-spotlit, tilt-on-hover ───
+   3-zone layout: left day-block (Bebas display), center session info,
+   right meta. Tribe-colored accent rail on left, tribe-tinted radial
+   spotlight following the cursor. JS attaches a perspective tilt on
+   hover-capable devices; coarse pointers get the static composition. */
+.session-card{
+  --tribe:#7AC231;
+  --spot-x:50%; --spot-y:50%;
+  position:relative;
+  display:grid;
+  grid-template-columns:108px 1fr auto;
+  gap:18px;
+  align-items:center;
+  padding:18px 22px 18px 18px;
+  min-height:128px;
+  background:
+    radial-gradient(220px 220px at var(--spot-x) var(--spot-y), rgba(122,194,49,.10), transparent 60%),
+    linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)),
+    var(--dark2);
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:18px;
+  cursor:pointer;
+  overflow:hidden;
+  transform-style:preserve-3d;
+  transition:transform .35s cubic-bezier(.2,.7,.2,1), border-color .25s, box-shadow .35s;
+  will-change:transform;
+  isolation:isolate;
+}
+.session-card::before{
+  /* Tribe-colored left rail — glows on hover */
+  content:'';position:absolute;left:0;top:14px;bottom:14px;width:3px;border-radius:0 3px 3px 0;
+  background:linear-gradient(180deg, var(--tribe), transparent 90%);
+  opacity:.55;transition:opacity .3s, box-shadow .3s;
+}
+.session-card::after{
+  /* Bottom soft glow only on hover */
+  content:'';position:absolute;left:8%;right:8%;bottom:-18px;height:36px;
+  background:radial-gradient(ellipse at center, var(--tribe), transparent 70%);
+  filter:blur(18px);opacity:0;transition:opacity .35s;pointer-events:none;z-index:-1;
+}
+.session-card:hover{
+  border-color:rgba(122,194,49,.32);
+  box-shadow:0 22px 48px -16px rgba(0,0,0,.55);
+}
+.session-card:hover::before{opacity:1;box-shadow:0 0 18px var(--tribe)}
+.session-card:hover::after{opacity:.18}
+.session-card[data-tribe="better"]  {--tribe:#a8e055}
+.session-card[data-tribe="faster"]  {--tribe:#7AC231}
+.session-card[data-tribe="stronger"]{--tribe:#f59e0b}
+
+/* LEFT block — Day + Time stacked, big condensed type */
+.sc-when{
+  display:flex;flex-direction:column;justify-content:center;align-items:flex-start;
+  border-right:1px solid rgba(255,255,255,.06);padding-right:14px;height:100%;
+}
+.sc-when-day{
+  font-family:var(--ff-display);font-size:14px;font-weight:800;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--tribe);line-height:1;margin-bottom:6px;
+}
+.sc-when-time{
+  font-family:var(--ff-display);font-size:30px;font-weight:900;
+  color:var(--white);line-height:.95;letter-spacing:.01em;
+}
+.sc-when-meridiem{font-size:13px;color:var(--muted);font-weight:700;margin-left:4px;letter-spacing:.05em}
+
+/* CENTER — tribe label, name, location */
+.sc-mid{display:flex;flex-direction:column;gap:6px;min-width:0}
+.sc-tribe{
+  font-size:10px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
+  color:var(--tribe);display:inline-flex;align-items:center;gap:6px;line-height:1;
+}
+.sc-tribe::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--tribe);
+  box-shadow:0 0 8px var(--tribe)}
+.sc-name{
+  font-family:var(--ff-display);font-size:28px;font-weight:900;text-transform:uppercase;
+  color:var(--white);line-height:1;letter-spacing:.005em;
+  overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+}
+.sc-loc{
+  font-size:12.5px;color:var(--light);display:flex;align-items:center;gap:6px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.sc-loc::before{content:"◈";color:var(--tribe);font-size:10px}
+.sc-coach{font-size:12px;color:var(--muted)} /* still rendered when present */
+
+/* RIGHT — price/free badge */
+.sc-free{
+  flex-shrink:0;font-size:10px;font-weight:800;letter-spacing:.12em;
+  padding:6px 12px;border-radius:99px;text-transform:uppercase;
+  background:rgba(122,194,49,.12);color:var(--green);
+  border:1px solid rgba(122,194,49,.28);
+  position:relative;overflow:hidden;
+}
+.sc-free.paid{background:rgba(245,192,66,.12);color:#f5c042;border-color:rgba(245,192,66,.28)}
+.sc-free::after{
+  /* shimmer */
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(110deg, transparent 35%, rgba(255,255,255,.25) 50%, transparent 65%);
+  transform:translateX(-100%);transition:transform .8s ease;
+}
+.session-card:hover .sc-free::after{transform:translateX(100%)}
+
+/* Tilt: vanilla JS sets --rx / --ry CSS vars on hover */
+.session-card[data-tilt]{transform:perspective(1100px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))}
+@media (hover:none) and (pointer:coarse){
+  .session-card{grid-template-columns:88px 1fr auto;padding:14px;min-height:112px}
+  .sc-name{font-size:24px;-webkit-line-clamp:2}
+  .sc-when-time{font-size:26px}
+  .session-card[data-tilt]{transform:none}
+}
+@media(max-width:560px){
+  .session-card{grid-template-columns:74px 1fr;gap:12px}
+  .session-card .sc-free{position:absolute;top:12px;right:12px;font-size:9px;padding:4px 10px}
+  .sc-when-time{font-size:22px}
+  .sc-name{font-size:21px;-webkit-line-clamp:2}
+}
 
 /* ── HOVER PREVIEW ── small floating popup that plays the session's
    intro_video_url while the cursor is over a card. Vertical 9:16
@@ -252,36 +367,154 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 
 
 /* ── VIEW TOGGLE ── */
-.view-toggle{display:flex;gap:0;background:var(--dark3);border-radius:var(--radius);padding:3px;border:1px solid rgba(255,255,255,.06)}
-.view-btn{padding:7px 14px;border-radius:4px;border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:12px;font-weight:600;letter-spacing:.04em;transition:all .2s;display:flex;align-items:center;gap:5px}
-.view-btn.active{background:var(--dark2);color:var(--white);box-shadow:0 1px 4px rgba(0,0,0,.4)}
+/* Modern segmented control — the active pill is a separate ::before
+   layer on the wrapper that slides between buttons via translateX. */
+.view-toggle{
+  position:relative;display:inline-flex;gap:0;padding:4px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);
+  border-radius:99px;
+}
+.view-toggle::before{
+  content:'';position:absolute;top:4px;bottom:4px;left:4px;width:calc(50% - 4px);
+  background:linear-gradient(180deg, rgba(122,194,49,.18), rgba(122,194,49,.08));
+  border:1px solid rgba(122,194,49,.35);border-radius:99px;
+  transition:transform .35s cubic-bezier(.4,1,.2,1);
+  box-shadow:0 6px 14px -8px rgba(122,194,49,.5);
+  pointer-events:none;
+}
+.view-toggle[data-active="calendar"]::before{transform:translateX(100%)}
+.view-btn{
+  position:relative;z-index:1;
+  padding:8px 18px;border-radius:99px;border:none;background:transparent;
+  color:var(--muted);cursor:pointer;font-size:12px;font-weight:700;
+  letter-spacing:.06em;text-transform:uppercase;
+  display:inline-flex;align-items:center;gap:6px;
+  transition:color .25s;
+}
+.view-btn.active{color:#fff}
+.view-btn:hover:not(.active){color:var(--light)}
+.view-btn svg{width:14px;height:14px}
 
 /* ── MONTHLY CALENDAR ── */
-.cal-wrap{display:none}
+/* ── CALENDAR — depth, today-pulse, gradient session pills ─────── */
+.cal-wrap{display:none;animation:cal-fade-in .35s cubic-bezier(.2,.7,.2,1) both}
 .cal-wrap.visible{display:block}
-.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px}
-.cal-month-label{font-family:var(--ff-display);font-size:28px;font-weight:900;text-transform:uppercase;color:var(--white);letter-spacing:.02em}
-.cal-nav{display:flex;gap:6px}
-.cal-nav-btn{width:36px;height:36px;border-radius:var(--radius);border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--light);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;transition:all .2s}
-.cal-nav-btn:hover{border-color:var(--green);color:var(--green)}
-.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:rgba(255,255,255,.05);border-radius:var(--radius-lg);overflow:hidden}
-.cal-dow{background:var(--dark3);padding:10px 0;text-align:center;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
-.cal-day{background:var(--dark2);min-height:90px;padding:8px;position:relative;transition:background .2s;cursor:default}
-.cal-day:hover{background:#1e1e1e}
+@keyframes cal-fade-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+
+.cal-header{
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;
+  gap:18px;flex-wrap:wrap;
+}
+.cal-month-label{
+  font-family:var(--ff-display);font-size:34px;font-weight:900;text-transform:uppercase;
+  color:var(--white);letter-spacing:.02em;line-height:1;
+  display:inline-flex;align-items:baseline;gap:14px;
+}
+.cal-month-label .yr{color:var(--muted);font-size:24px}
+.cal-nav{display:flex;gap:8px;align-items:center}
+.cal-nav-btn{
+  width:42px;height:42px;border-radius:12px;
+  border:1px solid rgba(255,255,255,.10);background:linear-gradient(180deg,rgba(255,255,255,.02),transparent);
+  color:var(--light);cursor:pointer;font-size:16px;
+  display:flex;align-items:center;justify-content:center;
+  transition:transform .2s, border-color .2s, color .2s, background .2s;
+}
+.cal-nav-btn:hover{border-color:rgba(122,194,49,.5);color:var(--green);background:rgba(122,194,49,.06);transform:translateY(-1px)}
+.cal-nav-btn:active{transform:translateY(0)}
+.cal-nav-btn.today-btn{width:auto;padding:0 14px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
+
+.cal-grid{
+  display:grid;grid-template-columns:repeat(7,1fr);gap:6px;
+  padding:6px;background:transparent;
+  border:1px solid rgba(255,255,255,.06);border-radius:16px;
+  background:linear-gradient(180deg, rgba(255,255,255,.015), transparent);
+}
+.cal-dow{
+  padding:11px 0;text-align:center;font-size:10px;font-weight:800;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--muted);
+  background:transparent;
+}
+
+.cal-day{
+  position:relative;min-height:108px;padding:9px 9px 10px;
+  background:var(--dark2);border:1px solid rgba(255,255,255,.04);border-radius:12px;
+  cursor:default;transition:transform .2s ease, border-color .25s, box-shadow .25s, background .25s;
+  display:flex;flex-direction:column;gap:4px;
+  isolation:isolate;
+}
+.cal-day::before{
+  /* very subtle inner highlight on the top edge for depth */
+  content:'';position:absolute;left:8px;right:8px;top:0;height:1px;
+  background:linear-gradient(90deg, transparent, rgba(255,255,255,.06), transparent);
+  pointer-events:none;
+}
+.cal-day:hover{border-color:rgba(255,255,255,.10);transform:translateY(-1px)}
 .cal-day.has-session{cursor:pointer}
-.cal-day.has-session:hover{background:rgba(122,194,49,.06)}
-.cal-day.today{background:rgba(122,194,49,.05)}
-.cal-day.today .cal-day-num{color:var(--green);font-weight:800}
-.cal-day.other-month .cal-day-num{color:#333}
-.cal-day.other-month{background:#111}
-.cal-day-num{font-size:13px;font-weight:600;color:var(--light);margin-bottom:4px}
-.cal-session-dot{font-size:10px;font-weight:700;padding:2px 6px;border-radius:4px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer;transition:opacity .15s}
-.cal-session-dot:hover{opacity:.8}
-.cal-session-dot.better{background:rgba(168,224,85,.15);color:#a8e055;border-left:2px solid #a8e055}
-.cal-session-dot.faster{background:rgba(122,194,49,.15);color:#7AC231;border-left:2px solid #7AC231}
-.cal-session-dot.stronger{background:rgba(245,158,11,.15);color:#f59e0b;border-left:2px solid #f59e0b}
-.cal-more{font-size:10px;color:var(--muted);padding:2px 4px;cursor:pointer}
-.cal-more:hover{color:var(--green)}
+.cal-day.has-session:hover{
+  border-color:rgba(122,194,49,.35);
+  background:linear-gradient(180deg, rgba(122,194,49,.05), var(--dark2));
+  box-shadow:0 14px 26px -16px rgba(122,194,49,.35);
+}
+.cal-day.other-month{opacity:.32;background:transparent;border-color:rgba(255,255,255,.025)}
+.cal-day.other-month .cal-day-num{color:#444}
+
+.cal-day-num{
+  font-family:var(--ff-display);font-size:18px;font-weight:800;color:var(--light);
+  line-height:1;letter-spacing:.02em;
+}
+.cal-day.today{
+  background:radial-gradient(120% 90% at 50% 0%, rgba(122,194,49,.14), var(--dark2) 70%);
+  border-color:rgba(122,194,49,.5);
+  animation:today-pulse 2.4s ease-in-out infinite;
+}
+.cal-day.today .cal-day-num{color:var(--green);text-shadow:0 0 12px rgba(122,194,49,.55)}
+.cal-day.today::after{
+  content:'TODAY';position:absolute;top:9px;right:9px;
+  font-family:var(--ff-display);font-size:9px;font-weight:800;letter-spacing:.18em;
+  color:#0a0a0a;background:var(--green);padding:2px 6px;border-radius:99px;line-height:1;
+}
+@keyframes today-pulse{
+  0%,100%{box-shadow:0 0 0 0 rgba(122,194,49,.0)}
+  50%   {box-shadow:0 0 0 6px rgba(122,194,49,.10)}
+}
+
+/* Count badge for non-today cells with sessions */
+.cal-day-count{
+  position:absolute;top:8px;right:8px;
+  font-family:var(--ff-display);font-size:11px;font-weight:800;letter-spacing:.04em;
+  min-width:18px;height:18px;padding:0 5px;border-radius:99px;
+  background:rgba(255,255,255,.07);color:#fff;
+  display:flex;align-items:center;justify-content:center;line-height:1;
+}
+.cal-day.today .cal-day-count{display:none}
+
+.cal-session-dot{
+  font-size:10.5px;font-weight:700;letter-spacing:.01em;
+  padding:4px 8px;border-radius:6px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  cursor:pointer;transition:transform .18s ease, filter .18s;
+  position:relative;
+}
+.cal-session-dot::before{
+  /* tiny colored chip on the left */
+  content:'';display:inline-block;width:5px;height:5px;border-radius:50%;
+  background:currentColor;margin-right:6px;vertical-align:middle;
+  box-shadow:0 0 6px currentColor;
+}
+.cal-session-dot:hover{transform:translateY(-1px);filter:brightness(1.15)}
+.cal-session-dot.better  {background:linear-gradient(135deg, rgba(168,224,85,.18), rgba(168,224,85,.06));color:#a8e055;border:1px solid rgba(168,224,85,.22)}
+.cal-session-dot.faster  {background:linear-gradient(135deg, rgba(122,194,49,.18), rgba(122,194,49,.06));color:#7AC231;border:1px solid rgba(122,194,49,.22)}
+.cal-session-dot.stronger{background:linear-gradient(135deg, rgba(245,158,11,.18), rgba(245,158,11,.06));color:#f59e0b;border:1px solid rgba(245,158,11,.22)}
+.cal-session-dot:not(.better):not(.faster):not(.stronger){
+  background:linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
+  color:#ddd;border:1px solid rgba(255,255,255,.10);
+}
+
+.cal-more{
+  font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--muted);
+  padding:2px 6px;cursor:pointer;border-radius:6px;transition:color .2s, background .2s;
+}
+.cal-more:hover{color:var(--green);background:rgba(122,194,49,.06)}
 .cal-sessions-grid{display:none}
 .cal-sessions-grid.visible{display:grid}
 
@@ -340,7 +573,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
     <div class="sessions-toolbar">
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <p class="sessions-count"><strong id="sessionCount">12</strong> sessions this week</p>
-        <div class="view-toggle">
+        <div class="view-toggle" data-active="list">
           <button class="view-btn active" id="listViewBtn" data-atp-call="setView" data-args='["list"]'>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/></svg>
             List
@@ -397,9 +630,9 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       <div class="cal-header">
         <div class="cal-month-label" id="calMonthLabel"></div>
         <div class="cal-nav">
-          <button class="cal-nav-btn" data-atp-call="calPrev">&#8249;</button>
-          <button class="cal-nav-btn" data-atp-call="calToday">Today</button>
-          <button class="cal-nav-btn" data-atp-call="calNext">&#8250;</button>
+          <button class="cal-nav-btn" data-atp-call="calPrev" aria-label="Previous month">&#8249;</button>
+          <button class="cal-nav-btn today-btn" data-atp-call="calToday">Today</button>
+          <button class="cal-nav-btn" data-atp-call="calNext" aria-label="Next month">&#8250;</button>
         </div>
       </div>
       <div class="cal-grid" id="calGrid"></div>
@@ -1352,6 +1585,9 @@ function setView(view) {
   var grid    = document.getElementById('sessionsGrid');
   var cal     = document.getElementById('calView');
   var toolbar = document.querySelector('.sessions-toolbar');
+  // Drive the segmented-control sliding pill via a data attribute.
+  var tog = document.querySelector('.view-toggle');
+  if (tog) tog.setAttribute('data-active', view === 'calendar' ? 'calendar' : 'list');
 
   if(view === 'calendar') {
     grid.style.display = 'none';
@@ -1405,7 +1641,9 @@ function renderCalendar() {
   var year  = calDate.getFullYear();
   var month = calDate.getMonth();
 
-  document.getElementById('calMonthLabel').textContent = MONTHS[month] + ' ' + year;
+  // Two-tone label: month in display white, year in muted accent.
+  document.getElementById('calMonthLabel').innerHTML =
+    escapeHtml(MONTHS[month]) + ' <span class="yr">' + year + '</span>';
 
   var firstDay    = new Date(year, month, 1).getDay();
   var daysInMonth = new Date(year, month+1, 0).getDate();
@@ -1463,7 +1701,12 @@ function renderCalendar() {
     if(daySessions.length > maxShow) {
       dots += '<div class="cal-more">+' + (daySessions.length - maxShow) + ' more</div>';
     }
-    html += '<div class="'+cls+'"><div class="cal-day-num">'+d+'</div>'+dots+'</div>';
+    // Count badge top-right when the day has sessions (hidden on today
+    // — the TODAY pill takes that slot).
+    var countBadge = daySessions.length > 0
+      ? '<span class="cal-day-count">' + daySessions.length + '</span>'
+      : '';
+    html += '<div class="'+cls+'"><div class="cal-day-num">'+d+'</div>'+countBadge+dots+'</div>';
   }
 
   // Trailing empty cells
@@ -1599,7 +1842,10 @@ function _sponsorStripHtml(s, variant) {
     : img;
   var align = variant === 'card' ? 'flex-start' : 'center';
   var mt = variant === 'card' ? '10px' : '16px';
-  return '<div class="sc-sponsor" style="display:flex;align-items:center;gap:8px;justify-content:' + align +
+  // On the redesigned card the parent is a 3-col grid — span all
+  // columns so the strip sits cleanly across the bottom.
+  var gridSpan = variant === 'card' ? 'grid-column:1/-1;' : '';
+  return '<div class="sc-sponsor" style="' + gridSpan + 'display:flex;align-items:center;gap:8px;justify-content:' + align +
          ';margin-top:' + mt + ';padding-top:10px;border-top:1px solid rgba(255,255,255,.07)">' +
          '<span style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#888)">Powered by</span>' +
          inner + '</div>';
@@ -1672,12 +1918,25 @@ function renderSessionsGrid(sessions) {
     // the modal: name, when, where, price. Coach + description live inside
     // the modal where there's room to actually read them. Keeps the grid
     // scannable on mobile where 11 lines was crushing the layout.
+    // Split the formatted time into a "12" + "PM" pair so the LEFT block
+    // can show the meridiem in a quieter tone next to the big number.
+    var _tmatch = /^(\d{1,2}:\d{2})\s*(AM|PM)?/i.exec(time) || [];
+    var _timeNum = _tmatch[1] || time;
+    var _timeMer = _tmatch[2] || '';
+    var freeClass = (priceTag === 'Free') ? 'sc-free' : 'sc-free paid';
     article.innerHTML =
-      '<span class="sc-free">' + escapeHtml(priceTag) + '</span>' +
-      '<p class="sc-tribe ' + tribe + '">' + escapeHtml(tribeLabel) + '</p>' +
-      '<h3 class="sc-name">' + escapeHtml(s.name) + '</h3>' +
-      '<p class="sc-time">' + escapeHtml(dayTime) + '</p>' +
-      '<p class="sc-loc">' + escapeHtml(loc) + escapeHtml(cityTag) + '</p>' +
+      '<div class="sc-when">' +
+        '<div class="sc-when-day">' + escapeHtml(dayName.slice(0,3)) + '</div>' +
+        '<div class="sc-when-time">' + escapeHtml(_timeNum) +
+          (_timeMer ? '<span class="sc-when-meridiem">' + escapeHtml(_timeMer) + '</span>' : '') +
+        '</div>' +
+      '</div>' +
+      '<div class="sc-mid">' +
+        '<div class="sc-tribe">' + escapeHtml(tribeLabel) + '</div>' +
+        '<h3 class="sc-name">' + escapeHtml(s.name) + '</h3>' +
+        '<p class="sc-loc">' + escapeHtml(loc) + escapeHtml(cityTag) + '</p>' +
+      '</div>' +
+      '<span class="' + freeClass + '">' + escapeHtml(priceTag) + '</span>' +
       _sponsorStripHtml(s, 'card');
 
     article.addEventListener('click', function() {
@@ -1699,8 +1958,41 @@ function renderSessionsGrid(sessions) {
   // Hover-preview popup wiring — re-runs each render so newly-built cards
   // are bound. The popup element + listeners are idempotent.
   if (typeof _wireSessionHoverPreview === 'function') _wireSessionHoverPreview();
+  // 3D tilt + cursor-tracking spotlight on hover-capable devices.
+  if (typeof _wireSessionTilt === 'function') _wireSessionTilt();
 
   applyFilters();
+}
+
+// Lightweight cursor-tracking tilt. Skipped on touch-primary devices
+// (no real hover, taps would briefly stick the tilt). Sets CSS vars
+// --rx/--ry for the perspective transform and --spot-x/--spot-y for
+// the radial spotlight already baked into .session-card.
+function _wireSessionTilt() {
+  if (window.matchMedia && window.matchMedia('(pointer: coarse)').matches) return;
+  var cards = document.querySelectorAll('.session-card');
+  cards.forEach(function(card){
+    if (card._tiltBound) return;
+    card._tiltBound = true;
+    card.setAttribute('data-tilt', '');
+    card.addEventListener('mousemove', function(e){
+      var r = card.getBoundingClientRect();
+      var px = (e.clientX - r.left) / r.width;   // 0..1
+      var py = (e.clientY - r.top)  / r.height;  // 0..1
+      var rx = ((0.5 - py) *  5).toFixed(2) + 'deg'; // tilt up/down
+      var ry = ((px - 0.5) *  6).toFixed(2) + 'deg'; // tilt left/right
+      card.style.setProperty('--rx', rx);
+      card.style.setProperty('--ry', ry);
+      card.style.setProperty('--spot-x', (px * 100).toFixed(1) + '%');
+      card.style.setProperty('--spot-y', (py * 100).toFixed(1) + '%');
+    });
+    card.addEventListener('mouseleave', function(){
+      card.style.setProperty('--rx', '0deg');
+      card.style.setProperty('--ry', '0deg');
+      card.style.setProperty('--spot-x', '50%');
+      card.style.setProperty('--spot-y', '50%');
+    });
+  });
 }
 
 // ── Hover-preview popup ──────────────────────────────────────
