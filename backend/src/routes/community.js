@@ -122,9 +122,12 @@ router.get('/me/posts', authenticate, async (req, res, next) => {
 });
 
 // ── POST /api/community/posts ─────────────────────────────────
-// Rulebook ref: R-PO-002 (OQ-26). Hard cap at 500 chars; frontend
-// shows a live counter on .composer-input.
+// Rulebook refs:
+//   R-PO-001 (OQ-25): rate-limit free=3/day, premium=10/day
+//   R-PO-002 (OQ-26): 500-char cap
+//   R-PO-007 (OQ-28): banned-word check
 const POST_MAX_LEN = 500;
+const moderation = require('../services/moderation');
 router.post('/posts', authenticate, async (req, res, next) => {
   try {
     const { content, media = [] } = req.body;
@@ -137,6 +140,33 @@ router.post('/posts', authenticate, async (req, res, next) => {
         code:  'POST_TOO_LONG',
         max:   POST_MAX_LEN,
       });
+    }
+
+    // R-PO-001: tiered rate limit per member.
+    const rl = await moderation.checkPostRateLimit(req.member);
+    if (!rl.allowed) {
+      return res.status(429).json({
+        error: `Daily post limit reached (${rl.limit} per 24h on ${rl.tier === 'premium' ? 'Premium' : 'Free'}). ` +
+               `Try again after ${rl.resets_at || 'a few hours'}.`,
+        code:      'POST_RATE_LIMIT',
+        limit:     rl.limit,
+        used:      rl.used,
+        tier:      rl.tier,
+        resets_at: rl.resets_at,
+      });
+    }
+
+    // R-PO-007: banned-word screen on text content. Media isn't scanned
+    // (image moderation comes in Phase 2 — OQ-28).
+    if (content) {
+      const hit = await moderation.checkContent(content);
+      if (hit) {
+        console.warn('[moderation] post blocked for member', req.member.id, 'word:', hit);
+        return res.status(400).json({
+          error: 'Your post contains content that violates our community guidelines.',
+          code:  'POST_BLOCKED',
+        });
+      }
     }
 
     const { rows } = await query(
@@ -255,10 +285,21 @@ router.get('/posts/:id/comments', optionalAuth, async (req, res, next) => {
 });
 
 // ── POST /api/community/posts/:id/comments ───────────────────
+// Rulebook ref: R-PO-007 (OQ-28) banned-word screen applies to
+// comments too.
 router.post('/posts/:id/comments', authenticate, async (req, res, next) => {
   try {
     const { content, parent_id } = req.body;
     if (!content) return res.status(400).json({ error: 'Content required' });
+
+    const hit = await moderation.checkContent(content);
+    if (hit) {
+      console.warn('[moderation] comment blocked for member', req.member.id, 'word:', hit);
+      return res.status(400).json({
+        error: 'Your comment contains content that violates our community guidelines.',
+        code:  'COMMENT_BLOCKED',
+      });
+    }
 
     const { rows } = await query(
       `INSERT INTO comments (post_id, member_id, content, parent_id)
@@ -283,6 +324,62 @@ router.post('/posts/:id/comments', authenticate, async (req, res, next) => {
     ).catch(function(e){ console.warn('[community] post_commented notif failed', e.message); });
 
     res.status(201).json({ comment: rows[0] });
+  } catch (err) { next(err); }
+});
+
+// ── DELETE /api/community/posts/:postId/comments/:commentId ──
+// Rulebook ref: R-CM-003 (OQ-29). A member can delete their own
+// comment within 1 hour of posting. After that, only admins can
+// remove it (use the reports → resolve flow for the audit trail).
+//
+// Soft-delete: is_deleted=true. The row stays so /posts/:id/comments
+// can still render the thread structure (deleted comments are filtered
+// out at read time).
+const COMMENT_DELETE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+router.delete('/posts/:postId/comments/:commentId', authenticate, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT member_id, created_at, is_deleted, post_id
+         FROM comments WHERE id=$1`,
+      [req.params.commentId]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Comment not found' });
+    const c = rows[0];
+    if (c.post_id !== req.params.postId) {
+      return res.status(404).json({ error: 'Comment not found on this post' });
+    }
+    if (c.is_deleted) {
+      return res.json({ message: 'Comment already deleted', idempotent: true });
+    }
+
+    const isOwner = c.member_id === req.member.id;
+    const isAdmin = !!req.member.is_admin;
+    if (!isOwner && !isAdmin) {
+      return res.status(403).json({ error: 'Not authorized to delete this comment' });
+    }
+    if (isOwner && !isAdmin) {
+      const ageMs = Date.now() - new Date(c.created_at).getTime();
+      if (ageMs > COMMENT_DELETE_WINDOW_MS) {
+        return res.status(403).json({
+          error: 'Comments can only be deleted within 1 hour of posting.',
+          code:  'COMMENT_DELETE_WINDOW_EXPIRED',
+          posted_at: c.created_at,
+        });
+      }
+    }
+
+    await query(
+      `UPDATE comments SET is_deleted=true WHERE id=$1`,
+      [req.params.commentId]
+    );
+    // Keep posts.comments_count consistent. Floor at 0 in case of
+    // a stale counter (defensive).
+    await query(
+      `UPDATE posts SET comments_count = GREATEST(comments_count - 1, 0) WHERE id=$1`,
+      [req.params.postId]
+    ).catch(() => {});
+
+    res.json({ message: 'Comment deleted', by: isAdmin && !isOwner ? 'admin' : 'self' });
   } catch (err) { next(err); }
 });
 

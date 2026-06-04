@@ -3455,6 +3455,39 @@ router.post('/migrate-members', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-moderation-banned-words ─────────────
+// One-shot migration (v1.51.0, R-PO-007 / OQ-28). Seeds the
+// system_config row that the moderation service reads from. Value
+// is a JSONB array of strings; admins maintain it via the admin
+// system_config UI. Idempotent — re-running just touches updated_at.
+//
+// Initial seed is an empty array deliberately — operators must
+// curate the actual word list (don't want slurs in git history).
+// Until populated, posts + comments pass through without filtering.
+router.post('/migrate-moderation-banned-words', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    await query(
+      `INSERT INTO system_config (key, value, label, description)
+       VALUES ('moderation_banned_words', '[]'::jsonb,
+               'Moderation: banned words',
+               'JSON array of lowercase strings. Posts + comments containing any of these (word-boundary match for single tokens, literal contains for multi-word phrases) are rejected at write-time with HTTP 400 POST_BLOCKED / COMMENT_BLOCKED.')
+       ON CONFLICT (key) DO UPDATE SET
+         label       = EXCLUDED.label,
+         description = EXCLUDED.description,
+         updated_at  = NOW()`
+    );
+    res.json({
+      ok: true,
+      message: 'moderation_banned_words seeded. Populate via admin system_config UI or direct SQL:\n' +
+               "UPDATE system_config SET value = '[\"word1\",\"word2\"]'::jsonb WHERE key='moderation_banned_words';",
+    });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-member-timezone ─────────────────────
 // One-shot migration (v1.49.0, R-ST-004 / OQ-18). Adds the
 // `members.timezone` column so streaks compute day boundaries in the
