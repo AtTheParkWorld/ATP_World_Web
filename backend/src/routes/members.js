@@ -266,19 +266,56 @@ router.get('/friends', authenticate, async (req, res, next) => {
 });
 
 // ── POST /api/members/friends/request ────────────────────────
+// Rulebook refs:
+//   R-FR-001  cannot friend yourself
+//   R-FR-005  block list takes priority over friend requests
+//   R-FR-006 / OQ-31  insert an in-app notification on the addressee
 router.post('/friends/request', authenticate, async (req, res, next) => {
   try {
     const { target_id } = req.body;
     if (!target_id) return res.status(400).json({ error: 'target_id required' });
     if (target_id === req.member.id) return res.status(400).json({ error: 'Cannot friend yourself' });
 
-    const [a, b] = [req.member.id, target_id].sort();
-    await query(
-      `INSERT INTO friendships (requester_id, addressee_id)
-       VALUES ($1, $2) ON CONFLICT DO NOTHING`,
+    // R-FR-005: refuse the request if either side has blocked the
+    // other. We deliberately return a generic 403 — leaking "you've
+    // been blocked" is the wrong UX.
+    const { rows: blocks } = await query(
+      `SELECT 1 FROM friendships
+        WHERE status='blocked'
+          AND ((requester_id=$1 AND addressee_id=$2) OR (requester_id=$2 AND addressee_id=$1))
+        LIMIT 1`,
       [req.member.id, target_id]
     );
-    res.json({ message: 'Friend request sent' });
+    if (blocks.length) {
+      return res.status(403).json({ error: 'Cannot send a friend request to this member.', code: 'BLOCKED' });
+    }
+
+    // Insert if missing; RETURNING tells us whether this was the
+    // creating call (so we only fire the notification once, not on
+    // duplicate clicks).
+    const { rows: ins } = await query(
+      `INSERT INTO friendships (requester_id, addressee_id)
+       VALUES ($1, $2) ON CONFLICT DO NOTHING RETURNING id`,
+      [req.member.id, target_id]
+    );
+    const created = ins.length > 0;
+    if (created) {
+      // R-FR-006 / OQ-31: notify the addressee in-app (no email per the
+      // decision). Fire-and-forget; a notification failure must not
+      // block the friendship creation that already committed.
+      const requesterName = ((req.member.first_name || '') + ' ' + (req.member.last_name || '')).trim() || 'A member';
+      query(
+        `INSERT INTO notifications (member_id, type, title, body, data)
+         VALUES ($1, 'friend_request', $2, $3, $4)`,
+        [
+          target_id,
+          requesterName + ' wants to be friends',
+          'Tap to accept or decline from your profile.',
+          JSON.stringify({ requester_id: req.member.id, friendship_id: ins[0].id }),
+        ]
+      ).catch(function(e){ console.warn('[friends] friend_request notif failed:', e.message); });
+    }
+    res.json({ message: 'Friend request sent', created });
   } catch (err) { next(err); }
 });
 
@@ -295,6 +332,102 @@ router.patch('/friends/:id', authenticate, async (req, res, next) => {
       [status, req.params.id, req.member.id]
     );
     res.json({ message: `Friend request ${status}` });
+  } catch (err) { next(err); }
+});
+
+// ── DELETE /api/members/friends/:id ──────────────────────────
+// Rulebook ref: R-FR-005 (OQ-30). Symmetric removal — either party
+// can unfriend. The friendship row is hard-deleted; if you re-add
+// each other later, a fresh row is created. Idempotent (200 with
+// already_removed=true if the row doesn't exist).
+//
+// :id can be either the friendship row id OR the other member's id —
+// both are tried so the UI doesn't have to track which one it has.
+router.delete('/friends/:id', authenticate, async (req, res, next) => {
+  try {
+    const idParam = req.params.id;
+    const { rowCount } = await query(
+      `DELETE FROM friendships
+        WHERE (id::text = $1
+               OR ((requester_id = $2 AND addressee_id::text = $1)
+                OR (addressee_id = $2 AND requester_id::text = $1)))
+          AND (requester_id = $2 OR addressee_id = $2)
+          AND status IN ('pending','accepted')`,
+      [idParam, req.member.id]
+    );
+    res.json({ message: 'Friend removed', removed: rowCount, already_removed: rowCount === 0 });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/members/block/:targetId ────────────────────────
+// Rulebook ref: R-FR-005 (OQ-30). Hard block — also tears down any
+// existing friendship (pending or accepted) in either direction so
+// no stale state hangs around. The block itself is recorded as a
+// friendships row with status='blocked' (the schema already supports
+// this enum value; no migration required).
+//
+// Caller becomes the requester_id of the block row. A second block
+// request between the same pair is a no-op.
+router.post('/block/:targetId', authenticate, async (req, res, next) => {
+  try {
+    const targetId = req.params.targetId;
+    if (targetId === req.member.id) {
+      return res.status(400).json({ error: 'Cannot block yourself' });
+    }
+    // Tear down any existing relationship between the two members
+    // (in either direction) so a stale 'accepted' row can't survive
+    // alongside a 'blocked' one.
+    await query(
+      `DELETE FROM friendships
+        WHERE ((requester_id=$1 AND addressee_id=$2) OR (requester_id=$2 AND addressee_id=$1))
+          AND status <> 'blocked'`,
+      [req.member.id, targetId]
+    );
+    // Upsert the blocked row. The composite UNIQUE makes this safe
+    // against double-clicks.
+    await query(
+      `INSERT INTO friendships (requester_id, addressee_id, status, updated_at)
+       VALUES ($1, $2, 'blocked', NOW())
+       ON CONFLICT (requester_id, addressee_id)
+         DO UPDATE SET status='blocked', updated_at=NOW()`,
+      [req.member.id, targetId]
+    );
+    res.json({ message: 'Member blocked', blocked_id: targetId });
+  } catch (err) { next(err); }
+});
+
+// ── DELETE /api/members/block/:targetId ──────────────────────
+// Rulebook ref: R-FR-005 (OQ-30). Unblock removes the row. Friendship
+// does NOT auto-restore — both sides have to send fresh requests if
+// they want to reconnect (correct social-app behaviour).
+router.delete('/block/:targetId', authenticate, async (req, res, next) => {
+  try {
+    const targetId = req.params.targetId;
+    const { rowCount } = await query(
+      `DELETE FROM friendships
+        WHERE status='blocked'
+          AND requester_id=$1 AND addressee_id=$2`,
+      [req.member.id, targetId]
+    );
+    res.json({ message: 'Member unblocked', removed: rowCount });
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/members/blocked ─────────────────────────────────
+// Returns the list of members the caller has blocked, so the
+// profile/privacy screen can render an "unblock" affordance.
+router.get('/blocked', authenticate, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT m.id, m.first_name, m.last_name, m.avatar_url, m.member_number,
+              f.updated_at AS blocked_at
+         FROM friendships f
+         JOIN members m ON m.id = f.addressee_id
+        WHERE f.requester_id = $1 AND f.status = 'blocked'
+        ORDER BY f.updated_at DESC`,
+      [req.member.id]
+    );
+    res.json({ blocked: rows });
   } catch (err) { next(err); }
 });
 

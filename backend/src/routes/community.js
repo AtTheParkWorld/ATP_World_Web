@@ -89,6 +89,20 @@ router.get('/feed', optionalAuth, async (req, res, next) => {
       beforeClause = `AND p.created_at < $${params.length}`;
     }
 
+    // Rulebook ref: R-FR-005 (OQ-30). Hide posts authored by anyone
+    // the viewer has blocked, AND posts authored by anyone who has
+    // blocked the viewer (so the blocked party doesn't get to surveil
+    // by following the feed). NOT EXISTS keeps the query plan tidy.
+    let blockClause = '';
+    if (viewerId) {
+      blockClause = `AND NOT EXISTS (
+        SELECT 1 FROM friendships fb
+         WHERE fb.status = 'blocked'
+           AND ((fb.requester_id = $${memberParamIdx}::uuid AND fb.addressee_id = p.member_id)
+             OR (fb.addressee_id = $${memberParamIdx}::uuid AND fb.requester_id = p.member_id))
+      )`;
+    }
+
     // Resolve the tribe filter. ?tribe=mine needs an authenticated
     // viewer whose own tribe is set; otherwise return a clear 400.
     let tribeFilterClause = '';
@@ -126,7 +140,7 @@ router.get('/feed', optionalAuth, async (req, res, next) => {
          FROM posts p
          JOIN members m ON m.id = p.member_id
          LEFT JOIN tribes t ON t.id = m.tribe_id
-         WHERE p.is_deleted = false ${beforeClause} ${tribeFilterClause}
+         WHERE p.is_deleted = false ${beforeClause} ${tribeFilterClause} ${blockClause}
          ORDER BY p.created_at DESC
          LIMIT $1`,
         params
