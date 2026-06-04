@@ -3455,6 +3455,41 @@ router.post('/migrate-members', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-member-timezone ─────────────────────
+// One-shot migration (v1.49.0, R-ST-004 / OQ-18). Adds the
+// `members.timezone` column so streaks compute day boundaries in the
+// member's local time. Default 'Asia/Dubai' (98% of members). The
+// streak service already falls back to Asia/Dubai when the column is
+// missing, so this migration can be run at any time without breaking
+// anything; running it just makes the column available for future
+// member-facing TZ selection in the profile UI.
+//
+// Maintenance-gated. Idempotent (ADD COLUMN IF NOT EXISTS).
+router.post('/migrate-member-timezone', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    await query(
+      `ALTER TABLE members ADD COLUMN IF NOT EXISTS timezone VARCHAR(64) NOT NULL DEFAULT 'Asia/Dubai'`
+    );
+    // Backfill: members created before the column existed will have
+    // already been set to 'Asia/Dubai' by the DEFAULT clause above. We
+    // also catch any pre-existing NULLs (shouldn't happen since NOT
+    // NULL, but be defensive).
+    await query(`UPDATE members SET timezone='Asia/Dubai' WHERE timezone IS NULL`).catch(() => {});
+    const { rows } = await query(
+      `SELECT COUNT(*)::int AS n FROM members WHERE timezone IS NOT NULL`
+    );
+    res.json({
+      ok: true,
+      message: 'members.timezone column ready. Default Asia/Dubai applied.',
+      members_with_tz: rows[0].n,
+    });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-wearable-tokens-encrypt ─────────────
 // One-shot migration (v1.48.0, audit #9 fix, R-WR-005 / OQ-23).
 // Re-encrypts any wearable_connections rows whose access_token /

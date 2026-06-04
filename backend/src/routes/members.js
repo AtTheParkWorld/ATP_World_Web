@@ -311,11 +311,17 @@ router.get('/leaderboard', async (req, res, next) => {
     const { period = 'mtd', city_id } = req.query;
     const tribe_id = req.query.tribe_id || req.query.tribe || null;
 
+    // Rulebook ref: R-LB-006 (OQ-21). The month/year boundaries roll at
+    // Dubai midnight, not UTC midnight, so members feel "the month
+    // rolled with me" instead of "the month rolled at 4am Dubai
+    // time." DATE_TRUNC is computed at the Dubai-local timestamp,
+    // then converted back to UTC for the index-friendly comparison
+    // against pl.created_at (which is TIMESTAMPTZ stored in UTC).
     let dateFilter = '';
     if (period === 'mtd') {
-      dateFilter = `AND pl.created_at >= DATE_TRUNC('month', NOW())`;
+      dateFilter = `AND pl.created_at >= (DATE_TRUNC('month', NOW() AT TIME ZONE 'Asia/Dubai') AT TIME ZONE 'Asia/Dubai')`;
     } else if (period === 'ytd') {
-      dateFilter = `AND pl.created_at >= DATE_TRUNC('year', NOW())`;
+      dateFilter = `AND pl.created_at >= (DATE_TRUNC('year',  NOW() AT TIME ZONE 'Asia/Dubai') AT TIME ZONE 'Asia/Dubai')`;
     }
 
     // Build WHERE + params dynamically so optional filters don't break
