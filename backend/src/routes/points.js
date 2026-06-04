@@ -49,7 +49,11 @@ router.patch('/config', authenticate, requireAdmin, async (req, res, next) => {
 });
 
 // ── POST /api/points/redeem ───────────────────────────────────
-// Member redeems points as store discount
+// Member redeems points as store discount.
+// Rulebook ref: R-PT-008 (OQ-13). Conversion is 28 pts ≈ 0.10 AED; the
+// floor of 280 pts (≈ 1 AED) prevents micro-redemptions from spamming
+// Shopify with single-cent discount codes.
+const MIN_REDEEM_PTS = 280;
 router.post('/redeem', authenticate, async (req, res, next) => {
   try {
     const { points_to_redeem } = req.body;
@@ -57,6 +61,13 @@ router.post('/redeem', authenticate, async (req, res, next) => {
 
     if (!pts || pts <= 0) {
       return res.status(400).json({ error: 'points_to_redeem must be a positive number' });
+    }
+    if (pts < MIN_REDEEM_PTS) {
+      return res.status(400).json({
+        error: `Minimum redemption is ${MIN_REDEEM_PTS} points (≈ 1 AED).`,
+        code: 'MIN_REDEEM',
+        min_redeem: MIN_REDEEM_PTS,
+      });
     }
 
     const { rows } = await query(

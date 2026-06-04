@@ -3454,3 +3454,88 @@ router.post('/migrate-members', async (req, res, next) => {
 
   } catch (err) { next(err); }
 });
+
+// ── POST /api/auth/migrate-wearable-tokens-encrypt ─────────────
+// One-shot migration (v1.48.0, audit #9 fix, R-WR-005 / OQ-23).
+// Re-encrypts any wearable_connections rows whose access_token /
+// refresh_token are still plaintext. Idempotent: rows already in the
+// `enc:v1:` format are skipped. Maintenance-gated (the regex at the
+// top of this file covers any path prefixed `migrate-`).
+//
+// Usage:
+//   curl -X POST $URL/api/auth/migrate-wearable-tokens-encrypt \
+//        -H "X-Maintenance-Secret: $MAINTENANCE_SECRET" \
+//        -H "Content-Type: application/json" \
+//        -d '{"setupKey":"<ADMIN_SETUP_KEY>","dry_run":true}'
+//
+// Returns: { scanned, would_encrypt, encrypted, failed, sample_errors }.
+router.post('/migrate-wearable-tokens-encrypt', async (req, res, next) => {
+  try {
+    const { setupKey, dry_run = false } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    if (!process.env.WEARABLE_TOKEN_KEK) {
+      return res.status(503).json({
+        error: 'WEARABLE_TOKEN_KEK env var is not set. Generate a key (openssl rand -hex 32) and set it in Render env before running this migration.',
+      });
+    }
+
+    const wcrypt = require('../services/wearableCrypto');
+    let scanned = 0, wouldEncrypt = 0, encrypted = 0, failed = 0;
+    const sampleErrors = [];
+
+    let rows;
+    try {
+      ({ rows } = await query(
+        `SELECT id, access_token, refresh_token FROM wearable_connections`
+      ));
+    } catch (e) {
+      // Pre-migration DB without the table — nothing to do.
+      if (e.code === '42P01') {
+        return res.json({ scanned: 0, message: 'wearable_connections table does not exist yet.' });
+      }
+      throw e;
+    }
+
+    for (const r of rows) {
+      scanned++;
+      const aPlain = r.access_token && !wcrypt.isEncrypted(r.access_token);
+      const rPlain = r.refresh_token && !wcrypt.isEncrypted(r.refresh_token);
+      if (!aPlain && !rPlain) continue; // already encrypted (or null)
+      wouldEncrypt++;
+      if (dry_run) continue;
+      try {
+        const encA = r.access_token  ? wcrypt.encrypt(r.access_token)  : null;
+        const encR = r.refresh_token ? wcrypt.encrypt(r.refresh_token) : null;
+        await query(
+          `UPDATE wearable_connections
+              SET access_token  = $1,
+                  refresh_token = $2,
+                  updated_at    = NOW()
+            WHERE id = $3`,
+          [encA, encR, r.id]
+        );
+        encrypted++;
+      } catch (e) {
+        failed++;
+        if (sampleErrors.length < 5) {
+          sampleErrors.push({ id: r.id, error: String(e.message || e).slice(0, 200) });
+        }
+      }
+    }
+
+    res.json({
+      ok: true,
+      dry_run: !!dry_run,
+      scanned,
+      would_encrypt: wouldEncrypt,
+      encrypted,
+      failed,
+      sample_errors: sampleErrors,
+      message: dry_run
+        ? `Dry-run: ${wouldEncrypt}/${scanned} rows would be encrypted.`
+        : `Encrypted ${encrypted}/${wouldEncrypt} rows. ${failed} failed.`,
+    });
+  } catch (err) { next(err); }
+});

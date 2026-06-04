@@ -299,9 +299,17 @@ router.patch('/friends/:id', authenticate, async (req, res, next) => {
 });
 
 // ── GET /api/members/leaderboard ─────────────────────────────
+// Rulebook refs: R-LB-001 .. R-LB-006, R-TR-004 (tribe scope), OQ-15,
+// OQ-20 (tie-break by longest current_streak).
+// Query params:
+//   ?period=mtd|ytd|all-time   (default mtd)
+//   ?city_id=<uuid>            (optional — global default)
+//   ?tribe_id=<uuid>           (optional — wires OQ-15)
+//                              legacy ?tribe= accepted as alias
 router.get('/leaderboard', async (req, res, next) => {
   try {
-    const { period = 'mtd', city_id, tribe } = req.query;
+    const { period = 'mtd', city_id } = req.query;
+    const tribe_id = req.query.tribe_id || req.query.tribe || null;
 
     let dateFilter = '';
     if (period === 'mtd') {
@@ -310,21 +318,55 @@ router.get('/leaderboard', async (req, res, next) => {
       dateFilter = `AND pl.created_at >= DATE_TRUNC('year', NOW())`;
     }
 
-    const { rows } = await query(
-      `SELECT m.id, m.first_name, m.last_name, m.avatar_url, m.member_number,
-              c.name AS city_name,
-              COALESCE(SUM(pl.amount) FILTER (WHERE pl.amount > 0), 0) AS period_points
-       FROM members m
-       LEFT JOIN points_ledger pl ON pl.member_id = m.id ${dateFilter}
-       LEFT JOIN cities c ON c.id = m.city_id
-       WHERE m.is_banned = false
-         ${city_id ? 'AND m.city_id=$1' : ''}
-       GROUP BY m.id, c.name
-       ORDER BY period_points DESC
-       LIMIT 50`,
-      city_id ? [city_id] : []
-    );
-    res.json({ leaderboard: rows, period });
+    // Build WHERE + params dynamically so optional filters don't break
+    // positional placeholders.
+    const params = [];
+    const whereExtra = [];
+    if (city_id)  { params.push(city_id);  whereExtra.push(`m.city_id=$${params.length}`); }
+    if (tribe_id) { params.push(tribe_id); whereExtra.push(`m.tribe_id=$${params.length}`); }
+    const whereClause = whereExtra.length ? ' AND ' + whereExtra.join(' AND ') : '';
+
+    let rows;
+    try {
+      ({ rows } = await query(
+        `SELECT m.id, m.first_name, m.last_name, m.avatar_url, m.member_number,
+                m.tribe_id,
+                c.name AS city_name,
+                t.name AS tribe_name,
+                COALESCE(ms.current_streak, 0) AS current_streak,
+                COALESCE(SUM(pl.amount) FILTER (WHERE pl.amount > 0), 0) AS period_points
+         FROM members m
+         LEFT JOIN points_ledger pl ON pl.member_id = m.id ${dateFilter}
+         LEFT JOIN cities c ON c.id = m.city_id
+         LEFT JOIN tribes t ON t.id = m.tribe_id
+         LEFT JOIN member_streaks ms ON ms.member_id = m.id
+         WHERE m.is_banned = false ${whereClause}
+         GROUP BY m.id, c.name, t.name, ms.current_streak
+         ORDER BY period_points DESC, current_streak DESC NULLS LAST, m.created_at ASC
+         LIMIT 50`,
+        params
+      ));
+    } catch (e) {
+      // Pre-migration fallback: member_streaks or tribes table may not
+      // exist on older DBs. Drop those joins + the tie-break and retry.
+      if (e.code === '42P01' || e.code === '42703') {
+        ({ rows } = await query(
+          `SELECT m.id, m.first_name, m.last_name, m.avatar_url, m.member_number,
+                  m.tribe_id,
+                  c.name AS city_name,
+                  COALESCE(SUM(pl.amount) FILTER (WHERE pl.amount > 0), 0) AS period_points
+           FROM members m
+           LEFT JOIN points_ledger pl ON pl.member_id = m.id ${dateFilter}
+           LEFT JOIN cities c ON c.id = m.city_id
+           WHERE m.is_banned = false ${whereClause}
+           GROUP BY m.id, c.name
+           ORDER BY period_points DESC, m.created_at ASC
+           LIMIT 50`,
+          params
+        ));
+      } else { throw e; }
+    }
+    res.json({ leaderboard: rows, period, tribe_id, city_id: city_id || null });
   } catch (err) { next(err); }
 });
 

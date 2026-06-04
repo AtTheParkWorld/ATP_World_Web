@@ -29,7 +29,10 @@ router.get('/', optionalAuth, async (req, res, next) => {
       where.push('c.ends_at > NOW()');
       where.push("c.status = 'active'");   // hide cancelled / closed challenges from members
     }
-    if (type) { where.push(`c.challenge_type=$${idx++}`); params.push(type); }
+    // Rulebook ref: R-CH-001 (OQ-17). The weekly/monthly distinction
+    // was retired — all challenges are now just "Active Challenges"
+    // with a start + end date. The legacy ?type= filter is accepted but
+    // ignored so callers using the old URL params don't 400.
     if (city_id) { where.push(`(c.city_id=$${idx++} OR c.city_id IS NULL)`); params.push(city_id); }
 
     const whereClause = where.length ? 'WHERE ' + where.join(' AND ') : '';
@@ -153,9 +156,14 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
       winner_slots = 1,
       prize_1st_points = 0, prize_2nd_points = 0, prize_3rd_points = 0,
     } = req.body;
-    if (!title || !challenge_type || !metric || !target || !starts_at || !ends_at) {
+    // Rulebook ref: R-CH-001 (OQ-17). challenge_type is no longer
+    // required from the admin form. We default to 'active' so the
+    // legacy NOT NULL column stays satisfied without forcing admins
+    // to pick a meaningless weekly/monthly bucket.
+    if (!title || !metric || !target || !starts_at || !ends_at) {
       return res.status(400).json({ error: 'Required fields missing' });
     }
+    const effectiveChallengeType = challenge_type || 'active';
     const validPrize = ['none', 'points', 'product', 'badge'];
     if (!validPrize.includes(prize_type)) {
       return res.status(400).json({ error: 'prize_type must be one of ' + validPrize.join(', ') });
@@ -171,7 +179,7 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
          winner_slots, prize_1st_points, prize_2nd_points, prize_3rd_points, status)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,false,$16,
                $17,$18,$19,$20,$21,$22,$23,$24,$25,'active') RETURNING *`,
-      [title,description,icon||'🏆',badge_svg||null,badge_image||null,challenge_type,metric,target,unit||metric,
+      [title,description,icon||'🏆',badge_svg||null,badge_image||null,effectiveChallengeType,metric,target,unit||metric,
        points_reward||0,starts_at,ends_at,city_id||null,tribe_id||null,device_metric||null,req.member.id,
        entry_cost_points || 0, prize_type, prize_badge_id || null,
        prize_product_name || null, prize_product_image_url || null,

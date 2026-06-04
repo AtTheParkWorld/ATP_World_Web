@@ -25,9 +25,11 @@
  * Schema: routes/auth.js → POST /api/auth/migrate-wearables
  *
  * Token storage note: access/refresh tokens are stored plain in the DB
- * today. TODO: encrypt at rest via a WEARABLE_TOKEN_KEY env (AES-256-GCM).
- * The interface is intentionally narrow (only this file reads them) so the
- * upgrade is a one-place change.
+ * As of v1.48.0: tokens are encrypted at rest via wearableCrypto
+ * (AES-256-GCM, KEK in WEARABLE_TOKEN_KEK env, envelope-encrypted per
+ * row with a random IV). Legacy plaintext rows are read transparently
+ * (backwards-compat) and re-saved encrypted on the next refresh or
+ * re-connect. Rulebook ref: R-WR-005 (OQ-23). Audit item #9 — closed.
  */
 const router = require('express').Router();
 const jwt = require('jsonwebtoken');
@@ -36,6 +38,7 @@ const { query } = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const providers = require('../services/wearables');
 const challengeProgress = require('../services/challengeProgress');
+const wcrypt = require('../services/wearableCrypto');
 
 function _publicBaseUrl(req) {
   // Honour Render's forwarded proto/host so OAuth redirects don't break
@@ -134,26 +137,38 @@ async function _saveDailyMetric(memberId, provider, m) {
 }
 
 // Ensure the connection's access token is fresh. Returns the (possibly
-// updated) connection row. If refresh fails, marks the connection as
-// 'needs_reauth' so the UI can prompt the member.
+// updated) connection row, with access_token + refresh_token decrypted
+// (callers consume conn.access_token as a Bearer in plaintext).
+//
+// SECURITY (R-WR-005): the row coming in may carry either legacy
+// plaintext or v1-encrypted tokens. wcrypt.decrypt() handles both. On
+// refresh, we always re-save encrypted — that's how legacy rows get
+// upgraded silently. If WEARABLE_TOKEN_KEK is unset, encrypt() throws
+// and the refresh fails loudly rather than regressing to plaintext.
 async function _ensureFreshToken(conn) {
-  if (!conn.token_expires_at) return conn;
+  if (!conn.token_expires_at) return wcrypt.decryptConn(conn);
   const expiresAt = new Date(conn.token_expires_at).getTime();
-  if (expiresAt > Date.now() + 60_000) return conn; // > 1 min left
+  if (expiresAt > Date.now() + 60_000) return wcrypt.decryptConn(conn); // > 1 min left
   const adapter = providers.get(conn.provider);
-  if (!adapter || !adapter.refreshAccessToken || !conn.refresh_token) return conn;
+  const plainRefresh = wcrypt.decrypt(conn.refresh_token);
+  if (!adapter || !adapter.refreshAccessToken || !plainRefresh) return wcrypt.decryptConn(conn);
   try {
-    const refreshed = await adapter.refreshAccessToken(conn.refresh_token);
-    if (!refreshed) return conn; // adapter says no refresh needed (e.g. Polar)
+    const refreshed = await adapter.refreshAccessToken(plainRefresh);
+    if (!refreshed) return wcrypt.decryptConn(conn); // adapter says no refresh needed (e.g. Polar)
     const { rows } = await query(
       `UPDATE wearable_connections
           SET access_token=$1, refresh_token=COALESCE($2, refresh_token),
               token_expires_at=$3, status='active', last_error=NULL, updated_at=NOW()
         WHERE id=$4 RETURNING *`,
-      [refreshed.access_token, refreshed.refresh_token, refreshed.token_expires_at, conn.id]
+      [
+        wcrypt.encrypt(refreshed.access_token),
+        refreshed.refresh_token ? wcrypt.encrypt(refreshed.refresh_token) : null,
+        refreshed.token_expires_at,
+        conn.id,
+      ]
     );
     _logSync(conn.member_id, conn.provider, 'refresh', 'ok');
-    return rows[0];
+    return wcrypt.decryptConn(rows[0]);
   } catch (e) {
     await query(
       `UPDATE wearable_connections SET status='needs_reauth', last_error=$1, updated_at=NOW() WHERE id=$2`,
@@ -337,8 +352,15 @@ router.get('/callback/:provider', async (req, res, next) => {
          status           = 'active',
          last_error       = NULL,
          updated_at       = NOW()`,
-      [decoded.m, adapter.name, tokens.provider_user_id, tokens.access_token,
-       tokens.refresh_token, tokens.token_expires_at, tokens.scopes]
+      // SECURITY (R-WR-005): encrypt at the boundary — tokens never
+      // hit the DB in plaintext after v1.48.0. If WEARABLE_TOKEN_KEK is
+      // unset, wcrypt.encrypt throws and the connect fails loudly —
+      // intentional: we'd rather break the OAuth flow than silently
+      // regress to plaintext storage.
+      [decoded.m, adapter.name, tokens.provider_user_id,
+       wcrypt.encrypt(tokens.access_token),
+       wcrypt.encrypt(tokens.refresh_token),
+       tokens.token_expires_at, tokens.scopes]
     );
     _logSync(decoded.m, adapter.name, 'oauth', 'ok');
     // Kick off an initial sync; don't block the redirect on it.
@@ -349,11 +371,14 @@ router.get('/callback/:provider', async (req, res, next) => {
       try {
         const { rows } = await query(`SELECT * FROM wearable_connections WHERE member_id=$1 AND provider=$2`, [decoded.m, adapter.name]);
         if (!rows[0]) return;
+        // R-WR-005: decrypt before handing to provider adapter; the
+        // adapter expects plaintext access_token / refresh_token.
+        const conn = wcrypt.decryptConn(rows[0]);
         if (typeof adapter.requestBackfill === 'function') {
-          await adapter.requestBackfill(rows[0], 30);
+          await adapter.requestBackfill(conn, 30);
           _logSync(decoded.m, adapter.name, 'backfill', 'ok');
         } else {
-          await _syncOne(rows[0]);
+          await _syncOne(conn);
         }
       } catch (e) { _logSync(decoded.m, adapter.name, 'backfill', 'error', String(e.message || e)); }
     });
@@ -559,7 +584,10 @@ router.post('/webhooks/:provider', async (req, res) => {
       [adapter.name, evt.provider_user_id]
     );
     if (!rows[0]) return;
-    const conn = rows[0];
+    // R-WR-005: webhook handler may dispatch into _syncOne, which uses
+    // the access token to call the provider API. Decrypt at the
+    // boundary so legacy + encrypted rows both work.
+    const conn = wcrypt.decryptConn(rows[0]);
     // Two paths: inline-payload providers (Garmin) ship the data with
     // the webhook itself, so we save straight from evt; other providers
     // (Strava) just notify and we re-fetch via _syncOne.
@@ -618,7 +646,10 @@ router.get('/debug/strava-test', authenticate, async (req, res, next) => {
       [req.member.id]
     );
     if (!rows.length) return res.json({ error: 'No active Strava connection for the calling account', hint: 'Make sure you are logged in as the same member account that connected Strava.' });
-    const conn = rows[0];
+    // R-WR-005: decrypt + auto-refresh so the test runs with a valid
+    // access token. _ensureFreshToken handles both legacy plaintext
+    // and v1-encrypted rows transparently.
+    const conn = (await _ensureFreshToken(rows[0])) || wcrypt.decryptConn(rows[0]);
 
     const out = {
       connection: {

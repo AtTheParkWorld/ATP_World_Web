@@ -122,11 +122,21 @@ router.get('/me/posts', authenticate, async (req, res, next) => {
 });
 
 // ── POST /api/community/posts ─────────────────────────────────
+// Rulebook ref: R-PO-002 (OQ-26). Hard cap at 500 chars; frontend
+// shows a live counter on .composer-input.
+const POST_MAX_LEN = 500;
 router.post('/posts', authenticate, async (req, res, next) => {
   try {
     const { content, media = [] } = req.body;
     if (!content && !media.length) {
       return res.status(400).json({ error: 'Post must have content or media' });
+    }
+    if (content && String(content).length > POST_MAX_LEN) {
+      return res.status(400).json({
+        error: `Post is too long. Max ${POST_MAX_LEN} characters.`,
+        code:  'POST_TOO_LONG',
+        max:   POST_MAX_LEN,
+      });
     }
 
     const { rows } = await query(
