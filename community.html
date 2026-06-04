@@ -94,7 +94,11 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .post-avatar{width:40px;height:40px;border-radius:50%;background:var(--dark3);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--white);flex-shrink:0;overflow:hidden}
 .post-avatar img{width:100%;height:100%;object-fit:cover}
 .post-author{font-size:13px;font-weight:700;color:var(--white)}
-.post-tribe{font-size:11px;font-weight:700;color:var(--green)}
+.post-tribe{font-size:11px;font-weight:700;color:var(--green);display:inline-flex;align-items:center;gap:5px}
+/* R-TR-005 / OQ-16b — tribe color dot rendered before the tribe name.
+   The dot inherits its background from --tribe-color, falling back to
+   the existing green so legacy renders don't lose their colour. */
+.tribe-dot{width:8px;height:8px;border-radius:50%;background:var(--tribe-color, var(--green));flex-shrink:0;box-shadow:0 0 0 1.5px rgba(255,255,255,.12)}
 .post-time{font-size:11px;color:var(--muted);margin-top:1px}
 .post-menu{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px 8px;font-size:18px;line-height:1;border-radius:4px;transition:color .2s}
 .post-menu:hover{color:var(--white)}
@@ -326,6 +330,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
   <div class="comm-tabs-bar">
     <div class="comm-tabs-inner">
       <button class="comm-tab active" data-atp-call="showTab" data-args='["feed"]'>Feed</button>
+      <button class="comm-tab" data-atp-call="showTab" data-args='["tribe"]'>Your Tribe</button>
       <button class="comm-tab" data-atp-call="showTab" data-args='["leaderboard"]'>Leaderboard</button>
       <button class="comm-tab" data-atp-call="showTab" data-args='["challenges"]'>Challenges</button>
       <a class="comm-tab" href="blog.html">Blog</a>
@@ -370,6 +375,16 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
         <!-- Posts -->
         <div id="postsContainer"></div>
+      </div>
+
+      <!-- ── YOUR TRIBE FEED (R-TR-005 / OQ-16a) ── -->
+      <div class="comm-panel" id="tab-tribe">
+        <div id="tribePostsContainer">
+          <div class="atp-empty" style="padding:48px 24px;text-align:center;color:var(--muted)">
+            <div style="font-size:36px;margin-bottom:12px">🤝</div>
+            <div style="font-size:14px;color:var(--light);margin-bottom:6px">Loading your tribe feed…</div>
+          </div>
+        </div>
       </div>
 
       <!-- ── LEADERBOARD ── -->
@@ -467,6 +482,87 @@ function showTab(name, btn) {
   document.querySelectorAll(".comm-tab").forEach(function(t){t.classList.remove("active");});
   document.getElementById("tab-"+name).classList.add("active");
   if(btn) btn.classList.add("active");
+  // Rulebook ref: R-TR-005 (OQ-16a). Lazy-load the tribe feed only
+  // when its tab is opened — keeps the initial page paint snappy.
+  if (name === "tribe") loadTribeFeed();
+}
+
+// Rulebook ref: R-TR-005 (OQ-16a). Calls /api/community/feed?tribe=mine
+// which the backend resolves against the authenticated member's
+// tribe_id. Handles the two friendly failure modes (signed out / no
+// tribe set) with a clear CTA rather than a blank pane.
+var _tribeFeedLoaded = false;
+function loadTribeFeed() {
+  if (_tribeFeedLoaded) return;
+  _tribeFeedLoaded = true;
+  var container = document.getElementById("tribePostsContainer");
+  if (!container) return;
+  var token = (window.ATP && window.ATP.getToken && window.ATP.getToken()) || null;
+  if (!token) {
+    container.innerHTML = '<div class="atp-empty" style="padding:48px 24px;text-align:center;color:var(--muted)">' +
+      '<div style="font-size:36px;margin-bottom:12px">🤝</div>' +
+      '<div style="font-size:14px;color:var(--light);margin-bottom:8px">Sign in to see your tribe\'s feed</div>' +
+      '<button class="atp-btn atp-btn--primary" onclick="openAuth(\'login\')">Log in</button>' +
+      '</div>';
+    _tribeFeedLoaded = false;  // retry on next tab visit
+    return;
+  }
+  fetch('/api/community/feed?tribe=mine', {
+    headers: { Authorization: 'Bearer ' + token },
+  })
+    .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, status: r.status, body: j }; }); })
+    .then(function(res){
+      if (!res.ok) {
+        var msg = res.body && res.body.error ? res.body.error : 'Could not load tribe feed.';
+        var cta = res.body && res.body.code === 'NO_TRIBE_SET'
+          ? '<a class="atp-btn atp-btn--primary" href="profile.html#edit" style="margin-top:12px;display:inline-block;text-decoration:none">Pick a tribe →</a>'
+          : '';
+        container.innerHTML = '<div class="atp-empty" style="padding:48px 24px;text-align:center;color:var(--muted)">' +
+          '<div style="font-size:36px;margin-bottom:12px">🤝</div>' +
+          '<div style="font-size:14px;color:var(--light)">' + escapeHtml(msg) + '</div>' +
+          cta + '</div>';
+        _tribeFeedLoaded = false;
+        return;
+      }
+      var posts = (res.body && res.body.posts) || [];
+      if (!posts.length) {
+        container.innerHTML = '<div class="atp-empty" style="padding:48px 24px;text-align:center;color:var(--muted)">' +
+          '<div style="font-size:36px;margin-bottom:12px">🤝</div>' +
+          '<div style="font-size:14px;color:var(--light)">No tribe posts yet. Be the first to share.</div>' +
+          '</div>';
+        return;
+      }
+      // Reuse buildPostCard — the tribe feed cards look identical to
+      // the main feed, just filtered. Adapter normalises the shape.
+      container.innerHTML = posts.map(_adaptFeedRow).map(buildPostCard).join('');
+    })
+    .catch(function(){
+      container.innerHTML = '<div class="atp-empty" style="padding:48px 24px;text-align:center;color:var(--muted)">Couldn’t load tribe feed — try again.</div>';
+      _tribeFeedLoaded = false;
+    });
+}
+
+// Map server-side post row → buildPostCard's expected shape. The
+// server now returns tribe_color / tribe_slug / tribe_name straight
+// off the DB join (R-TR-005 / OQ-16a) so renderers can colourise
+// the tribe chip without a second lookup.
+function _adaptFeedRow(p) {
+  var author = ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || 'Member';
+  var initials = ((p.first_name || ' ').charAt(0) + (p.last_name || ' ').charAt(0)).toUpperCase();
+  return {
+    id:         p.id,
+    av:         initials,
+    author:     author,
+    tribe:      p.tribe_name || '',
+    tribe_slug: p.tribe_slug || null,
+    tribe_color:p.tribe_color || null,
+    time:       p.created_at,
+    text:       p.content || '',
+    media:      Array.isArray(p.media) ? p.media : [],
+    likes:      Number(p.likes_count) || 0,
+    comments:   [],
+    friendAdded:false,
+  };
 }
 
 // ── DATA ────────────────────────────────────────────────────
@@ -731,7 +827,7 @@ function buildPostCard(post) {
         '<div>'+
           '<div style="display:flex;align-items:center;gap:8px">'+
             '<span class="post-author">'+escapeHtml(post.author)+'</span>'+
-            '<span class="post-tribe">'+escapeHtml(post.tribe)+' Tribe</span>'+
+            (post.tribe ? '<span class="post-tribe" style="--tribe-color:'+escapeHtml(post.tribe_color || '#7ac231')+'"><span class="tribe-dot"></span>'+escapeHtml(post.tribe)+' Tribe</span>' : '')+
             (!post.friendAdded ?
               '<button class="friend-req-btn" id="freq-'+_pid+'" onclick="sendFriendReq('+_pid+')">+ Friend</button>' :
               '') +
@@ -962,7 +1058,10 @@ async function renderLeaderboard() {
         return {
           init: m.first_name[0],
           name: m.first_name + ' ' + m.last_name,
-          tribe: m.tribe || 'Community',
+          // Rulebook ref: R-TR-005 / OQ-16b. Carry the tribe name +
+          // color through to the renderer so the chip is the right hue.
+          tribe:       m.tribe_name  || m.tribe || '',
+          tribe_color: m.tribe_color || null,
           pts: m.period_points,
           chg: 0,
           you: m.id === (window.ATP.getUser() && window.ATP.getUser().memberId)
@@ -983,12 +1082,16 @@ function _renderLeaderboardRows(data) {
       m.chg>0 ? '<span class="lb-chg up">▲'+m.chg+'</span>' :
       m.chg<0 ? '<span class="lb-chg down">▼'+Math.abs(m.chg)+'</span>' :
       '<span class="lb-chg same">—</span>';
+    // Rulebook ref: R-TR-005 / OQ-16b. Tribe-color dot rendered next to
+    // the tribe name. m.tribe_color comes from the backend's leaderboard
+    // join (added in v1.52.0); legacy LB_DATA rows fall back to green.
+    var tribeColor = m.tribe_color || '#7ac231';
     return '<tr class="lb-row'+(m.you?" lb-you":"")+'">'+
       '<td class="lb-rank '+rankClass+'">'+(i<3?medals[i]:i+1)+'</td>'+
       '<td class="lb-name-cell">'+
         '<div class="lb-av">'+escapeHtml(m.init)+'</div>'+
         '<div><div class="lb-member-name">'+escapeHtml(m.name)+(m.you?" (you)":"")+'</div>'+
-        '<div class="lb-member-tribe">'+escapeHtml(m.tribe)+' Tribe</div></div>'+
+        '<div class="lb-member-tribe" style="--tribe-color:'+escapeHtml(tribeColor)+';display:inline-flex;align-items:center;gap:5px"><span class="tribe-dot"></span>'+escapeHtml(m.tribe||'')+(m.tribe?' Tribe':'')+'</div></div>'+
       '</td>'+
       '<td class="lb-pts">'+(Number(m.pts)||0).toLocaleString()+'</td>'+
       '<td>'+chgHtml+'</td>'+
@@ -1379,7 +1482,11 @@ function mapApiPost(p) {
     realId:   p.id,
     av:       initials(p.first_name, p.last_name),
     author:   (p.first_name || '') + (p.last_name ? ' ' + p.last_name : ''),
-    tribe:    p.tribe_name || 'Community',
+    // Rulebook ref: R-TR-005 / OQ-16b. Carry tribe_color so the chip
+    // renders in the member's tribe colour, not the default green.
+    tribe:       p.tribe_name  || '',
+    tribe_slug:  p.tribe_slug  || null,
+    tribe_color: p.tribe_color || null,
     time:     p.created_at ? timeAgo(p.created_at) : '',
     text:     p.content || '',
     media:    media,

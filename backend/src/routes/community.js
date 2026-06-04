@@ -58,39 +58,101 @@ async function _stripInlineFromPosts(rows) {
 }
 
 // ── GET /api/community/feed ───────────────────────────────────
+// Rulebook refs: R-TR-005 / R-PO-001 / OQ-16a.
+//
+// Query params:
+//   ?limit       — default 20
+//   ?before      — pagination cursor (created_at)
+//   ?tribe_id    — filter to posts authored by members of that tribe
+//                  (powers the "Your Tribe" community tab)
+//   ?tribe=mine  — shortcut: filter by the calling member's tribe.
+//                  Requires auth; returns 400 if member has no tribe.
+//
+// Side note: this query used to LEFT JOIN tribes via
+// `m.sports_preferences->>0` (the first sport string in a member's
+// JSON array), which silently returned the wrong tribe color for
+// members whose first sport didn't match a tribe name. We now join
+// by `m.tribe_id`, the actual canonical FK, and surface tribe_color
+// + tribe_slug + tribe_name so the UI can render the OQ-16b color
+// badges.
 router.get('/feed', optionalAuth, async (req, res, next) => {
   try {
     const { limit = 20, before } = req.query;
-    // Parameterise everything — member_id used to be interpolated into
-    // the SQL string which, while not exploitable in practice (UUID
-    // generated server-side), is the wrong shape. Build the param list
-    // explicitly so each value is bound, including member_id.
     const params = [parseInt(limit, 10) || 20];
     const viewerId = req.member ? req.member.id : null;
     params.push(viewerId);                // $2 — may be null
     const memberParamIdx = params.length;
+
     let beforeClause = '';
     if (before) {
       params.push(before);
       beforeClause = `AND p.created_at < $${params.length}`;
     }
 
-    const { rows } = await query(
-      `SELECT p.id, p.content, p.media, p.likes_count, p.comments_count, p.created_at,
-              m.id AS member_id, m.first_name, m.last_name, m.avatar_url,
-              m.member_number, m.is_ambassador,
-              CASE WHEN $${memberParamIdx}::uuid IS NULL THEN false
-                   ELSE EXISTS(SELECT 1 FROM post_likes pl WHERE pl.post_id=p.id AND pl.member_id=$${memberParamIdx}::uuid)
-              END AS liked_by_me,
-              t.name AS tribe_name
-       FROM posts p
-       JOIN members m ON m.id = p.member_id
-       LEFT JOIN tribes t ON t.name = (m.sports_preferences->>0)
-       WHERE p.is_deleted = false ${beforeClause}
-       ORDER BY p.created_at DESC
-       LIMIT $1`,
-      params
-    );
+    // Resolve the tribe filter. ?tribe=mine needs an authenticated
+    // viewer whose own tribe is set; otherwise return a clear 400.
+    let tribeFilterClause = '';
+    if (req.query.tribe_id) {
+      params.push(req.query.tribe_id);
+      tribeFilterClause = `AND m.tribe_id = $${params.length}`;
+    } else if (req.query.tribe === 'mine') {
+      if (!req.member) {
+        return res.status(401).json({ error: 'Sign in to see your tribe feed.', code: 'AUTH_REQUIRED' });
+      }
+      const { rows: meRows } = await query('SELECT tribe_id FROM members WHERE id=$1', [req.member.id]);
+      const myTribe = meRows[0] && meRows[0].tribe_id;
+      if (!myTribe) {
+        return res.status(400).json({
+          error: 'Pick a tribe in your profile to see this feed.',
+          code:  'NO_TRIBE_SET',
+        });
+      }
+      params.push(myTribe);
+      tribeFilterClause = `AND m.tribe_id = $${params.length}`;
+    }
+
+    let rows;
+    try {
+      ({ rows } = await query(
+        `SELECT p.id, p.content, p.media, p.likes_count, p.comments_count, p.created_at,
+                m.id AS member_id, m.first_name, m.last_name, m.avatar_url,
+                m.member_number, m.is_ambassador, m.tribe_id,
+                CASE WHEN $${memberParamIdx}::uuid IS NULL THEN false
+                     ELSE EXISTS(SELECT 1 FROM post_likes pl WHERE pl.post_id=p.id AND pl.member_id=$${memberParamIdx}::uuid)
+                END AS liked_by_me,
+                t.name  AS tribe_name,
+                t.slug  AS tribe_slug,
+                t.color AS tribe_color
+         FROM posts p
+         JOIN members m ON m.id = p.member_id
+         LEFT JOIN tribes t ON t.id = m.tribe_id
+         WHERE p.is_deleted = false ${beforeClause} ${tribeFilterClause}
+         ORDER BY p.created_at DESC
+         LIMIT $1`,
+        params
+      ));
+    } catch (e) {
+      // Pre-migration fallback: members.tribe_id or tribes table may
+      // not exist on this DB. Drop the tribe join entirely.
+      if (e.code === '42P01' || e.code === '42703') {
+        ({ rows } = await query(
+          `SELECT p.id, p.content, p.media, p.likes_count, p.comments_count, p.created_at,
+                  m.id AS member_id, m.first_name, m.last_name, m.avatar_url,
+                  m.member_number, m.is_ambassador,
+                  CASE WHEN $${memberParamIdx}::uuid IS NULL THEN false
+                       ELSE EXISTS(SELECT 1 FROM post_likes pl WHERE pl.post_id=p.id AND pl.member_id=$${memberParamIdx}::uuid)
+                  END AS liked_by_me,
+                  NULL AS tribe_name, NULL AS tribe_slug, NULL AS tribe_color
+           FROM posts p
+           JOIN members m ON m.id = p.member_id
+           WHERE p.is_deleted = false ${beforeClause}
+           ORDER BY p.created_at DESC
+           LIMIT $1`,
+          [params[0], params[1], ...(before ? [params[2]] : [])]
+        ));
+      } else { throw e; }
+    }
+
     await _stripInlineFromPosts(rows);
     res.json({ posts: rows });
   } catch (err) { next(err); }

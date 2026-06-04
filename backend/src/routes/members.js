@@ -338,7 +338,9 @@ router.get('/leaderboard', async (req, res, next) => {
         `SELECT m.id, m.first_name, m.last_name, m.avatar_url, m.member_number,
                 m.tribe_id,
                 c.name AS city_name,
-                t.name AS tribe_name,
+                t.name  AS tribe_name,
+                t.slug  AS tribe_slug,
+                t.color AS tribe_color,
                 COALESCE(ms.current_streak, 0) AS current_streak,
                 COALESCE(SUM(pl.amount) FILTER (WHERE pl.amount > 0), 0) AS period_points
          FROM members m
@@ -347,7 +349,7 @@ router.get('/leaderboard', async (req, res, next) => {
          LEFT JOIN tribes t ON t.id = m.tribe_id
          LEFT JOIN member_streaks ms ON ms.member_id = m.id
          WHERE m.is_banned = false ${whereClause}
-         GROUP BY m.id, c.name, t.name, ms.current_streak
+         GROUP BY m.id, c.name, t.name, t.slug, t.color, ms.current_streak
          ORDER BY period_points DESC, current_streak DESC NULLS LAST, m.created_at ASC
          LIMIT 50`,
         params
