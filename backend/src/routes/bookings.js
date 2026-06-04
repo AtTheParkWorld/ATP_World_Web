@@ -841,25 +841,174 @@ router.post('/:id/feedback', authenticate, async (req, res, next) => {
 });
 
 // ── HELPER ────────────────────────────────────────────────────
+// Rulebook ref: R-BK-006 (OQ-7+8). Waitlist promotion behavior:
+//   - FREE sessions (price=0 AND price_points=0): auto-book the
+//     position-#1 member as confirmed + send them a confirmation
+//     email. They didn't ask for it, but a free seat opening up and
+//     making them book again is unnecessary friction. The waitlist
+//     row gets dropped so we don't double-promote.
+//   - PAID sessions (cash or points): notify only. The member gets
+//     24h to claim the seat by manually rebooking — they may not
+//     want to pay anymore. notified_at + expires_at are stamped so
+//     we know not to re-notify the same person twice.
+//   - On every call we also harvest "expired" entries (notified
+//     >24h ago, never booked) and treat them like fresh waitlist
+//     skips so the next un-notified entry gets a shot. This makes
+//     the helper "process the queue" rather than just "notify one."
 async function notifyWaitlist(sessionId) {
-  const { rows } = await query(
-    `SELECT wl.id, wl.member_id, m.email, m.first_name
-     FROM waiting_list wl
-     JOIN members m ON m.id=wl.member_id
-     WHERE wl.session_id=$1 AND wl.notified_at IS NULL
-     ORDER BY wl.position ASC
-     LIMIT 1`,
-    [sessionId]
-  );
-  if (!rows.length) return;
-  const entry = rows[0];
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  // Step 1: clear out expired notifications so position #1 (if any
+  // still un-notified) gets a clean shot. We don't delete — the audit
+  // trail stays — we just remove the lock-out by reverting notified_at
+  // back to NULL. expires_at stays so we can see it was attempted.
   await query(
-    'UPDATE waiting_list SET notified_at=NOW(), expires_at=$1 WHERE id=$2',
-    [expiresAt, entry.id]
+    `UPDATE waiting_list
+        SET notified_at = NULL
+      WHERE session_id = $1
+        AND notified_at IS NOT NULL
+        AND expires_at < NOW()`,
+    [sessionId]
+  ).catch(() => {});
+
+  // Step 2: find the next un-notified waitlist entry + session pricing.
+  const { rows } = await query(
+    `SELECT wl.id            AS wl_id,
+            wl.member_id,
+            wl.position,
+            s.id             AS session_id,
+            s.name           AS session_name,
+            s.scheduled_at,
+            s.ends_at,
+            s.location,
+            s.price,
+            s.price_points,
+            s.sponsor_name, s.sponsor_logo_url, s.sponsor_url,
+            m.first_name, m.last_name, m.email, m.member_number
+       FROM waiting_list wl
+       JOIN sessions s ON s.id  = wl.session_id
+       JOIN members  m ON m.id  = wl.member_id
+      WHERE wl.session_id   = $1
+        AND wl.notified_at IS NULL
+      ORDER BY wl.position ASC
+      LIMIT 1`,
+    [sessionId]
+  ).catch(async (e) => {
+    // Pre-migration fallback: sponsor_* columns may not exist on older DBs.
+    if (e.code === '42703') {
+      return query(
+        `SELECT wl.id  AS wl_id, wl.member_id, wl.position,
+                s.id  AS session_id, s.name AS session_name, s.scheduled_at,
+                s.ends_at, s.location, s.price, s.price_points,
+                NULL AS sponsor_name, NULL AS sponsor_logo_url, NULL AS sponsor_url,
+                m.first_name, m.last_name, m.email, m.member_number
+           FROM waiting_list wl
+           JOIN sessions s ON s.id  = wl.session_id
+           JOIN members  m ON m.id  = wl.member_id
+          WHERE wl.session_id   = $1
+            AND wl.notified_at IS NULL
+          ORDER BY wl.position ASC
+          LIMIT 1`,
+        [sessionId]
+      );
+    }
+    throw e;
+  });
+  if (!rows.length) return null;
+  const entry = rows[0];
+
+  const cashPrice  = Number(entry.price        || 0);
+  const pointPrice = parseInt(entry.price_points || 0, 10) || 0;
+  const isFree     = cashPrice <= 0 && pointPrice <= 0;
+
+  // Belt-and-braces: a member who somehow already has a non-cancelled
+  // booking on this session shouldn't be auto-promoted again. Skip them
+  // and let the next call advance to the following position.
+  const { rows: existing } = await query(
+    `SELECT id, status FROM bookings WHERE member_id=$1 AND session_id=$2`,
+    [entry.member_id, entry.session_id]
   );
-  // In production: send push notification + email
-  console.log(`Waiting list: notified ${entry.first_name} for session ${sessionId}`);
+  const hasActive = existing.some(b => b.status !== 'cancelled');
+  if (hasActive) {
+    await query('DELETE FROM waiting_list WHERE id=$1', [entry.wl_id]);
+    return { kind: 'skipped_already_booked', member_id: entry.member_id };
+  }
+
+  if (isFree) {
+    // FREE PATH: auto-book + email.
+    const qrToken = crypto.randomBytes(16).toString('hex');
+    const member  = {
+      member_number: entry.member_number,
+      first_name:    entry.first_name,
+      last_name:     entry.last_name,
+      email:         entry.email,
+    };
+    const sessionObj = {
+      name:         entry.session_name,
+      scheduled_at: entry.scheduled_at,
+      location:     entry.location,
+      sponsor_name:     entry.sponsor_name,
+      sponsor_logo_url: entry.sponsor_logo_url,
+      sponsor_url:      entry.sponsor_url,
+    };
+    const qrData = _buildQrPayload(member, sessionObj, qrToken);
+    try {
+      await transaction(async (client) => {
+        await client.query(
+          `INSERT INTO bookings (member_id, session_id, qr_code, qr_token, status)
+             VALUES ($1,$2,$3,$4,'confirmed')
+             ON CONFLICT (member_id, session_id)
+               DO UPDATE SET status='confirmed', qr_code=$3, qr_token=$4, cancelled_at=NULL`,
+          [entry.member_id, entry.session_id, qrData, qrToken]
+        );
+        await client.query('DELETE FROM waiting_list WHERE id=$1', [entry.wl_id]);
+        await client.query(
+          `INSERT INTO notifications (member_id, type, title, body, data)
+             VALUES ($1, 'waitlist_promoted', $2, $3, $4)`,
+          [
+            entry.member_id,
+            '🎉 You\'re in!',
+            `A seat opened up on ${entry.session_name}. You're confirmed — your QR is in your profile.`,
+            JSON.stringify({ session_id: entry.session_id, position: entry.position }),
+          ]
+        );
+      });
+      // Email outside the transaction (fire-and-forget).
+      emailService.sendBookingConfirmation(member, sessionObj, qrData, qrToken)
+        .catch(function(){ /* email failure shouldn't reverse the promotion */ });
+      console.log(`[waitlist] auto-booked ${entry.first_name} (free session)`);
+      return { kind: 'auto_booked', member_id: entry.member_id };
+    } catch (e) {
+      console.warn('[waitlist] auto-book failed:', e.message);
+      return null;
+    }
+  }
+
+  // PAID PATH: notify-only, 24h claim window.
+  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  try {
+    await query(
+      'UPDATE waiting_list SET notified_at=NOW(), expires_at=$1 WHERE id=$2',
+      [expiresAt, entry.wl_id]
+    );
+    await query(
+      `INSERT INTO notifications (member_id, type, title, body, data)
+         VALUES ($1, 'waitlist_seat_open', $2, $3, $4)`,
+      [
+        entry.member_id,
+        '⏰ A seat is yours if you want it',
+        `A seat opened up on ${entry.session_name}. Claim within 24 hours by booking from the session page.`,
+        JSON.stringify({
+          session_id:   entry.session_id,
+          position:     entry.position,
+          expires_at:   expiresAt.toISOString(),
+        }),
+      ]
+    );
+    console.log(`[waitlist] notified ${entry.first_name} (paid session)`);
+    return { kind: 'notified', member_id: entry.member_id, expires_at: expiresAt };
+  } catch (e) {
+    console.warn('[waitlist] notify failed:', e.message);
+    return null;
+  }
 }
 
 module.exports = router;

@@ -10,6 +10,38 @@ const achievements = require('../services/achievements');
 // upload ref. Click URL: https?:// only (no javascript:/data:). Returns
 // a clean { sponsor_name, sponsor_logo_url, sponsor_url } object; bad
 // values are dropped to null rather than throwing.
+// ─────────────────────────────────────────────────────────────
+// Effective session status (R-SES-001 / OQ-6).
+//
+// The stored sessions.status enum is { upcoming, completed, cancelled }
+// — we deliberately do NOT add a 'live' value to the DB column,
+// because a live session is just an upcoming one whose schedule window
+// is currently open. Computing it at read-time avoids needing a
+// per-minute cron to flip rows. The transition to 'completed' is
+// already handled by the existing 3h-after-end auto-fire job; nothing
+// else has to change.
+//
+// Window: scheduled_at <= now < ends_at (default 90 min when ends_at
+// is null). Outside that window the stored status is returned
+// unchanged.
+//
+// Mutates nothing — returns a shallow-cloned row with `status`
+// overwritten to 'live' when applicable, plus a `is_live` boolean
+// convenience flag for the UI.
+function _decorateLiveStatus(row) {
+  if (!row || !row.scheduled_at) return row;
+  if (row.status !== 'upcoming')   return { ...row, is_live: false };
+  const schedMs = new Date(row.scheduled_at).getTime();
+  const endsMs  = row.ends_at
+    ? new Date(row.ends_at).getTime()
+    : schedMs + 90 * 60 * 1000;
+  const now = Date.now();
+  if (schedMs <= now && now < endsMs) {
+    return { ...row, status: 'live', is_live: true };
+  }
+  return { ...row, is_live: false };
+}
+
 function _sanitizeSponsor(body) {
   const name = (body.sponsor_name == null ? '' : String(body.sponsor_name)).trim().slice(0, 120) || null;
   let logo = (body.sponsor_logo_url == null ? '' : String(body.sponsor_logo_url)).trim();
@@ -126,7 +158,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
       );
       rows = r.rows;
     }
-    res.json({ sessions: rows });
+    res.json({ sessions: rows.map(_decorateLiveStatus) });
   } catch (err) { next(err); }
 });
 
@@ -301,7 +333,7 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
     }
 
     res.json({
-      session: rows[0],
+      session: _decorateLiveStatus(rows[0]),
       assigned_ambassadors: assignedAmbassadors,
       myBooking, myWaitlistPos,
     });
@@ -578,7 +610,7 @@ router.post('/:id/checkin', authenticate, requireScanner, async (req, res, next)
     // Get session — must still be upcoming (non-admin). Once a
     // session auto-completes (3h after end time) check-ins close.
     const { rows: sRows } = await query(
-      'SELECT id, status, points_reward, is_online FROM sessions WHERE id=$1',
+      'SELECT id, status, points_reward, is_online, scheduled_at, ends_at FROM sessions WHERE id=$1',
       [req.params.id]
     );
     if (!sRows.length) return res.status(404).json({ error: 'Session not found' });
@@ -591,6 +623,36 @@ router.post('/:id/checkin', authenticate, requireScanner, async (req, res, next)
           : 'Session is not available for check-in (status: ' + session.status + ').',
         code: 'CHECKIN_CLOSED',
       });
+    }
+
+    // Rulebook ref: R-CHK-004 (OQ-10). Check-ins are only valid in the
+    // window [scheduled_at - 2h, ends_at + 2h]. Outside that, scanners
+    // get a clear error so a stale screen showing yesterday's session
+    // can't mark today's members "attended". Admins can override with
+    // ?force=1 (legitimate edge cases: late-finishing event, ambassador
+    // catching up on paper attendance sheet hours later).
+    const force = req.query.force === '1' && req.member && req.member.is_admin;
+    if (!force && session.scheduled_at) {
+      const TWO_H_MS = 2 * 60 * 60 * 1000;
+      const schedMs  = new Date(session.scheduled_at).getTime();
+      const endsMs   = session.ends_at
+        ? new Date(session.ends_at).getTime()
+        : schedMs + 90 * 60 * 1000;            // default duration: 90 min
+      const now = Date.now();
+      if (now < schedMs - TWO_H_MS) {
+        return res.status(400).json({
+          error: 'Check-ins open 2 hours before the session.',
+          code:  'CHECKIN_TOO_EARLY',
+          opens_at: new Date(schedMs - TWO_H_MS).toISOString(),
+        });
+      }
+      if (now > endsMs + TWO_H_MS) {
+        return res.status(400).json({
+          error: 'Check-ins closed (more than 2 hours after the session ended).',
+          code:  'CHECKIN_TOO_LATE',
+          closed_at: new Date(endsMs + TWO_H_MS).toISOString(),
+        });
+      }
     }
 
     // Find booking
