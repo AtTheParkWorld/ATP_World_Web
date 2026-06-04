@@ -339,13 +339,31 @@ router.post('/:id/pay-with-points', authenticate, async (req, res, next) => {
       }
 
       const newBalance = member.points_balance - cost;
-      await client.query(
-        `INSERT INTO points_ledger
-           (member_id, amount, balance, reason, reference_id, description)
-         VALUES ($1, $2, $3, 'session_booking', $4, $5)`,
-        [member.id, -cost, newBalance, b.session_id,
-         'Booked: ' + (b.name || 'Session')]
-      );
+      // R-PT-003 (OQ-11): insert the negative ledger row with
+      // remaining=0 + FIFO-debit oldest earning rows. Pre-migration
+      // fallback when the `remaining` column doesn't exist yet.
+      try {
+        await client.query(
+          `INSERT INTO points_ledger
+             (member_id, amount, balance, reason, reference_id, description, remaining)
+           VALUES ($1, $2, $3, 'session_booking', $4, $5, 0)`,
+          [member.id, -cost, newBalance, b.session_id,
+           'Booked: ' + (b.name || 'Session')]
+        );
+      } catch (e) {
+        if (e.code !== '42703') throw e;
+        await client.query(
+          `INSERT INTO points_ledger
+             (member_id, amount, balance, reason, reference_id, description)
+           VALUES ($1, $2, $3, 'session_booking', $4, $5)`,
+          [member.id, -cost, newBalance, b.session_id,
+           'Booked: ' + (b.name || 'Session')]
+        );
+      }
+      // FIFO debit oldest earning rows; harmless on pre-migration DBs.
+      const pointsService = require('../services/points');
+      await pointsService.debitFifo(client, member.id, cost);
+
       await client.query(
         'UPDATE members SET points_balance=$1, last_active_at=NOW() WHERE id=$2',
         [newBalance, member.id]

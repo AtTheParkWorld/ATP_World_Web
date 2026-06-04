@@ -1,6 +1,7 @@
 const router = require('express').Router();
 const { query, transaction } = require('../db');
 const { authenticate, requireAdmin, requireMaintenanceSecret, _safeEqual } = require('../middleware/auth');
+const pointsService = require('../services/points');
 
 // ── GET /api/points/balance ───────────────────────────────────
 router.get('/balance', authenticate, async (req, res, next) => {
@@ -88,15 +89,39 @@ router.post('/redeem', authenticate, async (req, res, next) => {
 
     const newBalance = balance - pts;
     await transaction(async (client) => {
-      await client.query(
-        `INSERT INTO points_ledger
-          (member_id, amount, balance, reason, description)
-         VALUES ($1,$2,$3,'redemption','Points redeemed for store discount')`,
-        [req.member.id, -pts, newBalance]
+      // R-PT-003 (OQ-11): re-acquire the lock + balance check inside
+      // the transaction so a concurrent spend can't drop the balance
+      // out from under us between the precheck above and the insert.
+      const { rows: locked } = await client.query(
+        'SELECT points_balance FROM members WHERE id=$1 FOR UPDATE',
+        [req.member.id]
       );
+      if (!locked.length) throw Object.assign(new Error('Member not found'), { status: 404 });
+      if (locked[0].points_balance < pts) {
+        throw Object.assign(new Error('Insufficient points'), { status: 400, code: 'INSUFFICIENT_POINTS' });
+      }
+      const balanceNow = locked[0].points_balance - pts;
+      try {
+        await client.query(
+          `INSERT INTO points_ledger
+            (member_id, amount, balance, reason, description, remaining)
+           VALUES ($1,$2,$3,'redemption','Points redeemed for store discount',0)`,
+          [req.member.id, -pts, balanceNow]
+        );
+      } catch (e) {
+        if (e.code !== '42703') throw e;
+        await client.query(
+          `INSERT INTO points_ledger
+            (member_id, amount, balance, reason, description)
+           VALUES ($1,$2,$3,'redemption','Points redeemed for store discount')`,
+          [req.member.id, -pts, balanceNow]
+        );
+      }
+      // R-PT-003: FIFO debit the oldest earning rows.
+      await pointsService.debitFifo(client, req.member.id, pts);
       await client.query(
         'UPDATE members SET points_balance=$1 WHERE id=$2',
-        [newBalance, req.member.id]
+        [balanceNow, req.member.id]
       );
     });
 

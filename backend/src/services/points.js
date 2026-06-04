@@ -1,6 +1,63 @@
 const { query, transaction } = require('../db');
 const emailService = require('./email');
 
+// ──────────────────────────────────────────────────────────────
+// STRICT FIFO ACCOUNTING (R-PT-003 / OQ-11, v1.54.0)
+//
+// Each positive ledger entry carries a `remaining` column that tracks
+// how much of its original amount is still "alive" (i.e. not yet
+// spent, refunded, or expired). debitFifo() walks earning rows
+// oldest-first and decrements them until the requested amount is
+// satisfied. Expiry only acts on rows where remaining > 0.
+//
+// Schema is added by POST /api/auth/migrate-points-fifo; until then
+// the column defaults to 0 and the helpers degrade gracefully (the
+// FIFO debit no-ops on 42703 column-missing).
+// ──────────────────────────────────────────────────────────────
+
+/**
+ * Decrement `remaining` across the member's earning rows, oldest-first,
+ * until `amount` units are consumed. Caller must already hold the
+ * member's row lock (SELECT … FOR UPDATE) so concurrent spends serialize.
+ *
+ * No-op (silent) on pre-migration DBs where the `remaining` column
+ * doesn't exist — the legacy balance arithmetic still works on those
+ * rows; FIFO just isn't tracked yet.
+ *
+ * Returns the number of ledger rows touched.
+ */
+async function debitFifo(client, memberId, amount) {
+  if (!amount || amount <= 0) return 0;
+  let consumed = 0;
+  let touched  = 0;
+  try {
+    const { rows } = await client.query(
+      `SELECT id, remaining FROM points_ledger
+        WHERE member_id = $1
+          AND amount > 0
+          AND remaining > 0
+          AND expired_at IS NULL
+        ORDER BY created_at ASC, id ASC
+        FOR UPDATE`,
+      [memberId]
+    );
+    for (const r of rows) {
+      if (consumed >= amount) break;
+      const take = Math.min(r.remaining, amount - consumed);
+      await client.query(
+        'UPDATE points_ledger SET remaining = remaining - $1 WHERE id = $2',
+        [take, r.id]
+      );
+      consumed += take;
+      touched++;
+    }
+  } catch (e) {
+    if (e.code === '42703') return 0;  // remaining column not yet on this DB
+    throw e;
+  }
+  return touched;
+}
+
 // ── AWARD POINTS ──────────────────────────────────────────────
 async function awardPoints(memberId, amount, reason, description, referenceId = null) {
   return transaction(async (client) => {
@@ -15,12 +72,35 @@ async function awardPoints(memberId, amount, reason, description, referenceId = 
       ? new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
       : null;
 
-    await client.query(
-      `INSERT INTO points_ledger
-        (member_id, amount, balance, reason, reference_id, description, expires_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-      [memberId, amount, newBalance, reason, referenceId, description, expiresAt]
-    );
+    // R-PT-003: positive amounts start with remaining = amount; spends /
+    // refunds / expiry get remaining = 0.
+    const initialRemaining = amount > 0 ? amount : 0;
+
+    try {
+      await client.query(
+        `INSERT INTO points_ledger
+          (member_id, amount, balance, reason, reference_id, description, expires_at, remaining)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
+        [memberId, amount, newBalance, reason, referenceId, description, expiresAt, initialRemaining]
+      );
+    } catch (e) {
+      if (e.code === '42703') {
+        // Pre-migration DB: legacy 7-column INSERT (no remaining).
+        await client.query(
+          `INSERT INTO points_ledger
+            (member_id, amount, balance, reason, reference_id, description, expires_at)
+           VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+          [memberId, amount, newBalance, reason, referenceId, description, expiresAt]
+        );
+      } else { throw e; }
+    }
+
+    // R-PT-003: for spends (negative non-expiry rows), debit oldest
+    // earning rows FIFO. expiry uses its own dedicated logic below.
+    if (amount < 0 && reason !== 'expiry') {
+      await debitFifo(client, memberId, -amount);
+    }
+
     await client.query(
       'UPDATE members SET points_balance=$1, last_active_at=NOW() WHERE id=$2',
       [newBalance, memberId]
@@ -136,13 +216,46 @@ async function processExpiringPoints() {
     }
   }
 
-  // Expire points past their date
-  const { rows: expired } = await query(
-    `SELECT member_id, SUM(amount) AS total
-     FROM points_ledger
-     WHERE expires_at < NOW() AND expired_at IS NULL AND amount > 0
-     GROUP BY member_id`
-  );
+  // ────────────────────────────────────────────────────────────
+  // EXPIRE points past their date — R-PT-003 (OQ-11).
+  //
+  // The pre-FIFO logic summed ALL positive ledger rows past expiry
+  // and floored at members.points_balance. Two problems:
+  //   1. Spends since the original earning weren't subtracted, so a
+  //      member who spent their oldest points could still see a
+  //      large "expiry" event because amounts were used, not remaining.
+  //   2. Non-deterministic which specific rows got marked expired_at.
+  //
+  // Strict FIFO: only consider remaining > 0. The new SUM uses
+  // `remaining` instead of `amount`, so expiry naturally reflects
+  // what's actually still alive in the wallet.
+  //
+  // Pre-migration fallback (42703) keeps the old behavior so existing
+  // expiry crons don't break on DBs that haven't run the FIFO
+  // migration yet.
+  // ────────────────────────────────────────────────────────────
+  let expired;
+  try {
+    ({ rows: expired } = await query(
+      `SELECT member_id, SUM(remaining)::int AS total
+         FROM points_ledger
+        WHERE expires_at < NOW()
+          AND expired_at IS NULL
+          AND amount    > 0
+          AND remaining > 0
+        GROUP BY member_id`
+    ));
+  } catch (e) {
+    if (e.code !== '42703') throw e;
+    ({ rows: expired } = await query(
+      `SELECT member_id, SUM(amount) AS total
+         FROM points_ledger
+        WHERE expires_at < NOW()
+          AND expired_at IS NULL
+          AND amount > 0
+        GROUP BY member_id`
+    ));
+  }
 
   for (const row of expired) {
     await transaction(async (client) => {
@@ -163,11 +276,26 @@ async function processExpiringPoints() {
         'UPDATE members SET points_balance=$1 WHERE id=$2',
         [newBal, row.member_id]
       );
-      await client.query(
-        `UPDATE points_ledger SET expired_at=NOW()
-         WHERE member_id=$1 AND expires_at<NOW() AND expired_at IS NULL AND amount>0`,
-        [row.member_id]
-      );
+      // Mark the actual earning rows as expired AND zero their
+      // remaining, so a subsequent call doesn't expire them again.
+      // Pre-migration: the remaining=0 set is silently dropped if the
+      // column doesn't exist (we wrap in try/catch).
+      try {
+        await client.query(
+          `UPDATE points_ledger
+              SET expired_at=NOW(), remaining=0
+            WHERE member_id=$1 AND expires_at<NOW() AND expired_at IS NULL AND amount>0`,
+          [row.member_id]
+        );
+      } catch (e) {
+        if (e.code !== '42703') throw e;
+        await client.query(
+          `UPDATE points_ledger
+              SET expired_at=NOW()
+            WHERE member_id=$1 AND expires_at<NOW() AND expired_at IS NULL AND amount>0`,
+          [row.member_id]
+        );
+      }
     });
   }
 
@@ -232,6 +360,7 @@ async function autoCompleteSessions() {
 
 module.exports = {
   awardPoints,
+  debitFifo,
   processAnniversaries,
   processReferralPoints,
   processExpiringPoints,

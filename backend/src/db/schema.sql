@@ -198,6 +198,7 @@ CREATE TABLE IF NOT EXISTS points_ledger (
   description TEXT,
   expires_at  TIMESTAMPTZ,                     -- 12 months from earn date
   expired_at  TIMESTAMPTZ,
+  remaining   INTEGER     NOT NULL DEFAULT 0,  -- R-PT-003 (OQ-11): strict FIFO. For positive rows, decrements as spent; 0 once fully consumed or expired.
   created_by  UUID        REFERENCES members(id), -- null = system, admin_id = manual
   created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );

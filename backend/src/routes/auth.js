@@ -3455,6 +3455,81 @@ router.post('/migrate-members', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-points-fifo ─────────────────────────
+// One-shot migration (v1.54.0, R-PT-003 / OQ-11). Two parts:
+//
+//   1. Adds the `remaining` column to points_ledger (default 0).
+//      Safe to run any number of times — ADD COLUMN IF NOT EXISTS.
+//
+//   2. Backfills `remaining` for existing rows. For each member
+//      with a positive balance, walks their unexpired earning rows
+//      oldest-first and allocates `remaining` up to the member's
+//      current points_balance. Everything past the budget gets 0,
+//      so the invariant SUM(remaining where amount>0 unexpired) ==
+//      members.points_balance is preserved.
+//
+// Maintenance-gated. Idempotent: re-running just refreshes the
+// backfill against the current balance.
+//
+// Body:
+//   setupKey   ADMIN_SETUP_KEY (required)
+//   dry_run    true → counts what would change, doesn't write
+router.post('/migrate-points-fifo', async (req, res, next) => {
+  try {
+    const { setupKey, dry_run = false } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    if (!dry_run) {
+      await query(`ALTER TABLE points_ledger ADD COLUMN IF NOT EXISTS remaining INTEGER NOT NULL DEFAULT 0`);
+    }
+
+    // Per-member backfill loop. We deliberately use a tight loop
+    // rather than one massive SQL window function — easier to read,
+    // easier to log, and at ATP's current scale this finishes in
+    // single-digit seconds.
+    const { rows: members } = await query(
+      `SELECT id, points_balance FROM members
+        WHERE points_balance > 0 AND is_banned = false`
+    );
+    let scanned = 0, updated = 0, allocated = 0;
+    for (const m of members) {
+      scanned++;
+      let budget = m.points_balance;
+      const { rows: rowsForMember } = await query(
+        `SELECT id, amount FROM points_ledger
+          WHERE member_id = $1
+            AND amount    > 0
+            AND expired_at IS NULL
+          ORDER BY created_at ASC, id ASC`,
+        [m.id]
+      );
+      for (const r of rowsForMember) {
+        const give = budget > 0 ? Math.min(r.amount, budget) : 0;
+        if (!dry_run) {
+          await query('UPDATE points_ledger SET remaining=$1 WHERE id=$2', [give, r.id]);
+          updated++;
+        }
+        allocated += give;
+        budget    -= give;
+        if (budget < 0) budget = 0;
+      }
+    }
+
+    res.json({
+      ok: true,
+      dry_run: !!dry_run,
+      members_scanned: scanned,
+      rows_updated:    updated,
+      points_allocated: allocated,
+      message: dry_run
+        ? `Dry-run: would touch ~${scanned} members.`
+        : `Backfilled remaining on ${updated} ledger rows across ${scanned} members. Allocated ${allocated} points.`,
+    });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-moderation-banned-words ─────────────
 // One-shot migration (v1.51.0, R-PO-007 / OQ-28). Seeds the
 // system_config row that the moderation service reads from. Value

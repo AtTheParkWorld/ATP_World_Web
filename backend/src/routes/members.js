@@ -535,28 +535,45 @@ async function updateProfileCompletion(memberId) {
     [pct, memberId]
   );
 
-  // Award profile completion points if just hit 100%
+  // ────────────────────────────────────────────────────────────
+  // Profile-completion bonus — R-PT-007 (OQ-12).
+  //
+  // Award the configured points (default 100) once the member's
+  // profile is fully filled. Idempotency comes from the
+  // reason='profile_complete' check against the ledger — a single
+  // member can never earn this twice, even if they later remove a
+  // field and re-add it.
+  //
+  // Routes through pointsService.awardPoints so the row lock, ledger
+  // FIFO remaining, balance update, and in-app notification all
+  // happen as one atomic unit. The previous in-place INSERT was
+  // missing the notification + the FIFO column + the row lock.
+  // ────────────────────────────────────────────────────────────
   if (pct === 100) {
     const { rows: existing } = await query(
-      `SELECT id FROM points_ledger WHERE member_id=$1 AND reason='profile_complete'`,
+      `SELECT id FROM points_ledger WHERE member_id=$1 AND reason='profile_complete' LIMIT 1`,
       [memberId]
     );
     if (!existing.length) {
-      const { rows: cfg } = await query(
-        `SELECT points FROM points_config WHERE action='profile_complete'`
-      );
-      const pts = cfg[0]?.points || 100;
-      await query(
-        `INSERT INTO points_ledger (member_id, amount, balance, reason, description)
-         VALUES ($1, $2,
-           (SELECT points_balance FROM members WHERE id=$1) + $2,
-           'profile_complete', 'Profile 100% complete reward')`,
-        [memberId, pts]
-      );
-      await query(
-        'UPDATE members SET points_balance=points_balance+$1 WHERE id=$2',
-        [pts, memberId]
-      );
+      let pts = 100;
+      try {
+        const { rows: cfg } = await query(
+          `SELECT points FROM points_config WHERE action='profile_complete'`
+        );
+        if (cfg[0]?.points) pts = cfg[0].points;
+      } catch (_) { /* points_config table missing pre-migration — use default */ }
+      try {
+        const pointsService = require('../services/points');
+        await pointsService.awardPoints(
+          memberId,
+          pts,
+          'profile_complete',
+          '🎉 Profile 100% complete — bonus points',
+          null
+        );
+      } catch (e) {
+        console.warn('[profile_complete] award failed for', memberId, '-', e.message);
+      }
     }
   }
 }
