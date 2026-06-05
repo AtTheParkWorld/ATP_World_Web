@@ -3455,6 +3455,126 @@ router.post('/migrate-members', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-auto-surveys ────────────────────────
+// v1.57.0 / R-SV-006 / OQ-40. Seeds three survey templates that the
+// auto-trigger service points members at:
+//   - post-session-nps  : 1 question, 1-5 rating, after attended sessions
+//   - signup-30day-pulse: 1 question, 1-5 rating, day 30 of membership
+//   - pre-cancel-exit   : 1 question, single-choice + free text, on cancel
+//
+// Idempotent — ON CONFLICT (slug) DO NOTHING. Re-run safely; existing
+// surveys + their questions are left alone.
+router.post('/migrate-auto-surveys', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const created = [];
+    async function seedSurvey(slug, title, intro, questions) {
+      const { rows } = await query(
+        `INSERT INTO surveys (slug, title, intro, status, collect_name, collect_email, show_back_link)
+         VALUES ($1, $2, $3, 'active', true, false, true)
+         ON CONFLICT (slug) DO NOTHING
+         RETURNING id`,
+        [slug, title, intro]
+      );
+      if (!rows.length) return; // already existed
+      const surveyId = rows[0].id;
+      for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        await query(
+          `INSERT INTO survey_questions (survey_id, sort_order, question_type, question_text, options, required)
+           VALUES ($1, $2, $3, $4, $5::jsonb, $6)`,
+          [surveyId, (i + 1) * 10, q.type, q.text, JSON.stringify(q.options || []), !!q.required]
+        );
+      }
+      created.push(slug);
+    }
+
+    await seedSurvey(
+      'post-session-nps',
+      'How was your session?',
+      'Two seconds of feedback shapes everything we plan next.',
+      [
+        { type: 'rating', text: 'On a scale of 1–5, how was your session?', required: true },
+        { type: 'textarea', text: 'Anything you’d like the coach or organisers to know? (optional)', required: false },
+      ]
+    );
+
+    await seedSurvey(
+      'signup-30day-pulse',
+      '30 days in — how’s ATP going?',
+      'You joined a month ago. We’d love a quick honest check-in.',
+      [
+        { type: 'rating', text: 'On a scale of 1–5, how welcome do you feel at ATP?', required: true },
+        { type: 'textarea', text: 'What would make ATP better for you? (optional)', required: false },
+      ]
+    );
+
+    await seedSurvey(
+      'pre-cancel-exit',
+      'Sorry to see you go',
+      'Help us improve — what tipped you toward cancelling?',
+      [
+        {
+          type: 'single_choice',
+          text: 'What was the main reason?',
+          required: true,
+          options: [
+            { value: 'price',       label: 'Too expensive' },
+            { value: 'schedule',    label: 'Couldn’t fit sessions into my schedule' },
+            { value: 'location',    label: 'No convenient location for me' },
+            { value: 'community',   label: 'Didn’t click with the community' },
+            { value: 'goals',       label: 'My fitness goals changed' },
+            { value: 'other',       label: 'Other (please tell us below)' },
+          ],
+        },
+        { type: 'textarea', text: 'Anything else you’d like us to know? (optional)', required: false },
+      ]
+    );
+
+    res.json({
+      ok: true,
+      seeded: created,
+      message: created.length
+        ? `Seeded ${created.length} new survey template(s).`
+        : 'All three templates already exist — nothing to seed.',
+    });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/maintenance-trigger-post-session-nps ────────
+// Cron-friendly (run hourly). Sends post-session NPS invites for
+// sessions that ended 60–120 minutes ago. Idempotent per
+// (member, session) pair. R-SV-006 / OQ-40a.
+router.post('/maintenance-trigger-post-session-nps', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const autoSurveys = require('../services/autoSurveys');
+    const out = await autoSurveys.triggerPostSessionNPS();
+    res.json({ ok: true, ...out });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/maintenance-trigger-30day-pulse ─────────────
+// Cron-friendly (run daily). Sends signup-30day-pulse invites to
+// members hitting day 30 ±12h. Idempotent per member. R-SV-006 / OQ-40b.
+router.post('/maintenance-trigger-30day-pulse', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const autoSurveys = require('../services/autoSurveys');
+    const out = await autoSurveys.trigger30DayPulse();
+    res.json({ ok: true, ...out });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-appeals ─────────────────────────────
 // v1.56.0 / R-MOD-005 / OQ-37. Creates the appeals table used by
 // POST /api/members/me/appeal + admin/appeals.

@@ -356,6 +356,27 @@ async function handleWebhookEvent(event) {
     case 'customer.subscription.trial_will_end': {
       // event.data.object IS the subscription, no extra fetch needed.
       await syncSubscription(event.data.object);
+      // R-SV-006 / OQ-40c: pre-cancel exit survey. Fires only on the
+      // 'deleted' event (Stripe's signal for a terminated subscription).
+      // syncSubscription has already flipped members.subscription_type
+      // back to 'free' by this point — we just need the member id from
+      // the local subscriptions row. Best-effort: a survey failure must
+      // never crash the webhook, which would cause Stripe to retry.
+      if (event.type === 'customer.subscription.deleted') {
+        try {
+          const sub = event.data.object;
+          const { rows } = await query(
+            `SELECT member_id FROM subscriptions WHERE stripe_subscription_id = $1 LIMIT 1`,
+            [sub.id]
+          );
+          if (rows.length && rows[0].member_id) {
+            const autoSurveys = require('./autoSurveys');
+            await autoSurveys.triggerPreCancelExit(rows[0].member_id);
+          }
+        } catch (e) {
+          console.warn('[billing] pre-cancel exit survey skipped:', e.message);
+        }
+      }
       break;
     }
     case 'invoice.payment_succeeded':
