@@ -18,9 +18,9 @@ const { authenticate, requireAdmin, requireMaintenanceSecret } = require('../mid
 // when MAINTENANCE_SECRET is unset (fail-closed) and 404 when the
 // header doesn't match — both deny without leaking route existence.
 router.use((req, res, next) => {
-  // Match prefixes for destructive / setup-only endpoints. Anything
-  // beginning with these labels requires the maintenance secret.
-  if (/^\/(migrate-|seed-|admin-backfill-|grant-admin|dedup-|admin-reset-)/.test(req.path)) {
+  // Match prefixes for destructive / setup-only / cron-only endpoints.
+  // Anything beginning with these labels requires the maintenance secret.
+  if (/^\/(migrate-|seed-|admin-backfill-|grant-admin|dedup-|admin-reset-|maintenance-)/.test(req.path)) {
     return requireMaintenanceSecret(req, res, next);
   }
   next();
@@ -3452,6 +3452,143 @@ router.post('/migrate-members', async (req, res, next) => {
       } catch (e) { console.error('[MIGRATE] Failed:', e.message); }
     })();
 
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/migrate-wearable-dedup-column ───────────────
+// v1.55.0 / R-WR-003 / OQ-22. Adds the is_duplicate_of FK column to
+// wearable_workouts so the dedup service has somewhere to write its
+// verdict. Idempotent — ADD COLUMN IF NOT EXISTS.
+//
+// Body: { setupKey }
+router.post('/migrate-wearable-dedup-column', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    await query(
+      `ALTER TABLE wearable_workouts
+       ADD COLUMN IF NOT EXISTS is_duplicate_of UUID REFERENCES wearable_workouts(id) ON DELETE SET NULL`
+    );
+    await query(
+      `CREATE INDEX IF NOT EXISTS idx_workouts_dedup_active
+         ON wearable_workouts(member_id, started_at DESC) WHERE is_duplicate_of IS NULL`
+    );
+    res.json({ ok: true, message: 'wearable_workouts.is_duplicate_of ready.' });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/maintenance-dedup-workouts ──────────────────
+// v1.55.0 / R-WR-003 / OQ-22. One-shot (or nightly cron) full
+// cross-provider dedup pass over every member with at least one
+// workout. Wired idempotently — running it twice produces the same
+// result. The post-sync hook in wearables.js already keeps things
+// dedupped on a per-member basis; this endpoint exists for the
+// initial backfill + as a periodic safety net.
+//
+// Returns { members, groups, marked }.
+router.post('/maintenance-dedup-workouts', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const wearableDedup = require('../services/wearableDedup');
+    const out = await wearableDedup.dedupAllMembers();
+    res.json({ ok: true, ...out });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/maintenance-prune-old-workouts ──────────────
+// v1.55.0 / R-WR-008 / OQ-24. Daily cron-friendly. Deletes
+// wearable_workouts rows older than 24 months. Daily aggregate
+// metrics (wearable_daily_metrics) are RETAINED indefinitely so a
+// member's history page still works — only the raw per-workout
+// rows get pruned.
+//
+// Body:
+//   setupKey   ADMIN_SETUP_KEY
+//   dry_run    true → count without deleting
+router.post('/maintenance-prune-old-workouts', async (req, res, next) => {
+  try {
+    const { setupKey, dry_run = false } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const cutoffSql = `NOW() - INTERVAL '24 months'`;
+    let deleted = 0;
+    try {
+      if (dry_run) {
+        const { rows } = await query(
+          `SELECT COUNT(*)::int AS n FROM wearable_workouts WHERE started_at < ${cutoffSql}`
+        );
+        deleted = rows[0].n;
+      } else {
+        const { rowCount } = await query(
+          `DELETE FROM wearable_workouts WHERE started_at < ${cutoffSql}`
+        );
+        deleted = rowCount;
+      }
+    } catch (e) {
+      // Table missing on pre-migration DB → nothing to prune.
+      if (e.code !== '42P01') throw e;
+    }
+    res.json({
+      ok: true,
+      dry_run: !!dry_run,
+      pruned: deleted,
+      cutoff_months: 24,
+      message: dry_run
+        ? `Dry-run: ${deleted} workouts older than 24 months would be deleted.`
+        : `Deleted ${deleted} workouts older than 24 months. Daily aggregates retained.`,
+    });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/maintenance-prune-old-notifications ─────────
+// v1.55.0 / R-NO-002 / OQ-32. Daily cron-friendly. Deletes notification
+// rows that are READ AND older than 90 days. Unread notifications are
+// retained indefinitely (until the member reads or the member is
+// deleted, which cascades via FK).
+//
+// Body:
+//   setupKey   ADMIN_SETUP_KEY
+//   dry_run    true → count without deleting
+router.post('/maintenance-prune-old-notifications', async (req, res, next) => {
+  try {
+    const { setupKey, dry_run = false } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const cutoffSql = `NOW() - INTERVAL '90 days'`;
+    let deleted = 0;
+    try {
+      if (dry_run) {
+        const { rows } = await query(
+          `SELECT COUNT(*)::int AS n FROM notifications
+            WHERE read_at IS NOT NULL AND read_at < ${cutoffSql}`
+        );
+        deleted = rows[0].n;
+      } else {
+        const { rowCount } = await query(
+          `DELETE FROM notifications
+            WHERE read_at IS NOT NULL AND read_at < ${cutoffSql}`
+        );
+        deleted = rowCount;
+      }
+    } catch (e) {
+      if (e.code !== '42P01') throw e;
+    }
+    res.json({
+      ok: true,
+      dry_run: !!dry_run,
+      pruned: deleted,
+      cutoff_days: 90,
+      message: dry_run
+        ? `Dry-run: ${deleted} read notifications older than 90 days would be deleted.`
+        : `Deleted ${deleted} read notifications. Unread retained.`,
+    });
   } catch (err) { next(err); }
 });
 

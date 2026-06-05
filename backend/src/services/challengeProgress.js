@@ -36,6 +36,33 @@ function _normalize(metric) {
 // Public — used by the API to decorate challenges with a
 // `requires_device` flag so the client can show a "connect a device"
 // modal at the join step.
+/**
+ * R-WR-003 / OQ-22 helper: SUM/COUNT a metric column from
+ * wearable_workouts excluding rows the dedup service marked as
+ * duplicates. Falls back to the legacy unfiltered query on
+ * pre-migration DBs where is_duplicate_of doesn't exist yet.
+ * Returns the numeric total (always a Number).
+ */
+async function _sumWithDedupFallback(selectPrefix, memberId, start, end) {
+  try {
+    const { rows } = await query(
+      `${selectPrefix}
+        WHERE member_id=$1 AND started_at >= $2 AND started_at <= $3
+          AND is_duplicate_of IS NULL`,
+      [memberId, start, end]
+    );
+    return Number(rows[0].total || 0);
+  } catch (e) {
+    if (e.code !== '42703') throw e;
+    const { rows } = await query(
+      `${selectPrefix}
+        WHERE member_id=$1 AND started_at >= $2 AND started_at <= $3`,
+      [memberId, start, end]
+    );
+    return Number(rows[0].total || 0);
+  }
+}
+
 function isDeviceMetric(metricOrDeviceMetric) {
   return _normalize(metricOrDeviceMetric) !== null;
 }
@@ -51,28 +78,29 @@ async function recomputeForChallenge(memberId, challenge) {
 
   let progress = 0;
 
+  // R-WR-003 (OQ-22): exclude rows the dedup service has flagged as
+  // duplicates of a higher-priority provider's row. _runMetricQuery
+  // tries the deduped query first and falls back to the legacy
+  // (no-column) variant for pre-migration DBs.
   if (t === 'distance') {
     // distance_m is integers in metres — challenge target is in km
-    const { rows } = await query(
-      `SELECT COALESCE(SUM(distance_m), 0)::bigint AS total
-         FROM wearable_workouts
-        WHERE member_id=$1 AND started_at >= $2 AND started_at <= $3`,
-      [memberId, start, end]
+    const total = await _sumWithDedupFallback(
+      `SELECT COALESCE(SUM(distance_m), 0)::bigint AS total FROM wearable_workouts`,
+      memberId, start, end
     );
-    progress = Math.floor(Number(rows[0].total || 0) / 1000);
+    progress = Math.floor(total / 1000);
 
   } else if (t === 'calories') {
-    const { rows } = await query(
-      `SELECT COALESCE(SUM(calories), 0)::bigint AS total
-         FROM wearable_workouts
-        WHERE member_id=$1 AND started_at >= $2 AND started_at <= $3`,
-      [memberId, start, end]
+    const total = await _sumWithDedupFallback(
+      `SELECT COALESCE(SUM(calories), 0)::bigint AS total FROM wearable_workouts`,
+      memberId, start, end
     );
-    progress = Math.round(Number(rows[0].total || 0));
+    progress = Math.round(total);
 
   } else if (t === 'steps') {
-    // steps live on daily metrics rather than per-workout — query that table
-    // with date-only window bounds.
+    // Daily metrics are aggregated upstream by provider/date — they
+    // don't have a per-row dedup concept, so no is_duplicate_of filter
+    // applies here.
     const { rows } = await query(
       `SELECT COALESCE(SUM(steps), 0)::bigint AS total
          FROM wearable_daily_metrics
@@ -82,23 +110,18 @@ async function recomputeForChallenge(memberId, challenge) {
     progress = Math.round(Number(rows[0].total || 0));
 
   } else if (t === 'duration') {
-    // duration_s in seconds → minutes for the challenge target
-    const { rows } = await query(
-      `SELECT COALESCE(SUM(duration_s), 0)::bigint AS total
-         FROM wearable_workouts
-        WHERE member_id=$1 AND started_at >= $2 AND started_at <= $3`,
-      [memberId, start, end]
+    const total = await _sumWithDedupFallback(
+      `SELECT COALESCE(SUM(duration_s), 0)::bigint AS total FROM wearable_workouts`,
+      memberId, start, end
     );
-    progress = Math.floor(Number(rows[0].total || 0) / 60);
+    progress = Math.floor(total / 60);
 
   } else if (t === 'workouts') {
-    const { rows } = await query(
-      `SELECT COUNT(*)::int AS total
-         FROM wearable_workouts
-        WHERE member_id=$1 AND started_at >= $2 AND started_at <= $3`,
-      [memberId, start, end]
+    const total = await _sumWithDedupFallback(
+      `SELECT COUNT(*)::int AS total FROM wearable_workouts`,
+      memberId, start, end
     );
-    progress = rows[0].total;
+    progress = total;
   }
 
   const target    = Number(challenge.target || 0);

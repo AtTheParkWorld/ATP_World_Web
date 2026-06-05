@@ -39,6 +39,7 @@ const { authenticate, requireAdmin } = require('../middleware/auth');
 const providers = require('../services/wearables');
 const challengeProgress = require('../services/challengeProgress');
 const wcrypt = require('../services/wearableCrypto');
+const wearableDedup = require('../services/wearableDedup');
 
 function _publicBaseUrl(req) {
   // Honour Render's forwarded proto/host so OAuth redirects don't break
@@ -437,11 +438,16 @@ router.post('/sync', authenticate, async (req, res, next) => {
       // client can render "nothing to sync" gracefully.
       return res.json({ success: true, workouts: 0, metrics: 0, providers_synced: 0, provider_results: [] });
     }
-    // After any successful sync, recompute every device-based challenge
-    // this member is enrolled in. Best-effort — never let it block the
-    // sync response.
+    // After any successful sync, dedup the member's workouts (R-WR-003
+    // / OQ-22) BEFORE recomputing challenges so freshly-arrived duplicates
+    // don't inflate the totals on the first recompute. Both steps are
+    // best-effort — never let either block the sync response.
     if (any_ok) {
-      challengeProgress.recomputeAllForMember(req.member.id)
+      wearableDedup.dedupForMember(req.member.id)
+        .catch(function(e){ console.warn('[wearables.sync] dedup failed:', e.message); })
+        .then(function(){
+          return challengeProgress.recomputeAllForMember(req.member.id);
+        })
         .catch(function(e){ console.warn('[wearables.sync] challenge recompute failed:', e.message); });
     }
     // 207 = Multi-Status when partial; 200 when all worked; 502 when all failed.
@@ -478,11 +484,16 @@ router.post('/workouts/manual', authenticate, async (req, res, next) => {
        b.gps_polyline || null, b.session_id || null,
        b.raw ? JSON.stringify(b.raw) : null]
     );
-    // If the workout actually persisted (wasn't a dedup), kick a
-    // background recompute so any active device-based challenges this
-    // member is in update without waiting for a manual sync.
+    // If the workout actually persisted (wasn't a dedup), dedup the
+    // member's workouts (R-WR-003) then kick a background recompute
+    // so any active device-based challenges this member is in update
+    // without waiting for a manual sync.
     if (r.rows[0]) {
-      challengeProgress.recomputeAllForMember(req.member.id)
+      wearableDedup.dedupForMember(req.member.id)
+        .catch(function(e){ console.warn('[wearables.manual] dedup failed:', e.message); })
+        .then(function(){
+          return challengeProgress.recomputeAllForMember(req.member.id);
+        })
         .catch(function(e){ console.warn('[wearables.manual] challenge recompute failed:', e.message); });
     }
     res.json({ success: true, workout_id: r.rows[0]?.id || null, dedup: !r.rows[0] });
