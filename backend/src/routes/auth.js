@@ -3455,6 +3455,38 @@ router.post('/migrate-members', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-appeals ─────────────────────────────
+// v1.56.0 / R-MOD-005 / OQ-37. Creates the appeals table used by
+// POST /api/members/me/appeal + admin/appeals.
+//
+// Idempotent — CREATE TABLE IF NOT EXISTS, ON CONFLICT-friendly.
+// Pre-migration safety: routes that read this table catch 42P01 and
+// return a 503 with code APPEALS_NOT_MIGRATED so the front-end can
+// render a clear "appeals not yet enabled" state.
+router.post('/migrate-appeals', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    await query(`
+      CREATE TABLE IF NOT EXISTS appeals (
+        id           UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+        member_id    UUID         NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+        reason       TEXT         NOT NULL,
+        status       VARCHAR(20)  NOT NULL DEFAULT 'pending', -- pending, approved, denied
+        admin_notes  TEXT,
+        resolved_by  UUID         REFERENCES members(id),
+        resolved_at  TIMESTAMPTZ,
+        created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_appeals_pending ON appeals(created_at ASC) WHERE status='pending'`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_appeals_member  ON appeals(member_id, status)`);
+    res.json({ ok: true, message: 'appeals table ready.' });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-wearable-dedup-column ───────────────
 // v1.55.0 / R-WR-003 / OQ-22. Adds the is_duplicate_of FK column to
 // wearable_workouts so the dedup service has somewhere to write its

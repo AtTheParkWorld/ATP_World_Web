@@ -81,6 +81,55 @@ const authenticate = async (req, res, next) => {
   }
 };
 
+// ── AUTHENTICATE BUT ALLOW BANNED ─────────────────────────────
+// Same JWT + member lookup as `authenticate`, but a banned member
+// is still allowed through. Used ONLY by the appeals endpoint
+// (R-MOD-005 / OQ-37) so a banned member can contest their ban
+// without first being unbanned. Sets req.member.is_banned so the
+// route handler can branch on it if it wants to.
+//
+// Returning 403 from `authenticate` made appeals impossible — a
+// banned member couldn't get a token in even though their JWT was
+// still valid. This middleware closes that gap.
+const authenticateAllowBanned = async (req, res, next) => {
+  const header = req.headers.authorization;
+  if (!header || !header.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+  const token = header.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    let rows;
+    try {
+      ({ rows } = await query(
+        `SELECT id, first_name, last_name, email, is_admin, is_ambassador, is_coach,
+                is_banned, banned_reason, subscription_type, city_id
+           FROM members WHERE id = $1`,
+        [decoded.sub]
+      ));
+    } catch (e) {
+      if (e.code === '42703') {
+        ({ rows } = await query(
+          `SELECT id, first_name, last_name, email, is_admin, is_ambassador,
+                  is_banned, banned_reason, subscription_type, city_id
+             FROM members WHERE id = $1`,
+          [decoded.sub]
+        ));
+        if (rows.length) rows[0].is_coach = false;
+      } else { throw e; }
+    }
+    if (!rows.length) return res.status(401).json({ error: 'Member not found' });
+    // No is_banned gate — that's the whole point of this middleware.
+    req.member = rows[0];
+    next();
+  } catch (err) {
+    if (err.name === 'TokenExpiredError') {
+      return res.status(401).json({ error: 'Token expired', code: 'TOKEN_EXPIRED' });
+    }
+    return res.status(401).json({ error: 'Invalid token' });
+  }
+};
+
 // ── REQUIRE ADMIN ─────────────────────────────────────────────
 const requireAdmin = (req, res, next) => {
   if (!req.member?.is_admin) {
@@ -138,6 +187,7 @@ const optionalAuth = async (req, res, next) => {
 
 module.exports = {
   authenticate,
+  authenticateAllowBanned,
   requireAdmin,
   requireAmbassador,
   requireScanner,

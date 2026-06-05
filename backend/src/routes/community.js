@@ -475,6 +475,76 @@ router.post('/posts/:id/report', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/community/comments/:commentId/report ───────────
+// Rulebook ref: R-MOD-001 (OQ-36). Members can report a specific
+// comment (in addition to reporting the parent post). The report
+// lands in the same admin queue with target_type='comment'.
+//
+// Body: { reason: string, description?: string }
+// Self-report blocked. Idempotent at the (reporter,target) level —
+// the reports table's natural shape allows duplicates but the admin
+// resolver dedups by (target_type, target_id) when grouping.
+router.post('/comments/:commentId/report', authenticate, async (req, res, next) => {
+  try {
+    const { reason, description } = req.body || {};
+    if (!reason) return res.status(400).json({ error: 'Reason required' });
+
+    const { rows: c } = await query(
+      'SELECT member_id FROM comments WHERE id=$1',
+      [req.params.commentId]
+    );
+    if (!c.length) return res.status(404).json({ error: 'Comment not found' });
+    if (c[0].member_id === req.member.id) {
+      return res.status(400).json({ error: 'Cannot report your own comment.' });
+    }
+    await query(
+      `INSERT INTO reports (reporter_id, target_type, target_id, reason, description)
+       VALUES ($1,'comment',$2,$3,$4)`,
+      [req.member.id, req.params.commentId, String(reason).slice(0, 100), description || null]
+    );
+    res.json({ message: 'Comment reported.' });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/community/messages/:messageId/report ───────────
+// Rulebook ref: R-MOD-001 (OQ-36). Scaffold for when DMs ship —
+// the route + queue work today using target_type='message'. Until
+// then, the precondition check (message exists) returns 404 because
+// the messages table is empty in production.
+router.post('/messages/:messageId/report', authenticate, async (req, res, next) => {
+  try {
+    const { reason, description } = req.body || {};
+    if (!reason) return res.status(400).json({ error: 'Reason required' });
+
+    // Sniff for an existing DM. Schema for direct messages isn't
+    // finalized yet; we try the most likely table name and gracefully
+    // 404 (or 503) if it doesn't exist.
+    let exists = false;
+    try {
+      const { rows } = await query(
+        'SELECT id FROM messages WHERE id=$1',
+        [req.params.messageId]
+      );
+      exists = rows.length > 0;
+    } catch (e) {
+      if (e.code === '42P01') {
+        return res.status(503).json({
+          error: 'Direct messages are not enabled yet.',
+          code:  'DMS_NOT_AVAILABLE',
+        });
+      }
+      throw e;
+    }
+    if (!exists) return res.status(404).json({ error: 'Message not found' });
+    await query(
+      `INSERT INTO reports (reporter_id, target_type, target_id, reason, description)
+       VALUES ($1,'message',$2,$3,$4)`,
+      [req.member.id, req.params.messageId, String(reason).slice(0, 100), description || null]
+    );
+    res.json({ message: 'Message reported.' });
+  } catch (err) { next(err); }
+});
+
 // ── GET /api/community/messages ───────────────────────────────
 router.get('/messages', authenticate, async (req, res, next) => {
   try {

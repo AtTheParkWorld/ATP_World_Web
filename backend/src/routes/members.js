@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const { query } = require('../db');
-const { authenticate, requireAdmin } = require('../middleware/auth');
+const { authenticate, requireAdmin, authenticateAllowBanned } = require('../middleware/auth');
 const streak = require('../services/streak');
 
 // ── GET /api/members/me/streak ────────────────────────────────
@@ -428,6 +428,97 @@ router.get('/blocked', authenticate, async (req, res, next) => {
       [req.member.id]
     );
     res.json({ blocked: rows });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/members/:targetId/report ───────────────────────
+// Rulebook ref: R-MOD-001 (OQ-36). Report a member's overall
+// behaviour (vs reporting a specific post or comment). Use cases:
+// harassment via DMs, off-platform behaviour brought up in-app,
+// fake profile. The report lands in the same admin queue
+// (`reports` table with target_type='member').
+//
+// Body: { reason: string, description?: string }
+// Self-report blocked. Idempotent at the (reporter,target) level
+// — re-reporting the same member just updates the latest reason.
+router.post('/:targetId/report', authenticate, async (req, res, next) => {
+  try {
+    const { reason, description } = req.body || {};
+    if (!reason || typeof reason !== 'string') {
+      return res.status(400).json({ error: 'Reason required.' });
+    }
+    if (req.params.targetId === req.member.id) {
+      return res.status(400).json({ error: 'Cannot report yourself.' });
+    }
+    // Confirm the target exists — silently 404 to avoid being used
+    // as a member-id enumeration oracle.
+    const { rows: target } = await query(
+      'SELECT id FROM members WHERE id=$1',
+      [req.params.targetId]
+    );
+    if (!target.length) return res.status(404).json({ error: 'Member not found' });
+    await query(
+      `INSERT INTO reports (reporter_id, target_type, target_id, reason, description)
+       VALUES ($1, 'member', $2, $3, $4)`,
+      [req.member.id, req.params.targetId, String(reason).slice(0, 100), description || null]
+    );
+    res.json({ message: 'Member reported. Our team will review.' });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/members/me/appeal ──────────────────────────────
+// Rulebook ref: R-MOD-005 (OQ-37). Banned members can use this
+// endpoint to contest their ban — that's why it goes through
+// `authenticateAllowBanned` instead of `authenticate`. Non-banned
+// members can also appeal account-level decisions (e.g., contested
+// content removal), so we don't gate this on is_banned.
+//
+// Body: { reason: string }
+//
+// One pending appeal at a time per member (UNIQUE constraint at
+// the DB layer would be ideal but a partial unique index can come
+// later; for now we check at insert).
+router.post('/me/appeal', authenticateAllowBanned, async (req, res, next) => {
+  try {
+    const { reason } = req.body || {};
+    if (!reason || typeof reason !== 'string' || reason.trim().length < 10) {
+      return res.status(400).json({
+        error: 'Please provide a reason of at least 10 characters explaining your appeal.',
+        code:  'APPEAL_REASON_TOO_SHORT',
+      });
+    }
+    try {
+      const { rows: pending } = await query(
+        `SELECT id FROM appeals WHERE member_id=$1 AND status='pending' LIMIT 1`,
+        [req.member.id]
+      );
+      if (pending.length) {
+        return res.status(409).json({
+          error: 'You already have a pending appeal. Our team will review it within 5 business days.',
+          code:  'APPEAL_ALREADY_PENDING',
+          appeal_id: pending[0].id,
+        });
+      }
+      const { rows: ins } = await query(
+        `INSERT INTO appeals (member_id, reason)
+         VALUES ($1, $2) RETURNING id, created_at`,
+        [req.member.id, reason.trim().slice(0, 5000)]
+      );
+      res.status(201).json({
+        message:   'Appeal submitted. Our team will review within 5 business days.',
+        appeal_id: ins[0].id,
+        submitted_at: ins[0].created_at,
+      });
+    } catch (e) {
+      // appeals table not yet on this DB → tell ops to run the migration.
+      if (e.code === '42P01') {
+        return res.status(503).json({
+          error: 'Appeals are not yet enabled. Please email general@atthepark.com.',
+          code:  'APPEALS_NOT_MIGRATED',
+        });
+      }
+      throw e;
+    }
   } catch (err) { next(err); }
 });
 

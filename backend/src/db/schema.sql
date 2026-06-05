@@ -358,7 +358,7 @@ CREATE INDEX idx_friendships_requester ON friendships(requester_id);
 CREATE TABLE IF NOT EXISTS reports (
   id            UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),
   reporter_id   UUID        NOT NULL REFERENCES members(id),
-  target_type   VARCHAR(20)  NOT NULL, -- post, comment, member
+  target_type   VARCHAR(20)  NOT NULL, -- post, comment, member, message (R-MOD-001 / OQ-36)
   target_id     UUID        NOT NULL,
   reason        VARCHAR(100) NOT NULL,
   description   TEXT,
@@ -367,6 +367,23 @@ CREATE TABLE IF NOT EXISTS reports (
   resolved_at   TIMESTAMPTZ,
   created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
+
+-- ── APPEALS — R-MOD-005 (OQ-37) ──────────────────────────────
+-- Banned (or otherwise sanctioned) members can submit an appeal
+-- via POST /api/members/me/appeal. Admins review at /admin/appeals.
+-- One pending appeal at a time per member.
+CREATE TABLE IF NOT EXISTS appeals (
+  id           UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+  member_id    UUID         NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  reason       TEXT         NOT NULL,
+  status       VARCHAR(20)  NOT NULL DEFAULT 'pending', -- pending, approved, denied
+  admin_notes  TEXT,
+  resolved_by  UUID         REFERENCES members(id),
+  resolved_at  TIMESTAMPTZ,
+  created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_appeals_pending ON appeals(created_at ASC) WHERE status='pending';
+CREATE INDEX IF NOT EXISTS idx_appeals_member  ON appeals(member_id, status);
 
 -- ── SPONSORS ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS sponsors (

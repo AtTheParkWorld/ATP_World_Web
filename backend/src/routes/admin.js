@@ -531,11 +531,27 @@ router.patch('/members/:id/ban', async (req, res, next) => {
 });
 
 // ── GET /api/admin/reports ────────────────────────────────────
+// Rulebook ref: R-MOD-001 (OQ-36). target_type can now be 'post' |
+// 'comment' | 'member' | 'message'. The query optionally LATERAL-
+// joins the target so admins see a preview (post excerpt, comment
+// snippet, member name, etc.) without needing a per-row API call.
 router.get('/reports', async (req, res, next) => {
   try {
     const { rows } = await query(
       `SELECT r.*,
-              m.first_name AS reporter_first, m.last_name AS reporter_last
+              m.first_name AS reporter_first, m.last_name AS reporter_last,
+              CASE r.target_type
+                WHEN 'post'    THEN (SELECT LEFT(content, 200) FROM posts    WHERE id=r.target_id)
+                WHEN 'comment' THEN (SELECT LEFT(content, 200) FROM comments WHERE id=r.target_id)
+                WHEN 'member'  THEN (SELECT TRIM(CONCAT(first_name,' ',last_name)) FROM members WHERE id=r.target_id)
+                ELSE NULL
+              END AS target_preview,
+              CASE r.target_type
+                WHEN 'post'    THEN (SELECT member_id FROM posts    WHERE id=r.target_id)
+                WHEN 'comment' THEN (SELECT member_id FROM comments WHERE id=r.target_id)
+                WHEN 'member'  THEN r.target_id
+                ELSE NULL
+              END AS target_member_id
        FROM reports r
        JOIN members m ON m.id=r.reporter_id
        WHERE r.resolved=false
@@ -553,6 +569,82 @@ router.patch('/reports/:id/resolve', async (req, res, next) => {
       [req.member.id, req.params.id]
     );
     res.json({ message: 'Report resolved' });
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/admin/appeals ───────────────────────────────────
+// Rulebook ref: R-MOD-005 (OQ-37). Pending appeals queue. Joins
+// member name + ban metadata so the admin can decide without a
+// separate lookup. Returns 503 if the appeals table hasn't been
+// migrated yet (rather than 500), so the admin UI can render a
+// "migration needed" banner instead of crashing.
+router.get('/appeals', async (req, res, next) => {
+  try {
+    let rows;
+    try {
+      ({ rows } = await query(
+        `SELECT a.id, a.reason, a.status, a.created_at, a.resolved_at, a.admin_notes,
+                m.id AS member_id, m.first_name, m.last_name, m.email, m.member_number,
+                m.is_banned, m.banned_reason, m.banned_at
+           FROM appeals a
+           JOIN members m ON m.id = a.member_id
+          WHERE a.status = 'pending'
+          ORDER BY a.created_at ASC`
+      ));
+    } catch (e) {
+      if (e.code === '42P01') {
+        return res.status(503).json({
+          error: 'Appeals table not yet migrated. Run /api/auth/migrate-appeals.',
+          code:  'APPEALS_NOT_MIGRATED',
+          appeals: [],
+        });
+      }
+      throw e;
+    }
+    res.json({ appeals: rows });
+  } catch (err) { next(err); }
+});
+
+// ── PATCH /api/admin/appeals/:id/resolve ─────────────────────
+// Rulebook ref: R-MOD-005 (OQ-37). Resolve an appeal — admin
+// chooses approve / deny + optional notes + optional unban (which
+// flips members.is_banned=false on approve).
+//
+// Body: { status: 'approved' | 'denied', admin_notes?, unban?: bool }
+router.patch('/appeals/:id/resolve', async (req, res, next) => {
+  try {
+    const { status, admin_notes, unban } = req.body || {};
+    if (!['approved', 'denied'].includes(status)) {
+      return res.status(400).json({ error: 'status must be approved or denied' });
+    }
+    const { rows } = await query(
+      `UPDATE appeals
+          SET status      = $1,
+              admin_notes = $2,
+              resolved_by = $3,
+              resolved_at = NOW()
+        WHERE id = $4 AND status = 'pending'
+        RETURNING member_id`,
+      [status, admin_notes || null, req.member.id, req.params.id]
+    );
+    if (!rows.length) {
+      return res.status(404).json({ error: 'Appeal not found or already resolved.' });
+    }
+    let unbanned = false;
+    if (status === 'approved' && unban) {
+      const r = await query(
+        `UPDATE members
+            SET is_banned     = false,
+                banned_reason = NULL,
+                banned_at     = NULL,
+                updated_at    = NOW()
+          WHERE id = $1`,
+        [rows[0].member_id]
+      );
+      unbanned = r.rowCount > 0;
+    }
+    audit.log(req, 'appeal.resolved', 'appeal', req.params.id, { status, unbanned });
+    res.json({ message: `Appeal ${status}`, unbanned });
   } catch (err) { next(err); }
 });
 
