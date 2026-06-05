@@ -3455,6 +3455,111 @@ router.post('/migrate-members', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/maintenance-migrate-media-to-r2 ─────────────
+// v1.59.0 / R-MED-005 / OQ-39. Walks cms_content rows whose
+// value_url is still a base64 data: URL, decodes them, uploads each
+// to Cloudflare R2, and rewrites the row to point at the public
+// CDN URL. Idempotent — rows already on R2 (or http(s)) are
+// skipped.
+//
+// Body:
+//   setupKey   ADMIN_SETUP_KEY (required)
+//   dry_run    true → counts what would migrate without uploading
+//   batch_size cap on rows touched in one call (default 100). Keeps
+//              the response time bounded; re-run to migrate the next
+//              batch. Safe to interrupt — already-migrated rows are
+//              skipped on the next call.
+//
+// Returns { scanned, migrated, skipped, failed, bytes, errors[] }.
+router.post('/maintenance-migrate-media-to-r2', async (req, res, next) => {
+  try {
+    const { setupKey, dry_run = false, batch_size = 100 } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const r2 = require('../services/r2Storage');
+    if (!r2.isConfigured()) {
+      return res.status(503).json({
+        error: 'R2 not configured. Set R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET, R2_PUBLIC_BASE_URL in Render env first.',
+        code:  'R2_NOT_CONFIGURED',
+      });
+    }
+
+    // Find rows still on base64. Limit by batch_size; ORDER BY id so
+    // successive runs make forward progress.
+    let rows;
+    try {
+      ({ rows } = await query(
+        `SELECT id, page, section, key, value_url
+           FROM cms_content
+          WHERE value_url LIKE 'data:%'
+          ORDER BY created_at ASC, id ASC
+          LIMIT $1`,
+        [Math.min(Number(batch_size) || 100, 500)]
+      ));
+    } catch (e) {
+      if (e.code === '42P01') {
+        return res.json({ ok: true, scanned: 0, migrated: 0, message: 'cms_content table does not exist yet.' });
+      }
+      throw e;
+    }
+
+    let migrated = 0, skipped = 0, failed = 0, bytes = 0;
+    const errors = [];
+
+    for (const row of rows) {
+      try {
+        const { mimeType, buffer } = r2.decodeDataUrl(row.value_url);
+        bytes += buffer.length;
+        if (dry_run) { migrated++; continue; }
+
+        // Map mime → ext, build the new R2 key. We prefix by the
+        // existing cms_content kind/section so the bucket stays
+        // browsable (image/ vs video/).
+        const ext = r2.extForMimeType(mimeType);
+        const baseName = (row.key || row.id).replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 60);
+        const filename = `${baseName}.${ext}`;
+        const kind = /^video\//i.test(mimeType) ? 'video' : 'image';
+        const newKey = r2.buildKey(kind, filename);
+
+        const publicUrl = await r2.uploadBuffer(newKey, buffer, mimeType);
+        await query(
+          `UPDATE cms_content SET value_url = $1, updated_at = NOW() WHERE id = $2`,
+          [publicUrl, row.id]
+        );
+        migrated++;
+      } catch (e) {
+        failed++;
+        if (errors.length < 10) {
+          errors.push({ id: row.id, error: String(e.message || e).slice(0, 200) });
+        }
+      }
+    }
+
+    // Count remaining rows so the caller knows how many more batches
+    // to run. Cheap COUNT — same WHERE clause as the SELECT.
+    const { rows: remaining } = await query(
+      `SELECT COUNT(*)::int AS n FROM cms_content WHERE value_url LIKE 'data:%'`
+    );
+
+    res.json({
+      ok: true,
+      dry_run: !!dry_run,
+      scanned:  rows.length,
+      migrated,
+      failed,
+      skipped,
+      bytes,
+      bytes_human: bytes > 1024 * 1024 ? `${(bytes / 1024 / 1024).toFixed(1)} MB` : `${(bytes / 1024).toFixed(0)} KB`,
+      remaining_after_this_batch: remaining[0].n,
+      errors,
+      message: dry_run
+        ? `Dry-run: ${rows.length} rows would be migrated (~${(bytes / 1024 / 1024).toFixed(1)} MB).`
+        : `Migrated ${migrated}/${rows.length} (${(bytes / 1024 / 1024).toFixed(1)} MB). ${remaining[0].n} rows remain.`,
+    });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-soft-delete ─────────────────────────
 // v1.58.0 / R-ACC-004 / OQ-4. Adds the pending_deletion_at column
 // to members. Until this runs, /me/forget falls back to the legacy

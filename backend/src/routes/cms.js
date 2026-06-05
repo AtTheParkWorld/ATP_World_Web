@@ -240,4 +240,142 @@ router.post('/upload', authenticate, requireAdmin, async (req, res, next) => {
 //  of the duplicate handler that would still be shadowed by /:page/:section.)
 
 
+// ─────────────────────────────────────────────────────────────
+// R2 direct-to-storage uploads — R-MED-005 / OQ-39 (v1.59.0).
+//
+// New flow (replaces base64-through-Postgres for large files):
+//   1. Client POST /api/cms/upload-url with { kind, filename, content_type }
+//      → returns { upload_url, public_url, key, expires_in }
+//   2. Client PUTs the file directly to upload_url with the matching
+//      Content-Type header. The bytes never touch the Render server.
+//   3. Client POSTs to /api/cms/upload-complete with { key, public_url,
+//      kind, filename, size_bytes? } → server records a cms_content
+//      row pointing at the new R2 public URL and returns the same
+//      short /api/cms/media/<id> reference that the legacy flow did,
+//      so existing call sites stay compatible.
+//
+// The legacy /api/cms/upload (base64) endpoint is intentionally
+// untouched and still works — kept as a fallback during rollout +
+// for the admin CMS panel until PR B flips its frontend too.
+//
+// When R2 isn't configured (env vars missing), both new endpoints
+// return 503 with a clear error so the front-end can fall back to
+// the legacy path instead of breaking silently.
+// ─────────────────────────────────────────────────────────────
+const r2 = require('../services/r2Storage');
+
+// Members can request a signed upload URL for their own avatar /
+// post media. Admins can request one for anything (CMS).
+const MEMBER_UPLOAD_KINDS = new Set(['avatar', 'post', 'image', 'video']);
+
+router.post('/upload-url', authenticate, async (req, res, next) => {
+  try {
+    if (!r2.isConfigured()) {
+      return res.status(503).json({
+        error: 'R2 storage is not configured on this server.',
+        code:  'R2_NOT_CONFIGURED',
+      });
+    }
+    const { kind, filename, content_type } = req.body || {};
+    if (!content_type || typeof content_type !== 'string') {
+      return res.status(400).json({ error: 'content_type required (e.g., image/jpeg)' });
+    }
+    // Type allow-list — only images + videos via this endpoint.
+    if (!/^(image|video)\//i.test(content_type)) {
+      return res.status(400).json({
+        error: 'Only image/* and video/* content_type accepted.',
+        code:  'BAD_CONTENT_TYPE',
+      });
+    }
+    // Authorisation: non-admins can only upload member-facing kinds.
+    if (!req.member.is_admin && kind && !MEMBER_UPLOAD_KINDS.has(kind)) {
+      return res.status(403).json({
+        error: 'You don\'t have permission to upload this kind of media.',
+        code:  'FORBIDDEN_KIND',
+      });
+    }
+    const key = r2.buildKey(kind || 'post', filename || 'upload');
+    const signed = await r2.presignUploadUrl(key, content_type, 300);
+    res.json({
+      ...signed,
+      max_size_bytes: 10 * 1024 * 1024,  // documented; R2 itself accepts up to 5GB
+      content_type,
+    });
+  } catch (err) { next(err); }
+});
+
+router.post('/upload-complete', authenticate, async (req, res, next) => {
+  try {
+    if (!r2.isConfigured()) {
+      return res.status(503).json({ error: 'R2 not configured.', code: 'R2_NOT_CONFIGURED' });
+    }
+    const { key, public_url, kind, filename, size_bytes,
+            target_page, target_section, target_key } = req.body || {};
+    if (!key || !public_url) {
+      return res.status(400).json({ error: 'key + public_url required' });
+    }
+    // Sanity-check the public_url matches what r2Storage would have
+    // generated for this key — prevents a malicious client from
+    // recording an arbitrary URL into our CMS table.
+    const expected = r2.publicUrlForKey(key);
+    if (expected !== public_url) {
+      return res.status(400).json({
+        error: 'public_url does not match the key.',
+        code:  'URL_MISMATCH',
+        expected,
+      });
+    }
+
+    // Make sure the cms_content value_url column is TEXT (was migrated
+    // up from VARCHAR for the legacy data: URLs). The helper is a no-op
+    // after the first call.
+    await _ensureValueUrlIsText();
+
+    const safeName = String(filename || 'upload').replace(/[^a-zA-Z0-9._-]/g, '_').slice(0, 80);
+    const dbKey    = `${safeName}_${Date.now()}`;
+    const { rows } = await query(
+      `INSERT INTO cms_content (page, section, key, value_url, updated_by)
+       VALUES ('_media', $1, $2, $3, $4)
+       ON CONFLICT (page, section, key) DO UPDATE SET value_url=$3, updated_by=$4, updated_at=NOW()
+       RETURNING id`,
+      [kind || 'image', dbKey, public_url, req.member.id]
+    );
+
+    // Auto-save into the target CMS field if the caller told us which
+    // one (admin CMS panel uses this).
+    let auto_saved = false;
+    if (target_page && target_section && target_key && target_page !== '_media') {
+      try {
+        await query(
+          `INSERT INTO cms_content (page, section, key, value_url, updated_by)
+                VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT (page, section, key) DO UPDATE SET
+             value_url  = EXCLUDED.value_url,
+             value_text = NULL,
+             updated_by = EXCLUDED.updated_by,
+             updated_at = NOW()`,
+          [target_page, target_section, target_key, public_url, req.member.id]
+        );
+        auto_saved = true;
+      } catch (e) {
+        console.warn('[cms] R2 upload-complete auto-save failed:', e.message);
+      }
+    }
+
+    // Return BOTH the public R2 URL (preferred — direct CDN hit) AND
+    // the legacy /api/cms/media/<id> reference (so existing call sites
+    // that still expect the short URL keep working). Once PR B flips
+    // every renderer to use public_url directly, the legacy reference
+    // can be deprecated.
+    res.json({
+      success:    true,
+      id:         rows[0].id,
+      url:        public_url,                       // canonical (direct R2/CDN)
+      legacy_url: `/api/cms/media/${rows[0].id}`,   // back-compat
+      size_bytes: size_bytes || null,
+      auto_saved,
+    });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
