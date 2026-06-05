@@ -50,6 +50,7 @@ CREATE TABLE IF NOT EXISTS members (
   banned_at         TIMESTAMPTZ,
   email_verified    BOOLEAN      NOT NULL DEFAULT false,
   timezone          VARCHAR(64)  NOT NULL DEFAULT 'Asia/Dubai',  -- R-ST-004 (OQ-18): streak day-boundary in member-local time
+  pending_deletion_at TIMESTAMPTZ,                              -- R-ACC-004 (OQ-4): 30-day soft-delete window; finalised by cron
   joined_at         TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
   last_active_at    TIMESTAMPTZ,
   migrated_from_csv BOOLEAN      NOT NULL DEFAULT false,

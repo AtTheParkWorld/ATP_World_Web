@@ -3455,6 +3455,103 @@ router.post('/migrate-members', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-soft-delete ─────────────────────────
+// v1.58.0 / R-ACC-004 / OQ-4. Adds the pending_deletion_at column
+// to members. Until this runs, /me/forget falls back to the legacy
+// instant-anonymise path.
+router.post('/migrate-soft-delete', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    await query(
+      `ALTER TABLE members ADD COLUMN IF NOT EXISTS pending_deletion_at TIMESTAMPTZ`
+    );
+    await query(
+      `CREATE INDEX IF NOT EXISTS idx_members_pending_deletion
+         ON members(pending_deletion_at) WHERE pending_deletion_at IS NOT NULL`
+    );
+    res.json({ ok: true, message: 'members.pending_deletion_at ready.' });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/migrate-email-send-log ──────────────────────
+// v1.58.0 / R-NO-006 / OQ-34. Creates the audit table used by
+// emailRateLimit.checkAndRecord. Without this, the rate-limit
+// helper fails open (allows everything).
+router.post('/migrate-email-send-log', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    await query(`
+      CREATE TABLE IF NOT EXISTS email_send_log (
+        id                UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+        member_id         UUID         NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+        email_type        VARCHAR(60)  NOT NULL,
+        was_critical      BOOLEAN      NOT NULL DEFAULT false,
+        was_rate_limited  BOOLEAN      NOT NULL DEFAULT false,
+        sent_at           TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+      )
+    `);
+    await query(`CREATE INDEX IF NOT EXISTS idx_email_log_recent
+                   ON email_send_log(member_id, sent_at DESC) WHERE was_rate_limited = false`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_email_log_suppressed
+                   ON email_send_log(sent_at DESC) WHERE was_rate_limited = true`);
+    res.json({ ok: true, message: 'email_send_log ready.' });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/maintenance-finalize-deletions ──────────────
+// v1.58.0 / R-ACC-004 / OQ-4. Daily cron. Finds members whose
+// soft-delete request is now past the 30-day cancellation window
+// and runs the real anonymisation on each. Idempotent — already-
+// anonymised members are skipped via a first_name='Deleted' check.
+//
+// Body: { setupKey, dry_run?:bool }
+router.post('/maintenance-finalize-deletions', async (req, res, next) => {
+  try {
+    const { setupKey, dry_run = false } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    let due;
+    try {
+      ({ rows: due } = await query(
+        `SELECT id, email, first_name
+           FROM members
+          WHERE pending_deletion_at IS NOT NULL
+            AND pending_deletion_at < NOW() - INTERVAL '30 days'
+            AND first_name <> 'Deleted'`
+      ));
+    } catch (e) {
+      if (e.code === '42703') {
+        return res.json({ ok: true, finalized: 0, dry_run, note: 'pending_deletion_at column missing — run migrate-soft-delete first.' });
+      }
+      throw e;
+    }
+    if (dry_run) {
+      return res.json({ ok: true, dry_run: true, would_finalize: due.length, message: `${due.length} members would be anonymised.` });
+    }
+    const { transaction } = require('../db');
+    const members = require('../routes/members');
+    let finalized = 0;
+    for (const m of due) {
+      try {
+        await transaction(async (client) => {
+          await members._anonymizeMember(client, m.id);
+        });
+        finalized++;
+      } catch (e) {
+        console.warn('[finalize-deletions] failed for', m.id, '-', e.message);
+      }
+    }
+    res.json({ ok: true, finalized, due: due.length });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-auto-surveys ────────────────────────
 // v1.57.0 / R-SV-006 / OQ-40. Seeds three survey templates that the
 // auto-trigger service points members at:

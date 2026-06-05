@@ -698,13 +698,64 @@ router.get('/search', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// ── POST /api/members/me/forget — UAE PDPL / GDPR right to erasure ──
-// Self-service hard-delete. Anonymises personal data on the member
-// row + deletes session_feedback, social_accounts, wearable_connections.
-// Bookings + audit logs are kept (legitimate business records) but
-// the linked email/name is scrubbed via FK CASCADE on the member row.
-// Requires explicit confirmation in the body (defence against accidental
-// hits) + the member's own JWT.
+// ─────────────────────────────────────────────────────────────
+// Deletion lifecycle — R-ACC-004 (OQ-4) two-phase soft-delete
+// (v1.58.0).
+//
+//   Phase 1 (/me/forget): set members.pending_deletion_at = NOW().
+//     - Member stays signed in; their data is untouched.
+//     - A confirmation email goes out (best-effort).
+//     - Member can cancel any time in the next 30 days via
+//       /me/cancel-deletion.
+//   Phase 2 (cron — /maintenance-finalize-deletions): when
+//     pending_deletion_at is more than 30 days old, the actual
+//     anonymisation runs. This is the same destructive flow that
+//     used to happen inline in /me/forget pre-v1.58.0.
+//
+// Pre-migration safety: members.pending_deletion_at is added by
+// /api/auth/migrate-soft-delete. Until that runs, /me/forget falls
+// back to the legacy instant-anonymise behaviour (a 42703 on the
+// soft-delete UPDATE drops into the legacy code path).
+// ─────────────────────────────────────────────────────────────
+
+// Shared with the maintenance cron — exported via the legacy
+// CommonJS module.exports tail below.
+async function _anonymizeMember(client, memberId) {
+  await client.query(
+    `UPDATE members
+       SET first_name = 'Deleted',
+           last_name  = 'User',
+           email      = 'deleted-' || id::text || '@atp.invalid',
+           phone      = NULL,
+           avatar_url = NULL,
+           avatar_gallery = '[]'::jsonb,
+           date_of_birth  = NULL,
+           nationality    = NULL,
+           sports_preferences = '[]'::jsonb,
+           password_hash  = 'ACCOUNT_DELETED',
+           is_banned      = true,
+           banned_reason  = 'Self-deleted via right-to-erasure',
+           banned_at      = NOW(),
+           updated_at     = NOW()
+     WHERE id = $1`,
+    [memberId]
+  );
+  const wipes = [
+    `DELETE FROM social_accounts WHERE member_id = $1`,
+    `DELETE FROM wearable_connections WHERE member_id = $1`,
+    `DELETE FROM friendships WHERE requester_id = $1 OR addressee_id = $1`,
+    `DELETE FROM notifications WHERE member_id = $1`,
+    `DELETE FROM survey_responses WHERE member_id = $1`,
+    `DELETE FROM appeals WHERE member_id = $1`,
+  ];
+  for (const sql of wipes) {
+    await client.query('SAVEPOINT erase').catch(() => {});
+    try { await client.query(sql, [memberId]); await client.query('RELEASE SAVEPOINT erase').catch(() => {}); }
+    catch (e) { await client.query('ROLLBACK TO SAVEPOINT erase').catch(() => {}); }
+  }
+}
+
+// ── POST /api/members/me/forget — schedules deletion ──────────
 router.post('/me/forget', authenticate, async (req, res, next) => {
   const { transaction } = require('../db');
   try {
@@ -716,51 +767,113 @@ router.post('/me/forget', authenticate, async (req, res, next) => {
     }
     const memberId = req.member.id;
 
-    await transaction(async (client) => {
-      // Anonymise the row instead of deleting — preserves FK integrity
-      // on bookings, points_ledger, audit logs (legitimate business records).
-      // PII fields are nulled. Email is replaced with a stable placeholder
-      // so the UNIQUE constraint still holds across multiple deletions.
-      await client.query(
-        `UPDATE members
-           SET first_name = 'Deleted',
-               last_name  = 'User',
-               email      = 'deleted-' || id::text || '@atp.invalid',
-               phone      = NULL,
-               avatar_url = NULL,
-               avatar_gallery = '[]'::jsonb,
-               date_of_birth  = NULL,
-               nationality    = NULL,
-               sports_preferences = '[]'::jsonb,
-               password_hash  = 'ACCOUNT_DELETED',
-               is_banned      = true,
-               banned_reason  = 'Self-deleted via right-to-erasure',
-               banned_at      = NOW(),
-               updated_at     = NOW()
-         WHERE id = $1`,
+    // Try the soft-delete path first (sets pending_deletion_at). On
+    // pre-migration DBs (column missing), fall back to the legacy
+    // instant-anonymise so the right-to-erasure surface never breaks.
+    let softDeleted = false;
+    try {
+      const { rowCount } = await query(
+        `UPDATE members SET pending_deletion_at = NOW(), updated_at = NOW()
+          WHERE id = $1 AND pending_deletion_at IS NULL`,
         [memberId]
       );
-      // Wipe linked records that contain PII not anonymisable on the
-      // main row. Each wrapped in defensive SAVEPOINT so a missing table
-      // (pre-migration) doesn't fail the whole erasure.
-      const wipes = [
-        `DELETE FROM social_accounts WHERE member_id = $1`,
-        `DELETE FROM wearable_connections WHERE member_id = $1`,
-        `DELETE FROM friendships WHERE requester_id = $1 OR addressee_id = $1`,
-        `DELETE FROM notifications WHERE member_id = $1`,
-        `DELETE FROM survey_responses WHERE member_id = $1`,
-      ];
-      for (const sql of wipes) {
-        await client.query('SAVEPOINT erase').catch(() => {});
-        try { await client.query(sql, [memberId]); await client.query('RELEASE SAVEPOINT erase').catch(() => {}); }
-        catch (e) { await client.query('ROLLBACK TO SAVEPOINT erase').catch(() => {}); }
+      softDeleted = rowCount > 0;
+    } catch (e) {
+      if (e.code !== '42703') throw e;
+      // Legacy path — instant anonymise (pre-v1.58 behaviour).
+      await transaction(async (client) => {
+        await _anonymizeMember(client, memberId);
+      });
+      return res.json({
+        success: true,
+        legacy_instant_delete: true,
+        message: 'Your account has been anonymised. Contact general@atthepark.com within 30 days if you change your mind.',
+      });
+    }
+
+    // If they'd ALREADY scheduled a deletion (idempotent re-call),
+    // softDeleted is false above but we still want to reply with the
+    // scheduled date so the UI can render the banner.
+    const { rows } = await query(
+      'SELECT pending_deletion_at FROM members WHERE id=$1',
+      [memberId]
+    );
+    const pendingAt = rows[0] && rows[0].pending_deletion_at;
+    const finalAt = pendingAt
+      ? new Date(new Date(pendingAt).getTime() + 30 * 86400 * 1000)
+      : null;
+
+    // Confirmation email — fire-and-forget. The 30-day window means
+    // we don't need it to succeed; the in-app banner is the primary
+    // surface.
+    try {
+      const emailService = require('../services/email');
+      if (emailService.sendDeletionScheduled) {
+        emailService.sendDeletionScheduled(req.member, finalAt).catch(() => {});
       }
-    });
+    } catch (_) { /* email service may not have the function yet */ }
+
     res.json({
       success: true,
-      message: 'Your account has been anonymised. You will be signed out automatically. Contact general@atthepark.com if you change your mind within 30 days.',
+      pending_deletion_at: pendingAt,
+      will_anonymize_at:   finalAt,
+      days_remaining:      finalAt ? Math.max(0, Math.ceil((finalAt - Date.now()) / 86400000)) : 30,
+      message: 'Your account is scheduled for deletion in 30 days. Cancel anytime from your profile to keep your account.',
+    });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/members/me/cancel-deletion ─────────────────────
+// R-ACC-004 (OQ-4). Clears pending_deletion_at so the cron skips
+// this member. Idempotent — re-runs are no-ops.
+router.post('/me/cancel-deletion', authenticate, async (req, res, next) => {
+  try {
+    try {
+      const { rowCount } = await query(
+        `UPDATE members SET pending_deletion_at = NULL, updated_at = NOW()
+          WHERE id = $1`,
+        [req.member.id]
+      );
+      res.json({ success: true, cancelled: rowCount > 0 });
+    } catch (e) {
+      if (e.code === '42703') {
+        return res.status(503).json({
+          error: 'Account deletion scheduling not yet enabled on this server.',
+          code:  'SOFT_DELETE_NOT_MIGRATED',
+        });
+      }
+      throw e;
+    }
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/members/me/deletion-status ──────────────────────
+// Member-facing read for the profile banner. Returns the schedule
+// + days remaining + whether the member can still cancel.
+router.get('/me/deletion-status', authenticate, async (req, res, next) => {
+  try {
+    let pendingAt = null;
+    try {
+      const { rows } = await query(
+        'SELECT pending_deletion_at FROM members WHERE id=$1',
+        [req.member.id]
+      );
+      pendingAt = rows[0] && rows[0].pending_deletion_at;
+    } catch (e) {
+      if (e.code !== '42703') throw e;
+    }
+    if (!pendingAt) {
+      return res.json({ pending: false });
+    }
+    const finalAt = new Date(new Date(pendingAt).getTime() + 30 * 86400 * 1000);
+    res.json({
+      pending: true,
+      pending_deletion_at: pendingAt,
+      will_anonymize_at:   finalAt,
+      days_remaining:      Math.max(0, Math.ceil((finalAt - Date.now()) / 86400000)),
     });
   } catch (err) { next(err); }
 });
 
 module.exports = router;
+module.exports._anonymizeMember = _anonymizeMember;

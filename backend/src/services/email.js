@@ -485,18 +485,48 @@ async function sendStreakReminder(member, streakDays) {
 }
 
 // ── POINTS EXPIRY WARNING ─────────────────────────────────────
+// R-NO-006 (OQ-34): non-critical, capped at 1/hour per member by
+// emailRateLimit.checkAndRecord. A bug that fires this on every
+// expiry tick can no longer flood a member's inbox.
 async function sendPointsExpiryWarning(member, expiringPoints, expiresAt) {
+  const rl = await require('./emailRateLimit').checkAndRecord(member.id, 'points_expiry_warning');
+  if (!rl.allowed) {
+    console.log(`[email] points_expiry_warning suppressed for ${member.email} — ${rl.reason}, resets ${rl.resets_at}`);
+    return { skipped: true, reason: rl.reason };
+  }
   const expiryDate = new Date(expiresAt).toLocaleDateString('en-AE', {
     day: 'numeric', month: 'long', year: 'numeric',
   });
   const html = baseTemplate(`
     <h1>⏰ Your points are expiring soon</h1>
-    <p>Hi ${member.first_name}, you have <strong style="color:#7AC231">${expiringPoints} ATP points</strong> 
+    <p>Hi ${member.first_name}, you have <strong style="color:#7AC231">${expiringPoints} ATP points</strong>
     expiring on <strong>${expiryDate}</strong>.</p>
     <p>Use them in the ATP store before they expire.</p>
     <a href="${FRONTEND_URL}/store.html" class="btn">Shop with points →</a>
   `);
   await send(member.email, `⏰ ${expiringPoints} ATP points expiring soon`, html);
+}
+
+// ── DELETION SCHEDULED — R-ACC-004 (OQ-4) ────────────────────
+// Critical: bypasses the rate-limit. Fires inline from
+// /api/members/me/forget. Best-effort — the 30-day in-app banner
+// is the primary surface for the cancel-deletion CTA.
+async function sendDeletionScheduled(member, willAnonymizeAt) {
+  if (!member || !member.email) return;
+  await require('./emailRateLimit').checkAndRecord(member.id, 'deletion_scheduled', { critical: true });
+  const finalDateStr = willAnonymizeAt
+    ? new Date(willAnonymizeAt).toLocaleDateString('en-AE', {
+        day: 'numeric', month: 'long', year: 'numeric',
+      })
+    : 'in 30 days';
+  const html = baseTemplate(`
+    <h1>Your ATP account is scheduled for deletion</h1>
+    <p>Hi ${member.first_name || ''}, we received your request to delete your account.</p>
+    <p>Your account will be anonymised on <strong>${finalDateStr}</strong>. Until then your data is untouched — log back in and cancel anytime from your profile to keep your account.</p>
+    <a href="${FRONTEND_URL}/profile.html" class="btn">Sign in to cancel →</a>
+    <p style="margin-top:24px;color:#888;font-size:13px">If you didn’t request this, sign in immediately and use the “Cancel deletion” button on your profile.</p>
+  `);
+  await send(member.email, 'Your ATP account is scheduled for deletion in 30 days', html);
 }
 
 // ── SESSION REMINDER ──────────────────────────────────────────
@@ -568,6 +598,7 @@ module.exports = {
   sendMigrationClaim,
   sendStreakReminder,
   sendPointsExpiryWarning,
+  sendDeletionScheduled,
   sendSessionReminder,
   sendSessionCancellation,
   sendRaw,
