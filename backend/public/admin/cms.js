@@ -795,27 +795,69 @@ async function handleCmsUpload(event) {
 
     try {
       var token = getToken();
+      var auth  = { 'Authorization': 'Bearer ' + token };
       // Tell the server which CMS field this upload is replacing (if any)
       // so the URL gets auto-saved straight into cms_content. The admin no
       // longer has to also click "Save All Changes" for media uploads —
       // the upload IS the save.
       var targetField = _uploadTargetFieldId ? document.getElementById(_uploadTargetFieldId) : null;
-      var body = {
-        data_url: dataUrl,
-        filename: file.name,
-        kind: file.type.startsWith('video/') ? 'video' : 'image',
-      };
+      var kind = file.type.startsWith('video/') ? 'video' : 'image';
+      var targetPage, targetSection, targetKey;
       if (targetField && targetField.dataset.section && targetField.dataset.key && CMS_CURRENT_PAGE && CMS_CURRENT_PAGE !== '_media') {
-        body.target_page    = CMS_CURRENT_PAGE;
-        body.target_section = targetField.dataset.section;
-        body.target_key     = targetField.dataset.key;
+        targetPage    = CMS_CURRENT_PAGE;
+        targetSection = targetField.dataset.section;
+        targetKey     = targetField.dataset.key;
       }
-      var res = await fetch(ATP_API + '/cms/upload', {
-        method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-        body: JSON.stringify(body)
-      });
-      var d = await res.json();
+
+      // R-MED-005 (OQ-39, v1.61.0): try direct-to-R2 first; fall back
+      // to the legacy base64 path on 503 R2_NOT_CONFIGURED.
+      var d;
+      try {
+        var ct = file.type || (kind === 'video' ? 'video/mp4' : 'image/jpeg');
+        var step1 = await fetch(ATP_API + '/cms/upload-url', {
+          method:  'POST',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, auth),
+          body:    JSON.stringify({ kind: kind, filename: file.name, content_type: ct }),
+        });
+        if (step1.status === 503) throw 'R2_NOT_CONFIGURED';
+        var j1 = await step1.json();
+        if (!step1.ok || !j1.upload_url) throw new Error((j1 && j1.error) || 'upload-url failed');
+        var step2 = await fetch(j1.upload_url, {
+          method:  'PUT',
+          headers: { 'Content-Type': ct },
+          body:    file,
+        });
+        if (!step2.ok) throw new Error('R2 upload failed (' + step2.status + ')');
+        var step3 = await fetch(ATP_API + '/cms/upload-complete', {
+          method:  'POST',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, auth),
+          body:    JSON.stringify({
+            key:        j1.key,
+            public_url: j1.public_url,
+            kind:       kind,
+            filename:   file.name,
+            size_bytes: file.size,
+            target_page: targetPage, target_section: targetSection, target_key: targetKey,
+          }),
+        });
+        d = await step3.json();
+        if (!step3.ok || !d.url) throw new Error((d && d.error) || 'upload-complete failed');
+        d.success = true;
+        d.size_kb = Math.round(file.size / 1024);
+      } catch (r2err) {
+        if (r2err !== 'R2_NOT_CONFIGURED') throw r2err;
+        // Legacy fallback — preserves the old auto-save behaviour.
+        var body = { data_url: dataUrl, filename: file.name, kind: kind };
+        if (targetPage)    body.target_page    = targetPage;
+        if (targetSection) body.target_section = targetSection;
+        if (targetKey)     body.target_key     = targetKey;
+        var resLeg = await fetch(ATP_API + '/cms/upload', {
+          method:'POST',
+          headers: Object.assign({ 'Content-Type':'application/json' }, auth),
+          body: JSON.stringify(body)
+        });
+        d = await resLeg.json();
+      }
       if (d.success) {
         msg.textContent = d.auto_saved
           ? '✅ Uploaded (' + d.size_kb + ' KB) — saved & live'

@@ -116,13 +116,20 @@ function showAdminSection(name, btn) {
 }
 
 // ── GENERIC MEDIA UPLOAD HELPER ────────────────────────────────
-// Wires a hidden <input type="file"> + a visible "📁 Upload" button to
-// a URL text input. On file pick, base64-encodes the file, POSTs it to
-// /api/cms/upload, then drops the returned short URL (/api/cms/media/<id>)
-// into the URL field. Used by every image/video/badge/logo field in the
-// admin panel — saves admins from having to host images elsewhere first.
+// Rulebook ref: R-MED-005 (OQ-39). Direct-to-R2 (v1.61) with legacy
+// base64 fallback. Wires a hidden <input type="file"> + a visible
+// "📁 Upload" button to a URL text input.
 //
-// HTML pattern (all three IDs are explicit, no naming convention required):
+// Flow per file:
+//   1. POST /api/cms/upload-url  → signed PUT + the eventual public URL
+//   2. PUT the file bytes directly to R2 via the signed URL
+//   3. POST /api/cms/upload-complete → records cms_content row,
+//                                      returns canonical public URL
+// If /upload-url returns 503 R2_NOT_CONFIGURED, falls back to the
+// legacy base64 POST /api/cms/upload path so admin uploads stay
+// functional in any environment.
+//
+// HTML pattern (all three IDs explicit; no naming convention required):
 //   <input id="myUrl" type="text">
 //   <input id="myFile" type="file" accept="image/*" style="display:none"
 //          onchange="atpUpload('myFile','myUrl','image',2)">
@@ -140,31 +147,83 @@ function atpUpload(fileInputId, urlFieldId, kind, maxMB) {
     return;
   }
   var token = (typeof getToken === 'function') ? getToken() : (localStorage.getItem('atp_token') || '');
-  var prev = urlField.value;
+  var auth  = { 'Authorization': 'Bearer ' + token };
+  var prev  = urlField.value;
   urlField.value = 'Uploading…';
-  var reader = new FileReader();
-  reader.onload = function() {
-    fetch(ATP_API + '/cms/upload', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ data_url: reader.result, filename: f.name, kind: kind || 'image' }),
-    }).then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); })
-      .then(function(res){
-        if (!res.ok || !res.body || !res.body.success) {
-          urlField.value = prev;
-          if (typeof showToast === 'function') showToast('❌ ' + ((res.body && res.body.error) || 'Upload failed'), true);
-          return;
-        }
-        urlField.value = res.body.url;
-        if (typeof showToast === 'function') showToast('✅ Uploaded — Save to apply');
-      })
-      .catch(function(e){
-        urlField.value = prev;
-        if (typeof showToast === 'function') showToast('❌ ' + e.message, true);
-      })
-      .finally(function(){ input.value = ''; });
-  };
-  reader.readAsDataURL(f);
+
+  async function tryR2() {
+    var ct = f.type || 'image/jpeg';
+    var step1 = await fetch(ATP_API + '/cms/upload-url', {
+      method:  'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, auth),
+      body:    JSON.stringify({ kind: kind || 'image', filename: f.name, content_type: ct }),
+    });
+    if (step1.status === 503) throw 'R2_NOT_CONFIGURED';
+    var j1 = await step1.json();
+    if (!step1.ok || !j1.upload_url) throw new Error((j1 && j1.error) || 'upload-url failed');
+
+    var step2 = await fetch(j1.upload_url, {
+      method:  'PUT',
+      headers: { 'Content-Type': ct },
+      body:    f,
+    });
+    if (!step2.ok) throw new Error('R2 upload failed (' + step2.status + ')');
+
+    var step3 = await fetch(ATP_API + '/cms/upload-complete', {
+      method:  'POST',
+      headers: Object.assign({ 'Content-Type': 'application/json' }, auth),
+      body:    JSON.stringify({
+        key:        j1.key,
+        public_url: j1.public_url,
+        kind:       kind || 'image',
+        filename:   f.name,
+        size_bytes: f.size,
+      }),
+    });
+    var j3 = await step3.json();
+    if (!step3.ok || !j3.url) throw new Error((j3 && j3.error) || 'upload-complete failed');
+    return j3.url;
+  }
+
+  function tryLegacyBase64() {
+    return new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function() {
+        fetch(ATP_API + '/cms/upload', {
+          method:  'POST',
+          headers: Object.assign({ 'Content-Type': 'application/json' }, auth),
+          body:    JSON.stringify({ data_url: reader.result, filename: f.name, kind: kind || 'image' }),
+        }).then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); })
+          .then(function(res){
+            if (!res.ok || !res.body || !res.body.success) {
+              return reject(new Error((res.body && res.body.error) || 'Upload failed'));
+            }
+            resolve(res.body.url);
+          })
+          .catch(reject);
+      };
+      reader.onerror = function(){ reject(new Error('File read failed')); };
+      reader.readAsDataURL(f);
+    });
+  }
+
+  Promise.resolve()
+    .then(function(){ return tryR2(); })
+    .catch(function(e){
+      if (e === 'R2_NOT_CONFIGURED') {
+        return tryLegacyBase64();
+      }
+      throw e;
+    })
+    .then(function(url){
+      urlField.value = url;
+      if (typeof showToast === 'function') showToast('✅ Uploaded — Save to apply');
+    })
+    .catch(function(e){
+      urlField.value = prev;
+      if (typeof showToast === 'function') showToast('❌ ' + (e.message || e), true);
+    })
+    .finally(function(){ input.value = ''; });
 }
 
 // ── DATA ──────────────────────────────────────────────────────
