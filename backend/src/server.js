@@ -77,11 +77,25 @@ app.use(helmet({
                      "https://fonts.googleapis.com",
                      "https://unpkg.com"],
       "font-src":   ["'self'", "https://fonts.gstatic.com", "data:"],
+      // R-MED-005 (OQ-39): allow images from Cloudflare R2 (member-
+      // uploaded post + avatar media). Both the public r2.dev hostname
+      // and any future custom CDN domain set via R2_PUBLIC_BASE_URL
+      // need to be whitelisted. We splice in process.env.R2_PUBLIC_BASE_URL
+      // at boot if it's set; otherwise the default r2.dev pattern covers
+      // the public-bucket case.
       "img-src":    ["'self'", "data:", "https://raw.githubusercontent.com",
                      "https://cdn.shopify.com",
-                     "https://*.googleusercontent.com"],
+                     "https://*.googleusercontent.com",
+                     "https://*.r2.dev",
+                     "https://*.r2.cloudflarestorage.com",
+                     ...(process.env.R2_PUBLIC_BASE_URL ? [process.env.R2_PUBLIC_BASE_URL] : [])],
       "connect-src":["'self'", "https://atp-world-web.onrender.com",
-                     "https://*.myshopify.com"],
+                     "https://*.myshopify.com",
+                     // R2 pre-signed PUT uploads from the browser hit the
+                     // R2 endpoint directly (no proxy through Render).
+                     "https://*.r2.dev",
+                     "https://*.r2.cloudflarestorage.com",
+                     ...(process.env.R2_PUBLIC_BASE_URL ? [process.env.R2_PUBLIC_BASE_URL] : [])],
       "media-src":  ["'self'", "https:"],
       "frame-ancestors": ["'none'"],            // prevent clickjacking
       "object-src": ["'none'"],
