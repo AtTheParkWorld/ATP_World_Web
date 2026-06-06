@@ -636,6 +636,18 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
     <div class="profile-cover-design"></div>
   </div>
 
+  <!-- Cancel-deletion banner (R-ACC-004 / OQ-4). Populated by
+       loadDeletionStatus() on page load when /me/deletion-status
+       reports a pending deletion. Stays hidden otherwise. -->
+  <div id="deletionBanner" style="display:none;max-width:1200px;margin:0 auto 20px;padding:16px 24px;background:linear-gradient(90deg,rgba(239,68,68,.12),rgba(245,158,11,.12));border:1px solid rgba(239,68,68,.4);border-radius:12px;display:none;align-items:center;gap:16px;flex-wrap:wrap">
+    <div style="font-size:24px">⚠️</div>
+    <div style="flex:1;min-width:240px">
+      <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:3px">Your account is scheduled for deletion</div>
+      <div id="deletionBannerBody" style="font-size:12px;color:#ddd;line-height:1.55"></div>
+    </div>
+    <button onclick="cancelDeletion()" style="background:#7AC231;color:#0a0a0a;border:none;padding:10px 20px;border-radius:8px;font-weight:800;font-size:13px;letter-spacing:.04em;cursor:pointer">Keep my account</button>
+  </div>
+
   <!-- HERO -->
   <div class="profile-hero">
     <div class="profile-avatar-wrap">
@@ -2106,8 +2118,6 @@ function renderFriends() {
   if (reqEl) {
     reqEl.innerHTML = (FRIENDS_REQUESTS && FRIENDS_REQUESTS.length)
       ? FRIENDS_REQUESTS.map(function(f,i){
-          // SECURITY: f.name / f.init / f.meta come from another member's
-          // free-form profile — escape to prevent stored XSS.
           return "<div class='friend-row'>"+
             "<div class='friend-av'>"+escapeHtml(f.init)+"</div>"+
             "<div class='friend-info'><div class='friend-name'>"+escapeHtml(f.name)+"</div><div class='friend-meta'>"+escapeHtml(f.meta)+"</div></div>"+
@@ -2122,26 +2132,134 @@ function renderFriends() {
   if (lstEl) {
     lstEl.innerHTML = (FRIENDS && FRIENDS.length)
       ? FRIENDS.map(function(f){
-          // SECURITY: f.name / f.init / f.meta come from another member's
-          // free-form profile — escape to prevent stored XSS. The friend
-          // id flows into an inline onclick, so we attribute-escape it
-          // *and* JS-escape the name argument the same way the legacy
-          // single-quote replacement did.
+          // R-FR-005 (OQ-30) — add Unfriend + Block buttons next to
+          // Train together. Backend endpoints are in v1.53. The buttons
+          // confirm() before firing so accidental clicks don't drop a
+          // friendship.
           var safeId = encodeURIComponent(String(f.id || ''));
           var safeNameForJs = String(f.name || '').replace(/\\/g,'\\\\').replace(/'/g, "\\'").replace(/</g,'\\u003c');
           var safeNameAttr = escapeHtml(safeNameForJs);
-          var btn = f.id
+          var trainBtn = f.id
             ? "<button type='button' class='friend-btn' onclick=\"openFriendSessionsModal('" + escapeHtml(safeId) + "','" + safeNameAttr + "')\">Train together</button>"
             : "<a href='sessions.html' class='friend-btn' style='text-decoration:none'>Train together</a>";
-          return "<div class='friend-row'>"+
+          var moreBtn = f.id
+            ? "<button type='button' class='friend-btn' onclick=\"friendsActionMenu('" + escapeHtml(safeId) + "','" + safeNameAttr + "',this)\" title='More options' style='padding:6px 10px'>⋯</button>"
+            : '';
+          return "<div class='friend-row' style='position:relative'>"+
             "<div class='friend-av'>"+escapeHtml(f.init)+"</div>"+
             "<div class='friend-info'><div class='friend-name'>"+escapeHtml(f.name)+"</div><div class='friend-meta'>"+escapeHtml(f.meta)+"</div></div>"+
-            btn+
+            "<div class='friend-actions' style='gap:6px'>"+ trainBtn + moreBtn +"</div>"+
           "</div>";
         }).join("")
       : _atpEmpty('🤝', 'No friends yet',
           'Connect with other ATP members and motivate each other.',
           '<a href="community.html" class="atp-btn atp-btn--primary atp-empty__cta">Browse the community</a>');
+  }
+}
+
+// R-FR-005 (OQ-30): unfriend + block dropdown for a friend row.
+// Renders a small inline menu next to the ⋯ button. Click outside
+// dismisses it. Each action confirms then calls the matching
+// backend endpoint shipped in v1.53.
+function friendsActionMenu(friendId, friendName, anchorBtn) {
+  // Toggle: if a menu already exists from a previous click, close it.
+  var existing = document.getElementById('friendActionMenu');
+  if (existing) existing.remove();
+
+  var menu = document.createElement('div');
+  menu.id = 'friendActionMenu';
+  menu.style.cssText = 'position:absolute;right:0;top:36px;background:#161616;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:6px;min-width:170px;z-index:50;box-shadow:0 8px 24px rgba(0,0,0,.5)';
+  menu.innerHTML =
+    "<button class='friend-btn' style='display:block;width:100%;text-align:left;background:none;border:none;color:#fff;padding:9px 12px;border-radius:6px;cursor:pointer;font-size:13px' onmouseover=\"this.style.background='rgba(255,255,255,.06)'\" onmouseout=\"this.style.background='none'\" onclick=\"unfriendMember('"+friendId+"','"+friendName+"')\">↩️ Unfriend</button>" +
+    "<button class='friend-btn' style='display:block;width:100%;text-align:left;background:none;border:none;color:#ef4444;padding:9px 12px;border-radius:6px;cursor:pointer;font-size:13px' onmouseover=\"this.style.background='rgba(239,68,68,.1)'\" onmouseout=\"this.style.background='none'\" onclick=\"blockMember('"+friendId+"','"+friendName+"')\">🚫 Block</button>";
+  anchorBtn.parentElement.appendChild(menu);
+
+  // Click-outside dismiss. Bind on next tick so this click doesn't
+  // immediately close the menu we just opened.
+  setTimeout(function(){
+    document.addEventListener('click', function _dismiss(ev){
+      if (!menu.contains(ev.target) && ev.target !== anchorBtn) {
+        menu.remove();
+        document.removeEventListener('click', _dismiss);
+      }
+    });
+  }, 0);
+}
+
+async function unfriendMember(friendId, friendName) {
+  if (!confirm('Remove ' + decodeURIComponent(friendId) === friendId ? friendName : friendName + ' from your friends?')) return;
+  try {
+    var token = localStorage.getItem('atp_token') || '';
+    var r = await fetch('/api/members/friends/' + encodeURIComponent(friendId), {
+      method:  'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    var j = await r.json().catch(function(){ return {}; });
+    if (!r.ok) throw new Error(j.error || 'Unfriend failed');
+    if (window.ATPComponents) ATPComponents.toast(friendName + ' removed from friends', 'success');
+    // Refresh the friends list in-place
+    if (typeof loadFriends === 'function') loadFriends();
+  } catch (e) {
+    if (window.ATPComponents) ATPComponents.toast('Could not unfriend: ' + (e.message || e), 'danger');
+  }
+}
+
+async function blockMember(memberId, memberName) {
+  if (!confirm('Block ' + memberName + '? They won\'t see your posts and you won\'t see theirs.')) return;
+  try {
+    var token = localStorage.getItem('atp_token') || '';
+    var r = await fetch('/api/members/block/' + encodeURIComponent(memberId), {
+      method:  'POST',
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    var j = await r.json().catch(function(){ return {}; });
+    if (!r.ok) throw new Error(j.error || 'Block failed');
+    if (window.ATPComponents) ATPComponents.toast(memberName + ' blocked', 'success');
+    if (typeof loadFriends === 'function') loadFriends();
+  } catch (e) {
+    if (window.ATPComponents) ATPComponents.toast('Could not block: ' + (e.message || e), 'danger');
+  }
+}
+
+// R-ACC-004 (OQ-4): on page load, check whether this member has a
+// pending self-delete scheduled. If yes, show the banner with the
+// days-remaining countdown + a "Keep my account" CTA.
+async function loadDeletionStatus() {
+  try {
+    var token = localStorage.getItem('atp_token') || '';
+    if (!token) return;
+    var r = await fetch('/api/members/me/deletion-status', {
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    if (!r.ok) return;
+    var j = await r.json();
+    if (!j || !j.pending) return;
+    var banner = document.getElementById('deletionBanner');
+    var body   = document.getElementById('deletionBannerBody');
+    if (!banner || !body) return;
+    var days = (j.days_remaining != null) ? j.days_remaining : 30;
+    var dateStr = j.will_anonymize_at ? new Date(j.will_anonymize_at).toLocaleDateString('en-GB', { day:'numeric', month:'long', year:'numeric' }) : '';
+    body.textContent = 'Your data will be permanently anonymised in ' + days + ' day' + (days === 1 ? '' : 's')
+      + (dateStr ? ' (' + dateStr + ').' : '.')
+      + ' Click "Keep my account" to cancel.';
+    banner.style.display = 'flex';
+  } catch (_) { /* silent — no banner if status check fails */ }
+}
+
+async function cancelDeletion() {
+  try {
+    var token = localStorage.getItem('atp_token') || '';
+    var r = await fetch('/api/members/me/cancel-deletion', {
+      method:  'POST',
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    var j = await r.json().catch(function(){ return {}; });
+    if (!r.ok) throw new Error(j.error || 'Cancel failed');
+    var banner = document.getElementById('deletionBanner');
+    if (banner) banner.style.display = 'none';
+    if (window.ATPComponents) ATPComponents.toast('Account deletion cancelled. Welcome back.', 'success');
+  } catch (e) {
+    if (window.ATPComponents) ATPComponents.toast('Could not cancel: ' + (e.message || e), 'danger');
   }
 }
 
@@ -4674,6 +4792,7 @@ function loadRealProfileData() {
     loadMyOneOnOnes();
     loadMyGifts();
     loadMyCompanies();
+    loadDeletionStatus();
     renderWelcomeDiscount(m);
     // loadFeaturedStore() — removed in v1.39.3; the sidebar carousel
     // (loadFeaturedSidebarCarousel, called via loadStoreBestSellers

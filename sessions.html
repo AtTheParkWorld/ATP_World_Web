@@ -226,6 +226,12 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 }
 .session-card:hover .sc-free::after{transform:translateX(100%)}
 
+/* R-SES-001 / OQ-6 — pulsing live badge on session cards */
+.sc-live-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(239,68,68,.15);color:#ef4444;border:1px solid rgba(239,68,68,.4);font-size:9px;font-weight:800;letter-spacing:.08em;padding:2px 7px;border-radius:10px;margin-left:8px;vertical-align:middle;text-transform:uppercase}
+.sc-live-dot{width:6px;height:6px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 0 rgba(239,68,68,.7);animation:scLivePulse 1.6s ease-in-out infinite}
+@keyframes scLivePulse{0%{box-shadow:0 0 0 0 rgba(239,68,68,.7)}70%{box-shadow:0 0 0 8px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}
+.session-card.is-live::before{opacity:.6;box-shadow:0 0 24px rgba(239,68,68,.5)}
+
 /* Tilt: vanilla JS sets --rx / --ry CSS vars on hover */
 .session-card[data-tilt]{transform:perspective(1100px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))}
 @media (hover:none) and (pointer:coarse){
@@ -1903,8 +1909,17 @@ function renderSessionsGrid(sessions) {
       priceTag = 'Free';
     }
 
+    // R-SES-001 (OQ-6): live state badge. Backend derives this on the
+    // server side — true when s.status === 'upcoming' AND the session
+    // is currently inside its [scheduled_at, ends_at] window. We just
+    // render the badge when the API tells us.
+    var isLive = !!s.is_live;
+    var liveBadge = isLive
+      ? '<span class="sc-live-badge" title="This session is live now"><span class="sc-live-dot"></span>LIVE</span>'
+      : '';
+
     var article = document.createElement('article');
-    article.className = 'session-card reveal visible';
+    article.className = 'session-card reveal visible' + (isLive ? ' is-live' : '');
     article.setAttribute('data-tribe', tribe);
     // Stable tribe_id so the tribe filter keeps working even if admin
     // renames a tribe in CMS (which changes the slug).
@@ -1932,7 +1947,7 @@ function renderSessionsGrid(sessions) {
         '</div>' +
       '</div>' +
       '<div class="sc-mid">' +
-        '<div class="sc-tribe">' + escapeHtml(tribeLabel) + '</div>' +
+        '<div class="sc-tribe">' + escapeHtml(tribeLabel) + liveBadge + '</div>' +
         '<h3 class="sc-name">' + escapeHtml(s.name) + '</h3>' +
         '<p class="sc-loc">' + escapeHtml(loc) + escapeHtml(cityTag) + '</p>' +
       '</div>' +
