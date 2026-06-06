@@ -13,12 +13,169 @@ function loadFounderDashboard() {
   var host = document.getElementById('founderDashboardBody');
   if (!host) return;
   host.innerHTML = '<div style="padding:60px;text-align:center;color:#555">Loading the numbers…</div>';
-  fetch(ATP_API + '/founder/dashboard', { headers: { Authorization: 'Bearer ' + getToken() } })
-    .then(function(r){ return r.json(); })
-    .then(function(d){ renderFounderDashboard(d); })
+  var hdrs = { Authorization: 'Bearer ' + getToken() };
+  // Load BOTH dashboards in parallel — Ops Pulse renders on top
+  // (today's actions), strategic KPIs below (growth + retention).
+  Promise.all([
+    fetch(ATP_API + '/founder/ops-pulse', { headers: hdrs }).then(function(r){ return r.json(); }),
+    fetch(ATP_API + '/founder/dashboard',  { headers: hdrs }).then(function(r){ return r.json(); }),
+  ])
+    .then(function(arr){
+      var opsHtml = renderOpsPulse(arr[0]) || '';
+      host.innerHTML = '<div id="opsPulseSection">'+opsHtml+'</div><div id="strategicKPIsSection"></div>';
+      // The strategic dashboard renderer still writes directly into
+      // founderDashboardBody — temporarily redirect it to the new sub-div.
+      var origGet = document.getElementById;
+      document.getElementById = function(id){
+        if (id === 'founderDashboardBody') return document.querySelector('#strategicKPIsSection');
+        return origGet.call(document, id);
+      };
+      try { renderFounderDashboard(arr[1]); } finally { document.getElementById = origGet; }
+    })
     .catch(function(e){
       host.innerHTML = '<div style="padding:30px;text-align:center;color:#f87171">Failed to load. ' + (e && e.message ? e.message : '') + '</div>';
     });
+}
+
+// ── Operations Pulse renderer ─────────────────────────────────
+// Tactical "what needs my attention today?" view. Pairs with the
+// strategic dashboard below. Each card surfaces a queue + a count
+// + the most actionable rows. Click-throughs deep-link into the
+// admin tabs where the action can be taken (appeals, reports,
+// surveys, etc.) when those have admin URLs.
+function renderOpsPulse(d) {
+  if (!d) return '';
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function fmtAgo(ts){
+    if(!ts) return '';
+    var s = (Date.now() - new Date(ts).getTime())/1000;
+    if (s < 60) return Math.floor(s)+'s ago';
+    if (s < 3600) return Math.floor(s/60)+'m ago';
+    if (s < 86400) return Math.floor(s/3600)+'h ago';
+    return Math.floor(s/86400)+'d ago';
+  }
+  function card(title, count, badgeColor, body) {
+    var badge = count != null
+      ? '<span style="background:'+badgeColor+';color:#fff;font-size:11px;font-weight:700;padding:3px 9px;border-radius:10px;margin-left:8px">'+count+'</span>'
+      : '';
+    return '<div style="background:#0d0d0d;border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:16px;margin-bottom:14px">' +
+      '<div style="font-size:13px;font-weight:700;color:#fff;text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;display:flex;align-items:center">'+title+badge+'</div>' +
+      '<div style="font-size:12px;color:#bbb;line-height:1.55">'+body+'</div>' +
+      '</div>';
+  }
+  function emptyRow(msg) {
+    return '<div style="color:#666;font-style:italic;padding:6px 0">'+esc(msg)+'</div>';
+  }
+
+  // ── Appeals ───────────────────────────────────────────────
+  var ap = d.appeals || { pending_count:0, recent:[] };
+  var appealsBody = ap.recent.length ? ap.recent.map(function(a){
+    return '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">' +
+      '<div><strong style="color:#fff">'+esc(a.member_name)+'</strong>'+
+      (a.is_banned?' <span style="color:#ef4444;font-size:10px">BANNED</span>':'')+
+      ' &middot; <span style="color:#888">'+esc(a.member_number||'')+'</span></div>' +
+      '<div style="margin:4px 0;color:#ddd">'+esc((a.reason||'').slice(0,160))+'</div>' +
+      '<div style="font-size:11px;color:#666">'+fmtAgo(a.created_at)+'</div>' +
+    '</div>';
+  }).join('') : emptyRow('No pending appeals — nothing to review.');
+  var appealsCard = card('⚖️ Pending Appeals', ap.pending_count, ap.pending_count > 0 ? '#f59e0b' : '#444', appealsBody);
+
+  // ── Reports ───────────────────────────────────────────────
+  var rp = d.reports || { open_count:0, recent:[] };
+  var reportsBody = rp.recent.length ? rp.recent.map(function(r){
+    return '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">' +
+      '<div><span style="background:#333;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px">'+esc(r.target_type)+'</span> ' +
+      '<strong style="color:#fff">'+esc(r.reason)+'</strong></div>' +
+      '<div style="margin:3px 0;color:#bbb">'+esc((r.description||'').slice(0,140))+'</div>' +
+      '<div style="font-size:11px;color:#666">reported by '+esc(r.reporter_name)+' &middot; '+fmtAgo(r.created_at)+'</div>' +
+    '</div>';
+  }).join('') : emptyRow('No open reports — community is healthy.');
+  var reportsCard = card('🚩 Open Reports', rp.open_count, rp.open_count > 0 ? '#ef4444' : '#444', reportsBody);
+
+  // ── Pending self-deletes ──────────────────────────────────
+  var sd = d.self_deletes || { pending_count:0, scheduled:[] };
+  var selfDelBody = sd.scheduled.length ? sd.scheduled.map(function(m){
+    return '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">' +
+      '<div><strong style="color:#fff">'+esc(m.member_name)+'</strong> <span style="color:#888">'+esc(m.email)+'</span></div>' +
+      '<div style="font-size:11px;color:#888">anonymises in <strong style="color:#f59e0b">'+m.days_remaining+' days</strong> &middot; requested '+fmtAgo(m.pending_deletion_at)+'</div>' +
+    '</div>';
+  }).join('') : emptyRow('No pending deletions.');
+  var selfDelCard = card('🗑️ Scheduled Account Deletions', sd.pending_count, sd.pending_count > 0 ? '#f59e0b' : '#444', selfDelBody);
+
+  // ── Suppressed emails ─────────────────────────────────────
+  var se = d.suppressed_emails || { count_24h:0, by_type:[], recent:[] };
+  var supByType = se.by_type.length ? se.by_type.map(function(t){
+    return '<span style="background:#222;color:#ddd;font-size:11px;padding:3px 8px;border-radius:4px;margin-right:6px;display:inline-block;margin-bottom:4px">'+esc(t.email_type)+' &times;'+t.count+'</span>';
+  }).join('') : emptyRow('No emails suppressed in last 24h.');
+  var supCard = card('📧 Emails Suppressed (24h)', se.count_24h, se.count_24h > 0 ? '#f59e0b' : '#444', supByType);
+
+  // ── Streak milestones ─────────────────────────────────────
+  var sm = d.streak_milestones || [];
+  var smBody = sm.length ? sm.map(function(s){
+    return '<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)">' +
+      '<strong style="color:#fff">'+esc(s.member_name||'Member')+'</strong>' +
+      (s.current_streak ? ' &middot; <span style="color:#7AC231">'+s.current_streak+'-day streak alive</span>' : '') +
+      ' &middot; <span style="color:#666">'+fmtAgo(s.created_at)+'</span>' +
+    '</div>';
+  }).join('') : emptyRow('No recent milestones to shout out.');
+  var smCard = card('🔥 Streak Milestones (last 14d)', sm.length, sm.length > 0 ? '#7AC231' : '#444', smBody);
+
+  // ── NPS ───────────────────────────────────────────────────
+  var nps = (d.surveys && d.surveys.post_session_nps) || {};
+  var avgStars = nps.avg_rating ? Number(nps.avg_rating).toFixed(2) : '—';
+  var promPct = nps.n > 0 ? Math.round(100 * (nps.promoters||0) / nps.n) : 0;
+  var detrPct = nps.n > 0 ? Math.round(100 * (nps.detractors||0) / nps.n) : 0;
+  var npsBody = nps.n > 0
+    ? '<div style="display:flex;gap:18px;align-items:baseline;font-size:20px;font-weight:800">' +
+        '<span style="color:#fff">'+avgStars+'<span style="font-size:11px;color:#888;font-weight:500"> / 5</span></span>' +
+        '<span style="color:#7AC231;font-size:13px">'+promPct+'% promoters (≥4)</span>' +
+        '<span style="color:#ef4444;font-size:13px">'+detrPct+'% detractors (≤2)</span>' +
+      '</div>' +
+      '<div style="font-size:11px;color:#888;margin-top:6px">'+nps.n+' responses last 30 days &middot; '+(nps.fives||0)+' perfect 5s</div>'
+    : emptyRow('No post-session NPS responses yet.');
+  var npsCard = card('⭐ Post-Session NPS (30d)', null, '#444', npsBody);
+
+  // ── Survey activity ───────────────────────────────────────
+  var surveyCounts = (d.surveys && d.surveys.recent) || [];
+  var surveyBody = surveyCounts.length ? surveyCounts.map(function(r){
+    var label = r.survey_slug === 'pre-cancel-exit' ? '😢 Exit' :
+                r.survey_slug === 'signup-30day-pulse' ? '👋 30-day pulse' : '📝 NPS';
+    return '<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)">' +
+      '<strong style="color:#fff">'+label+'</strong> &middot; '+esc(r.member_name||r.name||'Anonymous')+
+      ' &middot; <span style="color:#666">'+fmtAgo(r.created_at)+'</span>' +
+    '</div>';
+  }).join('') : emptyRow('No survey responses in last 7 days.');
+  var totalSurveys = ((d.surveys && d.surveys.post_session_nps && d.surveys.post_session_nps.n) || 0) +
+                     (d.surveys && d.surveys.signup_pulse_30d_count || 0) +
+                     (d.surveys && d.surveys.exit_30d_count || 0);
+  var surveyCard = card('📋 Recent Survey Responses (7d)', surveyCounts.length, surveyCounts.length > 0 ? '#60a5fa' : '#444', surveyBody);
+
+  // ── Quick stats strip ────────────────────────────────────
+  var qs = d.quick_stats || {};
+  var quickStrip = '<div style="display:flex;gap:16px;margin-bottom:18px">' +
+    '<div style="flex:1;background:#0d0d0d;border:1px solid rgba(122,194,49,.2);border-radius:10px;padding:14px;text-align:center">' +
+      '<div style="font-size:28px;font-weight:800;color:#7AC231">'+(qs.signups_today||0)+'</div>' +
+      '<div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em">Signups today</div>' +
+    '</div>' +
+    '<div style="flex:1;background:#0d0d0d;border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:14px;text-align:center">' +
+      '<div style="font-size:28px;font-weight:800;color:#ef4444">'+(qs.banned_last_7d||0)+'</div>' +
+      '<div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em">Banned (last 7d)</div>' +
+    '</div>' +
+    '<div style="flex:1;background:#0d0d0d;border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px;text-align:center">' +
+      '<div style="font-size:28px;font-weight:800;color:#fff">'+totalSurveys+'</div>' +
+      '<div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em">Survey responses (30d)</div>' +
+    '</div>' +
+  '</div>';
+
+  return '<div style="margin-bottom:28px">' +
+    '<h2 style="font-size:18px;font-weight:800;color:#fff;letter-spacing:.04em;text-transform:uppercase;margin:8px 0 14px;border-bottom:2px solid #7AC231;padding-bottom:8px">🌅 Today\'s Pulse</h2>' +
+    quickStrip +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">' +
+      '<div>'+appealsCard+reportsCard+selfDelCard+'</div>' +
+      '<div>'+npsCard+smCard+surveyCard+supCard+'</div>' +
+    '</div>' +
+    '<h2 style="font-size:18px;font-weight:800;color:#fff;letter-spacing:.04em;text-transform:uppercase;margin:24px 0 14px;border-bottom:2px solid rgba(255,255,255,.1);padding-bottom:8px">📊 Strategic KPIs</h2>' +
+  '</div>';
 }
 
 function renderFounderDashboard(d) {

@@ -311,4 +311,208 @@ router.get('/dashboard', authenticate, requireAdmin, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ═════════════════════════════════════════════════════════════════
+// Operations Pulse — the "what needs my attention today?" view.
+//
+// /api/founder/dashboard answers strategic questions (WAM, funnel,
+// retention). This endpoint answers tactical ones — what should the
+// founder click on in the next 10 minutes? Every section either
+// surfaces a queue (appeals, reports, pending deletions) or a signal
+// (NPS rolling avg, recent survey responses, members hitting a
+// streak milestone we should celebrate).
+//
+// All queries are parallelised + wrapped in .catch fallbacks so a
+// missing table (pre-migration env) returns an empty section instead
+// of failing the whole payload.
+// ═════════════════════════════════════════════════════════════════
+router.get('/ops-pulse', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const noTable = (e) => (e.code === '42P01' || e.code === '42703');
+
+    const [
+      appealsCountRow, appealsRecentRows,
+      reportsCountRow, reportsRecentRows,
+      pendingDelCountRow, pendingDelRecentRows,
+      suppressedCountRow, suppressedByTypeRows, suppressedRecentRows,
+      streakMilestoneRows,
+      npsRollingRow,
+      pulseCountRow, exitCountRow,
+      recentSurveyRows,
+      newSignupsTodayRow, bannedRecentRow,
+    ] = await Promise.all([
+
+      // 1. Appeals (R-MOD-005 / OQ-37)
+      query(`SELECT COUNT(*)::int AS n FROM appeals WHERE status='pending'`)
+        .catch((e) => noTable(e) ? { rows: [{ n: 0 }] } : Promise.reject(e)),
+      query(`
+        SELECT a.id, a.reason, a.created_at,
+               TRIM(CONCAT(m.first_name,' ',m.last_name)) AS member_name,
+               m.email, m.member_number, m.is_banned
+          FROM appeals a
+          JOIN members m ON m.id = a.member_id
+         WHERE a.status='pending'
+         ORDER BY a.created_at ASC
+         LIMIT 5
+      `).catch((e) => noTable(e) ? { rows: [] } : Promise.reject(e)),
+
+      // 2. Open reports (R-MOD-001 / OQ-36)
+      query(`SELECT COUNT(*)::int AS n FROM reports WHERE resolved=false`)
+        .catch((e) => noTable(e) ? { rows: [{ n: 0 }] } : Promise.reject(e)),
+      query(`
+        SELECT r.id, r.target_type, r.reason, r.description, r.created_at,
+               TRIM(CONCAT(m.first_name,' ',m.last_name)) AS reporter_name
+          FROM reports r
+          JOIN members m ON m.id = r.reporter_id
+         WHERE r.resolved=false
+         ORDER BY r.created_at DESC
+         LIMIT 5
+      `).catch((e) => noTable(e) ? { rows: [] } : Promise.reject(e)),
+
+      // 3. Pending self-deletes (R-ACC-004 / OQ-4)
+      query(`SELECT COUNT(*)::int AS n FROM members WHERE pending_deletion_at IS NOT NULL`)
+        .catch((e) => noTable(e) ? { rows: [{ n: 0 }] } : Promise.reject(e)),
+      query(`
+        SELECT id, email,
+               TRIM(CONCAT(first_name,' ',last_name)) AS member_name,
+               pending_deletion_at,
+               (pending_deletion_at + INTERVAL '30 days')::timestamptz AS will_anonymize_at
+          FROM members
+         WHERE pending_deletion_at IS NOT NULL
+         ORDER BY pending_deletion_at ASC
+         LIMIT 5
+      `).catch((e) => noTable(e) ? { rows: [] } : Promise.reject(e)),
+
+      // 4. Suppressed emails (R-NO-006 / OQ-34)
+      query(`SELECT COUNT(*)::int AS n FROM email_send_log
+              WHERE was_rate_limited=true AND sent_at > NOW() - INTERVAL '24 hours'`)
+        .catch((e) => noTable(e) ? { rows: [{ n: 0 }] } : Promise.reject(e)),
+      query(`SELECT email_type, COUNT(*)::int AS count
+               FROM email_send_log
+              WHERE was_rate_limited=true AND sent_at > NOW() - INTERVAL '24 hours'
+              GROUP BY email_type ORDER BY count DESC LIMIT 8`)
+        .catch((e) => noTable(e) ? { rows: [] } : Promise.reject(e)),
+      query(`
+        SELECT esl.email_type, esl.sent_at,
+               TRIM(CONCAT(m.first_name,' ',m.last_name)) AS member_name,
+               m.email
+          FROM email_send_log esl
+          JOIN members m ON m.id = esl.member_id
+         WHERE esl.was_rate_limited=true AND esl.sent_at > NOW() - INTERVAL '24 hours'
+         ORDER BY esl.sent_at DESC LIMIT 10
+      `).catch((e) => noTable(e) ? { rows: [] } : Promise.reject(e)),
+
+      // 5. Streak milestones to celebrate (R-ST-005 / OQ-19)
+      query(`
+        SELECT an.id, an.title, an.body, an.target_member_id, an.created_at,
+               TRIM(CONCAT(m.first_name,' ',m.last_name)) AS member_name,
+               ms.current_streak,
+               an.metadata
+          FROM admin_notifications an
+          LEFT JOIN members m ON m.id = an.target_member_id
+          LEFT JOIN member_streaks ms ON ms.member_id = an.target_member_id
+         WHERE an.type='streak.milestone'
+           AND an.created_at > NOW() - INTERVAL '14 days'
+         ORDER BY an.created_at DESC LIMIT 10
+      `).catch((e) => noTable(e) ? { rows: [] } : Promise.reject(e)),
+
+      // 6. Post-session NPS rolling (R-SV-006 / OQ-40a)
+      query(`
+        WITH s AS (SELECT id FROM surveys WHERE slug='post-session-nps' LIMIT 1),
+             q AS (SELECT id FROM survey_questions
+                    WHERE survey_id=(SELECT id FROM s)
+                      AND question_type='rating'
+                    ORDER BY sort_order ASC LIMIT 1),
+             responses AS (
+               SELECT NULLIF(answers ->> (SELECT id::text FROM q), '')::int AS rating
+                 FROM survey_responses
+                WHERE survey_id=(SELECT id FROM s)
+                  AND created_at > NOW() - INTERVAL '30 days'
+             )
+        SELECT COUNT(*)::int                                   AS n,
+               ROUND(AVG(rating)::numeric, 2)                  AS avg_rating,
+               COUNT(*) FILTER (WHERE rating >= 4)::int        AS promoters,
+               COUNT(*) FILTER (WHERE rating <= 2)::int        AS detractors,
+               COUNT(*) FILTER (WHERE rating = 5)::int         AS fives
+          FROM responses
+         WHERE rating IS NOT NULL
+      `).catch((e) => noTable(e) ? { rows: [{ n: 0, avg_rating: null, promoters: 0, detractors: 0, fives: 0 }] } : Promise.reject(e)),
+
+      // 7. 30-day signup pulse responses
+      query(`SELECT COUNT(*)::int AS n FROM survey_responses sr
+              JOIN surveys s ON s.id = sr.survey_id
+             WHERE s.slug='signup-30day-pulse'
+               AND sr.created_at > NOW() - INTERVAL '30 days'`)
+        .catch((e) => noTable(e) ? { rows: [{ n: 0 }] } : Promise.reject(e)),
+
+      // 8. Pre-cancel exit responses
+      query(`SELECT COUNT(*)::int AS n FROM survey_responses sr
+              JOIN surveys s ON s.id = sr.survey_id
+             WHERE s.slug='pre-cancel-exit'
+               AND sr.created_at > NOW() - INTERVAL '30 days'`)
+        .catch((e) => noTable(e) ? { rows: [{ n: 0 }] } : Promise.reject(e)),
+
+      // 9. Recent mixed survey responses (last 7d)
+      query(`
+        SELECT s.slug AS survey_slug, s.title AS survey_title,
+               sr.name, sr.email, sr.answers, sr.created_at,
+               TRIM(CONCAT(m.first_name,' ',m.last_name)) AS member_name
+          FROM survey_responses sr
+          JOIN surveys s ON s.id = sr.survey_id
+          LEFT JOIN members m ON m.id = sr.member_id
+         WHERE s.slug IN ('post-session-nps','signup-30day-pulse','pre-cancel-exit')
+           AND sr.created_at > NOW() - INTERVAL '7 days'
+         ORDER BY sr.created_at DESC
+         LIMIT 8
+      `).catch((e) => noTable(e) ? { rows: [] } : Promise.reject(e)),
+
+      // 10. New signups today
+      query(`SELECT COUNT(*)::int AS n FROM members
+              WHERE joined_at >= CURRENT_DATE
+                AND COALESCE(is_banned,false)=false`).catch(() => ({ rows: [{ n: 0 }] })),
+
+      // 11. Banned in last 7d
+      query(`SELECT COUNT(*)::int AS n FROM members
+              WHERE is_banned=true AND banned_at IS NOT NULL
+                AND banned_at >= NOW() - INTERVAL '7 days'`).catch(() => ({ rows: [{ n: 0 }] })),
+    ]);
+
+    res.json({
+      generated_at: new Date().toISOString(),
+      appeals: {
+        pending_count: appealsCountRow.rows[0].n,
+        recent:        appealsRecentRows.rows,
+      },
+      reports: {
+        open_count: reportsCountRow.rows[0].n,
+        recent:     reportsRecentRows.rows,
+      },
+      self_deletes: {
+        pending_count: pendingDelCountRow.rows[0].n,
+        scheduled:     pendingDelRecentRows.rows.map(r => ({
+          ...r,
+          days_remaining: r.will_anonymize_at
+            ? Math.max(0, Math.ceil((new Date(r.will_anonymize_at) - Date.now()) / 86400000))
+            : null,
+        })),
+      },
+      suppressed_emails: {
+        count_24h: suppressedCountRow.rows[0].n,
+        by_type:   suppressedByTypeRows.rows,
+        recent:    suppressedRecentRows.rows,
+      },
+      streak_milestones: streakMilestoneRows.rows,
+      surveys: {
+        post_session_nps:        npsRollingRow.rows[0],
+        signup_pulse_30d_count:  pulseCountRow.rows[0].n,
+        exit_30d_count:          exitCountRow.rows[0].n,
+        recent:                  recentSurveyRows.rows,
+      },
+      quick_stats: {
+        signups_today:  newSignupsTodayRow.rows[0].n,
+        banned_last_7d: bannedRecentRow.rows[0].n,
+      },
+    });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
