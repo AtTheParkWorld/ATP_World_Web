@@ -693,13 +693,24 @@ function updatePostBtn() {
 // a short /api/cms/media/<id> reference instead of the raw data: URL.
 // Before this fix, every fetch of /api/community/feed shipped multi-MB
 // per video — caching was useless and members on mobile data hated it.
+// Rulebook ref: R-MED-005 (OQ-39) — direct-to-R2 upload flow.
+//
+// Old flow (pre-v1.60): read file → base64 → POST to /api/cms/upload
+// → server stored multi-MB data URL in Postgres. New flow:
+//   1. POST /api/cms/upload-url  → backend returns a signed PUT URL
+//   2. PUT file bytes directly to R2 (never touches the Render server)
+//   3. POST /api/cms/upload-complete → backend records the cms_content
+//      row pointing at the R2 public URL
+//
+// Falls back to the legacy base64 path on 503 R2_NOT_CONFIGURED so
+// staging / dev environments without R2 keep working. Network errors
+// during the R2 PUT also fall back so a flaky CDN doesn't lock the
+// member out of posting.
 async function submitPost() {
   var txt = document.getElementById("postText").value.trim();
   var files = mediaFiles.filter(function(f){return f!==null;});
   if(!files.length) { createPost(txt, []); return; }
 
-  // Show "Uploading…" state on the post button so the founder knows
-  // something is happening; videos take a few seconds.
   var btn = document.getElementById("postBtn");
   var origLabel = btn ? btn.textContent : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Uploading…'; }
@@ -715,19 +726,91 @@ async function submitPost() {
 
   var token = '';
   try { token = localStorage.getItem('atp_token') || ''; } catch(_){}
+  var authHeader = { 'Authorization':'Bearer '+token };
+
+  // Upload ONE file via the direct-to-R2 flow. Returns { src, type } on
+  // success. Throws 'R2_NOT_CONFIGURED' (string) on 503 so the caller
+  // can fall back to the legacy path for that file (and remember the
+  // choice so subsequent files skip the R2 attempt). Any other failure
+  // throws Error with a human-readable message.
+  async function uploadViaR2(file, kind) {
+    var ct = file.type || (kind === 'video' ? 'video/mp4' : 'image/jpeg');
+    // Step 1: signed URL
+    var step1 = await fetch('/api/cms/upload-url', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type':'application/json' }, authHeader),
+      body: JSON.stringify({ kind: kind, filename: file.name, content_type: ct }),
+    });
+    if (step1.status === 503) throw 'R2_NOT_CONFIGURED';
+    var j1 = await step1.json();
+    if (!step1.ok || !j1.upload_url) throw new Error((j1 && j1.error) || 'upload-url failed');
+
+    // Step 2: direct PUT to R2. No Authorization header — the signed
+    // URL embeds its own auth. Content-Type MUST match what was signed.
+    var step2 = await fetch(j1.upload_url, {
+      method: 'PUT',
+      headers: { 'Content-Type': ct },
+      body: file,
+    });
+    if (!step2.ok) throw new Error('R2 upload failed (' + step2.status + ')');
+
+    // Step 3: tell the backend the upload landed.
+    var step3 = await fetch('/api/cms/upload-complete', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type':'application/json' }, authHeader),
+      body: JSON.stringify({
+        key: j1.key,
+        public_url: j1.public_url,
+        kind: kind,
+        filename: file.name,
+        size_bytes: file.size,
+      }),
+    });
+    var j3 = await step3.json();
+    if (!step3.ok || !j3.url) throw new Error((j3 && j3.error) || 'upload-complete failed');
+    return { src: j3.url, type: kind };
+  }
+
+  // Legacy base64 path — used as fallback when R2 isn't reachable.
+  async function uploadViaLegacy(file, kind) {
+    var dataUrl = await readAsDataUrl(file);
+    var r = await fetch('/api/cms/upload', {
+      method: 'POST',
+      headers: Object.assign({ 'Content-Type':'application/json' }, authHeader),
+      body: JSON.stringify({ data_url: dataUrl, filename: file.name, kind: kind }),
+    });
+    var d = await r.json();
+    if (!d || !d.success || !d.url) throw new Error((d && d.error) || 'Upload failed');
+    return { src: d.url, type: kind };
+  }
+
   var uploaded = [];
+  var r2Down  = false; // once true, all subsequent files skip the R2 attempt
   try {
     for (var i = 0; i < files.length; i++) {
       var f = files[i];
-      var dataUrl = await readAsDataUrl(f.file);
-      var r = await fetch('/api/cms/upload', {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
-        body: JSON.stringify({ data_url: dataUrl, filename: f.file.name, kind: f.type === 'video' ? 'video' : 'image' }),
-      });
-      var d = await r.json();
-      if (!d || !d.success || !d.url) throw new Error((d && d.error) || 'Upload failed');
-      uploaded.push({ src: d.url, type: f.type });
+      var kind = f.type === 'video' ? 'video' : 'image';
+      try {
+        var entry;
+        if (r2Down) {
+          entry = await uploadViaLegacy(f.file, kind);
+        } else {
+          try {
+            entry = await uploadViaR2(f.file, kind);
+          } catch (e) {
+            if (e === 'R2_NOT_CONFIGURED') {
+              console.warn('[upload] R2 not configured — falling back to legacy base64 path');
+              r2Down = true;
+              entry = await uploadViaLegacy(f.file, kind);
+            } else {
+              throw e;
+            }
+          }
+        }
+        uploaded.push(entry);
+      } catch (e) {
+        throw new Error('File "' + f.file.name + '": ' + (e.message || e));
+      }
     }
   } catch(e) {
     if (btn) { btn.disabled = false; btn.textContent = origLabel; }
