@@ -3486,14 +3486,16 @@ router.post('/maintenance-migrate-media-to-r2', async (req, res, next) => {
     }
 
     // Find rows still on base64. Limit by batch_size; ORDER BY id so
-    // successive runs make forward progress.
+    // successive runs make forward progress. cms_content does NOT have
+    // a created_at column (the table tracks updated_at only), so we
+    // sort by id which is uuid_generate_v4() — random but stable.
     let rows;
     try {
       ({ rows } = await query(
         `SELECT id, page, section, key, value_url
            FROM cms_content
           WHERE value_url LIKE 'data:%'
-          ORDER BY created_at ASC, id ASC
+          ORDER BY id ASC
           LIMIT $1`,
         [Math.min(Number(batch_size) || 100, 500)]
       ));
