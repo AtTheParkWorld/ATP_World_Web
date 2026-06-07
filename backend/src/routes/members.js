@@ -244,23 +244,52 @@ router.get('/referrals', authenticate, async (req, res, next) => {
 });
 
 // ── GET /api/members/friends ──────────────────────────────────
+// R-TR-005 / OQ-16b — also exposes the friend's tribe + colour so
+// the friends UI can render the tribe identity badge.
 router.get('/friends', authenticate, async (req, res, next) => {
   try {
-    const { rows } = await query(
-      `SELECT f.id, f.status, f.created_at,
-              CASE WHEN f.requester_id=$1 THEN m2.id ELSE m1.id END AS friend_id,
-              CASE WHEN f.requester_id=$1 THEN m2.first_name ELSE m1.first_name END AS first_name,
-              CASE WHEN f.requester_id=$1 THEN m2.last_name ELSE m1.last_name END AS last_name,
-              CASE WHEN f.requester_id=$1 THEN m2.avatar_url ELSE m1.avatar_url END AS avatar_url,
-              f.requester_id
-       FROM friendships f
-       JOIN members m1 ON m1.id = f.requester_id
-       JOIN members m2 ON m2.id = f.addressee_id
-       WHERE (f.requester_id=$1 OR f.addressee_id=$1)
-         AND f.status IN ('pending','accepted')
-       ORDER BY f.updated_at DESC`,
-      [req.member.id]
-    );
+    let rows;
+    try {
+      ({ rows } = await query(
+        `SELECT f.id, f.status, f.created_at,
+                CASE WHEN f.requester_id=$1 THEN m2.id          ELSE m1.id          END AS friend_id,
+                CASE WHEN f.requester_id=$1 THEN m2.first_name  ELSE m1.first_name  END AS first_name,
+                CASE WHEN f.requester_id=$1 THEN m2.last_name   ELSE m1.last_name   END AS last_name,
+                CASE WHEN f.requester_id=$1 THEN m2.avatar_url  ELSE m1.avatar_url  END AS avatar_url,
+                CASE WHEN f.requester_id=$1 THEN t2.name        ELSE t1.name        END AS tribe_name,
+                CASE WHEN f.requester_id=$1 THEN t2.slug        ELSE t1.slug        END AS tribe_slug,
+                CASE WHEN f.requester_id=$1 THEN t2.color       ELSE t1.color       END AS tribe_color,
+                f.requester_id
+         FROM friendships f
+         JOIN members m1 ON m1.id = f.requester_id
+         JOIN members m2 ON m2.id = f.addressee_id
+         LEFT JOIN tribes t1 ON t1.id = m1.tribe_id
+         LEFT JOIN tribes t2 ON t2.id = m2.tribe_id
+         WHERE (f.requester_id=$1 OR f.addressee_id=$1)
+           AND f.status IN ('pending','accepted')
+         ORDER BY f.updated_at DESC`,
+        [req.member.id]
+      ));
+    } catch (e) {
+      // Pre-migration fallback (tribes table missing) — drop the tribe joins.
+      if (e.code !== '42P01' && e.code !== '42703') throw e;
+      ({ rows } = await query(
+        `SELECT f.id, f.status, f.created_at,
+                CASE WHEN f.requester_id=$1 THEN m2.id         ELSE m1.id         END AS friend_id,
+                CASE WHEN f.requester_id=$1 THEN m2.first_name ELSE m1.first_name END AS first_name,
+                CASE WHEN f.requester_id=$1 THEN m2.last_name  ELSE m1.last_name  END AS last_name,
+                CASE WHEN f.requester_id=$1 THEN m2.avatar_url ELSE m1.avatar_url END AS avatar_url,
+                NULL AS tribe_name, NULL AS tribe_slug, NULL AS tribe_color,
+                f.requester_id
+         FROM friendships f
+         JOIN members m1 ON m1.id = f.requester_id
+         JOIN members m2 ON m2.id = f.addressee_id
+         WHERE (f.requester_id=$1 OR f.addressee_id=$1)
+           AND f.status IN ('pending','accepted')
+         ORDER BY f.updated_at DESC`,
+        [req.member.id]
+      ));
+    }
     res.json({ friendships: rows });
   } catch (err) { next(err); }
 });

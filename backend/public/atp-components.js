@@ -388,9 +388,20 @@
       toast(_authMode === 'login' ? 'Welcome back!' : 'Welcome to ATP!', 'success');
       closeAuthModal();
       // atp.js already dispatched atp:login
-    }).catch(function() {
+    }).catch(function(err) {
       submit.disabled = false;
       submit.textContent = _authMode === 'login' ? 'Log in' : 'Join free';
+      // R-MOD-005 (OQ-37): banned member tried to log in. Backend
+      // returns 403 with { error: 'Account suspended' }. Send them
+      // to /appeal.html — they may still have an old valid token in
+      // localStorage that authenticateAllowBanned accepts, and the
+      // appeal page itself handles the "no token" case with an
+      // email-fallback CTA.
+      if (err && err.status === 403 && err.data && /suspended/i.test(err.data.error || '')) {
+        closeAuthModal();
+        window.location.href = '/appeal.html';
+        return;
+      }
       _showBanner('Connection error. Please check your internet.');
     });
   }

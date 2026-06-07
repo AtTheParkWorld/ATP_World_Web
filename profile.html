@@ -305,6 +305,11 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .friend-name{font-size:13px;font-weight:600;color:var(--white)}
 .friend-meta{font-size:11px;color:var(--muted);margin-top:2px}
 .friend-actions{display:flex;gap:6px}
+/* R-TR-005 / OQ-16b — tribe identity chip in the friends list. The
+   color comes from the inline --tribe-color set on each row, so a
+   single CSS class supports every current and future tribe palette. */
+.friend-tribe-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--tribe-color,var(--green));margin-right:5px;vertical-align:middle;box-shadow:0 0 0 1.5px rgba(255,255,255,.12)}
+.friend-tribe-label{font-size:11px;color:var(--tribe-color,var(--green));font-weight:700;letter-spacing:.04em}
 .friend-btn{font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--white);cursor:pointer;transition:all .2s}
 .friend-btn.accept{background:var(--green);border-color:var(--green);color:#fff}
 .friend-btn.accept:hover{background:var(--green-dark)}
@@ -646,6 +651,20 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
       <div id="deletionBannerBody" style="font-size:12px;color:#ddd;line-height:1.55"></div>
     </div>
     <button onclick="cancelDeletion()" style="background:#7AC231;color:#0a0a0a;border:none;padding:10px 20px;border-radius:8px;font-weight:800;font-size:13px;letter-spacing:.04em;cursor:pointer">Keep my account</button>
+  </div>
+
+  <!-- Pick-your-tribe nudge (R-TR-005 / OQ-16). Populated by
+       loadTribeNudge() — shows only when the current member has no
+       tribe_id set. CTA opens the Edit Profile tab + scrolls to the
+       tribe selector. Closes when the member picks a tribe and saves. -->
+  <div id="tribeNudge" style="display:none;max-width:1200px;margin:0 auto 20px;padding:16px 24px;background:linear-gradient(90deg,rgba(122,194,49,.12),rgba(96,165,250,.08));border:1px solid rgba(122,194,49,.35);border-radius:12px;align-items:center;gap:16px;flex-wrap:wrap">
+    <div style="font-size:24px">🎽</div>
+    <div style="flex:1;min-width:240px">
+      <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:3px">Pick your tribe</div>
+      <div style="font-size:12px;color:#ddd;line-height:1.55">Better, Faster, or Stronger? Tribes power your community feed, leaderboard, and identity across ATP. Takes 5 seconds.</div>
+    </div>
+    <button onclick="openTribePicker()" style="background:#7AC231;color:#0a0a0a;border:none;padding:10px 20px;border-radius:8px;font-weight:800;font-size:13px;letter-spacing:.04em;cursor:pointer">Pick a tribe →</button>
+    <button onclick="dismissTribeNudge()" style="background:none;color:#888;border:none;padding:6px 8px;font-size:12px;cursor:pointer" title="Dismiss for this session">×</button>
   </div>
 
   <!-- HERO -->
@@ -2145,9 +2164,14 @@ function renderFriends() {
           var moreBtn = f.id
             ? "<button type='button' class='friend-btn' onclick=\"friendsActionMenu('" + escapeHtml(safeId) + "','" + safeNameAttr + "',this)\" title='More options' style='padding:6px 10px'>⋯</button>"
             : '';
+          // R-TR-005 / OQ-16b — tribe chip rendered in the meta line.
+          // Falls back to plain meta when the friend has no tribe set.
+          var tribeChip = f.tribe_name
+            ? "<span class='friend-tribe-label' style='--tribe-color:"+escapeHtml(f.tribe_color||'#7AC231')+"'><span class='friend-tribe-dot'></span>"+escapeHtml(f.tribe_name)+"</span> &middot; "
+            : '';
           return "<div class='friend-row' style='position:relative'>"+
             "<div class='friend-av'>"+escapeHtml(f.init)+"</div>"+
-            "<div class='friend-info'><div class='friend-name'>"+escapeHtml(f.name)+"</div><div class='friend-meta'>"+escapeHtml(f.meta)+"</div></div>"+
+            "<div class='friend-info'><div class='friend-name'>"+escapeHtml(f.name)+"</div><div class='friend-meta'>"+tribeChip+escapeHtml(f.meta)+"</div></div>"+
             "<div class='friend-actions' style='gap:6px'>"+ trainBtn + moreBtn +"</div>"+
           "</div>";
         }).join("")
@@ -2261,6 +2285,46 @@ async function cancelDeletion() {
   } catch (e) {
     if (window.ATPComponents) ATPComponents.toast('Could not cancel: ' + (e.message || e), 'danger');
   }
+}
+
+// R-TR-005 / OQ-16 — Pick-your-tribe nudge.
+// Shows when the loaded CURRENT_MEMBER has no tribe_id. Dismissible
+// for the session (sessionStorage) so we don't pester the member every
+// page hop. Hides automatically once they pick + save a tribe.
+function loadTribeNudge() {
+  try {
+    var banner = document.getElementById('tribeNudge');
+    if (!banner) return;
+    if (sessionStorage.getItem('atp_tribe_nudge_dismissed') === '1') return;
+    var hasTribe = CURRENT_MEMBER && (CURRENT_MEMBER.tribe_id || CURRENT_MEMBER.tribe_name);
+    if (hasTribe) return;
+    banner.style.display = 'flex';
+  } catch (_) { /* silent */ }
+}
+
+function dismissTribeNudge() {
+  try { sessionStorage.setItem('atp_tribe_nudge_dismissed', '1'); } catch(_){}
+  var banner = document.getElementById('tribeNudge');
+  if (banner) banner.style.display = 'none';
+}
+
+function openTribePicker() {
+  // Open the Edit Profile tab, then scroll the tribe selector into
+  // view so the member doesn't have to hunt for it. The select dropdown
+  // is auto-populated by the existing edit-tab init code from
+  // /api/sessions/tribes — that already runs when the tab opens.
+  if (typeof showTab === 'function') showTab('edit');
+  setTimeout(function(){
+    var sel = document.getElementById('fTribe');
+    if (sel) {
+      sel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      sel.focus();
+      // Flash the field briefly so it's the obvious next click.
+      sel.style.transition = 'box-shadow .3s';
+      sel.style.boxShadow = '0 0 0 3px rgba(122,194,49,.4)';
+      setTimeout(function(){ sel.style.boxShadow = ''; }, 1400);
+    }
+  }, 250);
 }
 
 // Theme 7 / #32 — "Train together" modal
@@ -4774,6 +4838,10 @@ function loadFriends() {
         init: initialsOf(f.first_name, f.last_name),
         name: ((f.first_name||'') + ' ' + (f.last_name||'')).trim(),
         meta: 'Friends since ' + formatDateShort(f.created_at),
+        // R-TR-005 / OQ-16b — tribe identity for the friends list chip.
+        tribe_name:  f.tribe_name  || null,
+        tribe_color: f.tribe_color || null,
+        tribe_slug:  f.tribe_slug  || null,
       };
     });
     FRIENDS_REQUESTS = pending.map(function(f){
@@ -4781,6 +4849,8 @@ function loadFriends() {
         init: initialsOf(f.first_name, f.last_name),
         name: (f.first_name||'') + ' ' + (f.last_name||''),
         meta: 'Wants to connect',
+        tribe_name:  f.tribe_name  || null,
+        tribe_color: f.tribe_color || null,
       };
     });
     // Sync the topbar badge with the real pending count. Hide at 0.
@@ -4822,6 +4892,7 @@ function loadRealProfileData() {
     loadMyGifts();
     loadMyCompanies();
     loadDeletionStatus();
+    loadTribeNudge();
     renderWelcomeDiscount(m);
     // loadFeaturedStore() — removed in v1.39.3; the sidebar carousel
     // (loadFeaturedSidebarCarousel, called via loadStoreBestSellers
