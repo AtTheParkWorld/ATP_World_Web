@@ -4668,6 +4668,35 @@ function loadChallenges() {
 function loadNotifications() {
   return window.ATP.notifications.list().then(function(data) {
     var list = (data && data.notifications) || [];
+
+    // R-ST-005 (OQ-19): streak milestone celebration toast.
+    // Find any unread streak_milestone notification from the last 24h
+    // that we HAVEN'T already shown a toast for in this browser
+    // session (tracked in sessionStorage by notification id). Fire
+    // one celebratory toast per unseen milestone — same UI vocabulary
+    // as every other ATPComponents toast, just with a fatter title.
+    try {
+      var shown = JSON.parse(sessionStorage.getItem('atp_shown_milestones') || '[]');
+      var now = Date.now();
+      list.forEach(function(n){
+        if (n.type !== 'streak_milestone') return;
+        if (n.read_at) return;
+        if (now - new Date(n.created_at).getTime() > 86400000) return;
+        if (shown.indexOf(n.id) !== -1) return;
+        var bonus = 0;
+        try {
+          var d = typeof n.data === 'string' ? JSON.parse(n.data) : (n.data || {});
+          bonus = Number(d.bonus_points) || 0;
+        } catch(_) {}
+        var msg = (n.title || '🔥 Streak milestone') + (bonus ? ' — +' + bonus + ' bonus pts!' : '');
+        if (window.ATPComponents && window.ATPComponents.toast) {
+          window.ATPComponents.toast(msg, 'success', 8000);
+        }
+        shown.push(n.id);
+      });
+      sessionStorage.setItem('atp_shown_milestones', JSON.stringify(shown.slice(-50)));
+    } catch (_) { /* never let the toast break the notification list */ }
+
     NOTIFS = list.map(function(n) {
       // Theme 14 — notifications carry a `data` payload (often a
       // post_id). Wrap the text in an anchor when there's a target so

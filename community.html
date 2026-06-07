@@ -881,11 +881,23 @@ function buildPostCard(post) {
     mediaHtml = '<div class="post-media-wrap"><div class="post-media-track" id="media-'+_pid+'">'+items+'</div>'+nav+dots+'</div>';
   }
 
+  // R-CM-003 (OQ-29): a member can delete their own comment within
+  // 1h of posting. We compute the "is mine" + "within window" flags
+  // per comment here so the renderer can conditionally include the
+  // Delete button. _currentMemberId is the viewer's UUID (null if
+  // signed out).
+  var _currentMemberId = (window.ATP && window.ATP.getUser && window.ATP.getUser() && window.ATP.getUser().memberId) || null;
+  var _ONE_HOUR_MS = 60 * 60 * 1000;
   var commentsHtml = post.comments.map(function(c,ci) {
     var replies = c.replies && c.replies.length ?
       c.replies.map(function(r){
         return '<div class="comment-reply"><strong>'+escapeHtml(r.author)+':</strong> '+escapeHtml(r.text)+'</div>';
       }).join("") : "";
+    var isMine = _currentMemberId && c.member_id && c.member_id === _currentMemberId;
+    var inWindow = c.created_at && (Date.now() - new Date(c.created_at).getTime()) < _ONE_HOUR_MS;
+    var deleteBtn = (isMine && inWindow && c.realId)
+      ? '<button class="comment-action" style="color:#ef4444" onclick="deleteComment(\''+escapeHtml(post.realId||'')+'\',\''+escapeHtml(c.realId)+'\','+_pid+','+ci+')">Delete</button>'
+      : '';
     return '<div class="comment">'+
       '<div class="comment-av">'+escapeHtml(c.av)+'</div>'+
       '<div class="comment-body">'+
@@ -897,6 +909,7 @@ function buildPostCard(post) {
         '<div class="comment-actions">'+
           '<button class="comment-action" onclick="likeComment('+_pid+','+ci+',this)">Like</button>'+
           '<button class="comment-action" onclick="replyComment('+_pid+','+ci+',this)">Reply</button>'+
+          deleteBtn+
         '</div>'+
       '</div>'+
     '</div>';
@@ -996,6 +1009,10 @@ function toggleComments(id) {
             text: c.content || '',
             replies: [],
             realId: c.id,
+            // R-CM-003 (OQ-29): carry author id + created_at so the
+            // renderer can decide whether to show the 1h Delete button.
+            member_id: c.member_id || null,
+            created_at: c.created_at || null,
           };
         });
         renderPosts();
@@ -1028,12 +1045,17 @@ function addComment(id) {
     .then(function(data){
       var me = null;
       try { me = JSON.parse(localStorage.getItem('atp:user') || 'null'); } catch(e){}
+      var myId = (window.ATP && window.ATP.getUser && window.ATP.getUser() && window.ATP.getUser().memberId) || null;
       post.comments.push({
         av: me ? initials(me.first_name, me.last_name) : 'Y',
         author: me ? ((me.first_name || 'You') + (me.last_name ? ' ' + me.last_name : '')) : 'You',
         text: txt,
         replies: [],
         realId: data.comment && data.comment.id,
+        // R-CM-003 (OQ-29): carry author id + timestamp so the
+        // optimistic render shows the Delete button immediately.
+        member_id:  (data.comment && data.comment.member_id) || myId,
+        created_at: (data.comment && data.comment.created_at) || new Date().toISOString(),
       });
       post.commentsCount = (post.commentsCount || 0) + 1;
       input.value = "";
@@ -1043,6 +1065,37 @@ function addComment(id) {
     .catch(function(err){
       alert('Could not post comment: ' + (err && err.message ? err.message : 'Please try again.'));
     });
+}
+
+// R-CM-003 (OQ-29): delete an own comment within the 1h window.
+// Optimistic remove + rollback on failure so the UI is snappy. The
+// server enforces the same 1h rule + ownership check.
+async function deleteComment(postRealId, commentRealId, postLocalId, commentIdx) {
+  if (!postRealId || !commentRealId) return;
+  if (!confirm('Delete this comment? Comments can only be deleted within 1 hour of posting.')) return;
+  var post = POSTS.find(function(p){return p.id===postLocalId;});
+  if (!post) return;
+  // Snapshot so we can roll back if the server refuses.
+  var removed = post.comments.splice(commentIdx, 1)[0];
+  post.commentsCount = Math.max(0, (post.commentsCount || 0) - 1);
+  renderPosts();
+  setTimeout(function(){ var el=document.getElementById("comments-"+postLocalId); if(el && removed) el.style.display="block"; },10);
+
+  try {
+    var token = localStorage.getItem('atp_token') || '';
+    var r = await fetch('/api/community/posts/' + encodeURIComponent(postRealId) + '/comments/' + encodeURIComponent(commentRealId), {
+      method:  'DELETE',
+      headers: { 'Authorization': 'Bearer ' + token },
+    });
+    var j = await r.json().catch(function(){ return {}; });
+    if (!r.ok && !j.idempotent) throw new Error(j.error || 'Delete failed');
+  } catch (e) {
+    // Rollback the optimistic remove.
+    post.comments.splice(commentIdx, 0, removed);
+    post.commentsCount = (post.commentsCount || 0) + 1;
+    renderPosts();
+    alert('Could not delete comment: ' + (e.message || e));
+  }
 }
 
 function likeComment(postId, ci, btn) { btn.textContent = btn.textContent==="Like" ? "Liked ✓" : "Like"; }

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <link rel="stylesheet" href="/atp.min.css">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account Suspended — Submit Appeal | At The Park</title>
+  <!-- R-MOD-005 (OQ-37) — appeal submission page for suspended members.
+       Uses POST /api/members/me/appeal which is gated by
+       authenticateAllowBanned, so a banned member's JWT still works
+       here even though every other authenticated endpoint returns 403
+       for them. Member must have a JWT in localStorage to use this
+       page — if not, they need to log in first (which itself may now
+       fail with "Account suspended" for them; the page handles that
+       case with an email-fallback CTA). -->
+  <script src="/atp.bundle.min.js"></script>
+  <style>
+    body { background:#0a0a0a; color:#fff; font-family:var(--ff-body,'DM Sans',sans-serif); margin:0; min-height:100vh; display:flex; flex-direction:column }
+    .appeal-wrap { max-width:640px; margin:0 auto; padding:80px 24px 60px; flex:1; display:flex; flex-direction:column; justify-content:center }
+    .appeal-card { background:#0d0d0d; border:1px solid rgba(239,68,68,.32); border-radius:18px; padding:36px 32px; box-shadow:0 24px 60px rgba(0,0,0,.5) }
+    .appeal-icon { font-size:48px; margin-bottom:10px }
+    .appeal-title { font-family:var(--ff-display,'Barlow Condensed',sans-serif); font-size:34px; font-weight:900; line-height:1.05; text-transform:uppercase; letter-spacing:.02em; margin-bottom:10px }
+    .appeal-sub { font-size:14px; color:#bbb; line-height:1.6; margin-bottom:24px }
+    .appeal-reason-box { background:rgba(239,68,68,.08); border:1px solid rgba(239,68,68,.3); border-radius:10px; padding:14px 16px; margin-bottom:22px; font-size:13px; color:#ffb4b4; line-height:1.55 }
+    .appeal-label { display:block; font-size:11px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#888; margin-bottom:8px }
+    .appeal-textarea { width:100%; min-height:150px; background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:14px 16px; color:#fff; font-family:inherit; font-size:14px; line-height:1.55; resize:vertical; box-sizing:border-box }
+    .appeal-textarea:focus { outline:none; border-color:#7AC231 }
+    .appeal-meta { font-size:11px; color:#666; margin-top:6px }
+    .appeal-btn-row { display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top:24px }
+    .appeal-submit { background:#7AC231; color:#0a0a0a; border:none; padding:13px 26px; border-radius:8px; font-weight:800; font-size:14px; letter-spacing:.04em; text-transform:uppercase; cursor:pointer; transition:filter .2s }
+    .appeal-submit:hover { filter:brightness(1.1) }
+    .appeal-submit:disabled { opacity:.5; cursor:not-allowed }
+    .appeal-cancel { background:none; color:#aaa; border:1px solid rgba(255,255,255,.15); padding:13px 22px; border-radius:8px; font-weight:600; font-size:13px; cursor:pointer; text-decoration:none }
+    .appeal-result { margin-top:18px; padding:14px 16px; border-radius:10px; font-size:13px; line-height:1.55; display:none }
+    .appeal-result.success { background:rgba(122,194,49,.1); border:1px solid rgba(122,194,49,.4); color:#7AC231; display:block }
+    .appeal-result.error { background:rgba(239,68,68,.1); border:1px solid rgba(239,68,68,.4); color:#ff8888; display:block }
+    .appeal-foot { font-size:11px; color:#555; text-align:center; padding:16px; line-height:1.6 }
+    .appeal-foot a { color:#888 }
+  </style>
+</head>
+<body>
+  <div class="appeal-wrap">
+    <div class="appeal-card">
+      <div class="appeal-icon">⚖️</div>
+      <h1 class="appeal-title">Account suspended</h1>
+      <p class="appeal-sub">If you think this was a mistake, submit an appeal below. Our team reviews every appeal within 5 business days and emails you the decision.</p>
+
+      <div id="appealReasonBox" class="appeal-reason-box" style="display:none">
+        <strong>Reason on file:</strong> <span id="appealReasonText"></span>
+      </div>
+
+      <label class="appeal-label" for="appealReason">Tell us what happened</label>
+      <textarea id="appealReason" class="appeal-textarea" maxlength="5000" placeholder="Be specific — what happened, what you think the misunderstanding was, and why you should be reinstated. Minimum 10 characters."></textarea>
+      <div class="appeal-meta"><span id="appealCharCount">0</span> / 5,000 characters</div>
+
+      <div class="appeal-btn-row">
+        <button id="appealSubmit" class="appeal-submit" onclick="submitAppeal()" disabled>Submit appeal</button>
+        <a href="/" class="appeal-cancel">Back to homepage</a>
+      </div>
+
+      <div id="appealResult" class="appeal-result"></div>
+    </div>
+
+    <div class="appeal-foot">
+      Questions? Email <a href="mailto:general@atthepark.com">general@atthepark.com</a> and reference your member number.
+    </div>
+  </div>
+
+  <script>
+    // R-MOD-005 (OQ-37). Single-page workflow:
+    //   1. On load, try GET /api/members/me to surface the ban reason
+    //      to the member (transparency — they should see what we have).
+    //   2. Wire the textarea char counter + submit gate (min 10 chars).
+    //   3. POST /api/members/me/appeal with { reason }.
+    //   4. Render success / 409 already-pending / network failure inline.
+
+    var TEXTAREA = document.getElementById('appealReason');
+    var COUNT    = document.getElementById('appealCharCount');
+    var SUBMIT   = document.getElementById('appealSubmit');
+    var RESULT   = document.getElementById('appealResult');
+
+    function token() { try { return localStorage.getItem('atp_token') || ''; } catch(_) { return ''; } }
+
+    function updateCount() {
+      var n = TEXTAREA.value.length;
+      COUNT.textContent = n.toLocaleString();
+      SUBMIT.disabled = n < 10;
+    }
+    TEXTAREA.addEventListener('input', updateCount);
+
+    // Surface the ban reason inline so the member knows what we have.
+    fetch('/api/members/me', { headers: { 'Authorization': 'Bearer ' + token() } })
+      .then(function(r){ return r.json().catch(function(){ return {}; }); })
+      .then(function(j){
+        if (j && j.banned_reason) {
+          var box = document.getElementById('appealReasonBox');
+          var txt = document.getElementById('appealReasonText');
+          if (box && txt) {
+            txt.textContent = j.banned_reason;
+            box.style.display = 'block';
+          }
+        }
+      })
+      .catch(function(){ /* the standard /me endpoint 403s for banned users; just skip the surface */ });
+
+    async function submitAppeal() {
+      var reason = TEXTAREA.value.trim();
+      if (reason.length < 10) return;
+      SUBMIT.disabled = true;
+      RESULT.className = 'appeal-result';
+      RESULT.textContent = '';
+      try {
+        var r = await fetch('/api/members/me/appeal', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token() },
+          body:    JSON.stringify({ reason: reason }),
+        });
+        var j = await r.json().catch(function(){ return {}; });
+        if (r.ok) {
+          RESULT.className = 'appeal-result success';
+          RESULT.textContent = '✓ Appeal submitted. Our team will review within 5 business days and email you the decision.';
+          TEXTAREA.disabled = true;
+          SUBMIT.style.display = 'none';
+          return;
+        }
+        if (r.status === 409) {
+          RESULT.className = 'appeal-result success';
+          RESULT.textContent = 'You already have a pending appeal on file. We\'ll get back to you within 5 business days.';
+          TEXTAREA.disabled = true;
+          SUBMIT.style.display = 'none';
+          return;
+        }
+        if (r.status === 503) {
+          RESULT.className = 'appeal-result error';
+          RESULT.innerHTML = 'Appeals are not yet enabled on this server. Please email <a href="mailto:general@atthepark.com" style="color:inherit">general@atthepark.com</a> directly.';
+          SUBMIT.disabled = false;
+          return;
+        }
+        if (r.status === 401) {
+          RESULT.className = 'appeal-result error';
+          RESULT.innerHTML = 'Your session expired. Please <a href="/" style="color:inherit">log in</a> first, then come back.';
+          SUBMIT.disabled = false;
+          return;
+        }
+        throw new Error((j && j.error) || 'Submission failed (HTTP ' + r.status + ')');
+      } catch (e) {
+        RESULT.className = 'appeal-result error';
+        RESULT.innerHTML = 'Could not submit: ' + (e.message || e) + '. Try again, or email <a href="mailto:general@atthepark.com" style="color:inherit">general@atthepark.com</a>.';
+        SUBMIT.disabled = false;
+      }
+    }
+  </script>
+</body>
+</html>
