@@ -276,6 +276,89 @@ app.get('/.well-known/apple-developer-merchantid-domain-association', (req, res)
   res.type('text/plain').send(content);
 });
 
+// ── Dynamic /sitemap.xml ──────────────────────────────────────
+// Pre-launch PR A1 (v1.66.0). Static pages + every active session +
+// blog post (when blog ships). Re-generated per request and cached
+// at the CDN edge for an hour. Falls back to the static
+// public/sitemap.xml on DB errors so crawlers never see a 500.
+//
+// Canonical hostname: from FRONTEND_URL env (set to
+// https://www.atthepark.world in production), else falls back to
+// the request's own host.
+const { query: _smQuery } = require('./db');
+app.get('/sitemap.xml', async (req, res, next) => {
+  try {
+    const host = (process.env.FRONTEND_URL || `https://${req.get('host')}`).replace(/\/+$/, '');
+    // Static, always-present pages.
+    const lines = [
+      { loc: '/',                changefreq: 'weekly',  priority: '1.0' },
+      { loc: '/sessions.html',   changefreq: 'daily',   priority: '0.9' },
+      { loc: '/coaches.html',    changefreq: 'weekly',  priority: '0.8' },
+      { loc: '/blog.html',       changefreq: 'weekly',  priority: '0.7' },
+      { loc: '/community.html',  changefreq: 'daily',   priority: '0.7' },
+      { loc: '/partners.html',   changefreq: 'monthly', priority: '0.6' },
+      { loc: '/business.html',   changefreq: 'monthly', priority: '0.6' },
+      { loc: '/corporate.html',  changefreq: 'monthly', priority: '0.6' },
+      { loc: '/plans.html',      changefreq: 'monthly', priority: '0.7' },
+      { loc: '/contacts.html',   changefreq: 'monthly', priority: '0.4' },
+      { loc: '/legal.html',      changefreq: 'yearly',  priority: '0.3' },
+      { loc: '/privacy.html',    changefreq: 'yearly',  priority: '0.3' },
+      { loc: '/terms.html',      changefreq: 'yearly',  priority: '0.3' },
+    ];
+
+    // Active upcoming sessions — one URL per session detail page.
+    try {
+      const { rows } = await _smQuery(
+        `SELECT id, scheduled_at FROM sessions
+          WHERE status='upcoming' AND scheduled_at > NOW()
+          ORDER BY scheduled_at ASC LIMIT 500`
+      );
+      for (const r of rows) {
+        lines.push({
+          loc: `/sessions.html#${r.id}`,
+          lastmod: new Date(r.scheduled_at).toISOString().slice(0, 10),
+          changefreq: 'daily',
+          priority: '0.5',
+        });
+      }
+    } catch (_) { /* DB hiccup → skip session URLs */ }
+
+    // Blog posts (table may not exist yet on pre-migration envs).
+    try {
+      const { rows } = await _smQuery(
+        `SELECT slug, updated_at FROM blog_posts
+          WHERE published=true ORDER BY published_at DESC LIMIT 200`
+      );
+      for (const r of rows) {
+        lines.push({
+          loc: `/blog/${r.slug}`,
+          lastmod: new Date(r.updated_at).toISOString().slice(0, 10),
+          changefreq: 'monthly',
+          priority: '0.6',
+        });
+      }
+    } catch (_) { /* blog table missing → skip */ }
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${lines.map(u =>
+  `  <url>` +
+  `<loc>${host}${u.loc}</loc>` +
+  (u.lastmod ? `<lastmod>${u.lastmod}</lastmod>` : '') +
+  `<changefreq>${u.changefreq}</changefreq>` +
+  `<priority>${u.priority}</priority>` +
+  `</url>`
+).join('\n')}
+</urlset>`;
+    res.set('Content-Type', 'application/xml');
+    res.set('Cache-Control', 'public, max-age=3600');  // 1h edge cache
+    res.send(xml);
+  } catch (err) {
+    // Fall through to the static public/sitemap.xml served by express.static.
+    next();
+  }
+});
+
 // HTML pages must never be cached (so deploys propagate immediately).
 // JS/CSS/assets get a sensible short cache. Bundles use content-hash
 // invalidation via ?cb=… cache-busters in the page templates.
@@ -417,7 +500,20 @@ for (const [prefix, router] of ROUTES) {
 }
 
 // ── 404 ───────────────────────────────────────────────────────
+// Pre-launch PR A1 (v1.66.0): browser requests (Accept includes
+// text/html) get the branded 404.html — same Cache-Control as
+// other HTML pages. API + JSON callers keep the legacy JSON 404
+// so SDK callers don't suddenly see HTML in their parse errors.
 app.use((req, res) => {
+  const wantsHtml = (req.headers.accept || '').includes('text/html')
+    && !req.path.startsWith('/api/');
+  if (wantsHtml) {
+    res.status(404).setHeader('Cache-Control', 'no-store').sendFile(
+      path.join(__dirname, '../public/404.html'),
+      (err) => { if (err) res.status(404).send('Page not found'); }
+    );
+    return;
+  }
   res.status(404).json({ error: 'Route not found' });
 });
 
