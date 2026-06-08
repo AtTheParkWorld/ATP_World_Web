@@ -3562,6 +3562,71 @@ router.post('/maintenance-migrate-media-to-r2', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/auth/migrate-premium-plus-tier ──────────────────
+// v1.68.0 / OQ-2 + the editable-perks decision from the C1 session.
+// Adds:
+//   subscription_plans.tier                 VARCHAR(20)  → 'premium' | 'premium_plus'
+//   subscription_plans.coach_sessions_included INT       → free 1-on-1s / month
+// Seeds the Premium Plus plan row (no stripe_price_id yet — Fredy
+// creates the Stripe price in the dashboard, then PATCH /admin/plans/:id
+// to wire it). All perks live in subscription_plans.features so admins
+// can edit them via /admin/plans without touching code.
+//
+// Idempotent. Existing 'premium' plans get tier='premium' as a default
+// so the webhook syncSubscription mapping keeps working.
+router.post('/migrate-premium-plus-tier', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    // 1) Add the new columns (idempotent).
+    await query(`ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS tier VARCHAR(20) NOT NULL DEFAULT 'premium'`);
+    await query(`ALTER TABLE subscription_plans ADD COLUMN IF NOT EXISTS coach_sessions_included INT NOT NULL DEFAULT 0`);
+    // 2) Mark any existing 'Premium' plans accordingly (cosmetic — default is already 'premium').
+    await query(`UPDATE subscription_plans SET tier='premium' WHERE tier IS NULL OR tier=''`);
+    // 3) Seed the Premium Plus plan if it doesn't exist. Uses a stable
+    //    name-based check so re-runs don't duplicate. Admin edits the row
+    //    afterward to set the real Stripe price + perks list.
+    const { rows: existing } = await query(
+      `SELECT id FROM subscription_plans WHERE LOWER(name) LIKE '%premium plus%' OR LOWER(name) LIKE '%premium +%' LIMIT 1`
+    );
+    let created_id = null;
+    if (!existing.length) {
+      const { rows: ins } = await query(
+        `INSERT INTO subscription_plans
+           (name, tagline, description, currency, amount_cents, interval,
+            features, sort_order, is_active, tier, coach_sessions_included)
+         VALUES ($1, $2, $3, 'aed', 14900, 'month',
+                 $4::jsonb, 50, true, 'premium_plus', 1)
+         RETURNING id`,
+        [
+          'Premium Plus',
+          'For members who treat ATP as their gym.',
+          'Everything in Premium, plus VIP-tier perks. Admin-editable: change price, perks, included coach sessions anytime from /admin/plans.',
+          JSON.stringify([
+            'Everything in Premium',
+            '1 free coach 1-on-1 session every month',
+            'Priority booking — never miss a popular session',
+            'Early access to new sessions (24h before public)',
+            '2× tribe check-in referral points',
+            'Exclusive ATP merch quarterly',
+            'Founder access via private WhatsApp',
+          ]),
+        ]
+      );
+      created_id = ins[0].id;
+    }
+    res.json({
+      ok: true,
+      message: created_id
+        ? 'Premium Plus seeded. Edit perks/price at /admin/plans. Set stripe_price_id once Stripe price is created.'
+        : 'Premium Plus already exists — columns ensured.',
+      premium_plus_plan_id: created_id,
+    });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/auth/migrate-soft-delete ─────────────────────────
 // v1.58.0 / R-ACC-004 / OQ-4. Adds the pending_deletion_at column
 // to members. Until this runs, /me/forget falls back to the legacy

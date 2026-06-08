@@ -166,17 +166,39 @@ async function syncSubscription(stripeSub) {
        stripeSub.cancel_at_period_end || false, cancelledAt]
     );
 
-    // Decide the member's subscription_type. If they have ANY active sub
-    // they're premium; if all are cancelled/unpaid they're free. We check
-    // across all their subs (not just this one) so toggling between plans
-    // doesn't briefly demote them.
-    const { rows: anyActive } = await client.query(
-      `SELECT 1 FROM subscriptions
-        WHERE member_id=$1 AND status = ANY($2::text[])
-        LIMIT 1`,
-      [memberId, Array.from(ACTIVE_STATUSES)]
-    );
-    const isPremium = anyActive.length > 0;
+    // Decide the member's subscription_type. Premium Plus (OQ-2, v1.68)
+    // sits ABOVE Premium — if a member has any active subscription
+    // mapped to a 'premium_plus'-tier plan, they're premium_plus. Else
+    // any active sub → 'premium'. None → 'free'.
+    //
+    // The tier mapping comes from subscription_plans.tier (added by
+    // /api/auth/migrate-premium-plus-tier). Pre-migration DBs (no
+    // tier column) fall back to the legacy "any active sub = premium"
+    // semantics via the 42703 catch.
+    let nextTier = 'free';
+    try {
+      const { rows: tiers } = await client.query(
+        `SELECT DISTINCT sp.tier
+           FROM subscriptions s
+           JOIN subscription_plans sp ON sp.stripe_price_id = s.stripe_price_id
+          WHERE s.member_id = $1 AND s.status = ANY($2::text[])`,
+        [memberId, Array.from(ACTIVE_STATUSES)]
+      );
+      if (tiers.some(t => t.tier === 'premium_plus')) nextTier = 'premium_plus';
+      else if (tiers.length > 0)                     nextTier = 'premium';
+    } catch (e) {
+      if (e.code !== '42703') throw e;
+      // Legacy DB: no tier column yet. Fall back to the old
+      // "any active sub == premium" rule. Once migrate-premium-plus-tier
+      // runs, this branch stops firing.
+      const { rows: anyActive } = await client.query(
+        `SELECT 1 FROM subscriptions
+          WHERE member_id=$1 AND status = ANY($2::text[])
+          LIMIT 1`,
+        [memberId, Array.from(ACTIVE_STATUSES)]
+      );
+      nextTier = anyActive.length > 0 ? 'premium' : 'free';
+    }
 
     await client.query(
       `UPDATE members
@@ -185,9 +207,9 @@ async function syncSubscription(stripeSub) {
               subscription_renews_at=$3,
               updated_at=NOW()
         WHERE id=$4`,
-      [isPremium ? 'premium' : 'free',
+      [nextTier,
        stripeSub.status,
-       isPremium ? periodEnd : null,
+       nextTier !== 'free' ? periodEnd : null,
        memberId]
     );
   });

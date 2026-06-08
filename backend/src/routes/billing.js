@@ -51,6 +51,8 @@ router.get('/plans', async (req, res, next) => {
                 p.interval, p.features, p.sort_order, p.is_active,
                 p.country_id,
                 p.annual_amount_cents, p.annual_savings_label,
+                COALESCE(p.tier, 'premium') AS tier,
+                COALESCE(p.coach_sessions_included, 0) AS coach_sessions_included,
                 CASE WHEN p.stripe_price_id        IS NOT NULL THEN true ELSE false END AS purchasable,
                 CASE WHEN p.annual_stripe_price_id IS NOT NULL THEN true ELSE false END AS purchasable_annual
          FROM subscription_plans p
@@ -287,7 +289,9 @@ router.patch('/admin/plans/:id', authenticate, requireAdmin, async (req, res, ne
     const allowed = ['name','tagline','description','stripe_price_id','currency',
                      'amount_cents','interval','features','sort_order','is_active',
                      'country_id',
-                     'annual_amount_cents','annual_stripe_price_id','annual_savings_label'];
+                     'annual_amount_cents','annual_stripe_price_id','annual_savings_label',
+                     // OQ-2 / v1.68 — Premium Plus admin-editable fields.
+                     'tier','coach_sessions_included'];
     for (const k of allowed) {
       if (k in (req.body || {})) {
         let v = req.body[k];
