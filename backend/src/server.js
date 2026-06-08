@@ -410,16 +410,176 @@ app.get('/company', (req, res) => res.sendFile(path.join(__dirname, '../public/c
 // Magic-link verify landing page — emailed links (FRONTEND_URL/auth/verify?token=…)
 // resolve to this static page, which calls GET /api/auth/verify and stores the JWT.
 app.get('/auth/verify', (req, res) => res.sendFile(path.join(__dirname, '../public/auth-verify.html')));
-// Coach profile pretty URLs — /coach/firstname-lastname → coach.html which
-// reads the :slug param from window.location and fetches /api/coaches/by-slug/:slug.
-app.get('/coach/:slug', (req, res) => res.sendFile(path.join(__dirname, '../public/coach.html')));
+// ── Server-side OG/SEO injection helper ───────────────────────
+// Pre-launch PR A2 (v1.67.0). Crawlers + social-share previewers
+// (Facebook, Twitter, LinkedIn, Slack, WhatsApp) DON'T run JS, so
+// dynamic /blog/<slug> + /coach/<slug> URLs need their per-row
+// title / description / image injected server-side into the static
+// HTML template.
+//
+// The helper reads the template file once, replaces <title> + the
+// existing description meta, and injects an OG / Twitter block
+// right after. Cache: 5 min edge cache for crawlers, no-store on
+// the page navigation itself.
+function _escMeta(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;');
+}
+function _renderWithMeta(res, templatePath, meta) {
+  const fs = require('fs');
+  let html;
+  try { html = fs.readFileSync(templatePath, 'utf8'); }
+  catch (e) { return res.status(404).send('Page not found'); }
+  const canonical = (process.env.FRONTEND_URL || 'https://www.atthepark.world').replace(/\/+$/, '') + meta.path;
+  const title = _escMeta(meta.title || 'At The Park');
+  const desc  = _escMeta(meta.description || '');
+  const img   = _escMeta(meta.image || ((process.env.FRONTEND_URL || 'https://www.atthepark.world') + '/og-default.jpg'));
+  const ogType = meta.ogType || 'website';
+  const block = [
+    '<link rel="canonical" href="' + canonical + '">',
+    '<meta property="og:type" content="' + ogType + '">',
+    '<meta property="og:site_name" content="At The Park">',
+    '<meta property="og:locale" content="en_US">',
+    '<meta property="og:url" content="' + canonical + '">',
+    '<meta property="og:title" content="' + title + '">',
+    '<meta property="og:description" content="' + desc + '">',
+    '<meta property="og:image" content="' + img + '">',
+    '<meta property="og:image:width" content="1200">',
+    '<meta property="og:image:height" content="630">',
+    '<meta name="twitter:card" content="summary_large_image">',
+    '<meta name="twitter:title" content="' + title + '">',
+    '<meta name="twitter:description" content="' + desc + '">',
+    '<meta name="twitter:image" content="' + img + '">',
+  ].join('\n');
+  // Override <title> + the existing description meta.
+  html = html.replace(/<title>[^<]*<\/title>/i, '<title>' + title + '</title>');
+  if (/<meta\s+name="description"[^>]*>/i.test(html)) {
+    html = html.replace(/<meta\s+name="description"[^>]*>/i, '<meta name="description" content="' + desc + '">' + '\n' + block);
+  } else {
+    // Inject after the title if no description meta exists yet.
+    html = html.replace(/<\/title>/i, '</title>\n<meta name="description" content="' + desc + '">\n' + block);
+  }
+  // Also inject JSON-LD when present.
+  if (meta.jsonLd) {
+    html = html.replace(/<\/head>/i,
+      '<script type="application/ld+json">' + JSON.stringify(meta.jsonLd) + '</script>\n</head>');
+  }
+  res.setHeader('Content-Type', 'text/html; charset=utf-8');
+  res.setHeader('Cache-Control', 'public, max-age=300, s-maxage=300');
+  res.send(html);
+}
+
+// Coach profile pretty URLs — /coach/firstname-lastname → coach.html
+// with per-coach OG injected from coach_profiles.
+app.get('/coach/:slug', async (req, res) => {
+  const tpl = path.join(__dirname, '../public/coach.html');
+  try {
+    const { query } = require('./db');
+    const { rows } = await query(
+      `SELECT cp.display_name, cp.bio, cp.cover_image_url, cp.slug,
+              m.first_name, m.last_name, m.avatar_url
+         FROM coach_profiles cp
+         JOIN members m ON m.id = cp.member_id
+        WHERE cp.slug = $1 LIMIT 1`,
+      [req.params.slug]
+    );
+    if (!rows.length) return _renderWithMeta(res, tpl, {
+      path: '/coach/' + req.params.slug,
+      title: 'Coach · At The Park',
+      description: 'Meet the ATP coaching team — UAE personal training + group sessions.',
+      ogType: 'profile',
+    });
+    const c = rows[0];
+    const fullName = c.display_name || ((c.first_name || '') + ' ' + (c.last_name || '')).trim() || 'ATP Coach';
+    const bio = c.bio ? String(c.bio).replace(/\s+/g, ' ').trim().slice(0, 280) : 'Personal training, group sessions, and accountability with the UAE\'s largest free outdoor fitness community.';
+    return _renderWithMeta(res, tpl, {
+      path: '/coach/' + req.params.slug,
+      title: fullName + ' · ATP Coach',
+      description: bio,
+      image: c.cover_image_url || c.avatar_url || undefined,
+      ogType: 'profile',
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@type': 'Person',
+        name: fullName,
+        jobTitle: 'Fitness Coach',
+        worksFor: { '@type': 'Organization', name: 'At The Park', url: 'https://www.atthepark.world' },
+        image: c.cover_image_url || c.avatar_url || undefined,
+        description: bio,
+        url: 'https://www.atthepark.world/coach/' + req.params.slug,
+      },
+    });
+  } catch (e) {
+    return _renderWithMeta(res, tpl, {
+      path: '/coach/' + req.params.slug,
+      title: 'Coach · At The Park',
+      description: 'Meet the ATP coaching team.',
+      ogType: 'profile',
+    });
+  }
+});
 // Public coaches listing — /coaches → coaches.html (CMS-driven hero + grid)
 app.get('/coaches', (req, res) => res.sendFile(path.join(__dirname, '../public/coaches.html')));
 // Visitor-facing coach conversation page — emailed token URLs land here.
 app.get('/coach-thread/:token', (req, res) => res.sendFile(path.join(__dirname, '../public/coach-thread.html')));
 // Blog — listing + single post (slug-based pretty URLs)
 app.get('/blog',         (req, res) => res.sendFile(path.join(__dirname, '../public/blog.html')));
-app.get('/blog/:slug',   (req, res) => res.sendFile(path.join(__dirname, '../public/blog-post.html')));
+// /blog/:slug — same SSR injection pattern as /coach/:slug above.
+// Pulls title + excerpt + hero image from blog_posts; falls back to
+// generic ATP Journal metadata when the post is missing OR the
+// table doesn't exist yet (pre-blog-migration envs).
+app.get('/blog/:slug', async (req, res) => {
+  const tpl = path.join(__dirname, '../public/blog-post.html');
+  try {
+    const { query } = require('./db');
+    const { rows } = await query(
+      `SELECT slug, title, excerpt, cover_image_url, hero_image_url, author_name, published_at
+         FROM blog_posts WHERE slug = $1 AND published = true LIMIT 1`,
+      [req.params.slug]
+    );
+    if (!rows.length) return _renderWithMeta(res, tpl, {
+      path: '/blog/' + req.params.slug,
+      title: 'The ATP Journal · At The Park',
+      description: 'Stories from the UAE\'s largest free outdoor fitness community.',
+      ogType: 'article',
+    });
+    const p = rows[0];
+    const title   = (p.title || 'ATP Journal') + ' · At The Park';
+    const excerpt = (p.excerpt || 'A story from the ATP community.').slice(0, 280);
+    const image   = p.cover_image_url || p.hero_image_url || undefined;
+    return _renderWithMeta(res, tpl, {
+      path: '/blog/' + req.params.slug,
+      title,
+      description: excerpt,
+      image,
+      ogType: 'article',
+      jsonLd: {
+        '@context': 'https://schema.org',
+        '@type': 'BlogPosting',
+        headline: p.title,
+        description: excerpt,
+        image,
+        author: { '@type': 'Person', name: p.author_name || 'At The Park' },
+        publisher: {
+          '@type': 'Organization',
+          name: 'At The Park',
+          logo: { '@type': 'ImageObject', url: 'https://www.atthepark.world/atp-logo-transparent.webp' },
+        },
+        datePublished: p.published_at,
+        mainEntityOfPage: 'https://www.atthepark.world/blog/' + p.slug,
+      },
+    });
+  } catch (e) {
+    return _renderWithMeta(res, tpl, {
+      path: '/blog/' + req.params.slug,
+      title: 'The ATP Journal · At The Park',
+      description: 'A story from the ATP community.',
+      ogType: 'article',
+    });
+  }
+});
 app.get('/sessions', (req, res) => res.sendFile(path.join(__dirname, '../public/sessions.html')));
 app.get('/community',(req, res) => res.sendFile(path.join(__dirname, '../public/community.html')));
 app.get('/profile',  (req, res) => res.sendFile(path.join(__dirname, '../public/profile.html')));
