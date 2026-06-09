@@ -108,10 +108,14 @@
       },
       "apiBaseUrl": "https://www.atthepark.world/api",
       "apiBaseUrlStaging": "https://atp-world-web.onrender.com/api",
+      "appealUrl": "https://atthepark.world/appeal",
       "oneSignalAppId": "",
       "amplitudeApiKey": "",
       "sentryDsn": "",
-      "stripePublishableKey": ""
+      "stripePublishableKey": "",
+      "googleIosClientId": "",
+      "googleAndroidClientId": "",
+      "googleWebClientId": ""
     }
   }
 }
