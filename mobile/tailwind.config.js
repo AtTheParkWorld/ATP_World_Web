@@ -30,6 +30,8 @@ module.exports = {
         'danger':          '#ef4444',
         'warning':         '#f59e0b',
         'info':            '#60a5fa',
+        // Brand semantic aliases (so screens can read as `atp-red` etc.)
+        'atp-red':         '#ef4444',
       },
       fontFamily: {
         display: ['BarlowCondensed_800ExtraBold'],

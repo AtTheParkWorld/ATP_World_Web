@@ -21,6 +21,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, DMSans_400Regular, DMSans_700Bold } from '@expo-google-fonts/dm-sans';
 import { BarlowCondensed_800ExtraBold, BarlowCondensed_900Black } from '@expo-google-fonts/barlow-condensed';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import * as Sentry from '@sentry/react-native';
 import Constants from 'expo-constants';
@@ -97,9 +98,11 @@ function RootLayoutInner() {
 function Root() {
   return (
     <QueryClientProvider client={queryClient}>
-      <StripeProvider publishableKey={extra.stripePublishableKey || ''}>
-        <RootLayoutInner />
-      </StripeProvider>
+      <SafeAreaProvider>
+        <StripeProvider publishableKey={extra.stripePublishableKey || ''}>
+          <RootLayoutInner />
+        </StripeProvider>
+      </SafeAreaProvider>
     </QueryClientProvider>
   );
 }
