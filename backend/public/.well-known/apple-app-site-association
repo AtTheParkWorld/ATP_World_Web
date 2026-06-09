@@ -1,0 +1,26 @@
+{
+  "applinks": {
+    "details": [
+      {
+        "appIDs": [
+          "TEAMID_PLACEHOLDER.world.atthepark.app"
+        ],
+        "components": [
+          { "/": "/sessions/*", "comment": "Open session detail in app" },
+          { "/": "/sessions.html", "?": { "id": "?*" }, "comment": "Legacy hash deep link" },
+          { "/": "/blog/*", "comment": "Open blog post in app" },
+          { "/": "/coach/*", "comment": "Open coach profile in app" },
+          { "/": "/community/*", "comment": "Open community feed" },
+          { "/": "/auth/verify", "comment": "Magic-link sign-in" },
+          { "/": "/profile*", "comment": "Open profile" }
+        ]
+      }
+    ]
+  },
+  "webcredentials": {
+    "apps": [
+      "TEAMID_PLACEHOLDER.world.atthepark.app"
+    ]
+  },
+  "_atp_note": "Replace TEAMID_PLACEHOLDER with the real Apple Team ID once the Apple Developer account is provisioned. Until then iOS won't associate the universal links and tap-on-link opens Safari (graceful fallback)."
+}

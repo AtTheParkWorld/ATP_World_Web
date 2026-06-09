@@ -27,17 +27,55 @@ router.use((req, res, next) => {
 });
 
 // ── HELPERS ───────────────────────────────────────────────────
-function generateJWT(memberId) {
+function generateJWT(memberId, opts) {
+  // Mobile PR D1 (v1.69.0): callers can request a short-lived access
+  // token by passing { expiresIn: '1h' }. Pairs with /auth/refresh.
+  // Without that opt the legacy 7-day default still applies, so the
+  // existing web flow is unaffected.
   return jwt.sign(
     { sub: memberId, iat: Math.floor(Date.now() / 1000) },
     process.env.JWT_SECRET,
-    { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    { expiresIn: (opts && opts.expiresIn) || process.env.JWT_EXPIRES_IN || '7d' }
   );
 }
 
 function generateMemberNumber(id) {
   const num = id.replace(/-/g, '').substring(0, 5).toUpperCase();
   return `ATP-${num}`;
+}
+
+// ── REFRESH TOKEN HELPER ──────────────────────────────────────
+// Mobile PR D1 (v1.69.0). Mints a 64-byte random refresh token,
+// stores its SHA-256 hash in refresh_tokens with a 90-day expiry,
+// returns the plain token to the caller. Plain text never persists.
+//
+// device fields (platform / device_name / app_version) come from the
+// custom X-Mobile-* headers the mobile client sets (see
+// mobile/lib/api/client.ts) — captured for ops visibility + the
+// "logout all devices" affordance.
+async function _issueRefreshToken(memberId, req) {
+  try {
+    const plain = crypto.randomBytes(48).toString('base64url');
+    const hash  = crypto.createHash('sha256').update(plain).digest('hex');
+    const expiresAt = new Date(Date.now() + 90 * 86400 * 1000);
+    const platform = String(req.headers['x-mobile-platform'] || '').slice(0, 20) || 'web';
+    const deviceName = String(req.headers['x-device-name']    || '').slice(0, 120) || null;
+    const appVersion = String(req.headers['x-mobile-app-version'] || '').slice(0, 20) || null;
+    await query(
+      `INSERT INTO refresh_tokens
+         (member_id, token_hash, platform, device_name, app_version, expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6)`,
+      [memberId, hash, platform, deviceName, appVersion, expiresAt]
+    );
+    return plain;
+  } catch (e) {
+    // refresh_tokens table missing on pre-migration DBs → null so
+    // login/register still works. The mobile client will keep using
+    // its (long-lived) JWT until ops runs the migration.
+    if (e.code === '42P01') return null;
+    console.warn('[auth] _issueRefreshToken failed:', e.message);
+    return null;
+  }
 }
 
 async function getMemberByEmail(email) {
@@ -147,8 +185,305 @@ router.post('/register', async (req, res, next) => {
     // Send welcome email (now with the discount code baked in)
     await emailService.sendWelcome(member, { welcome });
 
+    // Mobile PR D1: same dual-shape response as /login.
+    const isMobile = !!req.headers['x-mobile-platform'];
+    if (isMobile) {
+      const refresh_token = await _issueRefreshToken(member.id, req);
+      const access_token  = generateJWT(member.id, { expiresIn: '1h' });
+      return res.status(201).json({ access_token, refresh_token, token: access_token, member });
+    }
     res.status(201).json({ token, member });
   } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/refresh — mobile token rotation ───────────
+// Mobile PR D1. Verifies the refresh token, issues a NEW
+// access_token + ROTATES the refresh_token (revokes the old, mints a
+// new one). Caller MUST replace both on the device. The old refresh
+// token is unusable after this call — re-use returns 401 + revokes
+// every refresh token for the member (suspected replay attack).
+//
+// Pre-migration safety: returns 503 if refresh_tokens table doesn't
+// exist yet so the mobile client can fall back to the legacy long-
+// lived JWT until ops runs the migration.
+router.post('/refresh', async (req, res, next) => {
+  try {
+    const { refresh_token } = req.body || {};
+    if (!refresh_token) return res.status(400).json({ error: 'refresh_token required' });
+    const hash = crypto.createHash('sha256').update(refresh_token).digest('hex');
+
+    let rows;
+    try {
+      ({ rows } = await query(
+        `SELECT rt.id, rt.member_id, rt.expires_at, rt.revoked_at,
+                m.is_banned
+           FROM refresh_tokens rt
+           JOIN members m ON m.id = rt.member_id
+          WHERE rt.token_hash = $1
+          LIMIT 1`,
+        [hash]
+      ));
+    } catch (e) {
+      if (e.code === '42P01') {
+        return res.status(503).json({
+          error: 'Refresh tokens not enabled on this server.',
+          code:  'REFRESH_NOT_MIGRATED',
+        });
+      }
+      throw e;
+    }
+
+    if (!rows.length) {
+      // Token not found — could be an attacker probing. Generic 401.
+      return res.status(401).json({ error: 'Invalid refresh token', code: 'INVALID_REFRESH' });
+    }
+    const row = rows[0];
+    if (row.revoked_at) {
+      // Replay of a revoked token = compromised. Belt-and-braces:
+      // revoke all refresh tokens for this member.
+      await query(
+        `UPDATE refresh_tokens SET revoked_at = NOW()
+          WHERE member_id = $1 AND revoked_at IS NULL`,
+        [row.member_id]
+      );
+      return res.status(401).json({ error: 'Token revoked', code: 'TOKEN_REVOKED' });
+    }
+    if (new Date(row.expires_at) < new Date()) {
+      return res.status(401).json({ error: 'Refresh token expired', code: 'REFRESH_EXPIRED' });
+    }
+
+    // Banned members CAN still refresh (they need a valid JWT to hit
+    // /me/appeal which uses authenticateAllowBanned). The access token
+    // itself will 403 on every other endpoint.
+
+    // Rotate in a transaction so a crash mid-flow can't leave the
+    // member with neither a valid old token nor a usable new one.
+    const newPlain = crypto.randomBytes(48).toString('base64url');
+    const newHash  = crypto.createHash('sha256').update(newPlain).digest('hex');
+    const expiresAt = new Date(Date.now() + 90 * 86400 * 1000);
+    const platform = String(req.headers['x-mobile-platform'] || 'web').slice(0, 20);
+    const deviceName = String(req.headers['x-device-name']    || '').slice(0, 120) || null;
+    const appVersion = String(req.headers['x-mobile-app-version'] || '').slice(0, 20) || null;
+
+    await transaction(async (client) => {
+      await client.query(
+        `UPDATE refresh_tokens SET revoked_at = NOW(), last_used_at = NOW()
+          WHERE id = $1`,
+        [row.id]
+      );
+      await client.query(
+        `INSERT INTO refresh_tokens
+           (member_id, token_hash, platform, device_name, app_version, expires_at)
+         VALUES ($1, $2, $3, $4, $5, $6)`,
+        [row.member_id, newHash, platform, deviceName, appVersion, expiresAt]
+      );
+    });
+
+    res.json({
+      access_token:  generateJWT(row.member_id, { expiresIn: '1h' }),
+      refresh_token: newPlain,
+      expires_in:    3600,
+    });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/logout-all-devices ────────────────────────
+// Revoke EVERY refresh token for the member. Forces re-login on
+// every device. Member's currently-active short access JWT keeps
+// working until its 1h expiry — Stripe-style "no instant kill" so
+// mid-session UX doesn't break, but no new sessions can issue.
+router.post('/logout-all-devices', authenticate, async (req, res, next) => {
+  try {
+    try {
+      const { rowCount } = await query(
+        `UPDATE refresh_tokens SET revoked_at = NOW()
+          WHERE member_id = $1 AND revoked_at IS NULL`,
+        [req.member.id]
+      );
+      res.json({ message: 'All devices signed out.', revoked: rowCount });
+    } catch (e) {
+      if (e.code === '42P01') return res.json({ message: 'No active sessions.', revoked: 0 });
+      throw e;
+    }
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/apple — Sign in with Apple ────────────────
+// Mobile PR D1. App Store 4.8 requires Apple Sign-In whenever a
+// 3rd-party social login is offered. This endpoint:
+//   1. Receives the identity_token returned by Apple to the mobile
+//      app via expo-apple-authentication.
+//   2. Verifies the JWT signature against Apple's JWKS
+//      (https://appleid.apple.com/auth/keys).
+//   3. Verifies issuer + audience + expiry.
+//   4. Looks up the social_accounts row by (provider='apple',
+//      provider_id=sub). If found, log them in. If not, register
+//      a new member.
+//   5. Returns the standard mobile auth shape (access_token +
+//      refresh_token + member).
+const APPLE_JWKS_URL = 'https://appleid.apple.com/auth/keys';
+let _appleJwksCache = null;
+let _appleJwksAt    = 0;
+async function _getAppleJwks() {
+  // Apple rotates keys ~yearly. 6h cache is plenty + survives Render
+  // restarts without hammering Apple's endpoint.
+  if (_appleJwksCache && Date.now() - _appleJwksAt < 6 * 3600 * 1000) {
+    return _appleJwksCache;
+  }
+  const res = await fetch(APPLE_JWKS_URL);
+  if (!res.ok) throw new Error('Apple JWKS fetch failed: HTTP ' + res.status);
+  const j = await res.json();
+  _appleJwksCache = j.keys || [];
+  _appleJwksAt = Date.now();
+  return _appleJwksCache;
+}
+
+router.post('/apple', async (req, res, next) => {
+  try {
+    const { identity_token, full_name } = req.body || {};
+    if (!identity_token) {
+      return res.status(400).json({ error: 'identity_token required' });
+    }
+
+    // Decode the header to find the matching kid in Apple's JWKS.
+    const parts = String(identity_token).split('.');
+    if (parts.length !== 3) {
+      return res.status(400).json({ error: 'Malformed identity_token' });
+    }
+    let header;
+    try { header = JSON.parse(Buffer.from(parts[0], 'base64url').toString()); }
+    catch (_) { return res.status(400).json({ error: 'Malformed identity_token header' }); }
+    if (!header || !header.kid) {
+      return res.status(400).json({ error: 'identity_token missing kid' });
+    }
+
+    const keys = await _getAppleJwks();
+    const jwk = keys.find(k => k.kid === header.kid);
+    if (!jwk) {
+      return res.status(401).json({ error: 'Apple key not found for this token' });
+    }
+
+    // Node ≥16.18 supports importing JWK directly via crypto.
+    const publicKey = crypto.createPublicKey({ key: jwk, format: 'jwk' });
+
+    // Verify signature + standard claims.
+    let payload;
+    try {
+      payload = jwt.verify(identity_token, publicKey, {
+        algorithms: ['RS256'],
+        issuer: 'https://appleid.apple.com',
+        // App Store-issued tokens always have aud = our iOS bundle id.
+        // We accept either the bundle id OR the Apple Service ID
+        // (used for Sign-In-with-Apple-on-the-web), to keep one
+        // endpoint future-proof.
+        audience: ['world.atthepark.app', process.env.APPLE_SERVICES_ID].filter(Boolean),
+      });
+    } catch (e) {
+      return res.status(401).json({ error: 'Apple identity_token verification failed: ' + e.message });
+    }
+    if (!payload || !payload.sub) {
+      return res.status(401).json({ error: 'Apple token has no subject' });
+    }
+
+    const appleSub = String(payload.sub);
+    const email    = payload.email ? String(payload.email).toLowerCase() : null;
+
+    // Look up existing member via social_accounts. If absent, register
+    // a new one. Apple withholds the email after the first sign-in for
+    // the same user → we MUST find them by sub, not email.
+    let member;
+    const { rows: existingSocial } = await query(
+      `SELECT m.id, m.member_number, m.first_name, m.last_name, m.email,
+              m.is_banned, m.subscription_type, m.is_admin, m.is_ambassador
+         FROM social_accounts sa
+         JOIN members m ON m.id = sa.member_id
+        WHERE sa.provider = 'apple' AND sa.provider_id = $1
+        LIMIT 1`,
+      [appleSub]
+    );
+    if (existingSocial.length) {
+      member = existingSocial[0];
+    } else if (email) {
+      // No social row but email matches an existing member → link them.
+      const { rows: byEmail } = await query(
+        `SELECT id, member_number, first_name, last_name, email, is_banned,
+                subscription_type, is_admin, is_ambassador
+           FROM members WHERE LOWER(email) = $1 LIMIT 1`,
+        [email]
+      );
+      if (byEmail.length) {
+        member = byEmail[0];
+        await query(
+          `INSERT INTO social_accounts (member_id, provider, provider_id, email)
+           VALUES ($1, 'apple', $2, $3) ON CONFLICT DO NOTHING`,
+          [member.id, appleSub, email]
+        );
+      }
+    }
+
+    if (!member) {
+      // Fresh signup via Apple. Use the supplied full_name (only sent
+      // on the FIRST authorization; we ignore it on subsequent calls).
+      const firstName = (full_name && full_name.givenName) || 'Friend';
+      const lastName  = (full_name && full_name.familyName) || '';
+      // Apple's relay-email rule: when the user opts to hide their
+      // address, we get xxxx@privaterelay.appleid.com. That's still a
+      // valid forwarding address; treat it like a normal email.
+      const safeEmail = email || (appleSub.slice(0, 12) + '@privaterelay.appleid.com');
+
+      const { rows: ins } = await query(
+        `INSERT INTO members
+           (member_number, first_name, last_name, email, is_banned, email_verified)
+         VALUES ($1, $2, $3, $4, false, true)
+         RETURNING id, member_number, first_name, last_name, email, is_banned,
+                   subscription_type, is_admin, is_ambassador`,
+        ['TEMP', firstName, lastName, safeEmail]
+      );
+      member = ins[0];
+      const mn = generateMemberNumber(member.id);
+      await query('UPDATE members SET member_number=$1 WHERE id=$2', [mn, member.id]);
+      member.member_number = mn;
+      await query(
+        `INSERT INTO social_accounts (member_id, provider, provider_id, email)
+         VALUES ($1, 'apple', $2, $3)`,
+        [member.id, appleSub, email]
+      );
+    }
+
+    if (member.is_banned) {
+      return res.status(403).json({ error: 'Account suspended' });
+    }
+
+    await query('UPDATE members SET last_active_at=NOW() WHERE id=$1', [member.id]);
+    const refresh_token = await _issueRefreshToken(member.id, req);
+    const access_token  = generateJWT(member.id, { expiresIn: '1h' });
+    res.json({ access_token, refresh_token, token: access_token, member });
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/version — mobile force-update gate ──────────────
+// Mobile cold-start hits this. If the running app's version is below
+// `minimum`, the app blocks with an upgrade screen. If below `latest`
+// it soft-prompts. Currently config-as-env so we can change without
+// a code deploy — but admin UI could move these to system_config.
+router.get('/version', (req, res) => {
+  res.set('Cache-Control', 'public, max-age=300');
+  res.json({
+    ios: {
+      minimum: process.env.MOBILE_IOS_MIN_VERSION     || '1.0.0',
+      latest:  process.env.MOBILE_IOS_LATEST_VERSION  || '1.0.0',
+    },
+    android: {
+      minimum: process.env.MOBILE_ANDROID_MIN_VERSION    || '1.0.0',
+      latest:  process.env.MOBILE_ANDROID_LATEST_VERSION || '1.0.0',
+    },
+    force_update_message:
+      process.env.MOBILE_FORCE_UPDATE_MESSAGE
+      || 'We have a critical update. Please install the latest version of ATP to keep using the app.',
+    soft_update_message:
+      process.env.MOBILE_SOFT_UPDATE_MESSAGE
+      || 'A new version of ATP is available with improvements + bug fixes.',
+  });
 });
 
 // ── POST /api/auth/login ──────────────────────────────────────
@@ -177,6 +512,22 @@ router.post('/login', async (req, res, next) => {
     if (!valid) return res.status(401).json({ error: 'Invalid credentials' });
 
     await query('UPDATE members SET last_active_at=NOW() WHERE id=$1', [member.id]);
+
+    // Mobile PR D1: mint a refresh_token whenever the caller is mobile
+    // (X-Mobile-Platform set). For web we keep the legacy 7-day JWT
+    // and no refresh — nothing changes there. For mobile we issue a
+    // SHORT 1h access token + a 90-day refresh token.
+    const isMobile = !!req.headers['x-mobile-platform'];
+    if (isMobile) {
+      const refresh_token = await _issueRefreshToken(member.id, req);
+      return res.json({
+        access_token: generateJWT(member.id, { expiresIn: '1h' }),
+        refresh_token,
+        member,
+        // Legacy alias so older clients (mid-rollout) still find it.
+        token: generateJWT(member.id, { expiresIn: '1h' }),
+      });
+    }
     res.json({ token: generateJWT(member.id), member });
   } catch (err) { next(err); }
 });
@@ -3559,6 +3910,71 @@ router.post('/maintenance-migrate-media-to-r2', async (req, res, next) => {
         ? `Dry-run: ${rows.length} rows would be migrated (~${(bytes / 1024 / 1024).toFixed(1)} MB).`
         : `Migrated ${migrated}/${rows.length} (${(bytes / 1024 / 1024).toFixed(1)} MB). ${remaining[0].n} rows remain.`,
     });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/auth/migrate-mobile-d1 ──────────────────────────
+// Mobile PR D1 (v1.69.0). One-shot migration that creates every
+// schema piece the mobile app + companion endpoints need:
+//   - refresh_tokens             (90-day rotating refresh tokens)
+//   - push_tokens.onesignal_player_id  (OneSignal handshake)
+//   - push_send_log              (parallel to email_send_log for ops)
+//
+// Idempotent — re-runnable.
+router.post('/migrate-mobile-d1', async (req, res, next) => {
+  try {
+    const { setupKey } = req.body || {};
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    await query(`CREATE TABLE IF NOT EXISTS refresh_tokens (
+      id           UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+      member_id    UUID         NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      token_hash   VARCHAR(255) NOT NULL UNIQUE,
+      platform     VARCHAR(20),
+      device_name  VARCHAR(120),
+      app_version  VARCHAR(20),
+      expires_at   TIMESTAMPTZ  NOT NULL,
+      revoked_at   TIMESTAMPTZ,
+      created_at   TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+      last_used_at TIMESTAMPTZ
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_refresh_member_active
+                   ON refresh_tokens(member_id) WHERE revoked_at IS NULL`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_refresh_expires
+                   ON refresh_tokens(expires_at) WHERE revoked_at IS NULL`);
+
+    // push_tokens may not exist yet on truly-pristine DBs; create
+    // gently before adding our column.
+    await query(`CREATE TABLE IF NOT EXISTS push_tokens (
+      id          UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+      member_id   UUID         NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      token       TEXT         NOT NULL,
+      platform    VARCHAR(20)  NOT NULL,
+      created_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    )`);
+    await query(`ALTER TABLE push_tokens ADD COLUMN IF NOT EXISTS onesignal_player_id VARCHAR(120)`);
+    await query(`ALTER TABLE push_tokens ADD COLUMN IF NOT EXISTS app_version VARCHAR(20)`);
+    await query(`ALTER TABLE push_tokens ADD COLUMN IF NOT EXISTS revoked_at TIMESTAMPTZ`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_push_tokens_member_active
+                   ON push_tokens(member_id) WHERE revoked_at IS NULL`);
+
+    await query(`CREATE TABLE IF NOT EXISTS push_send_log (
+      id              UUID         PRIMARY KEY DEFAULT uuid_generate_v4(),
+      member_id       UUID         NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+      push_type       VARCHAR(60)  NOT NULL,
+      onesignal_id    VARCHAR(120),
+      was_delivered   BOOLEAN,
+      was_skipped     BOOLEAN      NOT NULL DEFAULT false,
+      skip_reason     VARCHAR(120),
+      sent_at         TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_push_log_recent
+                   ON push_send_log(member_id, sent_at DESC)`);
+
+    res.json({ ok: true, message: 'Mobile D1 schema ready (refresh_tokens, push_tokens.*, push_send_log).' });
   } catch (err) { next(err); }
 });
 

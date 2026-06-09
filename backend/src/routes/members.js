@@ -904,5 +904,156 @@ router.get('/me/deletion-status', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/members/me/export — GDPR Art. 20 data portability ──
+// Mobile PR D1 (v1.69.0). Also satisfies Play Store Data Safety +
+// App Store account-management requirements.
+//
+// Collects every PII-bearing row tied to the calling member, uploads
+// as a single JSON file to Cloudflare R2 with a member-specific key
+// prefix, and emails the signed URL. R2 lifecycle rules can later
+// auto-expire export files after 30 days.
+//
+// Rate limit: 1 export per member per 24h to prevent abuse.
+const EXPORT_RATE_LIMIT_MS = 24 * 3600 * 1000;
+router.post('/me/export', authenticate, async (req, res, next) => {
+  try {
+    const memberId = req.member.id;
+
+    // R2 may not be configured on dev. Soft-fail with 503 so the
+    // mobile app can tell the user to email general@atthepark.com
+    // instead.
+    const r2 = require('../services/r2Storage');
+    if (!r2.isConfigured()) {
+      return res.status(503).json({
+        error: 'Data export is not enabled yet on this server. Please email general@atthepark.com.',
+        code:  'EXPORT_NOT_CONFIGURED',
+      });
+    }
+
+    // Rate-limit via the latest notification of type='data_export'.
+    try {
+      const { rows: recent } = await query(
+        `SELECT created_at FROM notifications
+          WHERE member_id = $1 AND type = 'data_export'
+          ORDER BY created_at DESC LIMIT 1`,
+        [memberId]
+      );
+      if (recent.length) {
+        const age = Date.now() - new Date(recent[0].created_at).getTime();
+        if (age < EXPORT_RATE_LIMIT_MS) {
+          return res.status(429).json({
+            error: 'You can request another export in ' +
+                   Math.ceil((EXPORT_RATE_LIMIT_MS - age) / 3600000) + ' hours.',
+            code:  'EXPORT_RATE_LIMITED',
+          });
+        }
+      }
+    } catch (_) { /* table missing → no rate limit */ }
+
+    // Gather the data. Each query catches its own table-missing case
+    // so a partially-migrated env still produces a useful archive.
+    const safe = async (q, params) => {
+      try { return (await query(q, params)).rows; }
+      catch (e) { return e.code === '42P01' || e.code === '42703' ? [] : Promise.reject(e); };
+    };
+
+    const [profile, bookings, points, posts, comments, friends, notifs, survResp, appeals, wearables] = await Promise.all([
+      safe(`SELECT id, member_number, first_name, last_name, email, phone,
+                   date_of_birth, gender, nationality, joined_at, tribe_id,
+                   subscription_type, points_balance, timezone
+              FROM members WHERE id=$1`, [memberId]),
+      safe(`SELECT id, session_id, status, payment_method, payment_amount,
+                   payment_currency, points_paid, paid_at, checked_in_at,
+                   created_at, cancelled_at
+              FROM bookings WHERE member_id=$1
+              ORDER BY created_at DESC`, [memberId]),
+      safe(`SELECT amount, balance, reason, description, expires_at, expired_at, created_at
+              FROM points_ledger WHERE member_id=$1
+              ORDER BY created_at DESC LIMIT 5000`, [memberId]),
+      safe(`SELECT id, content, media, likes_count, comments_count, created_at
+              FROM posts WHERE member_id=$1 AND is_deleted=false
+              ORDER BY created_at DESC`, [memberId]),
+      safe(`SELECT id, post_id, content, created_at
+              FROM comments WHERE member_id=$1 AND is_deleted=false
+              ORDER BY created_at DESC`, [memberId]),
+      safe(`SELECT id, requester_id, addressee_id, status, created_at, updated_at
+              FROM friendships
+              WHERE requester_id=$1 OR addressee_id=$1
+              ORDER BY created_at DESC`, [memberId]),
+      safe(`SELECT id, type, title, body, read_at, created_at
+              FROM notifications WHERE member_id=$1
+              ORDER BY created_at DESC LIMIT 2000`, [memberId]),
+      safe(`SELECT id, survey_id, answers, source, created_at
+              FROM survey_responses WHERE member_id=$1
+              ORDER BY created_at DESC`, [memberId]),
+      safe(`SELECT id, reason, status, admin_notes, resolved_at, created_at
+              FROM appeals WHERE member_id=$1
+              ORDER BY created_at DESC`, [memberId]),
+      safe(`SELECT id, provider, provider_user_id, status, connected_at
+              FROM wearable_connections WHERE member_id=$1`, [memberId]),
+    ]);
+
+    const archive = {
+      generated_at: new Date().toISOString(),
+      member_id:    memberId,
+      sections: {
+        profile,       // member profile row (1 entry)
+        bookings,
+        points_ledger: points,
+        posts,
+        comments,
+        friendships:   friends,
+        notifications: notifs,
+        survey_responses: survResp,
+        appeals,
+        wearable_connections: wearables,
+      },
+      legal_note:
+        'This export contains all personal data ATP holds about you. ' +
+        'It does not include data about other members.',
+    };
+
+    // Upload to R2.
+    const json   = Buffer.from(JSON.stringify(archive, null, 2), 'utf8');
+    const key    = r2.buildKey('export', `atp-export-${memberId}-${Date.now()}.json`);
+    const url    = await r2.uploadBuffer(key, json, 'application/json');
+
+    // Notification + best-effort email.
+    try {
+      await query(
+        `INSERT INTO notifications (member_id, type, title, body, data)
+         VALUES ($1, 'data_export', $2, $3, $4)`,
+        [
+          memberId,
+          'Your ATP data export is ready',
+          'Tap to download. Link expires in 24 hours.',
+          JSON.stringify({ url, size_bytes: json.length, key }),
+        ]
+      );
+    } catch (_) { /* notifications missing → ignore */ }
+
+    try {
+      const emailService = require('../services/email');
+      if (emailService && typeof emailService.send === 'function') {
+        await emailService.send(
+          req.member.email,
+          'Your ATP data export',
+          '<p>Your ATP data is ready. Click below to download (link expires in 24 hours):</p>' +
+          '<p><a href="' + url + '" style="background:#7AC231;color:#0a0a0a;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700">Download my data</a></p>' +
+          '<p style="color:#888;font-size:12px">Didn\'t request this? Reply to this email immediately.</p>'
+        );
+      }
+    } catch (e) { console.warn('[export] email send failed:', e.message); }
+
+    res.json({
+      ok: true,
+      message: 'Your export is ready. Check your email + in-app notifications. The download link expires in 24 hours.',
+      url,
+      size_bytes: json.length,
+      sections: Object.keys(archive.sections),
+    });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
 module.exports._anonymizeMember = _anonymizeMember;

@@ -359,6 +359,25 @@ ${lines.map(u =>
   }
 });
 
+// ── Universal links / App Links (Mobile PR D1) ───────────────
+// Apple Universal Links require:
+//   - path EXACTLY at /.well-known/apple-app-site-association
+//   - Content-Type: application/json (or application/pkcs7-mime)
+//   - NO redirect (Apple's swcd refuses to follow them)
+// We serve a small inline handler instead of relying on express.static
+// so the content-type is set explicitly + cache aggressively (24h).
+app.get('/.well-known/apple-app-site-association', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.sendFile(path.join(__dirname, '../public/.well-known/apple-app-site-association'));
+});
+// Android App Links — Google's verifier follows the same JSON shape.
+app.get('/.well-known/assetlinks.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.setHeader('Cache-Control', 'public, max-age=86400');
+  res.sendFile(path.join(__dirname, '../public/.well-known/assetlinks.json'));
+});
+
 // HTML pages must never be cached (so deploys propagate immediately).
 // JS/CSS/assets get a sensible short cache. Bundles use content-hash
 // invalidation via ?cb=… cache-busters in the page templates.
