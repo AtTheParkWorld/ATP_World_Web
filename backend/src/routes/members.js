@@ -22,6 +22,7 @@ router.get('/profile', authenticate, async (req, res, next) => {
               m.gender, m.nationality, m.city_id, m.subscription_type,
               m.sports_preferences, m.top_size, m.bottom_size, m.padel_level,
               m.profile_complete_pct, m.points_balance, m.is_ambassador,
+              COALESCE(m.referral_code, m.member_number) AS referral_code,
               m.joined_at, m.email_verified,
               c.name AS city_name,
               (SELECT COUNT(*) FROM bookings b
