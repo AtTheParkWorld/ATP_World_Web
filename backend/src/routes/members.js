@@ -698,6 +698,53 @@ async function updateProfileCompletion(memberId) {
   }
 }
 
+// ── GET /api/members/:id/public ─────────────────────────────────
+// Minimal public profile for a member, used by the mobile app's
+// "view another member" screen. Only fields safe to surface to a peer:
+// name, avatar, tribe, city, ambassador flag, joined date, member#.
+// Never returns email/phone/DOB/preferences. Authenticated only to
+// keep scraping costly; if banned or pending deletion, 404.
+//
+// The route is placed BEFORE /search so it doesn't collide; the literal
+// "search" string is non-UUID so the :id pattern wouldn't match anyway,
+// but ordering keeps the intent explicit.
+router.get('/:id/public', authenticate, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT m.id, m.first_name, m.last_name, m.avatar_url,
+              m.member_number, m.is_ambassador, m.joined_at,
+              t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
+              c.name AS city_name
+         FROM members m
+         LEFT JOIN cities c ON c.id = m.city_id
+         LEFT JOIN tribes t ON t.id = m.tribe_id
+        WHERE m.id = $1
+          AND COALESCE(m.is_banned, false) = false
+          AND m.pending_deletion_at IS NULL
+        LIMIT 1`,
+      [req.params.id]
+    ).catch(async (e) => {
+      // Pre-migration fallback (tribes table or pending_deletion_at
+      // column missing) — drop the join + null guard.
+      if (e.code !== '42P01' && e.code !== '42703') throw e;
+      return query(
+        `SELECT m.id, m.first_name, m.last_name, m.avatar_url,
+                m.member_number, m.is_ambassador, m.joined_at,
+                NULL AS tribe_name, NULL AS tribe_slug, NULL AS tribe_color,
+                c.name AS city_name
+           FROM members m
+           LEFT JOIN cities c ON c.id = m.city_id
+          WHERE m.id = $1
+            AND COALESCE(m.is_banned, false) = false
+          LIMIT 1`,
+        [req.params.id]
+      );
+    });
+    if (!rows.length) return res.status(404).json({ error: 'Member not found' });
+    res.json({ member: rows[0] });
+  } catch (err) { next(err); }
+});
+
 // ── GET /api/members/search ─────────────────────────────────────
 // Member-to-member search for use cases like "gift a coach session to
 // another member". Returns minimal public info — never email, never
