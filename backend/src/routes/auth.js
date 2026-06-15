@@ -700,7 +700,12 @@ router.post('/google', async (req, res, next) => {
     );
     const gData = await googleRes.json();
 
-    if (gData.error || gData.aud !== process.env.GOOGLE_CLIENT_ID) {
+    // Accept tokens issued by any of our registered Google clients
+    // (Web + iOS + Android). Falls back to the legacy single-ID env
+    // var so existing web sign-in keeps working without a config change.
+    const allowedAuds = (process.env.GOOGLE_CLIENT_IDS || process.env.GOOGLE_CLIENT_ID || '')
+      .split(',').map(s => s.trim()).filter(Boolean);
+    if (gData.error || !allowedAuds.includes(gData.aud)) {
       return res.status(401).json({ error: 'Invalid Google token' });
     }
 
