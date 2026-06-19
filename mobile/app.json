@@ -113,9 +113,9 @@
       "amplitudeApiKey": "",
       "sentryDsn": "",
       "stripePublishableKey": "",
-      "googleIosClientId": "",
+      "googleIosClientId": "206407083569-is1kbav03g4gbd543deb0ivtkfv8pq2t.apps.googleusercontent.com",
       "googleAndroidClientId": "",
-      "googleWebClientId": ""
+      "googleWebClientId": "206407083569-1dh2uj8kfvnbkbt2jtlp6kt50otn3ukb.apps.googleusercontent.com"
     }
   }
 }
