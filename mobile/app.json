@@ -106,8 +106,8 @@
       "eas": {
         "projectId": ""
       },
-      "apiBaseUrl": "https://www.atthepark.world/api",
-      "apiBaseUrlStaging": "https://atp-world-web.onrender.com/api",
+      "apiBaseUrl": "https://atp-world-web.onrender.com/api",
+      "apiBaseUrlLegacyWebDomain": "https://www.atthepark.world/api",
       "appealUrl": "https://atthepark.world/appeal",
       "oneSignalAppId": "",
       "amplitudeApiKey": "",
