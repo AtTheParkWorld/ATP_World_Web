@@ -3,7 +3,7 @@
     "details": [
       {
         "appIDs": [
-          "TEAMID_PLACEHOLDER.world.atthepark.app"
+          "6UWDRGC9RC.world.atthepark.app"
         ],
         "components": [
           { "/": "/sessions/*", "comment": "Open session detail in app" },
@@ -19,8 +19,7 @@
   },
   "webcredentials": {
     "apps": [
-      "TEAMID_PLACEHOLDER.world.atthepark.app"
+      "6UWDRGC9RC.world.atthepark.app"
     ]
-  },
-  "_atp_note": "Replace TEAMID_PLACEHOLDER with the real Apple Team ID once the Apple Developer account is provisioned. Until then iOS won't associate the universal links and tap-on-link opens Safari (graceful fallback)."
+  }
 }
