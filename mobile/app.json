@@ -109,7 +109,7 @@
       "apiBaseUrl": "https://atp-world-web.onrender.com/api",
       "apiBaseUrlLegacyWebDomain": "https://www.atthepark.world/api",
       "appealUrl": "https://atthepark.world/appeal",
-      "oneSignalAppId": "",
+      "oneSignalAppId": "ff76a396-652d-436a-92fa-d94a6b9db280",
       "amplitudeApiKey": "",
       "sentryDsn": "",
       "stripePublishableKey": "",
