@@ -13,7 +13,9 @@
       "backgroundColor": "#0a0a0a"
     },
     "newArchEnabled": true,
-    "assetBundlePatterns": ["**/*"],
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "bundleIdentifier": "world.atthepark.app",
       "buildNumber": "1",
@@ -50,17 +52,28 @@
         "android.permission.health.READ_EXERCISE",
         "android.permission.health.READ_HEART_RATE",
         "android.permission.health.READ_DISTANCE",
-        "android.permission.health.READ_ACTIVE_CALORIES_BURNED"
+        "android.permission.health.READ_ACTIVE_CALORIES_BURNED",
+        "android.permission.RECORD_AUDIO",
+        "com.google.android.gms.permission.AD_ID"
       ],
       "intentFilters": [
         {
           "action": "VIEW",
           "autoVerify": true,
           "data": [
-            { "scheme": "https", "host": "www.atthepark.world" },
-            { "scheme": "https", "host": "atthepark.world" }
+            {
+              "scheme": "https",
+              "host": "www.atthepark.world"
+            },
+            {
+              "scheme": "https",
+              "host": "atthepark.world"
+            }
           ],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
       ]
     },
@@ -104,7 +117,24 @@
         "origin": false
       },
       "eas": {
-        "projectId": ""
+        "projectId": "b9991975-6cb8-4a0a-b8c5-e91d2a372bd6",
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "OneSignalNotificationServiceExtension",
+                  "bundleIdentifier": "world.atthepark.app.OneSignalNotificationServiceExtension",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.world.atthepark.app.onesignal"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        }
       },
       "apiBaseUrl": "https://atp-world-web.onrender.com/api",
       "apiBaseUrlLegacyWebDomain": "https://www.atthepark.world/api",
@@ -116,6 +146,7 @@
       "googleIosClientId": "206407083569-is1kbav03g4gbd543deb0ivtkfv8pq2t.apps.googleusercontent.com",
       "googleAndroidClientId": "",
       "googleWebClientId": "206407083569-1dh2uj8kfvnbkbt2jtlp6kt50otn3ukb.apps.googleusercontent.com"
-    }
+    },
+    "owner": "at-the-park"
   }
 }
