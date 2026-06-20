@@ -19,18 +19,5 @@
       "channel": "production",
       "autoIncrement": true
     }
-  },
-  "submit": {
-    "production": {
-      "ios": {
-        "appleId": "",
-        "ascAppId": "",
-        "appleTeamId": ""
-      },
-      "android": {
-        "serviceAccountKeyPath": "./play-service-account.json",
-        "track": "internal"
-      }
-    }
   }
 }
