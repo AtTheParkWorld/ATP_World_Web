@@ -143,6 +143,12 @@
       "googleAndroidClientId": "",
       "googleWebClientId": "206407083569-1dh2uj8kfvnbkbt2jtlp6kt50otn3ukb.apps.googleusercontent.com"
     },
-    "owner": "at-the-park"
+    "owner": "at-the-park",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/b9991975-6cb8-4a0a-b8c5-e91d2a372bd6"
+    }
   }
 }
