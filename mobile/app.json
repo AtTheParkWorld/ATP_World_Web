@@ -111,7 +111,7 @@
       "appealUrl": "https://atthepark.world/appeal",
       "oneSignalAppId": "ff76a396-652d-436a-92fa-d94a6b9db280",
       "amplitudeApiKey": "",
-      "sentryDsn": "",
+      "sentryDsn": "https://56ea93c480fa8ea2b2c0acbbf7e8447e@o4511599230779392.ingest.de.sentry.io/4511599269773392",
       "stripePublishableKey": "",
       "googleIosClientId": "206407083569-is1kbav03g4gbd543deb0ivtkfv8pq2t.apps.googleusercontent.com",
       "googleAndroidClientId": "",
