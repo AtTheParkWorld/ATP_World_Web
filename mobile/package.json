@@ -48,7 +48,7 @@
     "react-native-qrcode-svg": "^6.3.0",
     "react-native-mmkv": "^2.12.2",
     "react-native-onesignal": "5.2.6",
-    "onesignal-expo-plugin": "^2.0.3",
+    "onesignal-expo-plugin": "2.0.3",
     "@stripe/stripe-react-native": "0.38.6",
     "@sentry/react-native": "~5.24.3",
     "@amplitude/analytics-react-native": "^1.4.10",
