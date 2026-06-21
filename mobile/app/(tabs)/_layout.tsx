@@ -4,10 +4,18 @@
  * Tab bar: ATP-dark background, green active accent, Barlow Condensed
  * labels for ATP feel. Icons load from a single inline set so we don't
  * pull a heavy icon library; can swap to @expo/vector-icons later.
+ *
+ * Auth gate: subscribes to the access token. If it ever becomes null
+ * while we're inside the tab navigator (sign-out, refresh-token expiry,
+ * server-side revoke) we bounce back to /(auth)/welcome. Keeps the
+ * Profile button and the API-client refresh interceptor consistent —
+ * neither has to redirect by hand.
  */
-import { Tabs } from 'expo-router';
+import { useEffect } from 'react';
+import { Tabs, router } from 'expo-router';
 import { Text } from 'react-native';
 import { colors, fontFamily } from '@/lib/theme/tokens';
+import { useAuthStore } from '@/lib/stores/auth.store';
 
 function TabIcon({ glyph, focused }: { glyph: string; focused: boolean }) {
   return (
@@ -16,6 +24,11 @@ function TabIcon({ glyph, focused }: { glyph: string; focused: boolean }) {
 }
 
 export default function TabsLayout() {
+  const accessToken = useAuthStore((s) => s.accessToken);
+  useEffect(() => {
+    if (!accessToken) router.replace('/(auth)/welcome');
+  }, [accessToken]);
+
   return (
     <Tabs
       screenOptions={{

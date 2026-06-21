@@ -159,7 +159,10 @@ export default function Profile() {
         {/* Sign out */}
         <View className="px-5 mt-7">
           <Pressable
-            onPress={signOut}
+            onPress={async () => {
+              await signOut();
+              router.replace('/(auth)/welcome');
+            }}
             className="rounded-atp border border-white/10 py-3 items-center bg-atp-dark active:opacity-80"
           >
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.danger }} className="text-sm uppercase tracking-widest">
