@@ -189,6 +189,7 @@ export default function Profile() {
           <LinkRow label="Challenges"     emoji="🎯" onPress={() => router.push('/challenges')} />
           <LinkRow label="Messages"       emoji="💬" onPress={() => router.push('/messages')} />
           <LinkRow label="Stories"        emoji="📖" onPress={() => router.push('/blog')} />
+          <LinkRow label="ATP Store"      emoji="🛍️" onPress={() => router.push('/store')} />
           <LinkRow label="Edit profile"   emoji="✏️" onPress={() => router.push('/profile/edit')} />
           <LinkRow label="Notifications"  emoji="🔔" onPress={() => router.push('/profile/notifications')} />
           <LinkRow label="Privacy"        emoji="🔒" onPress={() => router.push('/profile/privacy')} />
