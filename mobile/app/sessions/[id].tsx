@@ -27,13 +27,13 @@ import { dayHeader, timeShort } from '@/lib/utils/date';
 
 export default function SessionDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const sessionId = Number(id);
+  const sessionId = String(id || '');
   const qc = useQueryClient();
 
   const sessionQ = useQuery({
     queryKey: ['session', sessionId],
     queryFn:  () => getSession(sessionId).then(r => r.session),
-    enabled:  Number.isFinite(sessionId),
+    enabled:  !!sessionId,
   });
 
   const myBookingsQ = useQuery({

@@ -14,7 +14,7 @@ export interface PointsBalance {
 }
 
 export interface LedgerEntry {
-  id: number;
+  id: string | number;
   amount: number;
   balance: number;
   reason: string;
@@ -24,7 +24,7 @@ export interface LedgerEntry {
 }
 
 export interface Offer {
-  id: number;
+  id: string | number;
   title: string;
   slug: string;
   offer_type: 'discount' | 'event' | 'promo' | string;
@@ -40,21 +40,21 @@ export interface Offer {
   starts_at: string | null;
   ends_at: string | null;
   is_featured: boolean;
-  partner_id: number | null;
+  partner_id: string | number | null;
   partner_name: string | null;
   partner_logo: string | null;
   partner_website: string | null;
 }
 
 export interface Redemption {
-  id: number;
+  id: string | number;
   code: string;
   points_spent: number;
   status: 'issued' | 'used' | 'expired' | string;
   issued_at: string;
   used_at: string | null;
   expires_at: string | null;
-  offer_id: number;
+  offer_id: string | number;
   title: string;
   offer_type: string;
   image_url: string | null;
@@ -75,7 +75,7 @@ export function listOffers(type?: 'discount' | 'event' | 'promo'): Promise<{ off
   return api.get(`/offers${type ? `?type=${type}` : ''}`);
 }
 
-export function getOffer(id: number): Promise<{ offer: Offer }> {
+export function getOffer(id: string | number): Promise<{ offer: Offer }> {
   return api.get(`/offers/${id}`);
 }
 
@@ -86,7 +86,7 @@ export interface RedeemResponse {
   points_balance?: number;
 }
 
-export function redeemOffer(id: number): Promise<RedeemResponse> {
+export function redeemOffer(id: string | number): Promise<RedeemResponse> {
   return api.post(`/offers/${id}/redeem`);
 }
 
@@ -106,7 +106,7 @@ export function redeemPointsForStore(points_to_redeem: number): Promise<PointsRe
 }
 
 export interface ReferralRow {
-  id: number;
+  id: string | number;
   created_at: string;
   points_awarded: number;
   member_id: string;

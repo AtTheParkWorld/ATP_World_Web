@@ -13,7 +13,7 @@
 import { api } from './client';
 
 export interface Friendship {
-  id: number;
+  id: string | number;
   status: 'pending' | 'accepted' | 'blocked';
   created_at: string;
   friend_id: string;

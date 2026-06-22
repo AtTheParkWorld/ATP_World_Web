@@ -16,7 +16,7 @@
 import { api } from './client';
 
 export interface BookingRecord {
-  id: number;
+  id: string | number;
   status: 'confirmed' | 'pending_payment' | 'cancelled' | 'attended' | 'waitlisted' | string;
   qr_code?: string | null;
   qr_token?: string | null;

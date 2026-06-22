@@ -1,30 +1,58 @@
 /**
  * Coaches API — directory + per-coach detail.
  *
- * The list is heavily denormalized — backend's COACH_SELECT returns
- * everything we need to render a card without a second round-trip.
+ * Backend response is nested: top-level member fields, plus profile{},
+ * social{}, stats{} sub-objects. Mirroring that shape exactly so screens
+ * just index in without a transform layer.
  */
 import { api } from './client';
 
+export interface CoachProfile {
+  tagline:            string | null;
+  bio:                string | null;
+  philosophy:         string | null;
+  cover_image_url:    string | null;
+  profile_photo_url:  string | null;
+  intro_video_url:    string | null;
+  specialties:        string[] | null;
+  certifications:     string[] | null;
+  languages:          string[] | null;
+  years_experience:   number | null;
+  gallery_urls:       string[] | null;
+  accepts_private_sessions: boolean;
+  private_session_info: string | null;
+  is_featured:        boolean;
+}
+
+export interface CoachSocial {
+  instagram:    string | null;
+  tiktok:       string | null;
+  whatsapp_url: string | null;
+  website_url:  string | null;
+  youtube_url:  string | null;
+  linkedin_url: string | null;
+}
+
+export interface CoachStats {
+  rating_avg:          number;
+  rating_count:        number;
+  sessions_delivered:  number;
+  total_sessions:      number | string;
+  upcoming_sessions:   number | string;
+}
+
 export interface Coach {
-  id: string;
-  first_name: string;
-  last_name: string;
-  avatar_url: string | null;
-  city_name: string | null;
-  slug: string | null;
-  headline: string | null;
-  bio: string | null;
-  specialties: string[] | null;
-  rating_avg: number | null;
-  rating_count: number;
-  is_featured: boolean;
-  is_ambassador?: boolean;
-  hero_url?: string | null;
-  cover_url?: string | null;
-  cert_badges?: string[] | null;
-  social_instagram?: string | null;
-  is_accepting_sessions?: boolean;
+  id:             string;
+  member_number:  string;
+  first_name:     string;
+  last_name:      string;
+  display_name:   string;
+  slug:           string | null;
+  city:           string | null;
+  joined_at:      string;
+  profile:        CoachProfile;
+  social:         CoachSocial;
+  stats:          CoachStats;
 }
 
 export function listCoaches(): Promise<{ coaches: Coach[] }> {

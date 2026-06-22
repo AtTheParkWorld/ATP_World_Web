@@ -33,7 +33,7 @@ import { useAuthStore } from '@/lib/stores/auth.store';
 
 export default function PostDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const postId = Number(id);
+  const postId = String(id || '');
   const qc = useQueryClient();
   const me = useAuthStore((s) => s.member);
 
@@ -49,7 +49,7 @@ export default function PostDetail() {
   const commentsQ = useQuery({
     queryKey: ['comments', postId],
     queryFn:  () => getComments(postId).then(r => r.comments),
-    enabled:  Number.isFinite(postId),
+    enabled:  !!postId,
   });
 
   const [draft, setDraft] = useState('');

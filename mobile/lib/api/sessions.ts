@@ -9,7 +9,7 @@
 import { api } from './client';
 
 export interface Tribe {
-  id: number;
+  id: string;
   name: string;
   slug: string;
   color: string | null;
@@ -17,20 +17,20 @@ export interface Tribe {
 }
 
 export interface Activity {
-  id: number;
+  id: string;
   name: string;
   slug: string;
   icon?: string | null;
 }
 
 export interface City {
-  id: number;
+  id: string;
   name: string;
   country_id?: number | null;
 }
 
 export interface Session {
-  id: number;
+  id: string;
   name: string;
   description: string | null;
   scheduled_at: string;       // ISO
@@ -47,10 +47,10 @@ export interface Session {
   is_live_enabled: boolean;
   session_category: string | null;
   sport_type: string | null;
-  city_id: number | null;
-  coach_id: number | null;
-  activity_id: number | null;
-  tribe_id: number | null;
+  city_id: string | null;
+  coach_id: string | null;
+  activity_id: string | null;
+  tribe_id: string | null;
   intro_video_url: string | null;
   sponsor_name: string | null;
   sponsor_logo_url: string | null;
@@ -74,11 +74,11 @@ export interface Session {
 }
 
 export interface ListSessionsParams {
-  city_id?: number;
+  city_id?: string;
   tribe?: string;
-  tribe_id?: number;
+  tribe_id?: string;
   activity?: string;
-  activity_id?: number;
+  activity_id?: string;
   status?: 'upcoming' | 'completed' | 'cancelled';
   limit?: number;
   offset?: number;
@@ -91,7 +91,7 @@ export function listSessions(params: ListSessionsParams = {}): Promise<{ session
   return api.get(`/sessions${qs ? `?${qs}` : ''}`);
 }
 
-export function getSession(id: number): Promise<{ session: Session }> {
+export function getSession(id: string | number): Promise<{ session: Session }> {
   return api.get(`/sessions/${id}`);
 }
 

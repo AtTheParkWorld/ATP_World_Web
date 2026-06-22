@@ -8,7 +8,7 @@
 import { api } from './client';
 
 export interface Achievement {
-  id: number;
+  id: string | number;
   name: string;
   description: string | null;
   icon: string | null;

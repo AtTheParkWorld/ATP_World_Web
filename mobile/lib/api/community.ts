@@ -8,7 +8,7 @@
 import { api } from './client';
 
 export interface Post {
-  id: number;
+  id: string | number;
   content: string;
   media: Array<{ url: string; type?: string }> | null;
   likes_count: number;
@@ -28,8 +28,8 @@ export interface Post {
 }
 
 export interface Comment {
-  id: number;
-  post_id: number;
+  id: string | number;
+  post_id: string | number;
   member_id: string;
   content: string;
   created_at: string;

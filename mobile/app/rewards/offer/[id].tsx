@@ -16,10 +16,10 @@ import { colors, fontFamily } from '@/lib/theme/tokens';
 
 export default function OfferDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const offerId = Number(id);
+  const offerId = String(id || '');
   const qc = useQueryClient();
 
-  const offerQ   = useQuery({ queryKey: ['offer', offerId], queryFn: () => getOffer(offerId).then(r => r.offer), enabled: Number.isFinite(offerId) });
+  const offerQ   = useQuery({ queryKey: ['offer', offerId], queryFn: () => getOffer(offerId).then(r => r.offer), enabled: !!offerId });
   const balanceQ = useQuery({ queryKey: ['balance'],        queryFn: () => getBalance() });
 
   const [issued, setIssued] = useState<Redemption | null>(null);

@@ -144,8 +144,8 @@ function CoachesView() {
           className="flex-1 bg-atp-dark rounded-atp-lg border border-white/5 p-4 active:opacity-70"
         >
           <View className="w-full aspect-square rounded-atp bg-atp-dark-3 mb-3 overflow-hidden items-center justify-center">
-            {item.avatar_url ? (
-              <Image source={{ uri: item.avatar_url }} className="w-full h-full" resizeMode="cover" />
+            {item.profile?.profile_photo_url ? (
+              <Image source={{ uri: item.profile.profile_photo_url }} className="w-full h-full" resizeMode="cover" />
             ) : (
               <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.muted }} className="text-3xl">
                 {item.first_name[0]}{item.last_name[0]}
@@ -153,16 +153,21 @@ function CoachesView() {
             )}
           </View>
           <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm" numberOfLines={1}>
-            {item.first_name} {item.last_name}
+            {item.display_name || `${item.first_name} ${item.last_name}`}
           </Text>
-          {!!item.city_name && (
+          {!!item.city && (
             <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-0.5">
-              📍 {item.city_name}
+              📍 {item.city}
             </Text>
           )}
-          {item.rating_avg != null && item.rating_count > 0 && (
+          {item.stats?.rating_avg > 0 && item.stats?.rating_count > 0 && (
             <Text style={{ fontFamily: fontFamily.body, color: colors.warning }} className="text-xs mt-1">
-              ★ {item.rating_avg.toFixed(1)} · {item.rating_count}
+              ★ {item.stats.rating_avg.toFixed(1)} · {item.stats.rating_count}
+            </Text>
+          )}
+          {!!item.profile?.tagline && (
+            <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-xs mt-0.5" numberOfLines={2}>
+              {item.profile.tagline}
             </Text>
           )}
         </Pressable>

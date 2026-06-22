@@ -8,7 +8,7 @@
 import { api } from './client';
 
 export interface MemberProfile {
-  id: number;
+  id: string | number;
   member_number: string;
   first_name: string;
   last_name: string;
@@ -19,7 +19,7 @@ export interface MemberProfile {
   date_of_birth: string | null;
   gender: string | null;
   nationality: string | null;
-  city_id: number | null;
+  city_id: string | null;
   city_name?: string | null;
   subscription_type: string | null;
   sports_preferences?: string[] | null;
