@@ -256,21 +256,31 @@ export default function MemberProfile() {
                   }
                   if (relationship.status === 'accepted') {
                     return (
-                      <Pressable
-                        onPress={() => Alert.alert(
-                          'Unfriend?',
-                          'You can send a fresh request later if you change your mind.',
-                          [
-                            { text: 'Keep', style: 'cancel' },
-                            { text: 'Unfriend', style: 'destructive', onPress: () => unfriendMu.mutate() },
-                          ]
-                        )}
-                        className="bg-atp-dark-3 rounded-atp py-3 items-center active:opacity-80"
-                      >
-                        <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="uppercase tracking-widest text-sm">
-                          Friends ✓ · Unfriend
-                        </Text>
-                      </Pressable>
+                      <View className="gap-2">
+                        <Pressable
+                          onPress={() => router.push(`/messages/${memberId}`)}
+                          className="bg-atp-green rounded-atp py-3 items-center active:opacity-80"
+                        >
+                          <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.black }} className="uppercase tracking-widest text-sm">
+                            💬 Message
+                          </Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => Alert.alert(
+                            'Unfriend?',
+                            'You can send a fresh request later if you change your mind.',
+                            [
+                              { text: 'Keep', style: 'cancel' },
+                              { text: 'Unfriend', style: 'destructive', onPress: () => unfriendMu.mutate() },
+                            ]
+                          )}
+                          className="bg-atp-dark-3 rounded-atp py-3 items-center active:opacity-80"
+                        >
+                          <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="uppercase tracking-widest text-sm">
+                            Friends ✓ · Unfriend
+                          </Text>
+                        </Pressable>
+                      </View>
                     );
                   }
                   return null;

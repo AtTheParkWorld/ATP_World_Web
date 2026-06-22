@@ -151,8 +151,13 @@ export default function Home() {
           </Text>
           <View className="flex-row gap-3">
             <QuickAction label="Find session" emoji="📍" onPress={() => router.push('/(tabs)/sessions')} />
-            <QuickAction label="My QR"        emoji="🎫" onPress={() => router.push('/(tabs)/profile')} />
-            <QuickAction label="Rewards"      emoji="🏆" onPress={() => router.push('/(tabs)/rewards')} />
+            <QuickAction label="Challenges"   emoji="🎯" onPress={() => router.push('/challenges')} />
+            <QuickAction label="Leaderboard"  emoji="🏆" onPress={() => router.push('/leaderboard')} />
+          </View>
+          <View className="flex-row gap-3 mt-3">
+            <QuickAction label="Messages"     emoji="💬" onPress={() => router.push('/messages')} />
+            <QuickAction label="Stories"      emoji="📖" onPress={() => router.push('/blog')} />
+            <QuickAction label="Rewards"      emoji="🎁" onPress={() => router.push('/(tabs)/rewards')} />
           </View>
         </View>
 

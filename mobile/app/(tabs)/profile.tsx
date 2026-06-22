@@ -149,12 +149,16 @@ export default function Profile() {
 
         {/* Quick links */}
         <View className="px-5 mt-7 gap-2">
-          <LinkRow label="Edit profile"  emoji="✏️" onPress={() => router.push('/profile/edit')} />
-          <LinkRow label="Notifications" emoji="🔔" onPress={() => router.push('/profile/notifications')} />
-          <LinkRow label="Privacy"       emoji="🔒" onPress={() => router.push('/profile/privacy')} />
+          <LinkRow label="Leaderboard"    emoji="🏆" onPress={() => router.push('/leaderboard')} />
+          <LinkRow label="Challenges"     emoji="🎯" onPress={() => router.push('/challenges')} />
+          <LinkRow label="Messages"       emoji="💬" onPress={() => router.push('/messages')} />
+          <LinkRow label="Stories"        emoji="📖" onPress={() => router.push('/blog')} />
+          <LinkRow label="Edit profile"   emoji="✏️" onPress={() => router.push('/profile/edit')} />
+          <LinkRow label="Notifications"  emoji="🔔" onPress={() => router.push('/profile/notifications')} />
+          <LinkRow label="Privacy"        emoji="🔒" onPress={() => router.push('/profile/privacy')} />
           <LinkRow label="Blocked members" emoji="🚫" onPress={() => router.push('/profile/blocked')} />
-          <LinkRow label="Help & support" emoji="💬" onPress={() => router.push('/profile/help')} />
-          <LinkRow label="About"         emoji="ℹ️" onPress={() => router.push('/profile/about')} />
+          <LinkRow label="Help & support"  emoji="🆘" onPress={() => router.push('/profile/help')} />
+          <LinkRow label="About"           emoji="ℹ️" onPress={() => router.push('/profile/about')} />
         </View>
 
         {/* Sign out */}
