@@ -20,6 +20,7 @@ import { getProfile, getStats, getStreak } from '@/lib/api/members';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { StreakBadge } from '@/lib/components/StreakBadge';
+import { absUrl } from '@/lib/utils/imageUrl';
 
 export default function Profile() {
   const qc = useQueryClient();
@@ -67,7 +68,7 @@ export default function Profile() {
             style={{ borderWidth: 2, borderColor: tColor }}
           >
             {m?.avatar_url
-              ? <Image source={{ uri: m.avatar_url }} className="w-28 h-28" />
+              ? <Image source={{ uri: absUrl(m.avatar_url)! }} className="w-28 h-28" />
               : <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.muted }} className="text-3xl">
                   {(m?.first_name || '?')[0]}{(m?.last_name || '')[0]}
                 </Text>}

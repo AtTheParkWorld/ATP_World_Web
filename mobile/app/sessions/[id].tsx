@@ -18,6 +18,7 @@ import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Text, View } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import QRCode from 'react-native-qrcode-svg';
 import { getSession } from '@/lib/api/sessions';
 import { createBooking, cancelBooking, listMyBookings, type PaymentOptions, type BookingRecord } from '@/lib/api/bookings';
 import { ApiError } from '@/lib/api/client';
@@ -238,6 +239,33 @@ export default function SessionDetail() {
             <Text style={{ fontFamily: fontFamily.body, color: colors.white }} className="text-base">
               {s.sponsor_name}
             </Text>
+          </View>
+        )}
+
+        {/* Check-in QR — only when the member has an active booking and the
+            backend issued a qr_token (free + paid confirmed bookings get
+            one; waitlist + cancelled don't). Ambassadors scan this at
+            session start to mark attendance. */}
+        {myBooking && (myBooking.qr_token || myBooking.qr_code) && myBooking.status !== 'cancelled' && (
+          <View className="px-5 mt-6">
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-3">
+              Your check-in QR
+            </Text>
+            <View className="bg-atp-white rounded-atp-lg p-5 items-center">
+              <QRCode
+                value={String(myBooking.qr_token || myBooking.qr_code)}
+                size={200}
+                backgroundColor="white"
+                color="#0a0a0a"
+              />
+              <Text style={{ fontFamily: fontFamily.bodyBold, color: '#0a0a0a' }} className="text-xs uppercase tracking-widest mt-3">
+                Show at check-in
+              </Text>
+              <Text style={{ fontFamily: fontFamily.body, color: '#666' }} className="text-xs mt-1 text-center">
+                An ambassador will scan this to confirm your attendance
+                {s.points_reward ? ` and credit +${s.points_reward} pts` : ''}.
+              </Text>
+            </View>
           </View>
         )}
       </ScrollView>

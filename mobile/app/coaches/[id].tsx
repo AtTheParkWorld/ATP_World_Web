@@ -11,6 +11,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { getCoach } from '@/lib/api/coaches';
 import { colors, fontFamily } from '@/lib/theme/tokens';
+import { absUrl } from '@/lib/utils/imageUrl';
 
 export default function CoachDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -47,7 +48,7 @@ export default function CoachDetail() {
         <View className="items-center pt-3 pb-6 px-5">
           <View className="w-32 h-32 rounded-full bg-atp-dark-3 overflow-hidden items-center justify-center mb-4">
             {profile?.profile_photo_url
-              ? <Image source={{ uri: profile.profile_photo_url }} className="w-32 h-32" />
+              ? <Image source={{ uri: absUrl(profile.profile_photo_url)! }} className="w-32 h-32" />
               : <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.muted }} className="text-4xl">
                   {(c?.first_name || '?')[0]}{(c?.last_name || '')[0]}
                 </Text>}

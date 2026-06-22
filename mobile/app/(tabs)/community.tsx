@@ -23,6 +23,7 @@ import { PostCard } from '@/lib/components/PostCard';
 import { SegmentedControl } from '@/lib/components/SegmentedControl';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { useAuthStore } from '@/lib/stores/auth.store';
+import { absUrl } from '@/lib/utils/imageUrl';
 
 type Tab = 'feed' | 'coaches' | 'friends';
 
@@ -145,7 +146,7 @@ function CoachesView() {
         >
           <View className="w-full aspect-square rounded-atp bg-atp-dark-3 mb-3 overflow-hidden items-center justify-center">
             {item.profile?.profile_photo_url ? (
-              <Image source={{ uri: item.profile.profile_photo_url }} className="w-full h-full" resizeMode="cover" />
+              <Image source={{ uri: absUrl(item.profile.profile_photo_url)! }} className="w-full h-full" resizeMode="cover" />
             ) : (
               <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.muted }} className="text-3xl">
                 {item.first_name[0]}{item.last_name[0]}
@@ -242,7 +243,7 @@ function FriendsView() {
                 >
                   <View className="w-10 h-10 rounded-full bg-atp-dark-3 items-center justify-center overflow-hidden">
                     {m.avatar_url
-                      ? <Image source={{ uri: m.avatar_url }} className="w-10 h-10" />
+                      ? <Image source={{ uri: absUrl(m.avatar_url)! }} className="w-10 h-10" />
                       : <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }}>{m.first_name[0]}</Text>}
                   </View>
                   <View className="flex-1">
@@ -355,7 +356,7 @@ function FriendAvatar({ friend }: { friend: { avatar_url: string | null; first_n
       style={{ borderWidth: 1, borderColor: tribeColor(friend.tribe_slug) }}
     >
       {friend.avatar_url
-        ? <Image source={{ uri: friend.avatar_url }} className="w-11 h-11" />
+        ? <Image source={{ uri: absUrl(friend.avatar_url)! }} className="w-11 h-11" />
         : <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }}>{friend.first_name[0]}</Text>}
     </View>
   );

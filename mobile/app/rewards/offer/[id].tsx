@@ -13,6 +13,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getOffer, getBalance, redeemOffer, type Redemption } from '@/lib/api/rewards';
 import { colors, fontFamily } from '@/lib/theme/tokens';
+import { absUrl } from '@/lib/utils/imageUrl';
 
 export default function OfferDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -52,7 +53,7 @@ export default function OfferDetail() {
         </View>
 
         {!!o?.image_url && (
-          <Image source={{ uri: o.image_url }} style={{ width: '100%', aspectRatio: 16 / 9, backgroundColor: colors.dark2 }} resizeMode="cover" />
+          <Image source={{ uri: absUrl(o.image_url)! }} style={{ width: '100%', aspectRatio: 16 / 9, backgroundColor: colors.dark2 }} resizeMode="cover" />
         )}
 
         <View className="px-5 mt-4">

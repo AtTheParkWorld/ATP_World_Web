@@ -9,6 +9,7 @@ import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { listBlocked, unblockMember } from '@/lib/api/friends';
 import { colors, fontFamily } from '@/lib/theme/tokens';
+import { absUrl } from '@/lib/utils/imageUrl';
 
 export default function BlockedMembers() {
   const qc = useQueryClient();
@@ -39,7 +40,7 @@ export default function BlockedMembers() {
           <View className="mx-5 mt-3 bg-atp-dark border border-white/5 rounded-atp p-3 flex-row items-center gap-3">
             <View className="w-10 h-10 rounded-full bg-atp-dark-3 items-center justify-center overflow-hidden">
               {item.avatar_url
-                ? <Image source={{ uri: item.avatar_url }} className="w-10 h-10" />
+                ? <Image source={{ uri: absUrl(item.avatar_url)! }} className="w-10 h-10" />
                 : <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }}>{item.first_name[0]}</Text>}
             </View>
             <View className="flex-1">

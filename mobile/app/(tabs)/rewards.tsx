@@ -15,6 +15,7 @@ import { getBalance, getPointsHistory, listOffers, listMyRedemptions } from '@/l
 import { getMyAchievements } from '@/lib/api/achievements';
 import { SegmentedControl } from '@/lib/components/SegmentedControl';
 import { useAuthStore } from '@/lib/stores/auth.store';
+import { absUrl } from '@/lib/utils/imageUrl';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 
 type Tab = 'wallet' | 'offers' | 'badges';
@@ -246,7 +247,7 @@ function OffersView() {
         >
           {!!item.image_url && (
             <Image
-              source={{ uri: item.image_url }}
+              source={{ uri: absUrl(item.image_url)! }}
               className="w-full"
               style={{ aspectRatio: 16 / 9, backgroundColor: colors.dark2 }}
               resizeMode="cover"

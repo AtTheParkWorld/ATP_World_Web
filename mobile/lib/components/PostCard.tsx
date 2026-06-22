@@ -13,6 +13,7 @@ import { Image, Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import type { Post } from '@/lib/api/community';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
+import { absUrl } from '@/lib/utils/imageUrl';
 
 function timeAgo(iso: string): string {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -48,7 +49,7 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
           style={{ borderWidth: 1, borderColor: tColor }}
         >
           {post.avatar_url ? (
-            <Image source={{ uri: post.avatar_url }} className="w-10 h-10" />
+            <Image source={{ uri: absUrl(post.avatar_url)! }} className="w-10 h-10" />
           ) : (
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">
               {(post.first_name || '?')[0]}
@@ -94,7 +95,7 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
       {/* Media (first only) */}
       {!!post.media && post.media.length > 0 && (
         <Image
-          source={{ uri: post.media[0].url }}
+          source={{ uri: absUrl(post.media[0].url)! }}
           className="w-full mt-3 rounded-atp"
           style={{ aspectRatio: 4 / 3 }}
           resizeMode="cover"

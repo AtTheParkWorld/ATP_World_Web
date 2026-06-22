@@ -27,6 +27,7 @@ import {
 } from '@/lib/api/friends';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { useAuthStore } from '@/lib/stores/auth.store';
+import { absUrl } from '@/lib/utils/imageUrl';
 
 interface PublicMember {
   id: string;
@@ -175,7 +176,7 @@ export default function MemberProfile() {
               style={{ borderWidth: 2, borderColor: tColor }}
             >
               {m?.avatar_url
-                ? <Image source={{ uri: m.avatar_url }} className="w-24 h-24" />
+                ? <Image source={{ uri: absUrl(m.avatar_url)! }} className="w-24 h-24" />
                 : <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.muted }} className="text-3xl">
                     {(m?.first_name || '?')[0]}{(m?.last_name || '')[0]}
                   </Text>}
