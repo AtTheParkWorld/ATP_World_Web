@@ -36,7 +36,9 @@ export default function Register() {
         email:      email.trim().toLowerCase(),
         password:   pass,
       });
-      router.replace('/(tabs)/home');
+      // Send brand-new members through onboarding so they pick a tribe
+      // + city + opt into notifications, plus earn the +200 pts bonus.
+      router.replace('/onboarding/welcome');
     } catch (err) {
       if (err instanceof ApiError && err.status === 409) {
         setError('An account with that email already exists. Try logging in.');
