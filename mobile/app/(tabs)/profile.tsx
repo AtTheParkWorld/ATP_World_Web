@@ -162,6 +162,27 @@ export default function Profile() {
           </View>
         )}
 
+        {/* Be a Supporter */}
+        <View className="px-5 mt-7">
+          <Pressable
+            onPress={() => router.push('/supporter')}
+            className="bg-atp-green/10 border border-atp-green/40 rounded-atp-lg p-4 active:opacity-80 flex-row items-center"
+          >
+            <Text style={{ fontSize: 24, marginRight: 12 }}>💚</Text>
+            <View className="flex-1">
+              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-sm uppercase tracking-widest">
+                {m?.subscription_type === 'premium' || m?.subscription_type === 'premium_plus' ? 'You\'re a supporter' : 'Be a supporter'}
+              </Text>
+              <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-xs mt-1">
+                {m?.subscription_type === 'premium' || m?.subscription_type === 'premium_plus'
+                  ? 'Manage your plan + perks.'
+                  : 'Keep ATP free for everyone. Unlock tribe-only sessions + live streams.'}
+              </Text>
+            </View>
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }}>›</Text>
+          </Pressable>
+        </View>
+
         {/* Quick links */}
         <View className="px-5 mt-7 gap-2">
           <LinkRow label="Leaderboard"    emoji="🏆" onPress={() => router.push('/leaderboard')} />
