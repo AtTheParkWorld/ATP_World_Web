@@ -147,6 +147,21 @@ export default function Profile() {
           </View>
         )}
 
+        {/* Role-specific tools (Ambassador / Coach) */}
+        {(m?.is_ambassador || (m as any)?.is_coach) && (
+          <View className="px-5 mt-7 gap-2">
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-1">
+              {(m?.is_ambassador && (m as any)?.is_coach) ? 'Ambassador + Coach tools' : m?.is_ambassador ? 'Ambassador tools' : 'Coach tools'}
+            </Text>
+            {m?.is_ambassador && (
+              <LinkRow label="Ambassador dashboard" emoji="🎫" onPress={() => router.push('/ambassador')} />
+            )}
+            {(m as any)?.is_coach && (
+              <LinkRow label="Coach dashboard" emoji="🏋️" onPress={() => router.push('/coach')} />
+            )}
+          </View>
+        )}
+
         {/* Quick links */}
         <View className="px-5 mt-7 gap-2">
           <LinkRow label="Leaderboard"    emoji="🏆" onPress={() => router.push('/leaderboard')} />
