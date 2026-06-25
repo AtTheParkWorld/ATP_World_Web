@@ -6,6 +6,7 @@
     "orientation": "portrait",
     "scheme": "atp",
     "userInterfaceStyle": "dark",
+    "icon": "./assets/images/icon.png",
     "splash": {
       "backgroundColor": "#0a0a0a"
     },
