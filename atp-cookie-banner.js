@@ -55,7 +55,7 @@
     div.style.cssText = [
       'position:fixed','bottom:14px','left:14px','right:14px',
       'max-width:920px','margin:0 auto','z-index:99998',
-      'background:#0a0a0a','border:1px solid rgba(122,194,49,.35)',
+      'background:#0a0a0a','border:1px solid rgba(168,255,0,.35)',
       'border-radius:12px','padding:18px 20px',
       'box-shadow:0 8px 30px rgba(0,0,0,.5)',
       'font-family:Inter,system-ui,-apple-system,sans-serif',
@@ -64,12 +64,12 @@
     ].join(';');
     div.innerHTML =
       '<div style="flex:1;min-width:260px">' +
-        '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:18px;letter-spacing:.04em;color:#7AC231;margin-bottom:4px">Cookies + your data</div>' +
-        'We use essential cookies to keep you signed in and analytics cookies to make ATP better. You can change your mind anytime in <a href="/privacy.html" style="color:#7AC231;text-decoration:underline">Privacy</a>.' +
+        '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:18px;letter-spacing:.04em;color:#A8FF00;margin-bottom:4px">Cookies + your data</div>' +
+        'We use essential cookies to keep you signed in and analytics cookies to make ATP better. You can change your mind anytime in <a href="/privacy.html" style="color:#A8FF00;text-decoration:underline">Privacy</a>.' +
       '</div>' +
       '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
         '<button id="atpCookieEssential" style="background:transparent;border:1px solid rgba(255,255,255,.16);color:#ccc;padding:10px 16px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">Essential only</button>' +
-        '<button id="atpCookieAll" style="background:#7AC231;border:none;color:#0a0a0a;padding:10px 18px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:700">Accept all</button>' +
+        '<button id="atpCookieAll" style="background:#A8FF00;border:none;color:#0a0a0a;padding:10px 18px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:700">Accept all</button>' +
       '</div>';
     document.body.appendChild(div);
     document.getElementById('atpCookieEssential').addEventListener('click', function() { window.ATPConsent.set('essential'); });

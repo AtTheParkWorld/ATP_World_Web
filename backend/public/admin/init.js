@@ -100,7 +100,7 @@ async function loadFailedShopifyRedemptions() {
     rows.forEach(function(r){
       html += '<tr style="border-bottom:1px solid #111">' +
         '<td style="padding:10px 12px;color:#fff">' + _atpEscapeHtml((r.first_name||'') + ' ' + (r.last_name||'')) + '<br><span style="color:#666;font-size:11px">' + _atpEscapeHtml(r.email||'') + '</span></td>' +
-        '<td style="padding:10px 12px;font-family:monospace;color:#7AC231">' + _atpEscapeHtml(r.discount_code||'') + '</td>' +
+        '<td style="padding:10px 12px;font-family:monospace;color:#A8FF00">' + _atpEscapeHtml(r.discount_code||'') + '</td>' +
         '<td style="padding:10px 12px;color:#fff">' + _atpEscapeHtml(r.points_spent) + '</td>' +
         '<td style="padding:10px 12px;color:#fff">' + _atpEscapeHtml(r.amount_value) + ' ' + _atpEscapeHtml(r.currency_code||'AED') + '</td>' +
         '<td style="padding:10px 12px;color:#f87171;font-size:11px;max-width:240px;word-wrap:break-word">' + _atpEscapeHtml(r.shopify_error||'(no error logged)') + '</td>' +
@@ -152,7 +152,7 @@ async function loadNewsletterAdmin() {
       statsHost.textContent = rows.length + ' subscriber' + (rows.length === 1 ? '' : 's') + ' total. CSV export includes email + opt-in date.';
     }
     if (!rows.length) {
-      listHost.innerHTML = '<div style="padding:18px;color:#888;text-align:center;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px">No newsletter subscribers yet — the homepage signup form posts to <code style="color:#7AC231">/api/newsletter/subscribe</code>.</div>';
+      listHost.innerHTML = '<div style="padding:18px;color:#888;text-align:center;background:#0d0d0d;border:1px solid #1a1a1a;border-radius:8px">No newsletter subscribers yet — the homepage signup form posts to <code style="color:#A8FF00">/api/newsletter/subscribe</code>.</div>';
       return;
     }
     var html = '<table class="admin-table" style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="text-align:left;color:#888;border-bottom:1px solid #1a1a1a">' +
@@ -167,7 +167,7 @@ async function loadNewsletterAdmin() {
         '<td style="padding:10px 12px;color:#fff">' + _atpEscapeHtml(r.email||'') + '</td>' +
         '<td style="padding:10px 12px;color:#aaa">' + _atpEscapeHtml(when) + '</td>' +
         '<td style="padding:10px 12px;color:#aaa">' + _atpEscapeHtml(r.source||'web') + '</td>' +
-        '<td style="padding:10px 12px;color:' + (r.unsubscribed_at ? '#f87171' : '#7AC231') + '">' +
+        '<td style="padding:10px 12px;color:' + (r.unsubscribed_at ? '#f87171' : '#A8FF00') + '">' +
           (r.unsubscribed_at ? 'Unsubscribed' : 'Active') +
         '</td>' +
         '</tr>';

@@ -34,7 +34,7 @@ export function StreakBadge({ streak, compact }: Props) {
   return (
     <View
       className={`rounded-full self-start flex-row items-center ${compact ? 'px-2.5 py-1' : 'px-3 py-1.5'}`}
-      style={{ backgroundColor: 'rgba(122, 194, 49, 0.12)', borderWidth: 1, borderColor: accent }}
+      style={{ backgroundColor: 'rgba(168, 255, 0, 0.12)', borderWidth: 1, borderColor: accent }}
     >
       <Text style={{ fontFamily: fontFamily.bodyBold, color: accent }} className="text-xs">
         {icon} {streak.current_streak}-day streak

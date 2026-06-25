@@ -154,7 +154,7 @@ async function loadCoachesSection() {
         '</div>'+
         '<div class="coach-body">'+
           '<div class="coach-stars" title="'+rating.toFixed(1)+'/5">'+
-            '<span style="color:#7AC231;font-size:13px">'+stars+'</span>'+
+            '<span style="color:#A8FF00;font-size:13px">'+stars+'</span>'+
             '<span style="font-size:11px;color:#555;margin-left:6px">'+(rating?rating.toFixed(1)+' ('+c.rating_count+')':'No reviews yet')+'</span>'+
           '</div>'+
           '<div class="coach-stat"><span>🎽</span><span>'+sessionCount+' sessions delivered</span></div>'+
@@ -229,7 +229,7 @@ async function openCoachModal(coachId) {
     ].map(function(s, i) {
       var borderR = i < 3 ? 'border-right:1px solid #1a1a1a' : '';
       return '<div style="padding:20px 12px;text-align:center;'+borderR+'">'+
-        '<div style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:#7AC231;line-height:1">'+s.val+'</div>'+
+        '<div style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:#A8FF00;line-height:1">'+s.val+'</div>'+
         '<div style="font-size:10px;color:#555;margin-top:6px;text-transform:uppercase;letter-spacing:.08em;line-height:1.3">'+s.label+'</div>'+
       '</div>';
     }).join('');
@@ -247,7 +247,7 @@ async function openCoachModal(coachId) {
     else { try { specs = JSON.parse(c.specialties||'[]'); } catch(e) {} }
     document.getElementById('coachModalSpecialties').innerHTML = specs.length
       ? '<div style="font-size:12px;color:#555;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">🎯 Specialties</div>' +
-        specs.map(function(s){ return '<span style="display:inline-block;background:rgba(122,194,49,.12);color:#7AC231;border:1px solid rgba(122,194,49,.3);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;margin:3px 3px 3px 0">'+s+'</span>'; }).join('')
+        specs.map(function(s){ return '<span style="display:inline-block;background:rgba(168,255,0,.12);color:#A8FF00;border:1px solid rgba(168,255,0,.3);border-radius:20px;padding:4px 12px;font-size:12px;font-weight:600;margin:3px 3px 3px 0">'+s+'</span>'; }).join('')
       : '';
 
     // Certifications — handle both array and string responses
@@ -256,7 +256,7 @@ async function openCoachModal(coachId) {
     else { try { certs = JSON.parse(c.certifications||'[]'); } catch(e) {} }
     document.getElementById('coachModalCertifications').innerHTML = certs.length
       ? '<div style="font-size:12px;color:#555;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">🏆 Certifications</div>' +
-        certs.map(function(s){ return '<div style="display:flex;align-items:center;gap:8px;background:#111;border:1px solid #1a1a1a;border-radius:8px;padding:8px 12px;margin-bottom:6px"><span style="color:#7AC231;font-size:14px">✓</span><span style="font-size:12px;color:#ccc">'+s+'</span></div>'; }).join('')
+        certs.map(function(s){ return '<div style="display:flex;align-items:center;gap:8px;background:#111;border:1px solid #1a1a1a;border-radius:8px;padding:8px 12px;margin-bottom:6px"><span style="color:#A8FF00;font-size:14px">✓</span><span style="font-size:12px;color:#ccc">'+s+'</span></div>'; }).join('')
       : '';
 
     // Languages — handle both array and string responses
@@ -276,7 +276,7 @@ async function openCoachModal(coachId) {
           var dt = s.scheduled_at ? new Date(s.scheduled_at).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit'}) : '—';
           return '<div style="background:#0f0f0f;border-radius:10px;padding:12px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;border:1px solid #1a1a1a">' +
             '<div><div style="font-size:13px;font-weight:700;color:#fff">'+s.name+'</div><div style="font-size:11px;color:#666;margin-top:3px">'+dt+'</div></div>' +
-            '<div style="text-align:right"><div style="font-size:13px;font-weight:800;color:#7AC231">'+s.registered+' / '+s.capacity+'</div><div style="font-size:10px;color:#555">booked</div></div>' +
+            '<div style="text-align:right"><div style="font-size:13px;font-weight:800;color:#A8FF00">'+s.registered+' / '+s.capacity+'</div><div style="font-size:10px;color:#555">booked</div></div>' +
           '</div>';
         }).join('')
       : '';
@@ -293,7 +293,7 @@ async function openCoachModal(coachId) {
           return '<div style="background:#0f0f0f;border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid #1a1a1a">' +
             '<div style="display:flex;justify-content:space-between;margin-bottom:8px;align-items:center">' +
               '<div style="display:flex;align-items:center;gap:8px">' +
-                '<div style="width:32px;height:32px;border-radius:50%;background:#1a2a0a;color:#7AC231;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800">'+initials+'</div>' +
+                '<div style="width:32px;height:32px;border-radius:50%;background:#1a2a0a;color:#A8FF00;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800">'+initials+'</div>' +
                 '<div><div style="font-weight:700;font-size:12px;color:#fff">'+f.first_name+' '+f.last_name+'</div><div style="font-size:10px;color:#555">'+dt+'</div></div>' +
               '</div>' +
               '<div style="font-size:14px">'+st+'</div>' +
@@ -356,7 +356,7 @@ async function submitCoachFeedback() {
     var d = await res.json();
     if (d.success) {
       msg.textContent = '✅ Thank you for your feedback!';
-      msg.style.color = '#7AC231';
+      msg.style.color = '#A8FF00';
       document.getElementById('feedbackComment').value = '';
       window._feedbackRating = 0;
       setTimeout(function() { openCoachModal(CURRENT_COACH_ID); }, 1200);
@@ -413,7 +413,7 @@ async function saveCoachProfile() {
     var d = await res.json();
     if (d.success) {
       msgEl.textContent = '✅ Profile saved!';
-      msgEl.style.cssText = 'display:block;background:#0d1a0a;color:#7AC231;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px';
+      msgEl.style.cssText = 'display:block;background:#0d1a0a;color:#A8FF00;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px';
       setTimeout(function() {
         document.getElementById('coachEditorModal').style.display = 'none';
         loadCoachesSection();

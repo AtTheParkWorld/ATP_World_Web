@@ -5,7 +5,7 @@
  * ════════════════════════════════════════════════════════════════ */
 
 :root{
-  --green:#7AC231;--green-dark:#5a9a1f;
+  --green:#A8FF00;--green-dark:#8FD800;
   --black:#0a0a0a;--dark:#111111;--dark2:#1a1a1a;--dark3:#222222;
   --muted:#888888;--light:#aaaaaa;--white:#ffffff;
   --ff-display:'Barlow Condensed',sans-serif;--ff-body:'DM Sans',sans-serif;
@@ -22,8 +22,8 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
 .admin-login-title{font-family:var(--ff-display);font-size:28px;font-weight:900;text-transform:uppercase;color:#fff;margin-bottom:6px}
 .admin-login-sub{font-size:13px;color:#555;margin-bottom:28px}
 .admin-login-input{width:100%;background:#111;border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:13px 16px;color:#fff;font-size:14px;font-family:var(--ff-body);margin-bottom:12px;transition:border-color .2s}
-.admin-login-input:focus{outline:none;border-color:rgba(122,194,49,.4)}
-.admin-login-btn{width:100%;padding:13px;background:#7AC231;color:#fff;font-size:15px;font-weight:800;border:none;border-radius:10px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:background .2s}
+.admin-login-input:focus{outline:none;border-color:rgba(168,255,0,.4)}
+.admin-login-btn{width:100%;padding:13px;background:#A8FF00;color:#fff;font-size:15px;font-weight:800;border:none;border-radius:10px;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;transition:background .2s}
 .admin-login-btn:hover{background:#68a82a}
 .admin-login-err{font-size:13px;color:#ef4444;margin-top:8px;display:none}
 
@@ -36,7 +36,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
 .admin-nav{flex:1;padding:16px 0}
 .admin-nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;font-size:13px;font-weight:500;color:#555;cursor:pointer;transition:all .2s;border-left:2px solid transparent}
 .admin-nav-item:hover{color:#fff;background:rgba(255,255,255,.03)}
-.admin-nav-item.active{color:#fff;border-left-color:#7AC231;background:rgba(122,194,49,.05)}
+.admin-nav-item.active{color:#fff;border-left-color:#A8FF00;background:rgba(168,255,0,.05)}
 .admin-nav-item svg{flex-shrink:0;opacity:.7}
 .admin-nav-item.active svg{opacity:1}
 .admin-logout{padding:16px 20px;border-top:1px solid rgba(255,255,255,.07);font-size:12px;color:#444;cursor:pointer;transition:color .2s}
@@ -49,7 +49,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
 /* STATS ROW */
 .admin-stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:28px}
 .admin-stat-card{background:#0d0d0d;border-radius:14px;border:1px solid rgba(255,255,255,.07);padding:20px}
-.admin-stat-num{font-family:var(--ff-display);font-size:36px;font-weight:900;color:#7AC231;line-height:1;margin-bottom:4px}
+.admin-stat-num{font-family:var(--ff-display);font-size:36px;font-weight:900;color:#A8FF00;line-height:1;margin-bottom:4px}
 .admin-stat-label{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#444}
 
 /* SECTIONS */
@@ -74,14 +74,14 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
 .toggle input{opacity:0;width:0;height:0;position:absolute}
 .toggle-slider{position:absolute;inset:0;background:#1e1e1e;border-radius:24px;cursor:pointer;transition:background .2s;border:1px solid rgba(255,255,255,.1)}
 .toggle-slider::before{content:'';position:absolute;width:18px;height:18px;left:2px;top:2px;background:#555;border-radius:50%;transition:transform .2s,background .2s}
-.toggle input:checked+.toggle-slider{background:rgba(122,194,49,.2);border-color:rgba(122,194,49,.4)}
-.toggle input:checked+.toggle-slider::before{transform:translateX(20px);background:#7AC231}
+.toggle input:checked+.toggle-slider{background:rgba(168,255,0,.2);border-color:rgba(168,255,0,.4)}
+.toggle input:checked+.toggle-slider::before{transform:translateX(20px);background:#A8FF00}
 .toggle-label{font-size:12px;font-weight:600;color:#555}
-.toggle input:checked~.toggle-label{color:#7AC231}
+.toggle input:checked~.toggle-label{color:#A8FF00}
 
 /* BADGES */
 .badge{font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 9px;border-radius:20px}
-.badge-green{background:rgba(122,194,49,.1);color:#7AC231;border:1px solid rgba(122,194,49,.2)}
+.badge-green{background:rgba(168,255,0,.1);color:#A8FF00;border:1px solid rgba(168,255,0,.2)}
 .badge-gold{background:rgba(255,196,0,.1);color:#ffc400;border:1px solid rgba(255,196,0,.2)}
 .badge-red{background:rgba(239,68,68,.1);color:#ef4444;border:1px solid rgba(239,68,68,.2)}
 .badge-grey{background:rgba(255,255,255,.05);color:#555;border:1px solid rgba(255,255,255,.08)}
@@ -100,13 +100,13 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
 .admin-form-group.full{grid-column:1/-1}
 .admin-form-label{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#444}
 .admin-form-input,.admin-form-select{background:#111;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:10px 13px;color:#fff;font-size:13px;font-family:var(--ff-body);width:100%;transition:border-color .2s}
-.admin-form-input:focus,.admin-form-select:focus{outline:none;border-color:rgba(122,194,49,.4)}
+.admin-form-input:focus,.admin-form-select:focus{outline:none;border-color:rgba(168,255,0,.4)}
 /* Date inputs (Theme 14) — make the native calendar picker indicator
    high-contrast so admins see exactly where to click. Webkit only —
    Firefox uses its own widget that's already visible enough. */
 .atp-date-input{position:relative}
 .atp-date-input::-webkit-calendar-picker-indicator{filter:invert(1);opacity:.85;cursor:pointer;padding:4px;margin-left:6px}
-.atp-date-input::-webkit-calendar-picker-indicator:hover{opacity:1;background:rgba(122,194,49,.15);border-radius:4px}
+.atp-date-input::-webkit-calendar-picker-indicator:hover{opacity:1;background:rgba(168,255,0,.15);border-radius:4px}
 .admin-form-select option{background:#111}
 
 /* SESSIONS VIEW */
@@ -114,12 +114,12 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
 .session-attendance-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
 .session-attendance-name{font-size:15px;font-weight:700;color:#fff}
 .session-attendance-bar{height:6px;background:rgba(255,255,255,.06);border-radius:4px;overflow:hidden}
-.session-attendance-fill{height:100%;background:#7AC231;border-radius:4px;transition:width .6s}
+.session-attendance-fill{height:100%;background:#A8FF00;border-radius:4px;transition:width .6s}
 
 /* TOAST */
 .admin-toast{position:fixed;bottom:24px;right:24px;background:#111;border:1px solid rgba(255,255,255,.1);color:#fff;padding:12px 18px;border-radius:10px;font-size:13px;font-weight:600;z-index:200;transform:translateY(80px);transition:transform .3s;max-width:300px}
 .admin-toast.show{transform:translateY(0)}
-.admin-toast.success{border-color:rgba(122,194,49,.4);color:#7AC231}
+.admin-toast.success{border-color:rgba(168,255,0,.4);color:#A8FF00}
 
 /* ── Session category selector ─────── */
 .session-cat-btn{
@@ -128,8 +128,8 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
   padding:14px 10px;text-align:center;cursor:pointer;transition:all .2s;
   user-select:none;
 }
-.session-cat-btn:hover{border-color:#7AC231;background:#0d1a0a}
-.session-cat-btn.active{border-color:#7AC231;background:#0d1a0a;box-shadow:0 0 12px rgba(122,194,49,.2)}
+.session-cat-btn:hover{border-color:#A8FF00;background:#0d1a0a}
+.session-cat-btn.active{border-color:#A8FF00;background:#0d1a0a;box-shadow:0 0 12px rgba(168,255,0,.2)}
 
 /* ── Day selector buttons ────────────── */
 .day-check-btn{
@@ -138,7 +138,7 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
   padding:7px 14px;cursor:pointer;font-size:13px;font-weight:600;
   color:#888;transition:all .2s;user-select:none;
 }
-.day-check-btn:has(input:checked){border-color:#7AC231;background:#0d1a0a;color:#7AC231}
+.day-check-btn:has(input:checked){border-color:#A8FF00;background:#0d1a0a;color:#A8FF00}
 .day-check-btn input{display:none}
 
 /* ── Court card ─────────────────────── */
@@ -147,26 +147,26 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
   padding:14px;margin-bottom:10px;
 }
 .court-card-header{
-  font-weight:700;font-size:13px;color:#7AC231;margin-bottom:10px;
+  font-weight:700;font-size:13px;color:#A8FF00;margin-bottom:10px;
 }
 
 /* ── Coaches grid ───────────────────── */
 .coaches-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:18px;padding:4px 0}
 .coach-card{background:#0d0d0d;border:1px solid #1a1a1a;border-radius:16px;overflow:hidden;transition:all .25s;cursor:pointer}
-.coach-card:hover{border-color:#7AC231;transform:translateY(-2px);box-shadow:0 8px 32px rgba(122,194,49,.1)}
+.coach-card:hover{border-color:#A8FF00;transform:translateY(-2px);box-shadow:0 8px 32px rgba(168,255,0,.1)}
 .coach-card-hero{background:linear-gradient(135deg,#0d1a0a 0%,#1a2a0a 100%);padding:20px;display:flex;align-items:center;gap:14px}
-.coach-avatar{width:56px;height:56px;border-radius:50%;background:#7AC231;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#0a0a0a;flex-shrink:0;border:2px solid rgba(122,194,49,.3)}
+.coach-avatar{width:56px;height:56px;border-radius:50%;background:#A8FF00;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:#0a0a0a;flex-shrink:0;border:2px solid rgba(168,255,0,.3)}
 .coach-name{font-family:var(--ff-display);font-size:15px;font-weight:800;color:#fff}
-.coach-meta{font-size:11px;color:#7AC231;margin-top:2px}
+.coach-meta{font-size:11px;color:#A8FF00;margin-top:2px}
 .coach-body{padding:14px}
 .coach-stars{display:flex;gap:2px;margin:6px 0}
 .coach-stat{display:flex;align-items:center;gap:6px;font-size:11px;color:#555;margin-bottom:4px}
-.coach-feature-badge{background:#7AC231;color:#0a0a0a;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;margin-left:8px}
+.coach-feature-badge{background:#A8FF00;color:#0a0a0a;font-size:10px;font-weight:800;padding:2px 8px;border-radius:20px;margin-left:8px}
 .coach-specialty-tag{display:inline-block;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:20px;padding:3px 10px;font-size:11px;color:#888;margin:2px}
 
 /* ── Analytics KPIs ──────────────────── */
 .analytics-kpi{background:#0d0d0d;border:1px solid #1a1a1a;border-radius:14px;padding:18px;text-align:center}
-.analytics-kpi .kpi-val{font-family:var(--ff-display);font-size:28px;font-weight:900;color:#7AC231}
+.analytics-kpi .kpi-val{font-family:var(--ff-display);font-size:28px;font-weight:900;color:#A8FF00}
 .analytics-kpi .kpi-label{font-size:11px;color:#555;margin-top:4px;text-transform:uppercase;letter-spacing:.08em}
 
 /* ── Challenge badge ─────────────────── */
@@ -185,26 +185,26 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
 .challenge-title{font-family:var(--ff-display);font-size:15px;font-weight:800;color:#fff;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .challenge-meta{font-size:11px;color:#555}
 .challenge-progress-bar{height:4px;background:#1a1a1a;border-radius:2px;margin-top:8px;overflow:hidden}
-.challenge-progress-fill{height:100%;background:#7AC231;border-radius:2px;transition:width .5s}
+.challenge-progress-fill{height:100%;background:#A8FF00;border-radius:2px;transition:width .5s}
 .pub-badge{padding:3px 10px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.05em}
-.pub-badge.published{background:rgba(122,194,49,.15);color:#7AC231;border:1px solid rgba(122,194,49,.3)}
+.pub-badge.published{background:rgba(168,255,0,.15);color:#A8FF00;border:1px solid rgba(168,255,0,.3)}
 .pub-badge.draft{background:#1a1a1a;color:#555;border:1px solid #2a2a2a}
 
 /* ── Team sports courts ──────────────── */
-.court-level-badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700;background:rgba(122,194,49,.1);color:#7AC231;border:1px solid rgba(122,194,49,.2)}
+.court-level-badge{display:inline-block;padding:2px 10px;border-radius:12px;font-size:11px;font-weight:700;background:rgba(168,255,0,.1);color:#A8FF00;border:1px solid rgba(168,255,0,.2)}
 
 /* ── CMS Editor ──────────────────────── */
 .cms-tab{background:#0d0d0d;border:1px solid #1a1a1a;color:#888;padding:8px 16px;border-radius:8px;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s}
 .cms-tab:hover{border-color:#333;color:#ccc}
-.cms-tab.active{background:#0d1a0a;border-color:#7AC231;color:#7AC231}
+.cms-tab.active{background:#0d1a0a;border-color:#A8FF00;color:#A8FF00}
 .cms-field-group{background:#0d0d0d;border:1px solid #1a1a1a;border-radius:12px;padding:18px;margin-bottom:14px}
-.cms-field-group-title{font-family:var(--ff-display);font-size:14px;font-weight:800;color:#7AC231;margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em}
+.cms-field-group-title{font-family:var(--ff-display);font-size:14px;font-weight:800;color:#A8FF00;margin-bottom:4px;text-transform:uppercase;letter-spacing:.08em}
 .cms-field-group-desc{font-size:11px;color:#555;margin-bottom:14px}
 .cms-field{margin-bottom:12px}
 .cms-field label{font-size:11px;color:#888;display:block;margin-bottom:5px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
 .cms-field input[type=text],.cms-field textarea{width:100%;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:8px;padding:10px 12px;color:#fff;font-size:13px;font-family:inherit;resize:vertical}
 .cms-field textarea{min-height:60px}
-.cms-field input:focus,.cms-field textarea:focus{outline:none;border-color:#7AC231}
+.cms-field input:focus,.cms-field textarea:focus{outline:none;border-color:#A8FF00}
 .cms-image-preview{width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin-top:8px;background:#0a0a0a;border:1px solid #1a1a1a}
 .cms-media-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px}
 .cms-media-card{background:#0d0d0d;border:1px solid #1a1a1a;border-radius:10px;overflow:hidden;position:relative}

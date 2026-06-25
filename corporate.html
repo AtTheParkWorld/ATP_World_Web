@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --green:#7AC231;--green-dark:#5a9a1f;--green-light:#a8e055;
+  --green:#A8FF00;--green-dark:#8FD800;--green-light:#C6FF55;
   --black:#0a0a0a;--dark:#111111;--dark2:#1a1a1a;--dark3:#222222;
   --muted:#888888;--light:#aaaaaa;--white:#ffffff;
   --gold:#f5c042;
@@ -43,14 +43,14 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
 .deck-footer{position:absolute;bottom:0;left:0;right:0;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:linear-gradient(0deg,rgba(0,0,0,.85),transparent);z-index:10;pointer-events:none}
 .deck-nav{display:flex;gap:10px;pointer-events:auto}
 .deck-btn{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--white);transition:background .2s}
-.deck-btn:hover{background:rgba(122,194,49,.18);border-color:rgba(122,194,49,.4)}
+.deck-btn:hover{background:rgba(168,255,0,.18);border-color:rgba(168,255,0,.4)}
 .deck-progress{flex:1;display:flex;justify-content:center;gap:6px;pointer-events:none}
 .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18);transition:all .2s}
 .dot.active{background:var(--green);transform:scale(1.4)}
 .deck-meta{font-size:11px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;pointer-events:auto}
 
 /* Slide 1 — Title */
-.slide-title{justify-content:center;background:radial-gradient(60% 80% at 20% 30%,rgba(122,194,49,.18) 0%,transparent 60%),radial-gradient(50% 70% at 80% 90%,rgba(245,192,66,.06) 0%,transparent 60%),var(--black)}
+.slide-title{justify-content:center;background:radial-gradient(60% 80% at 20% 30%,rgba(168,255,0,.18) 0%,transparent 60%),radial-gradient(50% 70% at 80% 90%,rgba(245,192,66,.06) 0%,transparent 60%),var(--black)}
 .slide-title h1{font-family:var(--ff-display);font-size:clamp(64px,10vw,160px);font-weight:900;line-height:.85;text-transform:uppercase;letter-spacing:-.025em;margin-bottom:32px}
 .slide-title h1 .acc{color:var(--green)}
 .slide-title-eyebrow{font-size:13px;letter-spacing:.24em;font-weight:700;color:var(--green);margin-bottom:30px}
@@ -62,7 +62,7 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
 
 /* Cards */
 .card{background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:28px}
-.card-green{background:linear-gradient(135deg,rgba(122,194,49,.10),rgba(122,194,49,.02));border:1px solid rgba(122,194,49,.32);border-radius:14px;padding:28px}
+.card-green{background:linear-gradient(135deg,rgba(168,255,0,.10),rgba(168,255,0,.02));border:1px solid rgba(168,255,0,.32);border-radius:14px;padding:28px}
 .card-gold{background:linear-gradient(135deg,rgba(245,192,66,.10),rgba(245,192,66,.02));border:1px solid rgba(245,192,66,.32);border-radius:14px;padding:28px}
 
 .big-stat{font-family:var(--ff-display);font-size:64px;font-weight:900;color:var(--green);line-height:.95;letter-spacing:-.01em;margin-bottom:6px}
@@ -74,7 +74,7 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
 /* Comparison table */
 .cmp{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;margin-top:24px}
 .cmp > div{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px;color:var(--light)}
-.cmp .head{background:rgba(122,194,49,.08);color:var(--green);font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+.cmp .head{background:rgba(168,255,0,.08);color:var(--green);font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
 .cmp .row-label{color:#fff;font-weight:600}
 .cmp .atp{color:var(--green);font-weight:700}
 .cmp .competitor{color:var(--muted)}
@@ -83,14 +83,14 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
 /* Bullets */
 .bullets{display:flex;flex-direction:column;gap:14px;margin-top:22px}
 .bullet{display:flex;gap:14px;align-items:flex-start}
-.bullet .b-icon{width:30px;height:30px;border-radius:50%;background:rgba(122,194,49,.16);color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;font-size:14px}
+.bullet .b-icon{width:30px;height:30px;border-radius:50%;background:rgba(168,255,0,.16);color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:900;flex-shrink:0;font-size:14px}
 .bullet h4{font-family:var(--ff-display);font-size:16px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:4px;letter-spacing:.02em}
 .bullet p{font-size:13px;color:var(--light);line-height:1.55}
 
 /* Pricing */
 .tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:30px}
 .tier{background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:30px 26px;position:relative}
-.tier.featured{border-color:rgba(122,194,49,.4);background:linear-gradient(180deg,rgba(122,194,49,.08),rgba(122,194,49,.02));transform:scale(1.04)}
+.tier.featured{border-color:rgba(168,255,0,.4);background:linear-gradient(180deg,rgba(168,255,0,.08),rgba(168,255,0,.02));transform:scale(1.04)}
 .tier .badge{position:absolute;top:-12px;right:18px;background:var(--green);color:#0a0a0a;padding:4px 12px;border-radius:99px;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
 .tier .name{font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#fff;margin-bottom:8px}
 .tier .price{font-family:var(--ff-display);font-size:42px;font-weight:900;color:var(--green);line-height:1;letter-spacing:-.01em;margin-bottom:4px}
@@ -101,7 +101,7 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
 .tier li:last-child{border-bottom:none}
 
 /* CTA block */
-.cta-block{margin-top:auto;padding:36px 40px;background:linear-gradient(120deg,rgba(122,194,49,.10),rgba(122,194,49,.02));border:1px solid rgba(122,194,49,.32);border-radius:18px;display:flex;justify-content:space-between;align-items:center;gap:24px}
+.cta-block{margin-top:auto;padding:36px 40px;background:linear-gradient(120deg,rgba(168,255,0,.10),rgba(168,255,0,.02));border:1px solid rgba(168,255,0,.32);border-radius:18px;display:flex;justify-content:space-between;align-items:center;gap:24px}
 .cta-block h3{font-family:var(--ff-display);font-size:32px;font-weight:900;text-transform:uppercase;color:#fff;margin-bottom:6px;line-height:1.05}
 .cta-block p{font-size:15px;color:var(--light);max-width:520px;line-height:1.55}
 .cta-btn{background:var(--green);color:#0a0a0a;padding:16px 32px;border-radius:10px;font-size:14px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;display:inline-block;text-decoration:none}
@@ -409,7 +409,7 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
           <h3 style="font-family:var(--ff-display);font-size:24px;font-weight:800;text-transform:uppercase;color:#fff;line-height:1.1;margin-bottom:20px">Growth plan · AED 120 per employee</h3>
           <div style="font-family:var(--ff-display);font-size:18px;font-weight:700;color:#fff;margin-bottom:6px">Annual investment</div>
           <div class="big-stat">AED 288k</div>
-          <div style="margin:16px 0;height:1px;background:rgba(122,194,49,.2)"></div>
+          <div style="margin:16px 0;height:1px;background:rgba(168,255,0,.2)"></div>
           <div style="font-family:var(--ff-display);font-size:18px;font-weight:700;color:#fff;margin-bottom:6px">Expected return</div>
           <div style="font-family:var(--ff-display);font-size:36px;font-weight:900;color:var(--gold);line-height:1">AED 580k+</div>
           <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5">Conservative: 2× return assuming 50% participation, 30% absenteeism drop among active employees, and the median UAE salary loaded cost.</div>
@@ -471,7 +471,7 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
       <p style="font-size:18px;color:var(--light);margin:24px 0 40px;line-height:1.55">No high-pressure pitch. No hidden tier. Just a real conversation about whether ATP is the right wellness layer for your team. Worst case: you walk away with a better benchmarking number for whatever vendor you do pick.</p>
       <div style="display:flex;flex-direction:column;gap:18px;align-items:center">
         <a href="mailto:partners@atthepark.world?subject=ATP%20for%20our%20team" class="cta-btn" style="font-size:16px;padding:18px 38px">📧 partners@atthepark.world</a>
-        <a href="https://wa.me/971585792378?text=Hi%20%E2%80%94%20interested%20in%20ATP%20for%20our%20company" class="cta-btn" style="font-size:16px;padding:18px 38px;background:rgba(122,194,49,.14);color:var(--green);border:1px solid var(--green)">💬 WhatsApp the founder</a>
+        <a href="https://wa.me/971585792378?text=Hi%20%E2%80%94%20interested%20in%20ATP%20for%20our%20company" class="cta-btn" style="font-size:16px;padding:18px 38px;background:rgba(168,255,0,.14);color:var(--green);border:1px solid var(--green)">💬 WhatsApp the founder</a>
       </div>
       <p style="font-size:13px;color:var(--muted);margin-top:40px;line-height:1.6">At The Park (ATP) · Founded 2015 · Dubai, UAE<br>Trade license + commercial registration on request.</p>
     </div>

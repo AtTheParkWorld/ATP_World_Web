@@ -13,7 +13,7 @@ function showSettingsTab(tab) {
   });
   document.querySelectorAll('.settings-tab').forEach(function(b){
     var match = (b.getAttribute('data-args') || '').indexOf('"' + tab + '"') >= 0;
-    b.style.borderBottomColor = match ? '#7AC231' : 'transparent';
+    b.style.borderBottomColor = match ? '#A8FF00' : 'transparent';
     b.style.color = match ? '#fff' : '#888';
   });
   if (tab === 'announcements') loadAnnouncementsAdmin();
@@ -60,7 +60,7 @@ function renderSessionTemplatesAdmin(list) {
               '</tr></thead><tbody>' +
               list.map(function(t){
                 var badge = t.is_active
-                  ? '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(122,194,49,.15);color:#7AC231">Active</span>'
+                  ? '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(168,255,0,.15);color:#A8FF00">Active</span>'
                   : '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.06);color:#666">Off</span>';
                 return '<tr style="border-bottom:1px solid #111;font-size:13px">' +
                   '<td style="padding:10px">' + badge + '</td>' +
@@ -71,7 +71,7 @@ function renderSessionTemplatesAdmin(list) {
                     '<button class="admin-btn" style="font-size:11px;padding:5px 10px;margin-right:4px" onclick="editSessionTemplate(\'' + t.id + '\')">Edit</button>' +
                     (t.is_active
                       ? '<button class="admin-btn admin-btn-danger" style="font-size:11px;padding:5px 10px" onclick="deactivateSessionTemplate(\'' + t.id + '\')">Disable</button>'
-                      : '<button class="admin-btn" style="font-size:11px;padding:5px 10px;color:#7AC231;border-color:rgba(122,194,49,.3)" onclick="reactivateSessionTemplate(\'' + t.id + '\')">Enable</button>') +
+                      : '<button class="admin-btn" style="font-size:11px;padding:5px 10px;color:#A8FF00;border-color:rgba(168,255,0,.3)" onclick="reactivateSessionTemplate(\'' + t.id + '\')">Enable</button>') +
                   '</td>' +
                 '</tr>';
               }).join('') +
@@ -213,7 +213,7 @@ function renderCitiesAdmin(list) {
         '<div id="cityFormWrap"></div>';
   Object.keys(grouped).sort().forEach(function(country){
     html += '<div style="margin-bottom:14px">' +
-      '<div style="font-size:11px;color:#7AC231;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">' + esc(country) + ' · ' + grouped[country].length + '</div>' +
+      '<div style="font-size:11px;color:#A8FF00;font-weight:700;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">' + esc(country) + ' · ' + grouped[country].length + '</div>' +
       grouped[country].map(function(c){
         return '<div style="display:flex;align-items:center;gap:8px;padding:8px 12px;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:6px;margin-bottom:4px">' +
           '<div style="flex:1;color:#fff;font-size:13px">' + esc(c.name) + '</div>' +
@@ -314,7 +314,7 @@ function renderAnnouncementsAdmin(list) {
       list.map(function(a){
         var msg = (a.message || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         var statusBadge = a.is_active
-          ? '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(122,194,49,.15);color:#7AC231">Active</span>'
+          ? '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(168,255,0,.15);color:#A8FF00">Active</span>'
           : '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.06);color:#666">Off</span>';
         var window_ = (a.starts_at || a.ends_at)
           ? (a.starts_at ? new Date(a.starts_at).toLocaleDateString('en-GB') : '∞') +
@@ -465,10 +465,10 @@ function renderActivitiesAdmin(list) {
       list.map(function(a){
         var name = (a.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         var icon = a.icon || '🏷️';
-        var border = a.is_active ? 'rgba(122,194,49,.3)' : 'rgba(255,255,255,.08)';
+        var border = a.is_active ? 'rgba(168,255,0,.3)' : 'rgba(255,255,255,.08)';
         var op = a.is_active ? '1' : '.45';
         var tribe = a.tribe_name
-          ? '<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:20px;background:rgba(122,194,49,.12);color:#7AC231;border:1px solid rgba(122,194,49,.3);margin-bottom:6px">' + a.tribe_name.replace(/</g,'&lt;') + '</span>'
+          ? '<span style="display:inline-block;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:2px 8px;border-radius:20px;background:rgba(168,255,0,.12);color:#A8FF00;border:1px solid rgba(168,255,0,.3);margin-bottom:6px">' + a.tribe_name.replace(/</g,'&lt;') + '</span>'
           : '<span style="display:inline-block;font-size:10px;color:#666;margin-bottom:6px">No tribe</span>';
         return '<div style="background:#0d0d0d;border:1px solid ' + border + ';border-radius:10px;padding:14px;opacity:' + op + '">' +
           '<div style="font-size:24px;margin-bottom:8px">' + icon + '</div>' +
@@ -573,7 +573,7 @@ function renderAchievementsAdmin(list) {
         var name = (a.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         var desc = (a.description || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         var op = a.is_active ? '1' : '.45';
-        var border = a.is_active ? 'rgba(122,194,49,.3)' : 'rgba(255,255,255,.08)';
+        var border = a.is_active ? 'rgba(168,255,0,.3)' : 'rgba(255,255,255,.08)';
         var iconHtml = a.badge_image_url
           ? '<img src="' + a.badge_image_url + '" style="width:48px;height:48px;object-fit:contain;display:block;margin-bottom:10px">'
           : '<div style="font-size:36px;margin-bottom:8px">' + (a.icon || '🏅') + '</div>';
@@ -788,13 +788,13 @@ function renderPlansAdmin(list) {
       list.map(function(p){
         var name = (p.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         var statusBadge = p.is_active
-          ? '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(122,194,49,.15);color:#7AC231">Active</span>'
+          ? '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(168,255,0,.15);color:#A8FF00">Active</span>'
           : '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.06);color:#666">Off</span>';
         var price = p.amount_cents
           ? (p.currency || 'aed').toUpperCase() + ' ' + (p.amount_cents/100).toFixed(2) + ' / ' + (p.interval || 'month')
           : '<span style="color:#666">—</span>';
         var priceId = p.stripe_price_id
-          ? '<code style="font-size:10px;color:#7AC231;font-family:monospace">' + p.stripe_price_id + '</code>'
+          ? '<code style="font-size:10px;color:#A8FF00;font-family:monospace">' + p.stripe_price_id + '</code>'
           : '<span style="font-size:11px;color:#f87171">⚠️ not connected</span>';
         return '<tr style="border-bottom:1px solid #111;font-size:13px">' +
           '<td style="padding:10px">' + statusBadge + '</td>' +
@@ -961,7 +961,7 @@ function renderCountriesAdmin(list) {
       list.map(function(c){
         var name = (c.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
         var statusBadge = c.is_active
-          ? '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(122,194,49,.15);color:#7AC231">Active</span>'
+          ? '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(168,255,0,.15);color:#A8FF00">Active</span>'
           : '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.06);color:#666">Off</span>';
         var rate = (c.atp_per_unit != null && c.atp_per_unit !== '') ? c.atp_per_unit : '<span style="color:#666">global default</span>';
         return '<tr style="border-bottom:1px solid #111;font-size:13px">' +
@@ -1269,7 +1269,7 @@ function renderStreamAdsList(list) {
       '</tr></thead><tbody>' +
       list.map(function(a){
         var pill = a.is_active
-          ? '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(122,194,49,.15);color:#7AC231">Active</span>'
+          ? '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(168,255,0,.15);color:#A8FF00">Active</span>'
           : '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.06);color:#666">Off</span>';
         var imp = (a.impressions || 0).toLocaleString();
         var clk = (a.clicks || 0).toLocaleString();

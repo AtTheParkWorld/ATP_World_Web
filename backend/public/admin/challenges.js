@@ -21,20 +21,20 @@ function generateBadgeSVG(icon, title) {
         '<stop offset="100%" stop-color="#050505"/>'+
       '</radialGradient>'+
       '<linearGradient id="ring'+uid+'" x1="0%" y1="0%" x2="100%" y2="100%">'+
-        '<stop offset="0%" stop-color="#7AC231"/>'+
+        '<stop offset="0%" stop-color="#A8FF00"/>'+
         '<stop offset="100%" stop-color="#4a7a1d"/>'+
       '</linearGradient>'+
     '</defs>'+
     // Outer ring
     '<circle cx="60" cy="60" r="58" fill="url(#bg'+uid+')" stroke="url(#ring'+uid+')" stroke-width="3"/>'+
     // Decorative laurel dots around top
-    '<circle cx="60" cy="8" r="1.5" fill="#7AC231"/>'+
-    '<circle cx="40" cy="12" r="1" fill="#7AC231" opacity="0.6"/>'+
-    '<circle cx="80" cy="12" r="1" fill="#7AC231" opacity="0.6"/>'+
+    '<circle cx="60" cy="8" r="1.5" fill="#A8FF00"/>'+
+    '<circle cx="40" cy="12" r="1" fill="#A8FF00" opacity="0.6"/>'+
+    '<circle cx="80" cy="12" r="1" fill="#A8FF00" opacity="0.6"/>'+
     // Icon - centered vertically, plenty of space
     '<text x="60" y="62" text-anchor="middle" font-size="42" dominant-baseline="central">'+(icon||'🏆')+'</text>'+
     // Ribbon at bottom
-    '<rect x="12" y="90" width="96" height="18" fill="#7AC231" rx="2"/>'+
+    '<rect x="12" y="90" width="96" height="18" fill="#A8FF00" rx="2"/>'+
     '<text x="60" y="100" text-anchor="middle" font-size="7" font-family="Arial Black,Impact,sans-serif" fill="#0a0a0a" font-weight="900" letter-spacing="1.5">ATP CHALLENGE</text>'+
     '</svg>';
 }
@@ -160,7 +160,7 @@ async function saveChallenge(publish) {
         });
       }
       msgEl.textContent = publish ? '✅ Challenge published!' : '✅ Challenge saved as draft.';
-      msgEl.style.cssText = 'display:block;background:#0d1a0a;color:#7AC231;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+      msgEl.style.cssText = 'display:block;background:#0d1a0a;color:#A8FF00;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
       resetChallengeForm();
       loadChallengesList();
     } else {
@@ -258,8 +258,8 @@ async function loadChallengesList() {
         '<div class="challenge-info">'+
           '<div class="challenge-title">'+c.title+'</div>'+
           '<div class="challenge-meta">'+start+' → '+end+' · 🎯 '+c.target+' '+c.unit+' · 👥 '+c.participant_count+' joined' + entryLine + '</div>'+
-          (prizeLine ? '<div style="font-size:11px;color:#7AC231;margin-top:3px">Prize: '+prizeLine+'</div>' : '')+
-          (c.device_metric?'<div style="font-size:10px;color:#7AC231;margin-top:3px">📡 Smart device: '+c.device_metric+'</div>':'')+
+          (prizeLine ? '<div style="font-size:11px;color:#A8FF00;margin-top:3px">Prize: '+prizeLine+'</div>' : '')+
+          (c.device_metric?'<div style="font-size:10px;color:#A8FF00;margin-top:3px">📡 Smart device: '+c.device_metric+'</div>':'')+
           '<div class="challenge-progress-bar"><div class="challenge-progress-fill" style="width:'+progress+'%"></div></div>'+
         '</div>'+
         '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px;flex-shrink:0">'+
@@ -306,7 +306,7 @@ async function viewLeaderboard(challengeId) {
             '<div style="font-size:11px;color:#555">'+r.member_number+'</div>'+
           '</div>'+
           '<div style="text-align:right">'+
-            '<div style="font-family:var(--ff-display);font-size:18px;font-weight:900;color:#7AC231">'+pct+'</div>'+
+            '<div style="font-family:var(--ff-display);font-size:18px;font-weight:900;color:#A8FF00">'+pct+'</div>'+
             '<div style="font-size:10px;color:#555">progress</div>'+
           '</div>'+
           (r.completed?'<div style="font-size:18px">✅</div>':'')+

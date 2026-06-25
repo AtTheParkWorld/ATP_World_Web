@@ -40,7 +40,7 @@ async function loadBlogSection() {
     if (!posts.length) {
       list.innerHTML = '<div style="text-align:center;color:#555;padding:40px;background:#0d0d0d;border:1px dashed #1a1a1a;border-radius:12px">' +
         '<div style="font-size:36px;margin-bottom:10px;opacity:.4">📝</div>' +
-        '<div style="font-size:14px;color:#aaa">No posts yet — click <strong style="color:#7AC231">+ New post</strong> to write the first one.</div>' +
+        '<div style="font-size:14px;color:#aaa">No posts yet — click <strong style="color:#A8FF00">+ New post</strong> to write the first one.</div>' +
         '</div>';
       return;
     }
@@ -417,7 +417,7 @@ async function _uploadAndInsertInline(file) {
     ta.addEventListener('dragover', function (ev) {
       if (ev.dataTransfer && ev.dataTransfer.types && ev.dataTransfer.types.indexOf('Files') !== -1) {
         ev.preventDefault();
-        ta.style.borderColor = 'rgba(122,194,49,.6)';
+        ta.style.borderColor = 'rgba(168,255,0,.6)';
         ta.style.background  = '#0a0f08';
       }
     });

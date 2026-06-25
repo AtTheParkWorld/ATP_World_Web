@@ -15,9 +15,9 @@ document.addEventListener('click', function(ev) {
   WEARABLES_ACTIVE_TAB = tab;
   document.querySelectorAll('.wearables-subtab').forEach(function(b) {
     var on = b.getAttribute('data-wearables-tab') === tab;
-    b.style.background  = on ? 'rgba(122,194,49,.12)' : 'transparent';
-    b.style.color       = on ? '#7AC231' : '#888';
-    b.style.borderColor = on ? 'rgba(122,194,49,.3)' : '#2a2a2a';
+    b.style.background  = on ? 'rgba(168,255,0,.12)' : 'transparent';
+    b.style.color       = on ? '#A8FF00' : '#888';
+    b.style.borderColor = on ? 'rgba(168,255,0,.3)' : '#2a2a2a';
     b.classList.toggle('active', on);
   });
   document.querySelectorAll('.wearables-pane').forEach(function(p) {
@@ -58,7 +58,7 @@ function renderWearableConnections(list) {
         '<th style="padding:8px 10px">Actions</th>' +
       '</tr></thead><tbody>' +
       list.map(function(c){
-        var statusColor = c.status === 'active' ? '#7AC231' : (c.status === 'needs_reauth' ? '#f5c042' : '#666');
+        var statusColor = c.status === 'active' ? '#A8FF00' : (c.status === 'needs_reauth' ? '#f5c042' : '#666');
         return (
           '<tr style="border-bottom:1px solid #1a1a1a">' +
             '<td style="padding:10px;color:#fff">' + _escW((c.first_name||'') + ' ' + (c.last_name||'')) + '<div style="font-size:10px;color:#666">' + _escW(c.email||'') + '</div></td>' +
@@ -116,15 +116,15 @@ function renderWearableProviders(list) {
     '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">' +
       list.map(function(p){
         var hint = envHints[p.name] || { vars: '(see adapter file)', url: '#' };
-        var statusColor = p.enabled ? '#7AC231' : '#666';
+        var statusColor = p.enabled ? '#A8FF00' : '#666';
         return (
-          '<div style="border:1px solid ' + (p.enabled ? 'rgba(122,194,49,.32)' : '#2a2a2a') + ';border-radius:10px;padding:16px;background:' + (p.enabled ? 'rgba(122,194,49,.05)' : 'transparent') + '">' +
+          '<div style="border:1px solid ' + (p.enabled ? 'rgba(168,255,0,.32)' : '#2a2a2a') + ';border-radius:10px;padding:16px;background:' + (p.enabled ? 'rgba(168,255,0,.05)' : 'transparent') + '">' +
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
               '<div style="font-family:var(--ff-display,sans-serif);font-size:16px;font-weight:800;text-transform:uppercase">' + _escW(p.displayName) + '</div>' +
               '<span style="font-size:10px;color:' + statusColor + ';font-weight:700;text-transform:uppercase;letter-spacing:.08em">' + (p.enabled ? '● Live' : '○ Disabled') + '</span>' +
             '</div>' +
-            '<div style="font-size:11px;color:#888;line-height:1.6;margin-bottom:10px">Env vars: <code style="background:#0f0f0f;color:#7AC231;padding:2px 6px;border-radius:3px;font-size:10px">' + _escW(hint.vars) + '</code></div>' +
-            '<a href="' + _escW(hint.url) + '" target="_blank" style="font-size:11px;color:#7AC231;text-decoration:none">' + (p.enabled ? 'Manage in provider console →' : 'Get credentials →') + '</a>' +
+            '<div style="font-size:11px;color:#888;line-height:1.6;margin-bottom:10px">Env vars: <code style="background:#0f0f0f;color:#A8FF00;padding:2px 6px;border-radius:3px;font-size:10px">' + _escW(hint.vars) + '</code></div>' +
+            '<a href="' + _escW(hint.url) + '" target="_blank" style="font-size:11px;color:#A8FF00;text-decoration:none">' + (p.enabled ? 'Manage in provider console →' : 'Get credentials →') + '</a>' +
           '</div>'
         );
       }).join('') +
@@ -158,7 +158,7 @@ function renderWearableSyncLog(list) {
         '<th style="padding:8px 10px">Detail</th>' +
       '</tr></thead><tbody>' +
       list.map(function(r){
-        var statusColor = r.status === 'ok' ? '#7AC231' : '#f87171';
+        var statusColor = r.status === 'ok' ? '#A8FF00' : '#f87171';
         return (
           '<tr style="border-bottom:1px solid #1a1a1a">' +
             '<td style="padding:10px;color:#888;white-space:nowrap">' + new Date(r.created_at).toLocaleString() + '</td>' +

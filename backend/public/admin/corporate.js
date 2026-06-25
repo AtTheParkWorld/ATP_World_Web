@@ -17,8 +17,8 @@ function renderCorporateSubtabs() {
   var host = document.getElementById('corporateSubtabs');
   if (!host) return;
   host.innerHTML =
-    '<button class="corp-subtab' + (CORP_VIEW === 'leads' ? ' active' : '') + '" data-atp-call="showCorporateTab" data-args=\'["leads"]\' style="padding:7px 14px;font-size:12px;font-weight:700;background:' + (CORP_VIEW === 'leads' ? 'rgba(122,194,49,.12)' : 'transparent') + ';color:' + (CORP_VIEW === 'leads' ? '#7AC231' : '#888') + ';border:1px solid ' + (CORP_VIEW === 'leads' ? 'rgba(122,194,49,.3)' : '#2a2a2a') + ';border-radius:8px;cursor:pointer">Leads pipeline</button>' +
-    '<button class="corp-subtab' + (CORP_VIEW === 'accounts' ? ' active' : '') + '" data-atp-call="showCorporateTab" data-args=\'["accounts"]\' style="padding:7px 14px;font-size:12px;font-weight:700;background:' + (CORP_VIEW === 'accounts' ? 'rgba(122,194,49,.12)' : 'transparent') + ';color:' + (CORP_VIEW === 'accounts' ? '#7AC231' : '#888') + ';border:1px solid ' + (CORP_VIEW === 'accounts' ? 'rgba(122,194,49,.3)' : '#2a2a2a') + ';border-radius:8px;cursor:pointer">Active accounts</button>';
+    '<button class="corp-subtab' + (CORP_VIEW === 'leads' ? ' active' : '') + '" data-atp-call="showCorporateTab" data-args=\'["leads"]\' style="padding:7px 14px;font-size:12px;font-weight:700;background:' + (CORP_VIEW === 'leads' ? 'rgba(168,255,0,.12)' : 'transparent') + ';color:' + (CORP_VIEW === 'leads' ? '#A8FF00' : '#888') + ';border:1px solid ' + (CORP_VIEW === 'leads' ? 'rgba(168,255,0,.3)' : '#2a2a2a') + ';border-radius:8px;cursor:pointer">Leads pipeline</button>' +
+    '<button class="corp-subtab' + (CORP_VIEW === 'accounts' ? ' active' : '') + '" data-atp-call="showCorporateTab" data-args=\'["accounts"]\' style="padding:7px 14px;font-size:12px;font-weight:700;background:' + (CORP_VIEW === 'accounts' ? 'rgba(168,255,0,.12)' : 'transparent') + ';color:' + (CORP_VIEW === 'accounts' ? '#A8FF00' : '#888') + ';border:1px solid ' + (CORP_VIEW === 'accounts' ? 'rgba(168,255,0,.3)' : '#2a2a2a') + ';border-radius:8px;cursor:pointer">Active accounts</button>';
 }
 
 function showCorporateTab(tab) {
@@ -45,7 +45,7 @@ function renderCorporateLeads(leads) {
   if (!host) return;
 
   var stages = ['new', 'qualified', 'pitch_sent', 'negotiating', 'won', 'lost'];
-  var stageColors = { new:'#888', qualified:'#3b82f6', pitch_sent:'#f59e0b', negotiating:'#f5c042', won:'#7AC231', lost:'#ef4444' };
+  var stageColors = { new:'#888', qualified:'#3b82f6', pitch_sent:'#f59e0b', negotiating:'#f5c042', won:'#A8FF00', lost:'#ef4444' };
   var byStage = {};
   stages.forEach(function(s){ byStage[s] = []; });
   leads.forEach(function(l){ if (byStage[l.stage]) byStage[l.stage].push(l); });
@@ -59,7 +59,7 @@ function renderCorporateLeads(leads) {
     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:18px">' +
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:18px"><div style="font-size:10px;color:#888;letter-spacing:.12em;text-transform:uppercase;font-weight:600">Total leads</div><div style="font-family:var(--ff-display,sans-serif);font-size:32px;font-weight:900;color:#fff">' + leads.length + '</div></div>' +
       '<div style="background:#0f0f0f;border:1px solid rgba(245,158,11,.32);border-radius:10px;padding:18px"><div style="font-size:10px;color:#f59e0b;letter-spacing:.12em;text-transform:uppercase;font-weight:600">In pipeline (AED MRR)</div><div style="font-family:var(--ff-display,sans-serif);font-size:32px;font-weight:900;color:#f59e0b">' + pipelineValue.toLocaleString() + '</div></div>' +
-      '<div style="background:#0f0f0f;border:1px solid rgba(122,194,49,.32);border-radius:10px;padding:18px"><div style="font-size:10px;color:#7AC231;letter-spacing:.12em;text-transform:uppercase;font-weight:600">Won (AED MRR)</div><div style="font-family:var(--ff-display,sans-serif);font-size:32px;font-weight:900;color:#7AC231">' + wonValue.toLocaleString() + '</div></div>' +
+      '<div style="background:#0f0f0f;border:1px solid rgba(168,255,0,.32);border-radius:10px;padding:18px"><div style="font-size:10px;color:#A8FF00;letter-spacing:.12em;text-transform:uppercase;font-weight:600">Won (AED MRR)</div><div style="font-family:var(--ff-display,sans-serif);font-size:32px;font-weight:900;color:#A8FF00">' + wonValue.toLocaleString() + '</div></div>' +
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:18px;display:flex;align-items:center;justify-content:center"><button class="admin-btn admin-btn-primary" data-atp-call="newCorporateLeadForm" style="font-size:13px;padding:10px 20px">+ Add lead</button></div>' +
     '</div>' +
     '<div id="corpLeadFormWrap"></div>' +
@@ -81,7 +81,7 @@ function renderCorporateLeads(leads) {
         return '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:8px;padding:10px;margin-bottom:6px;cursor:pointer" data-atp-call="editCorporateLead" data-args=\'["' + l.id + '"]\'>' +
           '<div style="font-size:12px;color:#fff;font-weight:700;margin-bottom:4px">' + _esc(l.company_name) + '</div>' +
           (l.contact_name ? '<div style="font-size:10px;color:#888">' + _esc(l.contact_name) + '</div>' : '') +
-          (l.estimated_aed ? '<div style="font-size:11px;color:#7AC231;font-weight:700;margin-top:6px">AED ' + l.estimated_aed.toLocaleString() + ' MRR</div>' : '') +
+          (l.estimated_aed ? '<div style="font-size:11px;color:#A8FF00;font-weight:700;margin-top:6px">AED ' + l.estimated_aed.toLocaleString() + ' MRR</div>' : '') +
           (l.next_action ? '<div style="font-size:10px;color:#888;margin-top:6px;font-style:italic">→ ' + _esc(l.next_action.slice(0, 50)) + '</div>' : '') +
         '</div>';
       }).join('');
@@ -98,7 +98,7 @@ function newCorporateLeadForm() {
   if (!wrap) return;
   wrap.innerHTML =
     '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:14px">' +
-      '<div style="font-family:var(--ff-display,sans-serif);font-size:16px;font-weight:800;color:#7AC231;text-transform:uppercase;margin-bottom:12px">New lead</div>' +
+      '<div style="font-family:var(--ff-display,sans-serif);font-size:16px;font-weight:800;color:#A8FF00;text-transform:uppercase;margin-bottom:12px">New lead</div>' +
       '<div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">' +
         '<div><label class="admin-form-label">Company *</label><input class="admin-form-input" id="leadCompany" placeholder="Acme Corp"></div>' +
         '<div><label class="admin-form-label">Industry</label><input class="admin-form-input" id="leadIndustry" placeholder="Financial services"></div>' +
@@ -205,7 +205,7 @@ function renderCorporateAccounts(accounts) {
   var html =
     '<div style="display:grid;grid-template-columns:repeat(3,1fr) auto;gap:14px;margin-bottom:18px">' +
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:18px"><div style="font-size:10px;color:#888;letter-spacing:.12em;text-transform:uppercase;font-weight:600">Active accounts</div><div style="font-family:var(--ff-display,sans-serif);font-size:32px;font-weight:900;color:#fff">' + accounts.filter(function(a){ return a.status === 'active'; }).length + '</div></div>' +
-      '<div style="background:#0f0f0f;border:1px solid rgba(122,194,49,.32);border-radius:10px;padding:18px"><div style="font-size:10px;color:#7AC231;letter-spacing:.12em;text-transform:uppercase;font-weight:600">Total MRR</div><div style="font-family:var(--ff-display,sans-serif);font-size:32px;font-weight:900;color:#7AC231">AED ' + totalMRR.toLocaleString() + '</div></div>' +
+      '<div style="background:#0f0f0f;border:1px solid rgba(168,255,0,.32);border-radius:10px;padding:18px"><div style="font-size:10px;color:#A8FF00;letter-spacing:.12em;text-transform:uppercase;font-weight:600">Total MRR</div><div style="font-family:var(--ff-display,sans-serif);font-size:32px;font-weight:900;color:#A8FF00">AED ' + totalMRR.toLocaleString() + '</div></div>' +
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:18px"><div style="font-size:10px;color:#888;letter-spacing:.12em;text-transform:uppercase;font-weight:600">Employees enrolled</div><div style="font-family:var(--ff-display,sans-serif);font-size:32px;font-weight:900;color:#fff">' + totalEmployees + '</div></div>' +
       '<div style="display:flex;align-items:center;justify-content:center"><button class="admin-btn admin-btn-primary" data-atp-call="newCorporateAccountForm" style="font-size:13px;padding:10px 20px;white-space:nowrap">+ New account</button></div>' +
     '</div>' +
@@ -215,7 +215,7 @@ function renderCorporateAccounts(accounts) {
     html += '<div style="padding:40px;color:#555;text-align:center;border:1px dashed #2a2a2a;border-radius:10px">No corporate accounts yet. Close a lead and create one here.</div>';
   } else {
     html += accounts.map(function(a){
-      var statusColor = a.status === 'active' ? '#7AC231' : (a.status === 'paused' ? '#f59e0b' : '#666');
+      var statusColor = a.status === 'active' ? '#A8FF00' : (a.status === 'paused' ? '#f59e0b' : '#666');
       var inviteUrl = a.latest_token ? (origin + '/corporate/join/' + a.latest_token) : null;
       return '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:18px;margin-bottom:10px">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px">' +
@@ -225,11 +225,11 @@ function renderCorporateAccounts(accounts) {
               '<span style="font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:' + statusColor + ';border:1px solid ' + statusColor + ';padding:2px 7px;border-radius:4px">' + a.status + '</span>' +
             '</div>' +
             '<div style="font-size:11px;color:#888">' +
-              '<strong style="color:#7AC231">AED ' + (a.monthly_fee_aed || 0).toLocaleString() + '/mo</strong>' +
+              '<strong style="color:#A8FF00">AED ' + (a.monthly_fee_aed || 0).toLocaleString() + '/mo</strong>' +
               ' · ' + (a.employee_count || 0) + ' / ' + (a.employee_cap || '∞') + ' employees' +
               ' · ' + (a.contact_email || 'no contact') +
             '</div>' +
-            (inviteUrl ? '<div style="margin-top:10px;display:flex;gap:6px;align-items:center"><code style="background:#0a0a0a;padding:4px 10px;border-radius:4px;color:#7AC231;font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + inviteUrl + '</code>' +
+            (inviteUrl ? '<div style="margin-top:10px;display:flex;gap:6px;align-items:center"><code style="background:#0a0a0a;padding:4px 10px;border-radius:4px;color:#A8FF00;font-size:11px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + inviteUrl + '</code>' +
               '<button class="admin-btn" onclick="navigator.clipboard.writeText(\'' + inviteUrl + '\').then(function(){showToast(\'✅ Copied\')})" style="font-size:11px;padding:4px 10px">Copy</button>' +
             '</div>' : '') +
           '</div>' +
@@ -251,7 +251,7 @@ function newCorporateAccountForm() {
   if (!wrap) return;
   wrap.innerHTML =
     '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:14px">' +
-      '<div style="font-family:var(--ff-display,sans-serif);font-size:16px;font-weight:800;color:#7AC231;text-transform:uppercase;margin-bottom:12px">New corporate account</div>' +
+      '<div style="font-family:var(--ff-display,sans-serif);font-size:16px;font-weight:800;color:#A8FF00;text-transform:uppercase;margin-bottom:12px">New corporate account</div>' +
       '<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:10px">' +
         '<div><label class="admin-form-label">Company *</label><input class="admin-form-input" id="accCompany" placeholder="Acme Corp"></div>' +
         '<div><label class="admin-form-label">Industry</label><input class="admin-form-input" id="accIndustry"></div>' +
@@ -341,7 +341,7 @@ function viewCorporateEngagement(e, btn) {
       host.innerHTML =
         '<div style="background:#0a0a0a;border:1px solid #1e1e1e;border-radius:8px;padding:14px;margin-top:12px;display:grid;grid-template-columns:repeat(4,1fr);gap:12px">' +
           '<div><div style="font-size:9px;color:#888;letter-spacing:.1em;text-transform:uppercase">Total enrolled</div><div style="font-family:var(--ff-display,sans-serif);font-size:22px;font-weight:900;color:#fff">' + (t.total_employees || 0) + '</div></div>' +
-          '<div><div style="font-size:9px;color:#888;letter-spacing:.1em;text-transform:uppercase">Active 30d (unique)</div><div style="font-family:var(--ff-display,sans-serif);font-size:22px;font-weight:900;color:#7AC231">' + (a.unique_30d || 0) + ' <span style="font-size:11px;color:#888;font-weight:500;font-family:inherit">/ ' + participation + '%</span></div></div>' +
+          '<div><div style="font-size:9px;color:#888;letter-spacing:.1em;text-transform:uppercase">Active 30d (unique)</div><div style="font-family:var(--ff-display,sans-serif);font-size:22px;font-weight:900;color:#A8FF00">' + (a.unique_30d || 0) + ' <span style="font-size:11px;color:#888;font-weight:500;font-family:inherit">/ ' + participation + '%</span></div></div>' +
           '<div><div style="font-size:9px;color:#888;letter-spacing:.1em;text-transform:uppercase">Check-ins 30d</div><div style="font-family:var(--ff-display,sans-serif);font-size:22px;font-weight:900;color:#fff">' + (a.checkins_30d || 0) + '</div></div>' +
           '<div><div style="font-size:9px;color:#888;letter-spacing:.1em;text-transform:uppercase">Check-ins 7d</div><div style="font-family:var(--ff-display,sans-serif);font-size:22px;font-weight:900;color:#fff">' + (a.checkins_7d || 0) + '</div></div>' +
         '</div>';
@@ -380,7 +380,7 @@ function renderCorporateAccountDetail(a, employees, engagement) {
   if (!a) { host.innerHTML = '<div style="padding:30px;color:#f87171;text-align:center">Account not found</div>'; return; }
 
   var origin = window.location.origin;
-  var statusColor = a.status === 'active' ? '#7AC231' : (a.status === 'paused' ? '#f59e0b' : '#666');
+  var statusColor = a.status === 'active' ? '#A8FF00' : (a.status === 'paused' ? '#f59e0b' : '#666');
   var inviteUrl = a.latest_token ? (origin + '/corporate/join/' + a.latest_token) : null;
   var pilotEnds = a.pilot_ends_at ? new Date(a.pilot_ends_at) : null;
   var pilotDaysLeft = pilotEnds ? Math.ceil((pilotEnds.getTime() - Date.now()) / 86400000) : null;
@@ -402,8 +402,8 @@ function renderCorporateAccountDetail(a, employees, engagement) {
       '<div style="display:flex;align-items:center;gap:14px">' +
         '<button class="admin-btn" data-atp-call="showCorporateTab" data-args=\'["accounts"]\' style="font-size:11px;padding:6px 12px">← All accounts</button>' +
         '<div style="position:relative">' +
-          (a.logo_url ? '<img src="' + _esc(a.logo_url) + '" alt="logo" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\';" style="width:48px;height:48px;border-radius:8px;background:linear-gradient(45deg,#1a1a1a 25%,#222 25%,#222 50%,#1a1a1a 50%,#1a1a1a 75%,#222 75%);background-size:8px 8px;padding:4px;object-fit:contain;border:1px solid rgba(255,255,255,.08)"><div style="display:none;width:48px;height:48px;border-radius:8px;background:#1a1a1a;align-items:center;justify-content:center;font-family:var(--ff-display,sans-serif);font-size:11px;color:#ef4444;font-weight:700">404</div>' : '<div style="width:48px;height:48px;border-radius:8px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-family:var(--ff-display,sans-serif);font-size:22px;color:#7AC231;font-weight:700">' + _esc((a.company_name||'?').charAt(0).toUpperCase()) + '</div>') +
-          '<button title="Edit logo" data-atp-call="editCorporateLogo" data-args=\'["' + a.id + '"]\' style="position:absolute;bottom:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:#7AC231;color:#0a0a0a;border:2px solid #0a0a0a;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;padding:0">✎</button>' +
+          (a.logo_url ? '<img src="' + _esc(a.logo_url) + '" alt="logo" onerror="this.style.display=\'none\';this.nextSibling.style.display=\'flex\';" style="width:48px;height:48px;border-radius:8px;background:linear-gradient(45deg,#1a1a1a 25%,#222 25%,#222 50%,#1a1a1a 50%,#1a1a1a 75%,#222 75%);background-size:8px 8px;padding:4px;object-fit:contain;border:1px solid rgba(255,255,255,.08)"><div style="display:none;width:48px;height:48px;border-radius:8px;background:#1a1a1a;align-items:center;justify-content:center;font-family:var(--ff-display,sans-serif);font-size:11px;color:#ef4444;font-weight:700">404</div>' : '<div style="width:48px;height:48px;border-radius:8px;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-family:var(--ff-display,sans-serif);font-size:22px;color:#A8FF00;font-weight:700">' + _esc((a.company_name||'?').charAt(0).toUpperCase()) + '</div>') +
+          '<button title="Edit logo" data-atp-call="editCorporateLogo" data-args=\'["' + a.id + '"]\' style="position:absolute;bottom:-6px;right:-6px;width:22px;height:22px;border-radius:50%;background:#A8FF00;color:#0a0a0a;border:2px solid #0a0a0a;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700;padding:0">✎</button>' +
         '</div>' +
         '<div>' +
           '<div style="font-family:var(--ff-display,sans-serif);font-size:24px;font-weight:800;color:#fff;line-height:1.1">' + _esc(a.company_name) + '</div>' +
@@ -424,7 +424,7 @@ function renderCorporateAccountDetail(a, employees, engagement) {
     // KPI strip
     '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">' +
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:8px;padding:14px"><div style="font-size:9px;color:#888;letter-spacing:.12em;text-transform:uppercase;font-weight:600">Total enrolled</div><div style="font-family:var(--ff-display,sans-serif);font-size:26px;font-weight:900;color:#fff">' + (a.employee_count || 0) + '</div></div>' +
-      '<div style="background:#0f0f0f;border:1px solid rgba(122,194,49,.32);border-radius:8px;padding:14px"><div style="font-size:9px;color:#7AC231;letter-spacing:.12em;text-transform:uppercase;font-weight:600">Active</div><div style="font-family:var(--ff-display,sans-serif);font-size:26px;font-weight:900;color:#7AC231">' + activeCount + '</div></div>' +
+      '<div style="background:#0f0f0f;border:1px solid rgba(168,255,0,.32);border-radius:8px;padding:14px"><div style="font-size:9px;color:#A8FF00;letter-spacing:.12em;text-transform:uppercase;font-weight:600">Active</div><div style="font-family:var(--ff-display,sans-serif);font-size:26px;font-weight:900;color:#A8FF00">' + activeCount + '</div></div>' +
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:8px;padding:14px"><div style="font-size:9px;color:#888;letter-spacing:.12em;text-transform:uppercase;font-weight:600">Active 30d (unique)</div><div style="font-family:var(--ff-display,sans-serif);font-size:26px;font-weight:900;color:#fff">' + (ea.unique_30d || 0) + ' <span style="font-size:11px;font-family:inherit;color:#888;font-weight:500">/ ' + participation + '%</span></div></div>' +
       '<div style="background:#0f0f0f;border:1px solid rgba(245,158,11,.32);border-radius:8px;padding:14px"><div style="font-size:9px;color:#f59e0b;letter-spacing:.12em;text-transform:uppercase;font-weight:600">Inactive (>30d)</div><div style="font-family:var(--ff-display,sans-serif);font-size:26px;font-weight:900;color:#f59e0b">' + inactive30 + '</div></div>' +
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:8px;padding:14px"><div style="font-size:9px;color:#888;letter-spacing:.12em;text-transform:uppercase;font-weight:600">AED MRR</div><div style="font-family:var(--ff-display,sans-serif);font-size:26px;font-weight:900;color:#fff">' + (a.monthly_fee_aed || 0).toLocaleString() + '</div></div>' +
@@ -442,7 +442,7 @@ function renderCorporateAccountDetail(a, employees, engagement) {
     // Employees table
     (employees.length ?
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;overflow:hidden">' +
-        '<div style="display:grid;grid-template-columns:1fr 1.2fr 0.8fr 80px 100px 100px auto;gap:14px;padding:10px 16px;background:rgba(122,194,49,.04);font-size:10px;color:#7AC231;letter-spacing:.12em;text-transform:uppercase;font-weight:700">' +
+        '<div style="display:grid;grid-template-columns:1fr 1.2fr 0.8fr 80px 100px 100px auto;gap:14px;padding:10px 16px;background:rgba(168,255,0,.04);font-size:10px;color:#A8FF00;letter-spacing:.12em;text-transform:uppercase;font-weight:700">' +
           '<div>Name</div><div>Email</div><div>Department</div><div>Status</div><div>30d</div><div>Last seen</div><div>Actions</div>' +
         '</div>' +
         employees.map(function(e){
@@ -450,7 +450,7 @@ function renderCorporateAccountDetail(a, employees, engagement) {
           var statusBadge;
           if (e.frozen_at) statusBadge = '<span style="background:rgba(245,158,11,.14);color:#f59e0b;font-size:9px;padding:3px 8px;border-radius:99px;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Frozen</span>';
           else if (e.invitation_sent_at && !e.joined_at) statusBadge = '<span style="background:rgba(59,130,246,.14);color:#3b82f6;font-size:9px;padding:3px 8px;border-radius:99px;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Invited</span>';
-          else statusBadge = '<span style="background:rgba(122,194,49,.14);color:#7AC231;font-size:9px;padding:3px 8px;border-radius:99px;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Active</span>';
+          else statusBadge = '<span style="background:rgba(168,255,0,.14);color:#A8FF00;font-size:9px;padding:3px 8px;border-radius:99px;font-weight:700;letter-spacing:.05em;text-transform:uppercase">Active</span>';
           var roleTag = e.role === 'admin' ? '<span style="background:rgba(245,192,66,.14);color:#f5c042;font-size:9px;padding:2px 6px;border-radius:4px;font-weight:700;letter-spacing:.04em;margin-left:6px">CA</span>' : '';
           var lastSeen = e.last_checkin_at ? new Date(e.last_checkin_at).toLocaleDateString('en-GB',{month:'short',day:'numeric'}) : '—';
           return '<div style="display:grid;grid-template-columns:1fr 1.2fr 0.8fr 80px 100px 100px auto;gap:14px;padding:10px 16px;border-top:1px solid #1a1a1a;align-items:center;font-size:13px">' +
@@ -466,7 +466,7 @@ function renderCorporateAccountDetail(a, employees, engagement) {
                 ? '<button class="admin-btn" data-atp-call="resendCorpInvite" data-args=\'["' + e.id + '"]\' style="font-size:10px;padding:4px 8px;background:rgba(59,130,246,.10);color:#3b82f6;border:1px solid rgba(59,130,246,.3)">Resend</button>'
                 : '') +
               (e.frozen_at
-                ? '<button class="admin-btn" data-atp-call="unfreezeCorpEmployee" data-args=\'["' + e.id + '"]\' style="font-size:10px;padding:4px 8px;background:rgba(122,194,49,.10);color:#7AC231;border:1px solid rgba(122,194,49,.3)">Unfreeze</button>'
+                ? '<button class="admin-btn" data-atp-call="unfreezeCorpEmployee" data-args=\'["' + e.id + '"]\' style="font-size:10px;padding:4px 8px;background:rgba(168,255,0,.10);color:#A8FF00;border:1px solid rgba(168,255,0,.3)">Unfreeze</button>'
                 : '<button class="admin-btn" data-atp-call="freezeCorpEmployee" data-args=\'["' + e.id + '"]\' style="font-size:10px;padding:4px 8px;background:rgba(245,158,11,.10);color:#f59e0b;border:1px solid rgba(245,158,11,.3)">Freeze</button>') +
               '<button class="admin-btn" data-atp-call="deleteCorpEmployee" data-args=\'["' + e.id + '","' + _esc(name).replace(/\\/g,"\\\\").replace(/"/g,"&quot;") + '"]\' style="font-size:10px;padding:4px 8px;background:rgba(239,68,68,.10);color:#ef4444;border:1px solid rgba(239,68,68,.3)">Remove</button>' +
             '</div>' +
@@ -485,7 +485,7 @@ function newCorpEmployeeForm() {
   if (!wrap) return;
   wrap.innerHTML =
     '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:16px;margin-bottom:14px">' +
-      '<div style="font-family:var(--ff-display,sans-serif);font-size:14px;font-weight:800;color:#7AC231;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Add an employee</div>' +
+      '<div style="font-family:var(--ff-display,sans-serif);font-size:14px;font-weight:800;color:#A8FF00;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Add an employee</div>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr 2fr 1fr;gap:10px;margin-bottom:10px">' +
         '<div><label class="admin-form-label">First name</label><input class="admin-form-input" id="empFirst" placeholder="Sarah"></div>' +
         '<div><label class="admin-form-label">Last name</label><input class="admin-form-input" id="empLast" placeholder="Khalil"></div>' +
@@ -610,9 +610,9 @@ function openCorpCsvUpload() {
   if (!wrap) return;
   wrap.innerHTML =
     '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:16px;margin-bottom:14px">' +
-      '<div style="font-family:var(--ff-display,sans-serif);font-size:14px;font-weight:800;color:#7AC231;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Bulk upload from CSV</div>' +
+      '<div style="font-family:var(--ff-display,sans-serif);font-size:14px;font-weight:800;color:#A8FF00;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Bulk upload from CSV</div>' +
       '<div style="font-size:12px;color:#aaa;line-height:1.55;margin-bottom:12px">' +
-        'CSV must have a header row. Required column: <code style="background:#000;padding:2px 6px;border-radius:3px;color:#7AC231">email</code>. ' +
+        'CSV must have a header row. Required column: <code style="background:#000;padding:2px 6px;border-radius:3px;color:#A8FF00">email</code>. ' +
         'Optional: <code style="background:#000;padding:2px 6px;border-radius:3px;color:#aaa">first_name</code>, ' +
         '<code style="background:#000;padding:2px 6px;border-radius:3px;color:#aaa">last_name</code>, ' +
         '<code style="background:#000;padding:2px 6px;border-radius:3px;color:#aaa">department</code>, ' +
@@ -712,7 +712,7 @@ function editCorporateLogo(e, btn) {
   var current = (CORP_ACTIVE_ACCOUNT && CORP_ACTIVE_ACCOUNT.logo_url) || '';
   wrap.innerHTML =
     '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:16px;margin-bottom:14px">' +
-      '<div style="font-family:var(--ff-display,sans-serif);font-size:14px;font-weight:800;color:#7AC231;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Company logo</div>' +
+      '<div style="font-family:var(--ff-display,sans-serif);font-size:14px;font-weight:800;color:#A8FF00;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px">Company logo</div>' +
       '<label class="admin-form-label">Company logo</label>' +
       '<div style="display:flex;gap:12px;align-items:center;margin-bottom:8px">' +
         // Live preview — checkered BG reveals both light and dark logos
@@ -723,7 +723,7 @@ function editCorporateLogo(e, btn) {
             '<input type="file" id="corpLogoInputFile" accept="image/png,image/svg+xml,image/webp" style="display:none" onchange="atpUpload(\'corpLogoInputFile\',\'corpLogoInput\',\'image\',1);setTimeout(refreshCorpLogoPreview,800);">' +
             '<button type="button" class="admin-btn" style="font-size:11px;padding:9px 14px;white-space:nowrap" onclick="document.getElementById(\'corpLogoInputFile\').click()">📁 Upload</button>' +
           '</div>' +
-          '<div style="font-size:11px;color:#666;line-height:1.5">📐 Square <strong style="color:#aaa">256 × 256&nbsp;px</strong> (1:1) · PNG or SVG with transparent BG · &lt; 100&nbsp;KB. <strong style="color:#7AC231">Preview shows on a checkered background</strong> so both light and dark logos are visible.</div>' +
+          '<div style="font-size:11px;color:#666;line-height:1.5">📐 Square <strong style="color:#aaa">256 × 256&nbsp;px</strong> (1:1) · PNG or SVG with transparent BG · &lt; 100&nbsp;KB. <strong style="color:#A8FF00">Preview shows on a checkered background</strong> so both light and dark logos are visible.</div>' +
         '</div>' +
       '</div>' +
       '<div style="display:flex;gap:8px;margin-top:10px">' +

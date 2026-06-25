@@ -52,8 +52,8 @@ function toggleLive() {
   var knob = document.getElementById('sLiveKnob');
   cb.checked = !cb.checked;
   if (cb.checked) {
-    toggle.style.background = '#7AC231';
-    toggle.style.borderColor = '#7AC231';
+    toggle.style.background = '#A8FF00';
+    toggle.style.borderColor = '#A8FF00';
     knob.style.left = '22px';
     knob.style.background = '#fff';
   } else {
@@ -105,14 +105,14 @@ function updateDayTimes() {
 
   var toggleRow =
     '<label style="display:flex;align-items:center;gap:8px;padding:6px 4px;font-size:12px;color:#aaa;cursor:pointer;margin-bottom:6px">' +
-      '<input type="checkbox" id="sameTimeAll" ' + (sameOn ? 'checked' : '') + ' onchange="updateDayTimes()" style="accent-color:#7AC231">' +
+      '<input type="checkbox" id="sameTimeAll" ' + (sameOn ? 'checked' : '') + ' onchange="updateDayTimes()" style="accent-color:#A8FF00">' +
       'Same time for all days' +
     '</label>';
 
   var perDay;
   if (sameOn) {
     perDay = '<div style="display:flex;align-items:center;gap:8px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:8px 12px">' +
-        '<span style="font-size:12px;font-weight:700;color:#7AC231;min-width:60px">All days</span>' +
+        '<span style="font-size:12px;font-weight:700;color:#A8FF00;min-width:60px">All days</span>' +
         '<input class="admin-form-input" type="time" id="time-ALL"    value="' + bulkS + '" style="width:90px;padding:4px 8px" title="Start time">' +
         '<span style="font-size:11px;color:#666">to</span>' +
         '<input class="admin-form-input" type="time" id="endtime-ALL" value="' + bulkE + '" style="width:90px;padding:4px 8px" title="End time">' +
@@ -121,7 +121,7 @@ function updateDayTimes() {
   } else {
     perDay = checked.map(function(day) {
       return '<div style="display:flex;align-items:center;gap:8px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:8px 12px">' +
-        '<span style="font-size:12px;font-weight:700;color:#7AC231;min-width:32px">'+day+'</span>' +
+        '<span style="font-size:12px;font-weight:700;color:#A8FF00;min-width:32px">'+day+'</span>' +
         '<input class="admin-form-input" type="time" id="time-'+day+'" value="06:30" style="width:90px;padding:4px 8px" title="Start time">' +
         '<span style="font-size:11px;color:#666">to</span>' +
         '<input class="admin-form-input" type="time" id="endtime-'+day+'" value="07:30" style="width:90px;padding:4px 8px" title="End time">' +
@@ -316,9 +316,9 @@ function renderAmbassadorChips() {
   wrap.innerHTML = SESSION_AMBS_PICK.map(function(id){
     var m = ALL_AMBASSADORS.find(function(x){ return x.id === id; }) || { first_name:'Ambassador', last_name:'' };
     var name = ((m.first_name||'') + ' ' + (m.last_name||'')).trim() || 'Ambassador';
-    return '<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;font-size:12px;background:rgba(122,194,49,.12);color:#7AC231;border:1px solid rgba(122,194,49,.3);border-radius:20px">' +
+    return '<span style="display:inline-flex;align-items:center;gap:6px;padding:4px 10px;font-size:12px;background:rgba(168,255,0,.12);color:#A8FF00;border:1px solid rgba(168,255,0,.3);border-radius:20px">' +
       name.replace(/</g,'&lt;') +
-      '<button type="button" onclick="removeSessionAmbassador(\'' + id + '\')" style="background:none;border:none;color:#7AC231;cursor:pointer;font-size:14px;line-height:1;padding:0">×</button>' +
+      '<button type="button" onclick="removeSessionAmbassador(\'' + id + '\')" style="background:none;border:none;color:#A8FF00;cursor:pointer;font-size:14px;line-height:1;padding:0">×</button>' +
     '</span>';
   }).join('');
 }
@@ -774,7 +774,7 @@ async function createSession() {
     if (data.sessions || data.session) {
       var count = data.sessions ? data.sessions.length : 1;
       msgEl.textContent = isEdit ? '✅ Session updated!' : '✅ '+count+' session(s) created!';
-      msgEl.style.cssText = 'display:block;background:#0d1a0a;color:#7AC231;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+      msgEl.style.cssText = 'display:block;background:#0d1a0a;color:#A8FF00;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
       resetSessionForm();
       setTimeout(function(){ loadSessionsList(); loadDashboardAPI(); }, 800);
     } else {
@@ -994,7 +994,7 @@ async function loadSessionsList() {
         var courtsArr = s.courts;
         if (typeof courtsArr === 'string') { try { courtsArr = JSON.parse(courtsArr); } catch(e){ courtsArr = []; } }
         var courtCount = Array.isArray(courtsArr) ? courtsArr.length : 0;
-        sportBadge = '<div style="font-size:11px;color:#7AC231;margin-top:3px;font-weight:600">'+(sportIcons[s.sport_type]||'🏆')+' '+s.sport_type.charAt(0).toUpperCase()+s.sport_type.slice(1);
+        sportBadge = '<div style="font-size:11px;color:#A8FF00;margin-top:3px;font-weight:600">'+(sportIcons[s.sport_type]||'🏆')+' '+s.sport_type.charAt(0).toUpperCase()+s.sport_type.slice(1);
         if (courtCount) sportBadge += ' · '+courtCount+' court'+(courtCount>1?'s':'');
         sportBadge += '</div>';
       }
@@ -1059,11 +1059,11 @@ async function viewRegistrations(sessionId) {
       courtsArr.forEach(function(ct){
         var count = grouped[ct.name] || 0;
         var pct = Math.round((count/(ct.max_players||4))*100);
-        courtsSummary += '<div style="padding:10px;background:#1a1a1a;border-radius:8px;border-left:3px solid #7AC231">'+
+        courtsSummary += '<div style="padding:10px;background:#1a1a1a;border-radius:8px;border-left:3px solid #A8FF00">'+
           '<div style="font-size:12px;font-weight:700;color:#fff">'+ct.name+'</div>'+
-          '<div style="font-size:10px;color:#7AC231;margin-top:2px">'+ct.level+'</div>'+
+          '<div style="font-size:10px;color:#A8FF00;margin-top:2px">'+ct.level+'</div>'+
           '<div style="font-size:14px;color:#fff;margin-top:6px;font-weight:700">'+count+' / '+ct.max_players+'</div>'+
-          '<div style="height:3px;background:#2a2a2a;border-radius:2px;margin-top:4px"><div style="width:'+pct+'%;height:100%;background:#7AC231;border-radius:2px"></div></div>'+
+          '<div style="height:3px;background:#2a2a2a;border-radius:2px;margin-top:4px"><div style="width:'+pct+'%;height:100%;background:#A8FF00;border-radius:2px"></div></div>'+
         '</div>';
       });
       courtsSummary += '</div>';
@@ -1075,7 +1075,7 @@ async function viewRegistrations(sessionId) {
           '<td><div class="admin-member-name">'+r.first_name+' '+r.last_name+'</div><div class="admin-member-email">'+r.email+'</div></td>'+
           '<td style="font-size:12px;color:#888">'+r.member_number+'</td>'+
           '<td style="font-size:12px;color:#888">'+(r.padel_level||'—')+'</td>'+
-          '<td style="font-size:12px;color:#7AC231">'+(r.court_name||'—')+'</td>'+
+          '<td style="font-size:12px;color:#A8FF00">'+(r.court_name||'—')+'</td>'+
           '<td><span class="badge '+(r.status==='attended'?'badge-green':'badge-grey')+'">'+r.status+'</span></td>'+
           '</tr>';
       }).join('')+'</tbody></table>';

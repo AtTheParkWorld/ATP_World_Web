@@ -9,7 +9,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --green:#7AC231;--green-dark:#5a9a1f;--green-light:#a8e055;
+  --green:#A8FF00;--green-dark:#8FD800;--green-light:#C6FF55;
   --black:#0a0a0a;--dark:#111111;--dark2:#1a1a1a;--dark3:#222222;
   --muted:#888888;--light:#aaaaaa;--white:#ffffff;
   --gold:#f5c042;
@@ -48,14 +48,14 @@ img{display:block;max-width:100%}button{cursor:pointer;font-family:inherit;backg
 .deck-footer{position:absolute;bottom:0;left:0;right:0;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;background:linear-gradient(0deg,rgba(0,0,0,.85),transparent);z-index:10;pointer-events:none}
 .deck-nav{display:flex;gap:10px;pointer-events:auto}
 .deck-btn{width:42px;height:42px;border-radius:50%;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--white);transition:background .2s,border-color .2s}
-.deck-btn:hover{background:rgba(122,194,49,.18);border-color:rgba(122,194,49,.4)}
+.deck-btn:hover{background:rgba(168,255,0,.18);border-color:rgba(168,255,0,.4)}
 .deck-progress{flex:1;display:flex;justify-content:center;gap:6px;pointer-events:none}
 .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18);transition:background .2s,transform .2s}
 .dot.active{background:var(--green);transform:scale(1.4)}
 .deck-meta{font-size:11px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;pointer-events:auto}
 
 /* Slide 1 — Title */
-.slide-title{justify-content:center;background:radial-gradient(60% 80% at 20% 30%,rgba(122,194,49,.16) 0%,transparent 60%),radial-gradient(50% 70% at 80% 90%,rgba(122,194,49,.10) 0%,transparent 60%),var(--black)}
+.slide-title{justify-content:center;background:radial-gradient(60% 80% at 20% 30%,rgba(168,255,0,.16) 0%,transparent 60%),radial-gradient(50% 70% at 80% 90%,rgba(168,255,0,.10) 0%,transparent 60%),var(--black)}
 .slide-title h1{font-family:var(--ff-display);font-size:clamp(60px,9vw,140px);font-weight:900;line-height:.9;text-transform:uppercase;letter-spacing:-.02em;margin-bottom:28px}
 .slide-title h1 .acc{color:var(--green)}
 .slide-title-eyebrow{font-size:13px;letter-spacing:.24em;font-weight:700;color:var(--green);margin-bottom:30px}
@@ -76,7 +76,7 @@ img{display:block;max-width:100%}button{cursor:pointer;font-family:inherit;backg
 /* Feature list */
 .feat-list{display:flex;flex-direction:column;gap:18px;margin-top:30px}
 .feat{display:flex;gap:18px;align-items:flex-start}
-.feat-icon{width:44px;height:44px;border-radius:10px;background:rgba(122,194,49,.14);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px}
+.feat-icon{width:44px;height:44px;border-radius:10px;background:rgba(168,255,0,.14);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:20px}
 .feat-text h4{font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:4px}
 .feat-text p{font-size:14px;color:var(--light);line-height:1.5}
 
@@ -100,7 +100,7 @@ img{display:block;max-width:100%}button{cursor:pointer;font-family:inherit;backg
 .mock-url{margin-left:14px;font-size:11px;color:var(--muted);background:rgba(255,255,255,.04);padding:4px 10px;border-radius:6px;font-family:monospace}
 
 /* Mock: coach profile fragment */
-.mock-coach-card{background:linear-gradient(135deg,rgba(122,194,49,.10),rgba(122,194,49,.02));border:1px solid rgba(122,194,49,.28);border-radius:14px;padding:20px;margin-bottom:14px}
+.mock-coach-card{background:linear-gradient(135deg,rgba(168,255,0,.10),rgba(168,255,0,.02));border:1px solid rgba(168,255,0,.28);border-radius:14px;padding:20px;margin-bottom:14px}
 .mock-coach-row{display:flex;align-items:center;gap:14px}
 .mock-coach-avatar{width:56px;height:56px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:22px;font-weight:900;color:#0a0a0a;flex-shrink:0}
 .mock-coach-name{font-family:var(--ff-display);font-size:18px;font-weight:800;color:#fff;text-transform:uppercase}
@@ -140,7 +140,7 @@ img{display:block;max-width:100%}button{cursor:pointer;font-family:inherit;backg
 /* Money diagram */
 .money-flow{display:grid;grid-template-columns:1.2fr 80px 1.5fr;gap:30px;align-items:center;margin-top:40px}
 .money-card{background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:24px;text-align:center}
-.money-card.green{background:linear-gradient(180deg,rgba(122,194,49,.12),rgba(122,194,49,.03));border-color:rgba(122,194,49,.32)}
+.money-card.green{background:linear-gradient(180deg,rgba(168,255,0,.12),rgba(168,255,0,.03));border-color:rgba(168,255,0,.32)}
 .money-card.gold{background:linear-gradient(180deg,rgba(245,192,66,.10),rgba(245,192,66,.02));border-color:rgba(245,192,66,.32)}
 .money-card .amount{font-family:var(--ff-display);font-size:54px;font-weight:900;color:#fff;line-height:1;letter-spacing:-.01em}
 .money-card.green .amount{color:var(--green)}
@@ -153,7 +153,7 @@ img{display:block;max-width:100%}button{cursor:pointer;font-family:inherit;backg
 .cancel-table{margin-top:30px;border:1px solid rgba(255,255,255,.08);border-radius:12px;overflow:hidden}
 .cancel-row{display:grid;grid-template-columns:2fr 1fr 1fr;padding:18px 24px;border-bottom:1px solid rgba(255,255,255,.06);align-items:center}
 .cancel-row:last-child{border-bottom:none}
-.cancel-row.head{background:rgba(122,194,49,.06);font-size:11px;color:var(--green);letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+.cancel-row.head{background:rgba(168,255,0,.06);font-size:11px;color:var(--green);letter-spacing:.14em;text-transform:uppercase;font-weight:700}
 .cancel-row .when{font-size:15px;color:#fff;font-weight:500}
 .cancel-row .pct{font-family:var(--ff-display);font-size:24px;font-weight:900;text-align:center}
 .cancel-row .pct.green{color:var(--green)}
@@ -161,7 +161,7 @@ img{display:block;max-width:100%}button{cursor:pointer;font-family:inherit;backg
 .cancel-row .pct.red{color:#ff8a8a}
 
 /* CTA */
-.cta-block{margin-top:auto;padding:32px 36px;background:linear-gradient(120deg,rgba(122,194,49,.10),rgba(122,194,49,.02));border:1px solid rgba(122,194,49,.32);border-radius:16px;display:flex;justify-content:space-between;align-items:center;gap:24px}
+.cta-block{margin-top:auto;padding:32px 36px;background:linear-gradient(120deg,rgba(168,255,0,.10),rgba(168,255,0,.02));border:1px solid rgba(168,255,0,.32);border-radius:16px;display:flex;justify-content:space-between;align-items:center;gap:24px}
 .cta-block h3{font-family:var(--ff-display);font-size:26px;font-weight:900;text-transform:uppercase;color:#fff;margin-bottom:6px}
 .cta-block p{font-size:14px;color:var(--light);max-width:480px}
 .cta-block button{background:var(--green);color:#0a0a0a;padding:14px 28px;border-radius:8px;font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap}
@@ -407,7 +407,7 @@ img{display:block;max-width:100%}button{cursor:pointer;font-family:inherit;backg
             <div class="mock-time">19:00</div>
           </div>
           <input class="mock-input" type="text" placeholder="What do you want to focus on? (optional)" value="Marathon pacing in mile 18+">
-          <div style="background:rgba(122,194,49,.06);border:1px solid rgba(122,194,49,.24);border-radius:6px;padding:8px 10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:10px;color:var(--green);font-weight:700;letter-spacing:.08em;text-transform:uppercase">Pay from wallet</span><span style="font-size:11px;color:#fff;font-weight:600">AED 180 + 700 pts</span></div>
+          <div style="background:rgba(168,255,0,.06);border:1px solid rgba(168,255,0,.24);border-radius:6px;padding:8px 10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:10px;color:var(--green);font-weight:700;letter-spacing:.08em;text-transform:uppercase">Pay from wallet</span><span style="font-size:11px;color:#fff;font-weight:600">AED 180 + 700 pts</span></div>
           <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:6px;padding:8px 10px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center"><span style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">🎁 Gift to a friend</span><span style="font-size:10px;color:var(--green)">Tap to switch →</span></div>
           <div class="mock-pay-bar">
             <small>60 min · Wed 27 May, 11:00</small>
@@ -451,7 +451,7 @@ img{display:block;max-width:100%}button{cursor:pointer;font-family:inherit;backg
           <div class="mock-modal-eyebrow">🎁 Gift a private session</div>
           <div class="mock-modal-title">For who?</div>
           <input class="mock-input" type="text" placeholder="Search ATP members…" value="Maria Lopez">
-          <div style="background:rgba(122,194,49,.06);border:1px solid rgba(122,194,49,.24);border-radius:8px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:10px">
+          <div style="background:rgba(168,255,0,.06);border:1px solid rgba(168,255,0,.24);border-radius:8px;padding:10px 12px;margin-bottom:10px;display:flex;align-items:center;gap:10px">
             <div style="width:32px;height:32px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-weight:900;color:#0a0a0a;font-size:12px">ML</div>
             <div style="flex:1"><div style="font-size:12px;color:#fff;font-weight:600">Maria Lopez</div><div style="font-size:10px;color:var(--muted)">Better tribe · Dubai</div></div>
             <div style="font-size:11px;color:var(--green)">✓ Selected</div>
@@ -578,7 +578,7 @@ img{display:block;max-width:100%}button{cursor:pointer;font-family:inherit;backg
             <span class="mock-tab">Availability</span>
             <span class="mock-tab active">Wallet</span>
           </div>
-          <div style="background:linear-gradient(120deg,rgba(122,194,49,.16),rgba(122,194,49,.04));border:1px solid rgba(122,194,49,.32);border-radius:12px;padding:22px;margin-bottom:12px">
+          <div style="background:linear-gradient(120deg,rgba(168,255,0,.16),rgba(168,255,0,.04));border:1px solid rgba(168,255,0,.32);border-radius:12px;padding:22px;margin-bottom:12px">
             <div style="font-size:10px;color:var(--green);letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">Current ATP wallet balance</div>
             <div style="font-family:var(--ff-display);font-size:48px;font-weight:900;color:var(--green);line-height:1">AED 2,520</div>
             <div style="font-size:11px;color:var(--muted);margin-top:8px">→ Bank transfer on June 1, 2026 (12 days)</div>
@@ -716,7 +716,7 @@ img{display:block;max-width:100%}button{cursor:pointer;font-family:inherit;backg
         <span class="pct red">0%</span>
         <span class="pct green">90% (100% − 10%)</span>
       </div>
-      <div class="cancel-row" style="background:rgba(122,194,49,.04)">
+      <div class="cancel-row" style="background:rgba(168,255,0,.04)">
         <span class="when"><strong style="color:#fff">YOU cancel</strong> · any time</span>
         <span class="pct green">100% to wallet</span>
         <span class="pct red">— (no service)</span>
@@ -745,17 +745,17 @@ img{display:block;max-width:100%}button{cursor:pointer;font-family:inherit;backg
     <p class="lead">Before we build this, we want to know if it works for you. Real feedback shapes the real product.</p>
 
     <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:24px;margin-top:40px">
-      <div style="background:var(--dark2);border:1px solid rgba(122,194,49,.32);border-radius:14px;padding:28px">
+      <div style="background:var(--dark2);border:1px solid rgba(168,255,0,.32);border-radius:14px;padding:28px">
         <div style="font-family:var(--ff-display);font-size:42px;font-weight:900;color:var(--green);margin-bottom:12px">01</div>
         <h4 style="font-family:var(--ff-display);font-size:20px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:10px">Would you use it?</h4>
         <p style="font-size:14px;color:var(--light);line-height:1.6">Honest answer. If "no," tell us what would change your mind.</p>
       </div>
-      <div style="background:var(--dark2);border:1px solid rgba(122,194,49,.32);border-radius:14px;padding:28px">
+      <div style="background:var(--dark2);border:1px solid rgba(168,255,0,.32);border-radius:14px;padding:28px">
         <div style="font-family:var(--ff-display);font-size:42px;font-weight:900;color:var(--green);margin-bottom:12px">02</div>
         <h4 style="font-family:var(--ff-display);font-size:20px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:10px">Is 10% fair?</h4>
         <p style="font-size:14px;color:var(--light);line-height:1.6">It covers Stripe fees, hosting, support, marketing. But you tell us.</p>
       </div>
-      <div style="background:var(--dark2);border:1px solid rgba(122,194,49,.32);border-radius:14px;padding:28px">
+      <div style="background:var(--dark2);border:1px solid rgba(168,255,0,.32);border-radius:14px;padding:28px">
         <div style="font-family:var(--ff-display);font-size:42px;font-weight:900;color:var(--green);margin-bottom:12px">03</div>
         <h4 style="font-family:var(--ff-display);font-size:20px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:10px">What's missing?</h4>
         <p style="font-size:14px;color:var(--light);line-height:1.6">Group sessions? Packages? Video on our platform? We're listening.</p>

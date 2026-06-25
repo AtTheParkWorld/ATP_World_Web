@@ -24,15 +24,15 @@ function baseTemplate(title, body) {
   body{margin:0;padding:0;background:#0a0a0a;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:#fff}
   .wrap{max-width:560px;margin:0 auto;padding:40px 20px}
   .logo{font-size:22px;font-weight:900;letter-spacing:-0.5px;margin-bottom:32px}
-  .logo span{color:#7AC231}
+  .logo span{color:#A8FF00}
   .title{font-size:28px;font-weight:900;text-transform:uppercase;margin-bottom:8px}
   .sub{color:#888;font-size:14px;margin-bottom:28px;line-height:1.5}
   .card{background:#111;border:1px solid rgba(255,255,255,.08);border-radius:16px;padding:24px;margin:20px 0}
   .label{font-size:11px;color:#555;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
   .value{font-size:15px;font-weight:600;color:#fff}
-  .btn{display:inline-block;background:#7AC231;color:#000;font-weight:800;font-size:14px;padding:14px 28px;border-radius:10px;text-decoration:none;margin:20px 0}
+  .btn{display:inline-block;background:#A8FF00;color:#000;font-weight:800;font-size:14px;padding:14px 28px;border-radius:10px;text-decoration:none;margin:20px 0}
   .footer{margin-top:40px;font-size:12px;color:#444;border-top:1px solid #1a1a1a;padding-top:20px}
-  .green{color:#7AC231}
+  .green{color:#A8FF00}
 </style></head>
 <body><div class="wrap">
   <div class="logo">@ THE PARK</div>

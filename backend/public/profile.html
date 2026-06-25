@@ -15,7 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{
-  --green:#7AC231;--green-dark:#5a9a1f;
+  --green:#A8FF00;--green-dark:#8FD800;
   --black:#0a0a0a;--dark:#111111;--dark2:#1a1a1a;--dark3:#222222;
   --muted:#888888;--light:#aaaaaa;--white:#ffffff;
   --ff-display:'Barlow Condensed',sans-serif;--ff-body:'DM Sans',sans-serif;
@@ -80,7 +80,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
   filter:
     brightness(0) invert(1)
     drop-shadow(0 0 18px rgba(255,255,255,.28))
-    drop-shadow(0 0 6px rgba(122,194,49,.35))
+    drop-shadow(0 0 6px rgba(168,255,0,.35))
 }
 
 /* TOP LAYER — covers the logo. The mask radial-gradient is set inline
@@ -152,8 +152,8 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .profile-meta{padding-top:68px;padding-bottom:28px;display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:16px}
 .profile-name{font-family:var(--ff-display);font-size:36px;font-weight:900;text-transform:uppercase;letter-spacing:-.01em;line-height:1;margin-bottom:6px}
 .profile-sub{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
-.member-badge{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 12px;border-radius:20px;background:rgba(122,194,49,.12);border:1px solid rgba(122,194,49,.3);color:var(--green)}
-.member-badge.premium{background:linear-gradient(135deg,rgba(122,194,49,.18),rgba(122,194,49,.08));border-color:rgba(122,194,49,.45);color:var(--green)}
+.member-badge{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 12px;border-radius:20px;background:rgba(168,255,0,.12);border:1px solid rgba(168,255,0,.3);color:var(--green)}
+.member-badge.premium{background:linear-gradient(135deg,rgba(168,255,0,.18),rgba(168,255,0,.08));border-color:rgba(168,255,0,.45);color:var(--green)}
 /* Theme 13 — Premium+ tier gets the gold treatment so it visually
    outranks regular Premium. */
 .member-badge.premium-plus{background:linear-gradient(135deg,rgba(255,196,0,.18),rgba(255,150,0,.10));border-color:rgba(255,196,0,.45);color:#ffc400;box-shadow:0 0 0 1px rgba(255,196,0,.1) inset}
@@ -196,7 +196,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
   transition:background .15s;
 }
 .profile-menu .menu-item:hover{background:rgba(255,255,255,.05)}
-.profile-menu .menu-item.active{background:rgba(122,194,49,.14);color:var(--green)}
+.profile-menu .menu-item.active{background:rgba(168,255,0,.14);color:var(--green)}
 .profile-menu .menu-item.active::before{content:"●";font-size:8px;color:var(--green);margin-right:-4px}
 .profile-menu-divider{height:1px;background:rgba(255,255,255,.06);margin:6px 4px}
 .profile-menu .menu-section-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;font-weight:700;padding:8px 14px 4px}
@@ -219,14 +219,14 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .widget-body{padding:12px 14px}
 
 /* ── STREAK ── */
-.streak-hero{display:flex;align-items:center;gap:20px;padding:20px;background:linear-gradient(135deg,rgba(122,194,49,.08),rgba(122,194,49,.03));border-radius:var(--radius)}
+.streak-hero{display:flex;align-items:center;gap:20px;padding:20px;background:linear-gradient(135deg,rgba(168,255,0,.08),rgba(168,255,0,.03));border-radius:var(--radius)}
 .streak-fire-big{font-size:52px;line-height:1}
 .streak-num-big{font-family:var(--ff-display);font-size:64px;font-weight:900;color:var(--green);line-height:1}
 .streak-days{font-size:14px;color:var(--light);font-weight:500;margin-top:4px}
 .streak-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:16px}
 .streak-day{aspect-ratio:1;border-radius:6px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--muted)}
 .streak-day.done{background:var(--green);color:#fff}
-.streak-day.today{background:var(--green);box-shadow:0 0 0 2px rgba(122,194,49,.4);color:#fff}
+.streak-day.today{background:var(--green);box-shadow:0 0 0 2px rgba(168,255,0,.4);color:#fff}
 .streak-day.missed{background:rgba(239,68,68,.15);color:rgba(239,68,68,.6)}
 
 /* Streak progression bar (Theme 3 / #10.5, 10.6) */
@@ -240,14 +240,14 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 }
 .streak-progress-fill{
   position:absolute;left:0;top:0;height:100%;
-  background:linear-gradient(90deg,#7AC231 0%,#a8e055 60%,#ffc400 80%,#ff8a00 100%);
+  background:linear-gradient(90deg,#A8FF00 0%,#C6FF55 60%,#ffc400 80%,#ff8a00 100%);
   border-radius:999px;
   transition:width 1.4s cubic-bezier(.4,0,.2,1);
-  box-shadow:0 0 16px rgba(122,194,49,.55);
+  box-shadow:0 0 16px rgba(168,255,0,.55);
   animation:streak-pulse 2.4s ease-in-out infinite;
 }
 @keyframes streak-pulse{
-  0%,100%{box-shadow:0 0 12px rgba(122,194,49,.45);}
+  0%,100%{box-shadow:0 0 12px rgba(168,255,0,.45);}
   50%    {box-shadow:0 0 24px rgba(255,196,0,.55);}
 }
 .streak-progress-marker{
@@ -276,13 +276,13 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .session-name{font-size:13px;font-weight:600;color:var(--white)}
 .session-meta{font-size:11px;color:var(--muted);margin-top:2px}
 .session-status{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px}
-.session-status.upcoming{background:rgba(122,194,49,.1);color:var(--green);border:1px solid rgba(122,194,49,.2)}
+.session-status.upcoming{background:rgba(168,255,0,.1);color:var(--green);border:1px solid rgba(168,255,0,.2)}
 .session-status.done{background:rgba(255,255,255,.05);color:var(--muted)}
 
 /* ── ACHIEVEMENTS ── */
 .achievement-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
 .achievement{background:var(--dark3);border-radius:12px;padding:16px;text-align:center;border:1px solid rgba(255,255,255,.05);transition:border-color .2s}
-.achievement.unlocked{border-color:rgba(122,194,49,.2)}
+.achievement.unlocked{border-color:rgba(168,255,0,.2)}
 .achievement.locked{opacity:.4}
 .ach-icon{font-size:28px;margin-bottom:8px}
 .ach-name{font-size:11px;font-weight:700;color:var(--white);margin-bottom:2px;line-height:1.3}
@@ -295,7 +295,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .tribe-info{flex:1}
 .tribe-mname{font-size:13px;font-weight:600;color:var(--white)}
 .tribe-msub{font-size:11px;color:var(--muted)}
-.tribe-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(122,194,49,.1);color:var(--green);border:1px solid rgba(122,194,49,.2)}
+.tribe-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;background:rgba(168,255,0,.1);color:var(--green);border:1px solid rgba(168,255,0,.2)}
 
 /* ── FRIENDS ── */
 .friend-row{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05)}
@@ -318,7 +318,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 /* ── NOTIFICATIONS ── */
 .notif-row{display:flex;gap:12px;padding:13px 0;border-bottom:1px solid rgba(255,255,255,.05)}
 .notif-row:last-child{border-bottom:none}
-.notif-row.unread{background:rgba(122,194,49,.03);margin:0 -20px;padding:13px 20px}
+.notif-row.unread{background:rgba(168,255,0,.03);margin:0 -20px;padding:13px 20px}
 .notif-dot-wrap{padding-top:3px}
 .notif-dot{width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0}
 .notif-text{font-size:13px;color:var(--light);line-height:1.5;flex:1}
@@ -327,15 +327,15 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
 /* ── WALLET ── */
 .wallet-hero{background:linear-gradient(135deg,#0f2a08,#0a1a06);border-radius:var(--radius-lg);padding:28px;margin-bottom:16px;position:relative;overflow:hidden}
-.wallet-hero::after{content:'ATP';position:absolute;right:-12px;top:-8px;font-family:var(--ff-display);font-size:110px;font-weight:900;color:rgba(122,194,49,.04);line-height:1;pointer-events:none;user-select:none}
-.wallet-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(122,194,49,.7);margin-bottom:8px}
+.wallet-hero::after{content:'ATP';position:absolute;right:-12px;top:-8px;font-family:var(--ff-display);font-size:110px;font-weight:900;color:rgba(168,255,0,.04);line-height:1;pointer-events:none;user-select:none}
+.wallet-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(168,255,0,.7);margin-bottom:8px}
 .wallet-points{font-family:var(--ff-display);font-size:64px;font-weight:900;color:var(--green);line-height:1;margin-bottom:4px}
-.wallet-pts-label{font-size:14px;color:rgba(122,194,49,.7);font-weight:500}
+.wallet-pts-label{font-size:14px;color:rgba(168,255,0,.7);font-weight:500}
 .wallet-equiv{font-size:13px;color:rgba(255,255,255,.4);margin-top:12px}
 .wallet-txn{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.05)}
 .wallet-txn:last-child{border-bottom:none}
 .wallet-txn-left{display:flex;align-items:center;gap:10px}
-.wallet-txn-icon{width:32px;height:32px;border-radius:8px;background:rgba(122,194,49,.1);display:flex;align-items:center;justify-content:center;font-size:14px}
+.wallet-txn-icon{width:32px;height:32px;border-radius:8px;background:rgba(168,255,0,.1);display:flex;align-items:center;justify-content:center;font-size:14px}
 .wallet-txn-name{font-size:13px;font-weight:500;color:var(--white)}
 .wallet-txn-date{font-size:11px;color:var(--muted);margin-top:1px}
 .wallet-txn-amt{font-family:var(--ff-display);font-size:16px;font-weight:800}
@@ -343,7 +343,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .wallet-txn-amt.spend{color:#f97316}
 
 /* ── EDIT PROFILE FORM ── */
-.form-section-title{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin:24px 0 14px;padding-bottom:8px;border-bottom:1px solid rgba(122,194,49,.15)}
+.form-section-title{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin:24px 0 14px;padding-bottom:8px;border-bottom:1px solid rgba(168,255,0,.15)}
 .form-section-title:first-child{margin-top:0}
 .form-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .form-group{display:flex;flex-direction:column;gap:6px}
@@ -354,18 +354,18 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .form-select option{background:var(--dark2)}
 .sport-pills{display:flex;flex-wrap:wrap;gap:6px}
 .sport-pill{font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--muted);cursor:pointer;transition:all .18s}
-.sport-pill.sel{border-color:var(--green);color:var(--green);background:rgba(122,194,49,.08)}
+.sport-pill.sel{border-color:var(--green);color:var(--green);background:rgba(168,255,0,.08)}
 .padel-row{display:flex;gap:8px}
 .padel-btn{flex:1;padding:10px;border-radius:var(--radius);border:1px solid rgba(255,255,255,.1);background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;text-align:center}
-.padel-btn.sel{border-color:var(--green);color:var(--green);background:rgba(122,194,49,.08)}
+.padel-btn.sel{border-color:var(--green);color:var(--green);background:rgba(168,255,0,.08)}
 .form-save-btn{width:100%;padding:14px;background:var(--green);color:#fff;font-size:14px;font-weight:800;border:none;border-radius:var(--radius);cursor:pointer;margin-top:24px;letter-spacing:.04em;text-transform:uppercase;transition:background .2s}
 .form-save-btn:hover{background:var(--green-dark)}
 
 /* ── REFERRAL ── */
 .referral-hero{background:var(--dark3);border-radius:var(--radius-lg);padding:24px;text-align:center;margin-bottom:16px}
 .referral-code{font-family:var(--ff-display);font-size:32px;font-weight:900;color:var(--green);letter-spacing:.06em;margin:12px 0}
-.referral-copy-btn{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;padding:10px 20px;border-radius:var(--radius);border:1px solid rgba(122,194,49,.3);background:rgba(122,194,49,.08);color:var(--green);cursor:pointer;transition:all .2s}
-.referral-copy-btn:hover{background:rgba(122,194,49,.15)}
+.referral-copy-btn{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;padding:10px 20px;border-radius:var(--radius);border:1px solid rgba(168,255,0,.3);background:rgba(168,255,0,.08);color:var(--green);cursor:pointer;transition:all .2s}
+.referral-copy-btn:hover{background:rgba(168,255,0,.15)}
 
 /* Share channels — buttons live on the referral hero on Overview + My Tribe.
    WhatsApp is the primary CTA (UAE/Oman market dominance). Outline buttons
@@ -387,9 +387,9 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
 /* ── CHALLENGES ── */
 .challenge-card{background:var(--dark3);border-radius:var(--radius-lg);padding:18px;margin-bottom:12px;border:1px solid rgba(255,255,255,.05);position:relative;overflow:hidden}
-.challenge-card.active-c{border-color:rgba(122,194,49,.2)}
+.challenge-card.active-c{border-color:rgba(168,255,0,.2)}
 .challenge-header{display:flex;align-items:center;gap:12px;margin-bottom:12px}
-.challenge-icon{width:40px;height:40px;border-radius:10px;background:rgba(122,194,49,.1);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.challenge-icon{width:40px;height:40px;border-radius:10px;background:rgba(168,255,0,.1);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
 .challenge-name{font-size:14px;font-weight:700;color:var(--white)}
 .challenge-sub{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5;white-space:pre-wrap;word-break:break-word}
 .challenge-progress-wrap{background:rgba(255,255,255,.06);border-radius:4px;height:6px;overflow:hidden}
@@ -403,7 +403,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .sub-card{background:var(--dark2);border-radius:var(--radius-lg);padding:20px;border:1px solid rgba(255,255,255,.07)}
 .sub-card-label{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
 .sub-free{display:flex;align-items:center;gap:10px}
-.sub-icon{width:40px;height:40px;border-radius:10px;background:rgba(122,194,49,.1);display:flex;align-items:center;justify-content:center;font-size:20px}
+.sub-icon{width:40px;height:40px;border-radius:10px;background:rgba(168,255,0,.1);display:flex;align-items:center;justify-content:center;font-size:20px}
 .sub-name{font-family:var(--ff-display);font-size:22px;font-weight:900;text-transform:uppercase;color:var(--white)}
 .sub-desc{font-size:12px;color:var(--muted);margin-top:2px}
 .upgrade-btn{width:100%;padding:11px;background:rgba(255,196,0,.08);border:1px solid rgba(255,196,0,.25);border-radius:var(--radius);color:#ffc400;font-size:12px;font-weight:700;cursor:pointer;margin-top:14px;transition:all .2s;letter-spacing:.04em;text-transform:uppercase}
@@ -419,7 +419,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .auth-overlay.open{opacity:1;pointer-events:all}
 .auth-modal{background:var(--dark2);border-radius:16px;padding:0;width:100%;max-width:440px;border:1px solid rgba(255,255,255,.1);position:relative;transform:translateY(28px) scale(.97);transition:transform .3s cubic-bezier(.4,0,.2,1);overflow:hidden}
 .auth-overlay.open .auth-modal{transform:translateY(0) scale(1)}
-.auth-modal-top{background:linear-gradient(135deg,rgba(122,194,49,.12) 0%,transparent 100%);padding:36px 36px 28px;border-bottom:1px solid rgba(255,255,255,.06)}
+.auth-modal-top{background:linear-gradient(135deg,rgba(168,255,0,.12) 0%,transparent 100%);padding:36px 36px 28px;border-bottom:1px solid rgba(255,255,255,.06)}
 .auth-modal-logo{height:28px;width:auto;display:block;margin-bottom:18px}
 .auth-modal-title{font-family:var(--ff-display);font-size:32px;font-weight:900;text-transform:uppercase;color:var(--white);line-height:1;margin-bottom:6px}
 .auth-modal-sub{font-size:13px;color:var(--muted);line-height:1.6}
@@ -463,7 +463,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
 /* Success panel */
 .auth-success{text-align:center;padding:12px 0 4px}
-.auth-success-icon{width:64px;height:64px;border-radius:50%;background:rgba(122,194,49,.12);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px}
+.auth-success-icon{width:64px;height:64px;border-radius:50%;background:rgba(168,255,0,.12);border:2px solid var(--green);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;font-size:28px}
 .auth-success-title{font-family:var(--ff-display);font-size:30px;font-weight:900;text-transform:uppercase;color:var(--green);margin-bottom:6px}
 .auth-success-sub{font-size:14px;color:var(--light);line-height:1.7}
 
@@ -484,8 +484,8 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
 
 /* ── SESSION QR BTN ── */
-.session-qr-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid rgba(122,194,49,.3);background:rgba(122,194,49,.06);color:var(--green);cursor:pointer;transition:all .2s}
-.session-qr-btn:hover{background:rgba(122,194,49,.15)}
+.session-qr-btn{display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid rgba(168,255,0,.3);background:rgba(168,255,0,.06);color:var(--green);cursor:pointer;transition:all .2s}
+.session-qr-btn:hover{background:rgba(168,255,0,.15)}
 
 /* ── QR MODAL ── */
 .qr-modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.88);backdrop-filter:blur(12px);z-index:600;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .25s}
@@ -513,8 +513,8 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .ambassador-scan-btn:hover{background:#e6b000;transform:translateY(-1px)}
 
 /* ── COACH BADGE + CARD (mirror of ambassador, brand green) ── */
-.coach-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 12px;border-radius:20px;background:linear-gradient(135deg,rgba(122,194,49,.18),rgba(122,194,49,.08));border:1px solid rgba(122,194,49,.4);color:var(--green)}
-.coach-card{background:linear-gradient(135deg,rgba(122,194,49,.06),rgba(122,194,49,.03));border:1px solid rgba(122,194,49,.22);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px}
+.coach-badge{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 12px;border-radius:20px;background:linear-gradient(135deg,rgba(168,255,0,.18),rgba(168,255,0,.08));border:1px solid rgba(168,255,0,.4);color:var(--green)}
+.coach-card{background:linear-gradient(135deg,rgba(168,255,0,.06),rgba(168,255,0,.03));border:1px solid rgba(168,255,0,.22);border-radius:var(--radius-lg);padding:20px;margin-bottom:20px}
 .coach-card-title{font-family:var(--ff-display);font-size:22px;font-weight:900;text-transform:uppercase;color:var(--green);margin-bottom:6px}
 .coach-card-desc{font-size:13px;color:#aaa;line-height:1.6;margin-bottom:16px}
 .coach-public-link{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;padding:11px 22px;border-radius:var(--radius);background:var(--green);color:#0a0a0a;border:none;cursor:pointer;text-decoration:none;transition:all .2s}
@@ -525,7 +525,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .coach-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
 .coach-editor label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
 .coach-editor input,.coach-editor textarea{width:100%;background:var(--dark3);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:10px 12px;color:var(--white);font-family:var(--ff-body);font-size:13px;transition:border-color .2s}
-.coach-editor input:focus,.coach-editor textarea:focus{outline:none;border-color:rgba(122,194,49,.4)}
+.coach-editor input:focus,.coach-editor textarea:focus{outline:none;border-color:rgba(168,255,0,.4)}
 .coach-editor .full{grid-column:1/-1}
 .coach-editor .help{font-size:11px;color:var(--muted);margin-top:4px}
 .coach-feedback-list{display:flex;flex-direction:column;gap:10px}
@@ -544,18 +544,18 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .coach-editor-row{display:flex;align-items:flex-start;gap:18px;flex-wrap:wrap}
 .coach-editor-row > .coach-editor-flex{flex:1;min-width:240px}
 .coach-cover-upload{position:relative;height:180px;background:#0d0d0d;border:1px dashed rgba(255,255,255,.18);border-radius:var(--radius-lg);overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .2s,background .2s}
-.coach-cover-upload:hover{border-color:rgba(122,194,49,.5);background:rgba(122,194,49,.04)}
+.coach-cover-upload:hover{border-color:rgba(168,255,0,.5);background:rgba(168,255,0,.04)}
 .coach-cover-upload img,.coach-cover-upload video{width:100%;height:100%;object-fit:cover;display:block}
 .coach-cover-upload-empty{font-size:13px;color:var(--muted);text-align:center;padding:20px;position:relative;z-index:1}
 .coach-cover-upload-empty strong{display:block;color:#ccc;font-size:14px;margin-bottom:4px}
 .coach-photo-upload{position:relative;width:120px;height:120px;border-radius:50%;overflow:hidden;background:#0d0d0d;border:1px dashed rgba(255,255,255,.18);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .2s;flex-shrink:0}
-.coach-photo-upload:hover{border-color:rgba(122,194,49,.5)}
+.coach-photo-upload:hover{border-color:rgba(168,255,0,.5)}
 .coach-photo-upload img,.coach-photo-upload video{width:100%;height:100%;object-fit:cover;display:block}
 .coach-photo-upload-empty{font-size:11px;color:var(--muted);text-align:center;padding:6px;line-height:1.3;position:relative;z-index:1}
 .coach-upload-overlay{position:absolute;inset:0;background:rgba(0,0,0,.55);display:none;align-items:center;justify-content:center;font-size:12px;color:#fff;font-weight:600;letter-spacing:.04em}
 .coach-cover-upload:hover .coach-upload-overlay,
 .coach-photo-upload:hover .coach-upload-overlay{display:flex}
-.coach-cover-upload.busy::after,.coach-photo-upload.busy::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.5) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="14" fill="none" stroke="%237AC231" stroke-width="3" stroke-dasharray="55 30"><animateTransform attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur=".9s" repeatCount="indefinite"/></circle></svg>') center/40px no-repeat}
+.coach-cover-upload.busy::after,.coach-photo-upload.busy::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.5) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="14" fill="none" stroke="%23A8FF00" stroke-width="3" stroke-dasharray="55 30"><animateTransform attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur=".9s" repeatCount="indefinite"/></circle></svg>') center/40px no-repeat}
 
 /* Coach gallery */
 .coach-gallery-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-top:6px}
@@ -564,7 +564,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .coach-gallery-thumb-rm{position:absolute;top:4px;right:4px;width:22px;height:22px;border-radius:50%;background:rgba(0,0,0,.7);border:none;color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;padding:0}
 .coach-gallery-thumb-rm:hover{background:#dc2626}
 .coach-gallery-add{aspect-ratio:1;border-radius:var(--radius);background:#0d0d0d;border:1px dashed rgba(255,255,255,.18);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:12px;font-weight:600;transition:border-color .2s,color .2s}
-.coach-gallery-add:hover{border-color:rgba(122,194,49,.5);color:var(--green)}
+.coach-gallery-add:hover{border-color:rgba(168,255,0,.5);color:var(--green)}
 @media(max-width:600px){.coach-gallery-grid{grid-template-columns:repeat(3,1fr)}}
 
 /* Toggle switch */
@@ -572,14 +572,14 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .atp-toggle input{position:absolute;opacity:0;pointer-events:none}
 .atp-toggle-track{width:42px;height:24px;background:#1a1a1a;border:1px solid rgba(255,255,255,.12);border-radius:14px;position:relative;transition:background .2s,border-color .2s;flex-shrink:0;display:inline-block}
 .atp-toggle-track::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#888;transition:transform .2s,background .2s}
-.atp-toggle input:checked + .atp-toggle-track{background:rgba(122,194,49,.18);border-color:rgba(122,194,49,.5)}
+.atp-toggle input:checked + .atp-toggle-track{background:rgba(168,255,0,.18);border-color:rgba(168,255,0,.5)}
 .atp-toggle input:checked + .atp-toggle-track::after{transform:translateX(18px);background:var(--green)}
 .atp-toggle-label{font-size:13px;font-weight:600;color:#ddd}
 
 /* Coach inbox */
 .coach-inbox-list{display:flex;flex-direction:column;gap:10px}
 .coach-inbox-row{background:var(--dark2);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:14px 16px;cursor:pointer;transition:border-color .2s,background .2s;border-left:3px solid transparent}
-.coach-inbox-row:hover{border-color:rgba(122,194,49,.3);background:#161616}
+.coach-inbox-row:hover{border-color:rgba(168,255,0,.3);background:#161616}
 .coach-inbox-row.unread{border-left-color:var(--green)}
 .coach-inbox-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:10px;flex-wrap:wrap}
 .coach-inbox-from{font-size:13px;font-weight:700;color:#fff;display:flex;align-items:center;gap:8px;min-width:0}
@@ -597,11 +597,11 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
 /* ── ROLE BANNER (between hero and tabs) ── */
 .role-banner{max-width:1200px;margin:0 auto 16px;padding:0 40px}
-.role-banner-card{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 22px;border-radius:var(--radius-lg);background:linear-gradient(135deg,#0d1a0a,#0a0a0a);border:1px solid rgba(122,194,49,.2);flex-wrap:wrap}
+.role-banner-card{display:flex;align-items:center;justify-content:space-between;gap:18px;padding:18px 22px;border-radius:var(--radius-lg);background:linear-gradient(135deg,#0d1a0a,#0a0a0a);border:1px solid rgba(168,255,0,.2);flex-wrap:wrap}
 .role-banner-card.amber{background:linear-gradient(135deg,rgba(255,196,0,.05),#0a0a0a);border-color:rgba(255,196,0,.25)}
 .role-banner-card.member{background:linear-gradient(135deg,rgba(255,255,255,.03),#0a0a0a);border-color:rgba(255,255,255,.08)}
 .role-banner-text{display:flex;align-items:center;gap:14px;min-width:0}
-.role-banner-icon{width:42px;height:42px;border-radius:50%;background:rgba(122,194,49,.12);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+.role-banner-icon{width:42px;height:42px;border-radius:50%;background:rgba(168,255,0,.12);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
 .role-banner-card.amber .role-banner-icon{background:rgba(255,196,0,.12)}
 .role-banner-title{font-size:15px;font-weight:700;color:var(--white);margin-bottom:2px}
 .role-banner-sub{font-size:13px;color:#aaa}
@@ -610,7 +610,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 /* ── FIRST-TIME ONBOARDING CARDS ── */
 .onboard-grid{max-width:1200px;margin:0 auto 24px;padding:0 40px;display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
 .onboard-card{background:var(--dark2);border:1px solid rgba(255,255,255,.07);border-radius:var(--radius-lg);padding:20px;display:flex;flex-direction:column;gap:8px;transition:border-color .2s,transform .2s;cursor:pointer;text-decoration:none;color:inherit}
-.onboard-card:hover{border-color:rgba(122,194,49,.4);transform:translateY(-2px)}
+.onboard-card:hover{border-color:rgba(168,255,0,.4);transform:translateY(-2px)}
 .onboard-card-step{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--green)}
 .onboard-card-title{font-family:var(--ff-display);font-size:18px;font-weight:900;text-transform:uppercase;color:var(--white);margin-top:4px}
 .onboard-card-desc{font-size:13px;color:#aaa;line-height:1.5;flex:1}
@@ -650,20 +650,20 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
       <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:3px">Your account is scheduled for deletion</div>
       <div id="deletionBannerBody" style="font-size:12px;color:#ddd;line-height:1.55"></div>
     </div>
-    <button onclick="cancelDeletion()" style="background:#7AC231;color:#0a0a0a;border:none;padding:10px 20px;border-radius:8px;font-weight:800;font-size:13px;letter-spacing:.04em;cursor:pointer">Keep my account</button>
+    <button onclick="cancelDeletion()" style="background:#A8FF00;color:#0a0a0a;border:none;padding:10px 20px;border-radius:8px;font-weight:800;font-size:13px;letter-spacing:.04em;cursor:pointer">Keep my account</button>
   </div>
 
   <!-- Pick-your-tribe nudge (R-TR-005 / OQ-16). Populated by
        loadTribeNudge() — shows only when the current member has no
        tribe_id set. CTA opens the Edit Profile tab + scrolls to the
        tribe selector. Closes when the member picks a tribe and saves. -->
-  <div id="tribeNudge" style="display:none;max-width:1200px;margin:0 auto 20px;padding:16px 24px;background:linear-gradient(90deg,rgba(122,194,49,.12),rgba(96,165,250,.08));border:1px solid rgba(122,194,49,.35);border-radius:12px;align-items:center;gap:16px;flex-wrap:wrap">
+  <div id="tribeNudge" style="display:none;max-width:1200px;margin:0 auto 20px;padding:16px 24px;background:linear-gradient(90deg,rgba(168,255,0,.12),rgba(96,165,250,.08));border:1px solid rgba(168,255,0,.35);border-radius:12px;align-items:center;gap:16px;flex-wrap:wrap">
     <div style="font-size:24px">🎽</div>
     <div style="flex:1;min-width:240px">
       <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:3px">Pick your tribe</div>
       <div style="font-size:12px;color:#ddd;line-height:1.55">Better, Faster, or Stronger? Tribes power your community feed, leaderboard, and identity across ATP. Takes 5 seconds.</div>
     </div>
-    <button onclick="openTribePicker()" style="background:#7AC231;color:#0a0a0a;border:none;padding:10px 20px;border-radius:8px;font-weight:800;font-size:13px;letter-spacing:.04em;cursor:pointer">Pick a tribe →</button>
+    <button onclick="openTribePicker()" style="background:#A8FF00;color:#0a0a0a;border:none;padding:10px 20px;border-radius:8px;font-weight:800;font-size:13px;letter-spacing:.04em;cursor:pointer">Pick a tribe →</button>
     <button onclick="dismissTribeNudge()" style="background:none;color:#888;border:none;padding:6px 8px;font-size:12px;cursor:pointer" title="Dismiss for this session">×</button>
   </div>
 
@@ -696,7 +696,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
              Hidden until loadBookings populates a real upcoming booking;
              handler in profile-init hydrates the dataset attrs at runtime
              so admin redesign of the modal doesn't break this entry point. -->
-        <button class="pf-btn primary" id="nextQrBtn" data-atp-call="showNextCheckinQR" style="display:none;background:rgba(122,194,49,.15);color:var(--green);border:1px solid rgba(122,194,49,.4)">
+        <button class="pf-btn primary" id="nextQrBtn" data-atp-call="showNextCheckinQR" style="display:none;background:rgba(168,255,0,.15);color:var(--green);border:1px solid rgba(168,255,0,.4)">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="4" height="4"/><rect x="10" y="2" width="4" height="4"/><rect x="2" y="10" width="4" height="4"/><path d="M10 10h1M13 10h1M10 13h4"/></svg>
           Next check-in QR
         </button>
@@ -704,7 +704,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1a5 5 0 015 5v3l1.5 2.5H1.5L3 9V6a5 5 0 015-5z"/><path d="M6.5 13.5a1.5 1.5 0 003 0"/></svg>
           <span id="notifCount" style="display:none;background:var(--green);color:#fff;width:18px;height:18px;border-radius:50%;font-size:10px;align-items:center;justify-content:center">0</span>
         </button>
-        <button class="pf-btn" data-atp-call="showTab" data-args='["friends"]'>Friend requests <span id="friendReqCount" style="display:none;background:rgba(122,194,49,.15);color:var(--green);padding:1px 7px;border-radius:10px;font-size:11px;margin-left:2px">0</span></button>
+        <button class="pf-btn" data-atp-call="showTab" data-args='["friends"]'>Friend requests <span id="friendReqCount" style="display:none;background:rgba(168,255,0,.15);color:var(--green);padding:1px 7px;border-radius:10px;font-size:11px;margin-left:2px">0</span></button>
         <!-- Manage Coach Profile — only shown if isCoach=true. Lives here
              (next to Edit Profile) instead of in the role-banner-card to
              save vertical space. Toggled in renderRoleBanner(). -->
@@ -761,7 +761,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
         <span id="completionLabel" style="font-size:12px;color:var(--light);font-weight:600">0% complete</span>
       </div>
       <div style="height:6px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden">
-        <div id="completionBar" style="height:100%;width:0;background:linear-gradient(90deg,var(--green),#a8e055);border-radius:6px;transition:width .6s cubic-bezier(.4,0,.2,1)"></div>
+        <div id="completionBar" style="height:100%;width:0;background:linear-gradient(90deg,var(--green),#C6FF55);border-radius:6px;transition:width .6s cubic-bezier(.4,0,.2,1)"></div>
       </div>
     </div>
   </div>
@@ -829,11 +829,11 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
         <!-- Referral mini-hero — first thing visible on the profile so the
              member's friendly code is always one tap away from being shared.
              Populated by applyMemberToPage() from m.referral_code. -->
-        <div class="ref-hero-mini" id="overviewRefHero" style="display:flex;align-items:center;gap:18px;background:linear-gradient(120deg,rgba(122,194,49,.12),rgba(122,194,49,.04));border:1px solid rgba(122,194,49,.28);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:16px;flex-wrap:wrap">
+        <div class="ref-hero-mini" id="overviewRefHero" style="display:flex;align-items:center;gap:18px;background:linear-gradient(120deg,rgba(168,255,0,.12),rgba(168,255,0,.04));border:1px solid rgba(168,255,0,.28);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:16px;flex-wrap:wrap">
           <div style="flex:1;min-width:220px">
             <div style="display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);font-weight:700;margin-bottom:6px">
               <span>★ Your referral code</span>
-              <span id="overviewRefTribe" style="display:none;font-size:10px;letter-spacing:.08em;color:var(--green-light);background:rgba(122,194,49,.12);border:1px solid rgba(122,194,49,.28);border-radius:999px;padding:2px 8px"></span>
+              <span id="overviewRefTribe" style="display:none;font-size:10px;letter-spacing:.08em;color:var(--green-light);background:rgba(168,255,0,.12);border:1px solid rgba(168,255,0,.28);border-radius:999px;padding:2px 8px"></span>
             </div>
             <div id="overviewRefCode" style="font-family:var(--ff-display);font-size:28px;font-weight:900;color:var(--white);letter-spacing:.04em;line-height:1.05">…</div>
             <div style="font-size:12px;color:var(--muted);margin-top:6px">Share your code — earn <strong style="color:var(--green)">50 pts</strong> on their first session, plus 1–2 pts every time they check-in.</div>
@@ -900,7 +900,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
         <!-- Offers quick-access — surfaces a featured partner offer + a
              link to the full /offers.html. Populated by JS below; hides
              itself silently if there's nothing to show. -->
-        <a id="profileOffersCard" href="/offers" style="display:none;text-decoration:none;color:inherit;background:linear-gradient(120deg,rgba(245,192,66,.14),rgba(122,194,49,.06));border:1px solid rgba(245,192,66,.32);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:16px;align-items:center;gap:18px;flex-wrap:wrap;transition:transform .15s,box-shadow .2s">
+        <a id="profileOffersCard" href="/offers" style="display:none;text-decoration:none;color:inherit;background:linear-gradient(120deg,rgba(245,192,66,.14),rgba(168,255,0,.06));border:1px solid rgba(245,192,66,.32);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:16px;align-items:center;gap:18px;flex-wrap:wrap;transition:transform .15s,box-shadow .2s">
           <div style="flex:1;min-width:220px">
             <div style="display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f5c042;font-weight:700;margin-bottom:6px">
               <span id="offersCardEyebrow">★ Member offers</span>
@@ -992,7 +992,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
               <div style="background:var(--dark3);padding:16px;text-align:center"><div style="font-family:var(--ff-display);font-size:24px;font-weight:900;color:var(--green)" id="streakWeeklyAvg">0</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-top:3px">Avg / Week</div></div>
             </div>
 
-            <div style="margin-top:18px;padding:14px 16px;background:rgba(122,194,49,.06);border:1px solid rgba(122,194,49,.18);border-radius:var(--radius);font-size:13px;color:#bbb;line-height:1.6">
+            <div style="margin-top:18px;padding:14px 16px;background:rgba(168,255,0,.06);border:1px solid rgba(168,255,0,.18);border-radius:var(--radius);font-size:13px;color:#bbb;line-height:1.6">
               <strong style="color:var(--green)">How it works.</strong> Days 1–7 earn standard points per session. Day 8 onwards earns <strong style="color:var(--green)">double points</strong>. Miss a day and the streak resets. You only count if an ATP Ambassador scans you in at the session.
             </div>
           </div>
@@ -1125,7 +1125,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             <label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;font-size:13px"><input type="checkbox" id="csEmployer"> Share with my employer (if part of a corporate plan)</label>
             <label style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.06);cursor:pointer;font-size:13px"><input type="checkbox" id="csPartners"> Share anonymized stats with ATP partners (insurance, healthcare)</label>
             <label style="display:flex;align-items:center;gap:10px;padding:10px 0;cursor:pointer;font-size:13px"><input type="checkbox" id="csResearch"> Allow aggregated use for public-health research</label>
-            <button class="btn-ghost" id="saveConsentBtn" style="margin-top:14px;padding:9px 16px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;border:1px solid rgba(122,194,49,.4);color:var(--green);background:transparent;border-radius:6px;cursor:pointer">Save preferences</button>
+            <button class="btn-ghost" id="saveConsentBtn" style="margin-top:14px;padding:9px 16px;font-size:12px;text-transform:uppercase;letter-spacing:.05em;border:1px solid rgba(168,255,0,.4);color:var(--green);background:transparent;border-radius:6px;cursor:pointer">Save preferences</button>
           </div>
         </div>
       </div>
@@ -1326,7 +1326,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
         <div class="coach-card">
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;flex-wrap:wrap">
             <span class="coach-badge">🎽 Coach</span>
-            <span id="coachFeaturedFlag" style="display:none;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 10px;border-radius:20px;background:#7AC231;color:#0a0a0a">⭐ Featured</span>
+            <span id="coachFeaturedFlag" style="display:none;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 10px;border-radius:20px;background:#A8FF00;color:#0a0a0a">⭐ Featured</span>
           </div>
           <div class="coach-card-title">ATP Coach Profile</div>
           <div class="coach-card-desc">Customize your public coach page. Members and visitors will see this when they land on your profile.</div>
@@ -1751,7 +1751,7 @@ function loadMyPosts() {
                : diffDays < 7   ? diffDays + 'd ago'
                : dt.toLocaleDateString(undefined, { day:'numeric', month:'short' });
         } catch(e){}
-        return '<a href="community.html#' + encodeURIComponent(String(p.id||'')) + '" style="text-decoration:none;color:inherit;display:block;background:#161616;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px;margin-bottom:12px;transition:border-color .2s" onmouseover="this.style.borderColor=\'rgba(122,194,49,.3)\'" onmouseout="this.style.borderColor=\'rgba(255,255,255,.06)\'">' +
+        return '<a href="community.html#' + encodeURIComponent(String(p.id||'')) + '" style="text-decoration:none;color:inherit;display:block;background:#161616;border:1px solid rgba(255,255,255,.06);border-radius:12px;padding:14px;margin-bottom:12px;transition:border-color .2s" onmouseover="this.style.borderColor=\'rgba(168,255,0,.3)\'" onmouseout="this.style.borderColor=\'rgba(255,255,255,.06)\'">' +
           (mediaHtml ? '<div style="margin-bottom:10px;max-width:280px">' + mediaHtml + '</div>' : '') +
           (content ? '<div style="font-size:13px;color:var(--light);line-height:1.5;margin-bottom:10px">' + content + '</div>' : '') +
           '<div style="display:flex;gap:18px;font-size:12px;color:var(--muted);align-items:center">' +
@@ -1957,7 +1957,7 @@ function openSessionDetailModal(bookingId) {
   var qrSection = '';
   if (s.qr_token && s.status === 'upcoming') {
     qrSection =
-      '<div style="margin-top:18px;padding:18px;background:#0d1a0a;border:1px solid rgba(122,194,49,.25);border-radius:12px;text-align:center">' +
+      '<div style="margin-top:18px;padding:18px;background:#0d1a0a;border:1px solid rgba(168,255,0,.25);border-radius:12px;text-align:center">' +
         '<div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-bottom:10px">Your check-in QR</div>' +
         '<div id="sessionQrCanvas" style="background:#fff;display:inline-block;padding:12px;border-radius:10px"></div>' +
         '<div style="font-size:11px;color:var(--muted);margin-top:10px">Show this to an Ambassador at the session.</div>' +
@@ -2109,13 +2109,13 @@ function renderTribe(el) {
   }
   el.innerHTML = TRIBE.map(function(m){
     var activeBadge = m.active
-      ? '<span class="tribe-badge" style="background:rgba(122,194,49,.14);color:var(--green);border:1px solid rgba(122,194,49,.35)">Active</span>'
+      ? '<span class="tribe-badge" style="background:rgba(168,255,0,.14);color:var(--green);border:1px solid rgba(168,255,0,.35)">Active</span>'
       : '<span class="tribe-badge" style="background:rgba(239,68,68,.12);color:#ef4444;border:1px solid rgba(239,68,68,.35)">Inactive</span>';
     var typeBadge = (m.subscription_type === 'premium_plus')
       ? '<span class="tribe-badge" style="background:rgba(255,196,0,.14);color:#ffc400;border:1px solid rgba(255,196,0,.35);margin-left:6px">★★ Founding Supporter</span>'
       : (m.subscription_type === 'premium')
       ? '<span class="tribe-badge" style="background:rgba(255,196,0,.14);color:#ffc400;border:1px solid rgba(255,196,0,.35);margin-left:6px">★ Supporter</span>'
-      : '<span class="tribe-badge" style="background:rgba(122,194,49,.10);color:var(--green);border:1px solid rgba(122,194,49,.25);margin-left:6px">Member</span>';
+      : '<span class="tribe-badge" style="background:rgba(168,255,0,.10);color:var(--green);border:1px solid rgba(168,255,0,.25);margin-left:6px">Member</span>';
     var lastAttended = m.last_session_at
       ? 'Last attended ' + new Date(m.last_session_at).toLocaleDateString('en-GB', { day: '2-digit', month: 'short' })
       : 'Hasn\u2019t attended yet';
@@ -2167,7 +2167,7 @@ function renderFriends() {
           // R-TR-005 / OQ-16b — tribe chip rendered in the meta line.
           // Falls back to plain meta when the friend has no tribe set.
           var tribeChip = f.tribe_name
-            ? "<span class='friend-tribe-label' style='--tribe-color:"+escapeHtml(f.tribe_color||'#7AC231')+"'><span class='friend-tribe-dot'></span>"+escapeHtml(f.tribe_name)+"</span> &middot; "
+            ? "<span class='friend-tribe-label' style='--tribe-color:"+escapeHtml(f.tribe_color||'#A8FF00')+"'><span class='friend-tribe-dot'></span>"+escapeHtml(f.tribe_name)+"</span> &middot; "
             : '';
           return "<div class='friend-row' style='position:relative'>"+
             "<div class='friend-av'>"+escapeHtml(f.init)+"</div>"+
@@ -2321,7 +2321,7 @@ function openTribePicker() {
       sel.focus();
       // Flash the field briefly so it's the obvious next click.
       sel.style.transition = 'box-shadow .3s';
-      sel.style.boxShadow = '0 0 0 3px rgba(122,194,49,.4)';
+      sel.style.boxShadow = '0 0 0 3px rgba(168,255,0,.4)';
       setTimeout(function(){ sel.style.boxShadow = ''; }, 1400);
     }
   }, 250);
@@ -2477,9 +2477,9 @@ function _renderUpgradeCard(compact) {
   var listMarkup = compact
     ? ''
     : '<ul style="list-style:none;padding:0;margin:14px 0 18px">' + bullets + '</ul>';
-  return '<div style="background:linear-gradient(135deg,#0f2a08,#0a1a06);border:1px solid rgba(122,194,49,.3);border-radius:14px;padding:' + (compact ? '18px' : '24px') + ';position:relative;overflow:hidden">' +
-    '<div style="position:absolute;top:-20px;right:-12px;font-family:var(--ff-display);font-size:90px;font-weight:900;color:rgba(122,194,49,.06);line-height:1;pointer-events:none;user-select:none">★</div>' +
-    '<div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(122,194,49,.85);margin-bottom:6px">⭐ Be a Supporter</div>' +
+  return '<div style="background:linear-gradient(135deg,#0f2a08,#0a1a06);border:1px solid rgba(168,255,0,.3);border-radius:14px;padding:' + (compact ? '18px' : '24px') + ';position:relative;overflow:hidden">' +
+    '<div style="position:absolute;top:-20px;right:-12px;font-family:var(--ff-display);font-size:90px;font-weight:900;color:rgba(168,255,0,.06);line-height:1;pointer-events:none;user-select:none">★</div>' +
+    '<div style="font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:rgba(168,255,0,.85);margin-bottom:6px">⭐ Be a Supporter</div>' +
     '<div style="font-family:var(--ff-display);font-size:' + (compact ? '20px' : '26px') + ';font-weight:900;color:var(--white);margin-bottom:6px;text-transform:uppercase">' + heading + '</div>' +
     '<div style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:' + (compact ? '12' : '4') + 'px;line-height:1.55">' + sub + '</div>' +
     listMarkup +
@@ -2500,9 +2500,9 @@ function _renderManageCard(m) {
   // Theme 13 — Premium+ tier gets a gold/yellow accent + "PRO+" badge,
   // standard Premium keeps the brand-green.
   var isPlus = (m.subscription_type || '').toLowerCase() === 'premium_plus';
-  var accent = isPlus ? '#ffc400' : '#7AC231';
+  var accent = isPlus ? '#ffc400' : '#A8FF00';
   var accentBg = isPlus ? '#1a1500' : '#0f2a08';
-  var accentRgba = isPlus ? '255,196,0' : '122,194,49';
+  var accentRgba = isPlus ? '255,196,0' : '168,255,0';
   // Reframed: 'Premium Member' → 'Supporter' / 'Founding Supporter'
   var label = isPlus ? '⭐⭐ Founding Supporter' : '⭐ ATP Supporter';
   var monogram = isPlus ? '★+' : '★';
@@ -3798,7 +3798,7 @@ function openAmbassadorApply() {
         '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;display:block;margin-bottom:4px" for="ambaSessions">Which sessions can you support? *</label><input id="ambaSessions" required placeholder="e.g. Morning Run Dubai Marina, HIIT Kite Beach" style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px"></div>' +
         '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;display:block;margin-bottom:4px" for="ambaArea">Which area / city can you cover? *</label><input id="ambaArea" required placeholder="e.g. Dubai Marina, Al Ain, Muscat" style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px"></div>' +
         '<div style="margin-bottom:18px"><label style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;display:block;margin-bottom:4px" for="ambaWhy">Why do you want to be an ATP Ambassador? *</label><textarea id="ambaWhy" required rows="4" placeholder="Tell us about your motivation, availability, fitness background…" style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;resize:vertical;min-height:90px;font-family:inherit"></textarea></div>' +
-        '<button type="submit" id="ambaSubmit" style="width:100%;padding:13px;background:#7AC231;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer">Submit application</button>' +
+        '<button type="submit" id="ambaSubmit" style="width:100%;padding:13px;background:#A8FF00;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer">Submit application</button>' +
       '</form>' +
     '</div>';
   document.body.appendChild(wrap);
@@ -3849,7 +3849,7 @@ function submitAmbassadorApply() {
     return r.json();
   }).then(function(){
     btn.disabled = false; btn.textContent = 'Submit application';
-    if (msg) { msg.style.display='block'; msg.style.cssText += 'background:rgba(122,194,49,.12);color:#7AC231;border:1px solid rgba(122,194,49,.3)'; msg.textContent = '✅ Application sent! We\u2019ll be in touch shortly.'; }
+    if (msg) { msg.style.display='block'; msg.style.cssText += 'background:rgba(168,255,0,.12);color:#A8FF00;border:1px solid rgba(168,255,0,.3)'; msg.textContent = '✅ Application sent! We\u2019ll be in touch shortly.'; }
     setTimeout(closeAmbassadorApply, 1800);
   }).catch(function(){
     btn.disabled = false; btn.textContent = 'Submit application';
@@ -4115,7 +4115,7 @@ function toggleCoachThread(row) {
       var timeline = msgs.map(function(m){
         var who = m.from_role === 'coach' ? coachName : (m.sender_name || thread.sender_name || 'Visitor');
         var when = m.created_at ? _coachRelTime(m.created_at) : '';
-        var bg   = m.from_role === 'coach' ? 'background:rgba(122,194,49,.08);border:1px solid rgba(122,194,49,.28)' : 'background:#0d0d0d;border:1px solid var(--line-soft)';
+        var bg   = m.from_role === 'coach' ? 'background:rgba(168,255,0,.08);border:1px solid rgba(168,255,0,.28)' : 'background:#0d0d0d;border:1px solid var(--line-soft)';
         var align = m.from_role === 'coach' ? 'margin-left:auto;border-bottom-right-radius:6px' : 'margin-right:auto;border-bottom-left-radius:6px';
         return ''
           + '<div class="cti-msg" style="' + bg + ';' + align + ';max-width:88%;padding:10px 14px;border-radius:10px">'
@@ -4388,7 +4388,7 @@ function renderCoachFeedback(coachRows, sessionRows, coachId) {
     var sessionAt = r.session_at ? new Date(r.session_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 
     var typeChip = r._kind === 'coach'
-      ? '<span style="display:inline-block;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--green);background:rgba(122,194,49,.1);border:1px solid rgba(122,194,49,.3);padding:2px 8px;border-radius:10px;margin-right:8px">Direct</span>'
+      ? '<span style="display:inline-block;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--green);background:rgba(168,255,0,.1);border:1px solid rgba(168,255,0,.3);padding:2px 8px;border-radius:10px;margin-right:8px">Direct</span>'
       : '<span style="display:inline-block;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#ffc400;background:rgba(255,196,0,.08);border:1px solid rgba(255,196,0,.28);padding:2px 8px;border-radius:10px;margin-right:8px">Session: ' + escapeHtml(r.session_name || 'Session') + (sessionAt ? ' · ' + escapeHtml(sessionAt) : '') + '</span>';
 
     var deleteBtn = isAdminViewer
@@ -4934,7 +4934,7 @@ function renderFeaturedStore(col, products) {
     var img = p.images && p.images.edges[0] && p.images.edges[0].node.url;
     var price = p.priceRange && p.priceRange.minVariantPrice;
     var priceStr = price ? (price.currencyCode + ' ' + Math.round(Number(price.amount))) : '';
-    return '<a href="/store.html#product/' + esc(p.handle || '') + '" style="display:block;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden;text-decoration:none;color:inherit;transition:transform .2s,border-color .2s" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.borderColor=\'rgba(122,194,49,.3)\'" onmouseout="this.style.transform=\'\';this.style.borderColor=\'rgba(255,255,255,.06)\'">' +
+    return '<a href="/store.html#product/' + esc(p.handle || '') + '" style="display:block;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden;text-decoration:none;color:inherit;transition:transform .2s,border-color .2s" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.borderColor=\'rgba(168,255,0,.3)\'" onmouseout="this.style.transform=\'\';this.style.borderColor=\'rgba(255,255,255,.06)\'">' +
       (img ? '<div style="aspect-ratio:1/1;background:#0a0a0a"><img src="' + esc(img) + '" alt="" style="width:100%;height:100%;object-fit:cover"></div>' : '<div style="aspect-ratio:1/1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:32px">🎽</div>') +
       '<div style="padding:10px 12px">' +
         '<div style="font-size:12px;color:#fff;font-weight:600;line-height:1.3;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(p.title || '') + '</div>' +
@@ -4943,7 +4943,7 @@ function renderFeaturedStore(col, products) {
     '</a>';
   }).join('');
   host.innerHTML =
-    '<div style="background:linear-gradient(120deg,rgba(122,194,49,.06),rgba(122,194,49,.01));border:1px solid rgba(122,194,49,.20);border-radius:var(--radius-lg);padding:18px 20px">' +
+    '<div style="background:linear-gradient(120deg,rgba(168,255,0,.06),rgba(168,255,0,.01));border:1px solid rgba(168,255,0,.20);border-radius:var(--radius-lg);padding:18px 20px">' +
       '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">' +
         '<div>' +
           '<div style="font-size:11px;color:var(--green);letter-spacing:.14em;text-transform:uppercase;font-weight:700">🛍️ Featured this week</div>' +
@@ -5124,10 +5124,10 @@ function renderMyCompanies() {
       : '<div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
           '<span style="font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;font-weight:600">Department</span>' +
           '<input id="corpDept-' + esc(m.employee_id) + '" value="' + esc(m.department || '') + '" placeholder="e.g. Marketing" style="background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.10);border-radius:6px;padding:4px 10px;color:#fff;font-size:12px;font-family:inherit;max-width:200px">' +
-          '<button onclick="saveMyDepartment(\'' + esc(m.employee_id) + '\')" style="background:transparent;border:1px solid rgba(122,194,49,.4);color:var(--green);padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Save</button>' +
+          '<button onclick="saveMyDepartment(\'' + esc(m.employee_id) + '\')" style="background:transparent;border:1px solid rgba(168,255,0,.4);color:var(--green);padding:4px 12px;border-radius:6px;font-size:11px;cursor:pointer;font-family:inherit">Save</button>' +
         '</div>';
 
-    return '<div style="background:linear-gradient(120deg,rgba(122,194,49,.08),rgba(122,194,49,.02));border:1px solid rgba(122,194,49,.28);border-radius:var(--radius-lg);padding:18px 20px">' +
+    return '<div style="background:linear-gradient(120deg,rgba(168,255,0,.08),rgba(168,255,0,.02));border:1px solid rgba(168,255,0,.28);border-radius:var(--radius-lg);padding:18px 20px">' +
       '<div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
         logo +
         '<div style="flex:1;min-width:0">' +
@@ -5327,9 +5327,9 @@ function renderRedeemGiftModal() {
     var isExpired = giftExpiry && day > giftExpiry;
     var hasAvail = availDows.has(day.getDay()) && !isPast && !isExpired;
     var isSelected = selectedIso === iso;
-    var bg = isSelected ? '#f5c042' : (hasAvail ? 'rgba(122,194,49,.16)' : 'transparent');
+    var bg = isSelected ? '#f5c042' : (hasAvail ? 'rgba(168,255,0,.16)' : 'transparent');
     var color = isSelected ? '#0a0a0a' : (hasAvail ? '#fff' : (isPast || isExpired ? '#333' : '#555'));
-    var border = isSelected ? '#f5c042' : (hasAvail ? 'rgba(122,194,49,.5)' : 'transparent');
+    var border = isSelected ? '#f5c042' : (hasAvail ? 'rgba(168,255,0,.5)' : 'transparent');
     var onclick = hasAvail ? 'onclick="pickRedeemDate(\'' + iso + '\')"' : '';
     calHtml += '<div ' + onclick + ' style="aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:' + color + ';background:' + bg + ';border:1px solid ' + border + ';border-radius:6px;cursor:' + (hasAvail?'pointer':'not-allowed') + '">' + d + '</div>';
   }
@@ -5468,7 +5468,7 @@ function renderMyOneOnOnes(list) {
           '</div>' +
           '<div style="font-size:12px;color:var(--muted);margin-top:4px">with ' + coachName.replace(/[<>&]/g, '') + ' · ' + b.duration_min + ' min</div>' +
           '<div style="font-size:13px;color:#f5c042;font-weight:600;margin-top:6px">' + dateStr + ' at ' + timeStr +
-            (minsUntil > 0 && minsUntil < 1440 ? ' <span style="color:#7AC231;font-size:11px;font-weight:500">· in ' + (minsUntil < 60 ? minsUntil + ' min' : Math.floor(minsUntil / 60) + 'h ' + (minsUntil % 60) + 'm') + '</span>' : '') +
+            (minsUntil > 0 && minsUntil < 1440 ? ' <span style="color:#A8FF00;font-size:11px;font-weight:500">· in ' + (minsUntil < 60 ? minsUntil + ' min' : Math.floor(minsUntil / 60) + 'h ' + (minsUntil % 60) + 'm') + '</span>' : '') +
           '</div>' +
           (b.member_note ? '<div style="font-size:11px;color:#aaa;margin-top:8px;font-style:italic;background:rgba(255,255,255,.03);padding:6px 10px;border-radius:4px">"' + (b.member_note || '').replace(/[<>&]/g, '') + '"</div>' : '') +
         '</div>' +
@@ -5783,9 +5783,9 @@ function renderWearableProviders(connections, available) {
     var connected = c && c.status === 'active';
     var needsReauth = c && c.status === 'needs_reauth';
     var label = connected ? 'Connected' : (needsReauth ? 'Reconnect needed' : 'Connect');
-    var color = connected ? '#7AC231' : (needsReauth ? '#f5c042' : 'var(--muted)');
+    var color = connected ? '#A8FF00' : (needsReauth ? '#f5c042' : 'var(--muted)');
     return (
-      '<div style="border:1px solid ' + (connected ? 'rgba(122,194,49,.32)' : 'rgba(255,255,255,.1)') + ';border-radius:10px;padding:14px;background:' + (connected ? 'rgba(122,194,49,.05)' : 'transparent') + '">' +
+      '<div style="border:1px solid ' + (connected ? 'rgba(168,255,0,.32)' : 'rgba(255,255,255,.1)') + ';border-radius:10px;padding:14px;background:' + (connected ? 'rgba(168,255,0,.05)' : 'transparent') + '">' +
         '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
           '<div style="font-family:var(--ff-display);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.02em">' + p.displayName + '</div>' +
           '<span style="font-size:10px;color:' + color + ';font-weight:700;letter-spacing:.08em;text-transform:uppercase">' + label + '</span>' +
@@ -6359,7 +6359,7 @@ function loadCoachBookings() {
 function _renderBookingRow(b) {
   var when = new Date(b.scheduled_at);
   var member = (b.member_first_name || '') + ' ' + (b.member_last_name || '');
-  var statusColor = ({ completed:'#7AC231', confirmed:'#f5c042', cancelled_by_member:'#888', cancelled_by_coach:'#888', no_show:'#ef4444' })[b.status] || '#888';
+  var statusColor = ({ completed:'#A8FF00', confirmed:'#f5c042', cancelled_by_member:'#888', cancelled_by_coach:'#888', no_show:'#ef4444' })[b.status] || '#888';
   var isUpcoming = ['confirmed','pending_payment','in_progress'].includes(b.status) && when > new Date(Date.now() - 3600000);
   var streamUrl = b.stream_room_id ? '/stream-broadcast.html?room=' + b.stream_room_id : null;
   return '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px;margin-bottom:8px">' +
@@ -6374,7 +6374,7 @@ function _renderBookingRow(b) {
         '<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:' + statusColor + ';background:rgba(255,255,255,.05);padding:3px 7px;border-radius:3px">' + b.status.replace(/_/g, ' ') + '</span>' +
         '<span style="font-family:var(--ff-display);font-size:18px;font-weight:900;color:#f5c042">AED ' + b.coach_payout_aed + '</span>' +
         (isUpcoming && streamUrl ? '<a href="' + streamUrl + '" target="_blank" style="font-size:11px;padding:6px 12px;background:#ef4444;color:#fff;border-radius:6px;text-decoration:none;font-weight:700">🎥 Go Live</a>' : '') +
-        (b.status === 'confirmed' && when < new Date() ? '<button data-atp-call="completeBooking" data-args=\'["' + b.id + '"]\' style="font-size:11px;padding:6px 12px;background:#7AC231;color:#0a0a0a;border:none;border-radius:6px;font-weight:700;cursor:pointer">Mark complete</button>' : '') +
+        (b.status === 'confirmed' && when < new Date() ? '<button data-atp-call="completeBooking" data-args=\'["' + b.id + '"]\' style="font-size:11px;padding:6px 12px;background:#A8FF00;color:#0a0a0a;border:none;border-radius:6px;font-weight:700;cursor:pointer">Mark complete</button>' : '') +
       '</div>' +
     '</div>' +
   '</div>';
@@ -6424,10 +6424,10 @@ function loadCoachEarnings() {
     // Bank account section
     html += '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px;margin-bottom:14px">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px"><div style="font-family:var(--ff-display);font-size:14px;font-weight:800;color:#fff;text-transform:uppercase">🏦 Bank account for payouts</div>' +
-      (bank ? '<span style="font-size:9px;color:#7AC231;background:rgba(122,194,49,.14);padding:3px 8px;border-radius:3px;letter-spacing:.06em;text-transform:uppercase;font-weight:700">' + (bank.verified ? '✓ Verified' : 'Pending verification') + '</span>' : '<span style="font-size:11px;color:#ff8a8a">⚠ Not set up</span>') +
+      (bank ? '<span style="font-size:9px;color:#A8FF00;background:rgba(168,255,0,.14);padding:3px 8px;border-radius:3px;letter-spacing:.06em;text-transform:uppercase;font-weight:700">' + (bank.verified ? '✓ Verified' : 'Pending verification') + '</span>' : '<span style="font-size:11px;color:#ff8a8a">⚠ Not set up</span>') +
       '</div>' +
       (bank
-        ? '<div style="font-size:13px;color:var(--light)">' + _chEsc(bank.bank_name) + ' · <code style="background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;color:#7AC231">' + _chEsc(bank.iban_masked) + '</code> · ' + _chEsc(bank.account_holder_name) + '</div>' +
+        ? '<div style="font-size:13px;color:var(--light)">' + _chEsc(bank.bank_name) + ' · <code style="background:rgba(0,0,0,.3);padding:2px 6px;border-radius:3px;color:#A8FF00">' + _chEsc(bank.iban_masked) + '</code> · ' + _chEsc(bank.account_holder_name) + '</div>' +
           '<button data-atp-call="showBankForm" style="margin-top:10px;padding:6px 12px;font-size:11px;background:transparent;border:1px solid rgba(255,255,255,.14);color:var(--light);border-radius:6px;cursor:pointer">Update bank details</button>'
         : '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Add your bank info so we can transfer your earnings on the 1st of every month.</div>' +
           '<button data-atp-call="showBankForm" style="padding:8px 16px;font-size:12px;background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">+ Add bank account</button>'
@@ -6442,7 +6442,7 @@ function loadCoachEarnings() {
     } else {
       html += '<div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden">';
       html += txns.slice(0, 20).map(function(t){
-        var color = t.amount_aed >= 0 ? '#7AC231' : '#ff8a8a';
+        var color = t.amount_aed >= 0 ? '#A8FF00' : '#ff8a8a';
         var sign = t.amount_aed >= 0 ? '+' : '';
         return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px">' +
           '<div><div style="color:#fff">' + _chEsc(t.description || t.txn_type) + '</div><div style="font-size:11px;color:var(--muted)">' + new Date(t.created_at).toLocaleDateString() + ' · ' + t.txn_type.replace(/_/g, ' ') + '</div></div>' +

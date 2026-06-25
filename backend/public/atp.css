@@ -20,8 +20,8 @@
    * before the .atp-* design system was introduced. Bridging them
    * here keeps those pages styled correctly without touching every
    * file. New code should prefer the .atp-* tokens below. */
-  --green:            #7AC231;
-  --green-dark:       #5fa01f;
+  --green:            #A8FF00;
+  --green-dark:       #8FD800;
   --ff-display:       "Bebas Neue", Inter, system-ui, sans-serif;
   --light:            #fff;
   --muted:            rgba(255, 255, 255, .6);
@@ -31,10 +31,10 @@
   --nav-h:            72px;
 
   /* ── Brand ─────────────────────────────────────────────────── */
-  --atp-green:        #7AC231;
-  --atp-green-dark:   #5fa01f;
-  --atp-green-soft:   rgba(122, 194, 49, .15);
-  --atp-green-line:   rgba(122, 194, 49, .35);
+  --atp-green:        #A8FF00;
+  --atp-green-dark:   #8FD800;
+  --atp-green-soft:   rgba(168, 255, 0, .15);
+  --atp-green-line:   rgba(168, 255, 0, .35);
 
   /* ── Surfaces (dark theme primary) ─────────────────────────── */
   --atp-bg:           #0a0a0a;
@@ -89,7 +89,7 @@
   --atp-shadow-1:     0 2px 8px rgba(0, 0, 0, .25);
   --atp-shadow-2:     0 4px 16px rgba(0, 0, 0, .35);
   --atp-shadow-3:     0 8px 32px rgba(0, 0, 0, .5);
-  --atp-shadow-glow:  0 8px 32px rgba(122, 194, 49, .25);
+  --atp-shadow-glow:  0 8px 32px rgba(168, 255, 0, .25);
 
   /* ── Motion ────────────────────────────────────────────────── */
   --atp-ease:         cubic-bezier(.4, 0, .2, 1);
@@ -452,8 +452,8 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
  *   · No JS. No changes to text, colour, padding, or border-radius.
  *   · prefers-reduced-motion drops the lift but keeps the glow.
  *
- * Glow uses #A6FF00 (a brighter chartreuse than the brand body
- * green #7AC231) so the halo reads as energy, not a static fill. */
+ * Glow uses #A8FF00 (a brighter chartreuse than the brand body
+ * green #A8FF00) so the halo reads as energy, not a static fill. */
 
 @media (hover: hover) and (pointer: fine) {
   .btn-atp-hover,
@@ -478,9 +478,9 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
   .find-session-btn:hover {
     transform: perspective(820px) translateY(-2px) rotateX(-3deg) !important;
     box-shadow:
-      0 0 0 1px   rgba(166, 255, 0, .18),
-      0 10px 26px -6px rgba(166, 255, 0, .42),
-      0 0 32px   rgba(166, 255, 0, .22) !important;
+      0 0 0 1px   rgba(168, 255, 0, .18),
+      0 10px 26px -6px rgba(168, 255, 0, .42),
+      0 0 32px   rgba(168, 255, 0, .22) !important;
   }
   /* Active press — sit back into the surface for a tactile click */
   .btn-atp-hover:active,
@@ -545,11 +545,11 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
 .nav-logo { cursor: pointer; }
 @keyframes nav-logo-ignite {
   0%   { opacity: 0; transform: scale(.92);
-         filter: drop-shadow(0 0 0 rgba(122,194,49,0)); }
+         filter: drop-shadow(0 0 0 rgba(168,255,0,0)); }
   60%  { opacity: 1; transform: scale(1.02);
-         filter: drop-shadow(0 0 18px rgba(122,194,49,.85)); }
+         filter: drop-shadow(0 0 18px rgba(168,255,0,.85)); }
   100% { opacity: 1; transform: scale(1);
-         filter: drop-shadow(0 0 0 rgba(122,194,49,0)); }
+         filter: drop-shadow(0 0 0 rgba(168,255,0,0)); }
 }
 
 /* — Streak: bright "fuse" head sweeping left → right ───────── */
@@ -559,11 +559,11 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
   left: 0; bottom: 0;
   width: 220px; height: 2px;
   background: linear-gradient(90deg,
-    rgba(122,194,49,0)    0%,
-    rgba(122,194,49,0)   18%,
-    rgba(122,194,49,.20) 48%,
-    rgba(122,194,49,.55) 74%,
-    rgba(122,194,49,1)   95%,
+    rgba(168,255,0,0)    0%,
+    rgba(168,255,0,0)   18%,
+    rgba(168,255,0,.20) 48%,
+    rgba(168,255,0,.55) 74%,
+    rgba(168,255,0,1)   95%,
     #d6ff8a              100%);
   border-radius: 99px;
   pointer-events: none;
@@ -580,9 +580,9 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
   left: 0; bottom: -9px;
   width: 280px; height: 22px;
   background: radial-gradient(ellipse at 78% center,
-    rgba(122,194,49,.45) 0%,
-    rgba(122,194,49,.18) 32%,
-    rgba(122,194,49,0)   65%);
+    rgba(168,255,0,.45) 0%,
+    rgba(168,255,0,.18) 32%,
+    rgba(168,255,0,0)   65%);
   filter: blur(6px);
   pointer-events: none;
   transform: translateX(-300px);
@@ -656,11 +656,11 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
 .nav-inner:has(.nav-logo:hover) .nav-links li:nth-child(9) { animation-delay: 1.42s; }
 @keyframes nav-li-flare {
   0%   { opacity: 0; transform: translateY(-3px);
-         filter: brightness(2.2) drop-shadow(0 0 10px rgba(122,194,49,.9)); }
+         filter: brightness(2.2) drop-shadow(0 0 10px rgba(168,255,0,.9)); }
   35%  { opacity: 1; transform: translateY(0);
-         filter: brightness(1.5) drop-shadow(0 0 6px  rgba(122,194,49,.55)); }
+         filter: brightness(1.5) drop-shadow(0 0 6px  rgba(168,255,0,.55)); }
   100% { opacity: 1; transform: translateY(0);
-         filter: brightness(1)   drop-shadow(0 0 0   rgba(122,194,49,0)); }
+         filter: brightness(1)   drop-shadow(0 0 0   rgba(168,255,0,0)); }
 }
 
 /* .nav-actions stays visible at all times — the auth chunk
@@ -738,7 +738,7 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: var(--atp-green, #7AC231);
+  background: var(--atp-green, #A8FF00);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -900,7 +900,7 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
 }
 .atp-badge--success {
   background: var(--atp-green-soft);
-  color: #a8e055;
+  color: #C6FF55;
   border-color: var(--atp-green-line);
 }
 .atp-badge--warning {
@@ -1054,7 +1054,7 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
 .tribe-badge {
   background: var(--atp-green-soft) !important;
   border: 1px solid var(--atp-green-line) !important;
-  color: #a8e055 !important;
+  color: #C6FF55 !important;
 }
 .member-badge:not(.premium):not(.premium-plus) {
   background: rgba(255, 255, 255, .06) !important;
@@ -1070,7 +1070,7 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
 .badge-green,
 .badge-success {
   background: var(--atp-green-soft) !important;
-  color: #a8e055 !important;
+  color: #C6FF55 !important;
   border: 1px solid var(--atp-green-line) !important;
 }
 .badge-amber,
@@ -1240,10 +1240,10 @@ body { max-width: 100vw; }
    The default grey flash on tap is ugly on dark themes. Replace with a
    subtle green tint. Selection-color also gets the brand treatment. */
 * {
-  -webkit-tap-highlight-color: rgba(122, 194, 49, 0.20);
+  -webkit-tap-highlight-color: rgba(168, 255, 0, 0.20);
 }
 ::selection {
-  background: rgba(122, 194, 49, 0.32);
+  background: rgba(168, 255, 0, 0.32);
   color: #fff;
 }
 

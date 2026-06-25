@@ -426,7 +426,7 @@
       '#atp-ticker-host{',
       '  position:fixed;top:var(--nav-h,68px);left:0;right:0;z-index:90;height:44px;display:none;',
       '  background:linear-gradient(90deg,#0a0a0a 0%,#0d1a08 50%,#0a0a0a 100%);',
-      '  border-bottom:2px solid var(--atp-green,#7AC231);',
+      '  border-bottom:2px solid var(--atp-green,#A8FF00);',
       '  overflow:hidden;align-items:center;',
       '  box-shadow:0 4px 16px rgba(0,0,0,.4);',
       '}',
@@ -449,12 +449,12 @@
       '  white-space:nowrap;flex-shrink:0}',
       '.atp-ticker-item .badge{font-size:10px;font-weight:800;letter-spacing:.1em;',
       '  text-transform:uppercase;padding:3px 9px;border-radius:20px;',
-      '  background:rgba(122,194,49,.18);color:var(--atp-green,#7AC231);',
-      '  border:1px solid rgba(122,194,49,.4)}',
+      '  background:rgba(168,255,0,.18);color:var(--atp-green,#A8FF00);',
+      '  border:1px solid rgba(168,255,0,.4)}',
       '.atp-ticker-item.kind-promo .badge{background:rgba(255,196,0,.15);color:#ffc400;border-color:rgba(255,196,0,.4)}',
       '.atp-ticker-item.kind-event .badge{background:rgba(96,165,250,.15);color:#60a5fa;border-color:rgba(96,165,250,.4)}',
       '.atp-ticker-item a{color:#fff;text-decoration:none;border-bottom:1px dashed rgba(255,255,255,.3)}',
-      '.atp-ticker-item a:hover{border-bottom-color:var(--atp-green,#7AC231);color:var(--atp-green,#7AC231)}',
+      '.atp-ticker-item a:hover{border-bottom-color:var(--atp-green,#A8FF00);color:var(--atp-green,#A8FF00)}',
       '.atp-ticker-sep{color:rgba(255,255,255,.25);font-weight:700;flex-shrink:0}',
       '@keyframes atp-ticker-scroll{from{transform:translateX(0)}to{transform:translateX(-50%)}}',
       '@media (prefers-reduced-motion: reduce){',
@@ -773,15 +773,15 @@
       d.id = 'atpCookieBanner';
       d.setAttribute('role', 'dialog');
       d.setAttribute('aria-label', 'Cookie consent');
-      d.style.cssText = 'position:fixed;bottom:14px;left:14px;right:14px;max-width:920px;margin:0 auto;z-index:99998;background:#0a0a0a;border:1px solid rgba(122,194,49,.35);border-radius:12px;padding:18px 20px;box-shadow:0 8px 30px rgba(0,0,0,.5);font-family:Inter,system-ui,-apple-system,sans-serif;color:#fff;font-size:13px;line-height:1.55;display:flex;gap:14px;align-items:center;flex-wrap:wrap';
+      d.style.cssText = 'position:fixed;bottom:14px;left:14px;right:14px;max-width:920px;margin:0 auto;z-index:99998;background:#0a0a0a;border:1px solid rgba(168,255,0,.35);border-radius:12px;padding:18px 20px;box-shadow:0 8px 30px rgba(0,0,0,.5);font-family:Inter,system-ui,-apple-system,sans-serif;color:#fff;font-size:13px;line-height:1.55;display:flex;gap:14px;align-items:center;flex-wrap:wrap';
       d.innerHTML =
         '<div style="flex:1;min-width:260px">' +
-          '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:18px;letter-spacing:.04em;color:#7AC231;margin-bottom:4px">Cookies + your data</div>' +
-          'We use essential cookies to keep you signed in and analytics cookies to make ATP better. Change your mind anytime in <a href="/privacy.html" style="color:#7AC231;text-decoration:underline">Privacy</a>.' +
+          '<div style="font-family:\'Bebas Neue\',sans-serif;font-size:18px;letter-spacing:.04em;color:#A8FF00;margin-bottom:4px">Cookies + your data</div>' +
+          'We use essential cookies to keep you signed in and analytics cookies to make ATP better. Change your mind anytime in <a href="/privacy.html" style="color:#A8FF00;text-decoration:underline">Privacy</a>.' +
         '</div>' +
         '<div style="display:flex;gap:8px;flex-wrap:wrap">' +
           '<button id="atpCookieEssential" type="button" style="background:transparent;border:1px solid rgba(255,255,255,.16);color:#ccc;padding:10px 16px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:600">Essential only</button>' +
-          '<button id="atpCookieAll" type="button" style="background:#7AC231;border:none;color:#0a0a0a;padding:10px 18px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:700">Accept all</button>' +
+          '<button id="atpCookieAll" type="button" style="background:#A8FF00;border:none;color:#0a0a0a;padding:10px 18px;border-radius:8px;font-size:12px;cursor:pointer;font-family:inherit;font-weight:700">Accept all</button>' +
         '</div>';
       document.body.appendChild(d);
       document.getElementById('atpCookieEssential').addEventListener('click', function(){ window.ATPConsent.set('essential'); });

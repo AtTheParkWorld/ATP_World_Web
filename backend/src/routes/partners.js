@@ -129,17 +129,17 @@ async function _notifyAdmin(row, body) {
   const subject = `🎯 New Partner inquiry — ${row.company || row.contact_name}`;
   const html = `
     <div style="font-family:Arial,sans-serif;background:#0a0a0a;color:#fff;padding:24px;border-radius:8px;max-width:560px">
-      <h2 style="color:#7AC231;margin-top:0">New partner inquiry</h2>
+      <h2 style="color:#A8FF00;margin-top:0">New partner inquiry</h2>
       <p>Just landed via /partners.</p>
       <table style="font-size:14px;color:#eee;line-height:1.6">
         <tr><td style="padding-right:14px;color:#888">Name</td><td><strong>${_esc(row.contact_name)}</strong></td></tr>
-        <tr><td style="padding-right:14px;color:#888">Email</td><td><a href="mailto:${_esc(row.contact_email)}" style="color:#7AC231">${_esc(row.contact_email)}</a></td></tr>
+        <tr><td style="padding-right:14px;color:#888">Email</td><td><a href="mailto:${_esc(row.contact_email)}" style="color:#A8FF00">${_esc(row.contact_email)}</a></td></tr>
         ${body.contact_phone   ? `<tr><td style="padding-right:14px;color:#888">Phone</td><td>${_esc(body.contact_phone)}</td></tr>` : ''}
         ${body.company         ? `<tr><td style="padding-right:14px;color:#888">Company</td><td>${_esc(body.company)}</td></tr>` : ''}
         ${body.brand_size      ? `<tr><td style="padding-right:14px;color:#888">Brand size</td><td>${_esc(body.brand_size)}</td></tr>` : ''}
         ${body.budget_band     ? `<tr><td style="padding-right:14px;color:#888">Budget</td><td>${_esc(body.budget_band)}</td></tr>` : ''}
       </table>
-      ${body.message ? `<div style="margin-top:18px;padding:14px;background:#161616;border-left:3px solid #7AC231;border-radius:6px"><strong style="color:#7AC231">Message</strong><br><br>${_esc(body.message).replace(/\n/g, '<br>')}</div>` : ''}
+      ${body.message ? `<div style="margin-top:18px;padding:14px;background:#161616;border-left:3px solid #A8FF00;border-radius:6px"><strong style="color:#A8FF00">Message</strong><br><br>${_esc(body.message).replace(/\n/g, '<br>')}</div>` : ''}
       <p style="margin-top:24px;font-size:12px;color:#888">Manage in admin → Partners → Inquiries.</p>
     </div>`;
   await emailService.sendRaw({ to: adminEmail, subject, html, replyTo: row.contact_email });
@@ -149,12 +149,12 @@ async function _autoReply(row) {
   const subject = 'Thanks for reaching out — ATP Partnerships';
   const html = `
     <div style="font-family:Arial,sans-serif;background:#0a0a0a;color:#fff;padding:24px;border-radius:8px;max-width:560px">
-      <h2 style="color:#7AC231;margin-top:0">Got it, ${_esc(row.contact_name.split(' ')[0] || 'there')}.</h2>
+      <h2 style="color:#A8FF00;margin-top:0">Got it, ${_esc(row.contact_name.split(' ')[0] || 'there')}.</h2>
       <p style="font-size:15px;line-height:1.6;color:#eee">
         Thanks for reaching out about partnering with At The Park. We've received your inquiry${row.company ? ` from <strong>${_esc(row.company)}</strong>` : ''} and someone from our team will be in touch within 48 hours.
       </p>
       <p style="font-size:15px;line-height:1.6;color:#eee">
-        In the meantime — check out our community on <a href="https://www.instagram.com/atthepark_world/?hl=en" style="color:#7AC231">Instagram</a> or come to a free session to see us in action.
+        In the meantime — check out our community on <a href="https://www.instagram.com/atthepark_world/?hl=en" style="color:#A8FF00">Instagram</a> or come to a free session to see us in action.
       </p>
       <p style="font-size:14px;color:#aaa;margin-top:24px">— The ATP team<br>Dubai · Al Ain · Muscat</p>
     </div>`;

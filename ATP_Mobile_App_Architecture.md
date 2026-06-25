@@ -156,7 +156,7 @@ mobile/
 │  │  └─ ...
 │  │
 │  ├─ design/
-│  │  ├─ tokens.ts             Green #7AC231, dark #0a0a0a, tribe palette, spacing scale
+│  │  ├─ tokens.ts             Green #A8FF00, dark #0a0a0a, tribe palette, spacing scale
 │  │  ├─ typography.ts         Barlow Condensed (titles) + DM Sans (body) — match web
 │  │  └─ theme.ts              Light/dark — dark by default to match web
 │  │
@@ -373,7 +373,7 @@ UX rule: don't show offline-mode errors as alerts — show a small persistent ba
 ## 12. UX / UI conventions
 
 ### Design language carries from web
-- Primary green `#7AC231`, near-black `#0a0a0a` background
+- Primary green `#A8FF00`, near-black `#0a0a0a` background
 - Display font: Barlow Condensed (titles, CTAs, large numbers)
 - Body font: DM Sans
 - Tribe palette: Better `#4ade80` · Faster `#60a5fa` · Stronger `#f97316`

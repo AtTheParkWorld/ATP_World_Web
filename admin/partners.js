@@ -20,9 +20,9 @@ document.addEventListener('click', function(ev) {
   // Toggle pill state
   document.querySelectorAll('.partners-subtab').forEach(function(b) {
     var on = b.getAttribute('data-partners-tab') === tab;
-    b.style.background = on ? 'rgba(122,194,49,.12)' : 'transparent';
-    b.style.color      = on ? '#7AC231' : '#888';
-    b.style.borderColor = on ? 'rgba(122,194,49,.3)' : '#2a2a2a';
+    b.style.background = on ? 'rgba(168,255,0,.12)' : 'transparent';
+    b.style.color      = on ? '#A8FF00' : '#888';
+    b.style.borderColor = on ? 'rgba(168,255,0,.3)' : '#2a2a2a';
     b.classList.toggle('active', on);
   });
   // Show matching pane
@@ -72,8 +72,8 @@ function renderPartnerInquiries(list) {
   var statusColors = {
     new:       { bg: 'rgba(245,158,11,.15)', fg: '#fbbf24', border: 'rgba(245,158,11,.4)' },
     contacted: { bg: 'rgba(96,165,250,.15)', fg: '#93c5fd', border: 'rgba(96,165,250,.4)' },
-    qualified: { bg: 'rgba(122,194,49,.15)', fg: '#7AC231', border: 'rgba(122,194,49,.4)' },
-    won:       { bg: 'rgba(122,194,49,.3)',  fg: '#a8e055', border: 'rgba(122,194,49,.6)' },
+    qualified: { bg: 'rgba(168,255,0,.15)', fg: '#A8FF00', border: 'rgba(168,255,0,.4)' },
+    won:       { bg: 'rgba(168,255,0,.3)',  fg: '#C6FF55', border: 'rgba(168,255,0,.6)' },
     lost:      { bg: 'rgba(239,68,68,.15)',  fg: '#fca5a5', border: 'rgba(239,68,68,.4)' },
   };
   el.innerHTML = list.map(function(i) {
@@ -90,7 +90,7 @@ function renderPartnerInquiries(list) {
           '<div style="font-size:15px;font-weight:700;color:#fff;margin-bottom:3px">' + name +
             (company ? ' <span style="font-weight:500;color:#888;font-size:13px">· ' + company + '</span>' : '') +
           '</div>' +
-          '<div style="font-size:12px;color:#888"><a href="mailto:' + email + '" style="color:#7AC231">' + email + '</a>' +
+          '<div style="font-size:12px;color:#888"><a href="mailto:' + email + '" style="color:#A8FF00">' + email + '</a>' +
             (i.contact_phone ? ' · ' + i.contact_phone : '') +
           '</div>' +
         '</div>' +
@@ -154,7 +154,7 @@ function renderPartnerTiers(list) {
       (typeof t.perks === 'string' ? (function(){ try { return JSON.parse(t.perks); } catch(e){ return []; } })() : []);
     var name = (t.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
     var status = t.is_active
-      ? '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(122,194,49,.15);color:#7AC231">Active</span>'
+      ? '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(168,255,0,.15);color:#A8FF00">Active</span>'
       : '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.06);color:#666">Off</span>';
     var featured = t.is_featured
       ? '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(245,158,11,.18);color:#fbbf24;border:1px solid rgba(245,158,11,.4)">★ Featured</span>'
@@ -166,7 +166,7 @@ function renderPartnerTiers(list) {
             '<span style="font-size:15px;font-weight:700;color:#fff">' + name + '</span>' +
             featured + status +
           '</div>' +
-          '<div style="font-size:13px;color:#7AC231;font-weight:600">' + priceTxt + '</div>' +
+          '<div style="font-size:13px;color:#A8FF00;font-weight:600">' + priceTxt + '</div>' +
           (t.tagline ? '<div style="font-size:12px;color:#888;margin-top:4px">' + t.tagline.replace(/</g,'&lt;') + '</div>' : '') +
         '</div>' +
         '<div style="display:flex;gap:6px;align-items:flex-start">' +
@@ -294,7 +294,7 @@ function renderPartnerDirectory(list) {
     '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px">' +
     list.map(function(p) {
       var status = p.is_active
-        ? '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(122,194,49,.15);color:#7AC231">Active</span>'
+        ? '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(168,255,0,.15);color:#A8FF00">Active</span>'
         : '<span style="font-size:10px;padding:3px 8px;border-radius:20px;background:rgba(255,255,255,.06);color:#666">Off</span>';
       var name = (p.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;');
       var logoBlock = p.logo_url
@@ -306,7 +306,7 @@ function renderPartnerDirectory(list) {
           '<span style="font-size:14px;font-weight:700;color:#fff">' + name + '</span>' +
           status +
         '</div>' +
-        (p.tier_name ? '<div style="font-size:11px;color:#7AC231;margin-bottom:6px">' + p.tier_name + '</div>' : '') +
+        (p.tier_name ? '<div style="font-size:11px;color:#A8FF00;margin-bottom:6px">' + p.tier_name + '</div>' : '') +
         (p.testimonial ? '<div style="font-size:11px;color:#888;font-style:italic;margin-bottom:8px;line-height:1.5">"' + (p.testimonial || '').slice(0, 80).replace(/</g,'&lt;') + (p.testimonial.length > 80 ? '…' : '') + '"</div>' : '') +
         '<div style="display:flex;gap:6px">' +
           '<button class="admin-btn" style="font-size:11px;padding:5px 10px;flex:1" data-atp-call="editPartnerDirectory" data-args=\'["' + p.id + '"]\'>Edit</button>' +
@@ -433,11 +433,11 @@ function renderPartnerOffers(list) {
     return;
   }
   el.innerHTML = list.map(function(o) {
-    var typeColor = o.offer_type === 'event' ? '#f5c042' : (o.offer_type === 'promo' ? '#ff8a3d' : '#7AC231');
+    var typeColor = o.offer_type === 'event' ? '#f5c042' : (o.offer_type === 'promo' ? '#ff8a3d' : '#A8FF00');
     var typeLabel = o.offer_type === 'event' ? 'EVENT' : (o.offer_type === 'promo' ? 'PROMO' : 'DISCOUNT');
     var partner = o.partner_name ? '<div style="font-size:11px;color:#aaa;margin-bottom:4px">' + _escAttr(o.partner_name) + '</div>' : '';
     var status = o.is_active ? 'Active' : 'Hidden';
-    var statusColor = o.is_active ? '#7AC231' : '#666';
+    var statusColor = o.is_active ? '#A8FF00' : '#666';
     return (
       '<div style="display:grid;grid-template-columns:1fr auto;gap:14px;align-items:center;padding:14px;background:#0f0f0f;border:1px solid #1e1e1e;border-radius:8px;margin-bottom:10px">' +
         '<div>' +
@@ -605,14 +605,14 @@ function renderPartnerRedemptions(list) {
         '<th style="padding:8px 10px">Status</th>' +
       '</tr></thead><tbody>' +
       list.map(function(r) {
-        var statusColor = r.status === 'used' ? '#aaa' : (r.status === 'expired' ? '#ef4444' : '#7AC231');
-        var statusBg = r.status === 'used' ? 'rgba(255,255,255,.06)' : (r.status === 'expired' ? 'rgba(239,68,68,.14)' : 'rgba(122,194,49,.14)');
+        var statusColor = r.status === 'used' ? '#aaa' : (r.status === 'expired' ? '#ef4444' : '#A8FF00');
+        var statusBg = r.status === 'used' ? 'rgba(255,255,255,.06)' : (r.status === 'expired' ? 'rgba(239,68,68,.14)' : 'rgba(168,255,0,.14)');
         return (
           '<tr style="border-bottom:1px solid #1a1a1a">' +
             '<td style="padding:10px;color:#fff">' + _escAttr((r.first_name || '') + ' ' + (r.last_name || '')) + '<div style="font-size:10px;color:#666">' + _escAttr(r.email || '') + '</div></td>' +
             '<td style="padding:10px;color:#ccc">' + _escAttr(r.offer_title || '') + '</td>' +
             '<td style="padding:10px;color:#888">' + _escAttr(r.partner_name || '—') + '</td>' +
-            '<td style="padding:10px;color:#7AC231;font-family:monospace;font-size:11px">' + _escAttr(r.code) + '</td>' +
+            '<td style="padding:10px;color:#A8FF00;font-family:monospace;font-size:11px">' + _escAttr(r.code) + '</td>' +
             '<td style="padding:10px;color:#fff;text-align:center">' + (r.points_spent || 0) + '</td>' +
             '<td style="padding:10px;color:#888">' + new Date(r.issued_at).toLocaleDateString() + '</td>' +
             '<td style="padding:10px">' +

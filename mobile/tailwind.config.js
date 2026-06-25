@@ -9,9 +9,9 @@ module.exports = {
     extend: {
       colors: {
         // Brand
-        'atp-green':       '#7AC231',
-        'atp-green-dark':  '#5a9a1f',
-        'atp-green-light': '#a8e055',
+        'atp-green':       '#A8FF00',
+        'atp-green-dark':  '#8FD800',
+        'atp-green-light': '#C6FF55',
         // Surface
         'atp-black':       '#0a0a0a',
         'atp-dark':        '#111111',
@@ -26,7 +26,7 @@ module.exports = {
         'tribe-faster':    '#60a5fa',
         'tribe-stronger':  '#f97316',
         // Semantic
-        'success':         '#7AC231',
+        'success':         '#A8FF00',
         'danger':          '#ef4444',
         'warning':         '#f59e0b',
         'info':            '#60a5fa',

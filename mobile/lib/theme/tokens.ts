@@ -9,9 +9,9 @@
 
 export const colors = {
   // Brand
-  green:      '#7AC231',
-  greenDark:  '#5a9a1f',
-  greenLight: '#a8e055',
+  green:      '#A8FF00',
+  greenDark:  '#8FD800',
+  greenLight: '#C6FF55',
 
   // Surface (dark-first per UX direction)
   black:      '#0a0a0a',
@@ -25,7 +25,7 @@ export const colors = {
   muted:      '#888888',
 
   // Semantic
-  success:    '#7AC231',
+  success:    '#A8FF00',
   danger:     '#ef4444',
   warning:    '#f59e0b',
   info:       '#60a5fa',

@@ -3370,7 +3370,7 @@ router.post('/migrate-tribe-activities', async (req, res, next) => {
 
     // 1. ensure tribes exist (founder spec: Stronger / Faster / Better)
     const seedTribes = [
-      { name: 'Stronger', slug: 'stronger', color: '#7AC231', description: 'Strength, power, hybrid training.' },
+      { name: 'Stronger', slug: 'stronger', color: '#A8FF00', description: 'Strength, power, hybrid training.' },
       { name: 'Faster',   slug: 'faster',   color: '#F59E0B', description: 'Endurance, cardio, speed.' },
       { name: 'Better',   slug: 'better',   color: '#60A5FA', description: 'Mobility, mind, recovery.' },
     ];

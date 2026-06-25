@@ -43,7 +43,7 @@ router.post('/ambassador', applyLimiter, async (req, res, next) => {
 
     const subject = `Ambassador application — ${first_name} ${last_name}`;
     const html = `
-      <h2 style="font-family:Arial,sans-serif;color:#7AC231">⭐ New Ambassador application</h2>
+      <h2 style="font-family:Arial,sans-serif;color:#A8FF00">⭐ New Ambassador application</h2>
       <table style="font-family:Arial,sans-serif;font-size:14px;border-collapse:collapse;width:100%;max-width:560px">
         <tr><td style="padding:6px 12px 6px 0;color:#888;width:140px">Name</td><td><strong>${esc(first_name)} ${esc(last_name)}</strong></td></tr>
         <tr><td style="padding:6px 12px 6px 0;color:#888">Email</td><td>${esc(memberEmail || '—')}</td></tr>

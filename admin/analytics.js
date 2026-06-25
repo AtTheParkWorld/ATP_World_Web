@@ -54,9 +54,9 @@ async function loadDashboardWidgets() {
                 return '<div style="margin-bottom:14px">'+
                   '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
                     '<div><div style="font-weight:700;font-size:14px">'+ss.name+' · '+dt+'</div><div style="font-size:11px;color:#555">'+(ss.location||'')+'</div></div>'+
-                    '<div style="text-align:right"><div style="font-family:var(--ff-display);font-size:18px;font-weight:900;color:#7AC231">'+att+'/'+cap+'</div><div style="font-size:10px;color:#555">checked in</div></div>'+
+                    '<div style="text-align:right"><div style="font-family:var(--ff-display);font-size:18px;font-weight:900;color:#A8FF00">'+att+'/'+cap+'</div><div style="font-size:10px;color:#555">checked in</div></div>'+
                   '</div>'+
-                  '<div style="height:6px;background:#1a1a1a;border-radius:3px"><div style="width:'+pct+'%;height:100%;background:#7AC231;border-radius:3px"></div></div>'+
+                  '<div style="height:6px;background:#1a1a1a;border-radius:3px"><div style="width:'+pct+'%;height:100%;background:#A8FF00;border-radius:3px"></div></div>'+
                 '</div>';
               }).join('');
             }
@@ -76,8 +76,8 @@ async function loadDashboardWidgets() {
         chart.innerHTML = growth.map(function(g) {
           var h = Math.max(8, Math.round((g.count/maxCount)*150));
           return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">'+
-            '<div style="font-size:10px;color:#7AC231;font-weight:700">'+g.count+'</div>'+
-            '<div style="width:100%;background:linear-gradient(to top,#7AC231,#4a7a1d);border-radius:3px 3px 0 0;height:'+h+'px"></div>'+
+            '<div style="font-size:10px;color:#A8FF00;font-weight:700">'+g.count+'</div>'+
+            '<div style="width:100%;background:linear-gradient(to top,#A8FF00,#4a7a1d);border-radius:3px 3px 0 0;height:'+h+'px"></div>'+
             '<div style="font-size:9px;color:#444;white-space:nowrap">'+g.month+'</div>'+
           '</div>';
         }).join('');
@@ -96,7 +96,7 @@ async function loadDashboardWidgets() {
           return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #111">'+
             '<div style="width:24px;text-align:center;font-size:14px">'+(medals[i]||'#'+(i+1))+'</div>'+
             '<div style="flex:1"><div style="font-size:13px;font-weight:600;color:#fff">'+m.first_name+' '+m.last_name+'</div><div style="font-size:11px;color:#555">'+m.member_number+(m.is_ambassador?' · Ambassador':'')+'</div></div>'+
-            '<div style="font-family:var(--ff-display);font-size:16px;font-weight:900;color:#7AC231">'+m.points_balance+'</div>'+
+            '<div style="font-family:var(--ff-display);font-size:16px;font-weight:900;color:#A8FF00">'+m.points_balance+'</div>'+
           '</div>';
         }).join('');
       }
@@ -136,8 +136,8 @@ async function loadAnalytics() {
     document.getElementById('growthChart').innerHTML = growth.map(function(g) {
       var h = Math.max(8, Math.round((g.count/maxCount)*180));
       return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px">'+
-        '<div style="font-size:10px;color:#7AC231;font-weight:700">'+g.count+'</div>'+
-        '<div style="width:100%;background:#7AC231;border-radius:3px 3px 0 0;transition:height .5s" style="height:'+h+'px"></div>'+
+        '<div style="font-size:10px;color:#A8FF00;font-weight:700">'+g.count+'</div>'+
+        '<div style="width:100%;background:#A8FF00;border-radius:3px 3px 0 0;transition:height .5s" style="height:'+h+'px"></div>'+
         '<div style="font-size:9px;color:#444;white-space:nowrap">'+g.month+'</div>'+
       '</div>';
     }).join('') || '<div style="color:#333;font-size:12px">No data yet</div>';
@@ -161,7 +161,7 @@ async function loadAnalytics() {
           '<div style="font-size:13px;font-weight:600;color:#fff">'+m.first_name+' '+m.last_name+'</div>'+
           '<div style="font-size:11px;color:#555">'+m.member_number+(m.is_ambassador?' · Ambassador':'')+'</div>'+
         '</div>'+
-        '<div style="font-family:var(--ff-display);font-size:16px;font-weight:900;color:#7AC231">'+m.points_balance+'</div>'+
+        '<div style="font-family:var(--ff-display);font-size:16px;font-weight:900;color:#A8FF00">'+m.points_balance+'</div>'+
       '</div>';
     }).join('') || '<div style="color:#333;font-size:12px;padding:12px 0">No data yet</div>';
 
@@ -173,10 +173,10 @@ async function loadAnalytics() {
       return '<div style="margin-bottom:10px">'+
         '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">'+
           '<span style="color:#ccc">'+n.nationality+'</span>'+
-          '<span style="color:#7AC231;font-weight:700">'+n.count+'</span>'+
+          '<span style="color:#A8FF00;font-weight:700">'+n.count+'</span>'+
         '</div>'+
         '<div style="height:4px;background:#1a1a1a;border-radius:2px">'+
-          '<div style="width:'+pct+'%;height:100%;background:#7AC231;border-radius:2px"></div>'+
+          '<div style="width:'+pct+'%;height:100%;background:#A8FF00;border-radius:2px"></div>'+
         '</div>'+
       '</div>';
     }).join('') || '<div style="color:#333;font-size:12px">No data yet</div>';
@@ -190,10 +190,10 @@ async function loadAnalytics() {
       return '<div style="margin-bottom:12px">'+
         '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">'+
           '<span style="color:#ccc">'+(catNames[c.session_category]||c.session_category)+'</span>'+
-          '<span style="color:#7AC231;font-weight:700">'+c.count+' sessions</span>'+
+          '<span style="color:#A8FF00;font-weight:700">'+c.count+' sessions</span>'+
         '</div>'+
         '<div style="height:6px;background:#1a1a1a;border-radius:3px">'+
-          '<div style="width:'+pct+'%;height:100%;background:#7AC231;border-radius:3px"></div>'+
+          '<div style="width:'+pct+'%;height:100%;background:#A8FF00;border-radius:3px"></div>'+
         '</div>'+
       '</div>';
     }).join('') || '<div style="color:#333;font-size:12px">No sessions yet</div>';
@@ -225,10 +225,10 @@ function renderAgeBreakdown(ages) {
     return '<div style="margin-bottom:10px">' +
       '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">' +
         '<span style="color:#ccc">' + _esc(a.range) + '</span>' +
-        '<span style="color:#7AC231;font-weight:700">' + a.count + '</span>' +
+        '<span style="color:#A8FF00;font-weight:700">' + a.count + '</span>' +
       '</div>' +
       '<div style="height:5px;background:#1a1a1a;border-radius:3px">' +
-        '<div style="width:' + pct + '%;height:100%;background:#7AC231;border-radius:3px"></div>' +
+        '<div style="width:' + pct + '%;height:100%;background:#A8FF00;border-radius:3px"></div>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -240,7 +240,7 @@ function renderAgeParticipation(rows) {
   if (!rows.length) { el.innerHTML = '<div style="color:#333;font-size:12px;padding:12px 0">No participation data yet</div>'; return; }
   el.innerHTML = rows.map(function(r){
     var pct = Math.round(Number(r.participation_pct || 0));
-    var barColor = pct >= 50 ? '#7AC231' : (pct >= 25 ? '#f5c042' : '#f87171');
+    var barColor = pct >= 50 ? '#A8FF00' : (pct >= 25 ? '#f5c042' : '#f87171');
     return '<div style="margin-bottom:12px">' +
       '<div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">' +
         '<span style="color:#ccc">' + _esc(r.bracket) + '</span>' +
@@ -267,7 +267,7 @@ function renderCoachDelivery(rows) {
       return '<div style="display:grid;grid-template-columns:1fr 100px 100px 110px;gap:12px;padding:10px 14px;border-bottom:1px solid #111;font-size:13px;align-items:center">' +
         '<div style="color:#fff">' + medal + _esc(name) + '</div>' +
         '<div style="text-align:right;color:#fff;font-weight:700">' + (c.sessions_delivered || 0) + '</div>' +
-        '<div style="text-align:right;color:#7AC231;font-weight:700">' + Number(c.hours_delivered || 0).toFixed(1) + 'h</div>' +
+        '<div style="text-align:right;color:#A8FF00;font-weight:700">' + Number(c.hours_delivered || 0).toFixed(1) + 'h</div>' +
         '<div style="text-align:right;color:#aaa">' + (c.total_attendees || 0) + '</div>' +
       '</div>';
     }).join('');
@@ -285,10 +285,10 @@ function renderAmbassadorCheckins(rows) {
       var name = ((a.first_name||'') + ' ' + (a.last_name||'')).trim() || '(unknown)';
       var medal = i < 3 ? ['🥇','🥈','🥉'][i] + ' ' : '';
       var role = a.is_admin ? '<span style="font-size:9px;background:rgba(245,192,66,.14);color:#f5c042;padding:2px 7px;border-radius:99px;margin-left:6px;letter-spacing:.06em;text-transform:uppercase;font-weight:700">Admin</span>'
-              : '<span style="font-size:9px;background:rgba(122,194,49,.14);color:#7AC231;padding:2px 7px;border-radius:99px;margin-left:6px;letter-spacing:.06em;text-transform:uppercase;font-weight:700">Ambassador</span>';
+              : '<span style="font-size:9px;background:rgba(168,255,0,.14);color:#A8FF00;padding:2px 7px;border-radius:99px;margin-left:6px;letter-spacing:.06em;text-transform:uppercase;font-weight:700">Ambassador</span>';
       return '<div style="display:grid;grid-template-columns:1fr 120px 110px 110px;gap:12px;padding:10px 14px;border-bottom:1px solid #111;font-size:13px;align-items:center">' +
         '<div style="color:#fff">' + medal + _esc(name) + role + '</div>' +
-        '<div style="text-align:right;color:#7AC231;font-weight:700;font-size:15px">' + (a.checkins_total || 0) + '</div>' +
+        '<div style="text-align:right;color:#A8FF00;font-weight:700;font-size:15px">' + (a.checkins_total || 0) + '</div>' +
         '<div style="text-align:right;color:#fff">' + (a.checkins_30d || 0) + '</div>' +
         '<div style="text-align:right;color:#aaa">' + (a.sessions_scanned || 0) + '</div>' +
       '</div>';
@@ -395,7 +395,7 @@ function _renderGenderCard(rows, qs) {
     : '<div style="display:flex;flex-direction:column;gap:8px">' +
       rows.map(function(r){
         var pct = r.percent != null ? Number(r.percent).toFixed(1) : (total ? (100 * r.count / total).toFixed(1) : '0');
-        return _barRow(_titleCase(r.gender || 'unspecified'), Number(r.count) || 0, pct, '#7AC231');
+        return _barRow(_titleCase(r.gender || 'unspecified'), Number(r.count) || 0, pct, '#A8FF00');
       }).join('') +
     '</div>';
   return _atpAnalyticsCard('🚻 Gender breakdown', 'gender', qs, body);
@@ -408,7 +408,7 @@ function _renderActivityCard(a, qs) {
   var total = active + inactive;
   var body = '<div style="display:flex;gap:14px;align-items:center;justify-content:center;padding:14px 0">' +
     '<div style="text-align:center;flex:1">' +
-      '<div style="font-family:var(--ff-display);font-size:36px;font-weight:900;color:#7AC231">' + active.toLocaleString() + '</div>' +
+      '<div style="font-family:var(--ff-display);font-size:36px;font-weight:900;color:#A8FF00">' + active.toLocaleString() + '</div>' +
       '<div style="font-size:11px;color:#666;text-transform:uppercase;letter-spacing:.06em">Active</div>' +
       '<div style="font-size:11px;color:#aaa;margin-top:2px">' + (total ? Math.round(100*active/total) : 0) + '%</div>' +
     '</div>' +
@@ -431,8 +431,8 @@ function _renderNewPerMonthCard(rows, qs) {
     rows.map(function(r){
       var h = max ? Math.max(4, (Number(r.count)/max) * 140) : 4;
       return '<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;min-width:24px">' +
-        '<div style="font-size:10px;font-weight:700;color:#7AC231">' + (Number(r.count)||0) + '</div>' +
-        '<div title="' + r.month + ': ' + r.count + '" style="width:100%;height:' + h + 'px;background:linear-gradient(180deg,#7AC231,#3d6118);border-radius:4px 4px 0 0"></div>' +
+        '<div style="font-size:10px;font-weight:700;color:#A8FF00">' + (Number(r.count)||0) + '</div>' +
+        '<div title="' + r.month + ': ' + r.count + '" style="width:100%;height:' + h + 'px;background:linear-gradient(180deg,#A8FF00,#3d6118);border-radius:4px 4px 0 0"></div>' +
       '</div>';
     }).join('') +
   '</div>' +
@@ -450,7 +450,7 @@ function _renderSubscriptionCard(rows, qs) {
   var body = !total ? _emptyCard('No members in this range.')
     : '<div style="display:flex;flex-direction:column;gap:10px">' +
       _barRow('🆓 Free',          byTier.free,         total ? (100*byTier.free/total).toFixed(1) : 0, '#888') +
-      _barRow('⭐ Premium',        byTier.premium,      total ? (100*byTier.premium/total).toFixed(1) : 0, '#7AC231') +
+      _barRow('⭐ Premium',        byTier.premium,      total ? (100*byTier.premium/total).toFixed(1) : 0, '#A8FF00') +
       _barRow('⭐⭐ Premium+',      byTier.premium_plus, total ? (100*byTier.premium_plus/total).toFixed(1) : 0, '#ffc400') +
     '</div>';
   return _atpAnalyticsCard('💳 Subscription tier', 'subscription', qs, body);
@@ -481,7 +481,7 @@ function _renderRevenueCard(rows, qs) {
     var t = totalsByCurrency[ccy];
     var net = t.gross - t.refunded;
     return '<div style="text-align:center">' +
-      '<div style="font-family:var(--ff-display);font-size:30px;font-weight:900;color:#7AC231">' + ccy + ' ' + Number(net).toFixed(2) + '</div>' +
+      '<div style="font-family:var(--ff-display);font-size:30px;font-weight:900;color:#A8FF00">' + ccy + ' ' + Number(net).toFixed(2) + '</div>' +
       '<div style="font-size:10px;color:#666">net (' + ccy + ' ' + Number(t.gross).toFixed(2) + ' gross − ' + ccy + ' ' + Number(t.refunded).toFixed(2) + ' refunded)</div>' +
     '</div>';
   }).join('<div style="height:1px;background:#222;margin:10px 0"></div>');
@@ -507,7 +507,7 @@ function _renderRevenueCard(rows, qs) {
       return '<tr style="border-bottom:1px solid #111">' +
         (i === 0 ? '<td style="padding:6px;color:#aaa" rowspan="' + byMonth[m].length + '">' + m + '</td>' : '') +
         '<td style="padding:6px;color:#888">' + ccy + '</td>' +
-        '<td style="padding:6px;text-align:right;color:#7AC231;font-weight:700">' + Number(net).toFixed(2) + '</td>' +
+        '<td style="padding:6px;text-align:right;color:#A8FF00;font-weight:700">' + Number(net).toFixed(2) + '</td>' +
         '<td style="padding:6px;text-align:right;color:#666">' + (Number(r.refunded) > 0 ? '−' + Number(r.refunded).toFixed(2) : '') + '</td>' +
         '<td style="padding:6px;text-align:right;color:#ffc400">' + (Number(r.points_spent) > 0 ? Number(r.points_spent).toLocaleString() + ' pts' : '') + '</td>' +
         '<td style="padding:6px;text-align:right;color:#666">' + ((Number(r.stripe_bookings)||0) + (Number(r.points_bookings)||0)) + '</td>' +
@@ -542,14 +542,14 @@ function _renderBookingsVsCheckinsCard(rows, qs) {
         '</div>' +
         '<div style="position:relative;height:14px;background:#0d0d0d;border-radius:3px;overflow:hidden">' +
           '<div style="position:absolute;left:0;top:0;bottom:0;width:' + bw + '%;background:#1f3a0d"></div>' +
-          '<div style="position:absolute;left:0;top:0;bottom:0;width:' + cw + '%;background:#7AC231"></div>' +
+          '<div style="position:absolute;left:0;top:0;bottom:0;width:' + cw + '%;background:#A8FF00"></div>' +
         '</div>' +
       '</div>';
     }).join('') +
   '</div>' +
   '<div style="display:flex;gap:14px;font-size:10px;color:#666;margin-top:10px;padding-top:10px;border-top:1px solid #1a1a1a">' +
     '<span><span style="display:inline-block;width:10px;height:10px;background:#1f3a0d;vertical-align:middle;margin-right:4px"></span>Bookings</span>' +
-    '<span><span style="display:inline-block;width:10px;height:10px;background:#7AC231;vertical-align:middle;margin-right:4px"></span>Check-ins</span>' +
+    '<span><span style="display:inline-block;width:10px;height:10px;background:#A8FF00;vertical-align:middle;margin-right:4px"></span>Check-ins</span>' +
   '</div>';
   return _atpAnalyticsCard('📅 Bookings vs Check-ins (monthly)', 'bookings_vs_checkins', qs, body);
 }
@@ -563,7 +563,7 @@ function _renderTopSessionsCard(rows, qs) {
       '<tbody>' +
         rows.slice(0,10).map(function(r){
           var pct = r.checkin_pct != null ? Number(r.checkin_pct).toFixed(1) : '0.0';
-          var color = (Number(r.checkin_pct) >= 70) ? '#7AC231' : (Number(r.checkin_pct) >= 40 ? '#ffc400' : '#f87171');
+          var color = (Number(r.checkin_pct) >= 70) ? '#A8FF00' : (Number(r.checkin_pct) >= 40 ? '#ffc400' : '#f87171');
           var name = (r.name||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
           return '<tr style="border-bottom:1px solid #111">' +
             '<td style="padding:8px 6px;color:#fff">' + name + '</td>' +
@@ -593,7 +593,7 @@ function _renderSessionGenderCard(rows, qs) {
       var name = (s.name||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
       var segments = '';
       var segOrder = ['male','female','non-binary','prefer_not_to_say','unspecified'];
-      var colorMap = { male: '#60a5fa', female: '#f0abfc', 'non-binary': '#7AC231', prefer_not_to_say: '#888', unspecified: '#444' };
+      var colorMap = { male: '#60a5fa', female: '#f0abfc', 'non-binary': '#A8FF00', prefer_not_to_say: '#888', unspecified: '#444' };
       segOrder.forEach(function(g){
         if (s.breakdown[g]) {
           var w = total ? (s.breakdown[g] / total) * 100 : 0;
@@ -618,7 +618,7 @@ function _renderSessionGenderCard(rows, qs) {
   '<div style="display:flex;gap:10px;font-size:10px;color:#666;margin-top:10px;padding-top:10px;border-top:1px solid #1a1a1a;flex-wrap:wrap">' +
     '<span><span style="display:inline-block;width:10px;height:10px;background:#60a5fa;vertical-align:middle;margin-right:4px"></span>Male</span>' +
     '<span><span style="display:inline-block;width:10px;height:10px;background:#f0abfc;vertical-align:middle;margin-right:4px"></span>Female</span>' +
-    '<span><span style="display:inline-block;width:10px;height:10px;background:#7AC231;vertical-align:middle;margin-right:4px"></span>Non-binary</span>' +
+    '<span><span style="display:inline-block;width:10px;height:10px;background:#A8FF00;vertical-align:middle;margin-right:4px"></span>Non-binary</span>' +
     '<span><span style="display:inline-block;width:10px;height:10px;background:#888;vertical-align:middle;margin-right:4px"></span>Prefer not to say</span>' +
   '</div>';
   return _atpAnalyticsCard('🚻 Gender breakdown per session', 'session_gender', qs, body);

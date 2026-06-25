@@ -23,14 +23,14 @@ function baseTemplate(content) {
   * { margin:0; padding:0; box-sizing:border-box; }
   body { font-family: Arial, sans-serif; background:#0a0a0a; color:#ffffff; }
   .wrap { max-width:600px; margin:0 auto; }
-  .header { background:#0a0a0a; padding:32px 40px 24px; border-bottom:3px solid #7AC231; }
+  .header { background:#0a0a0a; padding:32px 40px 24px; border-bottom:3px solid #A8FF00; }
   .logo { font-family:Arial Black,Arial,sans-serif; font-size:22px; font-weight:900;
           letter-spacing:.1em; text-transform:uppercase; color:#ffffff; }
-  .logo span { color:#7AC231; }
+  .logo span { color:#A8FF00; }
   .body { background:#111111; padding:40px; }
   .footer { background:#0a0a0a; padding:24px 40px; text-align:center;
             font-size:12px; color:#555; border-top:1px solid #1a1a1a; }
-  .btn { display:inline-block; background:#7AC231; color:#000000 !important;
+  .btn { display:inline-block; background:#A8FF00; color:#000000 !important;
          padding:14px 32px; border-radius:8px; text-decoration:none;
          font-weight:700; font-size:15px; letter-spacing:.02em; margin:24px 0; }
   h1 { font-size:28px; font-weight:900; text-transform:uppercase;
@@ -38,12 +38,12 @@ function baseTemplate(content) {
   p { font-size:15px; color:#cccccc; line-height:1.7; margin-bottom:16px; }
   .stat { display:inline-block; background:#1a1a1a; padding:16px 24px;
           border-radius:8px; margin:8px 8px 8px 0; text-align:center; }
-  .stat-num { font-size:28px; font-weight:900; color:#7AC231; display:block; }
+  .stat-num { font-size:28px; font-weight:900; color:#A8FF00; display:block; }
   .stat-label { font-size:11px; color:#666; text-transform:uppercase;
                 letter-spacing:.08em; }
   .qr-box { background:#1a1a1a; border:1px solid #2a2a2a; border-radius:12px;
             padding:24px; text-align:center; margin:24px 0; }
-  .qr-token { font-size:20px; font-weight:700; color:#7AC231; font-family:monospace;
+  .qr-token { font-size:20px; font-weight:700; color:#A8FF00; font-family:monospace;
               letter-spacing:.1em; }
   .divider { border:none; border-top:1px solid #222; margin:24px 0; }
   .muted { font-size:12px; color:#555; }
@@ -58,7 +58,7 @@ function baseTemplate(content) {
   <div class="footer">
     <p>© ${new Date().getFullYear()} At The Park. Never Train Alone.</p>
     <p style="margin-top:8px">
-      <a href="https://atthepark.world" style="color:#7AC231;text-decoration:none">atthepark.world</a>
+      <a href="https://atthepark.world" style="color:#A8FF00;text-decoration:none">atthepark.world</a>
       &nbsp;·&nbsp;
       <a href="mailto:general@atthepark.world" style="color:#555;text-decoration:none">general@atthepark.world</a>
     </p>
@@ -154,7 +154,7 @@ async function sendWelcome(member, opts) {
     <br>
     <a href="${FRONTEND_URL}/sessions.html" class="btn">Book your first session →</a>
     <hr class="divider">
-    <p class="muted">Your member number is <strong style="color:#7AC231">${escapeHtml(member.member_number || '')}</strong>.
+    <p class="muted">Your member number is <strong style="color:#A8FF00">${escapeHtml(member.member_number || '')}</strong>.
     Keep this safe — it's on your check-in QR code.</p>
   `);
   await send(member.email, 'Welcome to At The Park 🌿', html);
@@ -173,9 +173,9 @@ async function sendCoachMessage(coach, payload) {
     <h1>New message — ${safe(coach.first_name)}</h1>
     <p>You have a new inquiry from your ATP coach profile.</p>
     <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:20px;margin:20px 0">
-      <p style="margin:0 0 10px"><strong style="color:#7AC231">From:</strong> ${safe(payload.name)} &lt;${replyTo}&gt;</p>
-      ${payload.phone   ? `<p style="margin:0 0 10px"><strong style="color:#7AC231">Phone:</strong> ${safe(payload.phone)}</p>` : ''}
-      ${payload.subject ? `<p style="margin:0 0 10px"><strong style="color:#7AC231">Subject:</strong> ${safe(payload.subject)}</p>` : ''}
+      <p style="margin:0 0 10px"><strong style="color:#A8FF00">From:</strong> ${safe(payload.name)} &lt;${replyTo}&gt;</p>
+      ${payload.phone   ? `<p style="margin:0 0 10px"><strong style="color:#A8FF00">Phone:</strong> ${safe(payload.phone)}</p>` : ''}
+      ${payload.subject ? `<p style="margin:0 0 10px"><strong style="color:#A8FF00">Subject:</strong> ${safe(payload.subject)}</p>` : ''}
       <p style="margin:14px 0 0;white-space:pre-wrap">${safe(payload.message)}</p>
     </div>
     <p class="muted">Reply directly to this email to respond — your reply will go to <strong>${replyTo}</strong>.</p>
@@ -217,7 +217,7 @@ async function sendCoachThreadInitial(envelope, payload) {
 
   const intro = isCoach
     ? `<p>Hi ${safe(envelope.coachFirstName)}, you have a new inquiry from your ATP coach profile.</p>`
-    : `<p>Hi ${safe(payload.name.split(' ')[0])}, thanks for reaching out to <strong style="color:#7AC231">${safe(envelope.coachLabel)}</strong>. Your message landed in their inbox — they usually reply within 24 hours.</p>`;
+    : `<p>Hi ${safe(payload.name.split(' ')[0])}, thanks for reaching out to <strong style="color:#A8FF00">${safe(envelope.coachLabel)}</strong>. Your message landed in their inbox — they usually reply within 24 hours.</p>`;
 
   const cta = isCoach
     ? `<a href="${payload.threadUrl}" class="btn">Open conversation →</a>
@@ -230,9 +230,9 @@ async function sendCoachThreadInitial(envelope, payload) {
     <h1>${isCoach ? 'New inquiry' : 'Message received'}</h1>
     ${intro}
     <div style="background:#1a1a1a;border:1px solid #2a2a2a;border-radius:12px;padding:20px;margin:20px 0">
-      <p style="margin:0 0 8px"><strong style="color:#7AC231">${isCoach ? 'From' : 'To'}:</strong> ${isCoach ? safe(payload.name) + ' &lt;' + safe(payload.email) + '&gt;' : safe(envelope.coachLabel)}</p>
-      ${payload.phone   ? `<p style="margin:0 0 8px"><strong style="color:#7AC231">Phone:</strong> ${safe(payload.phone)}</p>` : ''}
-      ${payload.subject ? `<p style="margin:0 0 8px"><strong style="color:#7AC231">Subject:</strong> ${safe(payload.subject)}</p>` : ''}
+      <p style="margin:0 0 8px"><strong style="color:#A8FF00">${isCoach ? 'From' : 'To'}:</strong> ${isCoach ? safe(payload.name) + ' &lt;' + safe(payload.email) + '&gt;' : safe(envelope.coachLabel)}</p>
+      ${payload.phone   ? `<p style="margin:0 0 8px"><strong style="color:#A8FF00">Phone:</strong> ${safe(payload.phone)}</p>` : ''}
+      ${payload.subject ? `<p style="margin:0 0 8px"><strong style="color:#A8FF00">Subject:</strong> ${safe(payload.subject)}</p>` : ''}
       <p style="margin:14px 0 0;white-space:pre-wrap">${safe(payload.message)}</p>
     </div>
     ${cta}
@@ -265,8 +265,8 @@ async function sendCoachThreadReply(envelope, payload) {
     : `${envelope.coachLabel} replied to your message — At The Park`;
 
   const intro = isCoach
-    ? `<p>Hi ${safe(envelope.coachFirstName)}, <strong style="color:#7AC231">${safe(envelope.visitorName)}</strong> replied in your conversation.</p>`
-    : `<p>Hi ${safe(envelope.visitorFirstName)}, <strong style="color:#7AC231">${safe(envelope.coachLabel)}</strong> got back to you.</p>`;
+    ? `<p>Hi ${safe(envelope.coachFirstName)}, <strong style="color:#A8FF00">${safe(envelope.visitorName)}</strong> replied in your conversation.</p>`
+    : `<p>Hi ${safe(envelope.visitorFirstName)}, <strong style="color:#A8FF00">${safe(envelope.coachLabel)}</strong> got back to you.</p>`;
 
   const body = baseTemplate(`
     <h1>${isCoach ? 'New reply' : 'New reply from your coach'}</h1>
@@ -319,7 +319,7 @@ async function sendCorporateInvitation({ email, first_name, company_name, compan
     ${logoBlock}
     <h1>You're invited to ATP × ${safeCo}.</h1>
     <p>Hi ${safeFirst},</p>
-    <p>${safeSender} just enrolled you in <strong style="color:#7AC231">At The Park</strong> — ${safeCo}'s new wellness program.</p>
+    <p>${safeSender} just enrolled you in <strong style="color:#A8FF00">At The Park</strong> — ${safeCo}'s new wellness program.</p>
     <p>What you get:</p>
     <div class="stat"><span class="stat-num">🏃</span><span class="stat-label">Free outdoor sessions</span></div>
     <div class="stat"><span class="stat-num">💻</span><span class="stat-label">Live online workouts</span></div>
@@ -381,7 +381,7 @@ async function sendPaidSessionReceipt({ member, session, payment }) {
         <tr><td style="padding:4px 0;color:#888">Member</td><td style="text-align:right;color:#fff">${escapeHtml(member.first_name + ' ' + (member.last_name || ''))} · ${escapeHtml(member.member_number || '')}</td></tr>
       </table>
     </div>
-    <p class="muted">Issued by At The Park · This is an automated receipt. For corrections or refunds, reply to this email or write to <a href="mailto:general@atthepark.com" style="color:#7AC231">general@atthepark.com</a>.</p>
+    <p class="muted">Issued by At The Park · This is an automated receipt. For corrections or refunds, reply to this email or write to <a href="mailto:general@atthepark.com" style="color:#A8FF00">general@atthepark.com</a>.</p>
     ${_sponsorBlockHtml(session)}
   `);
   return send(member.email, `Receipt — ${currency} ${amount} · ${session.name || 'ATP session'}`, html);
@@ -398,7 +398,7 @@ async function sendBookingConfirmation(member, session, qrData, qrToken) {
 
   const html = baseTemplate(`
     <h1>You're booked! ✅</h1>
-    <p>See you at <strong style="color:#7AC231">${session.session_name || session.name}</strong>.</p>
+    <p>See you at <strong style="color:#A8FF00">${session.session_name || session.name}</strong>.</p>
 
     <div style="background:#1a2a0a;border:1px solid #2a4a1a;border-radius:12px;padding:20px;margin:20px 0">
       <p style="margin:0 0 6px"><strong>📅 When:</strong> ${sessionDate}</p>
@@ -476,7 +476,7 @@ async function sendMigrationClaim(member, magicUrl) {
 async function sendStreakReminder(member, streakDays) {
   const html = baseTemplate(`
     <h1>🔥 Don't break your streak!</h1>
-    <p>Hi ${member.first_name}, you're on a <strong style="color:#7AC231">${streakDays}-day streak</strong>. 
+    <p>Hi ${member.first_name}, you're on a <strong style="color:#A8FF00">${streakDays}-day streak</strong>. 
     Don't stop now.</p>
     <p>There are sessions today. Show up, check in, and keep the fire going.</p>
     <a href="${FRONTEND_URL}/sessions.html" class="btn">Find a session today →</a>
@@ -499,7 +499,7 @@ async function sendPointsExpiryWarning(member, expiringPoints, expiresAt) {
   });
   const html = baseTemplate(`
     <h1>⏰ Your points are expiring soon</h1>
-    <p>Hi ${member.first_name}, you have <strong style="color:#7AC231">${expiringPoints} ATP points</strong>
+    <p>Hi ${member.first_name}, you have <strong style="color:#A8FF00">${expiringPoints} ATP points</strong>
     expiring on <strong>${expiryDate}</strong>.</p>
     <p>Use them in the ATP store before they expire.</p>
     <a href="${FRONTEND_URL}/store.html" class="btn">Shop with points →</a>
@@ -537,7 +537,7 @@ async function sendSessionReminder(member, session) {
   const html = baseTemplate(`
     <h1>📅 Session in 10 hours</h1>
     <p>Hi ${member.first_name}, just a reminder — you're booked for 
-    <strong style="color:#7AC231">${session.name}</strong> ${sessionDate} at ${session.location}.</p>
+    <strong style="color:#A8FF00">${session.name}</strong> ${sessionDate} at ${session.location}.</p>
     <p>Your QR code is saved in your ATP profile. See you there! 💪</p>
     <a href="${FRONTEND_URL}/profile.html" class="btn">View my QR code →</a>
   `);
@@ -571,7 +571,7 @@ async function sendSessionCancellation(member, session, refund) {
         ? '<p style="color:#aaa">As your booking was inside the 12-hour window, no refund applies.</p>'
         : '';
   const reasonLine = session.cancellation_reason
-    ? `<p style="background:#1a1a1a;padding:14px 18px;border-radius:8px;border-left:3px solid #7AC231"><strong>Why:</strong> ${escapeHtml(session.cancellation_reason)}</p>`
+    ? `<p style="background:#1a1a1a;padding:14px 18px;border-radius:8px;border-left:3px solid #A8FF00"><strong>Why:</strong> ${escapeHtml(session.cancellation_reason)}</p>`
     : '';
   const html = baseTemplate(
     `<h1>Session cancelled</h1>

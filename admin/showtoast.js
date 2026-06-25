@@ -68,7 +68,7 @@ function showToast(msg, isError) {
   if (!t) return;
   t.textContent = msg;
   t.style.background = isError ? '#2a1010' : '#0d1a0a';
-  t.style.color = isError ? '#f87171' : '#7AC231';
+  t.style.color = isError ? '#f87171' : '#A8FF00';
   t.style.display = 'block';
   setTimeout(function() { t.style.display = 'none'; }, 3000);
 }
@@ -98,7 +98,7 @@ async function loadMembersAPI() {
       var tierSelect =
         '<select onchange="setMemberTier(this.dataset.mid, this.value, this)" data-mid="' + m.id + '" ' +
                 'style="background:#0a0a0a;border:1px solid #1a1a1a;color:' +
-                (tier === 'premium_plus' ? '#ffc400' : (tier === 'premium' ? '#7AC231' : '#888')) +
+                (tier === 'premium_plus' ? '#ffc400' : (tier === 'premium' ? '#A8FF00' : '#888')) +
                 ';font-size:11px;padding:4px 8px;border-radius:6px;font-weight:700;cursor:pointer">' +
           '<option value="free"' +         (tier==='free'         ? ' selected' : '') + '>Free</option>' +
           '<option value="premium"' +      (tier==='premium'      ? ' selected' : '') + '>⭐ Premium</option>' +
@@ -115,13 +115,13 @@ async function loadMembersAPI() {
         '<div class="admin-member-email">'+m.member_number+' · '+m.email+'</div></div></td>'+
         '<td style="color:#555;font-size:12px">'+joined+'</td>'+
         '<td style="color:#fff;font-size:13px;font-weight:600">'+(m.sessions_count||0)+'</td>'+
-        '<td style="font-size:13px;font-weight:700;color:#7AC231">'+(m.points_balance||0)+'</td>'+
+        '<td style="font-size:13px;font-weight:700;color:#A8FF00">'+(m.points_balance||0)+'</td>'+
         '<td>'+walletDisplay+'</td>'+
         '<td>'+tierSelect+'</td>'+
         '<td><span class="badge '+(isAmb?'badge-green':'badge-grey')+'">'+(isAmb?'Ambassador':'Member')+'</span></td>'+
         '<td>'+
           '<button class="admin-btn" style="font-size:11px;padding:4px 10px;background:rgba(245,192,66,.14);color:#f5c042;border:1px solid rgba(245,192,66,.3);margin-right:4px" onclick="topupWallet(this.dataset.mid, this.dataset.name)" data-mid="'+m.id+'" data-name="'+memberLabel.replace(/"/g,'')+'">💰 Top up</button>'+
-          '<button class="admin-btn" style="font-size:11px;padding:4px 10px;background:rgba(122,194,49,.14);color:#7AC231;border:1px solid rgba(122,194,49,.3);margin-right:4px" onclick="adjustPoints(this.dataset.mid, this.dataset.name)" data-mid="'+m.id+'" data-name="'+memberLabel.replace(/"/g,'')+'">± Points</button>'+
+          '<button class="admin-btn" style="font-size:11px;padding:4px 10px;background:rgba(168,255,0,.14);color:#A8FF00;border:1px solid rgba(168,255,0,.3);margin-right:4px" onclick="adjustPoints(this.dataset.mid, this.dataset.name)" data-mid="'+m.id+'" data-name="'+memberLabel.replace(/"/g,'')+'">± Points</button>'+
           (isAmb
             ? '<button class="admin-btn" style="font-size:11px;padding:4px 10px" onclick="removeAmbassador(this.dataset.mid)" data-mid="'+m.id+'">Remove Amb.</button>'
             : '<button class="admin-btn" style="font-size:11px;padding:4px 10px" onclick="makeAmbassador(this.dataset.mid)" data-mid="'+m.id+'">Make Amb.</button>'
@@ -155,7 +155,7 @@ async function setMemberTier(memberId, tier, selectEl) {
     if (selectEl) {
       selectEl.disabled = false;
       selectEl.style.opacity = '1';
-      selectEl.style.color = tier === 'premium_plus' ? '#ffc400' : (tier === 'premium' ? '#7AC231' : '#888');
+      selectEl.style.color = tier === 'premium_plus' ? '#ffc400' : (tier === 'premium' ? '#A8FF00' : '#888');
     }
   } catch (e) {
     showToast('❌ ' + e.message, true);

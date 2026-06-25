@@ -476,7 +476,7 @@ async function cmsRenderTribesActivities(host) {
     // ── Tribes block ─────────────────────────────────────────
     html += '<div style="background:#0d0d0d;border:1px solid #222;border-radius:10px;padding:14px;margin-bottom:18px">';
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
-    html += '<div style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#7AC231">Tribes (' + tribes.length + ')</div>';
+    html += '<div style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#A8FF00">Tribes (' + tribes.length + ')</div>';
     html += '<button class="admin-btn" style="font-size:11px;padding:5px 10px" data-atp-call="cmsTribeNew">+ Add Tribe</button>';
     html += '</div>';
     if (!tribes.length) {
@@ -484,7 +484,7 @@ async function cmsRenderTribesActivities(host) {
     } else {
       html += '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px">';
       tribes.forEach(function(t) {
-        var color = t.color || '#7AC231';
+        var color = t.color || '#A8FF00';
         var actCount = acts.filter(function(a){ return a.tribe_id === t.id; }).length;
         html += '<div style="background:#161616;border:1px solid ' + esc(color) + '40;border-left:4px solid ' + esc(color) + ';border-radius:8px;padding:12px">' +
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">' +
@@ -508,7 +508,7 @@ async function cmsRenderTribesActivities(host) {
     // ── Activities block, grouped by tribe ───────────────────
     html += '<div style="background:#0d0d0d;border:1px solid #222;border-radius:10px;padding:14px">';
     html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
-    html += '<div style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#7AC231">Activities (' + acts.length + ')</div>';
+    html += '<div style="font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#A8FF00">Activities (' + acts.length + ')</div>';
     html += '<button class="admin-btn" style="font-size:11px;padding:5px 10px" data-atp-call="cmsActivityNew">+ Add Activity</button>';
     html += '</div>';
 
@@ -523,7 +523,7 @@ async function cmsRenderTribesActivities(host) {
 
     Object.keys(byTribe).forEach(function(tid) {
       var grp = byTribe[tid];
-      var color = grp.tribe.color || '#7AC231';
+      var color = grp.tribe.color || '#A8FF00';
       html += '<div style="margin-bottom:14px">';
       html += '<div style="font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:' + esc(color) + ';margin-bottom:6px">' + esc(grp.tribe.name) + ' · ' + grp.items.length + '</div>';
       if (!grp.items.length) {
@@ -573,7 +573,7 @@ async function cmsRenderTribesActivities(host) {
 function cmsTribeNew() {
   var name = prompt('New tribe name (e.g. "Tactical")');
   if (!name) return;
-  var color = prompt('Tribe color (hex, e.g. "#FF6B6B"). Leave blank for default.', '#7AC231') || null;
+  var color = prompt('Tribe color (hex, e.g. "#FF6B6B"). Leave blank for default.', '#A8FF00') || null;
   var token = getToken();
   fetch(ATP_API + '/sessions/tribes/admin', {
     method: 'POST',
@@ -744,7 +744,7 @@ async function saveCmsContent() {
     var d = await res.json();
     if (d.message) {
       msg.textContent = '✅ Saved — ' + updates.length + ' fields';
-      msg.style.color = '#7AC231';
+      msg.style.color = '#A8FF00';
       setTimeout(function() { msg.textContent = ''; }, 4000);
     } else {
       throw new Error(d.error || 'Failed');
@@ -862,7 +862,7 @@ async function handleCmsUpload(event) {
         msg.textContent = d.auto_saved
           ? '✅ Uploaded (' + d.size_kb + ' KB) — saved & live'
           : '✅ Uploaded (' + d.size_kb + ' KB) — click Save All Changes to apply';
-        msg.style.color = '#7AC231';
+        msg.style.color = '#A8FF00';
         // Set the URL in the target field if we were called from a CMS
         // editor field. Standalone Library uploads have no target.
         // ALSO write into CMS_CONTENT_CACHE so the imminent renderCmsEditor
@@ -910,7 +910,7 @@ async function handleCmsUpload(event) {
 function _libraryUploadHeader() {
   return '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:12px;padding:16px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
     '<div style="flex:1;min-width:200px">' +
-      '<div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:4px">📤 Upload to library</div>' +
+      '<div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#A8FF00;margin-bottom:4px">📤 Upload to library</div>' +
       '<div style="font-size:11px;color:#888;line-height:1.5">Drop images or videos here \u2014 they\u2019ll appear below and can be reused on any page. Max <strong>10&nbsp;MB</strong>. Recommended: hero 1920×1080, card 800×600, square 600×600, video MP4 &lt;10&nbsp;MB.</div>' +
     '</div>' +
     '<div style="display:flex;gap:8px">' +

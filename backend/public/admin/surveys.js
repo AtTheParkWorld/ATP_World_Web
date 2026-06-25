@@ -38,7 +38,7 @@ function renderSurveysList() {
         html += '<div style="padding:40px;color:#555;text-align:center;font-size:13px;border:1px dashed #2a2a2a;border-radius:10px">No surveys yet. Click "+ New survey" to create your first.</div>';
       } else {
         html += list.map(function(s){
-          var statusColor = s.status === 'active' ? '#7AC231' : (s.status === 'closed' ? '#666' : '#f59e0b');
+          var statusColor = s.status === 'active' ? '#A8FF00' : (s.status === 'closed' ? '#666' : '#f59e0b');
           var publicUrl = '/survey/' + s.slug;
           return '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:18px;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;gap:14px">' +
             '<div style="flex:1;min-width:0">' +
@@ -46,7 +46,7 @@ function renderSurveysList() {
                 '<span style="font-family:var(--ff-display,sans-serif);font-size:18px;font-weight:800;color:#fff">' + _esc(s.title) + '</span>' +
                 '<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:' + statusColor + ';background:rgba(255,255,255,.05);padding:3px 8px;border-radius:4px;border:1px solid ' + statusColor + '">' + s.status + '</span>' +
               '</div>' +
-              '<div style="font-size:11px;color:#666"><code style="background:#0a0a0a;padding:2px 6px;border-radius:3px;color:#7AC231">' + publicUrl + '</code> · ' + (s.question_count || 0) + ' questions · ' + (s.actual_responses || 0) + ' responses</div>' +
+              '<div style="font-size:11px;color:#666"><code style="background:#0a0a0a;padding:2px 6px;border-radius:3px;color:#A8FF00">' + publicUrl + '</code> · ' + (s.question_count || 0) + ' questions · ' + (s.actual_responses || 0) + ' responses</div>' +
             '</div>' +
             '<div style="display:flex;gap:6px">' +
               (s.actual_responses > 0
@@ -68,7 +68,7 @@ function newSurveyForm() {
   if (!wrap) return;
   wrap.innerHTML =
     '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:14px">' +
-      '<div style="font-family:var(--ff-display,sans-serif);font-size:16px;font-weight:800;color:#7AC231;text-transform:uppercase;margin-bottom:12px">New survey</div>' +
+      '<div style="font-family:var(--ff-display,sans-serif);font-size:16px;font-weight:800;color:#A8FF00;text-transform:uppercase;margin-bottom:12px">New survey</div>' +
       '<div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">' +
         '<div><label class="admin-form-label" for="newSurveyTitle">Title *</label><input class="admin-form-input" type="text" id="newSurveyTitle" placeholder="Q3 2026 Member Pulse"></div>' +
         '<div><label class="admin-form-label" for="newSurveySlug">URL slug</label><input class="admin-form-input" type="text" id="newSurveySlug" placeholder="auto from title if blank"></div>' +
@@ -133,12 +133,12 @@ function renderSurveyEditor(s, questions) {
     '<div style="display:flex;align-items:center;gap:12px;margin-bottom:18px">' +
       '<button class="admin-btn" data-atp-call="loadSurveysSection" style="font-size:11px;padding:6px 12px">← All surveys</button>' +
       '<div style="font-family:var(--ff-display,sans-serif);font-size:22px;font-weight:800;color:#fff">' + _esc(s.title) + '</div>' +
-      '<code style="background:#0a0a0a;padding:3px 8px;border-radius:4px;color:#7AC231;font-size:11px">' + publicUrl + '</code>' +
+      '<code style="background:#0a0a0a;padding:3px 8px;border-radius:4px;color:#A8FF00;font-size:11px">' + publicUrl + '</code>' +
     '</div>' +
 
     // Metadata card
     '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:18px;margin-bottom:14px">' +
-      '<div style="font-size:10px;color:#7AC231;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:12px">Survey settings</div>' +
+      '<div style="font-size:10px;color:#A8FF00;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:12px">Survey settings</div>' +
       '<div style="display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;margin-bottom:10px">' +
         '<div><label class="admin-form-label">Title</label><input class="admin-form-input" id="srvTitle" value="' + _esc(s.title) + '"></div>' +
         '<div><label class="admin-form-label">Slug</label><input class="admin-form-input" id="srvSlug" value="' + _esc(s.slug) + '"></div>' +
@@ -164,7 +164,7 @@ function renderSurveyEditor(s, questions) {
     // Questions list
     '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:18px;margin-bottom:14px">' +
       '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
-        '<div style="font-size:10px;color:#7AC231;letter-spacing:.12em;text-transform:uppercase;font-weight:700">Questions (' + questions.length + ')</div>' +
+        '<div style="font-size:10px;color:#A8FF00;letter-spacing:.12em;text-transform:uppercase;font-weight:700">Questions (' + questions.length + ')</div>' +
         '<button class="admin-btn admin-btn-primary" data-atp-call="addQuestionForm" data-args=\'["' + s.id + '"]\' style="font-size:11px;padding:6px 12px">+ Add question</button>' +
       '</div>' +
       '<div id="newQWrap"></div>' +
@@ -194,8 +194,8 @@ function renderQuestionRow(q, idx, total, surveyId) {
   return '<div style="background:#0a0a0a;border:1px solid #1a1a1a;border-radius:8px;padding:14px;margin-bottom:8px;display:flex;justify-content:space-between;gap:12px">' +
     '<div style="flex:1;min-width:0">' +
       '<div style="display:flex;gap:8px;align-items:center;margin-bottom:6px">' +
-        '<span style="font-size:10px;color:#7AC231;font-family:var(--ff-display,sans-serif);font-weight:800;letter-spacing:.08em">Q' + (idx+1) + '</span>' +
-        '<span style="font-size:9px;background:rgba(122,194,49,.14);color:#7AC231;padding:2px 7px;border-radius:3px;text-transform:uppercase;letter-spacing:.06em;font-weight:700">' + typeBadge + '</span>' +
+        '<span style="font-size:10px;color:#A8FF00;font-family:var(--ff-display,sans-serif);font-weight:800;letter-spacing:.08em">Q' + (idx+1) + '</span>' +
+        '<span style="font-size:9px;background:rgba(168,255,0,.14);color:#A8FF00;padding:2px 7px;border-radius:3px;text-transform:uppercase;letter-spacing:.06em;font-weight:700">' + typeBadge + '</span>' +
         (q.required ? '<span style="font-size:9px;color:#ef4444;font-weight:700">REQUIRED</span>' : '') +
       '</div>' +
       '<div style="font-size:14px;color:#fff;font-weight:500">' + _esc(q.question_text) + '</div>' +
@@ -279,7 +279,7 @@ function renderQuestionForm(q, surveyId) {
 
   wrap.innerHTML =
     '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:12px">' +
-      '<div style="font-family:var(--ff-display,sans-serif);font-size:14px;font-weight:800;color:#7AC231;text-transform:uppercase;margin-bottom:12px">' + (isEdit ? 'Edit question' : 'New question') + '</div>' +
+      '<div style="font-family:var(--ff-display,sans-serif);font-size:14px;font-weight:800;color:#A8FF00;text-transform:uppercase;margin-bottom:12px">' + (isEdit ? 'Edit question' : 'New question') + '</div>' +
       '<input type="hidden" id="qEditId" value="' + (q ? q.id : '') + '">' +
       '<input type="hidden" id="qSurveyId" value="' + surveyId + '">' +
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
@@ -415,7 +415,7 @@ function renderSurveyResponses(survey, questions, summary, responses) {
       '<div style="font-family:var(--ff-display,sans-serif);font-size:22px;font-weight:800;color:#fff">' + _esc(survey.title) + ' · Responses</div>' +
     '</div>' +
     '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px">' +
-      '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:14px"><div style="font-size:10px;color:#888;letter-spacing:.1em;text-transform:uppercase;font-weight:600">Total</div><div style="font-family:var(--ff-display,sans-serif);font-size:28px;font-weight:900;color:#7AC231">' + (t.total || 0) + '</div></div>' +
+      '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:14px"><div style="font-size:10px;color:#888;letter-spacing:.1em;text-transform:uppercase;font-weight:600">Total</div><div style="font-family:var(--ff-display,sans-serif);font-size:28px;font-weight:900;color:#A8FF00">' + (t.total || 0) + '</div></div>' +
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:14px"><div style="font-size:10px;color:#888;letter-spacing:.1em;text-transform:uppercase;font-weight:600">This week</div><div style="font-family:var(--ff-display,sans-serif);font-size:28px;font-weight:900;color:#fff">' + (t.week || 0) + '</div></div>' +
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:14px"><div style="font-size:10px;color:#888;letter-spacing:.1em;text-transform:uppercase;font-weight:600">Today</div><div style="font-family:var(--ff-display,sans-serif);font-size:28px;font-weight:900;color:#fff">' + (t.day || 0) + '</div></div>' +
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:14px"><div style="font-size:10px;color:#888;letter-spacing:.1em;text-transform:uppercase;font-weight:600">Linked members</div><div style="font-family:var(--ff-display,sans-serif);font-size:28px;font-weight:900;color:#fff">' + (t.unique_members || 0) + '</div></div>' +
@@ -424,7 +424,7 @@ function renderSurveyResponses(survey, questions, summary, responses) {
   // Per-question summary
   html += '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:18px;margin-bottom:18px">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
-      '<div style="font-size:10px;color:#7AC231;letter-spacing:.12em;text-transform:uppercase;font-weight:700">Per-question summary</div>' +
+      '<div style="font-size:10px;color:#A8FF00;letter-spacing:.12em;text-transform:uppercase;font-weight:700">Per-question summary</div>' +
       '<a class="admin-btn" href="' + ATP_API + '/surveys/admin/' + survey.id + '/export" target="_blank" style="font-size:11px;padding:6px 12px;text-decoration:none">📥 Export CSV</a>' +
     '</div>';
   (summary.per_question || []).forEach(function(p){
@@ -436,7 +436,7 @@ function renderSurveyResponses(survey, questions, summary, responses) {
         var pct = totalCount ? Math.round(100 * c.count / totalCount) : 0;
         html += '<div style="margin-bottom:4px">' +
           '<div style="display:flex;justify-content:space-between;font-size:11px"><span style="color:#aaa">' + _esc(c.value) + '</span><span style="color:#888">' + c.count + ' · ' + pct + '%</span></div>' +
-          '<div style="height:3px;background:#1a1a1a;border-radius:2px"><div style="height:100%;width:' + pct + '%;background:#7AC231;border-radius:2px"></div></div>' +
+          '<div style="height:3px;background:#1a1a1a;border-radius:2px"><div style="height:100%;width:' + pct + '%;background:#A8FF00;border-radius:2px"></div></div>' +
         '</div>';
       });
     } else if (p.type === 'rating') {
@@ -451,7 +451,7 @@ function renderSurveyResponses(survey, questions, summary, responses) {
   // Individual responses
   html += '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:18px">' +
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">' +
-      '<div style="font-size:10px;color:#7AC231;letter-spacing:.12em;text-transform:uppercase;font-weight:700">Latest responses (' + responses.length + ')</div>' +
+      '<div style="font-size:10px;color:#A8FF00;letter-spacing:.12em;text-transform:uppercase;font-weight:700">Latest responses (' + responses.length + ')</div>' +
       '<button class="admin-btn" data-atp-call="purgeSurveyResponses" data-args=\'["' + survey.id + '"]\' style="font-size:11px;padding:6px 12px;background:rgba(217,119,87,.10);color:#d97757;border:1px solid rgba(217,119,87,.3)">🧹 Purge test + anonymous</button>' +
     '</div>';
   if (!responses.length) {
@@ -476,7 +476,7 @@ function renderSurveyResponses(survey, questions, summary, responses) {
             var a = r.answers && r.answers[q.id];
             if (a == null || a === '') return '';
             var display = Array.isArray(a) ? a.join(', ') : String(a);
-            return '<div style="padding:8px 0;border-top:1px solid #1a1a1a"><div style="font-size:10px;color:#7AC231;letter-spacing:.08em;text-transform:uppercase;font-weight:700">' + _esc(q.question_text) + '</div><div style="color:var(--light);margin-top:3px">' + _esc(display) + '</div></div>';
+            return '<div style="padding:8px 0;border-top:1px solid #1a1a1a"><div style="font-size:10px;color:#A8FF00;letter-spacing:.08em;text-transform:uppercase;font-weight:700">' + _esc(q.question_text) + '</div><div style="color:var(--light);margin-top:3px">' + _esc(display) + '</div></div>';
           }).join('') +
         '</div>' +
       '</details>';

@@ -75,8 +75,8 @@
       <div class="admin-version">Admin Panel v1.0</div>
     </div>
     <div class="admin-nav">
-      <div class="admin-nav-item active" data-atp-call="showAdminSection" data-args='["founder"]' style="background:rgba(122,194,49,.08);border-left:3px solid #7AC231">
-        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#7AC231" stroke-width="2"><path d="M8 1l2 4 5 .5-4 3.5 1 5L8 11l-4 3 1-5L1 5.5 6 5z"/></svg>
+      <div class="admin-nav-item active" data-atp-call="showAdminSection" data-args='["founder"]' style="background:rgba(168,255,0,.08);border-left:3px solid #A8FF00">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#A8FF00" stroke-width="2"><path d="M8 1l2 4 5 .5-4 3.5 1 5L8 11l-4 3 1-5L1 5.5 6 5z"/></svg>
         Founder
       </div>
       <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["dashboard"]'>
@@ -190,21 +190,21 @@
           <div class="session-attendance-card">
             <div class="session-attendance-header">
               <div><div class="session-attendance-name">Community Run · Tonight 7PM</div><div style="font-size:11px;color:#444;margin-top:2px">Dubai Marina Walk</div></div>
-              <div style="text-align:right"><div style="font-family:var(--ff-display);font-size:20px;font-weight:900;color:#7AC231">18/24</div><div style="font-size:10px;color:#444">checked in</div></div>
+              <div style="text-align:right"><div style="font-family:var(--ff-display);font-size:20px;font-weight:900;color:#A8FF00">18/24</div><div style="font-size:10px;color:#444">checked in</div></div>
             </div>
             <div class="session-attendance-bar"><div class="session-attendance-fill" style="width:75%"></div></div>
           </div>
           <div class="session-attendance-card">
             <div class="session-attendance-header">
               <div><div class="session-attendance-name">Military Bootcamp · Yesterday</div><div style="font-size:11px;color:#444;margin-top:2px">Al Formal Park</div></div>
-              <div style="text-align:right"><div style="font-family:var(--ff-display);font-size:20px;font-weight:900;color:#7AC231">31/35</div><div style="font-size:10px;color:#444">checked in</div></div>
+              <div style="text-align:right"><div style="font-family:var(--ff-display);font-size:20px;font-weight:900;color:#A8FF00">31/35</div><div style="font-size:10px;color:#444">checked in</div></div>
             </div>
             <div class="session-attendance-bar"><div class="session-attendance-fill" style="width:89%"></div></div>
           </div>
           <div class="session-attendance-card">
             <div class="session-attendance-header">
               <div><div class="session-attendance-name">Hatha Yoga · Mon</div><div style="font-size:11px;color:#444;margin-top:2px">DIC Amphitheatre</div></div>
-              <div style="text-align:right"><div style="font-family:var(--ff-display);font-size:20px;font-weight:900;color:#7AC231">22/28</div><div style="font-size:10px;color:#444">checked in</div></div>
+              <div style="text-align:right"><div style="font-family:var(--ff-display);font-size:20px;font-weight:900;color:#A8FF00">22/28</div><div style="font-size:10px;color:#444">checked in</div></div>
             </div>
             <div class="session-attendance-bar"><div class="session-attendance-fill" style="width:79%"></div></div>
           </div>
@@ -236,7 +236,7 @@
         <div class="admin-section-head">
           <span class="admin-section-title">All Members <span style="color:#444;font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;margin-left:8px">7,024 total</span></span>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-            <button class="admin-btn" onclick="exportPointsLedger()" style="font-size:11px;padding:7px 12px;background:rgba(122,194,49,.10);color:#7AC231;border:1px solid rgba(122,194,49,.3)">📊 Export points ledger (CSV)</button>
+            <button class="admin-btn" onclick="exportPointsLedger()" style="font-size:11px;padding:7px 12px;background:rgba(168,255,0,.10);color:#A8FF00;border:1px solid rgba(168,255,0,.3)">📊 Export points ledger (CSV)</button>
             <input type="search" id="memberSearch" placeholder="Search name, email, or ID…" style="background:#111;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:7px 14px;color:#fff;font-size:12px;font-family:var(--ff-body);width:240px" oninput="filterMembers(this.value)" aria-label="Search name, email, or ID…">
           </div>
         </div>
@@ -335,7 +335,7 @@
               <select class="admin-form-select" id="sName" onchange="onSessionTemplateChange()" aria-label="Pick a session name">
                 <option value="">— Pick a session name —</option>
               </select>
-              <div style="font-size:11px;color:#666;margin-top:4px">Manage the list in <a href="#" onclick="showSection('settings');setTimeout(function(){showSettingsTab&&showSettingsTab(\'session_templates\')},120);return false" style="color:#7AC231">Settings → Session Names</a>. Picking a name auto-populates from the last session created with it.</div>
+              <div style="font-size:11px;color:#666;margin-top:4px">Manage the list in <a href="#" onclick="showSection('settings');setTimeout(function(){showSettingsTab&&showSettingsTab(\'session_templates\')},120);return false" style="color:#A8FF00">Settings → Session Names</a>. Picking a name auto-populates from the last session created with it.</div>
             </div>
             <div class="admin-form-group">
               <label class="admin-form-label" for="sCoach">Coach</label>
@@ -448,7 +448,7 @@
                  on the ground (check-in scanning + meet-and-greet) and
                  — if streaming is enabled below — can also broadcast. -->
             <div class="admin-form-group full" style="margin-top:8px;padding:14px;background:#0d1a0a;border-radius:10px;border:1px solid #1f3a0d">
-              <div style="font-family:var(--ff-display);font-size:13px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:4px">👋 Assigned Ambassadors</div>
+              <div style="font-family:var(--ff-display);font-size:13px;font-weight:800;text-transform:uppercase;color:#A8FF00;margin-bottom:4px">👋 Assigned Ambassadors</div>
               <div style="font-size:11px;color:#888;margin-bottom:10px;line-height:1.5">Pick one or more ambassadors to support this session — they'll handle <strong>check-in scanning</strong> and member meet-and-greet. (If you also enable Live Streaming below, the same ambassadors can broadcast.)</div>
               <label class="admin-form-label" for="sAmbassadorPicker">Add ambassador</label>
               <select class="admin-form-select" id="sAmbassadorPicker" style="margin-bottom:8px">
@@ -461,9 +461,9 @@
                  is the session's assigned ambassadors above plus the
                  session's coach. -->
             <div class="admin-form-group full" style="margin-top:8px;padding:14px;background:#0d1a0a;border-radius:10px;border:1px solid #1f3a0d">
-              <div style="font-family:var(--ff-display);font-size:13px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:8px">🎥 Live Streaming</div>
+              <div style="font-family:var(--ff-display);font-size:13px;font-weight:800;text-transform:uppercase;color:#A8FF00;margin-bottom:8px">🎥 Live Streaming</div>
               <label style="display:flex;align-items:center;gap:10px;font-size:13px;color:#fff;cursor:pointer;margin-bottom:6px">
-                <input type="checkbox" id="sIsStreamable" style="width:18px;height:18px;accent-color:#7AC231">
+                <input type="checkbox" id="sIsStreamable" style="width:18px;height:18px;accent-color:#A8FF00">
                 Allow this session to be streamed live
               </label>
               <div id="sStreamingDetails" style="display:none">
@@ -476,9 +476,9 @@
             <!-- Corporate-exclusive — only members of the chosen company can see/book.
                  Optionally mark as online (lives on a stream URL instead of a venue). -->
             <div class="admin-form-group full" style="margin-top:8px;padding:14px;background:#0d1a0a;border-radius:10px;border:1px solid #1f3a0d">
-              <div style="font-family:var(--ff-display);font-size:13px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:8px">🏢 Corporate / Online (optional)</div>
+              <div style="font-family:var(--ff-display);font-size:13px;font-weight:800;text-transform:uppercase;color:#A8FF00;margin-bottom:8px">🏢 Corporate / Online (optional)</div>
               <label style="display:flex;align-items:center;gap:10px;font-size:13px;color:#fff;cursor:pointer;margin-bottom:10px">
-                <input type="checkbox" id="sIsCorporateOnly" style="width:18px;height:18px;accent-color:#7AC231" onchange="toggleCorporateSessionFields()">
+                <input type="checkbox" id="sIsCorporateOnly" style="width:18px;height:18px;accent-color:#A8FF00" onchange="toggleCorporateSessionFields()">
                 Corporate-exclusive (only this company's employees can book)
               </label>
               <div id="sCorporateDetails" style="display:none;margin-bottom:14px">
@@ -489,7 +489,7 @@
                 <div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">Only employees of this company will see this session. Companies must be in <em>active</em> status to appear here.</div>
               </div>
               <label style="display:flex;align-items:center;gap:10px;font-size:13px;color:#fff;cursor:pointer;margin-bottom:10px">
-                <input type="checkbox" id="sIsOnline" style="width:18px;height:18px;accent-color:#7AC231" onchange="toggleCorporateSessionFields()">
+                <input type="checkbox" id="sIsOnline" style="width:18px;height:18px;accent-color:#A8FF00" onchange="toggleCorporateSessionFields()">
                 Online session (live-streamed, no physical venue)
               </label>
               <div id="sOnlineDetails" style="display:none">
@@ -503,7 +503,7 @@
                  Members will pick at booking time (Stripe checkout / wallet redemption).
                  Leave both at 0 for a free session. -->
             <div class="admin-form-group full" style="margin-top:8px;padding:14px;background:#0d1a0a;border-radius:10px;border:1px solid #1f3a0d">
-              <div style="font-family:var(--ff-display);font-size:13px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:8px">💰 Paid Session Pricing (optional)</div>
+              <div style="font-family:var(--ff-display);font-size:13px;font-weight:800;text-transform:uppercase;color:#A8FF00;margin-bottom:8px">💰 Paid Session Pricing (optional)</div>
               <div style="font-size:11px;color:#888;margin-bottom:12px;line-height:1.6">
                 Set <strong>currency price</strong> for Stripe payment, <strong>points price</strong> for wallet redemption, or both. Members choose at checkout.
                 Leave both at 0 for a free session.
@@ -803,7 +803,7 @@
             <button class="admin-btn admin-btn-primary" style="padding:10px 24px;font-size:13px" data-atp-call="saveChallenge">
               <span id="challengeSubmitLabel">＋ Save as Draft</span>
             </button>
-            <button class="admin-btn" style="padding:10px 18px;font-size:13px;background:#0d1a0a;border-color:#7AC231;color:#7AC231" data-atp-call="saveAndPublish">
+            <button class="admin-btn" style="padding:10px 18px;font-size:13px;background:#0d1a0a;border-color:#A8FF00;color:#A8FF00" data-atp-call="saveAndPublish">
               ▶ Save &amp; Publish
             </button>
             <button class="admin-btn" style="padding:10px 18px;font-size:13px" data-atp-call="loadChallengesList">↻ Refresh</button>
@@ -865,11 +865,11 @@
 
         <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:10px;overflow:hidden;margin-bottom:14px">
           <div style="padding:16px 14px;text-align:center;border-right:1px solid #1a1a1a">
-            <div id="inqStatTotal" style="font-family:var(--ff-display);font-size:30px;font-weight:900;color:#7AC231;line-height:1">—</div>
+            <div id="inqStatTotal" style="font-family:var(--ff-display);font-size:30px;font-weight:900;color:#A8FF00;line-height:1">—</div>
             <div style="font-size:10px;color:#666;margin-top:4px;text-transform:uppercase;letter-spacing:.08em">Total inquiries</div>
           </div>
           <div style="padding:16px 14px;text-align:center;border-right:1px solid #1a1a1a">
-            <div id="inqStatCoaches" style="font-family:var(--ff-display);font-size:30px;font-weight:900;color:#7AC231;line-height:1">—</div>
+            <div id="inqStatCoaches" style="font-family:var(--ff-display);font-size:30px;font-weight:900;color:#A8FF00;line-height:1">—</div>
             <div style="font-size:10px;color:#666;margin-top:4px;text-transform:uppercase;letter-spacing:.08em">Coaches who got messages</div>
           </div>
           <div style="padding:16px 14px;text-align:center">
@@ -881,16 +881,16 @@
         <div id="inqTable" style="font-size:13px"></div>
       </div>
       <style>
-        .coach-inq-range.active{background:#7AC231!important;color:#0a0a0a!important;border-color:#7AC231!important;font-weight:800}
+        .coach-inq-range.active{background:#A8FF00!important;color:#0a0a0a!important;border-color:#A8FF00!important;font-weight:800}
         #inqTable .inq-row{display:grid;grid-template-columns:1.6fr .6fr 1fr .6fr;gap:12px;padding:12px 14px;border-bottom:1px solid #161616;align-items:center;cursor:pointer;transition:background .15s}
         #inqTable .inq-row:hover{background:#0a0a0a}
         #inqTable .inq-row:last-child{border-bottom:0}
         #inqTable .inq-head{display:grid;grid-template-columns:1.6fr .6fr 1fr .6fr;gap:12px;padding:10px 14px;border-bottom:1px solid #1a1a1a;font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#666}
         #inqTable .inq-name{font-weight:700;color:#fff}
         #inqTable .inq-slug{color:#666;font-size:11px;margin-top:2px}
-        #inqTable .inq-count{font-family:var(--ff-display);font-size:18px;font-weight:900;color:#7AC231}
+        #inqTable .inq-count{font-family:var(--ff-display);font-size:18px;font-weight:900;color:#A8FF00}
         #inqTable .inq-time{color:#aaa}
-        #inqTable .inq-action{color:#7AC231;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.04em;text-align:right}
+        #inqTable .inq-action{color:#A8FF00;font-weight:700;font-size:11px;text-transform:uppercase;letter-spacing:.04em;text-align:right}
         #inqTable .inq-empty{text-align:center;color:#555;padding:30px 14px;font-size:13px}
       </style>
 
@@ -908,10 +908,10 @@
               style="position:absolute;top:16px;right:16px;background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.1);color:#fff;width:36px;height:36px;border-radius:50%;cursor:pointer;font-size:15px;backdrop-filter:blur(8px)">✕</button>
 
             <!-- Featured ribbon -->
-            <div id="coachFeaturedRibbon" style="display:none;position:absolute;top:0;left:0;background:#7AC231;color:#0a0a0a;padding:6px 18px 6px 14px;font-size:11px;font-weight:900;letter-spacing:.1em;border-bottom-right-radius:10px">⭐ FEATURED COACH</div>
+            <div id="coachFeaturedRibbon" style="display:none;position:absolute;top:0;left:0;background:#A8FF00;color:#0a0a0a;padding:6px 18px 6px 14px;font-size:11px;font-weight:900;letter-spacing:.1em;border-bottom-right-radius:10px">⭐ FEATURED COACH</div>
 
             <div style="display:flex;gap:24px;align-items:flex-start;flex-wrap:wrap;margin-top:8px">
-              <div id="coachModalAvatar" style="width:110px;height:110px;border-radius:50%;background:linear-gradient(135deg,#7AC231,#4a7a1d);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:900;color:#0a0a0a;flex-shrink:0;border:4px solid rgba(122,194,49,.3);box-shadow:0 8px 24px rgba(122,194,49,.25)"></div>
+              <div id="coachModalAvatar" style="width:110px;height:110px;border-radius:50%;background:linear-gradient(135deg,#A8FF00,#4a7a1d);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:900;color:#0a0a0a;flex-shrink:0;border:4px solid rgba(168,255,0,.3);box-shadow:0 8px 24px rgba(168,255,0,.25)"></div>
               <div style="flex:1;min-width:240px">
                 <div id="coachModalName" style="font-family:var(--ff-display);font-size:28px;font-weight:900;color:#fff;line-height:1.1;margin-bottom:6px"></div>
                 <div id="coachModalMeta" style="font-size:13px;color:rgba(255,255,255,.7);margin-bottom:12px"></div>
@@ -945,7 +945,7 @@
 
             <!-- DIRECT MEMBER FEEDBACK (key feature) -->
             <div id="coachModalFeedbackForm" style="margin-bottom:24px;padding:20px;background:#0f0f0f;border-radius:12px;border:1px solid #1a1a1a">
-              <div style="font-size:13px;font-weight:800;color:#7AC231;margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em">⭐ Leave Feedback</div>
+              <div style="font-size:13px;font-weight:800;color:#A8FF00;margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em">⭐ Leave Feedback</div>
               <div style="font-size:12px;color:#888;margin-bottom:14px">Share your experience. Only members who have attended a session can leave feedback.</div>
               <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center">
                 <span style="font-size:12px;color:#888;min-width:60px">Rating:</span>
@@ -956,7 +956,7 @@
                   <span class="fb-star" data-v="4" style="font-size:24px;color:#333">★</span>
                   <span class="fb-star" data-v="5" style="font-size:24px;color:#333">★</span>
                 </div>
-                <span id="feedbackRatingLabel" style="font-size:12px;color:#7AC231;margin-left:10px"></span>
+                <span id="feedbackRatingLabel" style="font-size:12px;color:#A8FF00;margin-left:10px"></span>
               </div>
               <textarea id="feedbackComment" class="admin-form-input" rows="3" placeholder="How was your session? What did you enjoy most?" style="width:100%;font-family:inherit;resize:vertical"></textarea>
               <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
@@ -1073,7 +1073,7 @@
     <!-- ── BLOG ──────────────────────────────────── -->
     <div id="section-blog" style="display:none">
       <div class="admin-page-title">Blog</div>
-      <div class="admin-page-sub">Write and publish posts. Members + visitors see published posts at <a href="/blog" target="_blank" style="color:#7AC231">/blog</a>.</div>
+      <div class="admin-page-sub">Write and publish posts. Members + visitors see published posts at <a href="/blog" target="_blank" style="color:#A8FF00">/blog</a>.</div>
 
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:12px">
         <div style="display:flex;gap:6px;flex-wrap:wrap">
@@ -1085,17 +1085,17 @@
       </div>
 
       <style>
-        .blog-filter.active{background:#7AC231!important;color:#0a0a0a!important;border-color:#7AC231!important;font-weight:800}
+        .blog-filter.active{background:#A8FF00!important;color:#0a0a0a!important;border-color:#A8FF00!important;font-weight:800}
         #blogList{display:flex;flex-direction:column;gap:8px}
         .blog-row{background:#0d0d0d;border:1px solid #1a1a1a;border-radius:12px;padding:14px 18px;display:grid;grid-template-columns:88px 1fr auto;gap:16px;align-items:center;transition:border-color .15s;cursor:pointer}
-        .blog-row:hover{border-color:rgba(122,194,49,.42)}
+        .blog-row:hover{border-color:rgba(168,255,0,.42)}
         .blog-row-cover{width:88px;height:64px;border-radius:8px;background:#161616;overflow:hidden;flex-shrink:0}
         .blog-row-cover img{width:100%;height:100%;object-fit:cover}
         .blog-row-title{font-family:var(--ff-display);font-size:16px;font-weight:800;text-transform:uppercase;color:#fff;line-height:1.15;margin-bottom:4px;letter-spacing:-.005em}
         .blog-row-meta{font-size:11px;color:#666;letter-spacing:.04em}
         .blog-row-meta strong{color:#aaa;font-weight:600}
         .blog-row-status{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:4px 10px;border-radius:12px}
-        .blog-row-status.published{color:#7AC231;background:rgba(122,194,49,.1);border:1px solid rgba(122,194,49,.32)}
+        .blog-row-status.published{color:#A8FF00;background:rgba(168,255,0,.1);border:1px solid rgba(168,255,0,.32)}
         .blog-row-status.draft{color:#aaa;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12)}
 
         /* Editor modal */
@@ -1107,20 +1107,20 @@
         .blog-editor-body{padding:24px;display:flex;flex-direction:column;gap:14px}
         .blog-editor-body label{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#888;margin-bottom:6px}
         .blog-editor-body input[type=text],.blog-editor-body textarea,.blog-editor-body select{width:100%;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:8px;padding:11px 14px;color:#fff;font-size:13px;font-family:inherit;transition:border-color .15s}
-        .blog-editor-body input[type=text]:focus,.blog-editor-body textarea:focus,.blog-editor-body select:focus{outline:none;border-color:rgba(122,194,49,.45)}
+        .blog-editor-body input[type=text]:focus,.blog-editor-body textarea:focus,.blog-editor-body select:focus{outline:none;border-color:rgba(168,255,0,.45)}
         .blog-editor-cover{position:relative;height:160px;background:#0a0a0a;border:1px dashed rgba(255,255,255,.18);border-radius:10px;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center}
-        .blog-editor-cover:hover{border-color:rgba(122,194,49,.5)}
+        .blog-editor-cover:hover{border-color:rgba(168,255,0,.5)}
         .blog-editor-cover img{width:100%;height:100%;object-fit:cover;display:block}
         .blog-editor-cover-empty{font-size:13px;color:#666;text-align:center;padding:20px}
-        .blog-editor-cover.busy::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.5) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="14" fill="none" stroke="%237AC231" stroke-width="3" stroke-dasharray="55 30"><animateTransform attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur=".9s" repeatCount="indefinite"/></circle></svg>') center/40px no-repeat}
+        .blog-editor-cover.busy::after{content:'';position:absolute;inset:0;background:rgba(0,0,0,.5) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 40 40"><circle cx="20" cy="20" r="14" fill="none" stroke="%23A8FF00" stroke-width="3" stroke-dasharray="55 30"><animateTransform attributeName="transform" type="rotate" from="0 20 20" to="360 20 20" dur=".9s" repeatCount="indefinite"/></circle></svg>') center/40px no-repeat}
         .blog-editor-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
         .blog-editor-foot{padding:18px 24px;border-top:1px solid #1a1a1a;display:flex;justify-content:space-between;align-items:center;gap:14px;flex-wrap:wrap}
         .atp-toggle-blog{display:inline-flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
         .atp-toggle-blog input{position:absolute;opacity:0;pointer-events:none}
         .atp-toggle-blog-track{width:42px;height:24px;background:#1a1a1a;border:1px solid rgba(255,255,255,.12);border-radius:14px;position:relative;transition:background .2s,border-color .2s;display:inline-block}
         .atp-toggle-blog-track::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#888;transition:transform .2s,background .2s}
-        .atp-toggle-blog input:checked + .atp-toggle-blog-track{background:rgba(122,194,49,.18);border-color:rgba(122,194,49,.5)}
-        .atp-toggle-blog input:checked + .atp-toggle-blog-track::after{transform:translateX(18px);background:#7AC231}
+        .atp-toggle-blog input:checked + .atp-toggle-blog-track{background:rgba(168,255,0,.18);border-color:rgba(168,255,0,.5)}
+        .atp-toggle-blog input:checked + .atp-toggle-blog-track::after{transform:translateX(18px);background:#A8FF00}
       </style>
 
       <div id="blogList"><div style="text-align:center;color:#444;padding:40px">Loading…</div></div>
@@ -1160,17 +1160,17 @@
                 .bp-preview-pane p{font-size:14px;line-height:1.7;color:rgba(255,255,255,.88);margin:0 0 14px;font-weight:300}
                 .bp-preview-pane strong{color:#fff;font-weight:600}
                 .bp-preview-pane em{font-style:italic}
-                .bp-preview-pane a{color:#7AC231;border-bottom:1px solid rgba(122,194,49,.4)}
+                .bp-preview-pane a{color:#A8FF00;border-bottom:1px solid rgba(168,255,0,.4)}
                 .bp-preview-pane ul,.bp-preview-pane ol{margin:8px 0 14px 22px}
                 .bp-preview-pane li{margin-bottom:5px;font-size:14px;line-height:1.6;color:rgba(255,255,255,.88)}
                 .bp-preview-pane img{max-width:100%;border-radius:8px;margin:18px auto;display:block;box-shadow:0 8px 22px rgba(0,0,0,.32)}
-                .bp-preview-pane blockquote{margin:18px 0;padding:14px 20px;background:rgba(122,194,49,.04);border-left:3px solid #7AC231;border-radius:0 8px 8px 0;font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;line-height:1.35;color:#fff;font-style:italic}
+                .bp-preview-pane blockquote{margin:18px 0;padding:14px 20px;background:rgba(168,255,0,.04);border-left:3px solid #A8FF00;border-radius:0 8px 8px 0;font-family:'Barlow Condensed',sans-serif;font-size:17px;font-weight:700;line-height:1.35;color:#fff;font-style:italic}
                 .bp-preview-pane hr{border:0;border-top:1px solid #1a1a1a;margin:22px 0}
                 .bp-preview-pane code{background:#161616;padding:2px 6px;border-radius:4px;font-size:.9em;color:#e4e4e4}
                 .bp-preview-pane > :first-child{margin-top:0}
                 .bp-preview-pane > :last-child{margin-bottom:0}
-                .bp-preview-label{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#7AC231;margin-bottom:8px;display:flex;align-items:center;gap:6px}
-                .bp-preview-label::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:#7AC231;animation:bp-pulse 1.4s ease-in-out infinite}
+                .bp-preview-label{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#A8FF00;margin-bottom:8px;display:flex;align-items:center;gap:6px}
+                .bp-preview-label::before{content:'';display:inline-block;width:7px;height:7px;border-radius:50%;background:#A8FF00;animation:bp-pulse 1.4s ease-in-out infinite}
                 @keyframes bp-pulse{0%,100%{opacity:1}50%{opacity:.4}}
                 @media (max-width:1100px){.bp-body-section{grid-template-columns:1fr}.bp-preview-pane{max-height:340px}}
               </style>
@@ -1330,7 +1330,7 @@
       <!-- Settings sub-tabs -->
       <div style="display:flex;gap:0;border-bottom:1px solid #1a1a1a;margin-bottom:24px;overflow-x:auto">
         <button class="settings-tab active" data-atp-call="showSettingsTab" data-args='["announcements"]'
-                style="background:none;border:none;border-bottom:2px solid #7AC231;color:#fff;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">📣 Announcements</button>
+                style="background:none;border:none;border-bottom:2px solid #A8FF00;color:#fff;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">📣 Announcements</button>
         <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["activities"]'
                 style="background:none;border:none;border-bottom:2px solid transparent;color:#888;font-size:13px;font-weight:600;padding:14px 20px;cursor:pointer;white-space:nowrap">🏃 Activities</button>
         <button class="settings-tab" data-atp-call="showSettingsTab" data-args='["achievements"]'
@@ -1360,7 +1360,7 @@
           </div>
           <div class="admin-section-body">
             <div id="announcementFormWrap" style="display:none;background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:16px">
-              <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:12px" id="announcementFormTitle">New announcement</div>
+              <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#A8FF00;margin-bottom:12px" id="announcementFormTitle">New announcement</div>
               <input type="hidden" id="anEditId" value="">
               <div style="margin-bottom:10px"><label class="admin-form-label" for="anMessage">Message *</label><textarea class="admin-form-input" id="anMessage" rows="4" placeholder="e.g. Saturday Bootcamp at Kite Beach 7am — RSVP now. Multiple paragraphs OK." style="resize:vertical;min-height:80px;line-height:1.55"></textarea></div>
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px">
@@ -1393,7 +1393,7 @@
           <div class="admin-section-body">
             <div style="font-size:12px;color:#888;margin-bottom:16px">Members pick from this catalogue when editing favourite activities. Future push notifications will be targetable by activity.</div>
             <div id="activityFormWrap" style="display:none;background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:16px">
-              <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:12px" id="activityFormTitle">New activity</div>
+              <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#A8FF00;margin-bottom:12px" id="activityFormTitle">New activity</div>
               <input type="hidden" id="actEditId" value="">
               <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px">
                 <div><label class="admin-form-label" for="actName">Name *</label><input class="admin-form-input" type="text" id="actName" placeholder="e.g. Trail Running"></div>
@@ -1424,9 +1424,9 @@
             <button class="admin-btn admin-btn-primary" data-atp-call="showAchievementForm" style="font-size:12px;padding:7px 14px">+ New achievement</button>
           </div>
           <div class="admin-section-body">
-            <div style="font-size:12px;color:#888;margin-bottom:16px">Catalogue of badges members can unlock. Auto-award triggers fire on session count, streak length, and active referrals. <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#7AC231">manual</code> achievements have to be granted from the table below.</div>
+            <div style="font-size:12px;color:#888;margin-bottom:16px">Catalogue of badges members can unlock. Auto-award triggers fire on session count, streak length, and active referrals. <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#A8FF00">manual</code> achievements have to be granted from the table below.</div>
             <div id="achievementFormWrap" style="display:none;background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:16px">
-              <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:12px" id="achievementFormTitle">New achievement</div>
+              <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#A8FF00;margin-bottom:12px" id="achievementFormTitle">New achievement</div>
               <input type="hidden" id="achEditId" value="">
               <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">
                 <div><label class="admin-form-label" for="achName">Name *</label><input class="admin-form-input" type="text" id="achName" placeholder="e.g. Marathon Master"></div>
@@ -1468,10 +1468,10 @@
           </div>
           <div class="admin-section-body">
             <div style="font-size:12px;color:#888;margin-bottom:16px;line-height:1.6">
-              Each plan needs a <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#7AC231">stripe_price_id</code> from Stripe Dashboard → Products. Create the Product + Price in Stripe first, then paste the <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#7AC231">price_…</code> id here. Amount and currency are display-only mirrors — Stripe is the source of truth for actual billing.
+              Each plan needs a <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#A8FF00">stripe_price_id</code> from Stripe Dashboard → Products. Create the Product + Price in Stripe first, then paste the <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#A8FF00">price_…</code> id here. Amount and currency are display-only mirrors — Stripe is the source of truth for actual billing.
             </div>
             <div id="planFormWrap" style="display:none;background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:16px">
-              <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:12px" id="planFormTitle">New plan</div>
+              <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#A8FF00;margin-bottom:12px" id="planFormTitle">New plan</div>
               <input type="hidden" id="planEditId" value="">
               <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">
                 <div><label class="admin-form-label" for="planName">Name *</label><input class="admin-form-input" type="text" id="planName" placeholder="e.g. ATP Premium"></div>
@@ -1494,8 +1494,8 @@
                    billing option alongside the monthly tier with its own
                    Stripe Price and savings copy. Leave the amount empty
                    to disable yearly on this plan. -->
-              <fieldset style="border:1px dashed rgba(122,194,49,.25);border-radius:8px;padding:12px 14px;margin-bottom:14px">
-                <legend style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#7AC231;padding:0 6px">🎁 Yearly promo (optional)</legend>
+              <fieldset style="border:1px dashed rgba(168,255,0,.25);border-radius:8px;padding:12px 14px;margin-bottom:14px">
+                <legend style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#A8FF00;padding:0 6px">🎁 Yearly promo (optional)</legend>
                 <div style="display:grid;grid-template-columns:2fr 1fr 1.5fr;gap:10px">
                   <div>
                     <label class="admin-form-label" for="planAnnualStripePriceId">Annual Stripe price id</label>
@@ -1539,11 +1539,11 @@
           <div class="admin-section-body">
             <div style="font-size:12px;color:#888;margin-bottom:16px;line-height:1.6">
               Each country defines its currency + the points-to-currency rate used for store credit.
-              <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#7AC231">atp_per_unit</code> overrides the global config — leave blank to use the default
-              <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#7AC231">store_credit_atp_per_unit</code>.
+              <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#A8FF00">atp_per_unit</code> overrides the global config — leave blank to use the default
+              <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#A8FF00">store_credit_atp_per_unit</code>.
             </div>
             <div id="countryFormWrap" style="display:none;background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:16px">
-              <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:12px" id="countryFormTitle">New country</div>
+              <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#A8FF00;margin-bottom:12px" id="countryFormTitle">New country</div>
               <input type="hidden" id="countryEditId" value="">
               <div style="display:grid;grid-template-columns:80px 2fr;gap:10px;margin-bottom:10px">
                 <div><label class="admin-form-label" for="countryCode">Code *</label><input class="admin-form-input" type="text" id="countryCode" maxlength="2" placeholder="AE" style="text-transform:uppercase;font-family:monospace"></div>
@@ -1581,7 +1581,7 @@
           </div>
           <div class="admin-section-body">
             <div style="font-size:12px;color:#888;margin-bottom:16px;line-height:1.6">
-              Banner ads rotate (weighted) below the live video on <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#7AC231">/stream-watch.html</code>. Set <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#7AC231">weight</code> higher to show a creative more often. Impressions + clicks are tracked per ad.
+              Banner ads rotate (weighted) below the live video on <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#A8FF00">/stream-watch.html</code>. Set <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#A8FF00">weight</code> higher to show a creative more often. Impressions + clicks are tracked per ad.
             </div>
 
             <!-- Live dashboard tiles -->
@@ -1591,26 +1591,26 @@
                 <div style="font-size:11px;color:#666;letter-spacing:.06em;text-transform:uppercase;margin-top:4px">Live now</div>
               </div>
               <div style="background:#0d0d0d;border:1px solid #1a1a1a;border-radius:10px;padding:14px">
-                <div style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:#7AC231" id="dashConcurrent">—</div>
+                <div style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:#A8FF00" id="dashConcurrent">—</div>
                 <div style="font-size:11px;color:#666;letter-spacing:.06em;text-transform:uppercase;margin-top:4px">Concurrent viewers</div>
               </div>
               <div style="background:#0d0d0d;border:1px solid #1a1a1a;border-radius:10px;padding:14px">
-                <div style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:#7AC231" id="dash7dStreams">—</div>
+                <div style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:#A8FF00" id="dash7dStreams">—</div>
                 <div style="font-size:11px;color:#666;letter-spacing:.06em;text-transform:uppercase;margin-top:4px">Streams · 7d</div>
               </div>
               <div style="background:#0d0d0d;border:1px solid #1a1a1a;border-radius:10px;padding:14px">
-                <div style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:#7AC231" id="dash7dUnique">—</div>
+                <div style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:#A8FF00" id="dash7dUnique">—</div>
                 <div style="font-size:11px;color:#666;letter-spacing:.06em;text-transform:uppercase;margin-top:4px">Unique viewers · 7d</div>
               </div>
               <div style="background:#0d0d0d;border:1px solid #1a1a1a;border-radius:10px;padding:14px">
-                <div style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:#7AC231" id="dash7dAvg">—</div>
+                <div style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:#A8FF00" id="dash7dAvg">—</div>
                 <div style="font-size:11px;color:#666;letter-spacing:.06em;text-transform:uppercase;margin-top:4px">Avg watch · 7d</div>
               </div>
             </div>
 
             <!-- Ad form -->
             <div id="streamAdFormWrap" style="display:none;background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:16px">
-              <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#7AC231;margin-bottom:12px" id="streamAdFormTitle">New banner ad</div>
+              <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#A8FF00;margin-bottom:12px" id="streamAdFormTitle">New banner ad</div>
               <input type="hidden" id="streamAdEditId" value="">
               <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">
                 <div><label class="admin-form-label" for="streamAdName">Name *</label><input class="admin-form-input" type="text" id="streamAdName" placeholder="e.g. Fall apparel drop"></div>
@@ -1654,7 +1654,7 @@
           </div>
           <div class="admin-section-body">
             <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6">
-              Bookings stuck in <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#7AC231">pending_payment</code> for more than 1 hour are listed below.
+              Bookings stuck in <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#A8FF00">pending_payment</code> for more than 1 hour are listed below.
               They were created when a member started a Stripe checkout but never completed it.
               Cleanup cancels every booking older than 24 hours so the seats free up for waitlists.
             </div>
@@ -1671,7 +1671,7 @@
           <div class="admin-section-body">
             <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6">
               Cancelled paid-by-Stripe bookings that didn't get a refund recorded.
-              Click <strong style="color:#7AC231">Retry refund</strong> to issue the Stripe refund again.
+              Click <strong style="color:#A8FF00">Retry refund</strong> to issue the Stripe refund again.
             </div>
             <div id="failedRefundsList"><div style="padding:14px;color:#555;text-align:center">Loading…</div></div>
           </div>
@@ -1707,7 +1707,7 @@
         </div>
         <div class="admin-section-body">
           <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6">
-            Members redeemed points but the Shopify discount code never got created (token missing, transient API error, etc.). Click <strong style="color:#7AC231">Retry</strong> to re-run the Shopify create call. The DB row is updated to <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#7AC231">issued</code> on success.
+            Members redeemed points but the Shopify discount code never got created (token missing, transient API error, etc.). Click <strong style="color:#A8FF00">Retry</strong> to re-run the Shopify create call. The DB row is updated to <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#A8FF00">issued</code> on success.
           </div>
           <div id="failedShopifyList"><div style="padding:14px;color:#555;text-align:center">Loading…</div></div>
         </div>
@@ -1738,7 +1738,7 @@
         <div class="admin-section-head">
           <span class="admin-section-title">🤝 Partners</span>
           <div style="display:flex;gap:6px">
-            <button class="partners-subtab active" data-partners-tab="inquiries" style="padding:7px 14px;font-size:12px;font-weight:700;background:rgba(122,194,49,.12);color:#7AC231;border:1px solid rgba(122,194,49,.3);border-radius:8px;cursor:pointer">Inquiries</button>
+            <button class="partners-subtab active" data-partners-tab="inquiries" style="padding:7px 14px;font-size:12px;font-weight:700;background:rgba(168,255,0,.12);color:#A8FF00;border:1px solid rgba(168,255,0,.3);border-radius:8px;cursor:pointer">Inquiries</button>
             <button class="partners-subtab" data-partners-tab="tiers" style="padding:7px 14px;font-size:12px;font-weight:700;background:transparent;color:#888;border:1px solid #2a2a2a;border-radius:8px;cursor:pointer">Tiers</button>
             <button class="partners-subtab" data-partners-tab="directory" style="padding:7px 14px;font-size:12px;font-weight:700;background:transparent;color:#888;border:1px solid #2a2a2a;border-radius:8px;cursor:pointer">Directory</button>
             <button class="partners-subtab" data-partners-tab="offers" style="padding:7px 14px;font-size:12px;font-weight:700;background:transparent;color:#888;border:1px solid #2a2a2a;border-radius:8px;cursor:pointer">Offers</button>
@@ -1776,7 +1776,7 @@
         </div>
         <div class="admin-section-body">
           <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6">
-            Each tier appears as a card on <a href="/partners.html" target="_blank" style="color:#7AC231">/partners</a>. Edit name, pricing, and the bullet-point perks. Mark one tier as "featured" — it gets the ★ Most Popular treatment.
+            Each tier appears as a card on <a href="/partners.html" target="_blank" style="color:#A8FF00">/partners</a>. Edit name, pricing, and the bullet-point perks. Mark one tier as "featured" — it gets the ★ Most Popular treatment.
           </div>
           <div id="partnerTierFormWrap" style="display:none;background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:16px">
             <input type="hidden" id="ptEditId" value="">
@@ -1816,7 +1816,7 @@
         </div>
         <div class="admin-section-body">
           <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6">
-            Existing partners shown in the logo strip on <a href="/partners.html" target="_blank" style="color:#7AC231">/partners</a>. Add a testimonial on at least one entry — it surfaces as the page's social-proof quote.
+            Existing partners shown in the logo strip on <a href="/partners.html" target="_blank" style="color:#A8FF00">/partners</a>. Add a testimonial on at least one entry — it surfaces as the page's social-proof quote.
           </div>
           <div id="partnerDirFormWrap" style="display:none;background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:16px">
             <input type="hidden" id="pdEditId" value="">
@@ -1861,7 +1861,7 @@
         </div>
         <div class="admin-section-body">
           <div style="font-size:12px;color:#888;margin-bottom:14px;line-height:1.6">
-            These appear on <a href="/offers.html" target="_blank" style="color:#7AC231">/offers</a> — the member-facing commercial page. Pick the offer type, set points required (or leave 0 for free claims), and the partner. Mark one as "featured" — it gets the hero spotlight.
+            These appear on <a href="/offers.html" target="_blank" style="color:#A8FF00">/offers</a> — the member-facing commercial page. Pick the offer type, set points required (or leave 0 for free claims), and the partner. Mark one as "featured" — it gets the hero spotlight.
           </div>
           <div id="partnerOfferFormWrap" style="display:none;background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:16px">
             <input type="hidden" id="poEditId" value="">
@@ -1939,7 +1939,7 @@
         <div class="admin-section-head">
           <span class="admin-section-title">⌚ Wearables</span>
           <div style="display:flex;gap:6px">
-            <button class="wearables-subtab active" data-wearables-tab="connections" style="padding:7px 14px;font-size:12px;font-weight:700;background:rgba(122,194,49,.12);color:#7AC231;border:1px solid rgba(122,194,49,.3);border-radius:8px;cursor:pointer">Connections</button>
+            <button class="wearables-subtab active" data-wearables-tab="connections" style="padding:7px 14px;font-size:12px;font-weight:700;background:rgba(168,255,0,.12);color:#A8FF00;border:1px solid rgba(168,255,0,.3);border-radius:8px;cursor:pointer">Connections</button>
             <button class="wearables-subtab" data-wearables-tab="providers" style="padding:7px 14px;font-size:12px;font-weight:700;background:transparent;color:#888;border:1px solid #2a2a2a;border-radius:8px;cursor:pointer">Providers</button>
             <button class="wearables-subtab" data-wearables-tab="synclog" style="padding:7px 14px;font-size:12px;font-weight:700;background:transparent;color:#888;border:1px solid #2a2a2a;border-radius:8px;cursor:pointer">Sync log</button>
           </div>
@@ -1991,7 +1991,7 @@
     <!-- ═══ SURVEYS SECTION ═══ -->
     <div id="section-surveys" style="display:none">
       <div class="admin-page-title">📋 Surveys</div>
-      <div class="admin-page-sub">Create custom feedback forms with any questions you want. Each survey gets its own public URL like <code style="background:#0a0a0a;padding:2px 6px;border-radius:3px;color:#7AC231">/survey/your-slug</code> that you share with members.</div>
+      <div class="admin-page-sub">Create custom feedback forms with any questions you want. Each survey gets its own public URL like <code style="background:#0a0a0a;padding:2px 6px;border-radius:3px;color:#A8FF00">/survey/your-slug</code> that you share with members.</div>
       <div id="surveysBody" style="margin-top:16px">
         <div style="padding:60px;text-align:center;color:#555">Loading surveys…</div>
       </div>

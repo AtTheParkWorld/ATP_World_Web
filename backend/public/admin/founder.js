@@ -114,11 +114,11 @@ function renderOpsPulse(d) {
   var smBody = sm.length ? sm.map(function(s){
     return '<div style="padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)">' +
       '<strong style="color:#fff">'+esc(s.member_name||'Member')+'</strong>' +
-      (s.current_streak ? ' &middot; <span style="color:#7AC231">'+s.current_streak+'-day streak alive</span>' : '') +
+      (s.current_streak ? ' &middot; <span style="color:#A8FF00">'+s.current_streak+'-day streak alive</span>' : '') +
       ' &middot; <span style="color:#666">'+fmtAgo(s.created_at)+'</span>' +
     '</div>';
   }).join('') : emptyRow('No recent milestones to shout out.');
-  var smCard = card('🔥 Streak Milestones (last 14d)', sm.length, sm.length > 0 ? '#7AC231' : '#444', smBody);
+  var smCard = card('🔥 Streak Milestones (last 14d)', sm.length, sm.length > 0 ? '#A8FF00' : '#444', smBody);
 
   // ── NPS ───────────────────────────────────────────────────
   var nps = (d.surveys && d.surveys.post_session_nps) || {};
@@ -128,7 +128,7 @@ function renderOpsPulse(d) {
   var npsBody = nps.n > 0
     ? '<div style="display:flex;gap:18px;align-items:baseline;font-size:20px;font-weight:800">' +
         '<span style="color:#fff">'+avgStars+'<span style="font-size:11px;color:#888;font-weight:500"> / 5</span></span>' +
-        '<span style="color:#7AC231;font-size:13px">'+promPct+'% promoters (≥4)</span>' +
+        '<span style="color:#A8FF00;font-size:13px">'+promPct+'% promoters (≥4)</span>' +
         '<span style="color:#ef4444;font-size:13px">'+detrPct+'% detractors (≤2)</span>' +
       '</div>' +
       '<div style="font-size:11px;color:#888;margin-top:6px">'+nps.n+' responses last 30 days &middot; '+(nps.fives||0)+' perfect 5s</div>'
@@ -153,8 +153,8 @@ function renderOpsPulse(d) {
   // ── Quick stats strip ────────────────────────────────────
   var qs = d.quick_stats || {};
   var quickStrip = '<div style="display:flex;gap:16px;margin-bottom:18px">' +
-    '<div style="flex:1;background:#0d0d0d;border:1px solid rgba(122,194,49,.2);border-radius:10px;padding:14px;text-align:center">' +
-      '<div style="font-size:28px;font-weight:800;color:#7AC231">'+(qs.signups_today||0)+'</div>' +
+    '<div style="flex:1;background:#0d0d0d;border:1px solid rgba(168,255,0,.2);border-radius:10px;padding:14px;text-align:center">' +
+      '<div style="font-size:28px;font-weight:800;color:#A8FF00">'+(qs.signups_today||0)+'</div>' +
       '<div style="font-size:11px;color:#888;text-transform:uppercase;letter-spacing:.05em">Signups today</div>' +
     '</div>' +
     '<div style="flex:1;background:#0d0d0d;border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:14px;text-align:center">' +
@@ -168,7 +168,7 @@ function renderOpsPulse(d) {
   '</div>';
 
   return '<div style="margin-bottom:28px">' +
-    '<h2 style="font-size:18px;font-weight:800;color:#fff;letter-spacing:.04em;text-transform:uppercase;margin:8px 0 14px;border-bottom:2px solid #7AC231;padding-bottom:8px">🌅 Today\'s Pulse</h2>' +
+    '<h2 style="font-size:18px;font-weight:800;color:#fff;letter-spacing:.04em;text-transform:uppercase;margin:8px 0 14px;border-bottom:2px solid #A8FF00;padding-bottom:8px">🌅 Today\'s Pulse</h2>' +
     quickStrip +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">' +
       '<div>'+appealsCard+reportsCard+selfDelCard+'</div>' +
@@ -189,13 +189,13 @@ function renderFounderDashboard(d) {
   var wamPrev = ns.wam_prev || 0;
   var wamDelta = wamNow - wamPrev;
   var wamPct = wamPrev > 0 ? Math.round(100 * wamDelta / wamPrev) : (wamNow > 0 ? 100 : 0);
-  var wamTrendColor = wamDelta >= 0 ? '#7AC231' : '#ef4444';
+  var wamTrendColor = wamDelta >= 0 ? '#A8FF00' : '#ef4444';
   var wamArrow = wamDelta > 0 ? '↑' : (wamDelta < 0 ? '↓' : '→');
 
   // ── 2. Acquisition ────────────────────────────────────────────
   var acq = d.acquisition || {};
   var signupsDelta = (acq.week || 0) - (acq.prev_week || 0);
-  var signupsColor = signupsDelta >= 0 ? '#7AC231' : '#ef4444';
+  var signupsColor = signupsDelta >= 0 ? '#A8FF00' : '#ef4444';
 
   // ── 3. Funnel ─────────────────────────────────────────────────
   var f = d.activation_funnel || {};
@@ -219,9 +219,9 @@ function renderFounderDashboard(d) {
   function cohortColor(retained, size) {
     if (!size || retained == null) return 'rgba(255,255,255,.04)';
     var p = retained / size;
-    if (p >= 0.4) return 'rgba(122,194,49,.7)';
-    if (p >= 0.25) return 'rgba(122,194,49,.45)';
-    if (p >= 0.15) return 'rgba(122,194,49,.25)';
+    if (p >= 0.4) return 'rgba(168,255,0,.7)';
+    if (p >= 0.25) return 'rgba(168,255,0,.45)';
+    if (p >= 0.15) return 'rgba(168,255,0,.25)';
     if (p >= 0.05) return 'rgba(245,158,11,.25)';
     return 'rgba(239,68,68,.20)';
   }
@@ -237,7 +237,7 @@ function renderFounderDashboard(d) {
   var maxSignup = Math.max.apply(null, trend.map(function(t){ return t.signups; }).concat([1]));
   var sparkBars = trend.map(function(t){
     var h = Math.round(40 * t.signups / maxSignup);
-    return '<div title="' + t.week_start + ': ' + t.signups + ' signups" style="width:14px;height:' + Math.max(2, h) + 'px;background:#7AC231;border-radius:2px"></div>';
+    return '<div title="' + t.week_start + ': ' + t.signups + ' signups" style="width:14px;height:' + Math.max(2, h) + 'px;background:#A8FF00;border-radius:2px"></div>';
   }).join('');
 
   var html = '';
@@ -246,9 +246,9 @@ function renderFounderDashboard(d) {
   html +=
     '<div style="display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;gap:16px;margin-bottom:20px">' +
       // North star — Weekly Active Members
-      '<div style="background:linear-gradient(135deg,rgba(122,194,49,.14),rgba(122,194,49,.04));border:1px solid rgba(122,194,49,.32);border-radius:14px;padding:24px">' +
-        '<div style="font-size:10px;color:#7AC231;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">🌟 North Star · Weekly Active Members</div>' +
-        '<div style="font-family:var(--ff-display,sans-serif);font-size:56px;font-weight:900;color:#7AC231;line-height:.95">' + wamNow.toLocaleString() + '</div>' +
+      '<div style="background:linear-gradient(135deg,rgba(168,255,0,.14),rgba(168,255,0,.04));border:1px solid rgba(168,255,0,.32);border-radius:14px;padding:24px">' +
+        '<div style="font-size:10px;color:#A8FF00;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">🌟 North Star · Weekly Active Members</div>' +
+        '<div style="font-family:var(--ff-display,sans-serif);font-size:56px;font-weight:900;color:#A8FF00;line-height:.95">' + wamNow.toLocaleString() + '</div>' +
         '<div style="font-size:12px;color:' + wamTrendColor + ';margin-top:6px;font-weight:600">' +
           wamArrow + ' ' + Math.abs(wamDelta) + ' vs last 7d · ' + (wamPct > 0 ? '+' : '') + wamPct + '%' +
         '</div>' +
@@ -281,7 +281,7 @@ function renderFounderDashboard(d) {
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:14px;padding:24px">' +
         '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px">' +
           '<div>' +
-            '<div style="font-size:10px;color:#7AC231;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">Acquisition</div>' +
+            '<div style="font-size:10px;color:#A8FF00;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">Acquisition</div>' +
             '<div style="font-family:var(--ff-display,sans-serif);font-size:36px;font-weight:900;color:#fff">' + (acq.week || 0) + '<span style="font-size:14px;color:#888;font-weight:500;font-family:inherit;letter-spacing:0;margin-left:8px">new signups · 7d</span></div>' +
             '<div style="font-size:11px;color:' + signupsColor + ';margin-top:4px;font-weight:600">' + (signupsDelta >= 0 ? '↑ +' : '↓ ') + Math.abs(signupsDelta) + ' vs prev week</div>' +
           '</div>' +
@@ -296,9 +296,9 @@ function renderFounderDashboard(d) {
       '</div>' +
       // Activation funnel
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:14px;padding:24px">' +
-        '<div style="font-size:10px;color:#7AC231;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:14px">Activation funnel · last 4-week signup cohort</div>' +
-        _funnelBar('Signed up', f.signed_up, f.signed_up, '#7AC231') +
-        _funnelBar('Booked any session', f.booked, f.signed_up, '#7AC231') +
+        '<div style="font-size:10px;color:#A8FF00;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:14px">Activation funnel · last 4-week signup cohort</div>' +
+        _funnelBar('Signed up', f.signed_up, f.signed_up, '#A8FF00') +
+        _funnelBar('Booked any session', f.booked, f.signed_up, '#A8FF00') +
         _funnelBar('Attended once', f.attended_once, f.signed_up, '#f5c042') +
         _funnelBar('Attended 2+', f.attended_twice, f.signed_up, '#f5c042') +
         '<div style="margin-top:14px;padding-top:14px;border-top:1px solid #1e1e1e;font-size:11px;color:#888;line-height:1.5">' +
@@ -313,7 +313,7 @@ function renderFounderDashboard(d) {
     '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:14px;padding:24px;margin-bottom:20px">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px">' +
         '<div>' +
-          '<div style="font-size:10px;color:#7AC231;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">Cohort retention</div>' +
+          '<div style="font-size:10px;color:#A8FF00;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">Cohort retention</div>' +
           '<div style="font-size:14px;color:#fff;font-weight:600">% of each weekly signup cohort still showing up</div>' +
         '</div>' +
         '<div style="font-size:11px;color:#888">Greener = better retention. Reds need attention.</div>' +
@@ -345,7 +345,7 @@ function renderFounderDashboard(d) {
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">' +
       // Top sessions
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:14px;padding:24px">' +
-        '<div style="font-size:10px;color:#7AC231;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:14px">Top sessions · last 30 days</div>' +
+        '<div style="font-size:10px;color:#A8FF00;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:14px">Top sessions · last 30 days</div>' +
         (topSessions.length === 0
           ? '<div style="color:#555;padding:20px;text-align:center;font-size:13px">No sessions yet in this window.</div>'
           : topSessions.map(function(s){
@@ -356,7 +356,7 @@ function renderFounderDashboard(d) {
                   '<div style="font-size:11px;color:#888">' + new Date(s.scheduled_at).toLocaleDateString() + ' · ' + _esc(s.session_category || '—') + '</div>' +
                 '</div>' +
                 '<div style="text-align:right;flex-shrink:0">' +
-                  '<div style="font-family:var(--ff-display,sans-serif);font-size:18px;font-weight:900;color:#7AC231">' + s.attendees + '</div>' +
+                  '<div style="font-family:var(--ff-display,sans-serif);font-size:18px;font-weight:900;color:#A8FF00">' + s.attendees + '</div>' +
                   '<div style="font-size:10px;color:#888">/ ' + (s.capacity || 0) + ' · ' + fill + '%</div>' +
                 '</div>' +
               '</div>';
@@ -365,7 +365,7 @@ function renderFounderDashboard(d) {
       '</div>' +
       // Top coaches
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:14px;padding:24px">' +
-        '<div style="font-size:10px;color:#7AC231;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:14px">Top coaches · last 30 days</div>' +
+        '<div style="font-size:10px;color:#A8FF00;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:14px">Top coaches · last 30 days</div>' +
         (topCoaches.length === 0
           ? '<div style="color:#555;padding:20px;text-align:center;font-size:13px">No coach data yet.</div>'
           : topCoaches.map(function(c){
@@ -375,7 +375,7 @@ function renderFounderDashboard(d) {
                   '<div style="font-size:11px;color:#888">' + (c.sessions_led || 0) + ' sessions led</div>' +
                 '</div>' +
                 '<div style="text-align:right;flex-shrink:0">' +
-                  '<div style="font-family:var(--ff-display,sans-serif);font-size:18px;font-weight:900;color:#7AC231">' + (c.total_attendees || 0) + '</div>' +
+                  '<div style="font-family:var(--ff-display,sans-serif);font-size:18px;font-weight:900;color:#A8FF00">' + (c.total_attendees || 0) + '</div>' +
                   '<div style="font-size:10px;color:#888">total check-ins</div>' +
                 '</div>' +
               '</div>';
@@ -415,7 +415,7 @@ function renderFounderDashboard(d) {
                 '<td style="padding:10px;text-align:center;color:#888">' + (m.last_seen ? new Date(m.last_seen).toLocaleDateString() : '—') + '</td>' +
                 '<td style="padding:10px;text-align:center;color:#f59e0b;font-weight:700">' + (m.days_since || 0) + 'd</td>' +
                 '<td style="padding:10px;text-align:center;color:#fff;font-weight:600">' + (m.recent_count || 0) + '</td>' +
-                '<td style="padding:10px;text-align:center"><a href="mailto:' + _esc(m.email || '') + '?subject=' + subject + '&body=' + body + '" style="font-size:11px;color:#7AC231;text-decoration:none;font-weight:700">✉ Win back</a></td>' +
+                '<td style="padding:10px;text-align:center"><a href="mailto:' + _esc(m.email || '') + '?subject=' + subject + '&body=' + body + '" style="font-size:11px;color:#A8FF00;text-decoration:none;font-weight:700">✉ Win back</a></td>' +
               '</tr>';
             }).join('') +
           '</tbody></table></div>'
@@ -448,8 +448,8 @@ function renderFounderDashboard(d) {
         '<div style="font-size:11px;color:#888;margin-top:6px">' + (overall.ratings_30d || 0) + ' ratings · ' + (overall.ratings_7d || 0) + ' this week</div>' +
       '</div>' +
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:14px;padding:22px">' +
-        '<div style="font-size:10px;color:#7AC231;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">5★ ratings</div>' +
-        '<div style="font-family:var(--ff-display,sans-serif);font-size:36px;font-weight:900;color:#7AC231">' + (overall.five_count || 0).toLocaleString() + '</div>' +
+        '<div style="font-size:10px;color:#A8FF00;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">5★ ratings</div>' +
+        '<div style="font-family:var(--ff-display,sans-serif);font-size:36px;font-weight:900;color:#A8FF00">' + (overall.five_count || 0).toLocaleString() + '</div>' +
         '<div style="font-size:11px;color:#888;margin-top:6px">' + (overall.total_ratings ? Math.round(100 * (overall.five_count || 0) / overall.total_ratings) : 0) + '% of all ratings</div>' +
       '</div>' +
       '<div style="background:#0f0f0f;border:1px solid ' + ((overall.low_count || 0) > 0 ? 'rgba(239,68,68,.32)' : '#1e1e1e') + ';border-radius:14px;padding:22px">' +
@@ -464,7 +464,7 @@ function renderFounderDashboard(d) {
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">' +
       // Top-rated coaches
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:14px;padding:24px">' +
-        '<div style="font-size:10px;color:#7AC231;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">🏆 Top-rated coaches</div>' +
+        '<div style="font-size:10px;color:#A8FF00;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">🏆 Top-rated coaches</div>' +
         '<div style="font-size:11px;color:#888;margin-bottom:14px">Public session feedback · min 3 ratings to qualify</div>' +
         (topRatedCoaches.length === 0
           ? '<div style="color:#555;padding:30px;text-align:center;font-size:13px;border:1px dashed #2a2a2a;border-radius:8px">No coaches with 3+ ratings yet. As members rate sessions, this fills up.</div>'
@@ -486,7 +486,7 @@ function renderFounderDashboard(d) {
       '</div>' +
       // Top-rated sessions
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:14px;padding:24px">' +
-        '<div style="font-size:10px;color:#7AC231;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">⭐ Top-rated sessions · last 30 days</div>' +
+        '<div style="font-size:10px;color:#A8FF00;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:6px">⭐ Top-rated sessions · last 30 days</div>' +
         '<div style="font-size:11px;color:#888;margin-bottom:14px">Format signal — which session types members loved</div>' +
         (topRatedSessions.length === 0
           ? '<div style="color:#555;padding:30px;text-align:center;font-size:13px;border:1px dashed #2a2a2a;border-radius:8px">No session ratings in the last 30 days yet.</div>'

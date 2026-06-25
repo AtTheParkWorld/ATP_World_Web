@@ -22,13 +22,13 @@ async function renderAmbassadors() {
       var ini = ((m.first_name||'?')[0]+(m.last_name||'?')[0]).toUpperCase();
       var joined = m.joined_at ? new Date(m.joined_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '—';
       var coachBtn = m.is_coach
-        ? '<button class="admin-btn" style="font-size:11px;padding:4px 10px;background:#0d1a0a;color:#7AC231;border-color:#7AC231;margin-right:6px" onclick="toggleCoach(this.dataset.mid,false)" data-mid="'+m.id+'">🎽 Remove Coach</button>'
+        ? '<button class="admin-btn" style="font-size:11px;padding:4px 10px;background:#0d1a0a;color:#A8FF00;border-color:#A8FF00;margin-right:6px" onclick="toggleCoach(this.dataset.mid,false)" data-mid="'+m.id+'">🎽 Remove Coach</button>'
         : '<button class="admin-btn" style="font-size:11px;padding:4px 10px;margin-right:6px" onclick="toggleCoach(this.dataset.mid,true)" data-mid="'+m.id+'">🎽 Make Coach</button>';
       return '<tr>'+
         '<td style="display:flex;align-items:center;gap:10px"><div class="admin-av" style="background:rgba(255,196,0,.15);color:#ffc400">'+ini+'</div><div><div class="admin-member-name">'+name+'</div><div class="admin-member-email">'+m.member_number+' · '+m.email+'</div></div></td>'+
         '<td style="color:#555;font-size:12px">'+joined+'</td>'+
-        '<td style="color:#7AC231;font-weight:700">'+(m.sessions_count||0)+' sessions</td>'+
-        '<td><span class="badge badge-green">Active</span>'+(m.is_coach?' <span class="badge" style="background:#0d1a0a;color:#7AC231;border:1px solid #7AC231">🎽 Coach</span>':'')+'</td>'+
+        '<td style="color:#A8FF00;font-weight:700">'+(m.sessions_count||0)+' sessions</td>'+
+        '<td><span class="badge badge-green">Active</span>'+(m.is_coach?' <span class="badge" style="background:#0d1a0a;color:#A8FF00;border:1px solid #A8FF00">🎽 Coach</span>':'')+'</td>'+
         '<td>'+coachBtn+'<button class="admin-btn admin-btn-danger" onclick="removeAmbassador(this.dataset.mid)" data-mid="'+m.id+'" style="font-size:11px;padding:4px 10px">Revoke</button></td>'+
       '</tr>';
     }).join('');

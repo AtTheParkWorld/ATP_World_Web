@@ -1087,7 +1087,7 @@ router.post('/me/export', authenticate, async (req, res, next) => {
           req.member.email,
           'Your ATP data export',
           '<p>Your ATP data is ready. Click below to download (link expires in 24 hours):</p>' +
-          '<p><a href="' + url + '" style="background:#7AC231;color:#0a0a0a;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700">Download my data</a></p>' +
+          '<p><a href="' + url + '" style="background:#A8FF00;color:#0a0a0a;padding:12px 20px;border-radius:8px;text-decoration:none;font-weight:700">Download my data</a></p>' +
           '<p style="color:#888;font-size:12px">Didn\'t request this? Reply to this email immediately.</p>'
         );
       }
