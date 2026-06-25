@@ -48,6 +48,9 @@ export { IconNotification }   from './IconNotification';
 export { IconEdit }           from './IconEdit';
 export { IconInfo }           from './IconInfo';
 export { IconShield }         from './IconShield';
+export { IconHome }           from './IconHome';
+export { IconCalendar }       from './IconCalendar';
+export { IconCommunity }      from './IconCommunity';
 
 export type { IconProps } from './types';
 
