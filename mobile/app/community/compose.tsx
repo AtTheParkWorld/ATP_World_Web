@@ -38,7 +38,7 @@ export default function Compose() {
   const canSubmit = !!content.trim() || media.length > 0;
 
   const submitMu = useMutation({
-    mutationFn: () => createPost(content, media.map((m) => ({ url: m.url, type: m.type }))),
+    mutationFn: () => createPost(content, media.map((m) => ({ src: m.url, type: m.type }))),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['feed'] });
       router.back();

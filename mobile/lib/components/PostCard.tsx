@@ -14,6 +14,7 @@ import { router } from 'expo-router';
 import type { Post } from '@/lib/api/community';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
+import { Avatar } from '@/lib/components/Avatar';
 
 function timeAgo(iso: string): string {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -43,18 +44,16 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
     >
       {/* Author row */}
       <View className="flex-row items-center gap-3">
-        <Pressable
-          onPress={onAvatarPress || (() => router.push(`/community/members/${post.member_id}`))}
-          className="w-10 h-10 rounded-full bg-atp-dark-3 overflow-hidden items-center justify-center"
-          style={{ borderWidth: 1, borderColor: tColor }}
-        >
-          {post.avatar_url ? (
-            <Image source={{ uri: absUrl(post.avatar_url)! }} className="w-10 h-10" />
-          ) : (
-            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">
-              {(post.first_name || '?')[0]}
-            </Text>
-          )}
+        <Pressable onPress={onAvatarPress || (() => router.push(`/community/members/${post.member_id}`))}>
+          <Avatar
+            uri={post.avatar_url}
+            firstName={post.first_name}
+            lastName={post.last_name}
+            id={post.member_id}
+            size={40}
+            borderColor={tColor}
+            borderWidth={1}
+          />
         </Pressable>
         <View className="flex-1">
           <View className="flex-row items-center gap-2">
@@ -92,10 +91,10 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
         </Text>
       )}
 
-      {/* Media (first only) */}
-      {!!post.media && post.media.length > 0 && (
+      {/* Media (first only) — backend serves the URL under `src` */}
+      {!!post.media && post.media.length > 0 && !!post.media[0]?.src && (
         <Image
-          source={{ uri: absUrl(post.media[0].url)! }}
+          source={{ uri: absUrl(post.media[0].src)! }}
           className="w-full mt-3 rounded-atp"
           style={{ aspectRatio: 4 / 3 }}
           resizeMode="cover"

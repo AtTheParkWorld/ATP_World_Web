@@ -108,6 +108,9 @@ export function Avatar({
   // name changes) but falls back to first+last so brand-new members
   // still get something distinctive before they pick a handle.
   const seed = String(id ?? (`${firstName || ''}-${lastName || ''}-${name || ''}` || '?'));
+  // SVG defs IDs must be alphanumeric-safe — strip everything else so the
+  // url(#…) reference always resolves on iOS + Android.
+  const gradId = `avg-${seed.replace(/[^a-zA-Z0-9]/g, '').slice(0, 16) || 'x'}-${px}`;
   const [c1, c2] = pickGradient(seed);
   const initials = initialsFor(firstName, lastName, name);
 
@@ -116,16 +119,16 @@ export function Avatar({
 
   return (
     <View style={wrapStyle}>
-      <Svg width={px} height={px} viewBox="0 0 100 100">
+      <Svg width={px} height={px} viewBox="0 0 100 100" style={{ position: 'absolute', top: 0, left: 0 }}>
         <Defs>
-          <LinearGradient id={`g-${seed}-${px}`} x1="0" y1="0" x2="1" y2="1">
+          <LinearGradient id={gradId} x1="0" y1="0" x2="1" y2="1">
             <Stop offset="0" stopColor={c1} stopOpacity="1" />
             <Stop offset="1" stopColor={c2} stopOpacity="1" />
           </LinearGradient>
         </Defs>
-        <Circle cx="50" cy="50" r="50" fill={`url(#g-${seed}-${px})`} />
+        <Circle cx="50" cy="50" r="50" fill={`url(#${gradId})`} />
       </Svg>
-      <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ width: px, height: px, alignItems: 'center', justifyContent: 'center' }}>
         <Text
           style={{
             fontFamily: fontFamily.displayBlack,

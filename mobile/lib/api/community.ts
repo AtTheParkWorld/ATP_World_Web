@@ -10,7 +10,7 @@ import { api } from './client';
 export interface Post {
   id: string | number;
   content: string;
-  media: Array<{ url: string; type?: string }> | null;
+  media: Array<{ src: string; type?: string }> | null;
   likes_count: number;
   comments_count: number;
   created_at: string;
@@ -57,7 +57,7 @@ export function getMyPosts(limit = 20): Promise<{ posts: Post[] }> {
   return api.get(`/community/me/posts?limit=${limit}`);
 }
 
-export function createPost(content: string, media: Array<{ url: string; type?: string }> = []): Promise<{ post: Post }> {
+export function createPost(content: string, media: Array<{ src: string; type?: string }> = []): Promise<{ post: Post }> {
   return api.post('/community/posts', { content, media });
 }
 
