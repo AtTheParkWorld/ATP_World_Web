@@ -51,9 +51,14 @@ export { IconShield }         from './IconShield';
 export { IconHome }           from './IconHome';
 export { IconCalendar }       from './IconCalendar';
 export { IconCommunity }      from './IconCommunity';
-// Tab-bar icons are now PNG assets (see assets/images/icon-tab-*.png),
-// rendered directly in app/(tabs)/_layout.tsx via <Image tintColor>.
-// The SVG IconTab* components have been retired.
+// Tab-bar-specific marks — hand-coded SVG with continuous active-state
+// animation (sparkle, beat, shimmer, bounce, ripple). See app/(tabs)/_layout.tsx.
+export { IconTabHome }        from './IconTabHome';
+export { IconTabSessions }    from './IconTabSessions';
+export { IconTabCommunity }   from './IconTabCommunity';
+export { IconTabRewards }     from './IconTabRewards';
+export { IconTabStore }       from './IconTabStore';
+export { IconTabProfile }     from './IconTabProfile';
 
 export type { IconProps } from './types';
 

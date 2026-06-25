@@ -5,7 +5,7 @@
  * highlighted in green when present.
  */
 import { useState } from 'react';
-import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -13,7 +13,7 @@ import { getLeaderboard, type LeaderboardRow } from '@/lib/api/leaderboard';
 import { listCities, listTribes } from '@/lib/api/sessions';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
-import { absUrl } from '@/lib/utils/imageUrl';
+import { Avatar } from '@/lib/components/Avatar';
 
 type Period = 'mtd' | 'ytd' | 'all-time';
 
@@ -146,14 +146,15 @@ function LeaderboardRow({ row, rank, isMe }: { row: LeaderboardRow; rank: number
       >
         #{rank}
       </Text>
-      <View
-        className="w-10 h-10 rounded-full bg-atp-dark-3 items-center justify-center overflow-hidden"
-        style={{ borderWidth: 1, borderColor: tColor }}
-      >
-        {row.avatar_url
-          ? <Image source={{ uri: absUrl(row.avatar_url)! }} className="w-10 h-10" />
-          : <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }}>{row.first_name[0]}</Text>}
-      </View>
+      <Avatar
+        uri={row.avatar_url}
+        firstName={row.first_name}
+        lastName={row.last_name}
+        id={row.id}
+        size={40}
+        borderColor={tColor}
+        borderWidth={1}
+      />
       <View className="flex-1">
         <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">
           {row.first_name} {row.last_name}{isMe ? ' (you)' : ''}

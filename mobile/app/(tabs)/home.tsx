@@ -215,7 +215,13 @@ function QuickAction({ label, icon, emoji, onPress }: { label: string; icon?: Ic
       {icon
         ? <Icon name={icon} size={26} color={colors.green} />
         : <Text className="text-2xl">{emoji}</Text>}
-      <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-xs uppercase tracking-widest mt-2">
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+        style={{ fontFamily: fontFamily.bodyBold, color: colors.white, letterSpacing: 1.2 }}
+        className="text-xs uppercase mt-2 text-center"
+      >
         {label}
       </Text>
     </Pressable>

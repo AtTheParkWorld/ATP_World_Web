@@ -24,6 +24,7 @@ import { SegmentedControl } from '@/lib/components/SegmentedControl';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { absUrl } from '@/lib/utils/imageUrl';
+import { Avatar } from '@/lib/components/Avatar';
 
 type Tab = 'feed' | 'coaches' | 'friends';
 
@@ -241,11 +242,13 @@ function FriendsView() {
                   onPress={() => router.push(`/community/members/${m.id}`)}
                   className="flex-row items-center gap-3 bg-atp-dark border border-white/5 rounded-atp p-3 active:opacity-70"
                 >
-                  <View className="w-10 h-10 rounded-full bg-atp-dark-3 items-center justify-center overflow-hidden">
-                    {m.avatar_url
-                      ? <Image source={{ uri: absUrl(m.avatar_url)! }} className="w-10 h-10" />
-                      : <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }}>{m.first_name[0]}</Text>}
-                  </View>
+                  <Avatar
+                    uri={m.avatar_url}
+                    firstName={m.first_name}
+                    lastName={m.last_name}
+                    id={m.id}
+                    size={40}
+                  />
                   <View className="flex-1">
                     <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }}>{m.first_name} {m.last_name}</Text>
                     {!!m.city_name && (
@@ -349,15 +352,16 @@ function FriendsView() {
   );
 }
 
-function FriendAvatar({ friend }: { friend: { avatar_url: string | null; first_name: string; tribe_slug?: string | null } }) {
+function FriendAvatar({ friend }: { friend: { id?: string | number; avatar_url: string | null; first_name: string; last_name?: string; tribe_slug?: string | null } }) {
   return (
-    <View
-      className="w-11 h-11 rounded-full overflow-hidden items-center justify-center bg-atp-dark-3"
-      style={{ borderWidth: 1, borderColor: tribeColor(friend.tribe_slug) }}
-    >
-      {friend.avatar_url
-        ? <Image source={{ uri: absUrl(friend.avatar_url)! }} className="w-11 h-11" />
-        : <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }}>{friend.first_name[0]}</Text>}
-    </View>
+    <Avatar
+      uri={friend.avatar_url}
+      firstName={friend.first_name}
+      lastName={friend.last_name}
+      id={friend.id}
+      size={44}
+      borderColor={tribeColor(friend.tribe_slug)}
+      borderWidth={1}
+    />
   );
 }

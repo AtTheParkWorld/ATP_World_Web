@@ -1,37 +1,45 @@
 /**
- * Bottom-tab navigator — Home / Sessions / Community / Rewards / Profile.
+ * Bottom-tab navigator — Home / Sessions / Community / Rewards / Store / Profile.
  *
- * Tab bar: ATP-dark background, green active accent, Barlow Condensed
- * labels. Each tab uses a ChatGPT-designed PNG mark (white silhouette
- * on transparent) tinted at runtime — muted grey when inactive, ATP
- * green when active. Reanimated focus transition: scale 1.0 → 1.15
- * spring, plus a 4px active-dot that fades in beneath the icon.
+ * Six tabs. Each uses a hand-coded SVG mark from lib/components/icons
+ * with a continuous active-state animation:
+ *   - Home       → sparkle stars twinkle
+ *   - Sessions   → kettlebell tilts
+ *   - Community  → heart beats lub-dub
+ *   - Rewards    → gem sparkles
+ *   - Store      → bag bounces
+ *   - Profile    → arcs ripple
+ *
+ * The AnimatedTabIcon wrapper adds a spring scale 1.0 → 1.15 on focus
+ * plus a 4px green dot that fades in beneath the icon — the icon's
+ * own micro-animation runs on top of that.
  *
  * Auth gate: subscribes to the access token. If it ever becomes null
- * while we're inside the tab navigator (sign-out, refresh-token expiry,
- * server-side revoke) we bounce back to /(auth)/welcome.
+ * (sign-out, refresh-token expiry, server-side revoke) we bounce
+ * back to /(auth)/welcome.
  */
 import { useEffect } from 'react';
 import { Tabs, router } from 'expo-router';
-import { View, Image, type ImageSourcePropType } from 'react-native';
+import { View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { useAuthStore } from '@/lib/stores/auth.store';
-
-const TAB_ICONS: Record<string, ImageSourcePropType> = {
-  home:      require('@/assets/images/icon-tab-home.png'),
-  sessions:  require('@/assets/images/icon-tab-sessions.png'),
-  community: require('@/assets/images/icon-tab-community.png'),
-  rewards:   require('@/assets/images/icon-tab-rewards.png'),
-  profile:   require('@/assets/images/icon-tab-profile.png'),
-};
+import {
+  IconTabHome,
+  IconTabSessions,
+  IconTabCommunity,
+  IconTabRewards,
+  IconTabStore,
+  IconTabProfile,
+  type IconProps,
+} from '@/lib/components/icons';
 
 interface AnimatedTabIconProps {
-  source:  ImageSourcePropType;
-  focused: boolean;
+  Component: React.FC<IconProps>;
+  focused:   boolean;
 }
 
-function AnimatedTabIcon({ source, focused }: AnimatedTabIconProps) {
+function AnimatedTabIcon({ Component, focused }: AnimatedTabIconProps) {
   const scale = useSharedValue(focused ? 1.15 : 1);
   const dot   = useSharedValue(focused ? 1 : 0);
 
@@ -51,14 +59,11 @@ function AnimatedTabIcon({ source, focused }: AnimatedTabIconProps) {
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center', minHeight: 32 }}>
       <Animated.View style={iconStyle}>
-        <Image
-          source={source}
-          style={{
-            width: 26,
-            height: 26,
-            tintColor: focused ? colors.green : colors.muted,
-          }}
-          resizeMode="contain"
+        <Component
+          size={26}
+          color={focused ? colors.green : colors.muted}
+          strokeWidth={focused ? 2.6 : 2.2}
+          active={focused}
         />
       </Animated.View>
       <Animated.View
@@ -95,46 +100,20 @@ export default function TabsLayout() {
         tabBarInactiveTintColor: colors.muted,
         tabBarLabelStyle: {
           fontFamily: fontFamily.bodyBold,
-          fontSize: 11,
-          letterSpacing: 0.3,
+          fontSize: 10,
+          letterSpacing: 0.25,
+        },
+        tabBarItemStyle: {
+          paddingHorizontal: 0,
         },
       }}
     >
-      <Tabs.Screen
-        name="home"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ focused }) => <AnimatedTabIcon source={TAB_ICONS.home} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="sessions"
-        options={{
-          title: 'Sessions',
-          tabBarIcon: ({ focused }) => <AnimatedTabIcon source={TAB_ICONS.sessions} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="community"
-        options={{
-          title: 'Community',
-          tabBarIcon: ({ focused }) => <AnimatedTabIcon source={TAB_ICONS.community} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="rewards"
-        options={{
-          title: 'Rewards',
-          tabBarIcon: ({ focused }) => <AnimatedTabIcon source={TAB_ICONS.rewards} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ focused }) => <AnimatedTabIcon source={TAB_ICONS.profile} focused={focused} />,
-        }}
-      />
+      <Tabs.Screen name="home"      options={{ title: 'Home',      tabBarIcon: ({ focused }) => <AnimatedTabIcon Component={IconTabHome}      focused={focused} /> }} />
+      <Tabs.Screen name="sessions"  options={{ title: 'Sessions',  tabBarIcon: ({ focused }) => <AnimatedTabIcon Component={IconTabSessions}  focused={focused} /> }} />
+      <Tabs.Screen name="community" options={{ title: 'Community', tabBarIcon: ({ focused }) => <AnimatedTabIcon Component={IconTabCommunity} focused={focused} /> }} />
+      <Tabs.Screen name="rewards"   options={{ title: 'Rewards',   tabBarIcon: ({ focused }) => <AnimatedTabIcon Component={IconTabRewards}   focused={focused} /> }} />
+      <Tabs.Screen name="store"     options={{ title: 'Store',     tabBarIcon: ({ focused }) => <AnimatedTabIcon Component={IconTabStore}     focused={focused} /> }} />
+      <Tabs.Screen name="profile"   options={{ title: 'Profile',   tabBarIcon: ({ focused }) => <AnimatedTabIcon Component={IconTabProfile}   focused={focused} /> }} />
     </Tabs>
   );
 }

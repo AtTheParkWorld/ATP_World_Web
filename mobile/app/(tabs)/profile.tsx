@@ -11,16 +11,16 @@
  *  - Sign out (always visible so a broken session is recoverable)
  */
 import { useEffect } from 'react';
-import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import QRCode from 'react-native-qrcode-svg';
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getProfile, getStats, getStreak } from '@/lib/api/members';
 import { useAuthStore } from '@/lib/stores/auth.store';
+import { Avatar } from '@/lib/components/Avatar';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { StreakBadge } from '@/lib/components/StreakBadge';
-import { absUrl } from '@/lib/utils/imageUrl';
 import { Icon, type IconName } from '@/lib/components/icons';
 
 export default function Profile() {
@@ -63,16 +63,16 @@ export default function Profile() {
       >
         {/* Identity */}
         <View className="items-center pt-6 pb-3 px-5">
-          <Pressable
-            onPress={() => router.push('/profile/edit')}
-            className="w-28 h-28 rounded-full bg-atp-dark-3 overflow-hidden items-center justify-center"
-            style={{ borderWidth: 2, borderColor: tColor }}
-          >
-            {m?.avatar_url
-              ? <Image source={{ uri: absUrl(m.avatar_url)! }} className="w-28 h-28" />
-              : <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.muted }} className="text-3xl">
-                  {(m?.first_name || '?')[0]}{(m?.last_name || '')[0]}
-                </Text>}
+          <Pressable onPress={() => router.push('/profile/edit')}>
+            <Avatar
+              uri={m?.avatar_url}
+              firstName={m?.first_name}
+              lastName={m?.last_name}
+              id={m?.id}
+              size="xl"
+              borderColor={tColor}
+              borderWidth={2}
+            />
           </Pressable>
           <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-3xl uppercase mt-3 text-center">
             {name}
