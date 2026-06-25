@@ -21,6 +21,7 @@ import { useAuthStore } from '@/lib/stores/auth.store';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { StreakBadge } from '@/lib/components/StreakBadge';
 import { absUrl } from '@/lib/utils/imageUrl';
+import { Icon, type IconName } from '@/lib/components/icons';
 
 export default function Profile() {
   const qc = useQueryClient();
@@ -154,10 +155,10 @@ export default function Profile() {
               {(m?.is_ambassador && (m as any)?.is_coach) ? 'Ambassador + Coach tools' : m?.is_ambassador ? 'Ambassador tools' : 'Coach tools'}
             </Text>
             {m?.is_ambassador && (
-              <LinkRow label="Ambassador dashboard" emoji="🎫" onPress={() => router.push('/ambassador')} />
+              <LinkRow label="Ambassador dashboard" icon="ticket" onPress={() => router.push('/ambassador')} />
             )}
             {(m as any)?.is_coach && (
-              <LinkRow label="Coach dashboard" emoji="🏋️" onPress={() => router.push('/coach')} />
+              <LinkRow label="Coach dashboard" icon="dumbbell" onPress={() => router.push('/coach')} />
             )}
           </View>
         )}
@@ -168,7 +169,9 @@ export default function Profile() {
             onPress={() => router.push('/supporter')}
             className="bg-atp-green/10 border border-atp-green/40 rounded-atp-lg p-4 active:opacity-80 flex-row items-center"
           >
-            <Text style={{ fontSize: 24, marginRight: 12 }}>💚</Text>
+            <View style={{ marginRight: 12 }}>
+              <Icon name="heart" size={24} color={colors.green} active />
+            </View>
             <View className="flex-1">
               <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-sm uppercase tracking-widest">
                 {m?.subscription_type === 'premium' || m?.subscription_type === 'premium_plus' ? 'You\'re a supporter' : 'Be a supporter'}
@@ -185,17 +188,17 @@ export default function Profile() {
 
         {/* Quick links */}
         <View className="px-5 mt-7 gap-2">
-          <LinkRow label="Leaderboard"    emoji="🏆" onPress={() => router.push('/leaderboard')} />
-          <LinkRow label="Challenges"     emoji="🎯" onPress={() => router.push('/challenges')} />
-          <LinkRow label="Messages"       emoji="💬" onPress={() => router.push('/messages')} />
-          <LinkRow label="Stories"        emoji="📖" onPress={() => router.push('/blog')} />
-          <LinkRow label="ATP Store"      emoji="🛍️" onPress={() => router.push('/store')} />
-          <LinkRow label="Edit profile"   emoji="✏️" onPress={() => router.push('/profile/edit')} />
-          <LinkRow label="Notifications"  emoji="🔔" onPress={() => router.push('/profile/notifications')} />
-          <LinkRow label="Privacy"        emoji="🔒" onPress={() => router.push('/profile/privacy')} />
-          <LinkRow label="Blocked members" emoji="🚫" onPress={() => router.push('/profile/blocked')} />
-          <LinkRow label="Help & support"  emoji="🆘" onPress={() => router.push('/profile/help')} />
-          <LinkRow label="About"           emoji="ℹ️" onPress={() => router.push('/profile/about')} />
+          <LinkRow label="Leaderboard"    icon="trophy"       onPress={() => router.push('/leaderboard')} />
+          <LinkRow label="Challenges"     icon="target"       onPress={() => router.push('/challenges')} />
+          <LinkRow label="Messages"       icon="chat"         onPress={() => router.push('/messages')} />
+          <LinkRow label="Stories"        icon="story"        onPress={() => router.push('/blog')} />
+          <LinkRow label="ATP Store"      icon="bag"          onPress={() => router.push('/store')} />
+          <LinkRow label="Edit profile"   icon="edit"         onPress={() => router.push('/profile/edit')} />
+          <LinkRow label="Notifications"  icon="notification" onPress={() => router.push('/profile/notifications')} />
+          <LinkRow label="Privacy"        icon="shield"       onPress={() => router.push('/profile/privacy')} />
+          <LinkRow label="Blocked members" icon="no-entry"    onPress={() => router.push('/profile/blocked')} />
+          <LinkRow label="Help & support"  icon="help"        onPress={() => router.push('/profile/help')} />
+          <LinkRow label="About"           icon="info" onPress={() => router.push('/profile/about')} />
         </View>
 
         {/* Sign out */}
@@ -230,13 +233,19 @@ function StatTile({ label, value }: { label: string; value: string }) {
   );
 }
 
-function LinkRow({ label, emoji, onPress }: { label: string; emoji: string; onPress: () => void }) {
+function LinkRow({ label, icon, emoji, onPress }: { label: string; icon?: IconName; emoji?: string; onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
       className="flex-row items-center bg-atp-dark border border-white/5 rounded-atp px-4 py-3.5 active:opacity-70"
     >
-      <Text style={{ fontSize: 18, marginRight: 12 }}>{emoji}</Text>
+      {icon ? (
+        <View style={{ marginRight: 12, width: 24, alignItems: 'center' }}>
+          <Icon name={icon} size={20} color={colors.green} />
+        </View>
+      ) : (
+        <Text style={{ fontSize: 18, marginRight: 12 }}>{emoji}</Text>
+      )}
       <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm flex-1">
         {label}
       </Text>

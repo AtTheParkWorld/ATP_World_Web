@@ -10,6 +10,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { listLiveStreams, type LiveStream } from '@/lib/api/streams';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
+import { IconLive } from '@/lib/components/icons';
 
 export default function LiveIndex() {
   const qc = useQueryClient();
@@ -28,9 +29,10 @@ export default function LiveIndex() {
         <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-lg uppercase ml-2">
           Live now
         </Text>
-        <View className="ml-3 px-2 py-0.5 rounded bg-atp-red">
+        <View className="ml-3 px-2 py-0.5 rounded bg-atp-red flex-row items-center gap-1">
+          <IconLive size={10} color={colors.white} active />
           <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-[10px] uppercase tracking-widest">
-            ● LIVE
+            LIVE
           </Text>
         </View>
       </View>

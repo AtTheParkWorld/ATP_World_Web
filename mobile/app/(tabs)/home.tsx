@@ -24,6 +24,7 @@ import { listSessions } from '@/lib/api/sessions';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { SessionCard } from '@/lib/components/SessionCard';
 import { StreakBadge } from '@/lib/components/StreakBadge';
+import { Icon, type IconName } from '@/lib/components/icons';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 
 export default function Home() {
@@ -150,14 +151,14 @@ export default function Home() {
             Quick actions
           </Text>
           <View className="flex-row gap-3">
-            <QuickAction label="Find session" emoji="📍" onPress={() => router.push('/(tabs)/sessions')} />
-            <QuickAction label="Challenges"   emoji="🎯" onPress={() => router.push('/challenges')} />
-            <QuickAction label="Leaderboard"  emoji="🏆" onPress={() => router.push('/leaderboard')} />
+            <QuickAction label="Find session" icon="location" onPress={() => router.push('/(tabs)/sessions')} />
+            <QuickAction label="Challenges"   icon="target"   onPress={() => router.push('/challenges')} />
+            <QuickAction label="Leaderboard"  icon="trophy"   onPress={() => router.push('/leaderboard')} />
           </View>
           <View className="flex-row gap-3 mt-3">
-            <QuickAction label="Live now"     emoji="📡" onPress={() => router.push('/live')} />
-            <QuickAction label="Messages"     emoji="💬" onPress={() => router.push('/messages')} />
-            <QuickAction label="Stories"      emoji="📖" onPress={() => router.push('/blog')} />
+            <QuickAction label="Live now"     icon="live"     onPress={() => router.push('/live')} />
+            <QuickAction label="Messages"     icon="chat"     onPress={() => router.push('/messages')} />
+            <QuickAction label="Stories"      icon="story"    onPress={() => router.push('/blog')} />
           </View>
         </View>
 
@@ -205,13 +206,15 @@ function StatTile({ label, value }: { label: string; value: string }) {
   );
 }
 
-function QuickAction({ label, emoji, onPress }: { label: string; emoji: string; onPress: () => void }) {
+function QuickAction({ label, icon, emoji, onPress }: { label: string; icon?: IconName; emoji?: string; onPress: () => void }) {
   return (
     <Pressable
       onPress={onPress}
       className="flex-1 bg-atp-dark rounded-atp-lg border border-white/5 p-4 items-center active:opacity-70"
     >
-      <Text className="text-2xl">{emoji}</Text>
+      {icon
+        ? <Icon name={icon} size={26} color={colors.green} />
+        : <Text className="text-2xl">{emoji}</Text>}
       <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-xs uppercase tracking-widest mt-2">
         {label}
       </Text>

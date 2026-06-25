@@ -9,6 +9,7 @@
 import { Text, View } from 'react-native';
 import type { StreakSummary } from '@/lib/api/members';
 import { colors, fontFamily } from '@/lib/theme/tokens';
+import { IconStreak } from '@/lib/components/icons';
 
 interface Props {
   streak: StreakSummary | null;
@@ -28,16 +29,16 @@ export function StreakBadge({ streak, compact }: Props) {
 
   const alive    = streak.is_alive;
   const inGrace  = !alive && streak.current_streak > 0;
-  const icon     = inGrace ? '⏳' : '🔥';
   const accent   = inGrace ? colors.warning : colors.green;
 
   return (
     <View
-      className={`rounded-full self-start flex-row items-center ${compact ? 'px-2.5 py-1' : 'px-3 py-1.5'}`}
+      className={`rounded-full self-start flex-row items-center gap-1.5 ${compact ? 'px-2.5 py-1' : 'px-3 py-1.5'}`}
       style={{ backgroundColor: 'rgba(168, 255, 0, 0.12)', borderWidth: 1, borderColor: accent }}
     >
+      <IconStreak size={compact ? 14 : 16} color={accent} active={alive} />
       <Text style={{ fontFamily: fontFamily.bodyBold, color: accent }} className="text-xs">
-        {icon} {streak.current_streak}-day streak
+        {streak.current_streak}-day streak
       </Text>
       {inGrace && streak.hours_until_grace_ends != null && (
         <Text style={{ fontFamily: fontFamily.body, color: colors.warning }} className="text-[10px] ml-2">
