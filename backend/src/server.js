@@ -458,6 +458,10 @@ function _renderWithMeta(res, templatePath, meta) {
   const ogType = meta.ogType || 'website';
   const block = [
     '<link rel="canonical" href="' + canonical + '">',
+    '<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png">',
+    '<link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png">',
+    '<link rel="icon" href="/favicon.ico">',
+    '<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">',
     '<meta property="og:type" content="' + ogType + '">',
     '<meta property="og:site_name" content="At The Park">',
     '<meta property="og:locale" content="en_US">',
