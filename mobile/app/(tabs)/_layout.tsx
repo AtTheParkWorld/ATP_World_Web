@@ -22,11 +22,11 @@ import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } fr
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import {
-  IconHome,
-  IconCalendar,
-  IconCommunity,
-  IconGift,
-  IconProfile,
+  IconTabHome,
+  IconTabSessions,
+  IconTabCommunity,
+  IconTabRewards,
+  IconTabProfile,
   type IconProps,
 } from '@/lib/components/icons';
 
@@ -104,35 +104,35 @@ export default function TabsLayout() {
         name="home"
         options={{
           title: 'Home',
-          tabBarIcon: ({ focused }) => <AnimatedTabIcon Component={IconHome} focused={focused} />,
+          tabBarIcon: ({ focused }) => <AnimatedTabIcon Component={IconTabHome} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="sessions"
         options={{
           title: 'Sessions',
-          tabBarIcon: ({ focused }) => <AnimatedTabIcon Component={IconCalendar} focused={focused} />,
+          tabBarIcon: ({ focused }) => <AnimatedTabIcon Component={IconTabSessions} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="community"
         options={{
           title: 'Community',
-          tabBarIcon: ({ focused }) => <AnimatedTabIcon Component={IconCommunity} focused={focused} />,
+          tabBarIcon: ({ focused }) => <AnimatedTabIcon Component={IconTabCommunity} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="rewards"
         options={{
           title: 'Rewards',
-          tabBarIcon: ({ focused }) => <AnimatedTabIcon Component={IconGift} focused={focused} />,
+          tabBarIcon: ({ focused }) => <AnimatedTabIcon Component={IconTabRewards} focused={focused} />,
         }}
       />
       <Tabs.Screen
         name="profile"
         options={{
           title: 'Profile',
-          tabBarIcon: ({ focused }) => <AnimatedTabIcon Component={IconProfile} focused={focused} />,
+          tabBarIcon: ({ focused }) => <AnimatedTabIcon Component={IconTabProfile} focused={focused} />,
         }}
       />
     </Tabs>

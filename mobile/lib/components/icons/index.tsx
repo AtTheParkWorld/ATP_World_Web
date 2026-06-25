@@ -51,6 +51,12 @@ export { IconShield }         from './IconShield';
 export { IconHome }           from './IconHome';
 export { IconCalendar }       from './IconCalendar';
 export { IconCommunity }      from './IconCommunity';
+// Tab-bar-specific marks (matching contact sheet NAVIGATION row)
+export { IconTabHome }        from './IconTabHome';
+export { IconTabSessions }    from './IconTabSessions';
+export { IconTabCommunity }   from './IconTabCommunity';
+export { IconTabRewards }     from './IconTabRewards';
+export { IconTabProfile }     from './IconTabProfile';
 
 export type { IconProps } from './types';
 
