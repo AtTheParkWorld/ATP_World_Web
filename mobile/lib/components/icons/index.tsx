@@ -51,12 +51,9 @@ export { IconShield }         from './IconShield';
 export { IconHome }           from './IconHome';
 export { IconCalendar }       from './IconCalendar';
 export { IconCommunity }      from './IconCommunity';
-// Tab-bar-specific marks (matching contact sheet NAVIGATION row)
-export { IconTabHome }        from './IconTabHome';
-export { IconTabSessions }    from './IconTabSessions';
-export { IconTabCommunity }   from './IconTabCommunity';
-export { IconTabRewards }     from './IconTabRewards';
-export { IconTabProfile }     from './IconTabProfile';
+// Tab-bar icons are now PNG assets (see assets/images/icon-tab-*.png),
+// rendered directly in app/(tabs)/_layout.tsx via <Image tintColor>.
+// The SVG IconTab* components have been retired.
 
 export type { IconProps } from './types';
 
