@@ -454,7 +454,7 @@ function _renderWithMeta(res, templatePath, meta) {
   const canonical = (process.env.FRONTEND_URL || 'https://www.atthepark.world').replace(/\/+$/, '') + meta.path;
   const title = _escMeta(meta.title || 'At The Park');
   const desc  = _escMeta(meta.description || '');
-  const img   = _escMeta(meta.image || ((process.env.FRONTEND_URL || 'https://www.atthepark.world') + '/og-default.jpg'));
+  const img   = _escMeta(meta.image || ((process.env.FRONTEND_URL || 'https://www.atthepark.world') + '/og-default.png'));
   const ogType = meta.ogType || 'website';
   const block = [
     '<link rel="canonical" href="' + canonical + '">',
