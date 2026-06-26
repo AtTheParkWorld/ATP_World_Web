@@ -18,19 +18,21 @@ import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } 
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getStreak, getStats } from '@/lib/api/members';
+import { getProfile, getStreak, getStats } from '@/lib/api/members';
 import { listMyBookings } from '@/lib/api/bookings';
 import { listSessions } from '@/lib/api/sessions';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { SessionCard } from '@/lib/components/SessionCard';
 import { StreakBadge } from '@/lib/components/StreakBadge';
+import { Avatar } from '@/lib/components/Avatar';
 import { Icon, type IconName } from '@/lib/components/icons';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 
 export default function Home() {
-  const member = useAuthStore((s) => s.member);
+  const member = useAuthStore((s) => s.member) as any;
   const qc     = useQueryClient();
 
+  const profileQ  = useQuery({ queryKey: ['profile'],   queryFn: () => getProfile().then(r => r.member) });
   const streakQ   = useQuery({ queryKey: ['streak'],    queryFn: () => getStreak().then(r => r.streak) });
   const statsQ    = useQuery({ queryKey: ['stats'],     queryFn: () => getStats().then(r => r.stats) });
   const bookingsQ = useQuery({ queryKey: ['my-bookings'], queryFn: () => listMyBookings().then(r => r.bookings) });
@@ -38,6 +40,7 @@ export default function Home() {
     queryKey: ['sessions', 'home-upcoming'],
     queryFn:  () => listSessions({ status: 'upcoming', limit: 8 }).then(r => r.sessions),
   });
+  const me = profileQ.data || member;
 
   const refreshing = streakQ.isFetching || statsQ.isFetching || bookingsQ.isFetching || sessionsQ.isFetching;
   const onRefresh  = useCallback(async () => {
@@ -63,18 +66,33 @@ export default function Home() {
         refreshControl={<RefreshControl tintColor={colors.green} refreshing={refreshing} onRefresh={onRefresh} />}
       >
         {/* Greeting */}
-        <View className="px-5 pt-4">
-          <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm">
-            Welcome back,
-          </Text>
-          <Text
-            style={{ fontFamily: fontFamily.displayBlack, color: colors.white }}
-            className="text-4xl uppercase tracking-tight mt-0.5"
-          >
-            {name}.
-          </Text>
-          <View className="mt-3">
-            <StreakBadge streak={streakQ.data || null} />
+        <View className="px-5 pt-4 flex-row items-center gap-4">
+          <Pressable onPress={() => router.push('/(tabs)/profile')}>
+            <Avatar
+              uri={me?.avatar_url}
+              firstName={me?.first_name}
+              lastName={me?.last_name}
+              id={me?.id}
+              size="lg"
+              borderColor={colors.green}
+              borderWidth={2}
+            />
+          </Pressable>
+          <View className="flex-1">
+            <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm">
+              Welcome back,
+            </Text>
+            <Text
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              style={{ fontFamily: fontFamily.displayBlack, color: colors.white }}
+              className="text-3xl uppercase tracking-tight mt-0.5"
+            >
+              {name}.
+            </Text>
+            <View className="mt-2">
+              <StreakBadge streak={streakQ.data || null} />
+            </View>
           </View>
         </View>
 

@@ -11,7 +11,8 @@
  * Home, Profile, Friends, Comments, DMs, Leaderboard. Pass a number
  * for an arbitrary size only when none of the presets fit.
  */
-import { Image, View, Text } from 'react-native';
+import { View, Text } from 'react-native';
+import { Image } from 'expo-image';
 import Svg, { Defs, LinearGradient, Stop, Circle } from 'react-native-svg';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
@@ -97,9 +98,17 @@ export function Avatar({
   };
 
   if (resolved) {
+    // expo-image handles cross-origin redirects (our /api/cms/media/:id
+    // 302s to a Cloudflare R2 URL) and caches transparently — RN's
+    // built-in Image sometimes drops the redirected response.
     return (
       <View style={wrapStyle}>
-        <Image source={{ uri: resolved }} style={{ width: px, height: px }} />
+        <Image
+          source={{ uri: resolved }}
+          style={{ width: px, height: px }}
+          contentFit="cover"
+          transition={120}
+        />
       </View>
     );
   }
