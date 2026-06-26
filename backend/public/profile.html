@@ -654,19 +654,8 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
     <button onclick="cancelDeletion()" style="background:#A8FF00;color:#0a0a0a;border:none;padding:10px 20px;border-radius:8px;font-weight:800;font-size:13px;letter-spacing:.04em;cursor:pointer">Keep my account</button>
   </div>
 
-  <!-- Pick-your-tribe nudge (R-TR-005 / OQ-16). Populated by
-       loadTribeNudge() — shows only when the current member has no
-       tribe_id set. CTA opens the Edit Profile tab + scrolls to the
-       tribe selector. Closes when the member picks a tribe and saves. -->
-  <div id="tribeNudge" style="display:none;max-width:1200px;margin:0 auto 20px;padding:16px 24px;background:linear-gradient(90deg,rgba(168,255,0,.12),rgba(96,165,250,.08));border:1px solid rgba(168,255,0,.35);border-radius:12px;align-items:center;gap:16px;flex-wrap:wrap">
-    <div style="font-size:24px">🎽</div>
-    <div style="flex:1;min-width:240px">
-      <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:3px">Pick your tribe</div>
-      <div style="font-size:12px;color:#ddd;line-height:1.55">Better, Faster, or Stronger? Tribes power your community feed, leaderboard, and identity across ATP. Takes 5 seconds.</div>
-    </div>
-    <button onclick="openTribePicker()" style="background:#A8FF00;color:#0a0a0a;border:none;padding:10px 20px;border-radius:8px;font-weight:800;font-size:13px;letter-spacing:.04em;cursor:pointer">Pick a tribe →</button>
-    <button onclick="dismissTribeNudge()" style="background:none;color:#888;border:none;padding:6px 8px;font-size:12px;cursor:pointer" title="Dismiss for this session">×</button>
-  </div>
+  <!-- Pick-your-tribe nudge was here; moved BELOW the completion bar
+       so the floating profile-avatar no longer overlaps it. -->
 
   <!-- HERO -->
   <div class="profile-hero">
@@ -765,6 +754,22 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
         <div id="completionBar" style="height:100%;width:0;background:linear-gradient(90deg,var(--green),#C6FF55);border-radius:6px;transition:width .6s cubic-bezier(.4,0,.2,1)"></div>
       </div>
     </div>
+  </div>
+
+  <!-- Pick-your-tribe nudge (R-TR-005 / OQ-16). Populated by
+       loadTribeNudge() — shows only when the current member has no
+       tribe_id set. CTA opens the Edit Profile tab + scrolls to the
+       tribe selector. Closes when the member picks a tribe and saves.
+       Lives here (BELOW completion bar, ABOVE role banner) so the
+       floating profile-avatar never overlaps it. -->
+  <div id="tribeNudge" style="display:none;max-width:1200px;margin:0 auto 14px;padding:16px 24px;background:linear-gradient(90deg,rgba(168,255,0,.12),rgba(96,165,250,.08));border:1px solid rgba(168,255,0,.35);border-radius:12px;align-items:center;gap:16px;flex-wrap:wrap">
+    <div style="font-size:24px">🎽</div>
+    <div style="flex:1;min-width:240px">
+      <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:3px">Pick your tribe</div>
+      <div style="font-size:12px;color:#ddd;line-height:1.55">Better, Faster, or Stronger? Tribes power your community feed, leaderboard, and identity across ATP. Takes 5 seconds.</div>
+    </div>
+    <button onclick="openTribePicker()" style="background:#A8FF00;color:#0a0a0a;border:none;padding:10px 20px;border-radius:8px;font-weight:800;font-size:13px;letter-spacing:.04em;cursor:pointer">Pick a tribe →</button>
+    <button onclick="dismissTribeNudge()" style="background:none;color:#888;border:none;padding:6px 8px;font-size:12px;cursor:pointer" title="Dismiss for this session">×</button>
   </div>
 
   <!-- ROLE BANNER — different content based on member's role tier -->
