@@ -49,7 +49,7 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .nav-actions{display:flex;align-items:center;gap:12px}
 .btn-ghost{font-size:13px;font-weight:600;color:var(--white);border:1px solid rgba(255,255,255,.2);padding:9px 20px;border-radius:var(--radius);background:transparent;transition:border-color .2s}
 .btn-ghost:hover{border-color:var(--white)}
-.btn-primary{font-size:13px;font-weight:700;background:var(--green);color:var(--white);padding:10px 22px;border-radius:var(--radius);border:none;letter-spacing:.03em;transition:background .2s,transform .15s}
+.btn-primary{font-size:13px;font-weight:700;background:var(--green);color:var(--black);padding:10px 22px;border-radius:var(--radius);border:none;letter-spacing:.03em;transition:background .2s,transform .15s}
 .btn-primary:hover{background:var(--green-dark);transform:translateY(-1px)}
 .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
 .hamburger span{display:block;width:22px;height:2px;background:var(--white);border-radius:2px}
@@ -79,7 +79,7 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .hero-sub{font-size:17px;line-height:1.7;color:var(--light);max-width:400px;margin-bottom:40px;font-weight:300}
 .hero-sub strong{color:var(--white);font-weight:600}
 .hero-cta-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.btn-hero{font-size:15px;font-weight:700;background:var(--green);color:var(--white);padding:16px 36px;border-radius:var(--radius);border:none;letter-spacing:.02em;transition:background .2s,transform .15s;display:inline-flex;align-items:center;gap:8px}
+.btn-hero{font-size:15px;font-weight:700;background:var(--green);color:var(--black);padding:16px 36px;border-radius:var(--radius);border:none;letter-spacing:.02em;transition:background .2s,transform .15s;display:inline-flex;align-items:center;gap:8px}
 .btn-hero:hover{background:var(--green-dark);transform:translateY(-2px)}
 /* Right column is now decoration-only — green frame + live label sit
    above the full-section video. No background colour because the video
@@ -109,8 +109,8 @@ button{cursor:pointer;font-family:var(--ff-body)}
 /* TRUST TICKER */
 .trust-bar{background:var(--green);padding:13px 0;overflow:hidden}
 .trust-ticker{display:flex;gap:60px;animation:ticker 22s linear infinite;white-space:nowrap}
-.trust-ticker-item{display:flex;align-items:center;gap:12px;font-family:var(--ff-display);font-size:14px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--white);flex-shrink:0}
-.trust-ticker-item::before{content:'';display:block;width:5px;height:5px;background:rgba(255,255,255,.5);border-radius:50%}
+.trust-ticker-item{display:flex;align-items:center;gap:12px;font-family:var(--ff-display);font-size:14px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--black);flex-shrink:0}
+.trust-ticker-item::before{content:'';display:block;width:5px;height:5px;background:rgba(0,0,0,.5);border-radius:50%}
 @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
 /* STORY */
@@ -120,8 +120,8 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .story-img-box::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)}
 .img-ph{font-size:11px;color:#333;letter-spacing:.08em;text-transform:uppercase;text-align:center;line-height:1.8}
 .story-badge{position:absolute;bottom:0;right:-18px;transform:translateY(50%);width:100px;height:100px;background:var(--green);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;z-index:3;border:3px solid var(--dark2)}
-.story-badge-num{font-family:var(--ff-display);font-size:32px;font-weight:900;color:var(--white);line-height:1}
-.story-badge-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.85);letter-spacing:.06em;text-transform:uppercase}
+.story-badge-num{font-family:var(--ff-display);font-size:32px;font-weight:900;color:var(--black);line-height:1}
+.story-badge-label{font-size:10px;font-weight:700;color:rgba(0,0,0,.78);letter-spacing:.06em;text-transform:uppercase}
 .section-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:12px;display:flex;align-items:center;gap:10px}
 .section-label::before{content:'';display:block;width:20px;height:2px;background:var(--green)}
 .story-h2{font-family:var(--ff-display);font-size:clamp(40px,4.5vw,58px);font-weight:900;line-height:.95;letter-spacing:-.01em;text-transform:uppercase;margin-bottom:24px}

@@ -1415,3 +1415,20 @@ img, video {
   }
   #nav .nav-inner { gap: 10px; }
 }
+
+/* ============================================================
+   ║  A11Y — White text on lime-green fails WCAG-AA contrast.
+   ║  Any element that uses ATP green as its background must
+   ║  render its label in deep black instead. Defensive, sitewide.
+   ║  Single source of truth — overrides per-page inline styles.
+   ============================================================ */
+.btn-primary, .btn-hero, .btn-hero-sec, .btn-cta, .btn-green,
+.auth-submit, .modal-submit, .checkout-btn, .pf-btn-primary,
+.cart-count-badge, .product-tag-overlay, .nav-avatar,
+.trust-ticker-item, .story-closing-cta,
+.story-badge-num, .story-badge-label {
+  color: var(--black, #0a0a0a) !important;
+}
+.trust-ticker-item::before {
+  background: rgba(0,0,0,0.5) !important;
+}
