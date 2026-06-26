@@ -50,18 +50,16 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .hamburger span{display:block;width:22px;height:2px;background:var(--white);border-radius:2px}
 
 /* PAGE HERO */
-.page-hero{padding:calc(var(--nav-h) + 64px) 40px 60px;background:var(--dark2);border-bottom:1px solid rgba(255,255,255,.06);position:relative;overflow:hidden}
+/* PAGE HERO — compact (was 1/4 the height per founder 2026-06-27).
+   The stats strip (.page-hero-stats) has been removed entirely.    */
+.page-hero{padding:calc(var(--nav-h) + 16px) 40px 18px;background:var(--dark2);border-bottom:1px solid rgba(255,255,255,.06);position:relative;overflow:hidden}
 .page-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--green)}
-.page-hero-inner{max-width:var(--max);margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:end}
-.page-hero-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:14px;display:flex;align-items:center;gap:10px}
-.page-hero-label::before{content:'';display:block;width:20px;height:2px;background:var(--green)}
-.page-hero h1{font-family:var(--ff-display);font-size:clamp(52px,6vw,80px);font-weight:900;line-height:.92;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:16px}
+.page-hero-inner{max-width:var(--max);margin:0 auto;display:flex;flex-direction:column;gap:6px}
+.page-hero-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.page-hero-label::before{content:'';display:block;width:18px;height:2px;background:var(--green)}
+.page-hero h1{font-family:var(--ff-display);font-size:clamp(26px,3.4vw,40px);font-weight:900;line-height:.95;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:4px}
 .page-hero h1 .acc{color:var(--green)}
-.page-hero-sub{font-size:16px;color:var(--light);line-height:1.65;font-weight:300;max-width:480px}
-.page-hero-stats{display:flex;gap:32px;flex-shrink:0}
-.ph-stat{text-align:right}
-.ph-stat-num{font-family:var(--ff-display);font-size:38px;font-weight:900;color:var(--green);line-height:1}
-.ph-stat-label{font-size:12px;color:var(--muted);margin-top:3px}
+.page-hero-sub{font-size:13px;color:var(--light);line-height:1.45;font-weight:300;max-width:560px}
 
 /* REVEAL */
 .reveal{opacity:0;transform:translateY(22px);transition:opacity .6s,transform .6s}
@@ -88,7 +86,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 
 /* RESPONSIVE */
 @media(max-width:1100px){.footer-top{grid-template-columns:1fr 1fr}}
-@media(max-width:900px){.nav-links{display:none}.hamburger{display:flex}.page-hero-inner{grid-template-columns:1fr}.page-hero-stats{display:none}}
+@media(max-width:900px){.nav-links{display:none}.hamburger{display:flex}}
 @media(max-width:560px){.page-hero h1{font-size:clamp(40px,12vw,56px)}.page-hero-sub{font-size:15px}}
 @media(max-width:600px){.footer-top{grid-template-columns:1fr;gap:28px}}
 
@@ -443,7 +441,12 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 }
 
 .cal-day{
-  position:relative;min-height:108px;padding:9px 9px 10px;
+  position:relative;
+  /* Fit the whole month on screen: 6 rows + headers should sit inside
+     the viewport. We aim for (viewport - chrome) / 6, clamped so the
+     cell never collapses below 70px or stretches past 130px. */
+  min-height:clamp(70px, calc((100vh - 340px) / 6), 130px);
+  padding:7px 8px 8px;
   background:var(--dark2);border:1px solid rgba(255,255,255,.04);border-radius:12px;
   cursor:default;transition:transform .2s ease, border-color .25s, box-shadow .25s, background .25s;
   display:flex;flex-direction:column;gap:4px;
@@ -525,6 +528,55 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 .cal-sessions-grid{display:none}
 .cal-sessions-grid.visible{display:grid}
 
+/* ── HOVER POPOVER ─────────────────────────────────────────────
+   Hovering a day with sessions expands a card showing the full
+   list (not just the 2 visible dots).  Pure-CSS reveal; the
+   click handler on .cal-session-dot already opens the modal,
+   so each row inside the popover is selectable.            */
+.cal-day.has-session{z-index:1}
+.cal-day.has-session:hover{z-index:60}
+.cal-popover{
+  position:absolute;left:50%;top:calc(100% + 6px);
+  transform:translateX(-50%) translateY(-4px) scale(.97);
+  min-width:260px;max-width:320px;
+  background:var(--dark);border:1px solid rgba(168,255,0,.4);
+  border-radius:12px;padding:12px;
+  box-shadow:0 22px 44px -14px rgba(0,0,0,.75), 0 0 0 1px rgba(0,0,0,.4);
+  opacity:0;pointer-events:none;
+  transition:opacity .16s ease, transform .16s ease;
+  display:flex;flex-direction:column;gap:6px;
+}
+.cal-day.has-session:hover .cal-popover{
+  opacity:1;pointer-events:auto;
+  transform:translateX(-50%) translateY(0) scale(1);
+}
+/* Bottom rows flip the popover above so it doesn't get clipped */
+.cal-day.flip-up .cal-popover{
+  top:auto;bottom:calc(100% + 6px);
+  transform:translateX(-50%) translateY(4px) scale(.97);
+}
+.cal-day.flip-up.has-session:hover .cal-popover{
+  transform:translateX(-50%) translateY(0) scale(1);
+}
+/* Edge columns slide horizontally so the popover stays in viewport */
+.cal-day.flip-left .cal-popover{left:auto;right:0;transform:translateX(0) translateY(-4px) scale(.97)}
+.cal-day.flip-left.has-session:hover .cal-popover{transform:translateX(0) translateY(0) scale(1)}
+.cal-day.flip-right .cal-popover{left:0;transform:translateX(0) translateY(-4px) scale(.97)}
+.cal-day.flip-right.has-session:hover .cal-popover{transform:translateX(0) translateY(0) scale(1)}
+
+.cal-popover-header{
+  font-family:var(--ff-display);font-size:11px;font-weight:800;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--green);
+  padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08);
+}
+.cal-popover .cal-session-dot{
+  font-size:12px;padding:6px 10px;white-space:normal;text-overflow:clip;
+}
+.cal-popover .cal-session-dot .cps-meta{
+  display:block;font-size:10px;font-weight:600;opacity:.78;margin-top:2px;
+  letter-spacing:.02em;text-transform:none;
+}
+
 
 
 @media(max-width:900px){.cal-grid{font-size:11px}.cal-day{min-height:64px}}
@@ -558,11 +610,6 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
         <h1>Find your<br><span class="acc">free session</span></h1>
         <p class="page-hero-sub">12 sessions this week across Dubai, Al Ain and Muscat. Every session is free — always has been, always will be.</p>
       </div>
-      <div class="page-hero-stats">
-        <div class="ph-stat"><div class="ph-stat-num">19</div><div class="ph-stat-label">Activities</div></div>
-        <div class="ph-stat"><div class="ph-stat-num">21</div><div class="ph-stat-label">Coaches</div></div>
-        <div class="ph-stat"><div class="ph-stat-num">AED 0</div><div class="ph-stat-label">Always</div></div>
-      </div>
     </div>
   </section>
 
@@ -580,12 +627,12 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
     <div class="sessions-toolbar">
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <p class="sessions-count"><strong id="sessionCount">12</strong> sessions this week</p>
-        <div class="view-toggle" data-active="list">
-          <button class="view-btn active" id="listViewBtn" data-atp-call="setView" data-args='["list"]'>
+        <div class="view-toggle" data-active="calendar">
+          <button class="view-btn" id="listViewBtn" data-atp-call="setView" data-args='["list"]'>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/></svg>
             List
           </button>
-          <button class="view-btn" id="calViewBtn" data-atp-call="setView" data-args='["calendar"]'>
+          <button class="view-btn active" id="calViewBtn" data-atp-call="setView" data-args='["calendar"]'>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="12" height="11" rx="2"/><line x1="5" y1="1" x2="5" y2="5"/><line x1="11" y1="1" x2="11" y2="5"/><line x1="2" y1="7" x2="14" y2="7"/></svg>
             Calendar
           </button>
@@ -1675,45 +1722,77 @@ function renderCalendar() {
     byDate[k].sort(function(a,b){ return new Date(a.scheduled_at) - new Date(b.scheduled_at); });
   });
 
+  // Helper — build a .cal-session-dot for any context (compact in-cell
+  // OR expanded inside the hover popover).
+  function _buildDot(s, dayName, expanded) {
+    var time  = formatSessionTime(s.scheduled_at);
+    var tribe = s.tribe_slug || '';
+    var coach = s.coach_name || 'ATP Coach';
+    var nm    = s.name || 'Session';
+    var loc   = s.location || '';
+    var safeNm = nm.replace(/"/g,'&quot;');
+    var safeLoc = loc.replace(/"/g,'&quot;');
+    var safeCoach = String(coach).replace(/"/g,'&quot;');
+    var label = expanded
+      ? escapeHtml(time + ' · ' + nm)
+        + '<span class="cps-meta">' + escapeHtml(coach) + (loc ? ' · ' + escapeHtml(loc) : '') + '</span>'
+      : escapeHtml(time + ' ' + nm);
+    return '<div class="cal-session-dot '+tribe+'" '
+      + 'data-id="'+String(s.id).replace(/"/g,'&quot;')+'" '
+      + 'data-name="'+safeNm+'" '
+      + 'data-tribe="'+tribe+'" '
+      + 'data-daytime="'+dayName+' &middot; '+time+'" '
+      + 'data-coach="'+safeCoach+'" '
+      + 'data-loc="'+safeLoc+'" '
+      + 'data-day="'+dayName+'" '
+      + 'data-time="'+time+'">'
+      + label + '</div>';
+  }
+
   // Days of this month
   var DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var FULL_MONTHS = MONTHS;
   for(var d=1; d<=daysInMonth; d++) {
     var cellDate = new Date(year, month, d);
     var dow    = cellDate.getDay();
+    var dayName = DAY_NAMES[dow];
     var isToday = (today.getDate()===d && today.getMonth()===month && today.getFullYear()===year);
     var daySessions = byDate[_calDateKey(cellDate)] || [];
-    var cls = 'cal-day' + (isToday?' today':'') + (daySessions.length>0?' has-session':'');
+
+    // Cell position → flip classes so the hover popover stays inside
+    // the viewport (last two rows → flip up; edge columns → flip
+    // horizontally so the card doesn't clip off-screen).
+    var cellIndex   = firstDay + (d - 1);
+    var rowIndex    = Math.floor(cellIndex / 7);
+    var totalRows   = Math.ceil((firstDay + daysInMonth) / 7);
+    var flips = '';
+    if (rowIndex >= totalRows - 2) flips += ' flip-up';
+    if (dow === 0)                 flips += ' flip-right';
+    if (dow === 6)                 flips += ' flip-left';
+
+    var cls = 'cal-day' + (isToday?' today':'') + (daySessions.length>0?' has-session':'') + flips;
     var dots = '';
     var maxShow = 2;
-    daySessions.slice(0, maxShow).forEach(function(s) {
-      var dayName = DAY_NAMES[dow];
-      var time  = formatSessionTime(s.scheduled_at);
-      var tribe = s.tribe_slug || '';
-      var coach = s.coach_name || 'ATP Coach';
-      var nm    = s.name || 'Session';
-      var loc   = s.location || '';
-      // Build onclick as a data attribute to avoid quoting hell
-      var dotEl = '<div class="cal-session-dot '+tribe+'" '
-        + 'data-id="'+String(s.id).replace(/"/g,'&quot;')+'" '
-        + 'data-name="'+nm.replace(/"/g,'&quot;')+'" '
-        + 'data-tribe="'+tribe+'" '
-        + 'data-daytime="'+dayName+' &middot; '+time+'" '
-        + 'data-coach="'+String(coach).replace(/"/g,'&quot;')+'" '
-        + 'data-loc="'+loc.replace(/"/g,'&quot;')+'" '
-        + 'data-day="'+dayName+'" '
-        + 'data-time="'+time+'">'
-        + escapeHtml(time + ' ' + nm) + '</div>';
-      dots += dotEl;
-    });
+    daySessions.slice(0, maxShow).forEach(function(s){ dots += _buildDot(s, dayName, false); });
     if(daySessions.length > maxShow) {
       dots += '<div class="cal-more">+' + (daySessions.length - maxShow) + ' more</div>';
+    }
+    // Full-day popover (only when there's at least one session).
+    var popover = '';
+    if (daySessions.length > 0) {
+      var dayLabel = dayName + ' · ' + FULL_MONTHS[month] + ' ' + d;
+      var rows = daySessions.map(function(s){ return _buildDot(s, dayName, true); }).join('');
+      popover = '<div class="cal-popover">'
+        + '<div class="cal-popover-header">' + escapeHtml(dayLabel) + ' — ' + daySessions.length + ' session' + (daySessions.length === 1 ? '' : 's') + '</div>'
+        + rows
+        + '</div>';
     }
     // Count badge top-right when the day has sessions (hidden on today
     // — the TODAY pill takes that slot).
     var countBadge = daySessions.length > 0
       ? '<span class="cal-day-count">' + daySessions.length + '</span>'
       : '';
-    html += '<div class="'+cls+'"><div class="cal-day-num">'+d+'</div>'+countBadge+dots+'</div>';
+    html += '<div class="'+cls+'"><div class="cal-day-num">'+d+'</div>'+countBadge+dots+popover+'</div>';
   }
 
   // Trailing empty cells
@@ -2161,6 +2240,10 @@ async function loadSessions() {
     }).catch(function() {});
   }
   loadSessions();
+  // Calendar is the default landing view per founder (2026-06-27).
+  // setView() is safe to call before loadSessions() resolves — it just
+  // toggles visibility; the renderer fires when data lands.
+  try { setView('calendar'); } catch (_) {}
 })();
 
 </script>
