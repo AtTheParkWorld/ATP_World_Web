@@ -13,8 +13,10 @@ import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, Tex
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getProfile, patchProfile } from '@/lib/api/members';
+import { getProfile, patchProfile, patchAvatar } from '@/lib/api/members';
+import { pickAndUploadMedia } from '@/lib/api/upload';
 import { useAuthStore } from '@/lib/stores/auth.store';
+import { Avatar } from '@/lib/components/Avatar';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 
 export default function EditProfile() {
@@ -49,6 +51,25 @@ export default function EditProfile() {
       padel_level:   profileQ.data.padel_level   || '',
     });
   }, [profileQ.data]);
+
+  const avatarMu = useMutation({
+    mutationFn: async () => {
+      const picked = await pickAndUploadMedia({ kind: 'avatar' });
+      if (!picked) return null;
+      if (!picked.content_type.startsWith('image/')) {
+        throw new Error('Please pick an image (not a video) for your profile photo.');
+      }
+      await patchAvatar(picked.public_url);
+      return picked.public_url;
+    },
+    onSuccess: async (url) => {
+      if (!url) return;
+      await qc.invalidateQueries({ queryKey: ['profile'] });
+      const refreshed = await getProfile().then(r => r.member);
+      updateMember(refreshed as any);
+    },
+    onError: (err) => Alert.alert('Could not update photo', (err as Error).message || 'Try again.'),
+  });
 
   const saveMu = useMutation({
     mutationFn: () => patchProfile({
@@ -93,6 +114,33 @@ export default function EditProfile() {
         </View>
 
         <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
+          {/* Avatar — tap to swap */}
+          <View className="items-center mb-7">
+            <Pressable onPress={() => avatarMu.mutate()} disabled={avatarMu.isPending}>
+              <Avatar
+                uri={profileQ.data?.avatar_url}
+                firstName={profileQ.data?.first_name}
+                lastName={profileQ.data?.last_name}
+                id={profileQ.data?.id}
+                size="xl"
+                borderColor={colors.green}
+                borderWidth={2}
+              />
+            </Pressable>
+            <Pressable
+              onPress={() => avatarMu.mutate()}
+              disabled={avatarMu.isPending}
+              className="mt-3 px-4 py-2 rounded-atp border border-atp-green/40 bg-atp-green/10 active:opacity-70"
+            >
+              <Text
+                style={{ fontFamily: fontFamily.bodyBold, color: colors.green, letterSpacing: 1 }}
+                className="text-xs uppercase"
+              >
+                {avatarMu.isPending ? 'Uploading…' : (profileQ.data?.avatar_url ? 'Change photo' : 'Add photo')}
+              </Text>
+            </Pressable>
+          </View>
+
           <Field label="First name"  value={form.first_name}    onChange={(v) => setForm((f) => ({ ...f, first_name: v }))} autoCapitalize="words" textContentType="givenName" />
           <Field label="Last name"   value={form.last_name}     onChange={(v) => setForm((f) => ({ ...f, last_name: v }))}  autoCapitalize="words" textContentType="familyName" />
           <Field label="Phone"       value={form.phone}         onChange={(v) => setForm((f) => ({ ...f, phone: v }))}      keyboardType="phone-pad" textContentType="telephoneNumber" />

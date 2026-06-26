@@ -11,10 +11,16 @@
  */
 import { Image, Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { Video, ResizeMode } from 'expo-av';
 import type { Post } from '@/lib/api/community';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
 import { Avatar } from '@/lib/components/Avatar';
+
+function isVideoMedia(m: { src: string; type?: string }): boolean {
+  if (m.type === 'video') return true;
+  return /\.(mp4|mov|m4v|webm)(\?|$)/i.test(m.src);
+}
 
 function timeAgo(iso: string): string {
   const s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
@@ -91,14 +97,25 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
         </Text>
       )}
 
-      {/* Media (first only) — backend serves the URL under `src` */}
+      {/* Media (first only) — backend serves URL under `src`. Detect
+          video vs image by `type` first, then by file extension. */}
       {!!post.media && post.media.length > 0 && !!post.media[0]?.src && (
-        <Image
-          source={{ uri: absUrl(post.media[0].src)! }}
-          className="w-full mt-3 rounded-atp"
-          style={{ aspectRatio: 4 / 3 }}
-          resizeMode="cover"
-        />
+        isVideoMedia(post.media[0]) ? (
+          <Video
+            source={{ uri: absUrl(post.media[0].src)! }}
+            style={{ width: '100%', aspectRatio: 4 / 3, marginTop: 12, borderRadius: 14, backgroundColor: '#000' }}
+            useNativeControls
+            resizeMode={ResizeMode.COVER}
+            isLooping={false}
+          />
+        ) : (
+          <Image
+            source={{ uri: absUrl(post.media[0].src)! }}
+            className="w-full mt-3 rounded-atp"
+            style={{ aspectRatio: 4 / 3 }}
+            resizeMode="cover"
+          />
+        )
       )}
 
       {/* Footer */}
