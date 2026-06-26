@@ -88,7 +88,6 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .hero-right{position:relative;overflow:hidden;background:transparent;z-index:2}
 .hero-img-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
 .hero-img-placeholder .img-note{font-size:11px;color:#444;letter-spacing:.08em;text-transform:uppercase;text-align:center;line-height:1.8;max-width:200px}
-.hero-right::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:4px;background:var(--green);z-index:3}
 /* Vertical column-divider stripe removed per founder request — the
    full-section video reads better without a hard line through the middle. */
 /* HERO MEMBER COUNTER — "We are XXXX ATP Members". Hydrates live
@@ -168,11 +167,11 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .tribe-card:hover{background:var(--dark3)}
 .tribe-card:hover::before{transform:scaleX(1)}
 .tribe-card.featured{background:var(--green)}
-.tribe-card.featured .tribe-name,.tribe-card.featured .tribe-count,.tribe-card.featured .tribe-desc,.tribe-card.featured .tribe-next{color:var(--white)}
-.tribe-card.featured .tribe-divider{background:rgba(255,255,255,.2)}
-.tribe-card.featured .tribe-activities li{color:rgba(255,255,255,.85);border-bottom-color:rgba(255,255,255,.12)}
-.tribe-card.featured .tribe-activities li::before{background:rgba(255,255,255,.6)}
-.tribe-card.featured .tribe-tag{color:rgba(255,255,255,.6)}
+.tribe-card.featured .tribe-name,.tribe-card.featured .tribe-count,.tribe-card.featured .tribe-desc,.tribe-card.featured .tribe-next{color:var(--black)}
+.tribe-card.featured .tribe-divider{background:rgba(0,0,0,.22)}
+.tribe-card.featured .tribe-activities li{color:rgba(0,0,0,.82);border-bottom-color:rgba(0,0,0,.14)}
+.tribe-card.featured .tribe-activities li::before{background:rgba(0,0,0,.55)}
+.tribe-card.featured .tribe-tag{color:rgba(0,0,0,.6)}
 .tribe-card.featured::before{display:none}
 .tribe-tag{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
 .tribe-name{font-family:var(--ff-display);font-size:48px;font-weight:900;line-height:.9;text-transform:uppercase;color:var(--white);margin-bottom:8px}
