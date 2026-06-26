@@ -1625,13 +1625,22 @@ function renderAuthNav(user) {
 
 // ── Log out ──────────────────────────────────────────────────
 function logOut() {
-  authClearUser();
-  var actions = document.querySelector('.nav-actions');
-  if(actions) {
-    actions.innerHTML =
-      '<button class="btn-ghost" onclick="openAuth(\'login\')">Log in</button>' +
-      '<button class="btn-primary" onclick="openAuth(\'signup\')">Join free →</button>';
+  // See index.html — must wipe both current AND legacy auth keys so
+  // the bundle's migrate() step can't lift a stale JWT back on the
+  // next page load.
+  try {
+    localStorage.removeItem('atp_token');
+    localStorage.removeItem('atp_member');
+    localStorage.removeItem('atp:jwt');
+    localStorage.removeItem('atp:user');
+    localStorage.removeItem('atp:ambassador');
+  } catch (_) {}
+  try { authClearUser(); } catch (_) {}
+  if (window.ATP && window.ATP.auth && window.ATP.auth.logout) {
+    try { window.ATP.auth.logout(); } catch (_) {}
   }
+  try { window.dispatchEvent(new Event('atp:logout')); } catch (_) {}
+  window.location.replace('index.html');
 }
 
 // ── Guard: require auth before booking ───────────────────────

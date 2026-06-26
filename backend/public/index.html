@@ -1208,8 +1208,29 @@ function renderAuthNav(user) {
 }
 
 // ── Log out ──────────────────────────────────────────────────
+// Critical: must wipe BOTH the current auth keys (atp_token /
+// atp_member) AND the legacy keys (atp:jwt / atp:user) the bundle's
+// migrate() step would otherwise lift back on the next page load.
+// Pre-2026-06-27 this only cleared the in-memory mirror, so the
+// JWT survived in localStorage — the next "Log in" click then saw
+// isLoggedIn()=true and silently no-op'd the modal.
 function logOut() {
-  authClearUser();
+  try {
+    localStorage.removeItem('atp_token');
+    localStorage.removeItem('atp_member');
+    localStorage.removeItem('atp:jwt');
+    localStorage.removeItem('atp:user');
+    localStorage.removeItem('atp:ambassador');
+  } catch (_) {}
+  try { authClearUser(); } catch (_) {}
+  // Best-effort backend invalidate. Don't block the UI on the round-trip.
+  if (window.ATP && window.ATP.auth && window.ATP.auth.logout) {
+    try { window.ATP.auth.logout(); } catch (_) {}
+  }
+  try { window.dispatchEvent(new Event('atp:logout')); } catch (_) {}
+  // Immediate nav rebuild so the Log in / Join free buttons appear
+  // without waiting for the round-trip.
+  try { if (typeof renderAuthNav === 'function') renderAuthNav(null); } catch (_) {}
   var actions = document.querySelector('.nav-actions');
   if(actions) {
     actions.innerHTML =

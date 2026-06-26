@@ -6820,15 +6820,21 @@ function renderAuthNav(user) {
 
 // ── Log out ──────────────────────────────────────────────────
 function logOut() {
-  // Clear legacy auth-modal state
-  try { authClearUser(); } catch(e){}
-  // Clear real JWT + cached member
-  localStorage.removeItem('atp_token');
-  localStorage.removeItem('atp_member');
-  // Best-effort server logout (fire and forget)
+  // Clear current + legacy auth keys before anything else, so even if
+  // the backend POST fails or the bundle's migrate() runs again, no
+  // stale token can be lifted back.
+  try {
+    localStorage.removeItem('atp_token');
+    localStorage.removeItem('atp_member');
+    localStorage.removeItem('atp:jwt');
+    localStorage.removeItem('atp:user');
+    localStorage.removeItem('atp:ambassador');
+  } catch (_) {}
+  try { authClearUser(); } catch (_) {}
   if (window.ATP && window.ATP.auth && window.ATP.auth.logout) {
-    try { window.ATP.auth.logout(); } catch(e){}
+    try { window.ATP.auth.logout(); } catch (_) {}
   }
+  try { window.dispatchEvent(new Event('atp:logout')); } catch (_) {}
   window.location.replace('index.html');
 }
 
