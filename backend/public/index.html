@@ -81,9 +81,6 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .hero-cta-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
 .btn-hero{font-size:15px;font-weight:700;background:var(--green);color:var(--white);padding:16px 36px;border-radius:var(--radius);border:none;letter-spacing:.02em;transition:background .2s,transform .15s;display:inline-flex;align-items:center;gap:8px}
 .btn-hero:hover{background:var(--green-dark);transform:translateY(-2px)}
-.btn-hero-sec{font-size:14px;font-weight:500;color:var(--light);display:inline-flex;align-items:center;gap:6px;border:none;background:none;transition:color .2s}
-.btn-hero-sec:hover{color:var(--white)}
-.btn-hero-sec span{text-decoration:underline;text-underline-offset:3px}
 /* Right column is now decoration-only — green frame + live label sit
    above the full-section video. No background colour because the video
    shows through; no border-left because the green ::before stripe
@@ -94,23 +91,17 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .hero-right::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:4px;background:var(--green);z-index:3}
 /* Vertical column-divider stripe removed per founder request — the
    full-section video reads better without a hard line through the middle. */
-/* LIVE MEMBER COUNTER */
-.live-counter{display:inline-flex;align-items:center;gap:12px;margin-bottom:28px}
-.lc-pulse{position:relative;width:10px;height:10px;flex-shrink:0}
-.lc-pulse-dot{position:absolute;inset:0;background:var(--green);border-radius:50%}
-.lc-pulse-ring{position:absolute;inset:-4px;border:2px solid var(--green);border-radius:50%;animation:ring-out 2s ease-out infinite;opacity:0}
+/* HERO MEMBER COUNTER — "We are XXXX ATP Members". Hydrates live
+   from /api/stats/public via the generic [data-stat] hydrator. Sized
+   to carry the social-proof weight that the removed 4-stat strip
+   used to provide. */
+.member-counter{display:inline-flex;align-items:baseline;gap:10px 14px;flex-wrap:wrap;margin-bottom:28px;font-family:var(--ff-display);text-transform:uppercase;letter-spacing:.02em;line-height:1}
+.mc-prefix,.mc-suffix{font-size:clamp(20px,2.4vw,28px);font-weight:800;color:var(--white)}
+.mc-num{font-size:clamp(44px,6.5vw,80px);font-weight:900;color:var(--green);letter-spacing:-.02em;line-height:.9;font-feature-settings:"tnum";font-variant-numeric:tabular-nums}
+.mc-pulse{position:relative;width:10px;height:10px;display:inline-block;align-self:center;margin-left:4px}
+.mc-pulse-dot{position:absolute;inset:0;background:var(--green);border-radius:50%}
+.mc-pulse-ring{position:absolute;inset:-4px;border:2px solid var(--green);border-radius:50%;animation:ring-out 2s ease-out infinite;opacity:0}
 @keyframes ring-out{0%{transform:scale(.5);opacity:.8}100%{transform:scale(2.2);opacity:0}}
-.lc-text{font-family:var(--ff-display);font-size:clamp(18px,2vw,24px);font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:var(--white);line-height:1}
-.lc-text strong{color:var(--green)}
-.lc-divider{width:1px;height:24px;background:rgba(255,255,255,.15);flex-shrink:0}
-.lc-sub{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);line-height:1.4}
-
-
-.hero-stats{display:flex;gap:0;margin-top:56px;padding-top:36px;border-top:1px solid rgba(255,255,255,.1)}
-.stat{flex:1;padding-right:20px;border-right:1px solid rgba(255,255,255,.1);margin-right:20px}
-.stat:last-child{border-right:none;margin-right:0;padding-right:0}
-.stat-num{font-family:var(--ff-display);font-size:40px;font-weight:900;line-height:1;color:var(--green);letter-spacing:-.02em}
-.stat-label{font-size:12px;color:var(--muted);margin-top:4px}
 .scroll-hint{position:absolute;bottom:32px;left:64px;display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#444;animation:float 2.2s ease-in-out infinite}
 .scroll-hint::after{content:'';display:block;width:1px;height:36px;background:linear-gradient(to bottom,#444,transparent)}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
@@ -383,9 +374,8 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
   .sessions-grid{grid-template-columns:1fr}
   .shop-grid{grid-template-columns:1fr 1fr;gap:8px}
   .footer-top{grid-template-columns:1fr;gap:28px}
-  .hero-stats{flex-direction:column;gap:14px}
-  .stat{border-right:none;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:14px}
-  .stat:last-child{border-bottom:none}
+  .member-counter{gap:6px 10px}
+  .mc-num{flex-basis:100%}
 }
 
 /* ══ AUTH MODAL ══════════════════════════════════════════════ */
@@ -537,17 +527,18 @@ a.product-card:hover{transform:translateY(-4px)}
       <span class="word-alone">Alone.</span>
     </h1>
 
-    <!-- LIVE MEMBER COUNTER -->
-    <div class="live-counter" aria-live="polite" aria-label="Active ATP members">
-      <div class="lc-pulse" aria-hidden="true">
-        <div class="lc-pulse-dot"></div>
-        <div class="lc-pulse-ring"></div>
-      </div>
-      <div class="lc-text">
-        <strong id="liveCount">7,000</strong> ATP Active Members
-      </div>
-      <div class="lc-divider" aria-hidden="true"></div>
-      <div class="lc-sub">Always<br>free</div>
+    <!-- LIVE MEMBER COUNTER — hero-prominent. Hydrates from
+         /api/stats/public (data-stat="members_count") so every new
+         registration via the website OR the app bumps this number
+         within ~60 s (the stats endpoint's in-process TTL). -->
+    <div class="member-counter" aria-live="polite" aria-label="Total ATP members">
+      <span class="mc-prefix">We are</span>
+      <strong class="mc-num" data-stat="members_count">7,000</strong>
+      <span class="mc-suffix">ATP Members</span>
+      <span class="mc-pulse" aria-hidden="true">
+        <span class="mc-pulse-dot"></span>
+        <span class="mc-pulse-ring"></span>
+      </span>
     </div>
 
     <p class="hero-sub">
@@ -559,19 +550,6 @@ a.product-card:hover{transform:translateY(-4px)}
         Find a session
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
       </button>
-      <button class="btn-hero-sec"><span>Watch what we do</span>
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M6.5 6l4 2-4 2V6z" fill="currentColor" stroke="none"/></svg>
-      </button>
-    </div>
-    <!-- Hero stats (Audit 4.2) — live numbers from /api/stats/public.
-         data-stat="X" elements get hydrated by atp-stats.js on page load.
-         The static numbers below are sane fallbacks if the API is
-         unavailable so visitors never see "0" or skeleton text. -->
-    <div class="hero-stats">
-      <div class="stat"><div class="stat-num" data-stat="members_count" data-suffix="+">7,000+</div><div class="stat-label">Members</div></div>
-      <div class="stat"><div class="stat-num" data-stat="activities_count">19</div><div class="stat-label">Activities</div></div>
-      <div class="stat"><div class="stat-num" data-stat="cities_count">3</div><div class="stat-label">Cities</div></div>
-      <div class="stat"><div class="stat-num">AED 0</div><div class="stat-label">Cost to you</div></div>
     </div>
   </div>
   <div class="hero-right" aria-hidden="true">
@@ -725,6 +703,41 @@ a.product-card:hover{transform:translateY(-4px)}
   </div>
 </section>
 
+<!-- SHOP — moved up to sit directly below TRIBES per founder request
+     (2026-06-27). The carousel hydrates from the same Shopify-backed
+     endpoint as before; placement change only. -->
+<section class="shop-section" aria-labelledby="shop-heading">
+  <div class="shop-inner">
+    <div class="shop-header">
+      <div>
+        <p class="section-label reveal">ATP Store · Best sellers</p>
+        <h2 class="section-h2 reveal rd1" id="shop-heading">Our Collection</h2>
+        <p class="reveal rd2" style="font-size:14px;color:var(--muted);font-weight:300;line-height:1.5;margin-top:8px;max-width:520px">The pieces members are wearing right now — sorted by what's actually moving from the store this week.</p>
+      </div>
+      <a href="store.html" class="link-arrow reveal">Shop all <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7h10M8 3l4 4-4 4"/></svg></a>
+    </div>
+
+    <div class="swf-carousel-outer reveal">
+      <button class="swf-arrow swf-arrow-prev" id="shopPrev" aria-label="Previous">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="swf-track" id="indexShopGrid">
+        <!-- 8 skeleton placeholders -->
+        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:70%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
+        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:60%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
+        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:65%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
+        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:75%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
+        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:55%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
+        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:68%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
+      </div>
+      <button class="swf-arrow swf-arrow-next" id="shopNext" aria-label="Next">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+
+  </div>
+</section>
+
 <!-- SESSIONS -->
 <section class="sessions-section" id="sessions" aria-labelledby="sessions-heading">
   <div class="sessions-inner">
@@ -795,39 +808,6 @@ a.product-card:hover{transform:translateY(-4px)}
       @media (max-width:1100px){#home-blog-grid{grid-template-columns:repeat(2,1fr)!important}}
       @media (max-width:600px){#home-blog-grid{grid-template-columns:1fr!important}}
     </style>
-  </div>
-</section>
-
-<!-- SHOP -->
-<section class="shop-section" aria-labelledby="shop-heading">
-  <div class="shop-inner">
-    <div class="shop-header">
-      <div>
-        <p class="section-label reveal">ATP Store · Best sellers</p>
-        <h2 class="section-h2 reveal rd1" id="shop-heading">Our Collection</h2>
-        <p class="reveal rd2" style="font-size:14px;color:var(--muted);font-weight:300;line-height:1.5;margin-top:8px;max-width:520px">The pieces members are wearing right now — sorted by what's actually moving from the store this week.</p>
-      </div>
-      <a href="store.html" class="link-arrow reveal">Shop all <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7h10M8 3l4 4-4 4"/></svg></a>
-    </div>
-
-    <div class="swf-carousel-outer reveal">
-      <button class="swf-arrow swf-arrow-prev" id="shopPrev" aria-label="Previous">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
-      </button>
-      <div class="swf-track" id="indexShopGrid">
-        <!-- 8 skeleton placeholders -->
-        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:70%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
-        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:60%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
-        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:65%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
-        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:75%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
-        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:55%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
-        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:68%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
-      </div>
-      <button class="swf-arrow swf-arrow-next" id="shopNext" aria-label="Next">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
-      </button>
-    </div>
-
   </div>
 </section>
 
@@ -1117,71 +1097,9 @@ setTimeout(function() {
 }, 2000);
 
 // Counter animation
-function animateCounter(el, target, dur){
-  dur = dur || 1400;
-  if(el.textContent.includes("AED")) return;
-  var plus = el.textContent.includes("+");
-  var st = null;
-  function step(ts){ if(!st) st=ts; var p=Math.min((ts-st)/dur,1); var e=1-Math.pow(1-p,3); el.textContent=Math.round(e*target)+(plus?"+":""); if(p<1) requestAnimationFrame(step); }
-  requestAnimationFrame(step);
-}
-var cObs = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ animateCounter(e.target, parseInt(e.target.dataset.count)); cObs.unobserve(e.target); } }); }, {threshold:0.5});
-document.querySelectorAll(".stat-num[data-count]").forEach(function(el){ cObs.observe(el); });
-
-// ── LIVE MEMBER COUNTER ──────────────────────────────────────────
-// Base count — keep this in sync with your real member count.
-// The shared storage layer accumulates new signups on top of this.
-var ATP_BASE_COUNT = 7000;
-var ATP_STORAGE_KEY = 'atp:member_count';
-
-function formatCount(n) {
-  return n.toLocaleString('en-US');
-}
-function renderCount(n) {
-  var el = document.getElementById('liveCount');
-  if (el) el.textContent = formatCount(n);
-}
-async function loadCount() {
-  // Try to get real count from backend
-  try {
-    var resp = await fetch('/api/admin/members?limit=1');
-    var data = await resp.json();
-    if (data.total && data.total > ATP_BASE_COUNT) {
-      renderCount(data.total);
-      return data.total;
-    }
-  } catch(e) {}
-  // Fallback to stored or base
-  try {
-    var result = await window.storage.get(ATP_STORAGE_KEY, true);
-    var stored = result ? parseInt(result.value, 10) : ATP_BASE_COUNT;
-    var count = Math.max(stored, ATP_BASE_COUNT);
-    renderCount(count);
-    return count;
-  } catch(e) {
-    renderCount(ATP_BASE_COUNT);
-    return ATP_BASE_COUNT;
-  }
-}
-// Call window.atpAddMember() from your signup API callback to increment.
-window.atpAddMember = async function(delta) {
-  delta = delta || 1;
-  try {
-    var current = await loadCount();
-    var newCount = current + delta;
-    await window.storage.set(ATP_STORAGE_KEY, String(newCount), true);
-    renderCount(newCount);
-    var el = document.getElementById('liveCount');
-    if (el) {
-      el.style.transition = 'color .15s';
-      el.style.color = '#fff';
-      setTimeout(function(){ el.style.color = ''; el.style.transition = ''; }, 450);
-    }
-    return newCount;
-  } catch(e) { console.warn('ATP counter update failed:', e); }
-};
-loadCount();
-// ────────────────────────────────────────────────────────────────
+// Member counter now hydrates from /api/stats/public via the generic
+// [data-stat] handler further down the page — no per-element animator
+// or admin-API call needed here.
 
 // Read more toggle
 function toggleStory(){
