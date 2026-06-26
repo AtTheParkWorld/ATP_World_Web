@@ -32,8 +32,16 @@ function generateJWT(memberId, opts) {
   // token by passing { expiresIn: '1h' }. Pairs with /auth/refresh.
   // Without that opt the legacy 7-day default still applies, so the
   // existing web flow is unaffected.
+  //
+  // 2026-06-27: `via` claim tags the issuance path (magic_link, google,
+  // apple, password). Used by /auth/change-password to skip the old-
+  // password check inside the 30-min window after a magic-link login —
+  // members who came in via "forgot password" can set a new one
+  // without knowing the old.
+  const payload = { sub: memberId, iat: Math.floor(Date.now() / 1000) };
+  if (opts && opts.via) payload.via = opts.via;
   return jwt.sign(
-    { sub: memberId, iat: Math.floor(Date.now() / 1000) },
+    payload,
     process.env.JWT_SECRET,
     { expiresIn: (opts && opts.expiresIn) || process.env.JWT_EXPIRES_IN || '7d' }
   );
@@ -683,8 +691,15 @@ router.get('/verify', async (req, res, next) => {
       [record.member_id]
     );
 
-    const jwtToken = generateJWT(record.member_id);
-    res.json({ token: jwtToken, isFirstLogin: !record.email_verified });
+    const jwtToken = generateJWT(record.member_id, { via: 'magic_link' });
+    res.json({
+      token: jwtToken,
+      isFirstLogin: !record.email_verified,
+      // Lets the frontend show "Would you like to set a new password?"
+      // straight after a successful magic-link verify. Matches the
+      // 30-min `via:'magic_link'` window on /auth/change-password.
+      viaMagicLink: true,
+    });
   } catch (err) { next(err); }
 });
 
@@ -845,6 +860,11 @@ router.post('/logout', authenticate, (req, res) => {
 });
 
 // ── POST /api/auth/change-password ───────────────────────────
+// `current_password` is mandatory for normal logged-in members, but
+// skipped when the request is authenticated by a fresh magic-link
+// JWT (via:'magic_link' issued within the last 30 min) — that's
+// the post-"forgot password" path where the member doesn't know
+// their old password and the email click already proves identity.
 router.post('/change-password', authenticate, async (req, res, next) => {
   try {
     const { current_password, new_password } = req.body;
@@ -857,7 +877,13 @@ router.post('/change-password', authenticate, async (req, res, next) => {
       [req.member.id]
     );
 
-    if (rows[0].password_hash) {
+    const nowSec       = Math.floor(Date.now() / 1000);
+    const isFreshMagic = req.jwt
+      && req.jwt.via === 'magic_link'
+      && typeof req.jwt.iat === 'number'
+      && (nowSec - req.jwt.iat) < 30 * 60;
+
+    if (rows[0].password_hash && !isFreshMagic) {
       const valid = await bcrypt.compare(current_password, rows[0].password_hash);
       if (!valid) return res.status(401).json({ error: 'Current password is incorrect' });
     }

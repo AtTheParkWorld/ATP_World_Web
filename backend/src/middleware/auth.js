@@ -72,6 +72,11 @@ const authenticate = async (req, res, next) => {
     if (!rows.length) return res.status(401).json({ error: 'Member not found' });
     if (rows[0].is_banned) return res.status(403).json({ error: 'Account suspended' });
     req.member = rows[0];
+    // Expose the decoded JWT so handlers can read non-identity claims
+    // (e.g. `via` set by magic-link issuance — used by
+    // /auth/change-password to relax the old-password check inside
+    // the post-magic-link grace window).
+    req.jwt = decoded;
     next();
   } catch (err) {
     if (err.name === 'TokenExpiredError') {

@@ -47,6 +47,28 @@ body{font-family:var(--ff-body);background:var(--black);color:var(--white);min-h
     <br>
     <a class="verify-secondary" href="/">← Back to home</a>
   </div>
+
+  <!-- Post-verify "set a new password?" prompt. Only revealed when the
+       backend confirms this JWT came from a magic-link verify (the
+       "forgot password" / "magic link" email path). -->
+  <div id="pwd-prompt" style="display:none">
+    <p class="verify-sub" style="margin:6px 0 18px">Would you like to set a new password for your account?</p>
+    <button class="verify-btn" type="button" id="pwd-yes">Set a password</button>
+    <br>
+    <button class="verify-secondary" type="button" id="pwd-skip" style="background:none;border:none;border-bottom:1px solid rgba(255,255,255,.18);padding:0 0 1px;cursor:pointer;font:inherit">Skip for now</button>
+  </div>
+
+  <form id="pwd-form" style="display:none;text-align:left;margin-top:8px" autocomplete="off">
+    <label for="pwd-new" style="display:block;font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-bottom:8px">New password</label>
+    <input id="pwd-new" type="password" autocomplete="new-password" minlength="8" required
+      style="width:100%;background:var(--black);border:1px solid rgba(255,255,255,.12);border-radius:8px;color:#fff;padding:12px 14px;font-size:15px;font-family:var(--ff-body);outline:none;transition:border-color .15s"
+      placeholder="At least 8 characters">
+    <p id="pwd-err" style="display:none;color:#f87171;font-size:12px;margin-top:8px"></p>
+    <div style="margin-top:18px;display:flex;flex-direction:column;gap:10px">
+      <button class="verify-btn" type="submit" id="pwd-submit">Save password</button>
+      <button class="verify-secondary" type="button" id="pwd-cancel" style="background:none;border:none;border-bottom:1px solid rgba(255,255,255,.18);padding:0 0 1px;cursor:pointer;font:inherit">Skip and continue</button>
+    </div>
+  </form>
 </div>
 
 <script>
@@ -76,8 +98,71 @@ body{font-family:var(--ff-body);background:var(--black);color:var(--white);min-h
   function succeed() {
     icon.innerHTML = '✓';
     title.textContent = 'You\'re in.';
-    sub.textContent   = 'Redirecting you now…';
+    sub.textContent   = 'Welcome back.';
+    spinner.style.display = 'none';
   }
+  function goToProfile() {
+    window.location.href = '/profile.html';
+  }
+
+  // ── Magic-link → "set a new password?" prompt ──────────────────
+  // Shown only when the verify response is flagged `viaMagicLink`
+  // (the "forgot password" path). Backend accepts a passwordless
+  // POST to /auth/change-password inside the 30-min window after
+  // a magic-link issuance, so we don't ask for the old password.
+  var jwt = null;
+  function showPwdPrompt() {
+    document.getElementById('pwd-prompt').style.display = '';
+  }
+  function revealForm() {
+    document.getElementById('pwd-prompt').style.display = 'none';
+    var form = document.getElementById('pwd-form');
+    form.style.display = '';
+    setTimeout(function(){ document.getElementById('pwd-new').focus(); }, 50);
+  }
+  document.getElementById('pwd-yes').addEventListener('click', revealForm);
+  document.getElementById('pwd-skip').addEventListener('click', goToProfile);
+  document.getElementById('pwd-cancel').addEventListener('click', goToProfile);
+  document.getElementById('pwd-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var pwd = document.getElementById('pwd-new').value || '';
+    var err = document.getElementById('pwd-err');
+    var btn = document.getElementById('pwd-submit');
+    err.style.display = 'none';
+    if (pwd.length < 8) {
+      err.textContent = 'Use at least 8 characters.';
+      err.style.display = '';
+      return;
+    }
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+    fetch('/api/auth/change-password', {
+      method:  'POST',
+      headers: {
+        'Content-Type':  'application/json',
+        'Authorization': 'Bearer ' + jwt,
+      },
+      body: JSON.stringify({ new_password: pwd }),
+    })
+      .then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); })
+      .then(function(res){
+        if (!res.ok) {
+          err.textContent = (res.body && res.body.error) || 'Could not save password.';
+          err.style.display = '';
+          btn.disabled = false;
+          btn.textContent = 'Save password';
+          return;
+        }
+        btn.textContent = 'Saved ✓';
+        setTimeout(goToProfile, 600);
+      })
+      .catch(function(){
+        err.textContent = 'Network error — try again.';
+        err.style.display = '';
+        btn.disabled = false;
+        btn.textContent = 'Save password';
+      });
+  });
 
   if (!token || !email) {
     return fail('The link is missing a required token. Request a new sign-in link.');
@@ -89,9 +174,14 @@ body{font-family:var(--ff-body);background:var(--black);color:var(--white);min-h
       if (!res.ok || !res.body || !res.body.token) {
         return fail((res.body && res.body.error) || 'Link expired or invalid.');
       }
-      try { localStorage.setItem('atp_token', res.body.token); } catch (e) {}
+      jwt = res.body.token;
+      try { localStorage.setItem('atp_token', jwt); } catch (e) {}
       succeed();
-      setTimeout(function () { window.location.href = '/profile.html'; }, 700);
+      if (res.body.viaMagicLink) {
+        showPwdPrompt();
+      } else {
+        setTimeout(goToProfile, 700);
+      }
     })
     .catch(function () {
       fail('Network error — please try again.');
