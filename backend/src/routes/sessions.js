@@ -271,6 +271,45 @@ router.get('/templates', async (req, res, next) => {
   }
 });
 
+// ── GET /api/sessions/recent-feedback ─────────────────────────
+// Public — the 5 (or N) most recent member feedback comments left on
+// sessions, surfaced on the community-page sidebar.  Visitors don't
+// need to be logged in; this is an aggregate signal that the program
+// is alive.  Empty comments are filtered out — rating-only entries
+// have nothing to read.  Cached 60 s edge-side because the underlying
+// row is write-once per (session, member).
+router.get('/recent-feedback', async (req, res, next) => {
+  try {
+    const limit = Math.min(20, Math.max(1, parseInt(req.query.limit, 10) || 5));
+    const { rows } = await query(
+      `SELECT sf.id, sf.rating, sf.comment, sf.created_at,
+              m.id            AS member_id,
+              m.first_name,
+              m.last_name,
+              m.avatar_url,
+              COALESCE(m.is_ambassador, false) AS is_ambassador,
+              s.id            AS session_id,
+              s.name          AS session_name
+         FROM session_feedback sf
+         JOIN members  m ON m.id = sf.member_id AND COALESCE(m.is_banned,false)=false
+         JOIN sessions s ON s.id = sf.session_id
+        WHERE sf.comment IS NOT NULL
+          AND length(trim(sf.comment)) > 0
+        ORDER BY sf.created_at DESC
+        LIMIT $1`,
+      [limit]
+    );
+    res.set('Cache-Control', 'public, max-age=60');
+    res.json({ feedback: rows });
+  } catch (err) {
+    // Pre-migration: table or column missing on a fresh install — fail
+    // soft so the sidebar widget just renders empty instead of 500'ing
+    // the whole community page.
+    if (err.code === '42P01' || err.code === '42703') return res.json({ feedback: [] });
+    next(err);
+  }
+});
+
 // ── GET /api/sessions/:id ─────────────────────────────────────
 router.get('/:id', optionalAuth, async (req, res, next) => {
   try {
