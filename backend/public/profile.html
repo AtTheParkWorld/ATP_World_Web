@@ -821,6 +821,19 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
     <div class="pstat"><div class="pstat-num" id="statChallenges">0</div><div class="pstat-label">Challenges</div></div>
   </div>
 
+  <!-- BOOKED SESSIONS — promoted out of the Overview panel 2026-06-27.
+       Sits directly under the stats bar so members see their next
+       bookings at a glance regardless of which profile tab is active.
+       The .widget container keeps the same dark-card visual; the
+       #upcomingSessions id is preserved so loadBookings() still
+       populates the same node. -->
+  <div style="max-width:1200px;margin:0 auto 16px;padding:0 40px">
+    <div class="widget">
+      <div class="widget-head"><span class="widget-title">Booked Sessions</span><span class="widget-action" onclick="window.location='sessions.html'">Book more →</span></div>
+      <div class="widget-body" id="upcomingSessions"></div>
+    </div>
+  </div>
+
   <!-- TABS -->
   <!-- .profile-tabs-wrap removed in v1.40 — every tab destination now
        lives in the hamburger menu (#profileMenu) inside .profile-meta. -->
@@ -871,9 +884,10 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
              case we want to restore the bigger grid later. -->
         <div id="featuredStoreHost" style="display:none"></div>
 
-        <!-- Mini premium banner — only shows for free members. Same renderer
-             as the wallet card but in compact mode so it's not too pushy. -->
-        <div id="premiumBanner" style="margin-bottom:16px"></div>
+        <!-- #premiumBanner removed 2026-06-27 — it duplicated the
+             sidebar's "Support the Community" .sub-card right next
+             to it.  The .sub-card stays (compact, sticky, less
+             pushy); the renderer is no-op'd in the JS path below. -->
 
         <!-- Pending feedback prompt — auto-populates from
              /api/coach-sessions/me/pending-feedback when the member
@@ -935,10 +949,9 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             </div>
           </div>
         </div>
-        <div class="widget">
-          <div class="widget-head"><span class="widget-title">📅 Upcoming Sessions</span><span class="widget-action" onclick="window.location='sessions.html'">Book more →</span></div>
-          <div class="widget-body" id="upcomingSessions"></div>
-        </div>
+        <!-- "Booked Sessions" was here; promoted to a full-width strip
+             right below .profile-stats-bar so it's the first thing
+             after the stat tiles. -->
         <div class="widget">
           <div class="widget-head"><span class="widget-title">🏆 Recent Achievements</span><span class="widget-action" data-atp-call="showTab" data-args='["achievements"]'>All →</span></div>
           <div class="widget-body"><div class="achievement-grid" id="achieveMini"></div></div>
@@ -2469,9 +2482,12 @@ function renderPremiumCard() {
     if (bannerEl) bannerEl.innerHTML = '';
     return;
   }
-  // Free member — render upgrade card in both slots.
+  // Free member — render upgrade card in the Wallet tab.  The Overview
+  // banner slot was removed 2026-06-27 because it duplicated the
+  // sidebar's "Support the Community" .sub-card; the guard below keeps
+  // this renderer safe if the host ever gets re-added.
   if (walletEl) walletEl.innerHTML = _renderUpgradeCard(false);
-  if (bannerEl) bannerEl.innerHTML = _renderUpgradeCard(true);
+  if (bannerEl) bannerEl.innerHTML = '';
 }
 
 function _renderUpgradeCard(compact) {
