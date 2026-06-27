@@ -4686,7 +4686,18 @@ function loadBookings() {
       };
     });
     SESSIONS = mapped;
-    var upcoming = mapped.filter(function(s){ return s.status === 'upcoming'; });
+    // 2026-06-27 — match the backend /api/sessions filter: status
+    // alone is not enough (a "confirmed" booking for a past session
+    // would otherwise still show as upcoming).  Require scheduled_at
+    // ≥ now − 2 h (same grace as the sessions endpoint, so a session
+    // currently underway still appears).
+    var graceMs = 2 * 60 * 60 * 1000;
+    var cutoff  = Date.now() - graceMs;
+    var upcoming = mapped.filter(function(s){
+      if (s.status !== 'upcoming') return false;
+      if (!s.scheduled_at) return false;
+      return new Date(s.scheduled_at).getTime() >= cutoff;
+    });
     renderSessions(document.getElementById('upcomingSessions'), upcoming.slice(0,3));
     renderSessions(document.getElementById('allSessions'), mapped);
     // Refresh the header's "Next check-in QR" button — appears only
