@@ -1139,11 +1139,11 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
       <!-- FRIENDS -->
       <div class="profile-panel" id="panel-friends">
         <div class="widget">
-          <div class="widget-head"><span class="widget-title">Friend Requests</span><span class="member-badge" style="font-size:11px">2 pending</span></div>
+          <div class="widget-head"><span class="widget-title">Friend Requests</span><span class="member-badge" id="friendRequestsBadge" style="font-size:11px;display:none">0 pending</span></div>
           <div class="widget-body" id="friendRequests"></div>
         </div>
         <div class="widget" style="margin-top:20px">
-          <div class="widget-head"><span class="widget-title">My Friends</span></div>
+          <div class="widget-head"><span class="widget-title">My Friends</span><span class="member-badge" id="friendsListBadge" style="font-size:11px;display:none">0</span></div>
           <div class="widget-body" id="friendsList"></div>
         </div>
       </div>
@@ -2128,6 +2128,22 @@ function renderTribe(el) {
 function renderFriends() {
   var reqEl = document.getElementById("friendRequests");
   var lstEl = document.getElementById("friendsList");
+  // Sync widget-head badges — the hardcoded "2 pending" badge was
+  // the smoking gun on the "still shows 2 pending with nothing
+  // pending" bug.  Both badges now reflect the current array length
+  // and hide at 0.
+  var reqBadgeWidget = document.getElementById("friendRequestsBadge");
+  var lstBadgeWidget = document.getElementById("friendsListBadge");
+  if (reqBadgeWidget) {
+    var pn = (FRIENDS_REQUESTS && FRIENDS_REQUESTS.length) || 0;
+    reqBadgeWidget.textContent = pn + ' pending';
+    reqBadgeWidget.style.display = pn > 0 ? 'inline-flex' : 'none';
+  }
+  if (lstBadgeWidget) {
+    var fn = (FRIENDS && FRIENDS.length) || 0;
+    lstBadgeWidget.textContent = String(fn);
+    lstBadgeWidget.style.display = fn > 0 ? 'inline-flex' : 'none';
+  }
   if (reqEl) {
     reqEl.innerHTML = (FRIENDS_REQUESTS && FRIENDS_REQUESTS.length)
       ? FRIENDS_REQUESTS.map(function(f,i){
