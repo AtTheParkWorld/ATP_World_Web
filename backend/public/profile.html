@@ -694,6 +694,31 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1a5 5 0 015 5v3l1.5 2.5H1.5L3 9V6a5 5 0 015-5z"/><path d="M6.5 13.5a1.5 1.5 0 003 0"/></svg>
           <span id="notifCount" style="display:none;background:var(--green);color:#fff;width:18px;height:18px;border-radius:50%;font-size:10px;align-items:center;justify-content:center">0</span>
         </button>
+        <!-- Streak chip — compact, expandable.  Click toggles a small
+             dropdown with the progress bar + best + next milestone +
+             inspirational copy.  Same data source as the My Streak
+             tab (renderStreak() populates both).  Lives in
+             .profile-actions per founder 2026-06-27. -->
+        <div class="profile-menu-wrap" id="streakChipWrap" style="position:relative">
+          <button class="pf-btn" id="streakChipBtn" type="button" onclick="toggleStreakDropdown(event)" aria-expanded="false" aria-label="Current streak — tap for details">
+            <span id="streakChipFire">🔥</span>
+            <span><strong id="streakChipCurrent" style="font-family:var(--ff-display);font-size:14px;color:var(--green)">0</strong> <span style="color:var(--muted);font-weight:600;font-size:11px;letter-spacing:.05em">days</span></span>
+          </button>
+          <div id="streakDropdown" class="profile-menu" role="menu" aria-labelledby="streakChipBtn" style="min-width:280px;padding:16px">
+            <div style="font-family:var(--ff-display);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:10px">🔥 Current Streak</div>
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px">
+              <div style="font-family:var(--ff-display);font-size:42px;font-weight:900;color:var(--white);line-height:.9" id="streakDropdownCurrent">0</div>
+              <div style="font-size:12px;color:var(--muted)" id="streakDropdownDaysLabel">days in a row</div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:12px" id="streakDropdownBest">Personal best: 0 days</div>
+            <div style="height:8px;background:rgba(255,255,255,.08);border-radius:8px;overflow:hidden;margin-bottom:12px">
+              <div id="streakDropdownFill" style="height:100%;width:0;background:linear-gradient(90deg,#A8FF00,#C6FF55);border-radius:8px;transition:width .6s cubic-bezier(.4,0,.2,1)"></div>
+            </div>
+            <div style="font-size:11px;color:var(--light);line-height:1.5;margin-bottom:8px" id="streakDropdownNext">Next milestone: 7 days → admin shout-out + 1 day from 2× points</div>
+            <div style="font-size:12px;color:var(--white);line-height:1.5" id="streakDropdownInspire">Get checked in by an Ambassador to start your streak.</div>
+            <button type="button" data-atp-call="showTab" data-args='["streak"]' style="margin-top:14px;background:transparent;border:1px solid rgba(168,255,0,.4);color:var(--green);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:8px 14px;border-radius:6px;cursor:pointer;width:100%">Open full view →</button>
+          </div>
+        </div>
         <button class="pf-btn" data-atp-call="showTab" data-args='["friends"]'>Friend requests <span id="friendReqCount" style="display:none;background:rgba(168,255,0,.15);color:var(--green);padding:1px 7px;border-radius:10px;font-size:11px;margin-left:2px">0</span></button>
         <!-- Manage Coach Profile — only shown if isCoach=true. Lives here
              (next to Edit Profile) instead of in the role-banner-card to
@@ -917,38 +942,23 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
           <div id="feedbackModalCard" style="background:#111;border:1px solid rgba(245,192,66,.32);border-radius:14px;max-width:440px;width:100%;padding:28px;color:#fff;text-align:center"></div>
         </div>
 
-        <!-- Offers quick-access — surfaces a featured partner offer + a
-             link to the full /offers.html. Populated by JS below; hides
-             itself silently if there's nothing to show. -->
-        <a id="profileOffersCard" href="/offers" style="display:none;text-decoration:none;color:inherit;background:linear-gradient(120deg,rgba(245,192,66,.14),rgba(168,255,0,.06));border:1px solid rgba(245,192,66,.32);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:16px;align-items:center;gap:18px;flex-wrap:wrap;transition:transform .15s,box-shadow .2s">
-          <div style="flex:1;min-width:220px">
-            <div style="display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f5c042;font-weight:700;margin-bottom:6px">
-              <span id="offersCardEyebrow">★ Member offers</span>
-            </div>
-            <div id="offersCardTitle" style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--white);letter-spacing:.02em;line-height:1.1;text-transform:uppercase">Discounts, race tickets &amp; more</div>
-            <div id="offersCardSub" style="font-size:12px;color:var(--muted);margin-top:6px">Turn your ATP points into discount codes. New drops every week.</div>
+        <!-- WEARABLE MIRROR — surfaces the member's most recent device
+             data (Garmin / Strava / Fitbit / Apple Health) in the slot
+             vacated by the moved offers card.  Populated by
+             renderWearableOverviewMirror() — silent empty state when no
+             device is connected (CTA to Devices tab). -->
+        <div class="widget" id="wearableOverviewMirror" style="margin-bottom:16px">
+          <div class="widget-head">
+            <span class="widget-title">⌚ My device this week</span>
+            <span class="widget-action" data-atp-call="showTab" data-args='["devices"]'>Full view →</span>
           </div>
-          <span style="background:#f5c042;color:#0a0a0a;padding:11px 18px;border-radius:6px;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap">See offers →</span>
-        </a>
-
-        <div class="widget">
-          <div class="widget-head"><span class="widget-title">🔥 Current Streak</span><span class="widget-action" data-atp-call="showTab" data-args='["streak"]'>Full view →</span></div>
-          <div class="widget-body">
-            <!-- Mini version of the streak progression bar — populated by renderStreak() so this stays in sync with the My Streak tab -->
-            <div class="streak-hero">
-              <div class="streak-fire-big" id="streakFireMini">💤</div>
-              <div>
-                <div class="streak-num-big" id="streakCurrentMini">0</div>
-                <div class="streak-days" id="streakDaysLabelMini">days in a row · Best: 0 days</div>
-              </div>
-            </div>
-            <div style="margin-top:14px">
-              <div class="streak-progress-track" style="height:10px">
-                <div class="streak-progress-fill" id="streakProgressFillMini" style="width:0%"></div>
-              </div>
-            </div>
+          <div class="widget-body" id="wearableOverviewBody">
+            <div style="font-size:13px;color:var(--muted)">Loading…</div>
           </div>
         </div>
+
+        <!-- Streak widget was here; redesigned into a compact expandable
+             chip inside .profile-meta — see #streakChip above. -->
         <!-- "Booked Sessions" was here; promoted to a full-width strip
              right below .profile-stats-bar so it's the first thing
              after the stat tiles. -->
@@ -1617,6 +1627,20 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
           <div style="padding:14px 0;color:var(--muted);font-size:13px;text-align:center">Loading…</div>
         </div>
       </div>
+
+      <!-- Member offers — moved here 2026-06-27 from the Overview panel
+           (was eating the prime above-the-fold slot for a card that
+           hides until a real offer drops).  Sidebar placement keeps
+           it discoverable without crowding the main column.  Same
+           #profileOffersCard id so the populator JS still finds it. -->
+      <a id="profileOffersCard" href="/offers" style="display:none;text-decoration:none;color:inherit;background:linear-gradient(180deg,rgba(245,192,66,.16),rgba(245,192,66,.04));border:1px solid rgba(245,192,66,.32);border-radius:var(--radius-lg);padding:18px 18px 16px;transition:transform .15s,box-shadow .2s">
+        <div style="display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#f5c042;font-weight:700;margin-bottom:8px">
+          <span id="offersCardEyebrow">★ Member offers</span>
+        </div>
+        <div id="offersCardTitle" style="font-family:var(--ff-display);font-size:18px;font-weight:900;color:var(--white);letter-spacing:.02em;line-height:1.15;text-transform:uppercase">Discounts, race tickets &amp; more</div>
+        <div id="offersCardSub" style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5">Turn your ATP points into discount codes. New drops every week.</div>
+        <span style="display:inline-block;margin-top:12px;background:#f5c042;color:#0a0a0a;padding:8px 14px;border-radius:6px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase">See offers →</span>
+      </a>
     </aside>
   </div>
 </main>
@@ -1699,6 +1723,47 @@ function toggleProfileMenu(ev) {
   if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
 window.toggleProfileMenu = toggleProfileMenu;
+
+// Streak chip dropdown — same .open class as the profile menu, same
+// outside-click + Escape close handlers (a second listener pair is
+// installed below to keep this self-contained).
+function toggleStreakDropdown(ev) {
+  if (ev) ev.stopPropagation();
+  var menu = document.getElementById('streakDropdown');
+  var btn  = document.getElementById('streakChipBtn');
+  if (!menu) return;
+  // Close the main profile menu if it's open — only one floating
+  // panel at a time keeps the action bar uncluttered.
+  var pm = document.getElementById('profileMenu');
+  if (pm && pm.classList.contains('open')) {
+    pm.classList.remove('open');
+    var pmb = document.getElementById('profileMenuBtn');
+    if (pmb) pmb.setAttribute('aria-expanded', 'false');
+  }
+  var open = menu.classList.toggle('open');
+  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+window.toggleStreakDropdown = toggleStreakDropdown;
+
+document.addEventListener('click', function(ev){
+  var menu = document.getElementById('streakDropdown');
+  var btn  = document.getElementById('streakChipBtn');
+  if (!menu || !menu.classList.contains('open')) return;
+  if (btn && (ev.target === btn || btn.contains(ev.target))) return;
+  if (menu.contains(ev.target)) return;
+  menu.classList.remove('open');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+});
+document.addEventListener('keydown', function(ev){
+  if (ev.key === 'Escape') {
+    var menu = document.getElementById('streakDropdown');
+    if (menu && menu.classList.contains('open')) {
+      menu.classList.remove('open');
+      var btn = document.getElementById('streakChipBtn');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
+  }
+});
 
 // Close on outside click + Escape
 document.addEventListener('click', function(ev){
@@ -5724,10 +5789,70 @@ function loadWearables(force) {
       renderWearableWeek(d.week || {}, d.today || {});
       renderWearableWorkouts(d.recent_workouts || []);
       renderWearableConsent(d.consent || {});
+      renderWearableOverviewMirror(d);
       return d;
     })
-    .catch(function(){ /* table not migrated yet — silent */ return null; });
+    .catch(function(){
+      // Table not migrated yet — render empty state on the mirror so
+      // the Overview slot doesn't sit on "Loading…" forever.
+      renderWearableOverviewMirror(null);
+      return null;
+    });
   // (leaderboard fetched separately in openDevicesTab)
+}
+
+// Compact mirror of the Devices "This week" stats + a recent workout
+// line, rendered into the slot vacated by the offers card on Overview.
+// Empty state nudges to the Devices tab when no provider is connected.
+function renderWearableOverviewMirror(d) {
+  var host = document.getElementById('wearableOverviewBody');
+  if (!host) return;
+  var conns = (d && d.connections) || [];
+  var active = conns.filter(function(c){ return c.status === 'active'; });
+  if (!active.length) {
+    host.innerHTML =
+      '<div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:12px">' +
+        'Sync a watch or tracker (Garmin, Strava, Fitbit, Apple Health) and we’ll show your weekly distance, calories, and active minutes right here.' +
+      '</div>' +
+      '<button type="button" data-atp-call="showTab" data-args=\'["devices"]\' style="background:rgba(168,255,0,.12);color:var(--green);border:1px solid rgba(168,255,0,.4);padding:10px 16px;border-radius:8px;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;cursor:pointer">Connect a device →</button>';
+    return;
+  }
+  var week  = (d && d.week)  || {};
+  var today = (d && d.today) || {};
+  var recent = ((d && d.recent_workouts) || [])[0];
+  function num(v, dp) {
+    var n = Number(v) || 0;
+    if (dp == null) return Math.round(n).toLocaleString();
+    return (n.toFixed(dp));
+  }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; });
+  }
+  var providerName = (active[0] && (active[0].provider_label || active[0].provider)) || 'Connected device';
+  var recentLine = '';
+  if (recent) {
+    var rDt = recent.started_at ? new Date(recent.started_at).toLocaleDateString(undefined, { weekday:'short', day:'numeric', month:'short' }) : '';
+    var rName = recent.activity_type || recent.name || 'Workout';
+    var rDist = recent.distance_km ? num(recent.distance_km, 1) + ' km · ' : '';
+    var rMin  = recent.duration_min ? num(recent.duration_min) + ' min' : '';
+    recentLine =
+      '<div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);font-size:12px;color:var(--muted);line-height:1.5">' +
+        'Last: <strong style="color:var(--white)">' + escapeHtml(rName) + '</strong> · ' +
+        escapeHtml(rDist + rMin) + (rDt ? ' · ' + escapeHtml(rDt) : '') +
+      '</div>';
+  }
+  host.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px">' +
+      '<span style="font-size:12px;color:var(--light)">' + escapeHtml(providerName) + '</span>' +
+      '<span style="font-size:10px;color:var(--green);font-weight:700;letter-spacing:.1em;text-transform:uppercase">● Synced</span>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center">' +
+      '<div><div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--green);line-height:1">' + num(week.workouts) + '</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">Workouts</div></div>' +
+      '<div><div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--green);line-height:1">' + num(week.distance_km, 1) + '</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">km</div></div>' +
+      '<div><div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--green);line-height:1">' + num(week.calories) + '</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">Calories</div></div>' +
+      '<div><div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--green);line-height:1">' + num(week.active_minutes) + '</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">Active min</div></div>' +
+    '</div>' +
+    recentLine;
 }
 
 // Called whenever the member opens the Devices tab. Pulls fresh /me data,
@@ -6662,6 +6787,41 @@ function renderStreak(s) {
     requestAnimationFrame(function(){
       requestAnimationFrame(function(){ fillMini.style.width = (pctRaw * 100) + '%'; });
     });
+  }
+
+  // Compact streak chip in .profile-meta (2026-06-27 redesign)
+  setText('streakChipCurrent',       current);
+  setText('streakDropdownCurrent',   current);
+  setText('streakDropdownDaysLabel', current === 1 ? 'day in a row' : 'days in a row');
+  var bestDd = document.getElementById('streakDropdownBest');
+  if (bestDd) bestDd.innerHTML = 'Personal best: <strong style="color:var(--white)">' + longest + '</strong> day' + (longest === 1 ? '' : 's');
+  var fillDd = document.getElementById('streakDropdownFill');
+  if (fillDd) {
+    fillDd.style.width = '0%';
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){ fillDd.style.width = (pctRaw * 100) + '%'; });
+    });
+  }
+  // Chip fire emoji reflects active vs idle
+  var chipFire = document.getElementById('streakChipFire');
+  if (chipFire) chipFire.textContent = current > 0 ? '🔥' : '💤';
+  // Mirror milestone + inspirational copy onto the dropdown
+  var nextDd = document.getElementById('streakDropdownNext');
+  if (nextDd) {
+    if (current === 0)      nextDd.textContent = 'Next milestone: 7 days → admin shout-out + 1 day from 2× points';
+    else if (current < 7)   nextDd.textContent = 'Next milestone: ' + (7 - current) + ' more day' + (7 - current === 1 ? '' : 's') + ' to admin shout-out';
+    else if (current < 8)   nextDd.textContent = 'One more day to unlock 2× points!';
+    else                    nextDd.textContent = '⚡ 2× points zone — keep going for your longest streak';
+  }
+  var insDd = document.getElementById('streakDropdownInspire');
+  if (insDd) {
+    if (current === 0)      insDd.textContent = 'Get checked in by an Ambassador to start your streak.';
+    else if (current < 3)   insDd.textContent = 'Just getting started — keep going!';
+    else if (current < 7)   insDd.textContent = 'You’re building the habit. Show up tomorrow.';
+    else if (current < 8)   insDd.textContent = '🔥 Seven days! One more for 2× points.';
+    else if (current < 14)  insDd.textContent = '⚡ 2× points active. You’re on fire.';
+    else if (current < 30)  insDd.textContent = '🏆 Two weeks straight. The team noticed.';
+    else                    insDd.textContent = '🚀 Beyond the streak — you ARE the community.';
   }
 
   // Double-points badge (#10.3)
