@@ -1628,18 +1628,55 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
         </div>
       </div>
 
-      <!-- Member offers — moved here 2026-06-27 from the Overview panel
-           (was eating the prime above-the-fold slot for a card that
-           hides until a real offer drops).  Sidebar placement keeps
-           it discoverable without crowding the main column.  Same
+      <!-- Member offers — premium redesign 2026-06-27.  Black card with
+           a top-edge gold filament + corner radial glow + watermark ★;
+           gold reserved as restraint accent (eyebrow, divider, CTA
+           outline) so the card reads luxury, not flashy.  Same
            #profileOffersCard id so the populator JS still finds it. -->
-      <a id="profileOffersCard" href="/offers" style="display:none;text-decoration:none;color:inherit;background:linear-gradient(180deg,rgba(245,192,66,.16),rgba(245,192,66,.04));border:1px solid rgba(245,192,66,.32);border-radius:var(--radius-lg);padding:18px 18px 16px;transition:transform .15s,box-shadow .2s">
-        <div style="display:flex;align-items:center;gap:8px;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#f5c042;font-weight:700;margin-bottom:8px">
-          <span id="offersCardEyebrow">★ Member offers</span>
+      <style>
+        #profileOffersCard:hover {
+          transform: translateY(-2px);
+          border-color: rgba(245,192,66,.55) !important;
+          box-shadow: 0 18px 38px -18px rgba(245,192,66,.45), 0 0 0 1px rgba(0,0,0,.5) inset !important;
+        }
+        #profileOffersCard:hover .ofc-cta {
+          background: rgba(245,192,66,.12);
+          border-color: rgba(245,192,66,.9);
+          color: #fff7d8;
+        }
+        #profileOffersCard:hover .ofc-filament {
+          opacity: 1;
+        }
+      </style>
+      <a id="profileOffersCard" href="/offers" aria-label="Member offers — premium perks for ATP members" style="display:none;flex-direction:column;text-decoration:none;color:inherit;position:relative;overflow:hidden;background:radial-gradient(120% 90% at 100% 0%, rgba(245,192,66,.10), transparent 55%), linear-gradient(180deg, #141414 0%, #0a0a0a 100%);border:1px solid rgba(245,192,66,.28);border-radius:var(--radius-lg);padding:22px 22px 18px;box-shadow:0 8px 24px -18px rgba(245,192,66,.25), 0 0 0 1px rgba(0,0,0,.4) inset;transition:transform .22s cubic-bezier(.2,.7,.2,1), border-color .22s, box-shadow .22s">
+        <!-- Top-edge gold filament -->
+        <div class="ofc-filament" aria-hidden="true" style="position:absolute;top:0;left:0;right:0;height:1.5px;background:linear-gradient(90deg, transparent 0%, #f5c042 50%, transparent 100%);opacity:.7;transition:opacity .22s"></div>
+        <!-- Watermark ★ -->
+        <div aria-hidden="true" style="position:absolute;top:-16px;right:-10px;font-family:var(--ff-display);font-size:110px;font-weight:900;color:rgba(245,192,66,.06);line-height:1;pointer-events:none;user-select:none">★</div>
+
+        <!-- Eyebrow -->
+        <div style="position:relative;display:inline-flex;align-items:center;gap:7px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#f5c042;font-weight:800;margin-bottom:12px">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.39 7.36H22l-6.31 4.58L18.18 22 12 17.27 5.82 22l2.49-8.06L2 9.36h7.61z"/></svg>
+          <span id="offersCardEyebrow">Member offers</span>
         </div>
-        <div id="offersCardTitle" style="font-family:var(--ff-display);font-size:18px;font-weight:900;color:var(--white);letter-spacing:.02em;line-height:1.15;text-transform:uppercase">Discounts, race tickets &amp; more</div>
-        <div id="offersCardSub" style="font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5">Turn your ATP points into discount codes. New drops every week.</div>
-        <span style="display:inline-block;margin-top:12px;background:#f5c042;color:#0a0a0a;padding:8px 14px;border-radius:6px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase">See offers →</span>
+
+        <!-- Title -->
+        <div id="offersCardTitle" style="position:relative;font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--white);letter-spacing:.01em;line-height:1.1;text-transform:uppercase">Discounts, race tickets &amp; more</div>
+
+        <!-- Hairline gold divider -->
+        <div aria-hidden="true" style="position:relative;height:1px;background:linear-gradient(90deg, rgba(245,192,66,.45) 0%, rgba(245,192,66,0) 100%);margin:14px 0 12px"></div>
+
+        <!-- Description -->
+        <div id="offersCardSub" style="position:relative;font-size:12.5px;color:rgba(255,255,255,.65);line-height:1.55">Turn your ATP points into discount codes. New drops every week.</div>
+
+        <!-- Footer row — small badge left, outlined CTA right -->
+        <div style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)">
+          <span style="font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:rgba(245,192,66,.7);font-weight:700">Premium · Exclusive</span>
+          <span class="ofc-cta" style="background:transparent;color:#f5c042;border:1px solid rgba(245,192,66,.55);padding:7px 14px;border-radius:6px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px;transition:background .2s, border-color .2s, color .2s">
+            See offers
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </span>
+        </div>
       </a>
     </aside>
   </div>
