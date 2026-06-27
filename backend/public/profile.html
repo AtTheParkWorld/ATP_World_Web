@@ -752,7 +752,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             <button class="menu-item" data-tab="challenges"   data-atp-call="showTab" data-args='["challenges"]'  role="menuitem">🎯 Challenges</button>
             <div class="profile-menu-divider"></div>
             <div class="menu-section-label">Community</div>
-            <button class="menu-item" data-tab="tribe"        data-atp-call="showTab" data-args='["tribe"]'       role="menuitem">👥 My Tribe</button>
+            <button class="menu-item" data-tab="tribe"        data-atp-call="showTab" data-args='["tribe"]'       role="menuitem">👥 My Crew</button>
             <button class="menu-item" data-tab="friends"      data-atp-call="showTab" data-args='["friends"]'     role="menuitem">🤝 Friends</button>
             <button class="menu-item" data-tab="myposts"      data-atp-call="showTab" data-args='["myposts"]'     role="menuitem">📝 My Posts</button>
             <div class="profile-menu-divider"></div>
@@ -870,29 +870,10 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
       <!-- OVERVIEW -->
       <div class="profile-panel active" id="panel-overview">
-        <!-- Referral mini-hero — first thing visible on the profile so the
-             member's friendly code is always one tap away from being shared.
-             Populated by applyMemberToPage() from m.referral_code. -->
-        <div class="ref-hero-mini" id="overviewRefHero" style="display:flex;align-items:center;gap:18px;background:linear-gradient(120deg,rgba(168,255,0,.12),rgba(168,255,0,.04));border:1px solid rgba(168,255,0,.28);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:16px;flex-wrap:wrap">
-          <div style="flex:1;min-width:220px">
-            <div style="display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);font-weight:700;margin-bottom:6px">
-              <span>★ Your referral code</span>
-              <span id="overviewRefTribe" style="display:none;font-size:10px;letter-spacing:.08em;color:var(--green-light);background:rgba(168,255,0,.12);border:1px solid rgba(168,255,0,.28);border-radius:999px;padding:2px 8px"></span>
-            </div>
-            <div id="overviewRefCode" style="font-family:var(--ff-display);font-size:28px;font-weight:900;color:var(--white);letter-spacing:.04em;line-height:1.05">…</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:6px">Share your code — earn <strong style="color:var(--green)">50 pts</strong> on their first session, plus 1–2 pts every time they check-in.</div>
-          </div>
-          <div class="share-row">
-            <button class="share-btn share-btn--whatsapp" data-atp-call="shareReferralWhatsApp" aria-label="Share on WhatsApp">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4l-2-1c-.3-.1-.5-.1-.7.1-.2.2-.7.8-.9 1-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.4-.5-.6-.5h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.2 0 1.3.9 2.5 1 2.7.1.2 1.8 2.7 4.4 3.8 1.6.7 2.2.7 3 .6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.4c1.5.8 3.1 1.2 4.8 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18.3c-1.5 0-3-.4-4.3-1.2l-.3-.2-3.2.8.9-3-.2-.3c-.9-1.4-1.4-3-1.4-4.6 0-4.6 3.7-8.3 8.3-8.3s8.3 3.7 8.3 8.3-3.7 8.5-8.1 8.5z"/></svg>
-              WhatsApp
-            </button>
-            <button class="share-btn" data-atp-call="copyReferralCode" aria-label="Copy referral code">
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="9" height="9" rx="1"/><path d="M3 12H2a1 1 0 01-1-1V2a1 1 0 011-1h9a1 1 0 011 1v1"/></svg>
-              <span id="overviewRefCopyLabel">Copy code</span>
-            </button>
-          </div>
-        </div>
+        <!-- Referral hero relocated to the bottom of this panel as a
+             combined "Code + My Crew" card (2026-06-27 per founder).
+             See #overviewRefHero below.  Top of Overview now starts
+             with the corporate badge. -->
 
         <!-- Corporate membership badge — shown when this member belongs to
              a company via ATP Corporative. Populated from /api/corporate/me.
@@ -965,6 +946,56 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
         <div class="widget">
           <div class="widget-head"><span class="widget-title">🏆 Recent Achievements</span><span class="widget-action" data-atp-call="showTab" data-args='["achievements"]'>All →</span></div>
           <div class="widget-body"><div class="achievement-grid" id="achieveMini"></div></div>
+        </div>
+
+        <!-- REFERRAL CODE + MY CREW (combined card, relocated to bottom
+             2026-06-27 per founder).  Same #overviewRefHero / #overviewRefCode
+             / #overviewRefCopyLabel ids so applyMemberToPage() and the
+             share + copy handlers all keep working unchanged.  The
+             crew preview is populated by loadReferrals() into
+             #overviewCrewList + #overviewCrewCount. -->
+        <div id="overviewRefHero" style="display:flex;flex-direction:column;background:linear-gradient(180deg, rgba(168,255,0,.10), rgba(168,255,0,.02));border:1px solid rgba(168,255,0,.28);border-radius:var(--radius-lg);padding:22px 22px 18px;margin-top:8px">
+          <!-- Top section: code + share -->
+          <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+            <div style="flex:1;min-width:220px">
+              <div style="display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);font-weight:700;margin-bottom:6px">
+                <span>★ Your referral code</span>
+                <span id="overviewRefTribe" style="display:none;font-size:10px;letter-spacing:.08em;color:var(--green-light);background:rgba(168,255,0,.12);border:1px solid rgba(168,255,0,.28);border-radius:999px;padding:2px 8px"></span>
+              </div>
+              <div id="overviewRefCode" style="font-family:var(--ff-display);font-size:28px;font-weight:900;color:var(--white);letter-spacing:.04em;line-height:1.05">…</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:6px">Share your code — earn <strong style="color:var(--green)">50 pts</strong> on their first session, plus 1–2 pts every time they check-in.</div>
+            </div>
+            <div class="share-row">
+              <button class="share-btn share-btn--whatsapp" data-atp-call="shareReferralWhatsApp" aria-label="Share on WhatsApp">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4l-2-1c-.3-.1-.5-.1-.7.1-.2.2-.7.8-.9 1-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.4-.5-.6-.5h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.2 0 1.3.9 2.5 1 2.7.1.2 1.8 2.7 4.4 3.8 1.6.7 2.2.7 3 .6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.4c1.5.8 3.1 1.2 4.8 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18.3c-1.5 0-3-.4-4.3-1.2l-.3-.2-3.2.8.9-3-.2-.3c-.9-1.4-1.4-3-1.4-4.6 0-4.6 3.7-8.3 8.3-8.3s8.3 3.7 8.3 8.3-3.7 8.5-8.1 8.5z"/></svg>
+                WhatsApp
+              </button>
+              <button class="share-btn" data-atp-call="copyReferralCode" aria-label="Copy referral code">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="9" height="9" rx="1"/><path d="M3 12H2a1 1 0 01-1-1V2a1 1 0 011-1h9a1 1 0 011 1v1"/></svg>
+                <span id="overviewRefCopyLabel">Copy code</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Divider + My Crew section -->
+          <div style="display:flex;align-items:center;gap:12px;margin:18px 0 14px">
+            <div style="flex:1;height:1px;background:linear-gradient(90deg, rgba(168,255,0,.45), rgba(168,255,0,0))"></div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);font-weight:800">
+              <span>👥 My Crew</span>
+              <span id="overviewCrewCount" style="font-size:10px;letter-spacing:.06em;color:var(--green-light);background:rgba(168,255,0,.12);border:1px solid rgba(168,255,0,.28);border-radius:999px;padding:2px 7px">0</span>
+            </div>
+            <div style="flex:1;height:1px;background:linear-gradient(270deg, rgba(168,255,0,.45), rgba(168,255,0,0))"></div>
+          </div>
+
+          <div id="overviewCrewList" style="display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:12.5px;color:var(--muted);text-align:center;padding:14px 4px;line-height:1.55">
+              No crew yet — share your code above. The first 5 friends who join with it show up here.
+            </div>
+          </div>
+
+          <div style="margin-top:14px;text-align:center">
+            <button type="button" data-atp-call="showTab" data-args='["tribe"]' style="background:transparent;color:var(--green);border:1px solid rgba(168,255,0,.4);padding:8px 16px;border-radius:6px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer">See full crew →</button>
+          </div>
         </div>
       </div>
 
@@ -1048,7 +1079,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
       <!-- TRIBE -->
       <div class="profile-panel" id="panel-tribe">
         <div class="widget">
-          <div class="widget-head"><span class="widget-title">My Tribe</span><span style="font-size:12px;color:var(--muted)">12 people referred</span></div>
+          <div class="widget-head"><span class="widget-title">My Crew</span><span style="font-size:12px;color:var(--muted)" id="myCrewHeaderCount">0 in your crew</span></div>
           <div class="widget-body">
             <div class="referral-hero" style="margin-bottom:16px">
               <div style="font-size:13px;color:var(--muted)">Your referral code</div>
@@ -2211,7 +2242,7 @@ function loadAchievements() {
 function renderTribe(el) {
   if (!el) return;
   if (!TRIBE || !TRIBE.length) {
-    el.innerHTML = _atpEmpty('🌱', 'Build your tribe',
+    el.innerHTML = _atpEmpty('🌱', 'Build your crew',
       'Invite friends with your referral link — earn points when they attend their first session.',
       '<button class="atp-btn atp-btn--primary atp-empty__cta" onclick="copyReferralLink && copyReferralLink()">Copy referral link</button>');
     return;
@@ -4958,6 +4989,37 @@ function loadReferrals() {
     var totalPts = refs.reduce(function(sum, r){ return sum + (Number(r.points_awarded)||0); }, 0);
     if (refStats[1]) refStats[1].textContent = totalPts;
     if (refStats[2]) refStats[2].textContent = TRIBE.filter(function(t){return t.active;}).length;
+
+    // Overview crew preview (2026-06-27 — combined card at bottom of Overview)
+    var crewCountEl   = document.getElementById('overviewCrewCount');
+    var crewListEl    = document.getElementById('overviewCrewList');
+    var crewHdrCount  = document.getElementById('myCrewHeaderCount');
+    var crewLen = TRIBE.length;
+    if (crewCountEl)  crewCountEl.textContent  = crewLen;
+    if (crewHdrCount) crewHdrCount.textContent = crewLen + (crewLen === 1 ? ' member in your crew' : ' members in your crew');
+    if (crewListEl) {
+      if (!crewLen) {
+        crewListEl.innerHTML =
+          '<div style="font-size:12.5px;color:var(--muted);text-align:center;padding:14px 4px;line-height:1.55">' +
+            'No crew yet — share your code above. The first 5 friends who join with it show up here.' +
+          '</div>';
+      } else {
+        crewListEl.innerHTML = TRIBE.slice(0, 5).map(function(m){
+          var activeDot = m.active
+            ? '<span title="Active last 30 days" style="width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;box-shadow:0 0 6px rgba(168,255,0,.7)"></span>'
+            : '<span title="Inactive 30+ days" style="width:7px;height:7px;border-radius:50%;background:#666;flex-shrink:0"></span>';
+          var sessions = (Number(m.sessions) || 0);
+          return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:8px">' +
+            '<div style="width:30px;height:30px;border-radius:50%;background:rgba(168,255,0,.15);color:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:12px;font-weight:900;flex-shrink:0">' + escapeHtml(m.init) + '</div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="font-size:13px;font-weight:700;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(m.name) + '</div>' +
+              '<div style="font-size:11px;color:var(--muted);margin-top:1px">Joined ' + escapeHtml(m.joined) + ' · ' + sessions + ' session' + (sessions === 1 ? '' : 's') + '</div>' +
+            '</div>' +
+            activeDot +
+          '</div>';
+        }).join('');
+      }
+    }
   }).catch(function(){});
 }
 
