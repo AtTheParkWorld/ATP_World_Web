@@ -361,6 +361,20 @@ router.patch('/friends/:id', authenticate, async (req, res, next) => {
        WHERE id=$2 AND addressee_id=$3`,
       [status, req.params.id, req.member.id]
     );
+    // Mark the matching friend_request notification as read so the bell
+    // count drops in lockstep with the friends-tab change. Without this
+    // the addressee saw "X sent you a friend request" lingering in the
+    // unread list after they had already accepted/declined it.
+    // Idempotent + best-effort — failure must not roll back the resolve.
+    query(
+      `UPDATE notifications
+          SET read_at = COALESCE(read_at, NOW())
+        WHERE member_id = $1
+          AND type      = 'friend_request'
+          AND read_at IS NULL
+          AND (data->>'friendship_id') = $2`,
+      [req.member.id, req.params.id]
+    ).catch(function(e){ console.warn('[friends] notif cleanup failed:', e.message); });
     res.json({ message: `Friend request ${status}` });
   } catch (err) { next(err); }
 });
@@ -385,6 +399,20 @@ router.delete('/friends/:id', authenticate, async (req, res, next) => {
           AND status IN ('pending','accepted')`,
       [idParam, req.member.id]
     );
+    // Mirror PATCH's cleanup: if a pending row got torn down (e.g. a
+    // request withdrawal), clear the addressee's lingering bell entry
+    // so the unread count matches reality.
+    if (rowCount > 0) {
+      query(
+        `UPDATE notifications
+            SET read_at = COALESCE(read_at, NOW())
+          WHERE type = 'friend_request'
+            AND read_at IS NULL
+            AND ((data->>'friendship_id') = $1
+                 OR (data->>'requester_id') = $2)`,
+        [idParam, req.member.id]
+      ).catch(function(e){ console.warn('[friends] delete-notif cleanup failed:', e.message); });
+    }
     res.json({ message: 'Friend removed', removed: rowCount, already_removed: rowCount === 0 });
   } catch (err) { next(err); }
 });

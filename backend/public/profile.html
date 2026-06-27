@@ -1842,26 +1842,14 @@ var TRIBE = [
   {init:"T",name:"Tom B.",joined:"Dec 2024",sessions:31,active:false},
 ];
 
-var FRIENDS_REQUESTS = [
-  {init:"L",name:"Lucas P.",meta:"Faster Tribe · 89 sessions"},
-  {init:"E",name:"Elena M.",meta:"Better Tribe · 62 sessions"},
-];
-var FRIENDS = [
-  {init:"J",name:"Jay Ashar",meta:"127 sessions · 28d streak"},
-  {init:"V",name:"Valentina R.",meta:"118 sessions · 21d streak"},
-  {init:"G",name:"Gwen Gaje",meta:"104 sessions · 14d streak"},
-  {init:"H",name:"Hugo M.",meta:"98 sessions · 10d streak"},
-];
-
-var NOTIFS = [
-  {unread:true,text:"<strong>Jay Ashar</strong> liked your session check-in",time:"2m ago"},
-  {unread:true,text:"<strong>New session</strong> added: Padel Night at JBR — book now",time:"1h ago"},
-  {unread:true,text:"<strong>Elena M.</strong> sent you a friend request",time:"3h ago"},
-  {unread:false,text:"You earned the <strong>Tribe Leader</strong> achievement 🏆",time:"Yesterday"},
-  {unread:false,text:"Your streak is at <strong>14 days</strong> — keep it up! 🔥",time:"Yesterday"},
-  {unread:false,text:"<strong>Lucas P.</strong> joined ATP via your referral link",time:"2 days ago"},
-  {unread:false,text:"New challenge available: <strong>July Bootcamp Blitz</strong>",time:"3 days ago"},
-];
+// Empty by design — populated from /api at boot.  Pre-2026-06-27 these
+// were seeded with mock entries (Lucas/Elena/Jay/etc.) which then flashed
+// on screen before loadFriends/loadNotifications resolved, and stayed
+// visible if the API call silently failed.  The render functions handle
+// empty arrays with proper empty-state copy.
+var FRIENDS_REQUESTS = [];
+var FRIENDS          = [];
+var NOTIFS           = [];
 
 var WALLET_TXNS = [
   {icon:"🔥",name:"Session attendance",date:"Today",amt:"+10",earn:true},
