@@ -268,6 +268,12 @@ router.get('/friends', authenticate, async (req, res, next) => {
          LEFT JOIN tribes t2 ON t2.id = m2.tribe_id
          WHERE (f.requester_id=$1 OR f.addressee_id=$1)
            AND f.status IN ('pending','accepted')
+           -- Hide rows where the OTHER party is banned. A banned
+           -- requester's pending invite would otherwise count toward
+           -- the addressee's "X friend requests pending" badge with no
+           -- legitimate way to act on it.
+           AND COALESCE(m1.is_banned, false) = false
+           AND COALESCE(m2.is_banned, false) = false
          ORDER BY f.updated_at DESC`,
         [req.member.id]
       ));
@@ -287,6 +293,8 @@ router.get('/friends', authenticate, async (req, res, next) => {
          JOIN members m2 ON m2.id = f.addressee_id
          WHERE (f.requester_id=$1 OR f.addressee_id=$1)
            AND f.status IN ('pending','accepted')
+           AND COALESCE(m1.is_banned, false) = false
+           AND COALESCE(m2.is_banned, false) = false
          ORDER BY f.updated_at DESC`,
         [req.member.id]
       ));

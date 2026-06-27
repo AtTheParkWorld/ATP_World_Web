@@ -5,6 +5,30 @@ const { authenticate, requireAdmin } = require('../middleware/auth');
 // GET /api/notifications
 router.get('/', authenticate, async (req, res, next) => {
   try {
+    // Self-heal step (2026-06-27) — auto-mark `friend_request`
+    // notifications as read when their underlying friendship is no
+    // longer pending (accepted/declined elsewhere, request withdrawn,
+    // requester banned, addressee mismatch).  Catches every stuck row
+    // from before the PATCH/DELETE cleanup landed without needing a
+    // manual purge.  Best-effort: a missing column on a pre-migration
+    // DB must not block listing.
+    await query(
+      `UPDATE notifications n
+          SET read_at = NOW()
+        WHERE n.member_id = $1
+          AND n.type = 'friend_request'
+          AND n.read_at IS NULL
+          AND NOT EXISTS (
+            SELECT 1 FROM friendships f
+             WHERE f.id::text       = (n.data->>'friendship_id')
+               AND f.addressee_id   = n.member_id
+               AND f.status         = 'pending'
+          )`,
+      [req.member.id]
+    ).catch(function(e) {
+      console.warn('[notif] friend_request self-heal skipped:', e.message);
+    });
+
     const { limit = 30, unread_only } = req.query;
     let where = 'member_id=$1';
     if (unread_only === 'true') where += ' AND read_at IS NULL';
