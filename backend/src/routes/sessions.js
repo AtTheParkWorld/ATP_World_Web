@@ -68,6 +68,16 @@ router.get('/', optionalAuth, async (req, res, next) => {
     const params = [status];
     let idx = 2;
 
+    // 2026-06-27 — defensive date filter on upcoming.  The status
+    // column alone is not enough: sessions that never got cron-
+    // advanced (or were created with status='upcoming' and forgotten)
+    // would otherwise show up as "next" weeks after they happened.
+    // 2-hour grace so a session that's currently underway still
+    // appears in 'upcoming' lists until it visibly finishes.
+    if (status === 'upcoming') {
+      where.push(`s.scheduled_at >= NOW() - INTERVAL '2 hours'`);
+    }
+
     if (city_id)     { where.push(`s.city_id = $${idx++}`);       params.push(city_id); }
     if (tribe)       { where.push(`t.slug = $${idx++}`);           params.push(tribe); }
     if (tribe_id)    { where.push(`s.tribe_id = $${idx++}`);       params.push(tribe_id); }

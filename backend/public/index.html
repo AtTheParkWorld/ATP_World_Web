@@ -1422,7 +1422,20 @@ window.handleGoogleSignIn = async function(response) {
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(data){
       var sessions = data && data.sessions;
-      if (!Array.isArray(sessions) || sessions.length === 0) return;
+      // 2026-06-27 — when the live endpoint returns zero upcoming
+      // sessions (or fails outright), replace the static SEO fallback
+      // grid with an honest empty state.  Leaving the hardcoded
+      // "Community run / Coach Hugo" cards visible misled visitors
+      // into thinking those specific sessions still ran.
+      if (!Array.isArray(sessions) || sessions.length === 0) {
+        grid.innerHTML =
+          '<article class="session-card reveal" style="grid-column:1 / -1;text-align:center;padding:36px 28px">' +
+            '<p class="session-time" style="opacity:.7">No sessions on the calendar right now.</p>' +
+            '<h3 class="session-name" style="margin-top:6px">Check back soon.</h3>' +
+            '<p class="session-coach" style="margin-top:6px;opacity:.7">New free sessions land every week.</p>' +
+          '</article>';
+        return;
+      }
       function fmtTime(iso){
         try {
           var d = new Date(iso);

@@ -423,16 +423,14 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
     <!-- SIDEBAR -->
     <aside class="comm-sidebar">
-      <!-- MOCK: no GET /api/community/next-session endpoint yet — sessions.html has its own /sessions wiring -->
+      <!-- Next Session — pulls the truly-next upcoming session from
+           /api/stats/public/sessions.  Replaced 2026-06-27 — used to
+           be a hardcoded mock ("Community Run · Dubai Marina Walk")
+           that was wrong + never matched the real calendar. -->
       <div class="sidebar-widget">
         <div class="sw-title">Next Session</div>
-        <div class="sw-body">
-          <div style="background:var(--green);border-radius:var(--radius);padding:14px">
-            <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:4px">Tonight · 7:00 PM</div>
-            <div style="font-family:var(--ff-display);font-size:20px;font-weight:800;color:white;text-transform:uppercase">Community Run</div>
-            <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px">Dubai Marina Walk</div>
-          </div>
-          <a href="sessions.html" style="display:block;margin-top:12px;text-align:center;font-size:13px;font-weight:600;color:var(--green)">View all sessions →</a>
+        <div class="sw-body" id="sidebarNextSession">
+          <div style="font-size:13px;color:var(--muted)">Loading…</div>
         </div>
       </div>
       <div class="sidebar-widget">
@@ -1766,6 +1764,53 @@ function _escapeHtml(s) {
   });
 }
 
+// Next Session — pulls the truly-next upcoming session from the public
+// stats endpoint, which already filters scheduled_at > NOW() and skips
+// cancelled/completed.  Replaces the hardcoded "Tonight · Community
+// Run · Dubai Marina Walk" mock that never matched the real calendar.
+async function loadNextSession() {
+  var host = document.getElementById('sidebarNextSession');
+  if (!host) return;
+  try {
+    var resp = await fetch('/api/stats/public/sessions?limit=1', { cache: 'no-cache' });
+    var data = resp.ok ? await resp.json() : null;
+    var s    = data && Array.isArray(data.sessions) ? data.sessions[0] : null;
+    if (!s) {
+      host.innerHTML =
+        '<div style="font-size:13px;color:var(--muted)">No upcoming sessions yet.</div>' +
+        '<a href="sessions.html" style="display:block;margin-top:10px;text-align:center;font-size:13px;font-weight:600;color:var(--green)">Open the calendar →</a>';
+      return;
+    }
+    // Friendly relative day: Today / Tomorrow / Weekday DD MMM
+    var when = new Date(s.scheduled_at);
+    var now  = new Date();
+    var startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var diffDays = Math.floor((new Date(when.getFullYear(), when.getMonth(), when.getDate()) - startOfToday) / 86400000);
+    var dayLabel;
+    if (diffDays === 0)      dayLabel = 'Today';
+    else if (diffDays === 1) dayLabel = 'Tomorrow';
+    else dayLabel = when.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+    var timeLabel = when.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    var loc = (s.location || s.city_name || '').toString();
+    function esc(x){ return String(x||'').replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+    host.innerHTML =
+      '<div style="background:var(--green);border-radius:var(--radius);padding:14px">' +
+        '<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(0,0,0,.65);margin-bottom:4px">' +
+          esc(dayLabel) + ' · ' + esc(timeLabel) +
+        '</div>' +
+        '<div style="font-family:var(--ff-display);font-size:20px;font-weight:800;color:#0a0a0a;text-transform:uppercase;line-height:1.1">' +
+          esc(s.name || 'ATP Session') +
+        '</div>' +
+        (loc ? '<div style="font-size:12px;color:rgba(0,0,0,.7);margin-top:4px">' + esc(loc) + '</div>' : '') +
+      '</div>' +
+      '<a href="sessions.html" style="display:block;margin-top:12px;text-align:center;font-size:13px;font-weight:600;color:var(--green)">View all sessions →</a>';
+  } catch (err) {
+    host.innerHTML =
+      '<div style="font-size:13px;color:var(--muted)">Couldn’t load next session.</div>' +
+      '<a href="sessions.html" style="display:block;margin-top:10px;text-align:center;font-size:13px;font-weight:600;color:var(--green)">Open the calendar →</a>';
+  }
+}
+
 // Latest 5 member feedback comments — sits where "My Profile" used to,
 // gives visitors a real social-proof signal on the community page.
 async function loadRecentFeedback() {
@@ -1814,6 +1859,7 @@ async function loadRecentFeedback() {
   loadChallenges();
   loadLeaderboard();
   loadRecentFeedback();
+  loadNextSession();
 
   // Sync atp-api.js session into legacy atpUser if available (keeps nav in sync)
   if (window.ATP && typeof window.ATP.init === 'function') {
