@@ -25,6 +25,7 @@ import { useAuthStore } from '@/lib/stores/auth.store';
 import { SessionCard } from '@/lib/components/SessionCard';
 import { StreakBadge } from '@/lib/components/StreakBadge';
 import { Avatar } from '@/lib/components/Avatar';
+import { DeviceWeekCard } from '@/lib/components/DeviceWeekCard';
 import { Icon, type IconName } from '@/lib/components/icons';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 
@@ -113,6 +114,9 @@ export default function Home() {
             />
           </View>
         </View>
+
+        {/* My device this week — wearable mirror (per founder 2026-06-27) */}
+        <DeviceWeekCard />
 
         {/* Next booking */}
         <View className="px-5 mt-7">
