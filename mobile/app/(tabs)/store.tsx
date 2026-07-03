@@ -19,7 +19,10 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getWishlist, getRedemptionHistory, removeFromWishlist } from '@/lib/api/store';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 
-const SHOP_URL = 'https://shop.atthepark.world';
+// The custom shop.atthepark.world domain has no DNS record (yet) —
+// the store lives on the Shopify-issued domain. Swap back when the
+// custom domain is wired up in Shopify → Settings → Domains.
+const SHOP_URL = 'https://atp-store-7903.myshopify.com';
 
 type Segment = 'shop' | 'rewards';
 

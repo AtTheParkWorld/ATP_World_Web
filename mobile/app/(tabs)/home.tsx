@@ -184,6 +184,29 @@ export default function Home() {
           </View>
         </View>
 
+        {/* Ambassador scan & check-in — prominent full-width entry, only
+            for ambassadors. The dashboard route lists today's sessions →
+            tap → camera scanner. Was previously buried three levels deep
+            under Profile → Ambassador tools. */}
+        {!!me?.is_ambassador && (
+          <View className="px-5 mt-4">
+            <Pressable
+              onPress={() => router.push('/ambassador')}
+              className="bg-atp-green rounded-atp-lg p-4 flex-row items-center justify-between active:opacity-80"
+            >
+              <View className="flex-1">
+                <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.black }} className="text-lg uppercase tracking-tight">
+                  Scan & check-in
+                </Text>
+                <Text style={{ fontFamily: fontFamily.body, color: 'rgba(0,0,0,0.65)' }} className="text-xs mt-0.5">
+                  Ambassador tools · scan member QR codes at your session
+                </Text>
+              </View>
+              <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.black, fontSize: 22 }}>→</Text>
+            </Pressable>
+          </View>
+        )}
+
         {/* Upcoming session rail */}
         <View className="mt-8">
           <View className="px-5 flex-row items-center justify-between mb-3">

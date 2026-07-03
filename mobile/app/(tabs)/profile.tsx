@@ -13,7 +13,6 @@
 import { useEffect } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import QRCode from 'react-native-qrcode-svg';
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getProfile, getStats, getStreak } from '@/lib/api/members';
@@ -104,20 +103,10 @@ export default function Profile() {
           </View>
         </View>
 
-        {/* QR */}
-        {!!m?.member_number && (
-          <View className="px-5 mt-3">
-            <View className="bg-atp-white rounded-atp-lg p-5 items-center">
-              <QRCode value={`ATP:${m.member_number}`} size={170} backgroundColor="white" color="#0a0a0a" />
-              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.black }} className="text-xs uppercase tracking-widest mt-3">
-                #{m.member_number}
-              </Text>
-              <Text style={{ fontFamily: fontFamily.body, color: '#666' }} className="text-xs mt-1">
-                Ambassadors scan this at check-in.
-              </Text>
-            </View>
-          </View>
-        )}
+        {/* Member QR removed 2026-06-27 per founder — it confused members
+            with the per-booking session QR (the one that actually gets
+            scanned at check-in, reachable from Home → booked session →
+            Tap to show QR). */}
 
         {/* Profile completion */}
         {m?.profile_complete_pct != null && m.profile_complete_pct < 100 && (

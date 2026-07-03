@@ -9,6 +9,7 @@
  *
  * Comment count + relative time render statelessly.
  */
+import { useState } from 'react';
 import { Image, Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Video, ResizeMode } from 'expo-av';
@@ -20,6 +21,37 @@ import { Avatar } from '@/lib/components/Avatar';
 function isVideoMedia(m: { src: string; type?: string }): boolean {
   if (m.type === 'video') return true;
   return /\.(mp4|mov|m4v|webm)(\?|$)/i.test(m.src);
+}
+
+/**
+ * Feed video — Instagram-style: autoplays muted + looping the moment
+ * it's on screen (FlatList unmounts far-off-screen cards, so at most
+ * a couple play concurrently). Tapping toggles sound; a speaker chip
+ * bottom-right shows the current state.
+ */
+function FeedVideo({ uri }: { uri: string }) {
+  const [muted, setMuted] = useState(true);
+  return (
+    <Pressable onPress={() => setMuted((v) => !v)}>
+      <Video
+        source={{ uri }}
+        style={{ width: '100%', aspectRatio: 4 / 3, marginTop: 12, borderRadius: 14, backgroundColor: '#000' }}
+        resizeMode={ResizeMode.COVER}
+        shouldPlay
+        isLooping
+        isMuted={muted}
+      />
+      <View
+        style={{
+          position: 'absolute', right: 10, bottom: 10,
+          backgroundColor: 'rgba(0,0,0,0.55)',
+          borderRadius: 999, paddingHorizontal: 10, paddingVertical: 5,
+        }}
+      >
+        <Text style={{ fontSize: 13 }}>{muted ? '🔇' : '🔊'}</Text>
+      </View>
+    </Pressable>
+  );
 }
 
 function timeAgo(iso: string): string {
@@ -101,13 +133,7 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
           video vs image by `type` first, then by file extension. */}
       {!!post.media && post.media.length > 0 && !!post.media[0]?.src && (
         isVideoMedia(post.media[0]) ? (
-          <Video
-            source={{ uri: absUrl(post.media[0].src)! }}
-            style={{ width: '100%', aspectRatio: 4 / 3, marginTop: 12, borderRadius: 14, backgroundColor: '#000' }}
-            useNativeControls
-            resizeMode={ResizeMode.COVER}
-            isLooping={false}
-          />
+          <FeedVideo uri={absUrl(post.media[0].src)!} />
         ) : (
           <Image
             source={{ uri: absUrl(post.media[0].src)! }}

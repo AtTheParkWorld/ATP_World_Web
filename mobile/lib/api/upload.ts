@@ -73,23 +73,27 @@ export async function pickAndUploadMedia(opts: { kind?: 'post' | 'avatar' } = {}
     content_type: contentType,
   });
 
-  // Read the file as a blob via fetch — this works for both file:// URIs
-  // (iOS photo library) and content:// URIs (Android).
-  const fileResp = await fetch(uri);
-  const blob     = await fileResp.blob();
-
-  if (blob.size > signed.max_size_bytes) {
-    throw new Error(`File is too large (${Math.round(blob.size / 1024 / 1024)}MB). Max ${Math.round(signed.max_size_bytes / 1024 / 1024)}MB.`);
+  // Size check via the filesystem — cheaper than reading the whole file
+  // into memory, works for file:// (iOS) and content:// (Android) URIs.
+  const FileSystem = await import('expo-file-system');
+  const info = await FileSystem.getInfoAsync(uri, { size: true });
+  const size = (info.exists && 'size' in info ? (info as any).size : 0) || 0;
+  if (size > signed.max_size_bytes) {
+    throw new Error(`File is too large (${Math.round(size / 1024 / 1024)}MB). Max ${Math.round(signed.max_size_bytes / 1024 / 1024)}MB.`);
   }
 
-  // PUT directly to R2 — the presigned URL embeds auth, no header needed.
-  const putResp = await fetch(signed.url, {
-    method: 'PUT',
-    headers: { 'Content-Type': contentType },
-    body: blob,
+  // PUT directly to R2 via the native uploader. The old approach —
+  // fetch(file://) → blob → fetch(PUT, {body: blob}) — intermittently
+  // fails with "Network request failed" on iOS for larger photos
+  // because RN buffers the entire blob through the JS bridge.
+  // FileSystem.uploadAsync streams from disk in native code.
+  const putResp = await FileSystem.uploadAsync(signed.url, uri, {
+    httpMethod: 'PUT',
+    headers:    { 'Content-Type': contentType },
+    uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
   });
-  if (!putResp.ok) {
-    throw new Error(`Upload failed (${putResp.status}). Try a smaller file or a different network.`);
+  if (putResp.status < 200 || putResp.status >= 300) {
+    throw new Error(`Upload failed (HTTP ${putResp.status}). Try a smaller file or a different network.`);
   }
 
   return {
