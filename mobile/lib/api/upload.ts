@@ -15,7 +15,7 @@
 import { api } from './client';
 
 export interface UploadUrlResponse {
-  url: string;          // presigned PUT URL valid for 5 min
+  upload_url: string;   // presigned PUT URL valid for 5 min
   public_url: string;   // permanent R2 URL of the file once uploaded
   key: string;          // R2 object key (kind/filename/timestamp)
   content_type: string;
@@ -82,18 +82,42 @@ export async function pickAndUploadMedia(opts: { kind?: 'post' | 'avatar' } = {}
     throw new Error(`File is too large (${Math.round(size / 1024 / 1024)}MB). Max ${Math.round(signed.max_size_bytes / 1024 / 1024)}MB.`);
   }
 
+  // Guard against a shape change on the backend — this exact bug shipped
+  // once: the endpoint returns `upload_url`, the app read `url`, and
+  // uploadAsync got nil ("Cannot convert 'Optional(nil)' to URL").
+  if (!signed || typeof signed.upload_url !== 'string' || !signed.upload_url) {
+    throw new Error('Upload service returned an unexpected response. Try again in a minute.');
+  }
+
   // PUT directly to R2 via the native uploader. The old approach —
   // fetch(file://) → blob → fetch(PUT, {body: blob}) — intermittently
   // fails with "Network request failed" on iOS for larger photos
   // because RN buffers the entire blob through the JS bridge.
   // FileSystem.uploadAsync streams from disk in native code.
-  const putResp = await FileSystem.uploadAsync(signed.url, uri, {
+  const putResp = await FileSystem.uploadAsync(signed.upload_url, uri, {
     httpMethod: 'PUT',
     headers:    { 'Content-Type': contentType },
     uploadType: FileSystem.FileSystemUploadType.BINARY_CONTENT,
   });
   if (putResp.status < 200 || putResp.status >= 300) {
     throw new Error(`Upload failed (HTTP ${putResp.status}). Try a smaller file or a different network.`);
+  }
+
+  // Step 3 of the flow — register the uploaded object so the media
+  // registry knows about it (same call the website makes). The backend
+  // validates that public_url matches the key, so pass both through
+  // verbatim. Best-effort: if this fails the file is already in R2 and
+  // the avatar/post URL still works; we don't fail the whole upload.
+  try {
+    await api.post('/cms/upload-complete', {
+      key:        signed.key,
+      public_url: signed.public_url,
+      kind:       opts.kind || 'post',
+      filename:   basename(uri),
+      size_bytes: size || undefined,
+    });
+  } catch {
+    // non-fatal
   }
 
   return {
