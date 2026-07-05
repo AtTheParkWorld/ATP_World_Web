@@ -1,0 +1,20 @@
+{%- comment -%}
+  Renders a product price with sale/compare-at support.
+  Usage: {% render 'price', product: product %}
+         {% render 'price', variant: variant %}
+{%- endcomment -%}
+{%- liquid
+  if variant
+    assign target_price = variant.price
+    assign target_compare = variant.compare_at_price
+  else
+    assign target_price = product.price
+    assign target_compare = product.compare_at_price
+  endif
+-%}
+<span class="price{% if target_compare > target_price %} price--sale{% endif %}">
+  {{ target_price | money }}
+  {%- if target_compare > target_price -%}
+    <s class="price--compare">{{ target_compare | money }}</s>
+  {%- endif -%}
+</span>

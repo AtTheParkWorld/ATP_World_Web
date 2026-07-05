@@ -1,0 +1,12 @@
+{% render 'breadcrumbs' %}
+<section class="page-width" style="padding-bottom:72px;max-width:820px">
+  <h1 class="h2" style="margin:6px 0 26px">{{ page.title }}</h1>
+  <div class="rte">{{ page.content }}</div>
+</section>
+
+{% schema %}
+{
+  "name": "Page",
+  "settings": []
+}
+{% endschema %}

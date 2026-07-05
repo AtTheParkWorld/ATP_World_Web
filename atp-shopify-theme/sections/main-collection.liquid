@@ -1,0 +1,137 @@
+{% render 'breadcrumbs' %}
+
+<section class="page-width" style="padding-bottom:72px">
+  <div class="section-head" style="margin-top:6px">
+    <div>
+      <p class="eyebrow">{{ 'collections.eyebrow' | t }}</p>
+      <h1 class="h2" style="margin-top:10px">{{ collection.title }}</h1>
+      {%- if collection.description != blank -%}
+        <p style="color:var(--light);font-weight:300;margin-top:10px;max-width:60ch">{{ collection.description | strip_html }}</p>
+      {%- endif -%}
+    </div>
+  </div>
+
+  <div class="collection-layout">
+
+    {%- comment -%} ── Filter sidebar (native storefront filters) ── {%- endcomment -%}
+    <aside>
+      <button type="button" class="btn btn--secondary filter-toggle-mobile" data-filters-toggle>
+        {{ 'collections.filters' | t }}
+      </button>
+      <div class="filters">
+        <form id="CollectionFilters" method="get">
+          {%- if collection.current_type or collection.current_vendor -%}{%- endif -%}
+          {%- for filter in collection.filters -%}
+            {%- if filter.type == 'list' or filter.type == 'boolean' -%}
+              <details class="filter-group" {% if filter.active_values.size > 0 or forloop.first %}open{% endif %}>
+                <summary>{{ filter.label }}</summary>
+                <div class="filter-group__options">
+                  {%- for value in filter.values -%}
+                    <label class="filter-check">
+                      <input
+                        type="checkbox"
+                        name="{{ value.param_name }}"
+                        value="{{ value.value }}"
+                        {% if value.active %}checked{% endif %}
+                        {% if value.count == 0 and value.active == false %}disabled{% endif %}
+                      >
+                      {{ value.label }} <span style="color:var(--muted);font-size:11px">({{ value.count }})</span>
+                    </label>
+                  {%- endfor -%}
+                </div>
+              </details>
+            {%- elsif filter.type == 'price_range' -%}
+              <details class="filter-group" open>
+                <summary>{{ filter.label }}</summary>
+                <div class="filter-group__options" style="flex-direction:row;gap:10px">
+                  <input
+                    class="newsletter__input" style="padding:10px 12px;font-size:13px"
+                    name="{{ filter.min_value.param_name }}"
+                    type="number" min="0" placeholder="{{ 'collections.min' | t }}"
+                    {% if filter.min_value.value %}value="{{ filter.min_value.value | money_without_currency | replace: ',', '' }}"{% endif %}
+                  >
+                  <input
+                    class="newsletter__input" style="padding:10px 12px;font-size:13px"
+                    name="{{ filter.max_value.param_name }}"
+                    type="number" min="0" placeholder="{{ 'collections.max' | t }}"
+                    {% if filter.max_value.value %}value="{{ filter.max_value.value | money_without_currency | replace: ',', '' }}"{% endif %}
+                  >
+                </div>
+              </details>
+            {%- endif -%}
+          {%- endfor -%}
+          {%- if collection.filters.size > 0 -%}
+            <div style="padding:16px 0">
+              <a href="{{ collection.url }}" style="font-size:12px;color:var(--muted);text-decoration:underline">{{ 'collections.clear_filters' | t }}</a>
+            </div>
+          {%- endif -%}
+        </form>
+      </div>
+    </aside>
+
+    {%- comment -%} ── Grid + toolbar ────────────────────────── {%- endcomment -%}
+    <div>
+      <div class="collection-toolbar">
+        <span class="collection-count">
+          {{ 'collections.product_count' | t: count: collection.products_count }}
+        </span>
+        <select class="sort-select" data-sort-select aria-label="{{ 'collections.sort_by' | t }}">
+          {%- assign current_sort = collection.sort_by | default: collection.default_sort_by -%}
+          {%- for option in collection.sort_options -%}
+            <option value="{{ option.value }}" {% if option.value == current_sort %}selected{% endif %}>{{ option.name }}</option>
+          {%- endfor -%}
+        </select>
+      </div>
+
+      {%- paginate collection.products by section.settings.per_page -%}
+        {%- if collection.products.size > 0 -%}
+          <div class="product-grid">
+            {%- for product in collection.products -%}
+              {% render 'product-card', card_product: product %}
+            {%- endfor -%}
+          </div>
+
+          {%- if paginate.pages > 1 -%}
+            <nav class="pagination" aria-label="{{ 'general.pagination' | t }}">
+              {%- if paginate.previous -%}
+                <a href="{{ paginate.previous.url }}" aria-label="{{ 'general.previous' | t }}">‹</a>
+              {%- endif -%}
+              {%- for part in paginate.parts -%}
+                {%- if part.is_link -%}
+                  <a href="{{ part.url }}">{{ part.title }}</a>
+                {%- elsif part.title == paginate.current_page -%}
+                  <span class="current" aria-current="page">{{ part.title }}</span>
+                {%- else -%}
+                  <span>{{ part.title }}</span>
+                {%- endif -%}
+              {%- endfor -%}
+              {%- if paginate.next -%}
+                <a href="{{ paginate.next.url }}" aria-label="{{ 'general.next' | t }}">›</a>
+              {%- endif -%}
+            </nav>
+          {%- endif -%}
+        {%- else -%}
+          <div class="cart-empty">
+            <h2>{{ 'collections.empty' | t }}</h2>
+            <p style="color:var(--muted);margin-top:10px">{{ 'collections.empty_help' | t }}</p>
+            <a href="{{ collection.url }}" class="btn btn--primary" style="margin-top:22px">{{ 'collections.clear_filters' | t }}</a>
+          </div>
+        {%- endif -%}
+      {%- endpaginate -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Collection page",
+  "settings": [
+    {
+      "type": "range",
+      "id": "per_page",
+      "label": "Products per page",
+      "min": 8, "max": 48, "step": 4, "default": 24
+    }
+  ]
+}
+{% endschema %}

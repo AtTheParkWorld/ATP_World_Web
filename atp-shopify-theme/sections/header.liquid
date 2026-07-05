@@ -1,0 +1,62 @@
+<header class="site-header">
+  <div class="site-header__inner">
+    <button class="header-icon-btn mobile-toggle" data-drawer-open aria-label="{{ 'general.menu' | t }}">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
+    </button>
+
+    <a href="{{ routes.root_url }}" class="site-header__logo" aria-label="{{ shop.name }}">
+      {%- if section.settings.logo -%}
+        <img src="{{ section.settings.logo | image_url: width: 200 }}" alt="{{ shop.name }}" width="100" height="30" loading="eager">
+      {%- else -%}
+        ATP<span class="dot">.</span>STORE
+      {%- endif -%}
+    </a>
+
+    <nav class="site-header__nav" aria-label="{{ 'general.primary_navigation' | t }}">
+      {%- for link in section.settings.menu.links -%}
+        <a href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>{{ link.title }}</a>
+      {%- endfor -%}
+    </nav>
+
+    <div class="site-header__actions">
+      <a href="{{ routes.search_url }}" class="header-icon-btn" aria-label="{{ 'general.search' | t }}">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      </a>
+      <a href="{{ routes.cart_url }}" class="header-icon-btn" aria-label="{{ 'cart.title' | t }}">
+        {% render 'icon-cart' %}
+        <span class="cart-count" data-cart-count data-count="{{ cart.item_count }}">{{ cart.item_count }}</span>
+      </a>
+    </div>
+  </div>
+</header>
+
+<div class="mobile-drawer" id="MobileDrawer" aria-hidden="true">
+  <div class="mobile-drawer__scrim"></div>
+  <div class="mobile-drawer__panel" role="dialog" aria-label="{{ 'general.menu' | t }}">
+    <button class="mobile-drawer__close" data-drawer-close aria-label="{{ 'general.close' | t }}">×</button>
+    <nav class="mobile-drawer__nav">
+      {%- for link in section.settings.menu.links -%}
+        <a href="{{ link.url }}">{{ link.title }}</a>
+      {%- endfor -%}
+    </nav>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Header",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Logo image (leave empty for ATP.STORE wordmark)"
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Navigation menu",
+      "default": "main-menu"
+    }
+  ]
+}
+{% endschema %}

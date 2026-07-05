@@ -1,0 +1,61 @@
+{%- comment -%}
+  Product card — grid tile with hover-swap image, badge, quick add.
+  Usage: {% render 'product-card', card_product: product %}
+{%- endcomment -%}
+<article class="product-card">
+  <a href="{{ card_product.url }}" aria-label="{{ card_product.title | escape }}">
+    <div class="product-card__media">
+      {%- if card_product.featured_media -%}
+        <img
+          class="primary"
+          src="{{ card_product.featured_media | image_url: width: 600 }}"
+          srcset="{{ card_product.featured_media | image_url: width: 400 }} 400w,
+                  {{ card_product.featured_media | image_url: width: 600 }} 600w,
+                  {{ card_product.featured_media | image_url: width: 900 }} 900w"
+          sizes="(min-width: 990px) 25vw, 50vw"
+          alt="{{ card_product.featured_media.alt | default: card_product.title | escape }}"
+          loading="lazy"
+          width="600"
+          height="800"
+        >
+        {%- if card_product.media[1] -%}
+          <img
+            class="secondary"
+            src="{{ card_product.media[1] | image_url: width: 600 }}"
+            alt=""
+            loading="lazy"
+            width="600"
+            height="800"
+            aria-hidden="true"
+          >
+        {%- endif -%}
+      {%- else -%}
+        {{ 'product-1' | placeholder_svg_tag: 'placeholder-svg' }}
+      {%- endif -%}
+
+      {%- if card_product.available == false -%}
+        <span class="product-card__badge product-card__badge--sold">{{ 'products.sold_out' | t }}</span>
+      {%- elsif card_product.compare_at_price > card_product.price -%}
+        <span class="product-card__badge">{{ 'products.on_sale' | t }}</span>
+      {%- elsif card_product.tags contains 'new' -%}
+        <span class="product-card__badge">{{ 'products.new' | t }}</span>
+      {%- endif -%}
+    </div>
+  </a>
+
+  {%- if card_product.available and card_product.variants.size == 1 -%}
+    <button
+      type="button"
+      class="product-card__quick"
+      data-quick-add="{{ card_product.variants.first.id }}"
+      aria-label="{{ 'products.quick_add' | t }}: {{ card_product.title | escape }}"
+    >
+      {% render 'icon-cart' %}
+    </button>
+  {%- endif -%}
+
+  <div class="product-card__body">
+    <h3 class="product-card__title"><a href="{{ card_product.url }}">{{ card_product.title }}</a></h3>
+    <div class="product-card__price">{% render 'price', product: card_product %}</div>
+  </div>
+</article>

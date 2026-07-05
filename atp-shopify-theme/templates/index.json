@@ -1,0 +1,37 @@
+{
+  "sections": {
+    "hero": {
+      "type": "hero-video",
+      "settings": {
+        "eyebrow": "ATP Store · Est. 2015",
+        "heading": "Never train",
+        "heading_accent": "alone.",
+        "subheading": "Performance gear built for the heat. Worn by 7,000+ members across Dubai, Al Ain and Muscat.",
+        "cta_text": "Shop the collection",
+        "cta2_text": "New drops"
+      }
+    },
+    "usp": {
+      "type": "usp-strip",
+      "blocks": {
+        "usp-1": { "type": "usp", "settings": { "icon": "🚚", "title": "Free UAE shipping", "text": "On every order over AED 250" } },
+        "usp-2": { "type": "usp", "settings": { "icon": "🔁", "title": "14-day returns", "text": "Easy, no-drama exchanges" } },
+        "usp-3": { "type": "usp", "settings": { "icon": "⭐", "title": "Earn ATP points", "text": "Every purchase counts toward rewards" } }
+      },
+      "block_order": ["usp-1", "usp-2", "usp-3"]
+    },
+    "featured": {
+      "type": "featured-collection",
+      "settings": {
+        "eyebrow": "Best sellers",
+        "heading": "The collection",
+        "limit": 8
+      }
+    },
+    "newsletter": {
+      "type": "newsletter",
+      "settings": {}
+    }
+  },
+  "order": ["hero", "usp", "featured", "newsletter"]
+}

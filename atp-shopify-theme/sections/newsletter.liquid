@@ -1,0 +1,40 @@
+<section class="newsletter">
+  <div class="newsletter__inner">
+    <p class="eyebrow" style="justify-content:center">{{ section.settings.eyebrow }}</p>
+    <h2 style="margin-top:12px">{{ section.settings.heading }}</h2>
+    <p style="color:var(--light);margin-top:12px;font-weight:300">{{ section.settings.text }}</p>
+
+    {%- form 'customer', class: 'newsletter__form' -%}
+      <input type="hidden" name="contact[tags]" value="newsletter">
+      {%- if form.posted_successfully? -%}
+        <p class="newsletter__success" style="flex:1">{{ 'newsletter.success' | t }}</p>
+      {%- else -%}
+        <input
+          type="email"
+          name="contact[email]"
+          class="newsletter__input"
+          placeholder="{{ 'newsletter.placeholder' | t }}"
+          aria-label="{{ 'newsletter.placeholder' | t }}"
+          autocomplete="email"
+          required
+        >
+        <button type="submit" class="btn btn--primary">{{ 'newsletter.button' | t }}</button>
+      {%- endif -%}
+      {%- if form.errors -%}
+        <p style="color:var(--danger);font-size:13px;width:100%">{{ form.errors.translated_fields.email | capitalize }} {{ form.errors.messages.email }}</p>
+      {%- endif -%}
+    {%- endform -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Newsletter",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "The inside lane" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "New drops. First dibs." },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "Session drops sell out in 48 hours. Get the email before the Instagram post." }
+  ],
+  "presets": [{ "name": "Newsletter" }]
+}
+{% endschema %}

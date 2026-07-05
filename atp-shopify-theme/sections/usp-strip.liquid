@@ -1,0 +1,41 @@
+<section class="usp-strip">
+  <div class="usp-strip__inner" style="--usp-count: {{ section.blocks.size | default: 3 }}">
+    {%- for block in section.blocks -%}
+      <div class="usp" {{ block.shopify_attributes }}>
+        <span class="usp__icon" aria-hidden="true">{{ block.settings.icon }}</span>
+        <div>
+          <div class="usp__title">{{ block.settings.title }}</div>
+          <div class="usp__text">{{ block.settings.text }}</div>
+        </div>
+      </div>
+    {%- endfor -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "USP strip",
+  "max_blocks": 4,
+  "blocks": [
+    {
+      "type": "usp",
+      "name": "USP",
+      "settings": [
+        { "type": "text", "id": "icon", "label": "Icon (emoji)", "default": "🚚" },
+        { "type": "text", "id": "title", "label": "Title", "default": "Free UAE shipping" },
+        { "type": "text", "id": "text", "label": "Text", "default": "On every order over AED 250" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "USP strip",
+      "blocks": [
+        { "type": "usp", "settings": { "icon": "🚚", "title": "Free UAE shipping", "text": "On every order over AED 250" } },
+        { "type": "usp", "settings": { "icon": "🔁", "title": "14-day returns", "text": "Easy, no-drama exchanges" } },
+        { "type": "usp", "settings": { "icon": "⭐", "title": "Earn ATP points", "text": "Every purchase counts toward rewards" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

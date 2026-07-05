@@ -1,0 +1,86 @@
+{% render 'breadcrumbs' %}
+
+<section class="page-width" style="padding-bottom:72px">
+  <h1 class="h2" style="margin:6px 0 26px">{{ 'cart.title' | t }}</h1>
+
+  {%- if cart.item_count > 0 -%}
+    <div class="cart-layout">
+      <div class="cart-items">
+        {%- for item in cart.items -%}
+          <div class="cart-item" data-line-item="{{ item.key }}">
+            <a class="cart-item__img" href="{{ item.url }}">
+              {%- if item.image -%}
+                <img
+                  src="{{ item.image | image_url: width: 200 }}"
+                  alt="{{ item.title | escape }}"
+                  width="88" height="117" loading="lazy"
+                >
+              {%- endif -%}
+            </a>
+            <div>
+              <p class="cart-item__title"><a href="{{ item.url }}">{{ item.product.title }}</a></p>
+              {%- unless item.product.has_only_default_variant -%}
+                <p class="cart-item__variant">{{ item.variant.title }}</p>
+              {%- endunless -%}
+              <div class="qty-input" style="margin-top:10px;display:inline-flex">
+                <button type="button" data-qty-step="-1" aria-label="{{ 'products.decrease' | t }}">−</button>
+                <input type="number" value="{{ item.quantity }}" min="1" readonly aria-label="{{ 'products.quantity' | t }}">
+                <button type="button" data-qty-step="1" aria-label="{{ 'products.increase' | t }}">+</button>
+              </div>
+              <a href="#" class="cart-item__remove" data-line-remove="{{ item.key }}">{{ 'cart.remove' | t }}</a>
+            </div>
+            <div class="price">{{ item.final_line_price | money }}</div>
+          </div>
+        {%- endfor -%}
+      </div>
+
+      <aside class="cart-summary">
+        <h3 style="margin-bottom:14px">{{ 'cart.summary' | t }}</h3>
+        <div class="cart-summary__row">
+          <span>{{ 'cart.subtotal' | t }}</span>
+          <span>{{ cart.items_subtotal_price | money }}</span>
+        </div>
+        {%- if cart.cart_level_discount_applications.size > 0 -%}
+          {%- for discount in cart.cart_level_discount_applications -%}
+            <div class="cart-summary__row" style="color:var(--green)">
+              <span>{{ discount.title }}</span>
+              <span>−{{ discount.total_allocated_amount | money }}</span>
+            </div>
+          {%- endfor -%}
+        {%- endif -%}
+        <div class="cart-summary__row cart-summary__row--total">
+          <span>{{ 'cart.total' | t }}</span>
+          <span>{{ cart.total_price | money }}</span>
+        </div>
+        <p class="cart-summary__note">{{ 'cart.shipping_note' | t }}</p>
+        <form action="{{ routes.cart_url }}" method="post" style="margin-top:18px">
+          <button type="submit" name="checkout" class="btn btn--primary btn--full">
+            {{ 'cart.checkout' | t }} {% render 'icon-arrow' %}
+          </button>
+        </form>
+        {%- if section.settings.continue_url != blank -%}
+          <a href="{{ section.settings.continue_url }}" class="btn btn--secondary btn--full" style="margin-top:10px">
+            {{ 'cart.continue' | t }}
+          </a>
+        {%- endif -%}
+      </aside>
+    </div>
+  {%- else -%}
+    <div class="cart-empty">
+      <h2>{{ 'cart.empty' | t }}</h2>
+      <p style="color:var(--muted);margin-top:10px">{{ 'cart.empty_help' | t }}</p>
+      <a href="{{ section.settings.continue_url | default: routes.all_products_collection_url }}" class="btn btn--primary" style="margin-top:24px">
+        {{ 'cart.start_shopping' | t }} {% render 'icon-arrow' %}
+      </a>
+    </div>
+  {%- endif -%}
+</section>
+
+{% schema %}
+{
+  "name": "Cart page",
+  "settings": [
+    { "type": "url", "id": "continue_url", "label": "Continue shopping link" }
+  ]
+}
+{% endschema %}

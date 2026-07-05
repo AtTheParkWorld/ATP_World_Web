@@ -1,0 +1,144 @@
+{% render 'breadcrumbs' %}
+
+<section class="page-width" style="padding-bottom:72px">
+  <div class="product-layout">
+
+    {%- comment -%} ── Gallery ─────────────────────────────── {%- endcomment -%}
+    <div class="product-gallery" data-gallery>
+      <div class="product-gallery__main media-vignette" data-gallery-main>
+        {%- if product.featured_media -%}
+          <img
+            src="{{ product.featured_media | image_url: width: 1100 }}"
+            srcset="{{ product.featured_media | image_url: width: 700 }} 700w,
+                    {{ product.featured_media | image_url: width: 1100 }} 1100w,
+                    {{ product.featured_media | image_url: width: 1600 }} 1600w"
+            sizes="(min-width: 990px) 55vw, 100vw"
+            alt="{{ product.featured_media.alt | default: product.title | escape }}"
+            width="1100" height="1467"
+            loading="eager" fetchpriority="high"
+          >
+        {%- else -%}
+          {{ 'product-1' | placeholder_svg_tag }}
+        {%- endif -%}
+      </div>
+      {%- if product.media.size > 1 -%}
+        <div class="product-gallery__thumbs" role="list">
+          {%- for media in product.media -%}
+            <button
+              type="button"
+              class="product-gallery__thumb{% if forloop.first %} active{% endif %}"
+              data-gallery-thumb="{{ media | image_url: width: 1100 }}"
+              aria-label="{{ 'products.view_image' | t }} {{ forloop.index }}"
+            >
+              <img src="{{ media | image_url: width: 160 }}" alt="" width="68" height="90" loading="lazy">
+            </button>
+          {%- endfor -%}
+        </div>
+      {%- endif -%}
+    </div>
+
+    {%- comment -%} ── Info + form ─────────────────────────── {%- endcomment -%}
+    <div class="product-info">
+      <p class="product-info__vendor">{{ product.vendor | default: shop.name }}</p>
+      <h1 class="product-info__title h2">{{ product.title }}</h1>
+      <div class="product-info__price price" data-product-price>
+        {% render 'price', product: product %}
+      </div>
+
+      {%- assign variants_json = '[' -%}
+      {%- for v in product.variants -%}
+        {%- capture v_json -%}
+          {"id":{{ v.id }},"available":{{ v.available }},"options":{{ v.options | json }},"price_formatted":{{ v.price | money | json }}}
+        {%- endcapture -%}
+        {%- assign variants_json = variants_json | append: v_json -%}
+        {%- unless forloop.last -%}{%- assign variants_json = variants_json | append: ',' -%}{%- endunless -%}
+      {%- endfor -%}
+      {%- assign variants_json = variants_json | append: ']' -%}
+
+      <form class="product-form" data-product-form data-variants="{{ variants_json | escape }}">
+        <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}">
+
+        {%- unless product.has_only_default_variant -%}
+          {%- for option in product.options_with_values -%}
+            <div class="option-group">
+              <span class="option-group__label">{{ option.name }}</span>
+              <div class="option-pills" role="radiogroup" aria-label="{{ option.name }}">
+                {%- for value in option.values -%}
+                  <button
+                    type="button"
+                    class="option-pill{% if option.selected_value == value %} selected{% endif %}"
+                    data-value="{{ value | escape }}"
+                    role="radio"
+                    aria-checked="{% if option.selected_value == value %}true{% else %}false{% endif %}"
+                  >{{ value }}</button>
+                {%- endfor -%}
+              </div>
+            </div>
+          {%- endfor -%}
+        {%- endunless -%}
+
+        <div class="qty-row">
+          <div class="qty-input" aria-label="{{ 'products.quantity' | t }}">
+            <button type="button" data-qty-step="-1" aria-label="{{ 'products.decrease' | t }}">−</button>
+            <input type="number" data-qty-input value="1" min="1" inputmode="numeric" aria-label="{{ 'products.quantity' | t }}">
+            <button type="button" data-qty-step="1" aria-label="{{ 'products.increase' | t }}">+</button>
+          </div>
+          <button
+            type="submit"
+            class="btn btn--primary btn--full"
+            data-add-to-cart
+            data-label-add="{{ 'products.add_to_cart' | t }}"
+            data-label-sold="{{ 'products.sold_out' | t }}"
+            {% unless product.selected_or_first_available_variant.available %}disabled{% endunless %}
+          >
+            {%- if product.selected_or_first_available_variant.available -%}
+              {{ 'products.add_to_cart' | t }}
+            {%- else -%}
+              {{ 'products.sold_out' | t }}
+            {%- endif -%}
+          </button>
+        </div>
+      </form>
+
+      {%- comment -%} ── Tabs: description / size guide ─────── {%- endcomment -%}
+      <div class="tabs" data-tabs>
+        <div class="tabs__nav" role="tablist">
+          <button class="tabs__btn" role="tab" aria-selected="true">{{ 'products.description' | t }}</button>
+          <button class="tabs__btn" role="tab" aria-selected="false">{{ 'products.size_guide' | t }}</button>
+        </div>
+        <div class="tabs__panel" role="tabpanel">
+          {{ product.description }}
+        </div>
+        <div class="tabs__panel" role="tabpanel" hidden>
+          {%- if section.settings.size_guide_page != blank -%}
+            {{ section.settings.size_guide_page.content }}
+          {%- else -%}
+            <table>
+              <thead><tr><th>{{ 'products.size' | t }}</th><th>{{ 'products.chest_cm' | t }}</th><th>{{ 'products.waist_cm' | t }}</th></tr></thead>
+              <tbody>
+                <tr><td>S</td><td>88–96</td><td>73–81</td></tr>
+                <tr><td>M</td><td>96–104</td><td>81–89</td></tr>
+                <tr><td>L</td><td>104–112</td><td>89–97</td></tr>
+                <tr><td>XL</td><td>112–120</td><td>97–105</td></tr>
+              </tbody>
+            </table>
+            <p style="margin-top:12px;font-size:12px;color:var(--muted)">{{ 'products.size_note' | t }}</p>
+          {%- endif -%}
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Product page",
+  "settings": [
+    {
+      "type": "page",
+      "id": "size_guide_page",
+      "label": "Size guide page (optional — overrides the built-in table)"
+    }
+  ]
+}
+{% endschema %}

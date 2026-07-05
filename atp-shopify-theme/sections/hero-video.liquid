@@ -1,0 +1,72 @@
+<section class="hero">
+  <div class="hero__media" aria-hidden="true">
+    {%- if section.settings.video != blank -%}
+      {{ section.settings.video | video_tag: autoplay: true, loop: true, muted: true, controls: false, playsinline: true, image_size: '1600x' }}
+    {%- elsif section.settings.video_url != blank -%}
+      <video autoplay loop muted playsinline preload="metadata"
+        {% if section.settings.poster %}poster="{{ section.settings.poster | image_url: width: 1600 }}"{% endif %}>
+        <source src="{{ section.settings.video_url }}" type="video/mp4">
+      </video>
+    {%- elsif section.settings.image -%}
+      <img
+        src="{{ section.settings.image | image_url: width: 1600 }}"
+        srcset="{{ section.settings.image | image_url: width: 800 }} 800w,
+                {{ section.settings.image | image_url: width: 1600 }} 1600w,
+                {{ section.settings.image | image_url: width: 2400 }} 2400w"
+        sizes="100vw"
+        alt=""
+        width="1600"
+        height="900"
+        loading="eager"
+        fetchpriority="high"
+      >
+    {%- endif -%}
+  </div>
+  <div class="hero__overlay" aria-hidden="true"></div>
+
+  <div class="hero__content">
+    {%- if section.settings.eyebrow != blank -%}
+      <p class="eyebrow">{{ section.settings.eyebrow }}</p>
+    {%- endif -%}
+    <h1 class="hero__title" style="margin-top:12px">
+      {{ section.settings.heading }}
+      {%- if section.settings.heading_accent != blank -%}
+        <span class="accent"> {{ section.settings.heading_accent }}</span>
+      {%- endif -%}
+    </h1>
+    {%- if section.settings.subheading != blank -%}
+      <p class="hero__sub">{{ section.settings.subheading }}</p>
+    {%- endif -%}
+    <div class="hero__ctas">
+      {%- if section.settings.cta_text != blank -%}
+        <a href="{{ section.settings.cta_link }}" class="btn btn--primary">
+          {{ section.settings.cta_text }} {% render 'icon-arrow' %}
+        </a>
+      {%- endif -%}
+      {%- if section.settings.cta2_text != blank -%}
+        <a href="{{ section.settings.cta2_link }}" class="btn btn--secondary">{{ section.settings.cta2_text }}</a>
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Video hero",
+  "settings": [
+    { "type": "video", "id": "video", "label": "Video (Shopify-hosted, preferred)" },
+    { "type": "url", "id": "video_url", "label": "OR external MP4 URL" },
+    { "type": "image_picker", "id": "poster", "label": "Video poster image" },
+    { "type": "image_picker", "id": "image", "label": "Fallback image (used when no video set)" },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "ATP Store · Est. 2015" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Never train" },
+    { "type": "text", "id": "heading_accent", "label": "Heading accent (lime)", "default": "alone." },
+    { "type": "textarea", "id": "subheading", "label": "Subheading", "default": "Performance gear built for the heat. Worn by 7,000+ members across Dubai, Al Ain and Muscat." },
+    { "type": "text", "id": "cta_text", "label": "Primary button text", "default": "Shop the collection" },
+    { "type": "url", "id": "cta_link", "label": "Primary button link" },
+    { "type": "text", "id": "cta2_text", "label": "Secondary button text", "default": "New drops" },
+    { "type": "url", "id": "cta2_link", "label": "Secondary button link" }
+  ],
+  "presets": [{ "name": "Video hero" }]
+}
+{% endschema %}

@@ -1,0 +1,72 @@
+{
+  "general": {
+    "home": "Home",
+    "menu": "Menu",
+    "close": "Close",
+    "search": "Search",
+    "announcement": "Announcement",
+    "primary_navigation": "Primary",
+    "breadcrumbs": "Breadcrumbs",
+    "pagination": "Pagination",
+    "previous": "Previous page",
+    "next": "Next page",
+    "currency_note": "All prices in AED · UAE Dirham",
+    "404_title": "This page skipped the session.",
+    "404_text": "The page you're looking for doesn't exist or has moved.",
+    "404_cta": "Shop the collection",
+    "meta": {
+      "page": "Page {{ page }}"
+    }
+  },
+  "accessibility": {
+    "skip_to_content": "Skip to content"
+  },
+  "products": {
+    "add_to_cart": "Add to cart",
+    "sold_out": "Sold out",
+    "on_sale": "Sale",
+    "new": "New",
+    "quick_add": "Quick add",
+    "quantity": "Quantity",
+    "increase": "Increase quantity",
+    "decrease": "Decrease quantity",
+    "description": "Description",
+    "size_guide": "Size guide",
+    "size": "Size",
+    "chest_cm": "Chest (cm)",
+    "waist_cm": "Waist (cm)",
+    "size_note": "Between sizes? Size up for a relaxed fit, down for a compression fit.",
+    "view_image": "View image",
+    "example": "ATP Park Tee"
+  },
+  "collections": {
+    "eyebrow": "ATP Store",
+    "view_all": "View all",
+    "filters": "Filters",
+    "clear_filters": "Clear all filters",
+    "sort_by": "Sort by",
+    "min": "Min",
+    "max": "Max",
+    "empty": "Nothing matches those filters.",
+    "empty_help": "Try removing a filter — new gear lands every month.",
+    "product_count": "{{ count }} products"
+  },
+  "cart": {
+    "title": "Your cart",
+    "summary": "Order summary",
+    "subtotal": "Subtotal",
+    "total": "Total",
+    "checkout": "Checkout",
+    "continue": "Continue shopping",
+    "remove": "Remove",
+    "empty": "Your cart is empty.",
+    "empty_help": "The collection is waiting. Members earn ATP points on every order.",
+    "start_shopping": "Start shopping",
+    "shipping_note": "Shipping + taxes calculated at checkout. Free UAE shipping over AED 250."
+  },
+  "newsletter": {
+    "placeholder": "you@email.com",
+    "button": "Sign me up",
+    "success": "You're in. Watch your inbox for the next drop."
+  }
+}

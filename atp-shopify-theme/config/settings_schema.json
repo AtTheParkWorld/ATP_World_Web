@@ -1,0 +1,44 @@
+[
+  {
+    "name": "theme_info",
+    "theme_name": "ATP Store",
+    "theme_version": "1.0.0",
+    "theme_author": "At The Park",
+    "theme_documentation_url": "https://atthepark.world",
+    "theme_support_url": "https://atthepark.world/contacts.html"
+  },
+  {
+    "name": "Brand",
+    "settings": [
+      {
+        "type": "header",
+        "content": "Colours"
+      },
+      {
+        "type": "paragraph",
+        "content": "The ATP design system is dark-first: electric lime #A8FF00 on deep black #0a0a0a. These settings exist for future flexibility — the shipped CSS uses the brand tokens directly."
+      },
+      {
+        "type": "color",
+        "id": "accent_color",
+        "label": "Accent (lime)",
+        "default": "#A8FF00"
+      },
+      {
+        "type": "color",
+        "id": "background_color",
+        "label": "Background",
+        "default": "#0a0a0a"
+      },
+      {
+        "type": "header",
+        "content": "Social sharing"
+      },
+      {
+        "type": "image_picker",
+        "id": "og_image",
+        "label": "Default social sharing image (1200×630)"
+      }
+    ]
+  }
+]

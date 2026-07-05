@@ -1,0 +1,30 @@
+/* ════════════════════════════════════════════════════════════════
+   ATP STORE — theme.css
+   Merchant-tweakable overrides layer. base.css owns the system;
+   this file is intentionally light so Theme Editor customisations
+   and one-off campaign styles have a safe home that survives
+   base.css upgrades.
+   ════════════════════════════════════════════════════════════════ */
+
+/* Campaign utility: lime text on any heading span */
+.text-accent { color: var(--green); }
+
+/* Utility: soft-glow card for merchandising blocks */
+.glow-card {
+  border: 1px solid rgba(168, 255, 0, .3);
+  box-shadow: 0 14px 40px -18px rgba(168, 255, 0, .35);
+}
+
+/* Utility: gold accent for premium drops (matches website offers card) */
+.gold { color: #f5c042; }
+.gold-border { border-color: rgba(245, 192, 66, .4) !important; }
+
+/* Image treatment: subtle dark vignette for consistency across
+   product photography shot in different conditions */
+.media-vignette { position: relative; }
+.media-vignette::after {
+  content: '';
+  position: absolute; inset: 0;
+  background: radial-gradient(120% 120% at 50% 30%, transparent 60%, rgba(10, 10, 10, .25) 100%);
+  pointer-events: none;
+}

@@ -1,0 +1,53 @@
+<section class="section-pad">
+  <div class="page-width">
+    <div class="section-head">
+      <div>
+        {%- if section.settings.eyebrow != blank -%}
+          <p class="eyebrow">{{ section.settings.eyebrow }}</p>
+        {%- endif -%}
+        <h2 style="margin-top:10px">{{ section.settings.heading }}</h2>
+      </div>
+      {%- if section.settings.collection != blank -%}
+        <a href="{{ section.settings.collection.url }}" class="link-arrow">
+          {{ 'collections.view_all' | t }} {% render 'icon-arrow' %}
+        </a>
+      {%- endif -%}
+    </div>
+
+    <div class="product-grid">
+      {%- if section.settings.collection != blank -%}
+        {%- for product in section.settings.collection.products limit: section.settings.limit -%}
+          {% render 'product-card', card_product: product %}
+        {%- endfor -%}
+      {%- else -%}
+        {%- for i in (1..4) -%}
+          <article class="product-card">
+            <div class="product-card__media">{{ 'product-1' | placeholder_svg_tag }}</div>
+            <div class="product-card__body">
+              <h3 class="product-card__title">{{ 'products.example' | t }}</h3>
+              <div class="product-card__price"><span class="price">AED 175</span></div>
+            </div>
+          </article>
+        {%- endfor -%}
+      {%- endif -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Featured collection",
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Best sellers" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "The collection" },
+    { "type": "collection", "id": "collection", "label": "Collection" },
+    {
+      "type": "range",
+      "id": "limit",
+      "label": "Products to show",
+      "min": 4, "max": 12, "step": 4, "default": 8
+    }
+  ],
+  "presets": [{ "name": "Featured collection" }]
+}
+{% endschema %}
