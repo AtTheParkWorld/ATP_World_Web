@@ -1,30 +1,31 @@
 /**
- * Tab-bar Community icon — heart shape with two small figure dots
- * inside (heads + bodies suggested by a triangle/diamond) and a
- * tiny checkmark badge above. Matches the contact sheet Community
- * mark ("We move together"). Static, clear, readable at 26pt.
+ * Tab-bar Community — contact-sheet mark ("We move together."):
+ * two figures with raised arms whose inner arms flow into a shared
+ * heart with a checkmark inside.
+ * Geometry visually verified against the ChatGPT design sheet.
  */
 import Svg, { Path, Circle } from 'react-native-svg';
 import { DEFAULTS, type IconProps } from './types';
 
 export function IconTabCommunity({ size = DEFAULTS.size, color = DEFAULTS.color, strokeWidth = DEFAULTS.strokeWidth }: IconProps) {
+  const sw = strokeWidth * 0.8;
+  const swDetail = strokeWidth * 0.7;
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      {/* Heart */}
+      {/* Heads */}
+      <Circle cx="7"  cy="5.2" r="2" stroke={color} strokeWidth={sw} />
+      <Circle cx="17" cy="5.2" r="2" stroke={color} strokeWidth={sw} />
+      {/* Outer arms: raised up-out */}
+      <Path d="M3.6 10.4 5 6.6M20.4 10.4 19 6.6" stroke={color} strokeWidth={sw} strokeLinecap="round" />
+      {/* Inner arms: flow down into the heart's top lobes */}
+      <Path d="M9 6.8c.6 1.6.4 2.8-.3 4M15 6.8c-.6 1.6-.4 2.8.3 4" stroke={color} strokeWidth={sw} strokeLinecap="round" />
+      {/* Heart between the figures */}
       <Path
-        d="M12 21s-7-4.5-7-10.5a5 5 0 0 1 7-4.6A5 5 0 0 1 19 10.5C19 16.5 12 21 12 21Z"
-        stroke={color}
-        strokeWidth={strokeWidth}
-        strokeLinejoin="round"
+        d="M12 20.4c-3.4-2.3-5.6-4.4-5.6-6.9a2.8 2.8 0 0 1 5.6-1.1 2.8 2.8 0 0 1 5.6 1.1c0 2.5-2.2 4.6-5.6 6.9Z"
+        stroke={color} strokeWidth={sw} strokeLinejoin="round"
       />
-      {/* Two figures inside the heart — heads */}
-      <Circle cx="10" cy="11.5" r="1.1" fill={color} />
-      <Circle cx="14" cy="11.5" r="1.1" fill={color} />
-      {/* Two figures inside the heart — arms-up bodies (small V's) */}
-      <Path d="M8.7 16 L10 13.5 L11.3 16" stroke={color} strokeWidth={strokeWidth - 0.6} strokeLinecap="round" strokeLinejoin="round" />
-      <Path d="M12.7 16 L14 13.5 L15.3 16" stroke={color} strokeWidth={strokeWidth - 0.6} strokeLinecap="round" strokeLinejoin="round" />
-      {/* Checkmark badge above */}
-      <Path d="M10.5 3.5 L11.5 4.5 L13.5 2.5" stroke={color} strokeWidth={strokeWidth - 0.4} strokeLinecap="round" strokeLinejoin="round" />
+      {/* Check inside the heart */}
+      <Path d="m10.2 14.4 1.4 1.4 2.4-2.6" stroke={color} strokeWidth={swDetail} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
