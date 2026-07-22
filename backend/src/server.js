@@ -378,6 +378,16 @@ app.get('/.well-known/assetlinks.json', (req, res) => {
   res.sendFile(path.join(__dirname, '../public/.well-known/assetlinks.json'));
 });
 
+// ── Store cutover ────────────────────────────────────────────
+// The online shop lives entirely on Shopify; the old in-site store
+// page is retired. Every /store link — nav, bookmarks, email CTAs —
+// redirects there. Registered BEFORE express.static so the redirect
+// wins over public/store.html. 302 (not 301) so browsers don't cache
+// the hop while the custom-domain switch is still ahead; SHOP_URL env
+// flips it to shop.atthepark.world without a code change.
+const SHOP_URL = process.env.SHOP_URL || 'https://atp-store-7903.myshopify.com';
+app.get(['/store', '/store.html'], (req, res) => res.redirect(302, SHOP_URL));
+
 // HTML pages must never be cached (so deploys propagate immediately).
 // JS/CSS/assets get a sensible short cache. Bundles use content-hash
 // invalidation via ?cb=… cache-busters in the page templates.
@@ -606,7 +616,6 @@ app.get('/blog/:slug', async (req, res) => {
 app.get('/sessions', (req, res) => res.sendFile(path.join(__dirname, '../public/sessions.html')));
 app.get('/community',(req, res) => res.sendFile(path.join(__dirname, '../public/community.html')));
 app.get('/profile',  (req, res) => res.sendFile(path.join(__dirname, '../public/profile.html')));
-app.get('/store',    (req, res) => res.sendFile(path.join(__dirname, '../public/store.html')));
 app.get('/checkin',  (req, res) => res.sendFile(path.join(__dirname, '../public/checkin.html')));
 // Combined legal page — privacy + terms + refund in one place, deep-linkable.
 app.get('/legal',    (req, res) => res.sendFile(path.join(__dirname, '../public/legal.html')));

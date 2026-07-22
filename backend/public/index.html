@@ -713,7 +713,7 @@ a.product-card:hover{transform:translateY(-4px)}
         <h2 class="section-h2 reveal rd1" id="shop-heading">Our Collection</h2>
         <p class="reveal rd2" style="font-size:14px;color:var(--muted);font-weight:300;line-height:1.5;margin-top:8px;max-width:520px">The pieces members are wearing right now — sorted by what's actually moving from the store this week.</p>
       </div>
-      <a href="store.html" class="link-arrow reveal">Shop all <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7h10M8 3l4 4-4 4"/></svg></a>
+      <a href="/store" class="link-arrow reveal">Shop all <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7h10M8 3l4 4-4 4"/></svg></a>
     </div>
 
     <div class="swf-carousel-outer reveal">
@@ -994,7 +994,7 @@ document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
 
     // Best sellers — Shopify's BEST_SELLING sortKey ranks by recent sales
     // velocity. Falls back to creation order if a store has no sales yet.
-    var query = "{products(first:8, sortKey: BEST_SELLING){edges{node{id title productType priceRange{minVariantPrice{amount currencyCode}}images(first:1){edges{node{url altText}}}}}}}";
+    var query = "{products(first:8, sortKey: BEST_SELLING){edges{node{id title handle productType priceRange{minVariantPrice{amount currencyCode}}images(first:1){edges{node{url altText}}}}}}}";
 
     fetch("https://" + DOMAIN + "/api/2025-01/graphql.json", {
       method: "POST",
@@ -1029,8 +1029,10 @@ document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
         var alt = imgNode ? (imgNode.altText || p.title) : p.title;
         var price = parseFloat(p.priceRange.minVariantPrice.amount);
         var cur = p.priceRange.minVariantPrice.currencyCode;
+        // Card deep-links straight to the product on the Shopify storefront.
+        var productUrl = p.handle ? "https://" + DOMAIN + "/products/" + p.handle : "/store";
         return [
-          '<a href="store.html" class="swf-card">',
+          '<a href="' + productUrl + '" class="swf-card">',
             '<div class="swf-img">',
               img ? '<img src="' + img + '" alt="' + alt + '" loading="lazy">' : '<div style="width:100%;height:100%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:32px">🎽</div>',
             '</div>',
@@ -1073,7 +1075,7 @@ document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
       // routes members into the store even if Shopify is unreachable.
       // (Previous version overwrote a useful error card with this one,
       //  hiding diagnostic info from the page.)
-      track.innerHTML = '<a href="store.html" class="swf-card" style="min-width:100%;display:flex;align-items:center;justify-content:center;min-height:200px;border:1px solid rgba(168,255,0,.2);border-radius:12px;background:rgba(168,255,0,.04)">' +
+      track.innerHTML = '<a href="/store" class="swf-card" style="min-width:100%;display:flex;align-items:center;justify-content:center;min-height:200px;border:1px solid rgba(168,255,0,.2);border-radius:12px;background:rgba(168,255,0,.04)">' +
         '<div style="text-align:center"><div style="font-family:var(--ff-display);font-size:32px;font-weight:900;color:#A8FF00;text-transform:uppercase;letter-spacing:.04em">Shop Now</div>' +
         '<div style="font-size:13px;color:#555;margin-top:6px">View all products →</div></div></a>';
     });

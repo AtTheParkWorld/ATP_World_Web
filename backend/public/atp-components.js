@@ -22,7 +22,7 @@
     { key: 'sessions',  label: 'Sessions',     href: 'sessions.html' },
     { key: 'stream',    label: 'Live',         href: 'stream.html' },
     { key: 'community', label: 'Community',    href: 'community.html' },
-    { key: 'store',     label: 'Store',        href: 'store.html' },
+    { key: 'store',     label: 'Store',        href: '/store' },
     { key: 'plans',     label: 'Membership',   href: 'plans.html' },
     { key: 'offers',    label: 'Offers',       href: 'offers.html' },
     { key: 'coaches',   label: 'Our coaches',  href: 'coaches.html' },
@@ -679,7 +679,7 @@
             '<div class="atp-footer-col"><h4>Connect</h4><ul>' +
               '<li><a href="community.html">Community</a></li>' +
               '<li><a href="blog.html">Blog</a></li>' +
-              '<li><a href="store.html">Store</a></li>' +
+              '<li><a href="/store">Store</a></li>' +
             '</ul></div>' +
             '<div class="atp-footer-col"><h4>For Business</h4><ul>' +
               '<li><a href="business.html">Partners &amp; Corporate</a></li>' +
