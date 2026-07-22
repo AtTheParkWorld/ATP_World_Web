@@ -8,7 +8,9 @@
         "heading_accent": "alone.",
         "subheading": "Performance gear built for the heat. Worn by 7,000+ members across Dubai, Al Ain and Muscat.",
         "cta_text": "Shop the collection",
-        "cta2_text": "New drops"
+        "cta2_text": "New drops",
+        "cta_link": "/collections/all",
+        "cta2_link": "/collections/featured"
       }
     },
     "marquee": {
@@ -56,14 +58,16 @@
           "type": "tile",
           "settings": {
             "label": "Shop Men",
-            "cta": "Shop now"
+            "cta": "Shop now",
+            "collection": "men"
           }
         },
         "women": {
           "type": "tile",
           "settings": {
             "label": "Shop Women",
-            "cta": "Shop now"
+            "cta": "Shop now",
+            "collection": "women"
           }
         }
       },
@@ -77,7 +81,8 @@
       "settings": {
         "eyebrow": "Best sellers",
         "heading": "The collection",
-        "limit": 8
+        "limit": 8,
+        "collection": "featured"
       }
     },
     "tribes": {
@@ -88,7 +93,8 @@
           "settings": {
             "name": "Stronger",
             "desc": "Heavyweight fits. Bold typography. Built to lift.",
-            "color": "#f97316"
+            "color": "#f97316",
+            "link": "/collections/performance"
           }
         },
         "t2": {
@@ -96,7 +102,8 @@
           "settings": {
             "name": "Faster",
             "desc": "Ultralight, reflective, neon-on-black. Made to move.",
-            "color": "#A8FF00"
+            "color": "#A8FF00",
+            "link": "/collections/activewear"
           }
         },
         "t3": {
@@ -104,7 +111,8 @@
           "settings": {
             "name": "Better",
             "desc": "Soft hand-feel, monochrome, off-park energy.",
-            "color": "#4ade80"
+            "color": "#4ade80",
+            "link": "/collections/atp-essentials"
           }
         }
       },
@@ -117,7 +125,8 @@
     "countdown": {
       "type": "drop-countdown",
       "settings": {
-        "datetime": "2026-08-01T07:00"
+        "datetime": "2026-08-01T07:00",
+        "link": "/collections/featured"
       }
     },
     "usp": {
