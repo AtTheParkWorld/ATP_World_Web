@@ -423,3 +423,32 @@
     lastCount = Number(countEl.textContent);
   }
 })();
+
+/* ── Scroll parallax (v1.2) ─────────────────────────────────────
+   Product + split-tile imagery drifts with the scroll position.
+   rAF-throttled; skipped entirely under prefers-reduced-motion. */
+(function () {
+  'use strict';
+  if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  var els = Array.prototype.slice.call(document.querySelectorAll('.parallax-img'));
+  if (!els.length) return;
+  var ticking = false;
+  function update() {
+    ticking = false;
+    var vh = window.innerHeight;
+    els.forEach(function (el) {
+      var host = el.parentElement;
+      if (!host) return;
+      var r = host.getBoundingClientRect();
+      if (r.bottom < -60 || r.top > vh + 60) return; /* off-screen */
+      /* -1 (below viewport) … 0 (centred) … 1 (above viewport) */
+      var progress = (r.top + r.height / 2 - vh / 2) / (vh / 2 + r.height / 2);
+      el.style.setProperty('--py', (progress * -14).toFixed(1) + 'px');
+    });
+  }
+  window.addEventListener('scroll', function () {
+    if (!ticking) { ticking = true; window.requestAnimationFrame(update); }
+  }, { passive: true });
+  window.addEventListener('resize', update, { passive: true });
+  update();
+})();

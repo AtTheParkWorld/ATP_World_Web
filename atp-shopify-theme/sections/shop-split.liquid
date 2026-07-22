@@ -12,6 +12,7 @@
       <div class="split-tile__media" aria-hidden="true">
         {%- if block.settings.image -%}
           <img
+            class="parallax-img"
             src="{{ block.settings.image | image_url: width: 1200 }}"
             srcset="{{ block.settings.image | image_url: width: 700 }} 700w,
                     {{ block.settings.image | image_url: width: 1200 }} 1200w"

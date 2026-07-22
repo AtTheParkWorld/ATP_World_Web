@@ -7,7 +7,7 @@
     <div class="product-card__media">
       {%- if card_product.featured_media -%}
         <img
-          class="primary"
+          class="primary parallax-img"
           src="{{ card_product.featured_media | image_url: width: 600 }}"
           srcset="{{ card_product.featured_media | image_url: width: 400 }} 400w,
                   {{ card_product.featured_media | image_url: width: 600 }} 600w,
@@ -20,7 +20,7 @@
         >
         {%- if card_product.media[1] -%}
           <img
-            class="secondary"
+            class="secondary parallax-img"
             src="{{ card_product.media[1] | image_url: width: 600 }}"
             alt=""
             loading="lazy"

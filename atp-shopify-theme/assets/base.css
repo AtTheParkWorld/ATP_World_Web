@@ -140,7 +140,7 @@ h3, .h3 { font-size: clamp(20px, 3vw, 28px); }
   text-transform: uppercase; letter-spacing: .01em; line-height: 1;
   display: flex; align-items: center; gap: 8px; flex-shrink: 0;
 }
-.site-header__logo img { height: 30px; width: auto; }
+.site-header__logo img { height: 42px; width: auto; filter: drop-shadow(0 0 8px rgba(168,255,0,.35)); }
 .site-header__logo .dot { color: var(--green); }
 .site-header__nav { display: none; }
 @media (min-width: 990px) {
@@ -631,4 +631,21 @@ h3, .h3 { font-size: clamp(20px, 3vw, 28px); }
 .product-card__sizes-label { width: 100%; text-align: center; font-size: 9px; letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-weight: 700; }
 @media (hover: none) {
   .product-card__sizes { display: none; } /* touch devices: tap through to PDP */
+}
+
+/* ── Scroll parallax (v1.2) ───────────────────────────────────────
+   .parallax-img elements drift vertically in harmony with scroll.
+   The 1.12 base scale gives translate headroom inside the clipped
+   container; the .45s ease makes the drift feel weighted, not
+   glued to the wheel. Disabled for prefers-reduced-motion (JS). */
+.parallax-img {
+  transform: translate3d(0, var(--py, 0px), 0) scale(var(--pz, 1.12));
+  transition: transform .45s cubic-bezier(.2, .7, .3, 1);
+  will-change: transform;
+}
+.product-card:hover .product-card__media img.primary.parallax-img {
+  transform: translate3d(0, var(--py, 0px), 0) scale(1.18);
+}
+.split-tile:hover .split-tile__media .parallax-img {
+  transform: translate3d(0, var(--py, 0px), 0) scale(1.18);
 }

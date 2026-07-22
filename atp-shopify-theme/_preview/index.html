@@ -35,7 +35,7 @@
     <button class="header-icon-btn mobile-toggle" aria-label="Menu">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 6h18M3 12h18M3 18h18"/></svg>
     </button>
-    <a href="#" class="site-header__logo"><img src="../assets/atp-logo.png" alt="ATP" style="height:30px;width:auto"></a>
+    <a href="#" class="site-header__logo"><img src="../assets/atp-logo.png" alt="ATP" style="height:42px;width:auto;filter:drop-shadow(0 0 8px rgba(168,255,0,.35))"></a>
     <nav class="site-header__nav">
       <a href="#">Shop all</a><a href="#">Tees</a><a href="#">Hoodies</a><a href="#">Accessories</a><a href="#">Drops</a>
     </nav>
@@ -78,7 +78,7 @@
 
   <section class="shop-split" style="--split-count:2">
     <a href="#" class="split-tile reveal">
-      <div class="split-tile__media"><div style="width:100%;height:100%;background:linear-gradient(160deg,#18220c,#0a0a0a)"></div></div>
+      <div class="split-tile__media"><div class="parallax-img" style="width:100%;height:100%;background:linear-gradient(160deg,#18220c,#0a0a0a)"></div></div>
       <div class="split-tile__overlay"></div>
       <div class="split-tile__content">
         <div class="split-tile__label">Shop Men</div>
@@ -86,7 +86,7 @@
       </div>
     </a>
     <a href="#" class="split-tile reveal reveal-d1">
-      <div class="split-tile__media"><div style="width:100%;height:100%;background:linear-gradient(160deg,#101a20,#0a0a0a)"></div></div>
+      <div class="split-tile__media"><div class="parallax-img" style="width:100%;height:100%;background:linear-gradient(160deg,#101a20,#0a0a0a)"></div></div>
       <div class="split-tile__overlay"></div>
       <div class="split-tile__content">
         <div class="split-tile__label">Shop Women</div>
@@ -95,13 +95,6 @@
     </a>
   </section>
 
-  <section class="usp-strip">
-    <div class="usp-strip__inner" style="--usp-count:3">
-      <div class="usp"><span class="usp__icon">🚚</span><div><div class="usp__title">Free UAE shipping</div><div class="usp__text">On every order over AED 250</div></div></div>
-      <div class="usp"><span class="usp__icon">🔁</span><div><div class="usp__title">14-day returns</div><div class="usp__text">Easy, no-drama exchanges</div></div></div>
-      <div class="usp"><span class="usp__icon">⭐</span><div><div class="usp__title">Earn ATP points</div><div class="usp__text">Every purchase counts toward rewards</div></div></div>
-    </div>
-  </section>
 
   <section class="section-pad">
     <div class="page-width">
@@ -116,7 +109,7 @@
       </div>
       <div class="product-grid">
         <article class="product-card">
-          <div class="product-card__media"><div class="mock-img mock-1">TEE</div><span class="product-card__badge">New</span></div>
+          <div class="product-card__media"><div class="mock-img mock-1 parallax-img">TEE</div><span class="product-card__badge">New</span></div>
           <button class="product-card__quick" aria-label="Quick add">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 8V6.5a3.5 3.5 0 0 1 7 0V8"/><path d="M5.5 8h13l-1 11.5a1 1 0 0 1-1 .9H7.5a1 1 0 0 1-1-.9L5.5 8Z"/></svg>
           </button>
@@ -126,7 +119,7 @@
           </div>
         </article>
         <article class="product-card">
-          <div class="product-card__media"><div class="mock-img mock-2">CAP</div></div>
+          <div class="product-card__media"><div class="mock-img mock-2 parallax-img">CAP</div></div>
           <div class="product-card__sizes">
             <span class="product-card__sizes-label">Quick add</span>
             <button class="size-pill">S</button><button class="size-pill">M</button><button class="size-pill">L</button><button class="size-pill oos">XL</button>
@@ -137,14 +130,14 @@
           </div>
         </article>
         <article class="product-card">
-          <div class="product-card__media"><div class="mock-img mock-3">HOODIE</div><span class="product-card__badge">Sale</span></div>
+          <div class="product-card__media"><div class="mock-img mock-3 parallax-img">HOODIE</div><span class="product-card__badge">Sale</span></div>
           <div class="product-card__body">
             <h3 class="product-card__title">ATP Member Hoodie — Heavyweight</h3>
             <div class="product-card__price"><span class="price price--sale">AED 390 <s class="price--compare">AED 470</s></span></div>
           </div>
         </article>
         <article class="product-card">
-          <div class="product-card__media"><div class="mock-img mock-4">SHORT</div><span class="product-card__badge product-card__badge--sold">Sold out</span></div>
+          <div class="product-card__media"><div class="mock-img mock-4 parallax-img">SHORT</div><span class="product-card__badge product-card__badge--sold">Sold out</span></div>
           <div class="product-card__body">
             <h3 class="product-card__title">ATP Session Short 5"</h3>
             <div class="product-card__price"><span class="price">AED 250</span></div>
@@ -195,12 +188,20 @@
       </form>
     </div>
   </section>
+  <section class="usp-strip">
+    <div class="usp-strip__inner" style="--usp-count:3">
+      <div class="usp"><span class="usp__icon">🚚</span><div><div class="usp__title">Free UAE shipping</div><div class="usp__text">On every order over AED 250</div></div></div>
+      <div class="usp"><span class="usp__icon">🔁</span><div><div class="usp__title">14-day returns</div><div class="usp__text">Easy, no-drama exchanges</div></div></div>
+      <div class="usp"><span class="usp__icon">⭐</span><div><div class="usp__title">Earn ATP points</div><div class="usp__text">Every purchase counts toward rewards</div></div></div>
+    </div>
+  </section>
+
 </main>
 
 <footer class="site-footer">
   <div class="site-footer__top" style="--footer-cols:3">
     <div class="site-footer__brand">
-      <a href="#" class="site-header__logo"><img src="../assets/atp-logo.png" alt="ATP" style="height:30px;width:auto"></a>
+      <a href="#" class="site-header__logo"><img src="../assets/atp-logo.png" alt="ATP" style="height:42px;width:auto;filter:drop-shadow(0 0 8px rgba(168,255,0,.35))"></a>
       <p>Train in the colours. Performance gear from the UAE's largest free fitness community. Dubai · Al Ain · Muscat. Est. 2015.</p>
       <div class="footer-socials">
         <a href="#" aria-label="Instagram"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="4.5" fill="none" stroke="currentColor" stroke-width="1.8"/><rect x="2.8" y="2.8" width="18.4" height="18.4" rx="5" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="17.6" cy="6.4" r="1.2"/></svg></a>

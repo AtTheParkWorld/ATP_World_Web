@@ -6,10 +6,10 @@
 
     <a href="{{ routes.root_url }}" class="site-header__logo" aria-label="{{ shop.name }}">
       {%- if section.settings.logo -%}
-        <img src="{{ section.settings.logo | image_url: width: 200 }}" alt="{{ shop.name }}" width="100" height="30" loading="eager">
+        <img src="{{ section.settings.logo | image_url: width: 200 }}" alt="{{ shop.name }}" width="126" height="42" loading="eager">
       {%- else -%}
         {%- comment -%} Bundled ATP wordmark (assets/atp-logo.png, 400×133) {%- endcomment -%}
-        <img src="{{ 'atp-logo.png' | asset_url }}" alt="{{ shop.name }}" width="90" height="30" loading="eager">
+        <img src="{{ 'atp-logo.png' | asset_url }}" alt="{{ shop.name }}" width="126" height="42" loading="eager">
       {%- endif -%}
     </a>
 
