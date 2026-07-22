@@ -11,14 +11,66 @@
         "cta2_text": "New drops"
       }
     },
-    "usp": {
-      "type": "usp-strip",
+    "marquee": {
+      "type": "marquee",
       "blocks": {
-        "usp-1": { "type": "usp", "settings": { "icon": "🚚", "title": "Free UAE shipping", "text": "On every order over AED 250" } },
-        "usp-2": { "type": "usp", "settings": { "icon": "🔁", "title": "14-day returns", "text": "Easy, no-drama exchanges" } },
-        "usp-3": { "type": "usp", "settings": { "icon": "⭐", "title": "Earn ATP points", "text": "Every purchase counts toward rewards" } }
+        "m1": {
+          "type": "item",
+          "settings": {
+            "text": "Never train alone"
+          }
+        },
+        "m2": {
+          "type": "item",
+          "settings": {
+            "text": "Free UAE shipping over AED 250"
+          }
+        },
+        "m3": {
+          "type": "item",
+          "settings": {
+            "text": "Est. 2015 · Dubai · Al Ain · Muscat"
+          }
+        },
+        "m4": {
+          "type": "item",
+          "settings": {
+            "text": "Members earn ATP points"
+          }
+        }
       },
-      "block_order": ["usp-1", "usp-2", "usp-3"]
+      "block_order": [
+        "m1",
+        "m2",
+        "m3",
+        "m4"
+      ],
+      "settings": {
+        "speed": 28
+      }
+    },
+    "split": {
+      "type": "shop-split",
+      "blocks": {
+        "men": {
+          "type": "tile",
+          "settings": {
+            "label": "Shop Men",
+            "cta": "Shop now"
+          }
+        },
+        "women": {
+          "type": "tile",
+          "settings": {
+            "label": "Shop Women",
+            "cta": "Shop now"
+          }
+        }
+      },
+      "block_order": [
+        "men",
+        "women"
+      ]
     },
     "featured": {
       "type": "featured-collection",
@@ -28,10 +80,93 @@
         "limit": 8
       }
     },
+    "tribes": {
+      "type": "shop-by-tribe",
+      "blocks": {
+        "t1": {
+          "type": "tribe",
+          "settings": {
+            "name": "Stronger",
+            "desc": "Heavyweight fits. Bold typography. Built to lift.",
+            "color": "#f97316"
+          }
+        },
+        "t2": {
+          "type": "tribe",
+          "settings": {
+            "name": "Faster",
+            "desc": "Ultralight, reflective, neon-on-black. Made to move.",
+            "color": "#A8FF00"
+          }
+        },
+        "t3": {
+          "type": "tribe",
+          "settings": {
+            "name": "Better",
+            "desc": "Soft hand-feel, monochrome, off-park energy.",
+            "color": "#4ade80"
+          }
+        }
+      },
+      "block_order": [
+        "t1",
+        "t2",
+        "t3"
+      ]
+    },
+    "countdown": {
+      "type": "drop-countdown",
+      "settings": {
+        "datetime": "2026-08-01T07:00"
+      }
+    },
+    "usp": {
+      "type": "usp-strip",
+      "blocks": {
+        "usp-1": {
+          "type": "usp",
+          "settings": {
+            "icon": "🚚",
+            "title": "Free UAE shipping",
+            "text": "On every order over AED 250"
+          }
+        },
+        "usp-2": {
+          "type": "usp",
+          "settings": {
+            "icon": "🔁",
+            "title": "14-day returns",
+            "text": "Easy, no-drama exchanges"
+          }
+        },
+        "usp-3": {
+          "type": "usp",
+          "settings": {
+            "icon": "⭐",
+            "title": "Earn ATP points",
+            "text": "Every purchase counts toward rewards"
+          }
+        }
+      },
+      "block_order": [
+        "usp-1",
+        "usp-2",
+        "usp-3"
+      ]
+    },
     "newsletter": {
       "type": "newsletter",
       "settings": {}
     }
   },
-  "order": ["hero", "usp", "featured", "newsletter"]
+  "order": [
+    "hero",
+    "marquee",
+    "split",
+    "featured",
+    "tribes",
+    "countdown",
+    "usp",
+    "newsletter"
+  ]
 }

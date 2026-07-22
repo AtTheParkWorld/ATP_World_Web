@@ -22,7 +22,7 @@
       <a href="{{ routes.search_url }}" class="header-icon-btn" aria-label="{{ 'general.search' | t }}">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
       </a>
-      <a href="{{ routes.cart_url }}" class="header-icon-btn" aria-label="{{ 'cart.title' | t }}">
+      <a href="{{ routes.cart_url }}" class="header-icon-btn" data-cart-open aria-label="{{ 'cart.title' | t }}">
         {% render 'icon-cart' %}
         <span class="cart-count" data-cart-count data-count="{{ cart.item_count }}">{{ cart.item_count }}</span>
       </a>

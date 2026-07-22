@@ -1,0 +1,38 @@
+{%- comment -%}
+  Slide-out cart drawer. Rendered once in theme.liquid.
+  base.js populates [data-drawer-items] from /cart.js and opens the
+  drawer automatically after every successful add-to-cart.
+  The header cart icon opens it via [data-cart-open]; the /cart page
+  remains the no-JS fallback.
+{%- endcomment -%}
+<div class="cart-drawer" id="CartDrawer" aria-hidden="true">
+  <div class="cart-drawer__scrim"></div>
+  <aside class="cart-drawer__panel" role="dialog" aria-label="{{ 'cart.title' | t }}">
+    <header class="cart-drawer__head">
+      <h2 class="cart-drawer__title">{{ 'cart.title' | t }}</h2>
+      <button type="button" class="cart-drawer__close" data-drawer-close aria-label="{{ 'general.close' | t }}">×</button>
+    </header>
+
+    <div class="cart-drawer__items" data-drawer-items>
+      <div class="cart-drawer__empty">{{ 'cart.empty' | t }}</div>
+    </div>
+
+    <footer class="cart-drawer__foot">
+      <div data-free-ship data-threshold-cents="25000">
+        <div class="free-ship-bar"><div class="free-ship-bar__fill" style="width:0%"></div></div>
+        <p class="free-ship-msg">{{ 'cart.shipping_note' | t }}</p>
+      </div>
+      <div class="cart-drawer__subtotal" style="margin-top:14px">
+        <span>{{ 'cart.subtotal' | t }}</span>
+        <span data-drawer-subtotal>—</span>
+      </div>
+      <p class="cart-drawer__note">{{ 'cart.shipping_note' | t }}</p>
+      <a href="{{ routes.cart_url }}/checkout" class="btn btn--primary btn--full">
+        {{ 'cart.checkout' | t }} {% render 'icon-arrow' %}
+      </a>
+      <a href="{{ routes.cart_url }}" class="btn btn--secondary btn--full" style="margin-top:8px">
+        {{ 'cart.view_cart' | t }}
+      </a>
+    </footer>
+  </aside>
+</div>

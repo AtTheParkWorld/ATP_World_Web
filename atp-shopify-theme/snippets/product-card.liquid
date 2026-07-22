@@ -52,6 +52,21 @@
     >
       {% render 'icon-cart' %}
     </button>
+  {%- elsif card_product.available and card_product.variants.size <= 6 -%}
+    {%- comment -%} Size quick-add — hover reveals a size row; tapping a
+        size adds that variant straight to the cart drawer. Hidden on
+        touch (tap goes to the PDP instead). {%- endcomment -%}
+    <div class="product-card__sizes" aria-label="{{ 'products.quick_add' | t }}">
+      <span class="product-card__sizes-label">{{ 'products.quick_add' | t }}</span>
+      {%- for variant in card_product.variants -%}
+        <button
+          type="button"
+          class="size-pill{% unless variant.available %} oos{% endunless %}"
+          data-quick-add="{{ variant.id }}"
+          aria-label="{{ 'products.quick_add' | t }} {{ variant.title | escape }}"
+        >{{ variant.title }}</button>
+      {%- endfor -%}
+    </div>
   {%- endif -%}
 
   <div class="product-card__body">

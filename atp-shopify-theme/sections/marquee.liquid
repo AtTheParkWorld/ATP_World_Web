@@ -1,0 +1,43 @@
+{%- comment -%}
+  Scrolling marquee ticker — same energy as the website trust bar.
+  Content duplicated for a seamless CSS loop; pauses on hover.
+{%- endcomment -%}
+<div class="marquee" aria-hidden="true" style="--marquee-speed: {{ section.settings.speed }}s">
+  <div class="marquee__track">
+    {%- for i in (1..2) -%}
+      {%- for block in section.blocks -%}
+        <span class="marquee__item">{{ block.settings.text }}</span>
+      {%- endfor -%}
+    {%- endfor -%}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Marquee ticker",
+  "max_blocks": 8,
+  "settings": [
+    { "type": "range", "id": "speed", "label": "Loop duration (s)", "min": 10, "max": 60, "step": 2, "default": 28 }
+  ],
+  "blocks": [
+    {
+      "type": "item",
+      "name": "Ticker item",
+      "settings": [
+        { "type": "text", "id": "text", "label": "Text", "default": "Never train alone" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Marquee ticker",
+      "blocks": [
+        { "type": "item", "settings": { "text": "Never train alone" } },
+        { "type": "item", "settings": { "text": "Free UAE shipping over AED 250" } },
+        { "type": "item", "settings": { "text": "Est. 2015 · Dubai · Al Ain · Muscat" } },
+        { "type": "item", "settings": { "text": "Members earn ATP points" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

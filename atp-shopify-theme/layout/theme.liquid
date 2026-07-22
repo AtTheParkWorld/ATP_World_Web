@@ -65,6 +65,8 @@
   {%- comment -%} Cart-count live region for JS updates {%- endcomment -%}
   <div aria-live="polite" class="visually-hidden" id="CartLiveRegion"></div>
 
+  {% render 'cart-drawer' %}
+
   {{ 'base.js' | asset_url | script_tag }}
 </body>
 </html>

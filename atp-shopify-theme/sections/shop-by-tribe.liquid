@@ -1,0 +1,62 @@
+{%- comment -%}
+  Shop by tribe — Stronger / Faster / Better tiles in tribe colours.
+  Bridges the ATP community identity into the store.
+{%- endcomment -%}
+<section class="section-pad">
+  <div class="page-width">
+    <div class="section-head reveal">
+      <div>
+        <p class="eyebrow">{{ section.settings.eyebrow }}</p>
+        <h2 style="margin-top:10px">{{ section.settings.heading }}</h2>
+      </div>
+    </div>
+    <div class="tribe-tiles">
+      {%- for block in section.blocks -%}
+        <a
+          href="{% if block.settings.collection != blank %}{{ block.settings.collection.url }}{% else %}{{ block.settings.link }}{% endif %}"
+          class="tribe-tile reveal{% if forloop.index == 2 %} reveal-d1{% elsif forloop.index == 3 %} reveal-d2{% endif %}"
+          style="--tribe-c: {{ block.settings.color }}"
+          {{ block.shopify_attributes }}
+        >
+          <div class="tribe-tile__name">{{ block.settings.name }}</div>
+          <div class="tribe-tile__desc">{{ block.settings.desc }}</div>
+          <span class="tribe-tile__cta">{{ 'collections.view_all' | t }} {% render 'icon-arrow' %}</span>
+        </a>
+      {%- endfor -%}
+    </div>
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Shop by tribe",
+  "max_blocks": 3,
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Your tribe. Your colours." },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Shop by tribe" }
+  ],
+  "blocks": [
+    {
+      "type": "tribe",
+      "name": "Tribe",
+      "settings": [
+        { "type": "text", "id": "name", "label": "Tribe name", "default": "Stronger" },
+        { "type": "text", "id": "desc", "label": "Description", "default": "Heavyweight fits. Bold typography. Built to lift." },
+        { "type": "color", "id": "color", "label": "Tribe colour", "default": "#f97316" },
+        { "type": "collection", "id": "collection", "label": "Collection" },
+        { "type": "url", "id": "link", "label": "OR custom link" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Shop by tribe",
+      "blocks": [
+        { "type": "tribe", "settings": { "name": "Stronger", "desc": "Heavyweight fits. Bold typography. Built to lift.", "color": "#f97316" } },
+        { "type": "tribe", "settings": { "name": "Faster", "desc": "Ultralight, reflective, neon-on-black. Made to move.", "color": "#A8FF00" } },
+        { "type": "tribe", "settings": { "name": "Better", "desc": "Soft hand-feel, monochrome, off-park energy.", "color": "#4ade80" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

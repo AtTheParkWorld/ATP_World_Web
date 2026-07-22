@@ -1,0 +1,40 @@
+{%- comment -%}
+  Drop countdown — ticks down to the next capsule release.
+  When the moment passes, the numbers pulse and the LIVE CTA appears.
+{%- endcomment -%}
+{%- if section.settings.show -%}
+<section class="drop-countdown">
+  <div class="drop-countdown__inner">
+    <div class="reveal">
+      <p class="eyebrow">{{ section.settings.eyebrow }}</p>
+      <h2 style="margin-top:10px">{{ section.settings.heading }}</h2>
+      <p style="color:var(--light);margin-top:8px;font-weight:300;max-width:44ch">{{ section.settings.text }}</p>
+      <a href="{{ section.settings.link }}" class="btn btn--primary" style="margin-top:18px" data-cd-live hidden>
+        {{ section.settings.live_cta | default: 'Shop the drop' }} {% render 'icon-arrow' %}
+      </a>
+    </div>
+    <div class="countdown reveal reveal-d1" data-countdown="{{ section.settings.datetime }}">
+      <div class="countdown__cell"><div class="countdown__num" data-cd-days>–</div><div class="countdown__label">{{ 'countdown.days' | t }}</div></div>
+      <div class="countdown__cell"><div class="countdown__num" data-cd-hours>–</div><div class="countdown__label">{{ 'countdown.hours' | t }}</div></div>
+      <div class="countdown__cell"><div class="countdown__num" data-cd-mins>–</div><div class="countdown__label">{{ 'countdown.mins' | t }}</div></div>
+      <div class="countdown__cell"><div class="countdown__num" data-cd-secs>–</div><div class="countdown__label">{{ 'countdown.secs' | t }}</div></div>
+    </div>
+  </div>
+</section>
+{%- endif -%}
+
+{% schema %}
+{
+  "name": "Drop countdown",
+  "settings": [
+    { "type": "checkbox", "id": "show", "label": "Show countdown", "default": true },
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Next session drop" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Marina Sunrise capsule" },
+    { "type": "textarea", "id": "text", "label": "Text", "default": "200 units. Gone in 48 hours last time. Set an alarm." },
+    { "type": "text", "id": "datetime", "label": "Drop date-time (YYYY-MM-DDTHH:MM, store timezone)", "default": "2026-08-01T07:00" },
+    { "type": "url", "id": "link", "label": "Drop collection link" },
+    { "type": "text", "id": "live_cta", "label": "CTA when live", "default": "Shop the drop" }
+  ],
+  "presets": [{ "name": "Drop countdown" }]
+}
+{% endschema %}

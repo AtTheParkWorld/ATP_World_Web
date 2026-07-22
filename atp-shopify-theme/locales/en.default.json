@@ -62,11 +62,18 @@
     "empty": "Your cart is empty.",
     "empty_help": "The collection is waiting. Members earn ATP points on every order.",
     "start_shopping": "Start shopping",
-    "shipping_note": "Shipping + taxes calculated at checkout. Free UAE shipping over AED 250."
+    "shipping_note": "Shipping + taxes calculated at checkout. Free UAE shipping over AED 250.",
+    "view_cart": "View cart"
   },
   "newsletter": {
     "placeholder": "you@email.com",
     "button": "Sign me up",
     "success": "You're in. Watch your inbox for the next drop."
+  },
+  "countdown": {
+    "days": "Days",
+    "hours": "Hours",
+    "mins": "Mins",
+    "secs": "Secs"
   }
 }

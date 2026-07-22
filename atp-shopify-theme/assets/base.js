@@ -260,3 +260,166 @@
   /* ── Boot ──────────────────────────────────────────────────── */
   refreshCartCount();
 })();
+
+/* ════════════════════════════════════════════════════════════════
+   v1.1 — DYNAMIC LAYER
+   Scroll reveals, drop countdown, cart drawer, size quick-add hook,
+   cart-count bounce.
+   ════════════════════════════════════════════════════════════════ */
+(function () {
+  'use strict';
+
+  /* ── Scroll reveals ────────────────────────────────────────── */
+  if ('IntersectionObserver' in window) {
+    var revealObs = new IntersectionObserver(function (entries) {
+      entries.forEach(function (e) {
+        if (e.isIntersecting) { e.target.classList.add('visible'); revealObs.unobserve(e.target); }
+      });
+    }, { threshold: 0.12 });
+    document.querySelectorAll('.reveal').forEach(function (el) { revealObs.observe(el); });
+  } else {
+    document.querySelectorAll('.reveal').forEach(function (el) { el.classList.add('visible'); });
+  }
+
+  /* ── Drop countdown ────────────────────────────────────────── */
+  document.querySelectorAll('[data-countdown]').forEach(function (root) {
+    var target = new Date(root.getAttribute('data-countdown')).getTime();
+    if (isNaN(target)) return;
+    var cells = {
+      d: root.querySelector('[data-cd-days]'),
+      h: root.querySelector('[data-cd-hours]'),
+      m: root.querySelector('[data-cd-mins]'),
+      s: root.querySelector('[data-cd-secs]'),
+    };
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function tick() {
+      var diff = target - Date.now();
+      if (diff <= 0) {
+        root.classList.add('countdown--live');
+        if (cells.d) cells.d.textContent = '00';
+        if (cells.h) cells.h.textContent = '00';
+        if (cells.m) cells.m.textContent = '00';
+        if (cells.s) cells.s.textContent = '00';
+        var live = root.closest('.drop-countdown') && root.closest('.drop-countdown').querySelector('[data-cd-live]');
+        if (live) live.hidden = false;
+        clearInterval(iv);
+        return;
+      }
+      var d = Math.floor(diff / 86400000);
+      var h = Math.floor(diff % 86400000 / 3600000);
+      var m = Math.floor(diff % 3600000 / 60000);
+      var s = Math.floor(diff % 60000 / 1000);
+      if (cells.d) cells.d.textContent = pad(d);
+      if (cells.h) cells.h.textContent = pad(h);
+      if (cells.m) cells.m.textContent = pad(m);
+      if (cells.s) cells.s.textContent = pad(s);
+    }
+    tick();
+    var iv = setInterval(tick, 1000);
+  });
+
+  /* ── Cart drawer ───────────────────────────────────────────── */
+  var drawerEl = document.getElementById('CartDrawer');
+
+  function money(cents, currency) {
+    try {
+      return new Intl.NumberFormat(document.documentElement.lang || 'en', {
+        style: 'currency', currency: currency || 'AED', minimumFractionDigits: 0,
+      }).format(cents / 100);
+    } catch (e) { return (cents / 100).toFixed(2); }
+  }
+
+  function renderDrawer(cart) {
+    if (!drawerEl) return;
+    var itemsEl = drawerEl.querySelector('[data-drawer-items]');
+    var subEl = drawerEl.querySelector('[data-drawer-subtotal]');
+    var shipEl = drawerEl.querySelector('[data-free-ship]');
+    if (subEl) subEl.textContent = money(cart.total_price, cart.currency);
+    if (shipEl) {
+      var threshold = Number(shipEl.getAttribute('data-threshold-cents')) || 25000;
+      var pct = Math.min(100, Math.round(cart.total_price / threshold * 100));
+      var fill = shipEl.querySelector('.free-ship-bar__fill');
+      var msg = shipEl.querySelector('.free-ship-msg');
+      if (fill) fill.style.width = pct + '%';
+      if (msg) {
+        msg.innerHTML = cart.total_price >= threshold
+          ? '<strong>Free shipping unlocked ✓</strong>'
+          : 'Add <strong>' + money(threshold - cart.total_price, cart.currency) + '</strong> more for free UAE shipping';
+      }
+    }
+    if (!itemsEl) return;
+    if (!cart.items.length) {
+      itemsEl.innerHTML = '<div class="cart-drawer__empty">Your cart is empty.<br>The collection is waiting.</div>';
+      return;
+    }
+    itemsEl.innerHTML = cart.items.map(function (item) {
+      return '<div class="drawer-item">' +
+        '<a class="drawer-item__img" href="' + item.url + '">' +
+          (item.image ? '<img src="' + item.image.replace(/(\.[a-z]+)(\?|$)/, '_200x$1$2') + '" alt="" loading="lazy">' : '') +
+        '</a>' +
+        '<div>' +
+          '<div class="drawer-item__title">' + item.product_title + '</div>' +
+          (item.variant_title && item.variant_title !== 'Default Title'
+            ? '<div class="drawer-item__meta">' + item.variant_title + ' · Qty ' + item.quantity + '</div>'
+            : '<div class="drawer-item__meta">Qty ' + item.quantity + '</div>') +
+          '<a href="#" class="drawer-item__remove" data-drawer-remove="' + item.key + '">Remove</a>' +
+        '</div>' +
+        '<div class="drawer-item__price">' + money(item.final_line_price, cart.currency) + '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function openDrawer() {
+    if (!drawerEl) return;
+    fetch('/cart.js').then(function (r) { return r.json(); }).then(function (cart) {
+      renderDrawer(cart);
+      drawerEl.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    });
+  }
+  function closeDrawer() {
+    if (!drawerEl) return;
+    drawerEl.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  document.addEventListener('click', function (e) {
+    var openTrig = e.target.closest('[data-cart-open]');
+    if (openTrig && drawerEl) { e.preventDefault(); openDrawer(); return; }
+    if (e.target.closest('[data-drawer-close]') || e.target.classList.contains('cart-drawer__scrim')) { closeDrawer(); return; }
+    var rm = e.target.closest('[data-drawer-remove]');
+    if (rm) {
+      e.preventDefault();
+      fetch('/cart/change.js', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: rm.getAttribute('data-drawer-remove'), quantity: 0 }),
+      }).then(function (r) { return r.json(); }).then(function (cart) {
+        renderDrawer(cart);
+        document.querySelectorAll('[data-cart-count]').forEach(function (el) {
+          el.textContent = cart.item_count;
+          el.setAttribute('data-count', String(cart.item_count));
+        });
+      });
+    }
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && drawerEl && drawerEl.classList.contains('open')) closeDrawer();
+  });
+
+  /* Open drawer after a successful add (hook into the toast pathway) —
+     listen for cart-count changes triggered by base.js addToCart. */
+  var lastCount = null;
+  var countEl = document.querySelector('[data-cart-count]');
+  if (countEl && 'MutationObserver' in window) {
+    new MutationObserver(function () {
+      var n = Number(countEl.textContent);
+      countEl.classList.remove('bump');
+      void countEl.offsetWidth; /* restart animation */
+      countEl.classList.add('bump');
+      if (lastCount !== null && n > lastCount && drawerEl) openDrawer();
+      lastCount = n;
+    }).observe(countEl, { childList: true, characterData: true, subtree: true });
+    lastCount = Number(countEl.textContent);
+  }
+})();
