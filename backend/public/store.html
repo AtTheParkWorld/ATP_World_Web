@@ -391,6 +391,8 @@ window.ATP_NAV_EXTRAS = ['<button class="cart-icon-btn" data-atp-call="openCart"
       <div class="store-hero-badges">
         <span class="hero-badge">Free delivery AED 150+</span>
         <span class="hero-badge">Never Train Alone</span>
+        <a class="hero-badge" data-shop-link href="#" target="_blank" rel="noopener"
+           style="color:var(--green);border-color:rgba(168,255,0,.45);text-decoration:none">Visit the full store ↗</a>
       </div>
     </div>
     <div class="store-hero-video-wrap">
@@ -542,8 +544,9 @@ window.ATP_NAV_EXTRAS = ['<button class="cart-icon-btn" data-atp-call="openCart"
       <!-- Reviews summary on PDP (Audit 5 / tier 1.5) — hydrated by
            atpLoadReviews() when the PDP opens. -->
       <div id="pdpReviews" style="margin-top:18px;padding-top:18px;border-top:1px solid rgba(255,255,255,.08);min-height:0"></div>
-      <div class="pdp-share">
-        <span class="pdp-share-link" onclick="navigator.share&&navigator.share({title:document.getElementById('pdpName').textContent,url:location.href})">Share →</span>
+      <div class="pdp-share" style="display:flex;gap:18px;align-items:center">
+        <a class="pdp-share-link" id="pdpStoreLink" href="#" target="_blank" rel="noopener" style="display:none;text-decoration:none">View in ATP Store ↗</a>
+        <span class="pdp-share-link" onclick="navigator.share&&navigator.share({title:document.getElementById('pdpName').textContent,url:(window.atpProductUrl||location.href)})">Share →</span>
       </div>
     </div>
   </div>
@@ -656,7 +659,13 @@ document.querySelectorAll(".reveal").forEach(function(el){ revObs.observe(el); }
 
 // ── SHOPIFY CONFIG ───────────────────────────────────────────
 var SHOPIFY_TOKEN  = "31a1a5554b7f2fdaf2aa4dc44e13a127";
-var SHOPIFY_DOMAIN = "atp-store-7903.myshopify.com";
+var SHOPIFY_DOMAIN = "atp-store-7903.myshopify.com"; // swap to shop.atthepark.world once the custom domain is wired in Shopify
+
+// Any <a data-shop-link data-shop-path="/collections/men"> gets its href
+// built from SHOPIFY_DOMAIN, so the custom-domain swap stays a one-line change.
+document.querySelectorAll("a[data-shop-link]").forEach(function(a) {
+  a.href = "https://" + SHOPIFY_DOMAIN + (a.getAttribute("data-shop-path") || "");
+});
 
 // ── STATUS BAR ───────────────────────────────────────────────
 function showStatus(type, html) {
@@ -848,7 +857,7 @@ async function loadProducts() {
   var gql = [
     "{ products(first: 24) {",
     "  edges { node {",
-    "    id title description productType tags",
+    "    id title handle description productType tags",
     "    priceRange { minVariantPrice { amount currencyCode } }",
     "    images(first: 5) { edges { node { url altText } } }",
     "    variants(first: 20) {",
@@ -1184,6 +1193,14 @@ function openPDP(product) {
 
   document.getElementById("pdpName").textContent = product.title;
   document.getElementById("pdpType").textContent = product.productType || "";
+
+  // Deep link to the same product on the Shopify storefront (new theme).
+  var storeLink = document.getElementById("pdpStoreLink");
+  window.atpProductUrl = product.handle ? "https://" + SHOPIFY_DOMAIN + "/products/" + product.handle : null;
+  if (storeLink) {
+    if (window.atpProductUrl) { storeLink.href = window.atpProductUrl; storeLink.style.display = "inline"; }
+    else { storeLink.style.display = "none"; }
+  }
   document.getElementById("pdpPrice").textContent = cur + " " + price.toFixed(0);
   document.getElementById("pdpDesc").textContent = product.description || "Premium ATP performance gear built for the community.";
 
