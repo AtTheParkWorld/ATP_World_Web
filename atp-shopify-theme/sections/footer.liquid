@@ -1,7 +1,9 @@
 <footer class="site-footer" role="contentinfo">
   <div class="site-footer__top" style="--footer-cols: {{ section.blocks.size | default: 2 }}">
     <div class="site-footer__brand">
-      <a href="{{ routes.root_url }}" class="site-header__logo">ATP<span class="dot">.</span>STORE</a>
+      <a href="{{ routes.root_url }}" class="site-header__logo" aria-label="{{ shop.name }}">
+        <img src="{{ 'atp-logo.png' | asset_url }}" alt="{{ shop.name }}" width="90" height="30" loading="lazy">
+      </a>
       <p>{{ section.settings.tagline }}</p>
       <div class="footer-socials">
         {%- if section.settings.instagram != blank -%}
