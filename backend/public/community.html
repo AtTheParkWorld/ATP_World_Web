@@ -71,7 +71,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 /* ── FEED ── */
 .post-composer{background:var(--dark2);border-radius:var(--radius-lg);border:1px solid rgba(255,255,255,.07);margin-bottom:20px;overflow:hidden}
 .composer-header{display:flex;align-items:center;gap:12px;padding:16px 18px 0}
-.composer-av{width:38px;height:38px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:16px;font-weight:900;color:#fff;flex-shrink:0}
+.composer-av{width:38px;height:38px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:16px;font-weight:900;color:#0a0a0a;flex-shrink:0}
 .composer-input{flex:1;background:var(--dark3);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:11px 14px;color:var(--white);font-size:13px;font-family:var(--ff-body);resize:none;min-height:80px;transition:border-color .2s;width:100%}
 .composer-input:focus{outline:none;border-color:rgba(168,255,0,.4)}
 .composer-media-preview{display:flex;gap:8px;flex-wrap:wrap;padding:0 18px;margin-top:10px;min-height:0}
@@ -83,7 +83,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .composer-media-btns{display:flex;gap:8px}
 .composer-media-btn{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);background:none;border:1px solid rgba(255,255,255,.1);padding:7px 12px;border-radius:var(--radius);cursor:pointer;transition:all .2s}
 .composer-media-btn:hover{border-color:var(--green);color:var(--green)}
-.post-btn{font-size:13px;font-weight:700;background:var(--green);color:#fff;border:none;padding:9px 22px;border-radius:var(--radius);cursor:pointer;transition:background .2s}
+.post-btn{font-size:13px;font-weight:700;background:var(--green);color:#0a0a0a;border:none;padding:9px 22px;border-radius:var(--radius);cursor:pointer;transition:background .2s}
 .post-btn:hover{background:var(--green-dark)}
 .post-btn:disabled{opacity:.5;cursor:not-allowed}
 
@@ -150,7 +150,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .comment-input-wrap{display:flex;gap:8px;margin-top:8px}
 .comment-input{flex:1;background:var(--dark3);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:8px 14px;color:var(--white);font-size:12px;font-family:var(--ff-body);transition:border-color .2s}
 .comment-input:focus{outline:none;border-color:rgba(168,255,0,.4)}
-.comment-send{background:var(--green);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s}
+.comment-send{background:var(--green);border:none;color:#0a0a0a;width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s}
 .comment-send:hover{background:var(--green-dark)}
 .friend-req-btn{font-size:11px;font-weight:700;padding:4px 10px;border-radius:12px;border:1px solid rgba(168,255,0,.3);background:rgba(168,255,0,.06);color:var(--green);cursor:pointer;transition:all .2s;margin-left:auto;white-space:nowrap}
 .friend-req-btn:hover{background:rgba(168,255,0,.15)}
@@ -211,7 +211,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .challenge-av{width:28px;height:28px;border-radius:50%;background:var(--dark3);border:2px solid var(--dark2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--white);margin-left:-8px}
 .challenge-av:first-child{margin-left:0}
 .challenge-count{font-size:12px;color:var(--muted)}
-.challenge-join-btn{font-size:12px;font-weight:700;padding:7px 18px;border-radius:var(--radius);background:var(--green);border:none;color:#fff;cursor:pointer;transition:background .2s}
+.challenge-join-btn{font-size:12px;font-weight:700;padding:7px 18px;border-radius:var(--radius);background:var(--green);border:none;color:#0a0a0a;cursor:pointer;transition:background .2s}
 .challenge-join-btn:hover{background:var(--green-dark)}
 .challenge-join-btn.joined{background:rgba(168,255,0,.1);color:var(--green);border:1px solid rgba(168,255,0,.3)}
 
@@ -556,55 +556,13 @@ function _adaptFeedRow(p) {
 }
 
 // ── DATA ────────────────────────────────────────────────────
-var POSTS = [
-  {id:1,av:"F",author:"Fredy M.",tribe:"Stronger",time:"2h ago",text:"Just finished the <strong>Military Bootcamp</strong> at Al Formal Park. Absolute madness — but the kind of madness you love. Who else was there today? 💪",media:[],likes:24,comments:[
-    {av:"J",author:"Jay A.",text:"Was there! Best session this month 🔥",replies:[]},
-    {av:"V",author:"Valentina R.",text:"I was there too! See you next week 🙌",replies:[{av:"F",author:"Fredy M.",text:"Amazing! Keep it up 💚"}]}
-  ],friendAdded:false},
-  {id:2,av:"J",author:"Jay A.",tribe:"Faster",time:"5h ago",text:"Marathon training update: Week 8 done. 34km this week. The <strong>community run group</strong> is keeping me accountable like nothing else. Can't thank you all enough. 🏃",media:[],likes:41,comments:[
-    {av:"G",author:"Gwen G.",text:"Incredible dedication! You've got this 🏃‍♀️",replies:[]}
-  ],friendAdded:false},
-  {id:3,av:"G",author:"Gwen G.",tribe:"Better",time:"Yesterday",text:"First time doing <strong>Sound Healing</strong> yesterday and wow. I didn't know I needed that. Highly recommend to anyone feeling stressed. Thank you Manju! 🧘",media:[],likes:33,comments:[],friendAdded:false},
-];
+// POSTS seed removed (audit): the feed hydrates from /api/community —
+// no fabricated posts while loading or on API failure.
+var POSTS = [];
 
-var LB_DATA = {
-  mtd:[
-    {init:"J",name:"Jay Ashar",tribe:"Faster",pts:270,chg:2},
-    {init:"V",name:"Valentina R.",tribe:"Stronger",pts:220,chg:-1},
-    {init:"G",name:"Gwen Gaje",tribe:"Better",pts:190,chg:1},
-    {init:"H",name:"Hugo M.",tribe:"Faster",pts:170,chg:0},
-    {init:"S",name:"Shodhan K.",tribe:"Stronger",pts:150,chg:2},
-    {init:"M",name:"Manju P.",tribe:"Better",pts:140,chg:-1},
-    {init:"F",name:"Fredy M.",tribe:"Stronger",pts:130,chg:0,you:true},
-    {init:"T",name:"Tatiana M.",tribe:"Better",pts:120,chg:1},
-    {init:"C",name:"Carlos V.",tribe:"Faster",pts:110,chg:-2},
-    {init:"P",name:"Priya N.",tribe:"Better",pts:100,chg:0},
-  ],
-  ytd:[
-    {init:"J",name:"Jay Ashar",tribe:"Faster",pts:1270,chg:0},
-    {init:"V",name:"Valentina R.",tribe:"Stronger",pts:1180,chg:0},
-    {init:"G",name:"Gwen Gaje",tribe:"Better",pts:1040,chg:0},
-    {init:"F",name:"Fredy M.",tribe:"Stronger",pts:830,chg:0,you:true},
-    {init:"H",name:"Hugo M.",tribe:"Faster",pts:980,chg:0},
-    {init:"S",name:"Shodhan K.",tribe:"Stronger",pts:910,chg:0},
-    {init:"M",name:"Manju P.",tribe:"Better",pts:870,chg:0},
-    {init:"T",name:"Tatiana M.",tribe:"Better",pts:790,chg:0},
-    {init:"C",name:"Carlos V.",tribe:"Faster",pts:740,chg:0},
-    {init:"P",name:"Priya N.",tribe:"Better",pts:710,chg:0},
-  ],
-  all:[
-    {init:"F",name:"Fredy M.",tribe:"Stronger",pts:8300,chg:0,you:true},
-    {init:"T",name:"Tatiana M.",tribe:"Better",pts:7900,chg:0},
-    {init:"J",name:"Jay Ashar",tribe:"Faster",pts:3200,chg:0},
-    {init:"V",name:"Valentina R.",tribe:"Stronger",pts:2800,chg:0},
-    {init:"G",name:"Gwen Gaje",tribe:"Better",pts:2400,chg:0},
-    {init:"H",name:"Hugo M.",tribe:"Faster",pts:2100,chg:0},
-    {init:"S",name:"Shodhan K.",tribe:"Stronger",pts:1900,chg:0},
-    {init:"M",name:"Manju P.",tribe:"Better",pts:1800,chg:0},
-    {init:"C",name:"Carlos V.",tribe:"Faster",pts:1600,chg:0},
-    {init:"P",name:"Priya N.",tribe:"Better",pts:1500,chg:0},
-  ]
-};
+// LB_DATA seed removed (audit): the leaderboard renders from the API
+// only; failures show an empty state instead of fabricated members.
+var LB_DATA = { mtd: [], ytd: [], all: [] };
 
 var CHALLENGES = [
   {id:1,icon:"🏃",title:"July Run Challenge",desc:"Complete 8 running sessions this month. Track your consistency and push the pace.",type:"monthly",metric:"Sessions",target:8,unit:"sessions",participants:127,joined:true,done:6},
@@ -1179,7 +1137,10 @@ async function renderLeaderboard() {
   // Try API first
   if (window.ATP) {
     try {
-      var result = await window.ATP.members.leaderboard(currentPeriod);
+      // Audit fix: the live client's method is getLeaderboard —
+      // `leaderboard` never existed, so this always threw and the page
+      // showed the fake LB_DATA seed.
+      var result = await window.ATP.members.getLeaderboard(currentPeriod);
       var data = result.leaderboard.map(function(m, i) {
         return {
           init: m.first_name[0],
@@ -1190,14 +1151,14 @@ async function renderLeaderboard() {
           tribe_color: m.tribe_color || null,
           pts: m.period_points,
           chg: 0,
-          you: m.id === (window.ATP.getUser() && window.ATP.getUser().memberId)
+          you: m.id === ((window.ATP.getUser() || {}).id || (window.ATP.getUser() || {}).memberId)
         };
       });
       _renderLeaderboardRows(data);
       return;
     } catch(e) { /* fall through to static data */ }
   }
-  var data = LB_DATA[currentPeriod].slice().sort(function(a,b){return b.pts-a.pts;});
+  var data = (LB_DATA[currentPeriod] || []).slice().sort(function(a,b){return b.pts-a.pts;});
   _renderLeaderboardRows(data);
 }
 function _renderLeaderboardRows(data) {

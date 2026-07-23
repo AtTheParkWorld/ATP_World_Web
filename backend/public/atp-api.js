@@ -95,19 +95,33 @@
   const del    = (path)        => request('DELETE', path);
 
   // ── AUTH ─────────────────────────────────────────────────────
+  // Announce a fresh login so shared nav/components rerender. The
+  // resolved value carries member fields at the top level (legacy
+  // callers read member.first_name) plus token/member for callers
+  // that check data.token.
+  function _finishAuth(data) {
+    setToken(data.token);
+    setUser(data.member);
+    try { window.dispatchEvent(new CustomEvent('atp:login', { detail: { member: data.member } })); } catch (e) {}
+    return Object.assign({}, data.member, { token: data.token, member: data.member });
+  }
+
   const auth = {
-    async register(firstName, lastName, email, phone) {
-      const data = await post('/auth/register', { first_name: firstName, last_name: lastName, email, phone });
-      setToken(data.token);
-      setUser(data.member);
-      return data.member;
+    // Accepts positional args (legacy) OR a single payload object
+    // ({first_name, last_name, email, password, referral_code, …}).
+    // The old positional form silently dropped the password, so every
+    // shared-modal signup 400'd server-side.
+    async register(firstName, lastName, email, phone, password) {
+      const payload = (firstName && typeof firstName === 'object')
+        ? firstName
+        : { first_name: firstName, last_name: lastName, email, phone, password };
+      const data = await post('/auth/register', payload);
+      return _finishAuth(data);
     },
 
     async login(email, password) {
       const data = await post('/auth/login', { email, password });
-      setToken(data.token);
-      setUser(data.member);
-      return data.member;
+      return _finishAuth(data);
     },
 
     async requestMagicLink(email) {

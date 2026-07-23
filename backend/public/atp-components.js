@@ -18,15 +18,15 @@
   'use strict';
 
   var NAV_LINKS = [
-    { key: 'blog',      label: 'Blog',         href: 'blog.html' },
-    { key: 'sessions',  label: 'Sessions',     href: 'sessions.html' },
-    { key: 'stream',    label: 'Live',         href: 'stream.html' },
-    { key: 'community', label: 'Community',    href: 'community.html' },
+    { key: 'blog',      label: 'Blog',         href: '/blog.html' },
+    { key: 'sessions',  label: 'Sessions',     href: '/sessions.html' },
+    { key: 'stream',    label: 'Live',         href: '/stream.html' },
+    { key: 'community', label: 'Community',    href: '/community.html' },
     { key: 'store',     label: 'Store',        href: '/store' },
-    { key: 'plans',     label: 'Membership',   href: 'plans.html' },
-    { key: 'offers',    label: 'Offers',       href: 'offers.html' },
-    { key: 'coaches',   label: 'Our coaches',  href: 'coaches.html' },
-    { key: 'business',  label: 'Partners & Corporate', href: 'business.html' },
+    { key: 'plans',     label: 'Membership',   href: '/plans.html' },
+    { key: 'offers',    label: 'Offers',       href: '/offers.html' },
+    { key: 'coaches',   label: 'Our coaches',  href: '/coaches.html' },
+    { key: 'business',  label: 'Partners & Corporate', href: '/business.html' },
   ];
 
   var LOGO_SRC = '/atp-logo-transparent.webp';
@@ -47,7 +47,7 @@
     return (
       '<nav id="nav">' +
         '<div class="nav-inner">' +
-          '<a href="index.html" class="nav-logo" aria-label="At The Park">' +
+          '<a href="/index.html" class="nav-logo" aria-label="At The Park">' +
             '<img src="' + LOGO_SRC + '" alt="At The Park" style="height:32px;width:auto;display:block">' +
           '</a>' +
           '<ul class="nav-links">' + links + '</ul>' +
@@ -80,7 +80,7 @@
     var last  = u.last_name  || (u.lastName)  || '';
     var initials = (first[0] || '?') + ((last[0]) || '');
     return (
-      '<a href="profile.html" class="nav-user" title="My profile" style="text-decoration:none;color:inherit">' +
+      '<a href="/profile.html" class="nav-user" title="My profile" style="text-decoration:none;color:inherit">' +
         '<div class="nav-avatar" title="' + escapeHtml(first + ' ' + last) + '">' + escapeHtml(initials.toUpperCase()) + '</div>' +
         '<div class="nav-user-name">' + escapeHtml(first) + '</div>' +
       '</a>' +
@@ -121,7 +121,7 @@
       if (typeof window.logOut === 'function') {
         window.logOut();
       } else if (window.ATP && window.ATP.auth && window.ATP.auth.logout) {
-        window.ATP.auth.logout().finally(function() { window.location.href = 'index.html'; });
+        window.ATP.auth.logout().finally(function() { window.location.href = '/index.html'; });
       }
     }
   }
@@ -672,24 +672,24 @@
               '</div>' +
             '</div>' +
             '<div class="atp-footer-col"><h4>Train</h4><ul>' +
-              '<li><a href="sessions.html">Sessions</a></li>' +
-              '<li><a href="coaches.html">Coaches</a></li>' +
-              '<li><a href="plans.html">Membership</a></li>' +
+              '<li><a href="/sessions.html">Sessions</a></li>' +
+              '<li><a href="/coaches.html">Coaches</a></li>' +
+              '<li><a href="/plans.html">Membership</a></li>' +
             '</ul></div>' +
             '<div class="atp-footer-col"><h4>Connect</h4><ul>' +
-              '<li><a href="community.html">Community</a></li>' +
-              '<li><a href="blog.html">Blog</a></li>' +
+              '<li><a href="/community.html">Community</a></li>' +
+              '<li><a href="/blog.html">Blog</a></li>' +
               '<li><a href="/store">Store</a></li>' +
             '</ul></div>' +
             '<div class="atp-footer-col"><h4>For Business</h4><ul>' +
-              '<li><a href="business.html">Partners &amp; Corporate</a></li>' +
-              '<li><a href="corporate">Corporate wellness</a></li>' +
-              '<li><a href="partners.html">Brand partnerships</a></li>' +
+              '<li><a href="/business.html">Partners &amp; Corporate</a></li>' +
+              '<li><a href="/corporate">Corporate wellness</a></li>' +
+              '<li><a href="/partners.html">Brand partnerships</a></li>' +
             '</ul></div>' +
             '<div class="atp-footer-col"><h4>Help</h4><ul>' +
-              '<li><a href="contacts.html">Contact us</a></li>' +
-              '<li><a href="legal.html#privacy">Privacy</a></li>' +
-              '<li><a href="legal.html#terms">Terms</a></li>' +
+              '<li><a href="/contacts.html">Contact us</a></li>' +
+              '<li><a href="/legal.html#privacy">Privacy</a></li>' +
+              '<li><a href="/legal.html#terms">Terms</a></li>' +
             '</ul></div>' +
           '</div>' +
           '<div class="atp-footer-bottom">' +

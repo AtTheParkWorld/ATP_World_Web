@@ -1143,8 +1143,8 @@ try { localStorage.removeItem(ATP_USER_KEY); } catch(e){}
 // this page still read it; new code should not.
 function authLoadUser() {
   try {
-    if (window.ATP && typeof window.ATP.getMember === 'function') {
-      atpUser = window.ATP.getMember();
+    if (window.ATP && typeof window.ATP.getUser === 'function') {
+      atpUser = window.ATP.getUser();
     }
   } catch(e) { atpUser = null; }
 }

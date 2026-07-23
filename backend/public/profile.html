@@ -142,7 +142,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
 .profile-hero{max-width:1200px;margin:0 auto;padding:0 40px;position:relative}
 .profile-avatar-wrap{position:absolute;top:-56px;left:40px}
-.profile-avatar{width:112px;height:112px;border-radius:50%;background:var(--green);border:4px solid var(--black);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:44px;font-weight:900;color:#fff;position:relative;overflow:hidden;cursor:pointer}
+.profile-avatar{width:112px;height:112px;border-radius:50%;background:var(--green);border:4px solid var(--black);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:44px;font-weight:900;color:#0a0a0a;position:relative;overflow:hidden;cursor:pointer}
 .profile-avatar img{width:100%;height:100%;object-fit:cover;display:block}
 .avatar-upload{position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;border-radius:50%}
 .profile-avatar:hover .avatar-upload{opacity:1}
@@ -162,7 +162,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .profile-actions{display:flex;gap:8px;flex-wrap:wrap}
 .pf-btn{font-size:12px;font-weight:700;padding:9px 18px;border-radius:var(--radius);border:1px solid rgba(255,255,255,.15);background:transparent;color:var(--white);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
 .pf-btn:hover{border-color:var(--green);color:var(--green)}
-.pf-btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+.pf-btn.primary{background:var(--green);border-color:var(--green);color:#0a0a0a}
 .pf-btn.primary:hover{background:var(--green-dark)}
 
 /* ── STATS BAR ── */
@@ -226,8 +226,8 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .streak-days{font-size:14px;color:var(--light);font-weight:500;margin-top:4px}
 .streak-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:16px}
 .streak-day{aspect-ratio:1;border-radius:6px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--muted)}
-.streak-day.done{background:var(--green);color:#fff}
-.streak-day.today{background:var(--green);box-shadow:0 0 0 2px rgba(168,255,0,.4);color:#fff}
+.streak-day.done{background:var(--green);color:#0a0a0a}
+.streak-day.today{background:var(--green);box-shadow:0 0 0 2px rgba(168,255,0,.4);color:#0a0a0a}
 .streak-day.missed{background:rgba(239,68,68,.15);color:rgba(239,68,68,.6)}
 
 /* Streak progression bar (Theme 3 / #10.5, 10.6) */
@@ -312,7 +312,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .friend-tribe-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--tribe-color,var(--green));margin-right:5px;vertical-align:middle;box-shadow:0 0 0 1.5px rgba(255,255,255,.12)}
 .friend-tribe-label{font-size:11px;color:var(--tribe-color,var(--green));font-weight:700;letter-spacing:.04em}
 .friend-btn{font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--white);cursor:pointer;transition:all .2s}
-.friend-btn.accept{background:var(--green);border-color:var(--green);color:#fff}
+.friend-btn.accept{background:var(--green);border-color:var(--green);color:#0a0a0a}
 .friend-btn.accept:hover{background:var(--green-dark)}
 .friend-btn.decline:hover{border-color:#ef4444;color:#ef4444}
 
@@ -359,7 +359,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .padel-row{display:flex;gap:8px}
 .padel-btn{flex:1;padding:10px;border-radius:var(--radius);border:1px solid rgba(255,255,255,.1);background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;text-align:center}
 .padel-btn.sel{border-color:var(--green);color:var(--green);background:rgba(168,255,0,.08)}
-.form-save-btn{width:100%;padding:14px;background:var(--green);color:#fff;font-size:14px;font-weight:800;border:none;border-radius:var(--radius);cursor:pointer;margin-top:24px;letter-spacing:.04em;text-transform:uppercase;transition:background .2s}
+.form-save-btn{width:100%;padding:14px;background:var(--green);color:#0a0a0a;font-size:14px;font-weight:800;border:none;border-radius:var(--radius);cursor:pointer;margin-top:24px;letter-spacing:.04em;text-transform:uppercase;transition:background .2s}
 .form-save-btn:hover{background:var(--green-dark)}
 
 /* ── REFERRAL ── */
@@ -692,7 +692,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
         </button>
         <button class="pf-btn" data-atp-call="showTab" data-args='["notifications"]'>
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1a5 5 0 015 5v3l1.5 2.5H1.5L3 9V6a5 5 0 015-5z"/><path d="M6.5 13.5a1.5 1.5 0 003 0"/></svg>
-          <span id="notifCount" style="display:none;background:var(--green);color:#fff;width:18px;height:18px;border-radius:50%;font-size:10px;align-items:center;justify-content:center">0</span>
+          <span id="notifCount" style="display:none;background:var(--green);color:#0a0a0a;width:18px;height:18px;border-radius:50%;font-size:10px;align-items:center;justify-content:center">0</span>
         </button>
         <!-- Streak chip — compact, expandable.  Click toggles a small
              dropdown with the progress bar + best + next milestone +
@@ -1946,7 +1946,7 @@ async function loadBookingsFromAPI() {
       renderSessions(document.getElementById('upcomingSessions'),
         SESSIONS.filter(function(s){return s.status==='upcoming';}).slice(0,3));
       renderSessions(document.getElementById('allSessions'), SESSIONS);
-      console.log('✅ Profile: loaded', SESSIONS.length, 'bookings from API');
+      
     }
   } catch(e) { console.warn('Could not load bookings from API:', e.message); }
 }
@@ -3116,8 +3116,8 @@ function openChallengeLeaderboard(e, btn) {
 }
 
 function markAllRead() {
-  if (window.ATP && window.ATP.isLoggedIn() && window.ATP.notifications && window.ATP.notifications.readAll) {
-    window.ATP.notifications.readAll().catch(function(){});
+  if (window.ATP && window.ATP.isLoggedIn() && window.ATP.notifications && window.ATP.notifications.markAllRead) {
+    window.ATP.notifications.markAllRead().catch(function(){});
   }
   NOTIFS.forEach(function(n){n.unread=false;});
   renderNotifs();
@@ -3146,7 +3146,9 @@ function _atpReferralCode() {
 function _atpReferralUrl() {
   var code = _atpReferralCode();
   if (!code) return '';
-  return location.origin + '/?ref=' + encodeURIComponent(code);
+  // /join reads ?ref and pre-fills the signup form — the homepage never
+  // captured it, so shared links silently lost attribution.
+  return location.origin + '/join?ref=' + encodeURIComponent(code);
 }
 
 function _atpReferralMessage() {
@@ -3410,7 +3412,7 @@ function saveProfile(){
 
 function showMessage(msg){
   var toast=document.createElement("div");
-  toast.style.cssText="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:12px 24px;border-radius:var(--radius);font-size:14px;font-weight:700;z-index:999;animation:fadeIn .3s";
+  toast.style.cssText="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:var(--green);color:#0a0a0a;padding:12px 24px;border-radius:var(--radius);font-size:14px;font-weight:700;z-index:999;animation:fadeIn .3s";
   toast.textContent=msg;
   document.body.appendChild(toast);
   setTimeout(function(){toast.remove();},2500);
@@ -3957,7 +3959,7 @@ function openAmbassadorApply() {
         '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;display:block;margin-bottom:4px" for="ambaSessions">Which sessions can you support? *</label><input id="ambaSessions" required placeholder="e.g. Morning Run Dubai Marina, HIIT Kite Beach" style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px"></div>' +
         '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;display:block;margin-bottom:4px" for="ambaArea">Which area / city can you cover? *</label><input id="ambaArea" required placeholder="e.g. Dubai Marina, Al Ain, Muscat" style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px"></div>' +
         '<div style="margin-bottom:18px"><label style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;display:block;margin-bottom:4px" for="ambaWhy">Why do you want to be an ATP Ambassador? *</label><textarea id="ambaWhy" required rows="4" placeholder="Tell us about your motivation, availability, fitness background…" style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;resize:vertical;min-height:90px;font-family:inherit"></textarea></div>' +
-        '<button type="submit" id="ambaSubmit" style="width:100%;padding:13px;background:#A8FF00;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer">Submit application</button>' +
+        '<button type="submit" id="ambaSubmit" style="width:100%;padding:13px;background:#A8FF00;color:#0a0a0a;border:none;border-radius:10px;font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer">Submit application</button>' +
       '</form>' +
     '</div>';
   document.body.appendChild(wrap);
