@@ -704,13 +704,24 @@ router.post('/:id/checkin', authenticate, requireScanner, async (req, res, next)
       }
     }
 
+    // QR payloads differ by surface: web member QRs encode JSON
+    // ({"token": "..."}), mobile QRs encode the raw token. Normalize
+    // here so either scanner can check in either booking.
+    let normalizedToken = qr_token;
+    if (typeof qr_token === 'string' && qr_token.trim().startsWith('{')) {
+      try {
+        const parsed = JSON.parse(qr_token);
+        if (parsed && parsed.token) normalizedToken = parsed.token;
+      } catch (e) { /* not JSON — use as-is */ }
+    }
+
     // Find booking
     let bookingQuery, bookingParams;
     if (qr_token) {
       bookingQuery = `SELECT b.*, m.first_name, m.last_name, m.member_number
                       FROM bookings b JOIN members m ON m.id=b.member_id
                       WHERE b.qr_token=$1 AND b.session_id=$2`;
-      bookingParams = [qr_token, req.params.id];
+      bookingParams = [normalizedToken, req.params.id];
     } else {
       bookingQuery = `SELECT b.*, m.first_name, m.last_name, m.member_number
                       FROM bookings b JOIN members m ON m.id=b.member_id
@@ -1021,7 +1032,9 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
 });
 
 // ── GET /api/sessions/:id/registrations ──────────────────────
-router.get('/:id/registrations', authenticate, async (req, res, next) => {
+// requireScanner: this returns booked members' email/points/level —
+// PII that ordinary members must not be able to enumerate.
+router.get('/:id/registrations', authenticate, requireScanner, async (req, res, next) => {
   try {
     const { rows } = await query(
       `SELECT b.id, b.status, b.registered_at, b.court_name,

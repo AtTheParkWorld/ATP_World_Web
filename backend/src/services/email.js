@@ -381,7 +381,7 @@ async function sendPaidSessionReceipt({ member, session, payment }) {
         <tr><td style="padding:4px 0;color:#888">Member</td><td style="text-align:right;color:#fff">${escapeHtml(member.first_name + ' ' + (member.last_name || ''))} · ${escapeHtml(member.member_number || '')}</td></tr>
       </table>
     </div>
-    <p class="muted">Issued by At The Park · This is an automated receipt. For corrections or refunds, reply to this email or write to <a href="mailto:general@atthepark.com" style="color:#A8FF00">general@atthepark.com</a>.</p>
+    <p class="muted">Issued by At The Park · This is an automated receipt. For corrections or refunds, reply to this email or write to <a href="mailto:general@atthepark.world" style="color:#A8FF00">general@atthepark.world</a>.</p>
     ${_sponsorBlockHtml(session)}
   `);
   return send(member.email, `Receipt — ${currency} ${amount} · ${session.name || 'ATP session'}`, html);
@@ -580,7 +580,7 @@ async function sendSessionCancellation(member, session, refund) {
      ${reasonLine}
      ${refundLine}
      <p>You can browse upcoming sessions and rebook anytime.</p>
-     <a href="https://atp-world-web.onrender.com/sessions.html" class="btn">Browse sessions</a>`
+     <a href="${FRONTEND_URL}/sessions.html" class="btn">Browse sessions</a>`
   );
   await send(member.email, `Cancelled: ${session.name || 'Your ATP session'}`, html);
 }

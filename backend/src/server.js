@@ -111,7 +111,6 @@ const corsAllow = [
   'https://atp-world-web.onrender.com',
   'http://localhost:3001',
   'http://127.0.0.1:5500',
-  /\.github\.io$/,
 ].filter(Boolean);
 app.use(cors({
   origin: corsAllow,
@@ -161,21 +160,28 @@ const writeLimiter = rateLimit({
   },
   message: { error: 'Too many write operations, please slow down.' },
 });
+// The tight 10/15min shield applies ONLY to credential endpoints.
+// GET /auth/me, /version and POST /auth/refresh fire on every page/app
+// load, and members share IPs (venue WiFi at sessions, UAE CGNAT) — a
+// blanket /api/auth limiter locked whole groups out at peak moments.
+const AUTH_CREDENTIAL_RE = /^\/api\/(?:v1\/)?auth\/(login|register|magic-link|google|apple)\/?$/;
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, max: 10,
   standardHeaders: 'draft-7', legacyHeaders: false,
+  skip: (req) => req.method !== 'POST' || !AUTH_CREDENTIAL_RE.test(req.originalUrl.split('?')[0]),
   message: { error: 'Too many auth attempts, please try again later.' },
 });
 app.use('/api/', globalLimiter);
 app.use('/api/', writeLimiter);
-app.use('/api/auth/', authLimiter);
+// Mounted on BOTH prefixes — /api/v1/auth/login previously bypassed it.
+app.use(['/api/auth/', '/api/v1/auth/'], authLimiter);
 
 // ── MIGRATION-ENDPOINT GUARD ─────────────────────────────────
 // 45 /api/auth/migrate-* endpoints exist for one-off schema work.
 // Each is gated by ADMIN_SETUP_KEY, but they're still attack surface.
 // In production, require MIGRATIONS_ENABLED=true to even reach them.
 // Disable post-launch by un-setting the env var.
-app.use('/api/auth/', (req, res, next) => {
+app.use(['/api/auth/', '/api/v1/auth/'], (req, res, next) => {
   if (!/^\/api\/(?:v1\/)?auth\/migrate-/.test(req.originalUrl) &&
       !/^\/auth\/migrate-/.test(req.url)) return next();
   if ((process.env.NODE_ENV || 'development') !== 'production') return next();
@@ -617,6 +623,12 @@ app.get('/sessions', (req, res) => res.sendFile(path.join(__dirname, '../public/
 app.get('/community',(req, res) => res.sendFile(path.join(__dirname, '../public/community.html')));
 app.get('/profile',  (req, res) => res.sendFile(path.join(__dirname, '../public/profile.html')));
 app.get('/checkin',  (req, res) => res.sendFile(path.join(__dirname, '../public/checkin.html')));
+// Clean aliases — the mobile app and several pages link extensionless
+// (/privacy, /terms, /appeal, /guidelines); these 404'd before.
+app.get('/privacy',  (req, res) => res.sendFile(path.join(__dirname, '../public/privacy.html')));
+app.get('/terms',    (req, res) => res.sendFile(path.join(__dirname, '../public/terms.html')));
+app.get('/appeal',   (req, res) => res.sendFile(path.join(__dirname, '../public/appeal.html')));
+app.get('/guidelines', (req, res) => res.redirect(302, '/legal.html#terms'));
 // Combined legal page — privacy + terms + refund in one place, deep-linkable.
 app.get('/legal',    (req, res) => res.sendFile(path.join(__dirname, '../public/legal.html')));
 // For Business hub — routes visitors to Corporate Wellness or Brand
@@ -905,6 +917,50 @@ if (require.main === module) {
     };
     // Run once 30min after boot, then every 24h.
     setTimeout(() => { stubCleanupTick(); setInterval(stubCleanupTick, 24 * 60 * 60 * 1000); }, 30 * 60 * 1000);
+
+    // ── Daily maintenance tick ─────────────────────────────────
+    // These jobs were documented as "daily cron" but nothing ever
+    // scheduled them: deletion finalization (30-day privacy promise!),
+    // FIFO points expiry, NPS/pulse surveys, workout/notification
+    // pruning. Self-call the gated endpoints with MAINTENANCE_SECRET;
+    // if the env var is unset each call logs a loud warning instead.
+    const MAINT_JOBS = [
+      '/api/auth/maintenance-finalize-deletions',
+      '/api/points/expire',
+      '/api/auth/maintenance-trigger-post-session-nps',
+      '/api/auth/maintenance-trigger-30day-pulse',
+      '/api/auth/maintenance-prune-old-workouts',
+      '/api/auth/maintenance-prune-old-notifications',
+      '/api/auth/maintenance-dedup-workouts',
+    ];
+    const maintenanceTick = async () => {
+      if (!process.env.MAINTENANCE_SECRET) {
+        console.warn('[maintenance] MAINTENANCE_SECRET not set — daily jobs (deletion finalization, points expiry, surveys, pruning) are NOT running');
+        return;
+      }
+      for (const job of MAINT_JOBS) {
+        try {
+          const r = await fetch(`http://127.0.0.1:${PORT}${job}`, {
+            method: 'POST',
+            headers: { 'x-maintenance-secret': process.env.MAINTENANCE_SECRET },
+          });
+          const body = await r.json().catch(() => ({}));
+          if (!r.ok) console.error(`[maintenance] ${job} → ${r.status}`, body.error || '');
+          else console.log(`[maintenance] ${job} ✓`, JSON.stringify(body).slice(0, 120));
+        } catch (e) { console.error(`[maintenance] ${job} failed:`, e.message); }
+      }
+      // Prune revoked/expired refresh tokens — table grew unbounded.
+      try {
+        const { rowCount } = await query(
+          `DELETE FROM refresh_tokens
+            WHERE (revoked_at IS NOT NULL AND revoked_at < NOW() - INTERVAL '30 days')
+               OR expires_at < NOW() - INTERVAL '30 days'`
+        );
+        if (rowCount) console.log(`[maintenance] pruned ${rowCount} dead refresh tokens`);
+      } catch (e) { console.error('[maintenance] refresh-token prune:', e.message); }
+    };
+    // First run 45min after boot, then every 24h.
+    setTimeout(() => { maintenanceTick(); setInterval(maintenanceTick, 24 * 60 * 60 * 1000); }, 45 * 60 * 1000);
   });
 }
 

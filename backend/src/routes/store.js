@@ -242,7 +242,10 @@ router.post('/points/quote', authenticate, async (req, res, next) => {
       rate_atp_per_unit: rate,
       amount_value: value,
       currency_code: 'AED',
-      member_balance: req.member.points_balance || 0,
+      // authenticate's SELECT doesn't include points_balance — fetch it
+      // here so the cart quote shows the member's real balance.
+      member_balance: await query('SELECT points_balance FROM members WHERE id=$1', [req.member.id])
+        .then(r => (r.rows[0] && r.rows[0].points_balance) || 0),
     });
   } catch (err) { next(err); }
 });

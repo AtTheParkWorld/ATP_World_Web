@@ -380,7 +380,7 @@ function processQR(raw) {
   var sessionId = document.getElementById('sessionSelect')?.value;
   if (window.ATP && window.ATP.isLoggedIn() && sessionId) {
     var token = '';
-    try { token = JSON.parse(raw).token || ''; } catch(e) {}
+    try { token = JSON.parse(raw).token || ''; } catch(e) { token = raw; }
     if (token) {
       // POST direct to API with qr data
       fetch('/api/sessions/' + sessionId + '/checkin', {
@@ -703,7 +703,7 @@ function processQR(raw) {
   var sessionId = document.getElementById('sessionSelect')?.value;
   if (window.ATP && window.ATP.isLoggedIn() && sessionId) {
     var token = '';
-    try { token = JSON.parse(raw).token || ''; } catch(e) {}
+    try { token = JSON.parse(raw).token || ''; } catch(e) { token = raw; }
     if (token) {
       // POST direct to API with qr data
       fetch('/api/sessions/' + sessionId + '/checkin', {

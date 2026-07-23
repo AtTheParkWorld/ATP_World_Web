@@ -692,6 +692,24 @@ router.get('/verify', async (req, res, next) => {
     );
 
     const jwtToken = generateJWT(record.member_id, { via: 'magic_link' });
+
+    // Mobile callers (X-Mobile-Platform) need the same shape as /login:
+    // short access token + refresh token + the member row, otherwise the
+    // app's setSession(res.member) crashes on undefined and burns the
+    // single-use link.
+    if (req.headers['x-mobile-platform']) {
+      const { rows: mRows } = await query('SELECT * FROM members WHERE id=$1', [record.member_id]);
+      const refresh_token = await _issueRefreshToken(record.member_id, req);
+      return res.json({
+        access_token: generateJWT(record.member_id, { via: 'magic_link', expiresIn: '1h' }),
+        refresh_token,
+        member: mRows[0] || null,
+        token: generateJWT(record.member_id, { via: 'magic_link', expiresIn: '1h' }),
+        isFirstLogin: !record.email_verified,
+        viaMagicLink: true,
+      });
+    }
+
     res.json({
       token: jwtToken,
       isFirstLogin: !record.email_verified,
@@ -780,6 +798,20 @@ router.post('/google', async (req, res, next) => {
 
     if (member.is_banned) return res.status(403).json({ error: 'Account suspended' });
     await query('UPDATE members SET last_active_at=NOW() WHERE id=$1', [member.id]);
+
+    // Mirror /login's mobile branch: Google sign-ins from the app were
+    // getting only the 7-day JWT (stored as a bogus refresh token →
+    // silent forced logout on expiry).
+    if (req.headers['x-mobile-platform']) {
+      const refresh_token = await _issueRefreshToken(member.id, req);
+      return res.json({
+        access_token: generateJWT(member.id, { via: 'google', expiresIn: '1h' }),
+        refresh_token,
+        member,
+        token: generateJWT(member.id, { via: 'google', expiresIn: '1h' }),
+        isNew: !rows.length,
+      });
+    }
 
     res.json({ token: generateJWT(member.id), member, isNew: !rows.length });
   } catch (err) { next(err); }
