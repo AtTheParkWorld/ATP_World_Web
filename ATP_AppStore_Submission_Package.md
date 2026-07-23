@@ -49,8 +49,8 @@ TRIBES
 • Join Stronger, Faster or Better — your tribe powers your feed, leaderboard and identity
 • Compete on weekly leaderboards by city, tribe and activity
 
-CONNECT YOUR WATCH
-• Sync Garmin, Strava or Fitbit (Apple Health support coming soon)
+CONNECT STRAVA
+• Sync your Strava activities (more providers coming soon)
 • Count your workouts toward fitness challenges
 • Climb the weekly distance and active-minutes leaderboards
 
@@ -63,7 +63,7 @@ LIVE SESSIONS
 
 SUPPORT THE COMMUNITY
 • ATP is free because some members choose to support it
-• Optional Supporter subscription helps keep every session free for everyone
+• See how Supporter membership keeps every session free (managed on our website)
 
 Download the app, pick your tribe, and come train with us. Your first session is free. So is every one after that.
 
@@ -117,11 +117,11 @@ Answer: **"Yes, we collect data from this app."** Then declare:
 | **Contact info → Name** | Yes | Yes | No | App functionality |
 | **Contact info → Email** | Yes | Yes | No | App functionality |
 | **Contact info → Phone** | Yes (optional field) | Yes | No | App functionality |
-| **Health & Fitness → Fitness** | Yes (HealthKit read + Garmin/Strava/Fitbit sync) | Yes | No | App functionality |
+| **Health & Fitness → Fitness** | Yes (Strava workout sync via OAuth — NOT HealthKit; the app reads no on-device health data at launch) | Yes | No | App functionality |
 | **User content → Photos or Videos** | Yes (avatar, post media) | Yes | No | App functionality |
 | **User content → Other (posts, comments, messages, feedback)** | Yes | Yes | No | App functionality |
 | **Identifiers → User ID** | Yes (member id, push token) | Yes | No | App functionality |
-| **Purchases → Purchase history** | Yes (Supporter subscription status) | Yes | No | App functionality |
+| **Purchases → Purchase history** | No on iOS — the Supporter subscription is NOT sold in the iOS app (managed on the website); the app collects no purchase data on iOS | — | — | — |
 | **Diagnostics → Crash data** | Yes (Sentry) | **No** | No | App functionality |
 | **Diagnostics → Performance data** | Yes (Sentry) | **No** | No | App functionality |
 | **Location** | **NO** — the app never requests device location (session locations are content) | — | — | — |
@@ -163,12 +163,16 @@ REVIEW NOTES — At The Park (ATP)
    events. The app is the member companion: booking, check-in QR,
    community feed, points/rewards.
 
-3. PAYMENTS (3.1.3(e) — goods & services outside the app)
-   The optional "Supporter" subscription funds free physical training
-   sessions and includes real-world perks (priority booking of physical
-   sessions, merch discounts). Payment is completed via Stripe in an
-   external browser sheet, consistent with guideline 3.1.3(e) for
-   real-world services. No digital content is unlocked by payment.
+3. PAYMENTS / SUPPORTER (3.1.1 — no digital purchase in the iOS app)
+   To avoid any 3.1.1 ambiguity, the iOS app does NOT sell the "Supporter"
+   membership in-app. On iOS the Supporter screen is informational only —
+   it shows what membership funds (free physical sessions) with no price,
+   no buy button, and no link to an external purchase flow. Members who
+   already subscribed (via the website) see their status, but no purchase
+   or management happens in the app. Purchasing is available only on our
+   website, reached by the member independently. The paid-session booking
+   fee (a real-world event) is handled per 3.1.3(e); merch is physical
+   goods via the web store. No digital content is unlocked by any payment.
 
 4. SIGN IN WITH APPLE
    Implemented alongside Google sign-in and email/password per 4.8.

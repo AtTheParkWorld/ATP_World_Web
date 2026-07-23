@@ -32,9 +32,6 @@
         "NSCameraUsageDescription": "ATP uses the camera so ambassadors can scan member QR codes at the start of a session.",
         "NSPhotoLibraryUsageDescription": "ATP uses your photo library so you can attach an image to community posts.",
         "NSPhotoLibraryAddUsageDescription": "ATP saves your member QR badge to your photo library when you tap Save.",
-        "NSHealthShareUsageDescription": "ATP reads your workouts from HealthKit to credit your fitness challenges. We never share or sell this data.",
-        "NSHealthUpdateUsageDescription": "ATP does not write data to HealthKit — we only read your workouts to credit your fitness challenges.",
-        "NSUserTrackingUsageDescription": "ATP does not currently use cross-site tracking. This will appear only if a future analytics provider requires it.",
         "ITSAppUsesNonExemptEncryption": false
       },
       "config": {
@@ -88,12 +85,6 @@
         "expo-camera",
         {
           "cameraPermission": "ATP uses the camera so ambassadors can scan member QR codes."
-        }
-      ],
-      [
-        "expo-tracking-transparency",
-        {
-          "userTrackingPermission": "ATP does not currently use cross-site tracking. This prompt only appears if a future analytics provider requires it."
         }
       ],
       "expo-apple-authentication",
