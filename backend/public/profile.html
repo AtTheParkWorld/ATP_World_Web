@@ -1119,6 +1119,30 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
           <div class="wallet-pts-label">points</div>
           <div class="wallet-equiv">≈ AED 10 store credit · 280 pts = 10% off next order</div>
         </div>
+        <!-- SPEND YOUR POINTS (launch hardening) — the retired store.html
+             cart drawer owned the only redemption UI; /store now redirects
+             to the Shopify storefront, so the wallet hosts it instead.
+             POST /api/store/points/quote + /redeem, history via
+             GET /api/store/points/redemptions (src/routes/store.js).
+             Rendered by loadRedeemCard(). -->
+        <div class="widget" id="pointsRedeemCard" style="margin-top:20px;background:linear-gradient(135deg,#0f1e0a,#0a1a08);border:1px solid rgba(168,255,0,.3)">
+          <div class="widget-head">
+            <span class="widget-title">⚡ Spend your points</span>
+            <span class="widget-action" id="redeemBalanceChip" style="color:var(--green);cursor:default"></span>
+          </div>
+          <div class="widget-body">
+            <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px" id="redeemIntro">Swap points for a discount code, then apply it at checkout in the ATP store.</div>
+            <div id="redeemChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px"></div>
+            <div id="redeemQuoteLine" style="font-size:12px;color:var(--light);line-height:1.5;min-height:16px;margin-bottom:10px" aria-live="polite"></div>
+            <button id="redeemConfirmBtn" disabled style="width:100%;background:var(--green);color:#0a0a0a;border:none;font-size:12px;font-weight:800;padding:10px;border-radius:6px;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;opacity:.4">Redeem</button>
+            <div id="redeemError" role="alert" style="display:none;margin-top:10px;font-size:12px;line-height:1.5;color:#ff8a8a;background:rgba(255,71,71,.08);border:1px solid rgba(255,71,71,.3);border-radius:6px;padding:10px 12px"></div>
+            <div id="redeemResult" style="display:none;margin-top:12px"></div>
+            <div id="redeemHistoryWrap" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:8px">Your codes</div>
+              <div id="redeemHistoryList"></div>
+            </div>
+          </div>
+        </div>
         <!-- Theme 9 / #33 — Best-seller widget moved to the sidebar
              (#bestSellerCard) per founder request. Wallet panel keeps
              only the points + history widgets. -->
@@ -4867,6 +4891,252 @@ function loadPoints() {
   }).catch(function(){});
 }
 
+// ── Spend-your-points card (launch hardening) ─────────────────
+// The retired store.html cart drawer owned the only redemption UI;
+// /store now redirects to the Shopify storefront, so the wallet card
+// above (#pointsRedeemCard) hosts it. Contract (src/routes/store.js):
+//   POST /api/store/points/quote  { points }
+//        → { points, rate_atp_per_unit, amount_value, currency_code, member_balance }
+//   POST /api/store/points/redeem { points }
+//        → 201 { discount_code, amount_value, points_balance, expires_at,
+//                shopify_active, next_step } · 400 { error } when balance
+//        is short / below minimum. shopify_active:false = code reserved,
+//        Shopify mirror pending → member gets it by email.
+//   GET  /api/store/points/redemptions → { redemptions: [...] }
+var _REDEEM_RATE     = 28;   // pts per AED 1 — live value comes from the quote
+var _REDEEM_BALANCE  = 0;
+var _REDEEM_SELECTED = 0;    // points currently selected via a chip
+
+function _redeemHeaders(json) {
+  var h = { 'Authorization': 'Bearer ' + (localStorage.getItem('atp_token')||'') };
+  if (json) h['Content-Type'] = 'application/json';
+  return h;
+}
+
+function loadRedeemCard() {
+  var card = document.getElementById('pointsRedeemCard');
+  if (!card) return;
+  var btn = document.getElementById('redeemConfirmBtn');
+  if (btn && !btn._wired) { btn._wired = true; btn.addEventListener('click', confirmRedeem); }
+  // Quote with points:0 — cheap way to read the live rate + authoritative
+  // balance (authenticate's SELECT doesn't include points_balance).
+  fetch('/api/store/points/quote', {
+    method: 'POST',
+    headers: _redeemHeaders(true),
+    body: JSON.stringify({ points: 0 }),
+  })
+    .then(function(r){ if (!r.ok) throw new Error('quote'); return r.json(); })
+    .then(function(q){
+      _REDEEM_RATE    = Number(q.rate_atp_per_unit) > 0 ? Number(q.rate_atp_per_unit) : 28;
+      _REDEEM_BALANCE = Number(q.member_balance) || 0;
+      renderRedeemChips();
+    })
+    .catch(function(){
+      var line = document.getElementById('redeemQuoteLine');
+      if (line) line.textContent = 'Could not load redemption rates — refresh to try again.';
+    });
+  loadRedeemHistory();
+}
+
+function renderRedeemChips() {
+  var chipsEl = document.getElementById('redeemChips');
+  var balEl   = document.getElementById('redeemBalanceChip');
+  var line    = document.getElementById('redeemQuoteLine');
+  var btn     = document.getElementById('redeemConfirmBtn');
+  if (!chipsEl) return;
+  _REDEEM_SELECTED = 0;
+  if (balEl) balEl.textContent = _REDEEM_BALANCE.toLocaleString() + ' pts';
+  if (btn) { btn.disabled = true; btn.style.opacity = '.4'; btn.textContent = 'Redeem'; }
+  // Preset AED denominations, filtered to what the balance affords.
+  var options = [5, 10, 25, 50, 100].filter(function(aed){ return aed * _REDEEM_RATE <= _REDEEM_BALANCE; });
+  if (!options.length) {
+    var firstAed  = 5;
+    var shortBy   = Math.max(0, firstAed * _REDEEM_RATE - _REDEEM_BALANCE);
+    chipsEl.innerHTML = '';
+    if (line) line.textContent = 'Earn ' + shortBy.toLocaleString() + ' more points to unlock your first AED ' + firstAed + ' code (' + _REDEEM_RATE + ' pts = AED 1).';
+    return;
+  }
+  chipsEl.innerHTML = options.map(function(aed){
+    var pts = aed * _REDEEM_RATE;
+    return '<button type="button" class="redeem-chip" data-points="' + pts + '" data-aed="' + aed + '" style="background:transparent;border:1px solid rgba(168,255,0,.35);color:var(--green);padding:8px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;line-height:1.3">AED ' + aed + '<span style="display:block;font-size:10px;color:var(--muted);font-weight:600">' + pts.toLocaleString() + ' pts</span></button>';
+  }).join('');
+  if (line) line.textContent = 'Pick an amount — ' + _REDEEM_RATE + ' pts = AED 1 off at the ATP store.';
+  Array.prototype.forEach.call(chipsEl.querySelectorAll('.redeem-chip'), function(c){
+    c.addEventListener('click', function(){ selectRedeemAmount(c); });
+  });
+}
+
+function selectRedeemAmount(chip) {
+  var chipsEl = document.getElementById('redeemChips');
+  var line    = document.getElementById('redeemQuoteLine');
+  var btn     = document.getElementById('redeemConfirmBtn');
+  var err     = document.getElementById('redeemError');
+  if (err) err.style.display = 'none';
+  Array.prototype.forEach.call(chipsEl.querySelectorAll('.redeem-chip'), function(c){
+    c.style.background = 'transparent'; c.style.color = 'var(--green)';
+    var sub = c.querySelector('span'); if (sub) sub.style.color = 'var(--muted)';
+  });
+  chip.style.background = 'var(--green)'; chip.style.color = '#0a0a0a';
+  var sub = chip.querySelector('span'); if (sub) sub.style.color = 'rgba(10,10,10,.7)';
+  var pts = parseInt(chip.dataset.points, 10) || 0;
+  _REDEEM_SELECTED = pts;
+  if (line) line.textContent = 'Checking value…';
+  if (btn) { btn.disabled = true; btn.style.opacity = '.4'; }
+  // Server-side quote so the AED value shown is authoritative even if
+  // the admin changes the rate mid-session.
+  fetch('/api/store/points/quote', {
+    method: 'POST',
+    headers: _redeemHeaders(true),
+    body: JSON.stringify({ points: pts }),
+  })
+    .then(function(r){ if (!r.ok) throw new Error('quote'); return r.json(); })
+    .then(function(q){
+      if (_REDEEM_SELECTED !== pts) return; // member picked another chip meanwhile
+      var aed  = Number(q.amount_value) || Math.floor(pts / _REDEEM_RATE);
+      var left = Math.max(0, _REDEEM_BALANCE - pts);
+      if (line) line.innerHTML = 'AED <strong style="color:var(--green)">' + aed + '</strong> off · costs <strong style="color:#fff">' + pts.toLocaleString() + ' pts</strong> · leaves you ' + left.toLocaleString() + ' pts';
+      if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Redeem ' + pts.toLocaleString() + ' pts → AED ' + aed; }
+    })
+    .catch(function(){
+      if (_REDEEM_SELECTED !== pts) return;
+      // Fall back to the locally computed value — quote is preview-only.
+      var aed  = Math.floor(pts / _REDEEM_RATE);
+      var left = Math.max(0, _REDEEM_BALANCE - pts);
+      if (line) line.textContent = 'AED ' + aed + ' off · costs ' + pts.toLocaleString() + ' pts · leaves you ' + left.toLocaleString() + ' pts';
+      if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Redeem ' + pts.toLocaleString() + ' pts → AED ' + aed; }
+    });
+}
+
+function confirmRedeem() {
+  var pts = _REDEEM_SELECTED;
+  if (!pts) return;
+  var aed = Math.floor(pts / _REDEEM_RATE);
+  if (!confirm('Redeem ' + pts.toLocaleString() + ' points for AED ' + aed + ' off? This can’t be undone.')) return;
+  var btn = document.getElementById('redeemConfirmBtn');
+  var err = document.getElementById('redeemError');
+  if (err) err.style.display = 'none';
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; btn.textContent = 'Redeeming…'; }
+  fetch('/api/store/points/redeem', {
+    method: 'POST',
+    headers: _redeemHeaders(true),
+    body: JSON.stringify({ points: pts }),
+  })
+    .then(function(res){
+      return res.json().catch(function(){ return {}; }).then(function(data){
+        if (!res.ok) {
+          // 503 = redemption backend down mid-flight → points may be
+          // reserved; the code arrives by email once mirrored.
+          var msg = res.status === 503
+            ? 'Redemption is catching up — if your points were deducted, your code will be emailed to you shortly.'
+            : (data.error || 'Could not redeem right now. Try again in a minute.');
+          throw Object.assign(new Error(msg), { handled: true });
+        }
+        return data;
+      });
+    })
+    .then(function(data){
+      _REDEEM_BALANCE = Number(data.points_balance) || 0;
+      if (CURRENT_MEMBER) CURRENT_MEMBER.points_balance = _REDEEM_BALANCE;
+      // Keep the wallet hero + header stat in sync with the new balance.
+      var walletPts = document.querySelector('.wallet-points');
+      if (walletPts) walletPts.textContent = _REDEEM_BALANCE.toLocaleString();
+      var statPts = document.getElementById('statPoints');
+      if (statPts) statPts.textContent = _REDEEM_BALANCE.toLocaleString();
+      renderRedeemChips();
+      showRedeemResult(data);
+      loadRedeemHistory();
+    })
+    .catch(function(e){
+      if (btn) { btn.disabled = _REDEEM_SELECTED ? false : true; btn.style.opacity = _REDEEM_SELECTED ? '1' : '.4'; btn.textContent = 'Redeem'; }
+      if (err) {
+        err.textContent = (e && e.handled) ? e.message : 'Network error — check your connection and try again. Your points were not touched.';
+        err.style.display = 'block';
+      }
+    });
+}
+
+function showRedeemResult(data) {
+  var box = document.getElementById('redeemResult');
+  if (!box) return;
+  var code = String(data.discount_code || '');
+  var statusLine = data.shopify_active
+    ? '<div style="font-size:11px;color:var(--muted);line-height:1.5">Worth <strong style="color:#fff">AED ' + (Number(data.amount_value)||0) + '</strong> at checkout. Expires in 30 days.</div>'
+    : '<div style="font-size:11px;color:#ffc400;line-height:1.5">⚠️ Code reserved — we’ll activate it on Shopify and email it to you within the hour.</div>';
+  box.innerHTML =
+    '<div style="background:#0a0a0a;border:1px solid rgba(168,255,0,.4);border-radius:8px;padding:12px">' +
+      '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Your discount code</div>' +
+      '<div style="font-family:monospace;font-size:17px;font-weight:800;color:var(--green);letter-spacing:1px;margin-bottom:8px" id="redeemCodeText">' + code + '</div>' +
+      statusLine +
+      '<div style="display:flex;gap:8px;margin-top:10px">' +
+        '<button type="button" id="redeemCopyBtn" style="flex:1;background:transparent;border:1px solid rgba(168,255,0,.35);color:var(--green);font-size:11px;font-weight:700;padding:8px;border-radius:6px;cursor:pointer;text-transform:uppercase;letter-spacing:.05em">Copy code</button>' +
+        (data.shopify_active
+          ? '<a href="https://' + ATP_SHOPIFY_DOMAIN + '/discount/' + encodeURIComponent(code) + '" target="_blank" rel="noopener" style="flex:1;display:inline-flex;align-items:center;justify-content:center;background:var(--green);color:#0a0a0a;font-size:11px;font-weight:800;padding:8px;border-radius:6px;text-decoration:none;text-transform:uppercase;letter-spacing:.05em">Apply in store →</a>'
+          : '') +
+      '</div>' +
+    '</div>';
+  box.style.display = 'block';
+  var copyBtn = document.getElementById('redeemCopyBtn');
+  if (copyBtn) copyBtn.addEventListener('click', function(){ _redeemCopy(code, copyBtn); });
+}
+
+function _redeemCopy(code, btn) {
+  var done = function(){
+    var prev = btn.textContent;
+    btn.textContent = 'Copied ✓';
+    setTimeout(function(){ btn.textContent = prev; }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(done).catch(function(){ prompt('Copy your code:', code); });
+  } else {
+    prompt('Copy your code:', code);
+  }
+}
+
+function loadRedeemHistory() {
+  var wrap = document.getElementById('redeemHistoryWrap');
+  var host = document.getElementById('redeemHistoryList');
+  if (!wrap || !host) return;
+  fetch('/api/store/points/redemptions', { headers: _redeemHeaders() })
+    .then(function(r){ if (!r.ok) throw new Error('history'); return r.json(); })
+    .then(function(d){
+      var list = (d && d.redemptions) || [];
+      if (!list.length) { wrap.style.display = 'none'; return; }
+      host.innerHTML = list.slice(0, 5).map(function(r){
+        var now     = Date.now();
+        var expired = r.expires_at && new Date(r.expires_at).getTime() < now;
+        var status  = r.used_at ? 'Used'
+                    : expired   ? 'Expired'
+                    : (r.status === 'shopify_failed') ? 'Pending — emailed soon'
+                    : 'Active';
+        var color   = r.used_at || expired ? 'var(--muted)'
+                    : (r.status === 'shopify_failed') ? '#ffc400'
+                    : 'var(--green)';
+        var dim     = (r.used_at || expired) ? ';opacity:.55' : '';
+        return (
+          '<div class="redeem-hist-row" data-code="' + String(r.discount_code||'') + '" title="Tap to copy" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer' + dim + '">' +
+            '<div>' +
+              '<div style="font-family:monospace;font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px">' + String(r.discount_code||'') + '</div>' +
+              '<div style="font-size:10px;color:var(--muted)">AED ' + (Number(r.amount_value)||0) + ' · ' + (Number(r.points_spent)||0).toLocaleString() + ' pts' + (r.expires_at && !expired && !r.used_at ? ' · expires ' + new Date(r.expires_at).toLocaleDateString() : '') + '</div>' +
+            '</div>' +
+            '<span style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:' + color + ';white-space:nowrap">' + status + '</span>' +
+          '</div>'
+        );
+      }).join('');
+      Array.prototype.forEach.call(host.querySelectorAll('.redeem-hist-row'), function(row){
+        row.addEventListener('click', function(){
+          var c = row.dataset.code;
+          if (c && navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(c);
+            var badge = row.querySelector('span');
+            if (badge) { var prev = badge.textContent; badge.textContent = 'Copied ✓'; setTimeout(function(){ badge.textContent = prev; }, 1500); }
+          }
+        });
+      });
+      wrap.style.display = 'block';
+    })
+    .catch(function(){ wrap.style.display = 'none'; });
+}
+
 // Challenges → progress cards
 function loadChallenges() {
   return window.ATP.challenges.list().then(function(data) {
@@ -5082,6 +5352,7 @@ function loadRealProfileData() {
     applyMemberToPage(m);
     loadBookings();
     loadPoints();
+    loadRedeemCard();
     loadChallenges();
     loadNotifications();
     loadReferrals();
@@ -6040,8 +6311,20 @@ function renderWearableProviders(connections, available) {
   // Map connections by provider name
   var connByName = {};
   connections.forEach(function(c){ connByName[c.provider] = c; });
-  // Always show enabled providers + phone-native option
-  var rows = (available || []).filter(function(p){ return p.enabled; }).map(function(p){
+  // Launch hardening: Strava is the only integration that's live
+  // end-to-end. The rest (Fitbit / Polar / Withings / Garmin) render
+  // as muted "Coming soon" chips — no connect button, no click — until
+  // their OAuth apps are approved. Exception: a provider the member
+  // already has an ACTIVE connection to keeps its functional card so
+  // Disconnect (token wipe — see privacy widget) always works.
+  var LIVE_PROVIDERS = { strava: true };
+  var COMING_SOON = [
+    { name: 'garmin',   displayName: 'Garmin'   },
+    { name: 'fitbit',   displayName: 'Fitbit'   },
+    { name: 'polar',    displayName: 'Polar'    },
+    { name: 'withings', displayName: 'Withings' },
+  ];
+  function renderFunctional(p) {
     var c = connByName[p.name];
     var connected = c && c.status === 'active';
     var needsReauth = c && c.status === 'needs_reauth';
@@ -6060,11 +6343,32 @@ function renderWearableProviders(connections, available) {
         ) +
       '</div>'
     );
-  });
-  if (!rows.length) {
-    host.innerHTML = '<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--muted);font-size:13px">No device integrations are enabled yet. Ask the admin to add Strava / Fitbit / Polar credentials to the server config.</div>';
-    return;
   }
+  function renderComingSoon(p) {
+    return (
+      '<div aria-disabled="true" style="border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;background:transparent;opacity:.45;pointer-events:none;user-select:none">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+          '<div style="font-family:var(--ff-display);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;color:var(--muted)">' + p.displayName + '</div>' +
+          '<span style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">Coming soon</span>' +
+        '</div>' +
+        '<div style="font-size:11px;color:var(--muted)">Integration in progress.</div>' +
+      '</div>'
+    );
+  }
+  var rows = [];
+  // Live providers first (from the server's enabled list, so a missing
+  // Strava credential still degrades gracefully).
+  var live = (available || []).filter(function(p){ return p.enabled && LIVE_PROVIDERS[p.name]; });
+  if (live.length) {
+    rows = live.map(renderFunctional);
+  } else {
+    rows.push('<div style="grid-column:1/-1;padding:14px;text-align:center;color:var(--muted);font-size:12px">Strava connection is offline right now — check back soon.</div>');
+  }
+  COMING_SOON.forEach(function(p){
+    var c = connByName[p.name];
+    if (c && c.status === 'active') rows.push(renderFunctional(p)); // legacy connection → keep Disconnect reachable
+    else rows.push(renderComingSoon(p));
+  });
   host.innerHTML = rows.join('');
 }
 
@@ -7194,11 +7498,12 @@ window.addEventListener('hashchange', function(){
   </div>
 </div>
 
-<footer class="footer-min" role="contentinfo" style="background:#111111;padding:24px 40px;border-top:1px solid rgba(255,255,255,.06);font-family:'DM Sans',sans-serif">
-  <div style="max-width:1320px;margin:0 auto;display:flex;justify-content:center;align-items:center">
-    <p style="font-size:12px;color:#888;margin:0">© 2026 At The Park. All rights reserved. Dubai, United Arab Emirates.</p>
-  </div>
-</footer>
+<!-- Footer — mounts the canonical brand/legal footer from the shared
+     bundle (atp-components.js → mountFooter), same pattern as
+     community.html: boot() auto-mounts into #atp-footer-host on
+     DOMContentLoaded, no explicit call needed. Replaces the old
+     single-line 'footer-min' stub (launch hardening). -->
+<div id="atp-footer-host"></div>
 
 </body>
 </html>
