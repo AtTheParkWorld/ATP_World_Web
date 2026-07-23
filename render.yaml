@@ -1,0 +1,28 @@
+# Render Blueprint — adds a STAGING copy of the ATP backend so changes
+# can be verified before touching production.
+#
+# One-time setup (Fredy): Render Dashboard → New → Blueprint → pick this
+# repo. Render creates "atp-world-web-staging" from the `staging` branch.
+# Copy the env vars from the production service, but point DATABASE_URL
+# at a separate Neon branch/database (Neon → Branches → create "staging"
+# — instant copy-on-write clone), and leave MAINTENANCE_SECRET,
+# SENDGRID_API_KEY, STRIPE_SECRET_KEY empty or use test keys so staging
+# can never email members or charge cards.
+#
+# Flow after setup: feature work merges to `staging` → verify at
+# https://atp-world-web-staging.onrender.com → merge staging → main
+# → production deploys.
+services:
+  - type: web
+    name: atp-world-web-staging
+    runtime: node
+    branch: staging
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node src/server.js
+    plan: free
+    envVars:
+      - key: NODE_ENV
+        value: staging
+      - key: FRONTEND_URL
+        value: https://atp-world-web-staging.onrender.com

@@ -435,7 +435,16 @@ app.get('/join',     (req, res) => res.sendFile(path.join(__dirname, '../public/
 // Corporate wellness pitch deck — clean URL for sharing with HR teams.
 app.get('/corporate-deck', (req, res) => res.sendFile(path.join(__dirname, '../public/corporate-deck.html')));
 // Internal 90-day execution plan — not for HR audiences. Founder + team only.
-app.get('/corporate-plan', (req, res) => res.sendFile(path.join(__dirname, '../public/corporate-plan.html')));
+// Internal 90-day strategy doc — founder-only, moved to backend/private/
+// (was a public unauthenticated page). Read it from the repo; the URL
+// now requires the maintenance secret header.
+app.get('/corporate-plan', requireMaintenanceSecretPage, (req, res) =>
+  res.sendFile(path.join(__dirname, '../private/corporate-plan.html')));
+function requireMaintenanceSecretPage(req, res, next) {
+  const expected = process.env.MAINTENANCE_SECRET;
+  if (expected && req.query.key === expected) return next();
+  return res.status(404).sendFile(path.join(__dirname, '../public/404.html'));
+}
 // Corporate invitation accept landing — employees click the magic link from the email,
 // land here, see company branding, tap accept, get logged in.
 app.get('/corporate/accept-invite', (req, res) => res.sendFile(path.join(__dirname, '../public/corporate-accept-invite.html')));
