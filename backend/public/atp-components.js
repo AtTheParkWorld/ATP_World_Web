@@ -791,3 +791,6 @@
     else show();
   })();
 })();
+
+/* ── GA4 loader + login funnel event. Set MEASUREMENT_ID (G-XXXXXXXXXX) once the GA4 property exists — until then this no-ops. ── */
+(function(){var MEASUREMENT_ID="";if(!MEASUREMENT_ID)return;var s=document.createElement("script");s.async=1;s.src="https://www.googletagmanager.com/gtag/js?id="+MEASUREMENT_ID;document.head.appendChild(s);window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments)};gtag("js",new Date());gtag("config",MEASUREMENT_ID);window.addEventListener("atp:login",function(){try{gtag("event","login")}catch(e){}});})();

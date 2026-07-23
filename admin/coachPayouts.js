@@ -1,0 +1,123 @@
+/* ════════════════════════════════════════════════════════════════
+ * ATP Admin — Coach Payouts
+ * Surfaces the coach-sessions admin endpoints that previously had no
+ * UI, so the founder can actually see what ATP owes coaches:
+ *   - GET /api/coach-sessions/admin/payouts    → coach_monthly_payouts
+ *       joined with member name/email + bank account (bank_name, iban)
+ *   - GET /api/coach-sessions/admin/offerings  → all coach offerings
+ *       joined with coach name/email + bookings_total
+ * Read-only by design: the API has no "mark transferred" endpoint yet
+ * (status/transferred_at only change backend-side), so this renders
+ * the obligation + the bank details needed to make the transfer.
+ * Wallet top-ups already have UI via the Members table (topupWallet).
+ * ════════════════════════════════════════════════════════════════ */
+
+function loadCoachPayoutsSection() {
+  var host = document.getElementById('coachPayoutsBody');
+  if (!host) return;
+  host.innerHTML = '<div style="padding:30px;color:#555;text-align:center">Loading payouts…</div>';
+  var auth = { headers: { Authorization: 'Bearer ' + getToken() } };
+  Promise.all([
+    fetch(ATP_API + '/coach-sessions/admin/payouts', auth).then(function(r){ return r.json(); }),
+    fetch(ATP_API + '/coach-sessions/admin/offerings', auth).then(function(r){ return r.json(); }),
+  ])
+    .then(function(out){
+      renderCoachPayouts((out[0] && out[0].payouts) || [], (out[1] && out[1].offerings) || []);
+    })
+    .catch(function(e){
+      host.innerHTML = '<div style="padding:30px;color:#f87171;text-align:center">Failed to load payouts: ' + _esc(e.message || e) + '</div>';
+    });
+}
+
+function renderCoachPayouts(payouts, offerings) {
+  var host = document.getElementById('coachPayoutsBody');
+  if (!host) return;
+
+  var pending = payouts.filter(function(p){ return p.status === 'pending'; });
+  var pendingAed = pending.reduce(function(s, p){ return s + (p.amount_aed || 0); }, 0);
+  var settled = payouts.length - pending.length;
+
+  // ── Stat cards ────────────────────────────────────────────────
+  var html =
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px">' +
+      '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:14px"><div style="font-size:10px;color:#888;letter-spacing:.1em;text-transform:uppercase;font-weight:600">Owed to coaches</div><div style="font-family:var(--ff-display,sans-serif);font-size:28px;font-weight:900;color:#f5c042">AED ' + pendingAed.toLocaleString() + '</div></div>' +
+      '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:14px"><div style="font-size:10px;color:#888;letter-spacing:.1em;text-transform:uppercase;font-weight:600">Pending payouts</div><div style="font-family:var(--ff-display,sans-serif);font-size:28px;font-weight:900;color:#fff">' + pending.length + '</div></div>' +
+      '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:14px"><div style="font-size:10px;color:#888;letter-spacing:.1em;text-transform:uppercase;font-weight:600">Settled</div><div style="font-family:var(--ff-display,sans-serif);font-size:28px;font-weight:900;color:#A8FF00">' + settled + '</div></div>' +
+    '</div>';
+
+  // ── Payouts table ─────────────────────────────────────────────
+  html += '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:18px;margin-bottom:18px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">' +
+      '<div style="font-size:10px;color:#A8FF00;letter-spacing:.12em;text-transform:uppercase;font-weight:700">Monthly payout obligations</div>' +
+      '<button class="admin-btn" data-atp-call="loadCoachPayoutsSection" style="font-size:11px;padding:6px 12px">↻ Refresh</button>' +
+    '</div>' +
+    '<div style="font-size:11px;color:#888;margin-bottom:12px;line-height:1.6">Make the bank transfer with the IBAN below, then flip <code style="background:#0a0a0a;padding:2px 6px;border-radius:3px;color:#A8FF00">status</code> backend-side — the API has no mark-as-transferred endpoint yet.</div>';
+
+  if (!payouts.length) {
+    html += '<div style="padding:30px;color:#555;text-align:center;font-size:13px;border:1px dashed #2a2a2a;border-radius:8px">No payout rows yet. Rows appear once the monthly payout aggregation writes <code style="background:#0a0a0a;padding:2px 6px;border-radius:3px;color:#A8FF00">coach_monthly_payouts</code>.</div>';
+  } else {
+    html += '<table class="admin-table" style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="text-align:left;color:#888;border-bottom:1px solid #1a1a1a">' +
+      '<th style="padding:10px 12px">Coach</th>' +
+      '<th style="padding:10px 12px">Period</th>' +
+      '<th style="padding:10px 12px">Sessions</th>' +
+      '<th style="padding:10px 12px">Amount</th>' +
+      '<th style="padding:10px 12px">Bank</th>' +
+      '<th style="padding:10px 12px">Status</th>' +
+      '<th style="padding:10px 12px">Notes</th>' +
+      '</tr></thead><tbody>';
+    payouts.forEach(function(p){
+      var name = ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || '(no name)';
+      var fmt = function(d){ return d ? new Date(d).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }) : ''; };
+      var isPending = p.status === 'pending';
+      var c = isPending
+        ? { fg: '#fbbf24', border: 'rgba(245,158,11,.4)', bg: 'rgba(245,158,11,.15)' }
+        : { fg: '#A8FF00', border: 'rgba(168,255,0,.4)',  bg: 'rgba(168,255,0,.15)'  };
+      html += '<tr style="border-bottom:1px solid #111;vertical-align:top">' +
+        '<td style="padding:10px 12px;color:#fff">' + _esc(name) + '<br><span style="color:#666;font-size:11px">' + _esc(p.email || '') + '</span></td>' +
+        '<td style="padding:10px 12px;color:#aaa;white-space:nowrap">' + fmt(p.period_start) + ' → ' + fmt(p.period_end) + '</td>' +
+        '<td style="padding:10px 12px;color:#fff;font-weight:600">' + (p.session_count || 0) + '</td>' +
+        '<td style="padding:10px 12px;color:#f5c042;font-weight:700;white-space:nowrap">AED ' + (p.amount_aed || 0).toLocaleString() + '</td>' +
+        '<td style="padding:10px 12px;font-size:11px">' +
+          (p.iban
+            ? '<span style="color:#ddd">' + _esc(p.bank_name || '') + '</span><br><span style="font-family:monospace;color:#A8FF00">' + _esc(p.iban) + '</span>'
+            : '<span style="color:#fbbf24">⚠ No bank details on file</span>') + '</td>' +
+        '<td style="padding:10px 12px;white-space:nowrap"><span style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:' + c.fg + ';background:' + c.bg + ';border:1px solid ' + c.border + ';padding:3px 8px;border-radius:10px">' + _esc(p.status || 'pending') + '</span>' +
+          (p.transferred_at ? '<br><span style="color:#666;font-size:10px">' + fmt(p.transferred_at) + '</span>' : '') + '</td>' +
+        '<td style="padding:10px 12px;color:#888;font-size:11px;max-width:180px">' + _esc(p.notes || '') + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div>';
+
+  // ── Offerings table (context: what coaches are selling) ───────
+  html += '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:18px">' +
+    '<div style="font-size:10px;color:#A8FF00;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:12px">Coach offerings (' + offerings.length + ')</div>';
+  if (!offerings.length) {
+    html += '<div style="padding:30px;color:#555;text-align:center;font-size:13px;border:1px dashed #2a2a2a;border-radius:8px">No coach offerings yet. Coaches create them from their own dashboard on <code style="background:#0a0a0a;padding:2px 6px;border-radius:3px;color:#A8FF00">/coach</code>.</div>';
+  } else {
+    html += '<table class="admin-table" style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="text-align:left;color:#888;border-bottom:1px solid #1a1a1a">' +
+      '<th style="padding:10px 12px">Coach</th>' +
+      '<th style="padding:10px 12px">Offering</th>' +
+      '<th style="padding:10px 12px">Duration</th>' +
+      '<th style="padding:10px 12px">Price</th>' +
+      '<th style="padding:10px 12px">Active</th>' +
+      '<th style="padding:10px 12px">Bookings</th>' +
+      '</tr></thead><tbody>';
+    offerings.forEach(function(o){
+      var name = ((o.first_name || '') + ' ' + (o.last_name || '')).trim() || '(no name)';
+      html += '<tr style="border-bottom:1px solid #111">' +
+        '<td style="padding:10px 12px;color:#fff">' + _esc(name) + '<br><span style="color:#666;font-size:11px">' + _esc(o.email || '') + '</span></td>' +
+        '<td style="padding:10px 12px;color:#ddd;max-width:260px">' + _esc(o.title || '') + '</td>' +
+        '<td style="padding:10px 12px;color:#aaa;white-space:nowrap">' + (o.duration_min || 0) + ' min</td>' +
+        '<td style="padding:10px 12px;color:#f5c042;font-weight:700;white-space:nowrap">AED ' + (o.price_aed || 0).toLocaleString() + '</td>' +
+        '<td style="padding:10px 12px;color:' + (o.is_active ? '#A8FF00' : '#f87171') + '">' + (o.is_active ? 'Active' : 'Inactive') + '</td>' +
+        '<td style="padding:10px 12px;color:#fff;font-weight:600">' + (o.bookings_total || 0) + '</td>' +
+        '</tr>';
+    });
+    html += '</tbody></table>';
+  }
+  html += '</div>';
+
+  host.innerHTML = html;
+}

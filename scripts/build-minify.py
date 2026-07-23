@@ -45,6 +45,8 @@ JS_TARGETS = [
     'admin/wearables.js',
     'admin/founder.js',
     'admin/surveys.js',
+    'admin/appeals.js',
+    'admin/coachPayouts.js',
     'admin/corporate.js',
     'admin/init.js',
 ]

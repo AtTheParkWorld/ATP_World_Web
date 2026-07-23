@@ -137,6 +137,15 @@
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 6h6M5 9h6M5 12h3"/></svg>
         Surveys
       </div>
+      <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["appeals"]'>
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2v12M3 6l5-4 5 4M2 13h12"/></svg>
+        Appeals
+        <span id="adminAppealsBadge" style="display:none;margin-left:auto;background:rgba(239,68,68,.18);color:#f87171;border:1px solid rgba(239,68,68,.4);font-size:10px;font-weight:700;padding:2px 7px;border-radius:10px"></span>
+      </div>
+      <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["coachpayouts"]'>
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="1" y="4" width="14" height="9" rx="1"/><circle cx="8" cy="8.5" r="2"/></svg>
+        Coach payouts
+      </div>
       <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["corporate"]' style="background:rgba(245,192,66,.06);border-left:3px solid #f5c042">
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#f5c042" stroke-width="1.8"><rect x="1" y="6" width="14" height="9" rx="1"/><path d="M5 6V3a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
         Corporate
@@ -1995,6 +2004,24 @@
       <div class="admin-page-sub">Create custom feedback forms with any questions you want. Each survey gets its own public URL like <code style="background:#0a0a0a;padding:2px 6px;border-radius:3px;color:#A8FF00">/survey/your-slug</code> that you share with members.</div>
       <div id="surveysBody" style="margin-top:16px">
         <div style="padding:60px;text-align:center;color:#555">Loading surveys…</div>
+      </div>
+    </div>
+
+    <!-- ═══ APPEALS SECTION ═══ -->
+    <div id="section-appeals" style="display:none">
+      <div class="admin-page-title">⚖️ Ban Appeals</div>
+      <div class="admin-page-sub">Members file appeals from <code style="background:#0a0a0a;padding:2px 6px;border-radius:3px;color:#A8FF00">/appeal</code>. Approve unbans the member; reject leaves the ban in place.</div>
+      <div id="appealsBody" style="margin-top:16px">
+        <div style="padding:60px;text-align:center;color:#555">Loading appeals…</div>
+      </div>
+    </div>
+
+    <!-- ═══ COACH PAYOUTS SECTION ═══ -->
+    <div id="section-coachpayouts" style="display:none">
+      <div class="admin-page-title">💸 Coach Payouts</div>
+      <div class="admin-page-sub">Outstanding coach earnings from paid 1-on-1 sessions and gifts. Review balances owed before you settle up.</div>
+      <div id="coachPayoutsBody" style="margin-top:16px">
+        <div style="padding:60px;text-align:center;color:#555">Loading payouts…</div>
       </div>
     </div>
 
