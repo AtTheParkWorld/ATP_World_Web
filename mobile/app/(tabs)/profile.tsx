@@ -177,6 +177,7 @@ export default function Profile() {
 
         {/* Quick links */}
         <View className="px-5 mt-7 gap-2">
+          <LinkRow label="My bookings"    icon="calendar"     onPress={() => router.push('/bookings')} />
           <LinkRow label="Leaderboard"    icon="trophy"       onPress={() => router.push('/leaderboard')} />
           <LinkRow label="Challenges"     icon="target"       onPress={() => router.push('/challenges')} />
           <LinkRow label="Messages"       icon="chat"         onPress={() => router.push('/messages')} />

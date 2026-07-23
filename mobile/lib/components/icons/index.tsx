@@ -90,13 +90,15 @@ import { IconNotification as _Nt } from './IconNotification';
 import { IconEdit as _Ed }         from './IconEdit';
 import { IconInfo as _If }         from './IconInfo';
 import { IconShield as _Sh }       from './IconShield';
+import { IconCalendar as _Ca }     from './IconCalendar';
 import type { IconProps } from './types';
 
 export type IconName =
   | 'location' | 'check' | 'chat' | 'streak' | 'trophy' | 'lock' | 'camera'
   | 'live' | 'story' | 'profile' | 'eye' | 'target' | 'gift' | 'bolt'
   | 'dumbbell' | 'wallet' | 'inbox' | 'clipboard' | 'ticket' | 'heart'
-  | 'bag' | 'help' | 'no-entry' | 'notification' | 'edit' | 'info' | 'shield';
+  | 'bag' | 'help' | 'no-entry' | 'notification' | 'edit' | 'info' | 'shield'
+  | 'calendar';
 
 const MAP: Record<IconName, React.FC<IconProps>> = {
   'location':     _L,
@@ -126,6 +128,7 @@ const MAP: Record<IconName, React.FC<IconProps>> = {
   'edit':         _Ed,
   'info':         _If,
   'shield':       _Sh,
+  'calendar':     _Ca,
 };
 
 export function Icon({ name, ...rest }: IconProps & { name: IconName }) {

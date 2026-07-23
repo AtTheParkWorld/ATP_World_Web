@@ -27,6 +27,7 @@ import { listSessions, listCities, listTribes, listActivities, type Session } fr
 import { SessionCard } from '@/lib/components/SessionCard';
 import { FilterPills } from '@/lib/components/FilterPills';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
+import { LoadError } from '@/lib/components/LoadError';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -191,6 +192,10 @@ export default function Sessions() {
       {sessionsQ.isLoading ? (
         <View className="flex-1 items-center justify-center">
           <ActivityIndicator color={colors.green} size="large" />
+        </View>
+      ) : sessionsQ.isError ? (
+        <View className="flex-1 justify-center px-5">
+          <LoadError onRetry={() => sessionsQ.refetch()} message="Couldn't load sessions — check your connection." />
         </View>
       ) : focusedSessions.length === 0 ? (
         <View className="flex-1 items-center justify-center px-8">

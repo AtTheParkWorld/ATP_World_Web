@@ -8,8 +8,13 @@
  *
  * Members with an active sub see a "Manage" button instead of the
  * tier picker — that opens the Stripe customer portal.
+ *
+ * iOS (App Store 3.1.1): no purchase flow, no prices, no external
+ * links. Tiers render read-only (perks only) and a neutral line points
+ * at "the ATP website" without linking. Existing supporters still see
+ * their status. Android keeps the full Stripe flow.
  */
-import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -17,6 +22,10 @@ import * as WebBrowser from 'expo-web-browser';
 import { listPlans, getMySubscription, createCheckout, openPortal, type SubscriptionPlan } from '@/lib/api/billing';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { colors, fontFamily } from '@/lib/theme/tokens';
+
+// Apple guideline 3.1.1 — digital-content subscriptions can't be sold
+// via external checkout on iOS, and steering language gets flagged.
+const IS_IOS = Platform.OS === 'ios';
 
 export default function Supporter() {
   const qc = useQueryClient();
@@ -99,14 +108,16 @@ export default function Supporter() {
               Next renewal: {new Date(subscription.current_period_end).toLocaleDateString()}
               {subscription.cancel_at_period_end ? ' · cancelling at period end' : ''}
             </Text>
-            <Pressable
-              onPress={manage}
-              className="mt-3 bg-atp-dark border border-white/10 rounded-atp py-2.5 items-center active:opacity-80"
-            >
-              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm uppercase tracking-widest">
-                Manage subscription
-              </Text>
-            </Pressable>
+            {!IS_IOS && (
+              <Pressable
+                onPress={manage}
+                className="mt-3 bg-atp-dark border border-white/10 rounded-atp py-2.5 items-center active:opacity-80"
+              >
+                <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm uppercase tracking-widest">
+                  Manage subscription
+                </Text>
+              </Pressable>
+            )}
           </View>
         )}
 
@@ -116,26 +127,33 @@ export default function Supporter() {
               key={p.id}
               plan={p}
               active={activeTier === p.id}
+              readOnly={IS_IOS}
               onPress={() => startCheckout(p)}
             />
           ))}
         </View>
 
-        <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-7 text-center leading-relaxed">
-          Payments are handled securely by Stripe. Cancel any time — you keep access until the end of your billing period.
-        </Text>
+        {IS_IOS ? (
+          <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-7 text-center leading-relaxed">
+            Supporter management is available on the ATP website.
+          </Text>
+        ) : (
+          <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-7 text-center leading-relaxed">
+            Payments are handled securely by Stripe. Cancel any time — you keep access until the end of your billing period.
+          </Text>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-function PlanCard({ plan, active, onPress }: { plan: SubscriptionPlan; active: boolean; onPress: () => void }) {
+function PlanCard({ plan, active, readOnly, onPress }: { plan: SubscriptionPlan; active: boolean; readOnly?: boolean; onPress: () => void }) {
   const price = plan.amount_cents > 0 ? (plan.amount_cents / 100).toFixed(0) : '0';
   const isPlus = plan.tier === 'premium_plus';
   return (
     <Pressable
       onPress={onPress}
-      disabled={active || !plan.purchasable}
+      disabled={readOnly || active || !plan.purchasable}
       className={`rounded-atp-lg p-5 border ${active ? 'bg-atp-green/15 border-atp-green' : isPlus ? 'bg-atp-dark border-atp-green/40' : 'bg-atp-dark border-white/10'} active:opacity-80`}
     >
       <View className="flex-row items-start justify-between">
@@ -149,14 +167,17 @@ function PlanCard({ plan, active, onPress }: { plan: SubscriptionPlan; active: b
             </Text>
           )}
         </View>
-        <View className="items-end">
-          <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.green }} className="text-3xl">
-            {plan.currency} {price}
-          </Text>
-          <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs">
-            /{plan.interval}
-          </Text>
-        </View>
+        {/* No prices on iOS — Apple reads them as steering to external purchase. */}
+        {!readOnly && (
+          <View className="items-end">
+            <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.green }} className="text-3xl">
+              {plan.currency} {price}
+            </Text>
+            <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs">
+              /{plan.interval}
+            </Text>
+          </View>
+        )}
       </View>
 
       {!!plan.features && plan.features.length > 0 && (
@@ -178,7 +199,7 @@ function PlanCard({ plan, active, onPress }: { plan: SubscriptionPlan; active: b
             ✓ Active
           </Text>
         </View>
-      ) : plan.amount_cents === 0 ? (
+      ) : readOnly ? null : plan.amount_cents === 0 ? (
         <View className="mt-4 bg-atp-dark-3 rounded-atp py-2.5 items-center">
           <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest">
             Free tier · default

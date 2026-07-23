@@ -7,6 +7,8 @@
  * Not linked → compact connect card listing the enabled providers;
  *              tapping one opens the OAuth flow in the system browser
  *              and re-queries when the browser session closes.
+ *              Launch scope (2026-07): only Strava is live — other
+ *              providers render as muted "Coming soon" chips.
  *
  * Silent while loading (renders nothing) so the Home scroll never
  * jumps for members who don't use the feature.
@@ -15,8 +17,12 @@ import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import * as WebBrowser from 'expo-web-browser';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getMine, getConnectUrl, type WearablesMe } from '@/lib/api/wearables';
+import { getMine, getConnectUrl, type WearableProviderInfo, type WearablesMe } from '@/lib/api/wearables';
 import { colors, fontFamily } from '@/lib/theme/tokens';
+
+// Only Strava's OAuth flow is live for launch. Everything else the
+// backend advertises renders as a disabled "Coming soon" chip.
+const LIVE_PROVIDERS = ['strava'];
 
 function fmtKm(m?: number | null): string {
   const km = (Number(m) || 0) / 1000;
@@ -68,18 +74,29 @@ export function DeviceWeekCard() {
           Connect your watch to count workouts toward challenges and see your week at a glance.
         </Text>
         <View className="flex-row gap-2 mt-3 flex-wrap">
-          {enabledProviders.map((p) => (
-            <Pressable
-              key={p.name}
-              disabled={!!connecting}
-              onPress={() => connect(p.name)}
-              className="bg-atp-green/10 border border-atp-green/40 rounded-atp px-4 py-2.5 active:opacity-70"
-            >
-              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs uppercase tracking-widest">
-                {connecting === p.name ? 'Opening…' : p.displayName}
-              </Text>
-            </Pressable>
-          ))}
+          {enabledProviders.map((p: WearableProviderInfo) =>
+            LIVE_PROVIDERS.includes(p.name) ? (
+              <Pressable
+                key={p.name}
+                disabled={!!connecting}
+                onPress={() => connect(p.name)}
+                className="bg-atp-green/10 border border-atp-green/40 rounded-atp px-4 py-2.5 active:opacity-70"
+              >
+                <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs uppercase tracking-widest">
+                  {connecting === p.name ? 'Opening…' : p.displayName}
+                </Text>
+              </Pressable>
+            ) : (
+              <View
+                key={p.name}
+                className="bg-atp-dark-3 border border-white/10 rounded-atp px-4 py-2.5"
+              >
+                <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest">
+                  {p.displayName} · Soon
+                </Text>
+              </View>
+            )
+          )}
         </View>
       </View>
     );

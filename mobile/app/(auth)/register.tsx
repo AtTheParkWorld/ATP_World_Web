@@ -15,6 +15,7 @@ export default function Register() {
   const [lastName,  setLastName]  = useState('');
   const [email,     setEmail]     = useState('');
   const [pass,      setPass]      = useState('');
+  const [referral,  setReferral]  = useState('');
   const [busy,      setBusy]      = useState(false);
   const [error,     setError]     = useState<string | null>(null);
 
@@ -35,6 +36,7 @@ export default function Register() {
         last_name:  lastName.trim(),
         email:      email.trim().toLowerCase(),
         password:   pass,
+        referral_code: referral.trim() || undefined,
       });
       // Send brand-new members through onboarding so they pick a tribe
       // + city + opt into notifications, plus earn the +200 pts bonus.
@@ -127,6 +129,20 @@ export default function Register() {
             <Text style={{ fontFamily: fontFamily.body }} className="text-atp-muted text-xs mt-1">
               At least 8 characters.
             </Text>
+          </View>
+
+          <View>
+            <Text style={{ fontFamily: fontFamily.bodyBold }} className="text-atp-muted text-xs uppercase tracking-widest mb-2">Referral code (optional)</Text>
+            <TextInput
+              value={referral}
+              onChangeText={(t) => setReferral(t.toUpperCase())}
+              autoCapitalize="characters"
+              autoCorrect={false}
+              placeholder="Friend's code"
+              placeholderTextColor={colors.muted}
+              style={{ fontFamily: fontFamily.body, color: colors.white }}
+              className="bg-atp-dark-3 border border-white/10 rounded-atp px-4 py-3 text-base"
+            />
           </View>
 
           {!!error && (

@@ -22,6 +22,7 @@ import { listFriends, respondToRequest, searchMembers, type Friendship } from '@
 import { PostCard } from '@/lib/components/PostCard';
 import { SegmentedControl } from '@/lib/components/SegmentedControl';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
+import { LoadError } from '@/lib/components/LoadError';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { absUrl } from '@/lib/utils/imageUrl';
 import { Avatar } from '@/lib/components/Avatar';
@@ -113,11 +114,17 @@ function FeedView() {
       }
       contentContainerStyle={{ paddingTop: 8, paddingBottom: 100 }}
       ListEmptyComponent={
-        <View className="px-8 pt-12 items-center">
-          <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm text-center">
-            {feedQ.isLoading ? 'Loading feed…' : 'No posts yet. Be the first to share.'}
-          </Text>
-        </View>
+        feedQ.isError ? (
+          <View className="px-5 pt-12">
+            <LoadError onRetry={() => feedQ.refetch()} />
+          </View>
+        ) : (
+          <View className="px-8 pt-12 items-center">
+            <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm text-center">
+              {feedQ.isLoading ? 'Loading feed…' : 'No posts yet. Be the first to share.'}
+            </Text>
+          </View>
+        )
       }
     />
   );

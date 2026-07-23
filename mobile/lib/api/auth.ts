@@ -60,6 +60,7 @@ export async function register(payload: {
   email: string;
   phone?: string;
   password: string;
+  referral_code?: string;
 }): Promise<Member> {
   const res = await api.post<MobileAuthResponse>('/auth/register', payload);
   const refresh = res.refresh_token || res.token || res.access_token;

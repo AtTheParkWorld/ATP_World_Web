@@ -95,3 +95,16 @@ export interface MyBookingsResponse {
 export function listMyBookings(): Promise<MyBookingsResponse> {
   return api.get('/members/bookings');
 }
+
+/**
+ * Post-session rating. Backend only accepts feedback on bookings with
+ * status='attended' (404 otherwise) and upserts with ON CONFLICT DO
+ * NOTHING — resubmitting is a harmless 200, points are awarded once.
+ */
+export function submitSessionFeedback(
+  bookingId: string | number,
+  rating: number,
+  comment?: string
+): Promise<{ message: string }> {
+  return api.post(`/bookings/${bookingId}/feedback`, { rating, comment: comment || null });
+}

@@ -14,15 +14,16 @@
  * fresh state ("You're in").
  */
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import QRCode from 'react-native-qrcode-svg';
 import { getSession } from '@/lib/api/sessions';
-import { createBooking, cancelBooking, listMyBookings, type PaymentOptions, type BookingRecord } from '@/lib/api/bookings';
+import { createBooking, cancelBooking, listMyBookings, submitSessionFeedback, type PaymentOptions, type BookingRecord } from '@/lib/api/bookings';
 import { ApiError } from '@/lib/api/client';
 import { BookingSheet } from '@/lib/components/BookingSheet';
+import { FeedbackBlock } from '@/lib/components/FeedbackBlock';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { dayHeader, timeShort } from '@/lib/utils/date';
 
@@ -47,7 +48,7 @@ export default function SessionDetail() {
 
   const s = sessionQ.data;
   const myBooking = (myBookingsQ.data || []).find(
-    (b) => b.session_id === sessionId && b.status !== 'cancelled'
+    (b) => String(b.session_id) === sessionId && b.status !== 'cancelled'
   );
 
   async function onBookPress() {
@@ -246,6 +247,13 @@ export default function SessionDetail() {
             backend issued a qr_token (free + paid confirmed bookings get
             one; waitlist + cancelled don't). Ambassadors scan this at
             session start to mark attendance. */}
+        {/* Post-session rating — backend only accepts feedback on
+            status='attended' bookings (404 otherwise), so the block is
+            gated on attendance rather than on the session being past. */}
+        {myBooking?.status === 'attended' && (
+          <FeedbackBlock bookingId={myBooking.id} />
+        )}
+
         {myBooking && (myBooking.qr_token || myBooking.qr_code) && myBooking.status !== 'cancelled' && (
           <View className="px-5 mt-6">
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-3">
