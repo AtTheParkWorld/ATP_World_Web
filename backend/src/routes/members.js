@@ -532,6 +532,22 @@ router.post('/:targetId/report', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── GET /api/members/me ──────────────────────────────────────
+// Minimal self-lookup that works for BANNED members too — appeal.html
+// calls it to surface the ban reason. /auth/me 403s banned members, so
+// without this the reason box silently never showed. Deliberately
+// returns only what the appeal page needs, not the full member row.
+router.get('/me', authenticateAllowBanned, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      'SELECT id, first_name, last_name, member_number, is_banned, banned_reason FROM members WHERE id=$1',
+      [req.member.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Member not found' });
+    res.json(rows[0]);
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/members/me/appeal ──────────────────────────────
 // Rulebook ref: R-MOD-005 (OQ-37). Banned members can use this
 // endpoint to contest their ban — that's why it goes through

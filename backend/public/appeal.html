@@ -64,7 +64,7 @@
     </div>
 
     <div class="appeal-foot">
-      Questions? Email <a href="mailto:general@atthepark.com">general@atthepark.com</a> and reference your member number.
+      Questions? Email <a href="mailto:general@atthepark.world">general@atthepark.world</a> and reference your member number.
     </div>
   </div>
 
@@ -134,7 +134,7 @@
         }
         if (r.status === 503) {
           RESULT.className = 'appeal-result error';
-          RESULT.innerHTML = 'Appeals are not yet enabled on this server. Please email <a href="mailto:general@atthepark.com" style="color:inherit">general@atthepark.com</a> directly.';
+          RESULT.innerHTML = 'Appeals are not yet enabled on this server. Please email <a href="mailto:general@atthepark.world" style="color:inherit">general@atthepark.world</a> directly.';
           SUBMIT.disabled = false;
           return;
         }
@@ -147,7 +147,7 @@
         throw new Error((j && j.error) || 'Submission failed (HTTP ' + r.status + ')');
       } catch (e) {
         RESULT.className = 'appeal-result error';
-        RESULT.innerHTML = 'Could not submit: ' + (e.message || e) + '. Try again, or email <a href="mailto:general@atthepark.com" style="color:inherit">general@atthepark.com</a>.';
+        RESULT.innerHTML = 'Could not submit: ' + (e.message || e) + '. Try again, or email <a href="mailto:general@atthepark.world" style="color:inherit">general@atthepark.world</a>.';
         SUBMIT.disabled = false;
       }
     }
