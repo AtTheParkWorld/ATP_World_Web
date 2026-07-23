@@ -5,14 +5,11 @@
         "appIDs": [
           "6UWDRGC9RC.world.atthepark.app"
         ],
+        "comment": "Only claim paths the app routes WELL. A claimed path the app can't route sends the member to +not-found -> Home, which is worse than just opening the web page. Legacy .html links (sessions.html, profile.html, coach/:slug) are intentionally NOT claimed so they render in the browser; app/+native-intent.tsx remaps any that still slip through.",
         "components": [
-          { "/": "/sessions/*", "comment": "Open session detail in app" },
-          { "/": "/sessions.html", "?": { "id": "?*" }, "comment": "Legacy hash deep link" },
-          { "/": "/blog/*", "comment": "Open blog post in app" },
-          { "/": "/coach/*", "comment": "Open coach profile in app" },
-          { "/": "/community/*", "comment": "Open community feed" },
-          { "/": "/auth/verify", "comment": "Magic-link sign-in" },
-          { "/": "/profile*", "comment": "Open profile" }
+          { "/": "/auth/verify", "comment": "Magic-link sign-in — critical, app/auth/verify.tsx" },
+          { "/": "/sessions/*", "comment": "Session detail — app/sessions/[id].tsx" },
+          { "/": "/blog/*", "comment": "Blog post — app/blog/[slug].tsx" }
         ]
       }
     ]
