@@ -4,10 +4,10 @@
  * deep link, we hand them to /auth/verify, then bounce into the app.
  *
  * Universal-link wiring:
- *   iOS:     applinks:atthepark.world (AASA paths include /auth/m/*)
+ *   iOS:     applinks:atthepark.world (AASA path /auth/verify)
  *   Android: assetlinks.json + intentFilters in app.json
- * The web side already exposes /auth/m/:token routes that, when opened
- * on mobile, hand off to the app via the AASA path match.
+ * app/auth/verify.tsx re-exports this screen so the emailed URL
+ * (/auth/verify?token&email) resolves to a real expo-router route.
  */
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';

@@ -156,7 +156,7 @@ export function BookingSheet({ booking, opts, onClose, onSuccess }: Props) {
                         Pay with card
                       </Text>
                       <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-xs mt-0.5">
-                        {moneyLabel} · Apple Pay / Google Pay supported
+                        {moneyLabel}
                       </Text>
                     </View>
                     {busy === 'card'

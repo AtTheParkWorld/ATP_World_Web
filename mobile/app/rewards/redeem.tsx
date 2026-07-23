@@ -55,7 +55,7 @@ export default function Redeem() {
             {code}
           </Text>
           <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-base mt-4 text-center">
-            Apply at checkout on shop.atthepark.world
+            Apply at checkout in the ATP Store
           </Text>
           <Pressable
             onPress={() => Share.share({ message: `My ATP store discount code: ${code}` })}

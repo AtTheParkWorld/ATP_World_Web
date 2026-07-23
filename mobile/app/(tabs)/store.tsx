@@ -12,7 +12,7 @@
  * not unmounted) so a cart in progress survives a peek at your codes.
  */
 import { useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Linking, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -108,6 +108,18 @@ export default function StoreHub() {
               onLoadEnd={() => setLoading(false)}
               onError={() => { setLoading(false); setFailed(true); }}
               onNavigationStateChange={(nav) => setCanGoBack(nav.canGoBack)}
+              // Keep the Store tab on Shopify (checkout included). Links
+              // to any other host — e.g. the theme nav's "ATP World ↗" —
+              // open in the system browser instead of trapping the
+              // member logged-out inside this WebView.
+              onShouldStartLoadWithRequest={(req) => {
+                try {
+                  const host = new URL(req.url).hostname;
+                  const ok = host.endsWith('myshopify.com') || host.endsWith('shopify.com') || host.endsWith('atthepark.world');
+                  if (!ok && /^https?:/.test(req.url)) { Linking.openURL(req.url); return false; }
+                } catch (e) { /* non-http scheme — let WebView decide */ }
+                return true;
+              }}
               allowsBackForwardNavigationGestures
               sharedCookiesEnabled
               domStorageEnabled
@@ -181,7 +193,7 @@ export default function StoreHub() {
             </Text>
             {wishlist.length === 0 ? (
               <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm">
-                Tap the ♡ icon on any product in the shop to save it here.
+                Nothing saved yet — browse the shop and your saved items will appear here.
               </Text>
             ) : (
               wishlist.map((item) => (

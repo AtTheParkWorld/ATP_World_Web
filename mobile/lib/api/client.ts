@@ -25,7 +25,13 @@ const extra = (Constants.expoConfig?.extra || {}) as Extra;
 // Default to production. Staging build profile overrides via app.json env injection.
 export const API_BASE = process.env.EXPO_PUBLIC_API_BASE
   || extra.apiBaseUrl
-  || 'https://www.atthepark.world/api';
+  || 'https://atp-world-web.onrender.com/api';
+
+// Base URL for every link the app opens ON the website (privacy, terms,
+// coach pages, referral join, blog shares). ONE constant to flip at the
+// atthepark.world DNS cutover — the legacy domain still serves the OLD
+// site, so linking there today lands members on dead pages.
+export const WEB_BASE = API_BASE.replace(/\/api\/?$/, '');
 
 export class ApiError extends Error {
   status: number;

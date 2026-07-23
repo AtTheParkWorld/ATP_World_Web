@@ -46,7 +46,7 @@ export default function MagicLink() {
             If <Text className="text-atp-white">{email}</Text> matches an ATP account, you'll get a link in a few seconds. Tap it on this device to sign in.
           </Text>
           <Text style={{ fontFamily: fontFamily.body }} className="text-atp-muted text-sm mt-3">
-            Link is valid for 15 minutes.
+            Link is valid for 1 hour.
           </Text>
         </View>
         <Pressable onPress={() => router.replace('/(auth)/welcome')} className="rounded-atp py-4 items-center bg-atp-dark-3">

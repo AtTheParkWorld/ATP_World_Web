@@ -1,3 +1,4 @@
+import { WEB_BASE } from '@/lib/api/client';
 /**
  * Coach detail. Hero photo, headline, bio, specialties, rating.
  * Reads from the nested coach response (profile/social/stats sub-objects).
@@ -37,7 +38,7 @@ export default function CoachDetail() {
           </Pressable>
           {!!c?.slug && (
             <Pressable
-              onPress={() => Linking.openURL(`https://atthepark.world/coach/${c.slug}`)}
+              onPress={() => Linking.openURL(`${WEB_BASE}/coach/${c.slug}`)}
               className="py-2 px-2"
             >
               <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs">Share</Text>
@@ -148,7 +149,7 @@ export default function CoachDetail() {
       {!!c?.slug && profile?.accepts_private_sessions && (
         <View className="absolute bottom-0 left-0 right-0 px-5 pb-7 pt-3 bg-atp-black border-t border-white/5">
           <Pressable
-            onPress={() => Linking.openURL(`https://atthepark.world/coach/${c.slug}?book=1`)}
+            onPress={() => Linking.openURL(`${WEB_BASE}/coach/${c.slug}?book=1`)}
             className="rounded-atp py-4 items-center bg-atp-green active:opacity-80"
           >
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.black }} className="text-base uppercase tracking-widest">

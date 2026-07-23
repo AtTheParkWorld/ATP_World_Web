@@ -1,3 +1,4 @@
+import { WEB_BASE } from '@/lib/api/client';
 /**
  * Rewards tab — three sub-views via the same SegmentedControl pattern
  * used in Community:
@@ -158,7 +159,7 @@ function WalletView() {
         <Pressable
           onPress={() => {
             const code = me?.referral_code || me?.member_number;
-            const url  = `https://atthepark.world/join?ref=${encodeURIComponent(code || '')}`;
+            const url  = `${WEB_BASE}/join?ref=${encodeURIComponent(code || '')}`;
             Share.share({ message: `Train with me at ATP — your first month of Premium is on me. ${url}` });
           }}
           className="bg-atp-dark border border-white/10 rounded-atp p-4 active:opacity-80"

@@ -124,8 +124,18 @@ export async function verifyMagicLink(token: string, email: string): Promise<Mem
     );
     const refresh = res.refresh_token || res.access_token || res.token!;
     const access  = res.access_token || res.token!;
-    await useAuthStore.getState().setSession(res.member, access, refresh);
-    return res.member;
+    // Older backend builds returned only { token } here — fall back to
+    // /auth/me instead of crashing setSession on an undefined member
+    // (which burned the single-use link).
+    let member = res.member;
+    if (!member) {
+      const meRes = await api.get<{ member: Member }>('/auth/me', {
+        headers: { Authorization: `Bearer ${access}` },
+      });
+      member = (meRes as any).member || (meRes as any);
+    }
+    await useAuthStore.getState().setSession(member, access, refresh);
+    return member;
   } catch (err) {
     if (isSuspendedError(err)) throw new AccountSuspendedError();
     throw err;

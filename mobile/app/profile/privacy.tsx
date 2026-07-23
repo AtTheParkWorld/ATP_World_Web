@@ -1,3 +1,4 @@
+import { WEB_BASE } from '@/lib/api/client';
 /**
  * Privacy & data screen. Three high-stakes actions all live behind
  * confirmation alerts:
@@ -134,12 +135,12 @@ export default function Privacy() {
           <ActionRow
             label="Privacy policy"
             description="Read what we collect and why."
-            onPress={() => Linking.openURL('https://atthepark.world/privacy')}
+            onPress={() => Linking.openURL(`${WEB_BASE}/privacy`)}
           />
           <ActionRow
             label="Terms of service"
             description="The rules we all agree to."
-            onPress={() => Linking.openURL('https://atthepark.world/terms')}
+            onPress={() => Linking.openURL(`${WEB_BASE}/terms`)}
           />
         </Section>
 

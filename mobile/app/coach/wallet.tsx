@@ -1,3 +1,4 @@
+import { WEB_BASE } from '@/lib/api/client';
 /**
  * Coach wallet — balance + pending + payout history. Read-only on
  * mobile; payout setup (bank account) stays on the web side because
@@ -71,7 +72,7 @@ export default function CoachWallet() {
 
             <View className="px-5 mt-5">
               <Pressable
-                onPress={() => Linking.openURL('https://atthepark.world/coach/wallet')}
+                onPress={() => Linking.openURL(`${WEB_BASE}/profile.html`)}
                 className="bg-atp-dark border border-white/10 rounded-atp p-4 active:opacity-70"
               >
                 <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">

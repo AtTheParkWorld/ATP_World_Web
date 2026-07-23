@@ -41,6 +41,20 @@ Sentry.init({
   enableNative: !__DEV__,
 });
 
+// OneSignal push init — the plugin + app id were configured from day
+// one but nothing ever called initialize(), so push was a silent no-op.
+// Guarded: no-ops in dev/simulator or when the id is missing.
+try {
+  if (extra.oneSignalAppId) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const { OneSignal, LogLevel } = require('react-native-onesignal');
+    OneSignal.Debug.setLogLevel(__DEV__ ? LogLevel.Verbose : LogLevel.None);
+    OneSignal.initialize(extra.oneSignalAppId);
+  }
+} catch (e) {
+  // Native module absent (Expo Go) — push simply stays off.
+}
+
 // Hold the splash on screen until we've hydrated auth + loaded fonts.
 SplashScreen.preventAutoHideAsync().catch(() => {});
 

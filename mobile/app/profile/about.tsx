@@ -1,3 +1,4 @@
+import { WEB_BASE } from '@/lib/api/client';
 /**
  * About — app version, build, force-update gate state, and external
  * links (web, social, attribution). Force update polls /api/auth/version
@@ -98,15 +99,15 @@ export default function About() {
         )}
 
         <Section title="ATP">
-          <LinkRow label="atthepark.world" onPress={() => Linking.openURL('https://atthepark.world')} />
+          <LinkRow label="atthepark.world" onPress={() => Linking.openURL(`${WEB_BASE}`)} />
           <LinkRow label="Instagram"        onPress={() => Linking.openURL('https://instagram.com/atthepark.world')} />
           <LinkRow label="TikTok"           onPress={() => Linking.openURL('https://tiktok.com/@atthepark.world')} />
         </Section>
 
         <Section title="Legal">
-          <LinkRow label="Privacy policy" onPress={() => Linking.openURL('https://atthepark.world/privacy')} />
-          <LinkRow label="Terms of service" onPress={() => Linking.openURL('https://atthepark.world/terms')} />
-          <LinkRow label="Community guidelines" onPress={() => Linking.openURL('https://atthepark.world/guidelines')} />
+          <LinkRow label="Privacy policy" onPress={() => Linking.openURL(`${WEB_BASE}/privacy`)} />
+          <LinkRow label="Terms of service" onPress={() => Linking.openURL(`${WEB_BASE}/terms`)} />
+          <LinkRow label="Community guidelines" onPress={() => Linking.openURL(`${WEB_BASE}/guidelines`)} />
         </Section>
 
         <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs text-center mt-8">

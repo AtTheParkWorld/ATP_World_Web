@@ -71,7 +71,7 @@ export default function Help() {
             </Text>
           </Pressable>
           <Pressable
-            onPress={() => Linking.openURL('https://wa.me/971500000000')}
+            onPress={() => Linking.openURL('https://wa.me/971585792378')}
             className="bg-atp-dark border border-white/10 rounded-atp px-4 py-4 items-center active:opacity-80"
           >
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm uppercase tracking-widest">

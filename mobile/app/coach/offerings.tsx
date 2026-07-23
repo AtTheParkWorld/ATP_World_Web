@@ -1,3 +1,4 @@
+import { WEB_BASE } from '@/lib/api/client';
 /**
  * Coach offerings — what 1:1 sessions you offer to clients
  * (duration, price, max participants). Read-only view for now;
@@ -70,7 +71,7 @@ export default function CoachOfferings() {
 
             <View className="px-5 mt-5">
               <Pressable
-                onPress={() => Linking.openURL('https://atthepark.world/coach/me')}
+                onPress={() => Linking.openURL(`${WEB_BASE}/profile.html`)}
                 className="bg-atp-dark border border-white/10 rounded-atp p-4 active:opacity-70"
               >
                 <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">

@@ -1,3 +1,4 @@
+import { WEB_BASE } from '@/lib/api/client';
 /**
  * Account-suspended screen. Reached when login / register / Apple /
  * Google / magic-link verification all throw AccountSuspendedError
@@ -14,7 +15,7 @@ import { colors, fontFamily } from '@/lib/theme/tokens';
 
 const APPEAL_URL =
   (Constants.expoConfig?.extra as any)?.appealUrl ||
-  'https://atthepark.world/appeal';
+  `${WEB_BASE}/appeal`;
 
 export default function Suspended() {
   return (

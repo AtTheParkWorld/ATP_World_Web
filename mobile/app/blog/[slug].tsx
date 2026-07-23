@@ -1,3 +1,4 @@
+import { WEB_BASE } from '@/lib/api/client';
 /**
  * Blog post detail. Renders the post body as preformatted text — most
  * ATP blog content is markdown-flavoured prose, which reads fine in a
@@ -34,7 +35,7 @@ export default function BlogPostScreen() {
           <Pressable
             onPress={() => Share.share({
               message: post.title,
-              url:     `https://atthepark.world/blog/${post.slug}`,
+              url:     `${WEB_BASE}/blog/${post.slug}`,
             })}
             className="py-2 px-2"
           >

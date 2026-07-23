@@ -21,17 +21,16 @@ export default function OnboardingNotifications() {
   async function enablePush() {
     setBusy(true);
     try {
-      // Lazy import — expo-notifications isn't a hard dependency yet,
-      // and OneSignal will take over once installed (Phase 8).
-      const Notifications = await import('expo-notifications').catch(() => null);
-      if (Notifications) {
-        const settings = await Notifications.requestPermissionsAsync();
-        if (!settings.granted) {
-          Alert.alert(
-            'Notifications off',
-            'No problem — you can enable session reminders any time from Profile → Notifications.'
-          );
-        }
+      // OneSignal owns push (initialized in app/_layout.tsx). The old
+      // expo-notifications dynamic import broke Metro bundling — the
+      // package was never installed.
+      const { OneSignal } = require('react-native-onesignal');
+      const granted = await OneSignal.Notifications.requestPermission(true);
+      if (!granted) {
+        Alert.alert(
+          'Notifications off',
+          'No problem — you can enable session reminders any time from Profile → Notifications.'
+        );
       }
       router.replace('/onboarding/done');
     } catch (err) {
