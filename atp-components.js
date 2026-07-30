@@ -792,5 +792,5 @@
   })();
 })();
 
-/* ── GA4 loader + login funnel event. Set MEASUREMENT_ID (G-XXXXXXXXXX) once the GA4 property exists — until then this no-ops. ── */
-(function(){var MEASUREMENT_ID="";if(!MEASUREMENT_ID)return;var s=document.createElement("script");s.async=1;s.src="https://www.googletagmanager.com/gtag/js?id="+MEASUREMENT_ID;document.head.appendChild(s);window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments)};gtag("js",new Date());gtag("config",MEASUREMENT_ID);window.addEventListener("atp:login",function(){try{gtag("event","login")}catch(e){}});})();
+/* ── GA4 (G-9H8YLZVND7) — loads ONLY after the visitor accepts analytics cookies (atp_cookie_consent='all'); then tracks pageviews + a login funnel event. Honors the PDPL/GDPR consent banner. ── */
+(function(){var ID="G-9H8YLZVND7",started=false;function consented(){try{if(window.ATPConsent)return window.ATPConsent.has('analytics');return localStorage.getItem('atp_cookie_consent')==='all';}catch(e){return false;}}function start(){if(started||!consented())return;started=true;var s=document.createElement('script');s.async=1;s.src='https://www.googletagmanager.com/gtag/js?id='+ID;document.head.appendChild(s);window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments)};gtag('js',new Date());gtag('config',ID);window.addEventListener('atp:login',function(){try{gtag('event','login')}catch(e){}});}start();document.addEventListener('atp:consent',start);})();
