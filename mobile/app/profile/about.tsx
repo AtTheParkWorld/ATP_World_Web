@@ -86,7 +86,7 @@ export default function About() {
             <Pressable
               onPress={() => Linking.openURL(
                 Platform.OS === 'ios'
-                  ? 'https://apps.apple.com/app/at-the-park/id000000000'
+                  ? 'https://apps.apple.com/app/id6796708497'
                   : 'https://play.google.com/store/apps/details?id=world.atthepark.app'
               )}
               className="mt-3 bg-atp-green rounded-atp py-3 items-center active:opacity-80"

@@ -208,7 +208,7 @@ REVIEW NOTES — At The Park (ATP)
 - [ ] Confirm push works on the production build (OneSignal test message)
 
 **App Store Connect setup (one-time):**
-- [ ] Create the new app record: name, bundle `world.atthepark.app`, SKU `atp-world-ios`
+- [x] Create the new app record: bundle `world.atthepark.app`, SKU `atp-world-ios` — **DONE 2026-07-23, Apple ID `6796708497`** (store link: https://apps.apple.com/app/id6796708497). Note: the exact name "At The Park" was taken at creation; the listing uses an approved variant — reclaim the clean name after the legacy app is sunset (name changes ship with any app update).
 - [ ] `eas submit -p ios --latest` (wires credentials on first run)
 - [ ] Paste listing copy (§1), upload screenshots (§2)
 - [ ] Fill App Privacy (§3) + Age rating (§4)
