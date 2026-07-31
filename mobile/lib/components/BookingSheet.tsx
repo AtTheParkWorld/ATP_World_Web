@@ -19,8 +19,14 @@
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, Text, View } from 'react-native';
 import { useStripe } from '@stripe/stripe-react-native';
+import Constants from 'expo-constants';
 import { payWithPoints, startStripeCheckout, type PaymentOptions, type BookingRecord } from '@/lib/api/bookings';
 import { colors, fontFamily } from '@/lib/theme/tokens';
+
+// Card payments need the live publishable key in app.json extra.
+// Until it's set, the card option degrades gracefully instead of
+// crashing initPaymentSheet with an empty key.
+const STRIPE_READY = !!(Constants.expoConfig?.extra as Record<string, unknown> | undefined)?.stripePublishableKey;
 
 interface Props {
   booking: BookingRecord;
@@ -48,6 +54,13 @@ export function BookingSheet({ booking, opts, onClose, onSuccess }: Props) {
 
   async function onPayCard() {
     if (!opts.accepts_money) return;
+    if (!STRIPE_READY) {
+      Alert.alert(
+        'Card payments coming soon',
+        'Card checkout is being switched on. You can pay with points, or book a free session in the meantime.'
+      );
+      return;
+    }
     setBusy('card');
     try {
       const res = await startStripeCheckout(booking.id);
