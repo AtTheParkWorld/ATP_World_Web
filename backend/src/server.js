@@ -432,6 +432,21 @@ app.get('/coach', (req, res) => {
   }
 });
 app.get('/join',     (req, res) => res.sendFile(path.join(__dirname, '../public/join.html')));
+// ── /app — the one short link for the migration campaign ─────
+// Platform-aware: iPhones → the NEW App Store listing, Android → the
+// Play listing (new package; live once the Android app ships), anything
+// else → the join page. Campaign copy (docs/OLD_APP_SUNSET.md) prints
+// atthepark.world/app everywhere; this is where it lands.
+app.get('/app', (req, res) => {
+  const ua = String(req.headers['user-agent'] || '');
+  if (/iPhone|iPad|iPod/i.test(ua)) {
+    return res.redirect(302, 'https://apps.apple.com/app/id6796708497');
+  }
+  if (/Android/i.test(ua)) {
+    return res.redirect(302, 'https://play.google.com/store/apps/details?id=world.atthepark.app');
+  }
+  res.redirect(302, '/join');
+});
 // Corporate wellness pitch deck — clean URL for sharing with HR teams.
 app.get('/corporate-deck', (req, res) => res.sendFile(path.join(__dirname, '../public/corporate-deck.html')));
 // Internal 90-day execution plan — not for HR audiences. Founder + team only.
