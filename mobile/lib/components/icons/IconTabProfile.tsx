@@ -1,23 +1,19 @@
 /**
- * Tab-bar Profile — contact-sheet aura mark ("Your journey. Your
- * identity."): three concentric rings opening at the bottom, with a
- * person (head + shoulders) sitting in the opening.
- * Geometry visually verified against the ChatGPT design sheet.
+ * Tab-bar Profile — Lucide "circle-user" (lucide.dev, ISC license).
+ * Professionally-designed outline geometry ported verbatim:
+ * 24×24 viewBox, stroke-based, round caps/joins.
  */
 import Svg, { Path, Circle } from 'react-native-svg';
 import { DEFAULTS, type IconProps } from './types';
 
 export function IconTabProfile({ size = DEFAULTS.size, color = DEFAULTS.color, strokeWidth = DEFAULTS.strokeWidth }: IconProps) {
+  // Lucide is drawn for stroke-width 2 at 24px; DEFAULTS.strokeWidth (2.5) * 0.8 = 2.
   const sw = strokeWidth * 0.8;
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      {/* Aura rings — open at the bottom where the person sits */}
-      <Path d="M8.9 14.6a4 4 0 1 1 6.2 0"    stroke={color} strokeWidth={sw} strokeLinecap="round" />
-      <Path d="M6.9 16.2a6.6 6.6 0 1 1 10.2 0" stroke={color} strokeWidth={sw} strokeLinecap="round" />
-      <Path d="M5 17.9a9.2 9.2 0 1 1 14 0"    stroke={color} strokeWidth={sw} strokeLinecap="round" />
-      {/* Person */}
-      <Circle cx="12" cy="16" r="1.8" stroke={color} strokeWidth={sw} />
-      <Path d="M8.8 21.4a3.2 3.2 0 0 1 6.4 0" stroke={color} strokeWidth={sw} strokeLinecap="round" />
+      <Circle cx="12" cy="12" r="10" stroke={color} strokeWidth={sw} />
+      <Circle cx="12" cy="10" r="3" stroke={color} strokeWidth={sw} />
+      <Path d="M7 20.662V19a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v1.662" stroke={color} strokeWidth={sw} strokeLinecap="round" strokeLinejoin="round" />
     </Svg>
   );
 }
