@@ -136,7 +136,12 @@ router.get('/feed', optionalAuth, async (req, res, next) => {
                 END AS liked_by_me,
                 t.name  AS tribe_name,
                 t.slug  AS tribe_slug,
-                t.color AS tribe_color
+                t.color AS tribe_color,
+                COALESCE((
+                  SELECT json_agg(json_build_object('id', tm.id, 'first_name', tm.first_name, 'last_name', tm.last_name))
+                    FROM jsonb_array_elements_text(COALESCE(p.tagged_member_ids, '[]'::jsonb)) tid
+                    JOIN members tm ON tm.id = tid.value::uuid
+                ), '[]'::json) AS tagged_members
          FROM posts p
          JOIN members m ON m.id = p.member_id
          LEFT JOIN tribes t ON t.id = m.tribe_id
@@ -156,7 +161,8 @@ router.get('/feed', optionalAuth, async (req, res, next) => {
                   CASE WHEN $${memberParamIdx}::uuid IS NULL THEN false
                        ELSE EXISTS(SELECT 1 FROM post_likes pl WHERE pl.post_id=p.id AND pl.member_id=$${memberParamIdx}::uuid)
                   END AS liked_by_me,
-                  NULL AS tribe_name, NULL AS tribe_slug, NULL AS tribe_color
+                  NULL AS tribe_name, NULL AS tribe_slug, NULL AS tribe_color,
+                  '[]'::json AS tagged_members
            FROM posts p
            JOIN members m ON m.id = p.member_id
            WHERE p.is_deleted = false ${beforeClause}
@@ -181,17 +187,40 @@ router.get('/feed', optionalAuth, async (req, res, next) => {
 router.get('/me/posts', authenticate, async (req, res, next) => {
   try {
     const limit = Math.min(50, parseInt(req.query.limit, 10) || 20);
-    const { rows } = await query(
-      `SELECT p.id, p.content, p.media, p.likes_count, p.comments_count, p.created_at,
-              p.member_id, m.first_name, m.last_name, m.avatar_url,
-              EXISTS(SELECT 1 FROM post_likes pl WHERE pl.post_id=p.id AND pl.member_id=$1) AS liked_by_me
-       FROM posts p
-       JOIN members m ON m.id = p.member_id
-       WHERE p.member_id = $1 AND p.is_deleted = false
-       ORDER BY p.created_at DESC
-       LIMIT $2`,
-      [req.member.id, limit]
-    );
+    let rows;
+    try {
+      ({ rows } = await query(
+        `SELECT p.id, p.content, p.media, p.likes_count, p.comments_count, p.created_at,
+                p.member_id, m.first_name, m.last_name, m.avatar_url,
+                EXISTS(SELECT 1 FROM post_likes pl WHERE pl.post_id=p.id AND pl.member_id=$1) AS liked_by_me,
+                COALESCE((
+                  SELECT json_agg(json_build_object('id', tm.id, 'first_name', tm.first_name, 'last_name', tm.last_name))
+                    FROM jsonb_array_elements_text(COALESCE(p.tagged_member_ids, '[]'::jsonb)) tid
+                    JOIN members tm ON tm.id = tid.value::uuid
+                ), '[]'::json) AS tagged_members
+         FROM posts p
+         JOIN members m ON m.id = p.member_id
+         WHERE p.member_id = $1 AND p.is_deleted = false
+         ORDER BY p.created_at DESC
+         LIMIT $2`,
+        [req.member.id, limit]
+      ));
+    } catch (e) {
+      // Pre-migration fallback: tagged_member_ids column not ensured yet.
+      if (e.code !== '42703') throw e;
+      ({ rows } = await query(
+        `SELECT p.id, p.content, p.media, p.likes_count, p.comments_count, p.created_at,
+                p.member_id, m.first_name, m.last_name, m.avatar_url,
+                EXISTS(SELECT 1 FROM post_likes pl WHERE pl.post_id=p.id AND pl.member_id=$1) AS liked_by_me,
+                '[]'::json AS tagged_members
+         FROM posts p
+         JOIN members m ON m.id = p.member_id
+         WHERE p.member_id = $1 AND p.is_deleted = false
+         ORDER BY p.created_at DESC
+         LIMIT $2`,
+        [req.member.id, limit]
+      ));
+    }
     await _stripInlineFromPosts(rows);
     res.json({ posts: rows });
   } catch (err) { next(err); }
@@ -203,10 +232,14 @@ router.get('/me/posts', authenticate, async (req, res, next) => {
 //   R-PO-002 (OQ-26): 500-char cap
 //   R-PO-007 (OQ-28): banned-word check
 const POST_MAX_LEN = 500;
+const MAX_TAGGED = 10;
+const FRIEND_POST_FANOUT_CAP = 200;
 const moderation = require('../services/moderation');
+const push = require('../services/push');
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 router.post('/posts', authenticate, async (req, res, next) => {
   try {
-    const { content, media = [] } = req.body;
+    const { content, media = [], tagged_member_ids } = req.body;
     if (!content && !media.length) {
       return res.status(400).json({ error: 'Post must have content or media' });
     }
@@ -245,43 +278,146 @@ router.post('/posts', authenticate, async (req, res, next) => {
       }
     }
 
-    const { rows } = await query(
-      `INSERT INTO posts (member_id, content, media)
-       VALUES ($1,$2,$3) RETURNING *`,
-      [req.member.id, content, JSON.stringify(media)]
-    );
-
-    // Theme 14 — fan-out a notification to every accepted friend when
-    // a member posts media (image or video). Text-only posts don't fire
-    // (would be too noisy). Best-effort, fire-and-forget — failure here
-    // must not affect the post creation.
-    const hasMedia = Array.isArray(media) && media.length > 0;
-    if (hasMedia) {
-      const author = req.member;
-      const authorName = ((author.first_name || '') + ' ' + (author.last_name || '')).trim() || 'A friend';
-      const mediaKind = (media[0] && (media[0].type || media[0].kind)) || 'media';
-      const niceKind = mediaKind === 'video' ? 'video' : (mediaKind === 'image' ? 'photo' : 'a new post');
-      query(
-        `INSERT INTO notifications (member_id, type, title, body, data)
-         SELECT
-           CASE WHEN f.requester_id = $1 THEN f.addressee_id ELSE f.requester_id END AS recipient,
-           'friend_post',
-           $2,
-           $3,
-           $4
-         FROM friendships f
-         WHERE f.status = 'accepted'
-           AND (f.requester_id = $1 OR f.addressee_id = $1)`,
-        [
-          author.id,
-          authorName + ' posted a new ' + niceKind,
-          'Tap to see it in the community feed.',
-          JSON.stringify({ post_id: rows[0].id, author_id: author.id, kind: niceKind }),
-        ]
-      ).catch(function(e){ console.warn('[community] friend_post notif fan-out failed', e.message); });
+    // TAG A FRIEND — optional tagged_member_ids: array of member UUIDs,
+    // max 10, every id must be an ACCEPTED friend of the poster (same
+    // friendships shape as GET /api/members/friends). Invalid input is
+    // a 400 — never a silent drop, so clients can surface the reason.
+    let tagged = [];
+    if (tagged_member_ids !== undefined && tagged_member_ids !== null) {
+      if (!Array.isArray(tagged_member_ids)) {
+        return res.status(400).json({ error: 'tagged_member_ids must be an array', code: 'TAGS_INVALID' });
+      }
+      if (tagged_member_ids.length > MAX_TAGGED) {
+        return res.status(400).json({
+          error: `You can tag up to ${MAX_TAGGED} friends per post.`,
+          code:  'TAGS_TOO_MANY',
+          max:   MAX_TAGGED,
+        });
+      }
+      // De-dupe, drop self-tags, and hard-validate UUID shape BEFORE the
+      // ::uuid[] cast so a malformed id is a clean 400, not a 22P02 500.
+      const ids = [...new Set(tagged_member_ids.map(String))].filter((id) => id !== req.member.id);
+      if (ids.some((id) => !UUID_RE.test(id))) {
+        return res.status(400).json({ error: 'tagged_member_ids contains an invalid member id', code: 'TAGS_INVALID' });
+      }
+      if (ids.length) {
+        const { rows: fr } = await query(
+          `SELECT CASE WHEN f.requester_id=$1 THEN f.addressee_id ELSE f.requester_id END AS friend_id
+             FROM friendships f
+            WHERE f.status = 'accepted'
+              AND (f.requester_id=$1 OR f.addressee_id=$1)
+              AND (f.requester_id = ANY($2::uuid[]) OR f.addressee_id = ANY($2::uuid[]))`,
+          [req.member.id, ids]
+        );
+        const friendSet = new Set(fr.map((r) => r.friend_id));
+        if (ids.some((id) => !friendSet.has(id))) {
+          return res.status(400).json({
+            error: 'You can only tag members who are accepted friends.',
+            code:  'TAGS_NOT_FRIENDS',
+          });
+        }
+        tagged = ids;
+      }
     }
 
-    res.status(201).json({ post: rows[0] });
+    let rows;
+    try {
+      ({ rows } = await query(
+        `INSERT INTO posts (member_id, content, media, tagged_member_ids)
+         VALUES ($1,$2,$3,$4) RETURNING *`,
+        [req.member.id, content, JSON.stringify(media), JSON.stringify(tagged)]
+      ));
+    } catch (e) {
+      // Pre-migration fallback: tagged_member_ids column not ensured yet
+      // (boot-schema runs async at startup). The post still lands; tag
+      // notifications below still fire.
+      if (e.code !== '42703') throw e;
+      ({ rows } = await query(
+        `INSERT INTO posts (member_id, content, media)
+         VALUES ($1,$2,$3) RETURNING *`,
+        [req.member.id, content, JSON.stringify(media)]
+      ));
+    }
+    const post = rows[0];
+
+    // Hydrate tagged members (id + names) for the response so clients
+    // can render "with @Name" without a second round-trip.
+    let taggedMembers = [];
+    if (tagged.length) {
+      try {
+        const { rows: tm } = await query(
+          'SELECT id, first_name, last_name FROM members WHERE id = ANY($1::uuid[])',
+          [tagged]
+        );
+        taggedMembers = tm;
+      } catch (e) { /* names are a nicety — never block the post */ }
+    }
+
+    // Theme 14 — community-driven notifications, fire-and-forget: any
+    // failure in here must never fail the post itself.
+    //   friend_post → every accepted friend when the post has media
+    //                 (text-only posts stay quiet), capped at 200.
+    //   post_tag    → every tagged member.
+    // De-dupe: a tagged friend gets ONLY the tag notification.
+    const hasMedia = Array.isArray(media) && media.length > 0;
+    (async () => {
+      const author = req.member;
+      const firstName = (author.first_name || '').trim() || 'Your friend';
+      const taggedSet = new Set(tagged);
+      const postData = JSON.stringify({ post_id: post.id });
+
+      // post_tag — "your moment" ping for each tagged member.
+      const tagTitle = `📸 ${firstName} tagged you in a post`;
+      const tagBody  = 'Go see your moment!';
+      if (tagged.length) {
+        await query(
+          `INSERT INTO notifications (member_id, type, title, body, data)
+           SELECT unnest($1::uuid[]), 'post_tag', $2, $3, $4`,
+          [tagged, tagTitle, tagBody, postData]
+        );
+      }
+
+      // friend_post — hype fan-out to accepted friends on media posts.
+      const fpTitle = `🔥 ${firstName} just dropped something new in the feed`;
+      const fpBody  = "Don't leave them hanging — go show some love 💚";
+      let recipients = [];
+      if (hasMedia) {
+        const { rows: fr } = await query(
+          `SELECT CASE WHEN f.requester_id=$1 THEN f.addressee_id ELSE f.requester_id END AS friend_id
+             FROM friendships f
+            WHERE f.status = 'accepted'
+              AND (f.requester_id=$1 OR f.addressee_id=$1)
+            LIMIT $2`,
+          [author.id, FRIEND_POST_FANOUT_CAP]
+        );
+        recipients = fr.map((r) => r.friend_id)
+          .filter((id) => id && id !== author.id && !taggedSet.has(id));
+        if (recipients.length) {
+          await query(
+            `INSERT INTO notifications (member_id, type, title, body, data)
+             SELECT unnest($1::uuid[]), 'friend_post', $2, $3, $4`,
+            [recipients, fpTitle, fpBody, postData]
+          );
+        }
+      }
+
+      // PUSH — mirror the same copy through OneSignal when configured.
+      // First real caller of services/push.js; kept thin + fire-and-forget
+      // so a OneSignal hiccup can't slow the request path.
+      if (push.isConfigured()) {
+        const pushData = { post_id: post.id };
+        for (const memberId of tagged) {
+          push.sendPush(memberId, { title: tagTitle, body: tagBody, data: pushData, push_type: 'post_tag' })
+            .catch((e) => console.warn('[community] post_tag push failed', e.message));
+        }
+        if (recipients.length) {
+          push.sendBatch(recipients, { title: fpTitle, body: fpBody, data: pushData, push_type: 'friend_post' })
+            .catch((e) => console.warn('[community] friend_post push failed', e.message));
+        }
+      }
+    })().catch((e) => console.warn('[community] post notification fan-out failed', e.message));
+
+    res.status(201).json({ post: { ...post, tagged_members: taggedMembers } });
   } catch (err) { next(err); }
 });
 

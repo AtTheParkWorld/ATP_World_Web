@@ -6,13 +6,18 @@
  *   - Tap card body  → /community/post/[id]
  *   - Tap avatar     → /community/members/[id]
  *   - Long-press     → report sheet
+ *   - Media posts    → Share (native sheet with the media URL) and
+ *                      Save (download to cache → camera roll via
+ *                      expo-media-library, write-only permission)
  *
  * Comment count + relative time render statelessly.
  */
 import { useState } from 'react';
-import { Image, Pressable, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Platform, Pressable, Share, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Video, ResizeMode } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
 import type { Post } from '@/lib/api/community';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
@@ -73,6 +78,50 @@ interface Props {
 
 export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPress }: Props) {
   const tColor = tribeColor(post.tribe_slug);
+  const [saving, setSaving] = useState(false);
+
+  const media0 = (post.media && post.media.length > 0 ? post.media[0] : null) ?? null;
+  const mediaUrl = media0?.src ? absUrl(media0.src) : null;
+
+  // TAG A FRIEND — "with @Name" line when the poster tagged friends.
+  const taggedNames = (post.tagged_members ?? [])
+    .map((t) => `@${`${t.first_name ?? ''} ${t.last_name ?? ''}`.trim() || 'a friend'}`)
+    .join(', ');
+
+  async function onSharePress() {
+    if (!mediaUrl) return;
+    try {
+      // iOS shares a real URL object; Android's sheet only reads message.
+      await Share.share(Platform.OS === 'ios' ? { url: mediaUrl } : { message: mediaUrl });
+    } catch {
+      // Member dismissed the sheet — nothing to surface.
+    }
+  }
+
+  async function onSavePress() {
+    if (!mediaUrl || !media0 || saving) return;
+    setSaving(true);
+    try {
+      // writeOnly — we only ever ADD to the camera roll, never read it.
+      const perm = await MediaLibrary.requestPermissionsAsync(true);
+      if (!perm.granted) {
+        Alert.alert(
+          'Allow photo access',
+          'To save this to your camera roll, allow photo access for ATP in Settings.',
+        );
+        return;
+      }
+      const isVideo = isVideoMedia(media0);
+      const target = `${FileSystem.cacheDirectory}atp-post-${String(post.id)}${isVideo ? '.mp4' : '.jpg'}`;
+      const dl = await FileSystem.downloadAsync(mediaUrl, target);
+      await MediaLibrary.saveToLibraryAsync(dl.uri);
+      Alert.alert('Saved 💚', isVideo ? 'Video saved to your camera roll.' : 'Photo saved to your camera roll.');
+    } catch (err) {
+      Alert.alert('Could not save', (err as Error).message || 'Try again.');
+    } finally {
+      setSaving(false);
+    }
+  }
 
   return (
     <Pressable
@@ -119,6 +168,13 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
         </View>
       </View>
 
+      {/* Tagged friends — "with @Name" */}
+      {!!taggedNames && (
+        <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-2">
+          with <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }}>{taggedNames}</Text>
+        </Text>
+      )}
+
       {/* Content */}
       {!!post.content && (
         <Text
@@ -158,6 +214,26 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
             {post.comments_count}
           </Text>
         </View>
+
+        {/* Media-only actions — kept muted so they read as secondary. */}
+        {!!mediaUrl && (
+          <View className="flex-row items-center gap-4 ml-auto">
+            <Pressable onPress={onSharePress} hitSlop={8} className="flex-row items-center gap-1.5 active:opacity-60">
+              <Text style={{ fontSize: 13 }}>📤</Text>
+              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs">
+                Share
+              </Text>
+            </Pressable>
+            <Pressable onPress={onSavePress} disabled={saving} hitSlop={8} className="flex-row items-center gap-1.5 active:opacity-60">
+              {saving
+                ? <ActivityIndicator size="small" color={colors.muted} />
+                : <Text style={{ fontSize: 13 }}>⬇️</Text>}
+              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs">
+                {saving ? 'Saving…' : 'Save'}
+              </Text>
+            </Pressable>
+          </View>
+        )}
       </View>
     </Pressable>
   );

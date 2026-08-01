@@ -804,6 +804,13 @@ async function _ensureBootSchema() {
       ADD COLUMN IF NOT EXISTS sponsor_url       TEXT`);
   } catch (e) { console.warn('[boot] sessions sponsor columns:', e.message); }
 
+  // Tag-a-friend on community posts — jsonb array of member UUIDs the
+  // poster tagged. Validated server-side (accepted friends only, max
+  // 10) in routes/community.js; feed queries expand it to id + names.
+  try {
+    await query(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS tagged_member_ids JSONB NOT NULL DEFAULT '[]'::jsonb`);
+  } catch (e) { console.warn('[boot] posts tagged_member_ids column:', e.message); }
+
   // Session name templates (Phase 1.35.1)
   try {
     await query(`CREATE TABLE IF NOT EXISTS session_templates (

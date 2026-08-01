@@ -12,6 +12,8 @@
  * The caller gets back the resulting public_url which they can include
  * in the post's `media` array.
  */
+import { launchImageLibraryAsync, MediaTypeOptions, requestMediaLibraryPermissionsAsync } from 'expo-image-picker';
+import * as FileSystem from 'expo-file-system';
 import { api } from './client';
 
 export interface UploadUrlResponse {
@@ -45,9 +47,6 @@ export async function pickAndUploadMedia(opts: { kind?: 'post' | 'avatar' } = {}
   width:  number | null;
   height: number | null;
 } | null> {
-  const { launchImageLibraryAsync, MediaTypeOptions, requestMediaLibraryPermissionsAsync } =
-    await import('expo-image-picker');
-
   const perm = await requestMediaLibraryPermissionsAsync();
   if (!perm.granted) {
     throw new Error('Photo library access is required to attach media.');
@@ -62,6 +61,7 @@ export async function pickAndUploadMedia(opts: { kind?: 'post' | 'avatar' } = {}
   if (picked.canceled || !picked.assets?.length) return null;
 
   const asset = picked.assets[0];
+  if (!asset) return null;
   const uri = asset.uri;
   const contentType =
     asset.mimeType
@@ -75,7 +75,6 @@ export async function pickAndUploadMedia(opts: { kind?: 'post' | 'avatar' } = {}
 
   // Size check via the filesystem — cheaper than reading the whole file
   // into memory, works for file:// (iOS) and content:// (Android) URIs.
-  const FileSystem = await import('expo-file-system');
   const info = await FileSystem.getInfoAsync(uri, { size: true });
   const size = (info.exists && 'size' in info ? (info as any).size : 0) || 0;
   if (size > signed.max_size_bytes) {

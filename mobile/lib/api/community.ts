@@ -7,6 +7,12 @@
  */
 import { api } from './client';
 
+export interface TaggedMember {
+  id: string;
+  first_name: string;
+  last_name: string;
+}
+
 export interface Post {
   id: string | number;
   content: string;
@@ -25,6 +31,8 @@ export interface Post {
   tribe_name?: string | null;
   tribe_slug?: string | null;
   tribe_color?: string | null;
+  /** Friends the poster tagged — renders as a "with @Name" line. */
+  tagged_members?: TaggedMember[] | null;
 }
 
 export interface Comment {
@@ -57,8 +65,14 @@ export function getMyPosts(limit = 20): Promise<{ posts: Post[] }> {
   return api.get(`/community/me/posts?limit=${limit}`);
 }
 
-export function createPost(content: string, media: Array<{ src: string; type?: string }> = []): Promise<{ post: Post }> {
-  return api.post('/community/posts', { content, media });
+export function createPost(
+  content: string,
+  media: Array<{ src: string; type?: string }> = [],
+  taggedMemberIds: string[] = [],
+): Promise<{ post: Post }> {
+  const body: Record<string, unknown> = { content, media };
+  if (taggedMemberIds.length) body.tagged_member_ids = taggedMemberIds;
+  return api.post('/community/posts', body);
 }
 
 export function deletePost(postId: number): Promise<void> {

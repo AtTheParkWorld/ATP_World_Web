@@ -83,6 +83,15 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .composer-media-btns{display:flex;gap:8px}
 .composer-media-btn{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);background:none;border:1px solid rgba(255,255,255,.1);padding:7px 12px;border-radius:var(--radius);cursor:pointer;transition:all .2s}
 .composer-media-btn:hover{border-color:var(--green);color:var(--green)}
+.composer-media-btn.active-tags{border-color:var(--green);color:var(--green)}
+/* TAG A FRIEND — composer panel of accepted-friend chips. Selection is
+   sent as tagged_member_ids (max 10, validated server-side). */
+.composer-tags{padding:10px 18px 0;display:none}
+.composer-tags.open{display:block}
+.composer-tags-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.tag-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--light);background:transparent;border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:5px 12px;margin:0 6px 6px 0;cursor:pointer;transition:all .2s}
+.tag-chip:hover{border-color:rgba(168,255,0,.5)}
+.tag-chip.sel{border-color:var(--green);color:var(--green);background:rgba(168,255,0,.08)}
 .post-btn{font-size:13px;font-weight:700;background:var(--green);color:#0a0a0a;border:none;padding:9px 22px;border-radius:var(--radius);cursor:pointer;transition:background .2s}
 .post-btn:hover{background:var(--green-dark)}
 .post-btn:disabled{opacity:.5;cursor:not-allowed}
@@ -102,6 +111,12 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .post-time{font-size:11px;color:var(--muted);margin-top:1px}
 .post-menu{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px 8px;font-size:18px;line-height:1;border-radius:4px;transition:color .2s}
 .post-menu:hover{color:var(--white)}
+/* TAG A FRIEND — "with @Name" line rendered under the post header. */
+.post-tagged{font-size:12px;color:var(--muted);padding:10px 16px 0}
+.post-tagged .tagged-name{color:var(--green);font-weight:600}
+/* Toast — used by share/download + tag feedback. */
+.atp-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--dark2);border:1px solid rgba(168,255,0,.35);color:var(--white);font-size:13px;font-weight:600;padding:10px 18px;border-radius:8px;z-index:700;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;max-width:90vw;text-align:center}
+.atp-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .post-content{font-size:14px;color:var(--light);line-height:1.65;padding:12px 16px;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere}
 .comment-text,.comment-reply{white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere}
 
@@ -344,6 +359,12 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             <textarea class="composer-input" id="postText" placeholder="Share a session recap, milestone or shoutout…" maxlength="500" oninput="updatePostBtn()"></textarea>
           </div>
           <div class="composer-media-preview" id="mediaPreview"></div>
+          <!-- TAG A FRIEND — accepted friends load lazily on first open;
+               selection posts as tagged_member_ids (max 10). -->
+          <div class="composer-tags" id="tagFriendsPanel">
+            <div class="composer-tags-title">Tag friends <span id="tagCount"></span></div>
+            <div id="tagFriendsList" style="font-size:12px;color:var(--muted)">Loading friends…</div>
+          </div>
           <!-- Rulebook ref: R-PO-002 — 500-char hard limit. Counter goes
                amber at 450, red at 480 to warn before hitting the cap. -->
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);padding:0 18px;line-height:1.5;gap:12px">
@@ -359,6 +380,10 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
               <button class="composer-media-btn" onclick="document.getElementById('vidInput').click()">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="3" width="10" height="10" rx="2"/><path d="M11 6l4-2v8l-4-2V6z"/></svg>
                 Video
+              </button>
+              <button class="composer-media-btn" id="tagFriendsBtn" onclick="toggleTagFriends()">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3 2.7-4.5 6-4.5s6 1.5 6 4.5"/></svg>
+                Tag friends
               </button>
             </div>
             <button class="post-btn" id="postBtn" disabled data-atp-call="submitPost">Post</button>
@@ -524,7 +549,10 @@ function loadTribeFeed() {
       }
       // Reuse buildPostCard — the tribe feed cards look identical to
       // the main feed, just filtered. Adapter normalises the shape.
-      container.innerHTML = posts.map(_adaptFeedRow).map(buildPostCard).join('');
+      // Keep the adapted rows in TRIBE_POSTS so share/download handlers
+      // (which look posts up by real id) work on this tab too.
+      TRIBE_POSTS = posts.map(_adaptFeedRow);
+      container.innerHTML = TRIBE_POSTS.map(buildPostCard).join('');
     })
     .catch(function(){
       container.innerHTML = '<div class="atp-empty" style="padding:48px 24px;text-align:center;color:var(--muted)">Couldn’t load tribe feed — try again.</div>';
@@ -541,6 +569,7 @@ function _adaptFeedRow(p) {
   var initials = ((p.first_name || ' ').charAt(0) + (p.last_name || ' ').charAt(0)).toUpperCase();
   return {
     id:         p.id,
+    realId:     p.id,
     av:         initials,
     author:     author,
     tribe:      p.tribe_name || '',
@@ -551,6 +580,7 @@ function _adaptFeedRow(p) {
     media:      Array.isArray(p.media) ? p.media : [],
     likes:      Number(p.likes_count) || 0,
     comments:   [],
+    tagged:     Array.isArray(p.tagged_members) ? p.tagged_members : [],
     friendAdded:false,
   };
 }
@@ -559,6 +589,9 @@ function _adaptFeedRow(p) {
 // POSTS seed removed (audit): the feed hydrates from /api/community —
 // no fabricated posts while loading or on API failure.
 var POSTS = [];
+// Adapted rows from the "Your Tribe" tab — kept so post lookups by
+// real (UUID) id work for cards rendered in that container too.
+var TRIBE_POSTS = [];
 
 // LB_DATA seed removed (audit): the leaderboard renders from the API
 // only; failures show an empty state instead of fabricated members.
@@ -770,6 +803,9 @@ async function submitPost() {
 }
 
 function createPost(txt, media) {
+  // Capture tagged friends BEFORE clearing the composer state.
+  var taggedIds = _selectedTagIds();
+
   // Clear composer immediately
   var postTextEl = document.getElementById("postText");
   var previewEl  = document.getElementById("mediaPreview");
@@ -778,6 +814,7 @@ function createPost(txt, media) {
   mediaFiles = [];
   if (previewEl) { previewEl.innerHTML = ""; previewEl.classList.remove("has-items"); }
   if (btnEl) btnEl.disabled = true;
+  _resetTagFriends();
 
   // Backend requires auth — guard
   if (typeof isApiLoggedIn === 'function' && !isApiLoggedIn()) {
@@ -786,11 +823,82 @@ function createPost(txt, media) {
   }
   // media from file reader is data URLs — send as an array of {type,src} entries
   var mediaPayload = (media || []).map(function(m){ return { type: m.type, src: m.src }; });
-  apiPost('/community/posts', { content: txt, media: mediaPayload })
+  var body = { content: txt, media: mediaPayload };
+  if (taggedIds.length) body.tagged_member_ids = taggedIds;
+  apiPost('/community/posts', body)
     .then(function(){ loadFeed(); })
     .catch(function(err){
       alert('Could not post: ' + (err && err.message ? err.message : 'Please try again.'));
     });
+}
+
+// ── TAG A FRIEND (composer) ──────────────────────────────────
+// Accepted friends load lazily the first time the panel opens (via
+// the same /members/friends endpoint the friends UI uses — the ATP
+// client calls it members.getFriends). Selection is chip-based and
+// capped at 10 to match the backend's MAX_TAGGED.
+var tagFriends = { open:false, loaded:false, list:[], selected:{} };
+
+function _selectedTagIds() { return Object.keys(tagFriends.selected); }
+
+function _resetTagFriends() {
+  tagFriends.selected = {};
+  tagFriends.open = false;
+  var panel = document.getElementById('tagFriendsPanel');
+  if (panel) panel.classList.remove('open');
+  renderTagFriends();
+}
+
+function toggleTagFriends() {
+  if (typeof isApiLoggedIn === 'function' && !isApiLoggedIn()) {
+    if (typeof openAuth === 'function') openAuth('login');
+    return;
+  }
+  var panel = document.getElementById('tagFriendsPanel');
+  if (!panel) return;
+  tagFriends.open = !tagFriends.open;
+  panel.classList.toggle('open', tagFriends.open);
+  if (tagFriends.open && !tagFriends.loaded) {
+    apiGet('/members/friends').then(function(d){
+      tagFriends.loaded = true;
+      tagFriends.list = (d.friendships || []).filter(function(f){ return f.status === 'accepted'; });
+      renderTagFriends();
+    }).catch(function(){
+      var host = document.getElementById('tagFriendsList');
+      if (host) host.textContent = 'Couldn’t load friends — try again.';
+    });
+  }
+}
+
+function renderTagFriends() {
+  var host = document.getElementById('tagFriendsList');
+  if (!host) return;
+  var cnt = _selectedTagIds().length;
+  var cEl = document.getElementById('tagCount');
+  if (cEl) cEl.textContent = cnt ? '· ' + cnt + '/10' : '';
+  var btn = document.getElementById('tagFriendsBtn');
+  if (btn) btn.classList.toggle('active-tags', cnt > 0);
+  if (!tagFriends.loaded) return;
+  if (!tagFriends.list.length) {
+    host.textContent = 'No accepted friends yet — add friends from the feed to tag them.';
+    return;
+  }
+  host.innerHTML = tagFriends.list.map(function(f){
+    var nm = ((f.first_name || '') + ' ' + (f.last_name || '')).trim() || 'Member';
+    var sel = !!tagFriends.selected[f.friend_id];
+    return '<button type="button" class="tag-chip' + (sel ? ' sel' : '') + '" onclick="toggleTagFriend(\'' + escapeHtml(String(f.friend_id)) + '\')">' +
+      (sel ? '✓ ' : '') + escapeHtml(nm) + '</button>';
+  }).join('');
+}
+
+function toggleTagFriend(id) {
+  if (tagFriends.selected[id]) {
+    delete tagFriends.selected[id];
+  } else {
+    if (_selectedTagIds().length >= 10) { atpToast('You can tag up to 10 friends.'); return; }
+    tagFriends.selected[id] = true;
+  }
+  renderTagFriends();
 }
 
 function renderPosts() {
@@ -810,6 +918,9 @@ function buildPostCard(post) {
   // ci) are coerced to numbers below; media src attributes get the
   // same escaping treatment so " can't break the quote.
   var _pid = Number(post.id) || 0;
+  // Real (UUID) post id — the share/download handlers look posts up by
+  // this, since the numeric coercion above collapses UUID ids to 0.
+  var _rid = escapeHtml(String(post.realId || post.id || ''));
   var mediaHtml = "";
   if(post.media && post.media.length > 0) {
     var items = post.media.map(function(m, i) {
@@ -881,6 +992,12 @@ function buildPostCard(post) {
       '</div>'+
       '<button class="post-menu" onclick="togglePostMenu('+_pid+')">···</button>'+
     '</div>'+
+    // TAG A FRIEND — "with @Name" line when the poster tagged friends.
+    (post.tagged && post.tagged.length ?
+      '<div class="post-tagged">with ' + post.tagged.map(function(t){
+        var nm = ((t.first_name || '') + ' ' + (t.last_name || '')).trim() || 'a friend';
+        return '<span class="tagged-name">@' + escapeHtml(nm) + '</span>';
+      }).join(', ') + '</div>' : '')+
     (post.text ? '<div class="post-content">'+escapeHtml(post.text)+'</div>' : '')+
     mediaHtml+
     '<div class="post-actions">'+
@@ -893,14 +1010,19 @@ function buildPostCard(post) {
         post.comments.length+
       '</button>'+
       '<div class="share-dropdown">'+
-        '<button class="post-action-btn" onclick="toggleShare('+_pid+')">'+
+        '<button class="post-action-btn" onclick="toggleShare(\''+_rid+'\')">'+
           '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="3" r="1.5"/><circle cx="4" cy="8" r="1.5"/><circle cx="12" cy="13" r="1.5"/><path d="M5.5 9l5 3M5.5 7l5-3"/></svg>'+
           'Share'+
         '</button>'+
-        '<div class="share-menu" id="share-'+_pid+'">'+
-          '<button class="share-item" onclick="shareWhatsApp('+_pid+')"><div class="share-item-icon" style="background:#25d366">💬</div>Share on WhatsApp</button>'+
-          '<button class="share-item" onclick="downloadMedia('+_pid+')"><div class="share-item-icon" style="background:rgba(255,255,255,.08)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 13h12"/></svg></div>Download</button>'+
-          '<button class="share-item" onclick="copyPostLink('+_pid+')"><div class="share-item-icon" style="background:rgba(255,255,255,.08)">🔗</div>Copy link</button>'+
+        '<div class="share-menu" id="share-'+_rid+'">'+
+          '<button class="share-item" onclick="shareWhatsApp(\''+_rid+'\')"><div class="share-item-icon" style="background:#25d366">💬</div>Share on WhatsApp</button>'+
+          // Download + native Share only make sense on media posts —
+          // text-only cards keep just WhatsApp + Copy link.
+          (post.media && post.media.length ?
+            '<button class="share-item" onclick="sharePostNative(\''+_rid+'\')"><div class="share-item-icon" style="background:rgba(168,255,0,.14)">📤</div>Share…</button>'+
+            '<button class="share-item" onclick="downloadMedia(\''+_rid+'\')"><div class="share-item-icon" style="background:rgba(255,255,255,.08)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 13h12"/></svg></div>Download</button>'
+            : '')+
+          '<button class="share-item" onclick="copyPostLink(\''+_rid+'\')"><div class="share-item-icon" style="background:rgba(255,255,255,.08)">🔗</div>Copy link</button>'+
         '</div>'+
       '</div>'+
     '</div>'+
@@ -1101,25 +1223,105 @@ document.addEventListener("click",function(e){
   if(!e.target.closest(".share-dropdown")) document.querySelectorAll(".share-menu").forEach(function(m){m.classList.remove("open");});
 });
 
+// Look a post up by its real (UUID) id across both feed containers.
+function _findPost(id) {
+  var match = function(p){ return String(p.realId || p.id) === String(id); };
+  return POSTS.find(match) || TRIBE_POSTS.find(match);
+}
+
+// Toast — lightweight feedback for share/download/tag actions (the
+// page otherwise leans on alert(), which is too heavy for these).
+var _toastTimer = null;
+function atpToast(msg) {
+  var el = document.getElementById('atpToast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'atpToast';
+    el.className = 'atp-toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2600);
+}
+
+function _postPageLink(id) {
+  return window.location.origin + '/community.html#post-' + id;
+}
+
+function _copyToClipboard(txt) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(
+      function(){ atpToast('Link copied to clipboard'); },
+      function(){ atpToast('Could not copy the link'); }
+    );
+  } else {
+    atpToast('Sharing is not supported in this browser');
+  }
+}
+
 function shareWhatsApp(id) {
-  var post = POSTS.find(function(p){return p.id===id;});
-  var text = encodeURIComponent("Check this out on ATP Community: "+(post.text||"")+"\nhttps://attheparkworld.github.io/ATP_World_Web/community.html");
+  var post = _findPost(id);
+  var text = encodeURIComponent("Check this out on ATP Community: "+((post && post.text)||"")+"\n"+_postPageLink(id));
   window.open("https://wa.me/?text="+text,"_blank");
 }
 
-function downloadMedia(id) {
-  var post = POSTS.find(function(p){return p.id===id;});
-  if(!post||!post.media||!post.media.length){alert("No media to download.");return;}
-  post.media.forEach(function(m,i){
-    var a=document.createElement("a");
-    a.href=m.src;a.download="atp-post-"+id+"-"+i+(m.type==="video"?".mp4":".jpg");
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-  });
+// Native share — navigator.share where the browser supports it
+// (mobile Safari/Chrome), copy-link + toast everywhere else.
+function sharePostNative(id) {
+  var post = _findPost(id);
+  var mediaUrl = (post && post.media && post.media.length && post.media[0].src)
+    ? new URL(post.media[0].src, window.location.origin).href
+    : null;
+  var url = mediaUrl || _postPageLink(id);
+  if (navigator.share) {
+    navigator.share({
+      title: 'ATP Community',
+      text:  (post && post.text) || 'Check this out on ATP Community',
+      url:   url,
+    }).catch(function(err){
+      // User dismissing the sheet is not an error worth surfacing.
+      if (err && err.name !== 'AbortError') _copyToClipboard(url);
+    });
+  } else {
+    _copyToClipboard(url);
+  }
+}
+
+// Download — fetch each media item as a blob first so the anchor's
+// download attribute works for cross-origin R2 URLs too (a plain
+// href+download on another origin just navigates instead of saving).
+async function downloadMedia(id) {
+  var post = _findPost(id);
+  if(!post||!post.media||!post.media.length){atpToast("No media to download.");return;}
+  atpToast('Preparing download…');
+  for (var i = 0; i < post.media.length; i++) {
+    var m = post.media[i];
+    if (!m || !m.src) continue;
+    var abs = new URL(m.src, window.location.origin).href;
+    var ext = m.type === "video" ? ".mp4" : ".jpg";
+    var name = "atp-post-" + String(id).slice(0, 8) + "-" + (i + 1) + ext;
+    try {
+      var resp = await fetch(abs);
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      var blob = await resp.blob();
+      var blobUrl = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = blobUrl; a.download = name;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout((function(u){ return function(){ URL.revokeObjectURL(u); }; })(blobUrl), 5000);
+    } catch (e) {
+      // Blob fetch blocked (e.g. R2 bucket without CORS) — open the
+      // file in a new tab so the member can still save it manually.
+      window.open(abs, "_blank");
+    }
+  }
+  atpToast("Download started");
 }
 
 function copyPostLink(id) {
-  navigator.clipboard&&navigator.clipboard.writeText("https://attheparkworld.github.io/ATP_World_Web/community.html#post-"+id);
-  alert("Link copied!");
+  _copyToClipboard(_postPageLink(id));
 }
 
 function togglePostMenu(id) {}
@@ -1590,6 +1792,7 @@ function mapApiPost(p) {
     comments: [],  // loaded on demand via /comments
     commentsCount: parseInt(p.comments_count) || 0,
     liked:    !!p.liked_by_me,
+    tagged:   Array.isArray(p.tagged_members) ? p.tagged_members : [],
     friendAdded: true,
     memberId: p.member_id,
     commentsLoaded: false,
