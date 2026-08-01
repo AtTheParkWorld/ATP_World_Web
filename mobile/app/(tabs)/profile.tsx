@@ -4,6 +4,7 @@
  *
  * Sections (top → bottom):
  *  - Avatar + name + tribe + member#
+ *  - "My Next Session" card (shared with Home; founder 2026-08-01)
  *  - QR card (member_number encoded; ambassadors scan it at sessions)
  *  - Profile completion progress (drives the +200 pts profile_complete bonus)
  *  - Stat strip: sessions / streak / friends
@@ -20,6 +21,7 @@ import { useAuthStore } from '@/lib/stores/auth.store';
 import { Avatar } from '@/lib/components/Avatar';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { StreakBadge } from '@/lib/components/StreakBadge';
+import { MyNextSession } from '@/lib/components/MyNextSession';
 import { Icon, type IconName } from '@/lib/components/icons';
 
 export default function Profile() {
@@ -55,6 +57,7 @@ export default function Profile() {
                 qc.invalidateQueries({ queryKey: ['profile'] }),
                 qc.invalidateQueries({ queryKey: ['stats'] }),
                 qc.invalidateQueries({ queryKey: ['streak'] }),
+                qc.invalidateQueries({ queryKey: ['my-bookings'] }),
               ]);
             }}
           />
@@ -101,6 +104,11 @@ export default function Profile() {
           <View className="mt-3">
             <StreakBadge streak={streakQ.data || null} compact />
           </View>
+        </View>
+
+        {/* My next session — same card as Home (founder 2026-08-01) */}
+        <View className="px-5 mt-4">
+          <MyNextSession />
         </View>
 
         {/* Member QR removed 2026-06-27 per founder — it confused members

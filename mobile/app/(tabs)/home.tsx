@@ -2,30 +2,33 @@
  * Home tab — landing screen after sign-in.
  *
  * Composition (top → bottom):
- *   1. Greeting + streak badge
- *   2. Points + sessions stat strip
- *   3. Next upcoming booking card (deep-links to /sessions/[id])
- *   4. "Today" + "This weekend" session rails (pulled from /api/sessions)
- *   5. Quick actions — QR / Rewards / Find a session
+ *   1. Compact greeting (small avatar + name + streak)
+ *   2. Primary CTAs — BOOK A SESSION / STORE (founder 2026-08-01:
+ *      these must be the two most prominent elements on the screen;
+ *      the points/sessions/friends stat strip moved to Profile only)
+ *   3. "My Next Session" — the member's soonest booking (shared card,
+ *      deep-links to /sessions/[id])
+ *   4. Device week card + quick actions
+ *   5. "Coming up" session discovery rail (pulled from /api/sessions)
  *
- * Pulls four endpoints in parallel via React Query so the screen
- * paints in one frame after data lands. Pull-to-refresh re-runs all
- * four. Auth-store member is the source of truth for the greeting so
- * the screen renders instantly while the freshest data resolves.
+ * Pulls endpoints in parallel via React Query so the screen paints in
+ * one frame after data lands. Pull-to-refresh re-runs all of them.
+ * Auth-store member is the source of truth for the greeting so the
+ * screen renders instantly while the freshest data resolves.
  */
 import { useCallback } from 'react';
 import { ActivityIndicator, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getProfile, getStreak, getStats } from '@/lib/api/members';
-import { listMyBookings } from '@/lib/api/bookings';
-import { listSessions } from '@/lib/api/sessions';
+import { getProfile, getStreak } from '@/lib/api/members';
+import { listSessions, type Session } from '@/lib/api/sessions';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { SessionCard } from '@/lib/components/SessionCard';
 import { StreakBadge } from '@/lib/components/StreakBadge';
 import { Avatar } from '@/lib/components/Avatar';
 import { DeviceWeekCard } from '@/lib/components/DeviceWeekCard';
+import { MyNextSession } from '@/lib/components/MyNextSession';
 import { Icon, type IconName } from '@/lib/components/icons';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 
@@ -33,32 +36,25 @@ export default function Home() {
   const member = useAuthStore((s) => s.member) as any;
   const qc     = useQueryClient();
 
-  const profileQ  = useQuery({ queryKey: ['profile'],   queryFn: () => getProfile().then(r => r.member) });
-  const streakQ   = useQuery({ queryKey: ['streak'],    queryFn: () => getStreak().then(r => r.streak) });
-  const statsQ    = useQuery({ queryKey: ['stats'],     queryFn: () => getStats().then(r => r.stats) });
-  const bookingsQ = useQuery({ queryKey: ['my-bookings'], queryFn: () => listMyBookings().then(r => r.bookings) });
+  const profileQ = useQuery({ queryKey: ['profile'], queryFn: () => getProfile().then(r => r.member) });
+  const streakQ  = useQuery({ queryKey: ['streak'],  queryFn: () => getStreak().then(r => r.streak) });
   const sessionsQ = useQuery({
     queryKey: ['sessions', 'home-upcoming'],
     queryFn:  () => listSessions({ status: 'upcoming', limit: 8 }).then(r => r.sessions),
   });
   const me = profileQ.data || member;
 
-  const refreshing = streakQ.isFetching || statsQ.isFetching || bookingsQ.isFetching || sessionsQ.isFetching;
+  const refreshing = streakQ.isFetching || sessionsQ.isFetching;
   const onRefresh  = useCallback(async () => {
     await Promise.all([
       qc.invalidateQueries({ queryKey: ['streak'] }),
-      qc.invalidateQueries({ queryKey: ['stats'] }),
       qc.invalidateQueries({ queryKey: ['my-bookings'] }),
       qc.invalidateQueries({ queryKey: ['sessions'] }),
     ]);
   }, [qc]);
 
-  const upcoming = (bookingsQ.data || []).filter(
-    (b) => b.status !== 'cancelled' && b.scheduled_at && new Date(b.scheduled_at).getTime() > Date.now()
-  );
-  const nextBooking = upcoming[0] || null;
-  const sessions    = sessionsQ.data || [];
-  const name        = member?.first_name || 'Athlete';
+  const sessions = sessionsQ.data || [];
+  const name     = member?.first_name || 'Athlete';
 
   return (
     <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>
@@ -66,106 +62,75 @@ export default function Home() {
         contentContainerStyle={{ paddingBottom: 40 }}
         refreshControl={<RefreshControl tintColor={colors.green} refreshing={refreshing} onRefresh={onRefresh} />}
       >
-        {/* Greeting */}
-        <View className="px-5 pt-4 flex-row items-center gap-4">
+        {/* Greeting — compact (founder 2026-08-01: was too big) */}
+        <View className="px-5 pt-4 flex-row items-center gap-3">
           <Pressable onPress={() => router.push('/(tabs)/profile')}>
             <Avatar
               uri={me?.avatar_url}
               firstName={me?.first_name}
               lastName={me?.last_name}
               id={me?.id}
-              size="lg"
+              size={38}
               borderColor={colors.green}
               borderWidth={2}
             />
           </Pressable>
           <View className="flex-1">
-            <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm">
+            <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[11px]">
               Welcome back,
             </Text>
             <Text
               numberOfLines={1}
               adjustsFontSizeToFit
               style={{ fontFamily: fontFamily.displayBlack, color: colors.white }}
-              className="text-3xl uppercase tracking-tight mt-0.5"
+              className="text-lg uppercase tracking-tight"
             >
               {name}.
             </Text>
-            <View className="mt-2">
-              <StreakBadge streak={streakQ.data || null} />
-            </View>
           </View>
+          <StreakBadge streak={streakQ.data || null} compact />
         </View>
 
-        {/* Stat strip */}
-        <View className="px-5 mt-5">
-          <View className="flex-row gap-3">
-            <StatTile
-              label="Points"
-              value={statsQ.data ? statsQ.data.current_balance.toLocaleString() : '—'}
-            />
-            <StatTile
-              label="Sessions"
-              value={statsQ.data ? String(statsQ.data.total_sessions) : '—'}
-            />
-            <StatTile
-              label="Friends"
-              value={statsQ.data ? String(statsQ.data.friends_count) : '—'}
-            />
-          </View>
+        {/* Primary CTAs — the two things a member most wants to do
+            (founder 2026-08-01: big, unmissable, brand lime) */}
+        <View className="px-5 mt-5 gap-3">
+          <Pressable
+            onPress={() => router.push('/(tabs)/sessions')}
+            className="bg-atp-green rounded-atp-lg p-5 flex-row items-center justify-between active:opacity-80"
+          >
+            <View className="flex-1">
+              <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.black }} className="text-2xl uppercase tracking-tight">
+                Book a session
+              </Text>
+              <Text style={{ fontFamily: fontFamily.body, color: 'rgba(0,0,0,0.65)' }} className="text-xs mt-0.5">
+                Pick a day, grab your spot
+              </Text>
+            </View>
+            <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.black, fontSize: 26 }}>→</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => router.push('/(tabs)/store')}
+            className="bg-atp-green rounded-atp-lg p-5 flex-row items-center justify-between active:opacity-80"
+          >
+            <View className="flex-1">
+              <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.black }} className="text-2xl uppercase tracking-tight">
+                Store
+              </Text>
+              <Text style={{ fontFamily: fontFamily.body, color: 'rgba(0,0,0,0.65)' }} className="text-xs mt-0.5">
+                Official ATP gear + drops
+              </Text>
+            </View>
+            <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.black, fontSize: 26 }}>→</Text>
+          </Pressable>
+        </View>
+
+        {/* My next session — the member's own soonest booking */}
+        <View className="px-5 mt-7">
+          <MyNextSession />
         </View>
 
         {/* My device this week — wearable mirror (per founder 2026-06-27) */}
         <DeviceWeekCard />
-
-        {/* Next booking */}
-        <View className="px-5 mt-7">
-          <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-3">
-            Next session
-          </Text>
-          {bookingsQ.isLoading ? (
-            <ActivityIndicator color={colors.green} />
-          ) : nextBooking ? (
-            <Pressable
-              onPress={() => router.push(`/sessions/${nextBooking.session_id}`)}
-              className="bg-atp-dark rounded-atp-lg border border-white/5 p-5 active:opacity-70"
-            >
-              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs uppercase tracking-widest mb-1">
-                {nextBooking.tribe_name || nextBooking.city_name || 'Booked'}
-              </Text>
-              <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-2xl uppercase tracking-tight">
-                {nextBooking.session_name}
-              </Text>
-              <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm mt-2">
-                {nextBooking.scheduled_at && new Date(nextBooking.scheduled_at).toLocaleString()}
-              </Text>
-              {!!nextBooking.location && (
-                <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-1">
-                  📍 {nextBooking.location}
-                </Text>
-              )}
-              {!!nextBooking.qr_token && (
-                <View className="mt-3 self-start bg-atp-green/15 border border-atp-green/40 px-3 py-1.5 rounded-full">
-                  <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs uppercase tracking-widest">
-                    Tap to show QR
-                  </Text>
-                </View>
-              )}
-            </Pressable>
-          ) : (
-            <Pressable
-              onPress={() => router.push('/(tabs)/sessions')}
-              className="bg-atp-dark rounded-atp-lg border border-dashed border-white/10 p-5 active:opacity-70"
-            >
-              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-sm uppercase tracking-widest">
-                Nothing booked yet
-              </Text>
-              <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm mt-1">
-                Browse today's free sessions →
-              </Text>
-            </Pressable>
-          )}
-        </View>
 
         {/* Quick actions */}
         <View className="px-5 mt-7">
@@ -227,7 +192,7 @@ export default function Home() {
             </Text>
           ) : (
             <View className="px-5 gap-3">
-              {sessions.slice(0, 4).map((s) => (
+              {sessions.slice(0, 4).map((s: Session) => (
                 <SessionCard key={s.id} session={s} compact />
               ))}
             </View>
@@ -235,19 +200,6 @@ export default function Home() {
         </View>
       </ScrollView>
     </SafeAreaView>
-  );
-}
-
-function StatTile({ label, value }: { label: string; value: string }) {
-  return (
-    <View className="flex-1 bg-atp-dark rounded-atp-lg border border-white/5 p-4">
-      <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-[10px] uppercase tracking-widest">
-        {label}
-      </Text>
-      <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-2xl mt-1">
-        {value}
-      </Text>
-    </View>
   );
 }
 

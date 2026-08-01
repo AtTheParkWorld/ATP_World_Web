@@ -8,7 +8,11 @@
  *                            Day name + date number + small count badge.
  *                            Tap to focus that day. Today is auto-selected
  *                            on mount.
- *   3. City + Activity filter row (horizontal pills)
+ *   3. City + Activity filter row (horizontal pills). Options are
+ *      DYNAMIC (founder 2026-08-01): derived from an unfiltered
+ *      ['sessions','facets'] query so a city/activity only gets a pill
+ *      if at least one upcoming session actually has it. Tribes stay
+ *      static (always the 3 tribes).
  *   4. Sessions list      — only sessions for the focused day; each card
  *                            enters with FadeInDown so the day-tap feels
  *                            responsive.
@@ -23,7 +27,7 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, Tex
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { listSessions, listCities, listTribes, listActivities, type Session } from '@/lib/api/sessions';
+import { listSessions, listTribes, type Session } from '@/lib/api/sessions';
 import { SessionCard } from '@/lib/components/SessionCard';
 import { FilterPills } from '@/lib/components/FilterPills';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
@@ -57,9 +61,16 @@ export default function Sessions() {
 
   const days = useMemo(() => buildWeek(2), []);
 
-  const citiesQ     = useQuery({ queryKey: ['cities'],     queryFn: () => listCities().then(r => r.cities),    staleTime: 1000 * 60 * 30 });
-  const tribesQ     = useQuery({ queryKey: ['tribes'],     queryFn: () => listTribes().then(r => r.tribes),    staleTime: 1000 * 60 * 30 });
-  const activitiesQ = useQuery({ queryKey: ['activities'], queryFn: () => listActivities().then(r => r.activities), staleTime: 1000 * 60 * 30 });
+  const tribesQ = useQuery({ queryKey: ['tribes'], queryFn: () => listTribes().then(r => r.tribes), staleTime: 1000 * 60 * 30 });
+
+  // Unfiltered upcoming sessions — the facet base. City/activity pills
+  // are derived from what's actually on the calendar, not the full
+  // catalogs, so members never tap a filter that yields zero sessions.
+  const facetsQ = useQuery({
+    queryKey: ['sessions', 'facets'],
+    queryFn:  () => listSessions({ status: 'upcoming', limit: 200 }).then(r => r.sessions),
+    staleTime: 1000 * 60 * 5,
+  });
 
   const sessionsQ = useQuery({
     queryKey: ['sessions', 'calendar', { cityId, tribeSlug, activityId }],
@@ -95,9 +106,30 @@ export default function Sessions() {
     if (nextWithSessions) setFocusedDay(ymd(nextWithSessions));
   }, [sessionsQ.data, byDay, days, focusedDay]);
 
-  const cityOptions     = (citiesQ.data     || []).map((c: any) => ({ value: String(c.id),   label: c.name }));
-  const tribeOptions    = (tribesQ.data     || []).map((t: any) => ({ value: String(t.slug), label: t.name }));
-  const activityOptions = (activitiesQ.data || []).map((a: any) => ({ value: String(a.id),   label: a.name }));
+  const tribeOptions = (tribesQ.data || []).map((t: any) => ({ value: String(t.slug), label: t.name }));
+
+  // Unique city/activity options actually present in upcoming sessions.
+  const { cityOptions, activityOptions } = useMemo(() => {
+    const cities     = new Map<string, string>();
+    const activities = new Map<string, string>();
+    for (const s of facetsQ.data || []) {
+      if (s.city_id != null && s.city_name)         cities.set(String(s.city_id), s.city_name);
+      if (s.activity_id != null && s.activity_name) activities.set(String(s.activity_id), s.activity_name);
+    }
+    const toOptions = (m: Map<string, string>) =>
+      [...m.entries()]
+        .map(([value, label]) => ({ value, label }))
+        .sort((a, b) => a.label.localeCompare(b.label));
+    return { cityOptions: toOptions(cities), activityOptions: toOptions(activities) };
+  }, [facetsQ.data]);
+
+  // If a selected filter value disappears from the facets (e.g. the last
+  // session in that city passed), clear it so the list can't get stuck.
+  useEffect(() => {
+    if (!facetsQ.data) return;
+    if (cityId     && !cityOptions.some((o) => o.value === cityId))         setCityId(null);
+    if (activityId && !activityOptions.some((o) => o.value === activityId)) setActivityId(null);
+  }, [facetsQ.data, cityOptions, activityOptions, cityId, activityId]);
 
   return (
     <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>
@@ -125,7 +157,7 @@ export default function Sessions() {
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 12, paddingBottom: 12, gap: 8 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10, gap: 6 }}
       >
         {days.map((d) => {
           const k     = ymd(d);
@@ -136,7 +168,7 @@ export default function Sessions() {
             <Pressable
               key={k}
               onPress={() => setFocusedDay(k)}
-              className={`px-3 py-2.5 rounded-atp-lg border min-w-[58px] items-center active:opacity-70 ${isFocused ? 'bg-atp-green border-atp-green' : count > 0 ? 'bg-atp-dark border-white/10' : 'bg-atp-dark border-white/5'}`}
+              className={`px-2 py-1.5 rounded-atp-lg border min-w-[45px] items-center active:opacity-70 ${isFocused ? 'bg-atp-green border-atp-green' : count > 0 ? 'bg-atp-dark border-white/10' : 'bg-atp-dark border-white/5'}`}
             >
               <Text
                 style={{ fontFamily: fontFamily.bodyBold, color: isFocused ? colors.black : colors.muted, letterSpacing: 1 }}
@@ -146,7 +178,7 @@ export default function Sessions() {
               </Text>
               <Text
                 style={{ fontFamily: fontFamily.displayBlack, color: isFocused ? colors.black : count > 0 ? colors.white : colors.muted }}
-                className="text-xl mt-0.5"
+                className="text-base mt-0.5"
               >
                 {d.getDate()}
               </Text>
