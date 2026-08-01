@@ -249,6 +249,9 @@ router.get('/providers', (req, res) => {
     frontend_url_env: process.env.FRONTEND_URL || null,
     strava_webhook_verify_token_set: !!process.env.STRAVA_WEBHOOK_VERIFY_TOKEN,
     strava_webhook_verify_token_length: (process.env.STRAVA_WEBHOOK_VERIFY_TOKEN || '').length,
+    // Whether Strava will actually PUSH events to us — populated by
+    // GET /api/wearables/strava-subscription (kept out of this public
+    // response since it costs a Strava API round-trip).
     providers: providers.list().map(p => ({
       name: p.name,
       displayName: p.displayName,
@@ -573,6 +576,28 @@ router.post('/consent', authenticate, async (req, res, next) => {
 // ── Webhooks ───────────────────────────────────────────────────
 // Strava uses GET (handshake) + POST (events). Other providers may add
 // their own paths later. Unauthenticated — each adapter validates.
+// ── GET /api/wearables/strava-subscription (admin) ────────────
+// Shows whether Strava has an active push subscription pointing at us
+// — the difference between "activities appear within seconds" and
+// "activities only appear when the 15-min poller runs". ?ensure=1
+// re-registers if it's missing or pointing at a stale URL.
+router.get('/strava-subscription', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const strava = require('../services/wearables/strava');
+    const base = (process.env.FRONTEND_URL || '').replace(/\/+$/, '');
+    const callback = `${base}/api/wearables/webhooks/strava`;
+    if (req.query.ensure === '1') {
+      return res.json({ callback_expected: callback, ...(await strava.ensureWebhookSubscription(callback)) });
+    }
+    const subs = await strava.listSubscriptions();
+    res.json({
+      callback_expected: callback,
+      subscriptions: subs,
+      active: (subs || []).some((s) => s.callback_url === callback),
+    });
+  } catch (err) { next(err); }
+});
+
 router.get('/webhooks/:provider', (req, res) => {
   const adapter = providers.get(req.params.provider);
   if (!adapter || !adapter.verifyWebhook) return res.status(404).end();

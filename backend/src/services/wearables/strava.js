@@ -184,10 +184,88 @@ function handleWebhook(body) {
   };
 }
 
+// ── Webhook subscription management ──────────────────────────
+// Strava only pushes activity events to applications that have an
+// ACTIVE push subscription — a one-time registration that was
+// documented at the top of this file as a manual step and never run,
+// so nothing ever arrived automatically. These helpers make the server
+// self-register on boot (see server.js), and re-point the subscription
+// if the public URL changes (e.g. at the atthepark.world cutover).
+//
+// Strava allows exactly ONE subscription per application.
+async function listSubscriptions() {
+  const params = new URLSearchParams({
+    client_id:     process.env.STRAVA_CLIENT_ID,
+    client_secret: process.env.STRAVA_CLIENT_SECRET,
+  });
+  const r = await fetch(`${BASE}/api/v3/push_subscriptions?${params}`);
+  if (!r.ok) throw new Error(`Strava list subscriptions ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  return r.json();
+}
+
+async function deleteSubscription(id) {
+  const params = new URLSearchParams({
+    client_id:     process.env.STRAVA_CLIENT_ID,
+    client_secret: process.env.STRAVA_CLIENT_SECRET,
+  });
+  const r = await fetch(`${BASE}/api/v3/push_subscriptions/${id}?${params}`, { method: 'DELETE' });
+  if (!r.ok && r.status !== 404) {
+    throw new Error(`Strava delete subscription ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  }
+}
+
+async function createSubscription(callbackUrl) {
+  const body = new URLSearchParams({
+    client_id:     process.env.STRAVA_CLIENT_ID,
+    client_secret: process.env.STRAVA_CLIENT_SECRET,
+    callback_url:  callbackUrl,
+    verify_token:  process.env.STRAVA_WEBHOOK_VERIFY_TOKEN || '',
+  });
+  // Strava calls our GET /webhooks/strava synchronously during this
+  // request to verify the challenge — the service must be publicly
+  // reachable at callbackUrl for this to succeed.
+  const r = await fetch(`${BASE}/api/v3/push_subscriptions`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body,
+  });
+  if (!r.ok) throw new Error(`Strava create subscription ${r.status}: ${(await r.text()).slice(0, 300)}`);
+  return r.json();
+}
+
+/**
+ * Idempotent: ensure exactly one subscription pointing at callbackUrl.
+ * Returns { status, subscription_id?, detail? } and never throws.
+ */
+async function ensureWebhookSubscription(callbackUrl) {
+  if (!enabled()) return { status: 'skipped', detail: 'Strava client id/secret not set' };
+  if (!process.env.STRAVA_WEBHOOK_VERIFY_TOKEN) {
+    return { status: 'skipped', detail: 'STRAVA_WEBHOOK_VERIFY_TOKEN not set' };
+  }
+  if (!/^https:\/\//i.test(callbackUrl)) {
+    return { status: 'skipped', detail: `callback must be public https (got ${callbackUrl})` };
+  }
+  try {
+    const existing = await listSubscriptions();
+    const match = (existing || []).find((s) => s.callback_url === callbackUrl);
+    if (match) return { status: 'ok', subscription_id: match.id, detail: 'already subscribed' };
+
+    // Wrong/stale URL (old host) — Strava permits only one, so clear it.
+    for (const s of existing || []) await deleteSubscription(s.id);
+
+    const created = await createSubscription(callbackUrl);
+    return { status: 'created', subscription_id: created && created.id };
+  } catch (e) {
+    return { status: 'error', detail: String((e && e.message) || e) };
+  }
+}
+
 module.exports = {
   name: 'strava',
   displayName: 'Strava',
   enabled,
+  ensureWebhookSubscription,
+  listSubscriptions,
   getAuthUrl,
   exchangeCode,
   refreshAccessToken,

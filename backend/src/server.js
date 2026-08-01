@@ -886,6 +886,29 @@ if (require.main === module) {
     // members whose last_sync_at is > 60 minutes old. Strava is
     // webhook-driven so this is a safety-net + token-refresh loop
     // for it. Runs every 15 minutes after a 60-second warmup.
+    // ── Strava webhook self-registration ──────────────────────
+    // Strava only PUSHES activity events to apps with an active push
+    // subscription. That registration was documented as a manual
+    // one-time step and never run, so nothing ever synced instantly —
+    // members only got data when the 15-min poller happened to run.
+    // Idempotent + self-healing: re-points the subscription if
+    // FRONTEND_URL changes (e.g. the atthepark.world cutover).
+    try {
+      const strava = require('./services/wearables/strava');
+      if (typeof strava.ensureWebhookSubscription === 'function') {
+        const base = (process.env.FRONTEND_URL || '').replace(/\/+$/, '');
+        const callback = `${base}/api/wearables/webhooks/strava`;
+        setTimeout(() => {
+          strava.ensureWebhookSubscription(callback)
+            .then((r) => {
+              if (r.status === 'error') console.error('[strava] webhook subscription FAILED:', r.detail);
+              else console.log(`[strava] webhook subscription ${r.status}`, r.subscription_id || r.detail || '');
+            })
+            .catch((e) => console.error('[strava] webhook subscription threw:', e.message));
+        }, 20 * 1000); // let the service become publicly reachable first
+      }
+    } catch (e) { console.warn('[strava] subscription bootstrap skipped:', e.message); }
+
     const wearablesRouter = require('./routes/wearables');
     if (typeof wearablesRouter.__syncWorker === 'function') {
       const tick = async () => {
