@@ -17,7 +17,20 @@ import { ActivityIndicator, Alert, Image, Platform, Pressable, Share, Text, View
 import { router } from 'expo-router';
 import { Video, ResizeMode } from 'expo-av';
 import * as FileSystem from 'expo-file-system';
-import * as MediaLibrary from 'expo-media-library';
+// Lazily required inside onSavePress — expo-media-library is a NATIVE
+// module, so a statically-imported reference would crash this whole
+// component on any binary built before it was added (e.g. testers still
+// on an older OTA-updated build). Loading it on demand lets the rest of
+// the card work everywhere and degrades Save gracefully.
+type MediaLibraryModule = typeof import('expo-media-library');
+function loadMediaLibrary(): MediaLibraryModule | null {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    return require('expo-media-library') as MediaLibraryModule;
+  } catch {
+    return null;
+  }
+}
 import type { Post } from '@/lib/api/community';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
@@ -102,6 +115,11 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
     if (!mediaUrl || !media0 || saving) return;
     setSaving(true);
     try {
+      const MediaLibrary = loadMediaLibrary();
+      if (!MediaLibrary) {
+        Alert.alert('Update needed', 'Saving to your camera roll arrives in the next app update.');
+        return;
+      }
       // writeOnly — we only ever ADD to the camera roll, never read it.
       const perm = await MediaLibrary.requestPermissionsAsync(true);
       if (!perm.granted) {
