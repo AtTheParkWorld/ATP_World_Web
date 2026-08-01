@@ -7,8 +7,12 @@
     "development": {
       "developmentClient": true,
       "distribution": "internal",
-      "ios":     { "simulator": true },
-      "android": { "buildType": "apk" },
+      "ios": {
+        "simulator": true
+      },
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "SENTRY_DISABLE_AUTO_UPLOAD": "true",
         "SENTRY_ALLOW_FAILURE": "true"
@@ -17,8 +21,12 @@
     "preview": {
       "distribution": "internal",
       "channel": "preview",
-      "ios":     { "simulator": false },
-      "android": { "buildType": "apk" },
+      "ios": {
+        "simulator": false
+      },
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "SENTRY_DISABLE_AUTO_UPLOAD": "true",
         "SENTRY_ALLOW_FAILURE": "true"
@@ -29,6 +37,14 @@
       "autoIncrement": true,
       "env": {
         "SENTRY_ALLOW_FAILURE": "true"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "ascAppId": "6796708497",
+        "appleTeamId": "6UWDRGC9RC"
       }
     }
   }
