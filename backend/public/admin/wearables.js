@@ -128,8 +128,56 @@ function renderWearableProviders(list) {
           '</div>'
         );
       }).join('') +
+    '</div>' +
+    // Strava push-subscription diagnostic. Without an ACTIVE subscription
+    // Strava never notifies us of new activities and members only get
+    // data when the 15-min poller runs — the exact symptom of "Strava
+    // isn't syncing automatically".
+    '<div id="stravaWebhookPanel" style="margin-top:16px;border:1px solid #2a2a2a;border-radius:10px;padding:16px">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px">' +
+        '<div>' +
+          '<div style="font-family:var(--ff-display,sans-serif);font-size:15px;font-weight:800;text-transform:uppercase">Strava live sync (webhook)</div>' +
+          '<div style="font-size:11px;color:#888;margin-top:2px">Active = activities appear within seconds. Inactive = only every 15 min.</div>' +
+        '</div>' +
+        '<div style="display:flex;gap:8px">' +
+          '<button class="admin-btn" onclick="checkStravaWebhook(0)">Check status</button>' +
+          '<button class="admin-btn admin-btn-primary" onclick="checkStravaWebhook(1)">Re-register</button>' +
+        '</div>' +
+      '</div>' +
+      '<div id="stravaWebhookOut" style="margin-top:12px;font-size:12px;color:#666">Click “Check status”.</div>' +
     '</div>';
 }
+
+function checkStravaWebhook(ensure) {
+  var out = document.getElementById('stravaWebhookOut');
+  if (!out) return;
+  out.innerHTML = '<span style="color:#888">Talking to Strava…</span>';
+  fetch(ATP_API + '/wearables/strava-subscription' + (ensure ? '?ensure=1' : ''), {
+    headers: { Authorization: 'Bearer ' + getToken() },
+  })
+    .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, status: r.status, d: d || {} }; }); })
+    .then(function(res){
+      if (!res.ok) {
+        out.innerHTML = '<span style="color:#f87171">HTTP ' + res.status + ' — ' + _escW(res.d.error || 'request failed') + '</span>';
+        return;
+      }
+      var d = res.d;
+      var active = d.active || d.status === 'ok' || d.status === 'created';
+      var colour = active ? '#A8FF00' : '#f87171';
+      var label  = active ? '● LIVE — Strava is pushing activities to us' : '○ NOT ACTIVE — Strava is not notifying us';
+      out.innerHTML =
+        '<div style="color:' + colour + ';font-weight:700;margin-bottom:8px">' + label + '</div>' +
+        (d.status ? '<div style="color:#aaa;margin-bottom:6px">Result: <strong>' + _escW(d.status) + '</strong>' + (d.detail ? ' — ' + _escW(d.detail) : '') + '</div>' : '') +
+        '<div style="color:#666;font-size:11px;word-break:break-all">Expected callback: ' + _escW(d.callback_expected || '—') + '</div>' +
+        '<pre style="margin-top:10px;background:#0f0f0f;border:1px solid #222;border-radius:6px;padding:10px;overflow-x:auto;font-size:11px;color:#9ad">' +
+          _escW(JSON.stringify(d.subscriptions !== undefined ? d.subscriptions : d, null, 2)) +
+        '</pre>';
+    })
+    .catch(function(e){
+      out.innerHTML = '<span style="color:#f87171">Failed: ' + _escW(String(e && e.message || e)) + '</span>';
+    });
+}
+window.checkStravaWebhook = checkStravaWebhook;
 
 // ── Sync log ───────────────────────────────────────────────────
 function loadWearableSyncLog() {
