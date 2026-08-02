@@ -4,9 +4,10 @@
  * engagement metrics per account.
  * ════════════════════════════════════════════════════════════════ */
 
-var CORP_VIEW = 'leads';        // 'leads' | 'accounts' | 'account_detail'
+var CORP_VIEW = 'leads';        // 'leads' | 'accounts' | 'packages' | 'account_detail'
 var CORP_ACTIVE_ID = null;
 var CORP_ACTIVE_ACCOUNT = null; // cached account object when in detail view
+var CORP_PACKAGES = [];         // cached catalogue (admin list, incl. inactive)
 
 function loadCorporateSection() {
   renderCorporateSubtabs();
@@ -16,9 +17,15 @@ function loadCorporateSection() {
 function renderCorporateSubtabs() {
   var host = document.getElementById('corporateSubtabs');
   if (!host) return;
-  host.innerHTML =
-    '<button class="corp-subtab' + (CORP_VIEW === 'leads' ? ' active' : '') + '" data-atp-call="showCorporateTab" data-args=\'["leads"]\' style="padding:7px 14px;font-size:12px;font-weight:700;background:' + (CORP_VIEW === 'leads' ? 'rgba(168,255,0,.12)' : 'transparent') + ';color:' + (CORP_VIEW === 'leads' ? '#A8FF00' : '#888') + ';border:1px solid ' + (CORP_VIEW === 'leads' ? 'rgba(168,255,0,.3)' : '#2a2a2a') + ';border-radius:8px;cursor:pointer">Leads pipeline</button>' +
-    '<button class="corp-subtab' + (CORP_VIEW === 'accounts' ? ' active' : '') + '" data-atp-call="showCorporateTab" data-args=\'["accounts"]\' style="padding:7px 14px;font-size:12px;font-weight:700;background:' + (CORP_VIEW === 'accounts' ? 'rgba(168,255,0,.12)' : 'transparent') + ';color:' + (CORP_VIEW === 'accounts' ? '#A8FF00' : '#888') + ';border:1px solid ' + (CORP_VIEW === 'accounts' ? 'rgba(168,255,0,.3)' : '#2a2a2a') + ';border-radius:8px;cursor:pointer">Active accounts</button>';
+  var tabs = [
+    { v: 'leads',    l: 'Leads pipeline' },
+    { v: 'accounts', l: 'Active accounts' },
+    { v: 'packages', l: '💎 Packages' },
+  ];
+  host.innerHTML = tabs.map(function(t){
+    var on = CORP_VIEW === t.v;
+    return '<button class="corp-subtab' + (on ? ' active' : '') + '" data-atp-call="showCorporateTab" data-args=\'["' + t.v + '"]\' style="padding:7px 14px;font-size:12px;font-weight:700;background:' + (on ? 'rgba(168,255,0,.12)' : 'transparent') + ';color:' + (on ? '#A8FF00' : '#888') + ';border:1px solid ' + (on ? 'rgba(168,255,0,.3)' : '#2a2a2a') + ';border-radius:8px;cursor:pointer">' + t.l + '</button>';
+  }).join('');
 }
 
 function showCorporateTab(tab) {
@@ -26,6 +33,7 @@ function showCorporateTab(tab) {
   renderCorporateSubtabs();
   if (tab === 'leads') loadCorporateLeads();
   else if (tab === 'accounts') loadCorporateAccounts();
+  else if (tab === 'packages') loadCorporatePackages();
   else if (tab === 'account_detail') loadCorporateAccountDetail(CORP_ACTIVE_ID);
 }
 
@@ -182,6 +190,271 @@ function editCorporateLead(e, btn) {
       showToast('✅ Stage updated to ' + stages[idx].l);
       loadCorporateLeads();
     });
+}
+
+/* ── PACKAGES CATALOGUE ────────────────────────────────────────
+ * The sellable corporate catalogue (flat monthly partnership fee).
+ * Prices live in the DB so they can be retuned here without a deploy —
+ * GET /api/corporate/packages feeds the public corporate.html pricing
+ * section, so a save here changes the sales page instantly.
+ * ──────────────────────────────────────────────────────────── */
+function loadCorporatePackages() {
+  var host = document.getElementById('corporateBody');
+  if (!host) return;
+  host.innerHTML = '<div style="padding:30px;color:#555;text-align:center">Loading packages…</div>';
+  fetch(ATP_API + '/corporate/admin/packages', { headers: { Authorization: 'Bearer ' + getToken() } })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      CORP_PACKAGES = (d && d.packages) || [];
+      renderCorporatePackages(CORP_PACKAGES);
+    })
+    .catch(function(){ host.innerHTML = '<div style="padding:30px;color:#f87171;text-align:center">Failed to load packages. Migration run?</div>'; });
+}
+
+function renderCorporatePackages(packages) {
+  var host = document.getElementById('corporateBody');
+  if (!host) return;
+  var active = packages.filter(function(p){ return p.is_active; });
+  var lowest = active.reduce(function(m, p){ return Math.min(m, Number(p.monthly_fee_aed) || 0); }, Infinity);
+  if (!isFinite(lowest)) lowest = 0;
+  var totalSessions = active.reduce(function(s, p){ return s + (Number(p.sessions_per_month) || 0); }, 0);
+
+  var html =
+    '<div style="display:grid;grid-template-columns:repeat(3,1fr) auto;gap:14px;margin-bottom:18px">' +
+      '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:18px"><div style="font-size:10px;color:#888;letter-spacing:.12em;text-transform:uppercase;font-weight:600">Live packages</div><div style="font-family:var(--ff-display,sans-serif);font-size:32px;font-weight:900;color:#fff">' + active.length + ' <span style="font-size:12px;color:#666;font-family:inherit;font-weight:500">/ ' + packages.length + ' total</span></div></div>' +
+      '<div style="background:#0f0f0f;border:1px solid rgba(168,255,0,.32);border-radius:10px;padding:18px"><div style="font-size:10px;color:#A8FF00;letter-spacing:.12em;text-transform:uppercase;font-weight:600">Entry price</div><div style="font-family:var(--ff-display,sans-serif);font-size:32px;font-weight:900;color:#A8FF00">AED ' + lowest.toLocaleString() + '</div></div>' +
+      '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:18px"><div style="font-size:10px;color:#888;letter-spacing:.12em;text-transform:uppercase;font-weight:600">Sessions/mo across tiers</div><div style="font-family:var(--ff-display,sans-serif);font-size:32px;font-weight:900;color:#fff">' + totalSessions + '</div></div>' +
+      '<div style="display:flex;align-items:center;justify-content:center"><button class="admin-btn admin-btn-primary" data-atp-call="newCorporatePackageForm" style="font-size:13px;padding:10px 20px;white-space:nowrap">+ Add package</button></div>' +
+    '</div>' +
+    '<div style="font-size:11px;color:#666;line-height:1.6;margin-bottom:14px">Edit a price and hit <strong style="color:#A8FF00">Save</strong> — the public pricing section on <code style="background:#0a0a0a;padding:2px 6px;border-radius:3px;color:#f5c042">/corporate</code> updates instantly, no deploy needed. Only one package can be <strong style="color:#f5c042">featured</strong>; featuring one un-features the rest.</div>' +
+    '<div id="corpPackageFormWrap"></div>';
+
+  if (!packages.length) {
+    html += '<div style="padding:40px;color:#555;text-align:center;border:1px dashed #2a2a2a;border-radius:10px">No packages yet. Click "+ Add package" to build the catalogue.</div>';
+  } else {
+    html += packages.map(_corpPackageCard).join('');
+  }
+  host.innerHTML = html;
+}
+
+// One editable package card. Price + sessions sit front-and-centre;
+// everything else is one grid below it. Save PATCHes the whole card.
+function _corpPackageCard(p) {
+  var features = Array.isArray(p.features) ? p.features : [];
+  var dim = p.is_active ? '' : 'opacity:.55;';
+  var borderCol = p.is_featured ? 'rgba(245,192,66,.42)' : '#1e1e1e';
+  return '<div id="pkgCard_' + p.id + '" style="background:#0f0f0f;border:1px solid ' + borderCol + ';border-radius:10px;padding:18px;margin-bottom:12px;' + dim + '">' +
+    // Header — name + badges
+    '<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap">' +
+      '<span style="font-family:var(--ff-display,sans-serif);font-size:18px;font-weight:800;color:#fff">' + _esc(p.name) + '</span>' +
+      '<code style="background:#0a0a0a;padding:3px 8px;border-radius:4px;color:#888;font-size:11px">' + _esc(p.slug) + '</code>' +
+      (p.is_featured ? '<span style="font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#f5c042;border:1px solid rgba(245,192,66,.4);padding:2px 7px;border-radius:4px">★ Featured</span>' : '') +
+      (p.is_active ? '' : '<span style="font-size:9px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#666;border:1px solid #2a2a2a;padding:2px 7px;border-radius:4px">Inactive</span>') +
+      '<span id="pkgDirty_' + p.id + '" style="margin-left:auto;font-size:11px;color:#f59e0b;font-weight:700;display:none">● Unsaved changes</span>' +
+    '</div>' +
+    // Money row — the founder's headline controls
+    '<div style="display:grid;grid-template-columns:1.1fr 1.1fr 1fr .7fr;gap:10px;margin-bottom:12px">' +
+      '<div>' +
+        '<label class="admin-form-label" style="color:#A8FF00">Monthly fee (AED)</label>' +
+        '<input class="admin-form-input" type="number" min="0" step="1" id="pkgMonthly_' + p.id + '" value="' + (Number(p.monthly_fee_aed) || 0) + '" oninput="corpPkgDirty(\'' + p.id + '\')" onkeydown="if(event.key===\'Enter\'){saveCorporatePackage(\'' + p.id + '\')}" style="font-size:18px;font-weight:800;color:#A8FF00;border-color:rgba(168,255,0,.28)">' +
+      '</div>' +
+      '<div>' +
+        '<label class="admin-form-label">Annual fee (AED)</label>' +
+        '<input class="admin-form-input" type="number" min="0" step="1" id="pkgAnnual_' + p.id + '" value="' + (p.annual_fee_aed == null ? '' : Number(p.annual_fee_aed)) + '" placeholder="optional" oninput="corpPkgDirty(\'' + p.id + '\')" onkeydown="if(event.key===\'Enter\'){saveCorporatePackage(\'' + p.id + '\')}">' +
+      '</div>' +
+      '<div>' +
+        '<label class="admin-form-label" style="color:#A8FF00">Private sessions / month</label>' +
+        '<input class="admin-form-input" type="number" min="0" step="1" id="pkgSessions_' + p.id + '" value="' + (Number(p.sessions_per_month) || 0) + '" oninput="corpPkgDirty(\'' + p.id + '\')" onkeydown="if(event.key===\'Enter\'){saveCorporatePackage(\'' + p.id + '\')}" style="font-weight:700">' +
+      '</div>' +
+      '<div>' +
+        '<label class="admin-form-label">Sort</label>' +
+        '<input class="admin-form-input" type="number" step="1" id="pkgSort_' + p.id + '" value="' + (Number(p.sort_order) || 0) + '" oninput="corpPkgDirty(\'' + p.id + '\')">' +
+      '</div>' +
+    '</div>' +
+    // Name + tagline
+    '<div style="display:grid;grid-template-columns:1fr 2fr;gap:10px;margin-bottom:12px">' +
+      '<div><label class="admin-form-label">Name</label><input class="admin-form-input" id="pkgName_' + p.id + '" value="' + _esc(p.name) + '" oninput="corpPkgDirty(\'' + p.id + '\')"></div>' +
+      '<div><label class="admin-form-label">Tagline</label><input class="admin-form-input" id="pkgTagline_' + p.id + '" value="' + _esc(p.tagline || '') + '" placeholder="For teams getting started" oninput="corpPkgDirty(\'' + p.id + '\')"></div>' +
+    '</div>' +
+    // Features
+    '<div style="margin-bottom:12px">' +
+      '<label class="admin-form-label">Features — one per line (' + features.length + ')</label>' +
+      '<textarea class="admin-form-input" id="pkgFeatures_' + p.id + '" rows="' + Math.max(4, Math.min(12, features.length + 1)) + '" oninput="corpPkgDirty(\'' + p.id + '\')" style="font-family:var(--ff-body);line-height:1.6;resize:vertical">' + _esc(features.join('\n')) + '</textarea>' +
+    '</div>' +
+    // Flags + actions
+    '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">' +
+      '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#f5c042;cursor:pointer"><input type="checkbox" id="pkgFeatured_' + p.id + '"' + (p.is_featured ? ' checked' : '') + ' onchange="corpFeatureExclusive(\'' + p.id + '\')"> ★ Featured (most popular)</label>' +
+      '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#aaa;cursor:pointer"><input type="checkbox" id="pkgActive_' + p.id + '"' + (p.is_active ? ' checked' : '') + ' onchange="corpPkgDirty(\'' + p.id + '\')"> Active (shown on /corporate)</label>' +
+      '<div style="margin-left:auto;display:flex;gap:8px">' +
+        '<button class="admin-btn admin-btn-primary" id="pkgSave_' + p.id + '" data-atp-call="saveCorporatePackage" data-args=\'["' + p.id + '"]\' style="font-size:12px">Save</button>' +
+        '<button class="admin-btn admin-btn-danger" data-atp-call="deleteCorporatePackage" data-args=\'["' + p.id + '"]\' style="font-size:12px">Delete</button>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+// Visual "you have unsaved edits" cue on a package card.
+function corpPkgDirty(id) {
+  var flag = document.getElementById('pkgDirty_' + id);
+  if (flag) flag.style.display = 'inline';
+  var card = document.getElementById('pkgCard_' + id);
+  if (card) card.style.borderColor = 'rgba(245,158,11,.45)';
+}
+
+// Only one package can carry the "most popular" badge — un-check the
+// others in the DOM the moment one is featured (the save then PATCHes
+// the un-featured ones too, so the DB matches what's on screen).
+function corpFeatureExclusive(id) {
+  var el = document.getElementById('pkgFeatured_' + id);
+  if (el && el.checked) {
+    CORP_PACKAGES.forEach(function(p){
+      if (p.id === id) return;
+      var other = document.getElementById('pkgFeatured_' + p.id);
+      if (other && other.checked) { other.checked = false; corpPkgDirty(p.id); }
+    });
+  }
+  corpPkgDirty(id);
+}
+
+function _corpPatchPackage(id, body) {
+  return fetch(ATP_API + '/corporate/admin/packages/' + id, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
+    body: JSON.stringify(body),
+  }).then(function(r){ return r.json(); });
+}
+
+function saveCorporatePackage(id) {
+  if (!id || typeof id !== 'string') return;
+  var el = function(prefix){ return document.getElementById('pkg' + prefix + '_' + id); };
+  if (!el('Name')) return;
+  var annualRaw = (el('Annual').value || '').trim();
+  var body = {
+    name: el('Name').value.trim(),
+    tagline: el('Tagline').value.trim() || null,
+    monthly_fee_aed: Math.max(0, parseInt(el('Monthly').value, 10) || 0),
+    annual_fee_aed: annualRaw === '' ? null : Math.max(0, parseInt(annualRaw, 10) || 0),
+    sessions_per_month: Math.max(0, parseInt(el('Sessions').value, 10) || 0),
+    sort_order: parseInt(el('Sort').value, 10) || 0,
+    features: (el('Features').value || '').split('\n').map(function(s){ return s.trim(); }).filter(Boolean),
+    is_featured: !!el('Featured').checked,
+    is_active: !!el('Active').checked,
+  };
+  if (!body.name) { showToast('❌ Package name required', true); return; }
+
+  // Featuring this one means un-featuring every other package first.
+  var pre = [];
+  if (body.is_featured) {
+    CORP_PACKAGES.forEach(function(p){
+      if (p.id !== id && p.is_featured) pre.push(_corpPatchPackage(p.id, { is_featured: false }));
+    });
+  }
+  var btn = document.getElementById('pkgSave_' + id);
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+  Promise.all(pre)
+    .then(function(){ return _corpPatchPackage(id, body); })
+    .then(function(res){
+      if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
+      if (res && res.error) { showToast('❌ ' + res.error, true); return; }
+      showToast('✅ ' + body.name + ' saved · AED ' + body.monthly_fee_aed.toLocaleString() + '/mo · ' + body.sessions_per_month + ' session' + (body.sessions_per_month === 1 ? '' : 's') + '/mo');
+      loadCorporatePackages();
+    })
+    .catch(function(err){
+      if (btn) { btn.disabled = false; btn.textContent = 'Save'; }
+      showToast('❌ ' + (err.message || 'Save failed'), true);
+    });
+}
+
+function deleteCorporatePackage(id) {
+  if (!id || typeof id !== 'string') return;
+  var pkg = CORP_PACKAGES.filter(function(p){ return p.id === id; })[0] || {};
+  if (!confirm('Delete the "' + (pkg.name || 'this') + '" package?\n\nIf any corporate account is already on it, it is deactivated instead (hidden from /corporate) so signed clients keep their pricing.')) return;
+  fetch(ATP_API + '/corporate/admin/packages/' + id, {
+    method: 'DELETE',
+    headers: { Authorization: 'Bearer ' + getToken() },
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res.error) { showToast('❌ ' + res.error, true); return; }
+      if (res.deactivated) {
+        showToast('⚠ Not deleted — ' + res.accounts_using + ' account' + (res.accounts_using === 1 ? ' is' : 's are') + ' on this package. Deactivated instead (hidden from /corporate, existing clients keep it).', true);
+        alert('"' + (pkg.name || 'This package') + '" could not be deleted.\n\n' + res.accounts_using + ' corporate account' + (res.accounts_using === 1 ? '' : 's') + ' still reference it, so it was DEACTIVATED instead:\n\n• It disappears from the public /corporate pricing section\n• Accounts already on it keep their price and entitlement\n\nMove those accounts to another package first if you really want it gone.');
+      } else {
+        showToast('✅ Package deleted');
+      }
+      loadCorporatePackages();
+    })
+    .catch(function(err){ showToast('❌ ' + (err.message || 'Delete failed'), true); });
+}
+
+function newCorporatePackageForm() {
+  var wrap = document.getElementById('corpPackageFormWrap');
+  if (!wrap) return;
+  if (wrap.innerHTML) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML =
+    '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:10px;padding:18px;margin-bottom:14px">' +
+      '<div style="font-family:var(--ff-display,sans-serif);font-size:16px;font-weight:800;color:#A8FF00;text-transform:uppercase;margin-bottom:12px">New package</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 2fr;gap:10px;margin-bottom:10px">' +
+        '<div><label class="admin-form-label">Name *</label><input class="admin-form-input" id="newPkgName" placeholder="Champion"></div>' +
+        '<div><label class="admin-form-label">Slug *</label><input class="admin-form-input" id="newPkgSlug" placeholder="champion"></div>' +
+        '<div><label class="admin-form-label">Tagline</label><input class="admin-form-input" id="newPkgTagline" placeholder="Our most popular partnership"></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:10px">' +
+        '<div><label class="admin-form-label" style="color:#A8FF00">Monthly fee (AED) *</label><input class="admin-form-input" type="number" min="0" id="newPkgMonthly" placeholder="6000"></div>' +
+        '<div><label class="admin-form-label">Annual fee (AED)</label><input class="admin-form-input" type="number" min="0" id="newPkgAnnual" placeholder="61200"></div>' +
+        '<div><label class="admin-form-label" style="color:#A8FF00">Sessions / month</label><input class="admin-form-input" type="number" min="0" id="newPkgSessions" placeholder="4"></div>' +
+        '<div><label class="admin-form-label">Sort order</label><input class="admin-form-input" type="number" id="newPkgSort" placeholder="2"></div>' +
+      '</div>' +
+      '<div style="margin-bottom:10px"><label class="admin-form-label">Features — one per line</label><textarea class="admin-form-input" id="newPkgFeatures" rows="5" placeholder="4 private company sessions / month&#10;Unlimited free ATP access for all staff&#10;Monthly participation report" style="line-height:1.6;resize:vertical"></textarea></div>' +
+      '<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">' +
+        '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#f5c042;cursor:pointer"><input type="checkbox" id="newPkgFeatured"> ★ Featured (un-features the current one)</label>' +
+        '<div style="margin-left:auto;display:flex;gap:8px">' +
+          '<button class="admin-btn admin-btn-primary" data-atp-call="saveNewCorporatePackage" style="font-size:12px">Create package</button>' +
+          '<button class="admin-btn" data-atp-call="cancelCorporatePackageForm" style="font-size:12px">Cancel</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+}
+
+function cancelCorporatePackageForm() { var w = document.getElementById('corpPackageFormWrap'); if (w) w.innerHTML = ''; }
+
+function saveNewCorporatePackage() {
+  var name = (document.getElementById('newPkgName').value || '').trim();
+  var slug = (document.getElementById('newPkgSlug').value || '').trim().toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+  if (!name) { showToast('❌ Name required', true); return; }
+  if (!slug) slug = name.toLowerCase().replace(/[^a-z0-9-]+/g, '-');
+  var annualRaw = (document.getElementById('newPkgAnnual').value || '').trim();
+  var featured = !!document.getElementById('newPkgFeatured').checked;
+  var body = {
+    slug: slug,
+    name: name,
+    tagline: (document.getElementById('newPkgTagline').value || '').trim() || null,
+    monthly_fee_aed: Math.max(0, parseInt(document.getElementById('newPkgMonthly').value, 10) || 0),
+    annual_fee_aed: annualRaw === '' ? null : Math.max(0, parseInt(annualRaw, 10) || 0),
+    sessions_per_month: Math.max(0, parseInt(document.getElementById('newPkgSessions').value, 10) || 0),
+    sort_order: parseInt(document.getElementById('newPkgSort').value, 10) || 99,
+    features: (document.getElementById('newPkgFeatures').value || '').split('\n').map(function(s){ return s.trim(); }).filter(Boolean),
+    is_featured: featured,
+  };
+  var pre = [];
+  if (featured) {
+    CORP_PACKAGES.forEach(function(p){ if (p.is_featured) pre.push(_corpPatchPackage(p.id, { is_featured: false })); });
+  }
+  Promise.all(pre)
+    .then(function(){
+      return fetch(ATP_API + '/corporate/admin/packages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
+        body: JSON.stringify(body),
+      }).then(function(r){ return r.json(); });
+    })
+    .then(function(res){
+      if (res.error) { showToast('❌ ' + res.error, true); return; }
+      showToast('✅ ' + name + ' created · AED ' + body.monthly_fee_aed.toLocaleString() + '/mo');
+      cancelCorporatePackageForm();
+      loadCorporatePackages();
+    })
+    .catch(function(err){ showToast('❌ ' + (err.message || 'Create failed'), true); });
 }
 
 // ── CORPORATE ACCOUNTS ─────────────────────────────────────────
@@ -362,19 +635,25 @@ function loadCorporateAccountDetail(id) {
   var host = document.getElementById('corporateBody');
   if (!host) return;
   host.innerHTML = '<div style="padding:30px;color:#555;text-align:center">Loading company detail…</div>';
+  var auth = { headers: { Authorization: 'Bearer ' + getToken() } };
   Promise.all([
-    fetch(ATP_API + '/corporate/admin/accounts/' + id, { headers: { Authorization: 'Bearer ' + getToken() } }).then(function(r){return r.json();}),
-    fetch(ATP_API + '/corporate/admin/accounts/' + id + '/employees', { headers: { Authorization: 'Bearer ' + getToken() } }).then(function(r){return r.json();}),
-    fetch(ATP_API + '/corporate/admin/accounts/' + id + '/engagement', { headers: { Authorization: 'Bearer ' + getToken() } }).then(function(r){return r.json();}),
+    fetch(ATP_API + '/corporate/admin/accounts/' + id, auth).then(function(r){return r.json();}),
+    fetch(ATP_API + '/corporate/admin/accounts/' + id + '/employees', auth).then(function(r){return r.json();}),
+    fetch(ATP_API + '/corporate/admin/accounts/' + id + '/engagement', auth).then(function(r){return r.json();}),
+    // Catalogue + private-session delivery. Both are additive — if either
+    // endpoint isn't deployed yet the rest of the detail view still renders.
+    fetch(ATP_API + '/corporate/admin/packages', auth).then(function(r){return r.json();}).catch(function(){ return {}; }),
+    fetch(ATP_API + '/corporate/admin/accounts/' + id + '/delivery', auth).then(function(r){return r.json();}).catch(function(){ return null; }),
   ]).then(function(out){
     CORP_ACTIVE_ACCOUNT = out[0] && out[0].account;
-    renderCorporateAccountDetail(CORP_ACTIVE_ACCOUNT, (out[1] && out[1].employees) || [], out[2] || {});
+    CORP_PACKAGES = (out[3] && out[3].packages) || [];
+    renderCorporateAccountDetail(CORP_ACTIVE_ACCOUNT, (out[1] && out[1].employees) || [], out[2] || {}, CORP_PACKAGES, out[4]);
   }).catch(function(){
     host.innerHTML = '<div style="padding:30px;color:#f87171;text-align:center">Failed to load. Migration run?</div>';
   });
 }
 
-function renderCorporateAccountDetail(a, employees, engagement) {
+function renderCorporateAccountDetail(a, employees, engagement, packages, delivery) {
   var host = document.getElementById('corporateBody');
   if (!host) return;
   if (!a) { host.innerHTML = '<div style="padding:30px;color:#f87171;text-align:center">Account not found</div>'; return; }
@@ -429,6 +708,8 @@ function renderCorporateAccountDetail(a, employees, engagement) {
       '<div style="background:#0f0f0f;border:1px solid rgba(245,158,11,.32);border-radius:8px;padding:14px"><div style="font-size:9px;color:#f59e0b;letter-spacing:.12em;text-transform:uppercase;font-weight:600">Inactive (>30d)</div><div style="font-family:var(--ff-display,sans-serif);font-size:26px;font-weight:900;color:#f59e0b">' + inactive30 + '</div></div>' +
       '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:8px;padding:14px"><div style="font-size:9px;color:#888;letter-spacing:.12em;text-transform:uppercase;font-weight:600">AED MRR</div><div style="font-family:var(--ff-display,sans-serif);font-size:26px;font-weight:900;color:#fff">' + (a.monthly_fee_aed || 0).toLocaleString() + '</div></div>' +
     '</div>' +
+    // Package assignment + private-session delivery counter
+    _corpPackagePanel(a, packages || [], delivery) +
     // Add employee form (collapsed)
     '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">' +
       '<div style="font-family:var(--ff-display,sans-serif);font-size:18px;font-weight:800;color:#fff">Employees (' + employees.length + ')</div>' +
@@ -478,6 +759,139 @@ function renderCorporateAccountDetail(a, employees, engagement) {
     );
 
   host.innerHTML = html;
+}
+
+/* ── PACKAGE + DELIVERY PANEL (account detail) ─────────────────
+ * Left: which package this client is on (and their session
+ * entitlement). Right: "X of Y private sessions delivered this month"
+ * — what gets invoiced against, and what HR asks about.
+ * ──────────────────────────────────────────────────────────── */
+function _corpPackagePanel(a, packages, delivery) {
+  var current = packages.filter(function(p){ return p.id === a.package_id; })[0] || null;
+  var options = '<option value="">— No package —</option>' + packages.map(function(p){
+    return '<option value="' + p.id + '"' + (p.id === a.package_id ? ' selected' : '') + '>' +
+      _esc(p.name) + ' — AED ' + (Number(p.monthly_fee_aed) || 0).toLocaleString() + '/mo · ' +
+      (Number(p.sessions_per_month) || 0) + ' session' + ((Number(p.sessions_per_month) || 0) === 1 ? '' : 's') + '/mo' +
+      (p.is_active ? '' : ' (inactive)') + '</option>';
+  }).join('');
+  var entitlement = a.sessions_per_month != null ? Number(a.sessions_per_month) : (current ? Number(current.sessions_per_month) || 0 : 0);
+
+  return '<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">' +
+    // ── Package assignment ──
+    '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:16px">' +
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">' +
+        '<span style="font-size:10px;color:#888;letter-spacing:.12em;text-transform:uppercase;font-weight:700">Package</span>' +
+        (current
+          ? '<span style="font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#A8FF00;border:1px solid rgba(168,255,0,.35);padding:2px 7px;border-radius:4px">' + _esc(current.name) + '</span>'
+          : '<span style="font-size:10px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#f59e0b;border:1px solid rgba(245,158,11,.35);padding:2px 7px;border-radius:4px">Unassigned</span>') +
+        '<button class="admin-btn" data-atp-call="showCorporateTab" data-args=\'["packages"]\' style="margin-left:auto;font-size:10px;padding:4px 9px">Edit catalogue →</button>' +
+      '</div>' +
+      (packages.length
+        ? '<div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">' +
+            '<div><label class="admin-form-label">Package</label><select class="admin-form-select" id="accPkgSelect" onchange="corpAccountPackageChanged()">' + options + '</select></div>' +
+            '<div><label class="admin-form-label">Sessions / month</label><input class="admin-form-input" type="number" min="0" id="accPkgSessions" value="' + entitlement + '"></div>' +
+          '</div>' +
+          '<label style="display:flex;align-items:center;gap:6px;font-size:11px;color:#aaa;cursor:pointer;margin-bottom:10px"><input type="checkbox" id="accPkgSyncFee" checked> Also set this account\'s monthly fee to the package price</label>' +
+          '<button class="admin-btn admin-btn-primary" data-atp-call="saveCorporateAccountPackage" data-args=\'["' + a.id + '"]\' style="font-size:12px">Save package</button>'
+        : '<div style="font-size:12px;color:#666;line-height:1.6">No packages in the catalogue yet — build one in the <strong style="color:#A8FF00">Packages</strong> tab first.</div>') +
+    '</div>' +
+    // ── Delivery counter ──
+    _corpDeliveryWidget(delivery, entitlement) +
+  '</div>';
+}
+
+// "3 of 4 private sessions delivered this month" + a lime-on-black bar.
+// Solid lime = already delivered, translucent lime = still scheduled.
+function _corpDeliveryWidget(d, fallbackEntitled) {
+  if (!d || d.error) {
+    return '<div style="background:#0f0f0f;border:1px solid #1e1e1e;border-radius:10px;padding:16px">' +
+      '<div style="font-size:10px;color:#888;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:10px">Private sessions this month</div>' +
+      '<div style="font-size:12px;color:#666;line-height:1.6">Delivery data unavailable.</div></div>';
+  }
+  var delivered = Number(d.delivered) || 0;
+  var scheduled = Number(d.scheduled) || 0;
+  var entitled  = Number(d.entitled) || Number(fallbackEntitled) || 0;
+  var pct       = entitled ? Math.min(100, Math.round(100 * delivered / entitled)) : (delivered ? 100 : 0);
+  var schedPct  = entitled ? Math.min(100 - pct, Math.round(100 * scheduled / entitled)) : 0;
+  var monthLabel = d.month
+    ? new Date(d.month).toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+    : new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+  var behind = entitled && (delivered + scheduled) < entitled;
+  var accent = !entitled ? '#666' : (delivered >= entitled ? '#A8FF00' : (behind ? '#f59e0b' : '#A8FF00'));
+
+  return '<div style="background:#0f0f0f;border:1px solid ' + (behind ? 'rgba(245,158,11,.32)' : 'rgba(168,255,0,.32)') + ';border-radius:10px;padding:16px">' +
+    '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">' +
+      '<span style="font-size:10px;color:#888;letter-spacing:.12em;text-transform:uppercase;font-weight:700">Private sessions this month</span>' +
+      '<span style="margin-left:auto;font-size:10px;color:#666">' + monthLabel + '</span>' +
+    '</div>' +
+    '<div style="font-family:var(--ff-display,sans-serif);font-size:26px;font-weight:900;color:' + accent + ';line-height:1.1;margin-bottom:4px">' +
+      delivered + ' of ' + (entitled || '—') +
+      '<span style="font-size:12px;color:#888;font-weight:500;font-family:inherit"> delivered</span>' +
+    '</div>' +
+    '<div style="font-size:11px;color:#888;margin-bottom:10px">' +
+      (scheduled ? '<strong style="color:#A8FF00">' + scheduled + '</strong> more scheduled' : 'Nothing else on the calendar') +
+      (entitled ? ' · ' + Math.max(0, entitled - delivered - scheduled) + ' still to book' : ' · no package entitlement set') +
+    '</div>' +
+    // Progress bar — brand lime on black
+    '<div style="height:10px;border-radius:99px;background:#000;border:1px solid #1e1e1e;overflow:hidden;display:flex">' +
+      '<div style="width:' + pct + '%;background:#A8FF00"></div>' +
+      '<div style="width:' + schedPct + '%;background:rgba(168,255,0,.32)"></div>' +
+    '</div>' +
+    (entitled && delivered > entitled
+      ? '<div style="font-size:11px;color:#A8FF00;margin-top:8px;font-weight:600">✓ Over-delivered by ' + (delivered - entitled) + '</div>'
+      : (behind ? '<div style="font-size:11px;color:#f59e0b;margin-top:8px;font-weight:600">⚠ ' + (entitled - delivered - scheduled) + ' session' + ((entitled - delivered - scheduled) === 1 ? '' : 's') + ' unbooked this month</div>' : '')) +
+  '</div>';
+}
+
+// Picking a package pre-fills the entitlement with that package's
+// sessions/month (still editable — some clients negotiate extras).
+function corpAccountPackageChanged() {
+  var sel = document.getElementById('accPkgSelect');
+  var sessions = document.getElementById('accPkgSessions');
+  if (!sel || !sessions) return;
+  var pkg = CORP_PACKAGES.filter(function(p){ return p.id === sel.value; })[0];
+  sessions.value = pkg ? (Number(pkg.sessions_per_month) || 0) : 0;
+}
+
+function saveCorporateAccountPackage(id) {
+  if (!id || typeof id !== 'string') return;
+  var sel = document.getElementById('accPkgSelect');
+  if (!sel) return;
+  var pkgId = sel.value || null;
+  var pkg = CORP_PACKAGES.filter(function(p){ return p.id === pkgId; })[0] || null;
+  var body = {
+    package_id: pkgId,
+    sessions_per_month: Math.max(0, parseInt((document.getElementById('accPkgSessions') || {}).value, 10) || 0),
+  };
+  var sync = document.getElementById('accPkgSyncFee');
+  if (sync && sync.checked && pkg) body.monthly_fee_aed = Number(pkg.monthly_fee_aed) || 0;
+
+  fetch(ATP_API + '/corporate/admin/accounts/' + id, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + getToken() },
+    body: JSON.stringify(body),
+  })
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      if (res.error) {
+        // The account PATCH allowlist may not include package_id yet —
+        // say so plainly instead of echoing "no fields to update".
+        if (/no fields to update/i.test(res.error)) {
+          showToast('⚠ API ignored package_id — add package_id + sessions_per_month to the PATCH /admin/accounts/:id allowlist', true);
+        } else {
+          showToast('❌ ' + res.error, true);
+        }
+        return;
+      }
+      var acc = res.account || {};
+      if ((acc.package_id || null) !== (pkgId || null)) {
+        showToast('⚠ Saved, but package_id was dropped by the API — its allowlist needs package_id + sessions_per_month', true);
+      } else {
+        showToast('✅ ' + (pkg ? pkg.name + ' assigned · ' + body.sessions_per_month + ' session' + (body.sessions_per_month === 1 ? '' : 's') + '/mo' : 'Package cleared'));
+      }
+      loadCorporateAccountDetail(id);
+    })
+    .catch(function(err){ showToast('❌ ' + (err.message || 'Save failed'), true); });
 }
 
 function newCorpEmployeeForm() {

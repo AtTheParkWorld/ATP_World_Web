@@ -117,6 +117,9 @@ router.get('/', optionalAuth, async (req, res, next) => {
                 s.session_category, s.sport_type, s.courts, s.cancellation_reason,
                 s.city_id, s.coach_id, s.activity_id, s.tribe_id, s.intro_video_url,
                 s.sponsor_name, s.sponsor_logo_url, s.sponsor_url,
+                s.is_corporate_only, s.corporate_account_id,
+                ca.company_name AS corporate_company_name,
+                ca.logo_url     AS corporate_logo_url,
                 t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
                 a.name AS activity_name, a.slug AS activity_slug, a.icon AS activity_icon,
                 c.name AS city_name,
@@ -131,6 +134,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
          LEFT JOIN activities a ON a.id = s.activity_id
          LEFT JOIN cities c ON c.id = s.city_id
          LEFT JOIN members m ON m.id = s.coach_id
+         LEFT JOIN corporate_accounts ca ON ca.id = s.corporate_account_id
          WHERE ${where.join(' AND ')}
          ORDER BY s.scheduled_at ASC
          LIMIT $${idx} OFFSET $${idx + 1}`,

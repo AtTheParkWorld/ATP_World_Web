@@ -231,6 +231,32 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 @keyframes scLivePulse{0%{box-shadow:0 0 0 0 rgba(239,68,68,.7)}70%{box-shadow:0 0 0 8px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}
 .session-card.is-live::before{opacity:.6;box-shadow:0 0 24px rgba(239,68,68,.5)}
 
+/* ── PRIVATE COMPANY SESSION ──────────────────────────────────────
+   Sessions a company buys for its own staff. The API only ever returns
+   these rows to that company's active employees, so the badge is a
+   perk marker ("this one's yours"), never a lock-out. Gold #f5c042 —
+   the premium accent already used for paid pills, 1-on-1s and gifts —
+   keeps it clearly distinct from the lime tribe language. */
+.sc-corp{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  padding:2px 8px;border-radius:99px;vertical-align:middle;
+  background:rgba(245,192,66,.12);color:#f5c042;border:1px solid rgba(245,192,66,.32);
+  max-width:100%;min-width:0;
+}
+.sc-corp svg{flex-shrink:0}
+.sc-corp-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+/* On the card the badge owns its own line between the tribe label and
+   the session name — inline with the tribe it got crushed at 2-up grid
+   widths and pushed the tribe label onto two lines. */
+.sc-corp-row{display:flex;min-width:0}
+.sc-corp--modal{font-size:10px;padding:3px 10px;margin-left:8px}
+/* Whole card gets a quiet gold edge so the perk reads before you look
+   at the badge. Deliberately faint — the tribe rail stays the loudest
+   accent on the card. */
+.session-card.is-corporate{border-color:rgba(245,192,66,.20)}
+.session-card.is-corporate:hover{border-color:rgba(245,192,66,.42)}
+
 /* Tilt: vanilla JS sets --rx / --ry CSS vars on hover */
 .session-card[data-tilt]{transform:perspective(1100px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))}
 @media (hover:none) and (pointer:coarse){
@@ -518,6 +544,14 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 .cal-session-dot:not(.better):not(.faster):not(.stronger){
   background:linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
   color:#ddd;border:1px solid rgba(255,255,255,.10);
+}
+/* Private company sessions read gold in the calendar so a member spots
+   their company's own dates instantly. Doubled selector so it also wins
+   over the 4-class :not() fallback above. */
+.cal-session-dot.is-corporate,
+.cal-session-dot.is-corporate:not(.better):not(.faster):not(.stronger){
+  background:linear-gradient(135deg, rgba(245,192,66,.20), rgba(245,192,66,.06));
+  color:#f5c042;border:1px solid rgba(245,192,66,.30);
 }
 
 .cal-more{
@@ -1024,7 +1058,10 @@ function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId)
   var sessionType = (sFull && sFull.session_type) || 'free';
 
   activeSession = { id:sessionId, name:name, tribe:tribe, dayTime:dayTime, coach:coach, loc:loc, desc:desc, day:day, time:time, session_type: sessionType };
-  document.getElementById('modalTribe').textContent = (tribe || 'ATP').toUpperCase() + ' TRIBE';
+  // innerHTML (not textContent) so the private-company badge can sit
+  // next to the tribe label. Both halves are escaped.
+  document.getElementById('modalTribe').innerHTML =
+    escapeHtml((tribe || 'ATP').toUpperCase() + ' TRIBE') + _corpBadgeHtml(sFull, 'modal');
   document.getElementById('modalName').textContent = name;
   var whenLabel = _formatBookingWhen(sFull, dayTime);
   // Single tighter block: when / where / coach on one line with bullet
@@ -1742,11 +1779,16 @@ function renderCalendar() {
     var safeNm = nm.replace(/"/g,'&quot;');
     var safeLoc = loc.replace(/"/g,'&quot;');
     var safeCoach = String(coach).replace(/"/g,'&quot;');
+    // Private company sessions go gold in the calendar; the expanded
+    // popover row also names the company on its own line.
+    var corpCls   = s.is_corporate_only ? ' is-corporate' : '';
+    var corpBadge = expanded ? _corpBadgeHtml(s, 'popover') : '';
     var label = expanded
       ? escapeHtml(time + ' · ' + nm)
         + '<span class="cps-meta">' + escapeHtml(coach) + (loc ? ' · ' + escapeHtml(loc) : '') + '</span>'
+        + corpBadge
       : escapeHtml(time + ' ' + nm);
-    return '<div class="cal-session-dot '+tribe+'" '
+    return '<div class="cal-session-dot '+tribe+corpCls+'" '
       + 'data-id="'+String(s.id).replace(/"/g,'&quot;')+'" '
       + 'data-name="'+safeNm+'" '
       + 'data-tribe="'+tribe+'" '
@@ -1946,6 +1988,31 @@ function _sponsorStripHtml(s, variant) {
          inner + '</div>';
 }
 
+// Private company session badge — gold pill + padlock, rendered wherever
+// a session chip appears (card, calendar popover row, booking modal).
+// GET /api/sessions only returns is_corporate_only rows to that
+// company's own active employees, so this is purely presentational:
+// if you can see it, it's yours. variant: 'card' | 'popover' | 'modal'.
+function _corpBadgeHtml(s, variant) {
+  if (!s || !s.is_corporate_only) return '';
+  var named = String(s.corporate_company_name || '').trim();
+  var name  = named || 'Private session';
+  var px    = (variant === 'modal') ? 11 : 10;
+  var lock = '<svg width="' + px + '" height="' + px + '" viewBox="0 0 24 24" fill="none" '
+    + 'stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" '
+    + 'aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect>'
+    + '<path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>';
+  var cls = 'sc-corp' + (variant === 'modal' ? ' sc-corp--modal' : '');
+  var title = named
+    ? 'Private session for ' + named + ' — you’re seeing this because you’re on their team.'
+    : 'A private company session — you’re seeing this because you’re on the team.';
+  var pill = '<span class="' + cls + '" title="' + escapeHtml(title) + '">'
+    + lock + '<span class="sc-corp-name">' + escapeHtml(name) + '</span></span>';
+  // Card + popover give the pill its own line so long company names get
+  // an ellipsis instead of crushing the label beside them.
+  return (variant === 'modal') ? pill : '<div class="sc-corp-row">' + pill + '</div>';
+}
+
 function renderSessionsGrid(sessions) {
   var grid = document.getElementById('sessionsGrid');
   if (!grid) return;
@@ -2007,8 +2074,11 @@ function renderSessionsGrid(sessions) {
       ? '<span class="sc-live-badge" title="This session is live now"><span class="sc-live-dot"></span>LIVE</span>'
       : '';
 
+    // Private company session — gold badge + quiet gold card edge.
+    var corpBadge = _corpBadgeHtml(s, 'card');
+
     var article = document.createElement('article');
-    article.className = 'session-card reveal visible' + (isLive ? ' is-live' : '');
+    article.className = 'session-card reveal visible' + (isLive ? ' is-live' : '') + (s.is_corporate_only ? ' is-corporate' : '');
     article.setAttribute('data-tribe', tribe);
     // Stable tribe_id so the tribe filter keeps working even if admin
     // renames a tribe in CMS (which changes the slug).
@@ -2037,6 +2107,7 @@ function renderSessionsGrid(sessions) {
       '</div>' +
       '<div class="sc-mid">' +
         '<div class="sc-tribe">' + escapeHtml(tribeLabel) + liveBadge + '</div>' +
+        corpBadge +
         '<h3 class="sc-name">' + escapeHtml(s.name) + '</h3>' +
         '<p class="sc-loc">' + escapeHtml(loc) + escapeHtml(cityTag) + '</p>' +
       '</div>' +

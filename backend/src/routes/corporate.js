@@ -272,6 +272,257 @@ router.patch('/admin/leads/:id', authenticate, requireAdmin, async (req, res, ne
   } catch (err) { next(err); }
 });
 
+// ══════════════════════════════════════════════════════════════
+// PACKAGES — the sellable catalogue (2026-08 pricing model)
+// ══════════════════════════════════════════════════════════════
+// Pricing moved from per-employee to a FLAT monthly partnership fee.
+// Rationale: ATP sessions are free to everyone, so charging per head
+// for "access" was unsellable ("why pay for what's free?"). Companies
+// now pay for what's genuinely scarce — private sessions dedicated to
+// their staff, participation reporting, and brand association.
+//
+// Prices live in the DB (not hardcoded) so the founder can retune them
+// from the admin panel without a deploy; corporate.html renders from
+// GET /api/corporate/packages.
+let _pkgReady = false;
+async function _ensurePackages() {
+  if (_pkgReady) return;
+  await query(`CREATE TABLE IF NOT EXISTS corporate_packages (
+    id                  UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    slug                VARCHAR(60) UNIQUE NOT NULL,
+    name                VARCHAR(80) NOT NULL,
+    tagline             VARCHAR(200),
+    monthly_fee_aed     INT NOT NULL DEFAULT 0,
+    annual_fee_aed      INT,
+    sessions_per_month  INT NOT NULL DEFAULT 0,
+    features            JSONB NOT NULL DEFAULT '[]'::jsonb,
+    is_featured         BOOLEAN NOT NULL DEFAULT false,
+    is_active           BOOLEAN NOT NULL DEFAULT true,
+    sort_order          INT NOT NULL DEFAULT 0,
+    created_at          TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`);
+  // Link an account to its package + snapshot the entitlement, so
+  // changing catalogue pricing never silently re-prices signed clients.
+  await query(`ALTER TABLE corporate_accounts
+                 ADD COLUMN IF NOT EXISTS package_id UUID REFERENCES corporate_packages(id)`);
+  await query(`ALTER TABLE corporate_accounts
+                 ADD COLUMN IF NOT EXISTS sessions_per_month INT NOT NULL DEFAULT 0`);
+  // Seed the three starting packages once (founder edits from admin).
+  const { rows } = await query('SELECT COUNT(*)::int AS n FROM corporate_packages');
+  if (!rows[0].n) {
+    await query(
+      `INSERT INTO corporate_packages
+         (slug, name, tagline, monthly_fee_aed, annual_fee_aed, sessions_per_month, features, is_featured, sort_order)
+       VALUES
+         ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9),
+         ($10,$11,$12,$13,$14,$15,$16::jsonb,$17,$18),
+         ($19,$20,$21,$22,$23,$24,$25::jsonb,$26,$27)`,
+      [
+        'partner', 'Partner', 'For teams getting started', 2500, 25500, 1,
+        JSON.stringify([
+          '1 private company session / month',
+          'Unlimited free ATP access for all staff',
+          'Monthly participation report',
+          'Company leaderboard',
+          'WhatsApp account contact',
+        ]), false, 1,
+
+        'champion', 'Champion', 'Our most popular partnership', 6000, 61200, 4,
+        JSON.stringify([
+          '4 private company sessions / month',
+          'Unlimited free ATP access for all staff',
+          'Monthly participation report',
+          'Company leaderboard',
+          '"Powered by you" on public ATP sessions',
+          'Co-branded launch campaign + photo content',
+          'Quarterly review with the founder',
+        ]), true, 2,
+
+        'founding-partner', 'Founding Partner', 'Multi-city, maximum visibility', 12000, 122400, 8,
+        JSON.stringify([
+          '8 private company sessions / month',
+          'Unlimited free ATP access for all staff',
+          'Monthly participation report',
+          'Company leaderboard',
+          'Premium "Powered by you" placement',
+          'Co-branded launch campaign + photo content',
+          'Quarterly review with the founder',
+          'Annual company field day',
+          'Multi-city coverage',
+        ]), false, 3,
+      ]
+    );
+  }
+  _pkgReady = true;
+}
+
+// ── GET /api/corporate/packages (public) ──────────────────────
+// Feeds the pricing section on corporate.html — edit prices in admin,
+// the sales page updates instantly.
+router.get('/packages', async (req, res, next) => {
+  try {
+    await _ensurePackages();
+    const { rows } = await query(
+      `SELECT id, slug, name, tagline, monthly_fee_aed, annual_fee_aed,
+              sessions_per_month, features, is_featured, sort_order
+         FROM corporate_packages
+        WHERE is_active = true
+        ORDER BY sort_order ASC, monthly_fee_aed ASC`
+    );
+    res.json({ packages: rows });
+  } catch (err) { next(err); }
+});
+
+// ── Admin: list ALL packages (incl. inactive) ─────────────────
+router.get('/admin/packages', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    await _ensurePackages();
+    const { rows } = await query(
+      `SELECT * FROM corporate_packages ORDER BY sort_order ASC, monthly_fee_aed ASC`
+    );
+    res.json({ packages: rows });
+  } catch (err) { next(err); }
+});
+
+// ── Admin: update a package (price, sessions, features…) ──────
+router.patch('/admin/packages/:id', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    await _ensurePackages();
+    const allowed = ['name', 'tagline', 'monthly_fee_aed', 'annual_fee_aed',
+                     'sessions_per_month', 'features', 'is_featured', 'is_active', 'sort_order'];
+    const sets = [];
+    const params = [];
+    let i = 1;
+    for (const k of allowed) {
+      if (!(k in req.body)) continue;
+      let v = req.body[k];
+      if (k === 'features') {
+        if (!Array.isArray(v)) return res.status(400).json({ error: 'features must be an array of strings' });
+        sets.push(`features = $${i++}::jsonb`); params.push(JSON.stringify(v.map(String)));
+        continue;
+      }
+      if (['monthly_fee_aed', 'annual_fee_aed', 'sessions_per_month', 'sort_order'].includes(k)) {
+        if (v !== null && (isNaN(Number(v)) || Number(v) < 0)) {
+          return res.status(400).json({ error: `${k} must be a non-negative number` });
+        }
+        v = v === null ? null : Math.round(Number(v));
+      }
+      sets.push(`${k} = $${i++}`); params.push(v);
+    }
+    if (!sets.length) return res.status(400).json({ error: 'Nothing to update' });
+    sets.push('updated_at = NOW()');
+    params.push(req.params.id);
+    const { rows } = await query(
+      `UPDATE corporate_packages SET ${sets.join(', ')} WHERE id = $${i} RETURNING *`,
+      params
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Package not found' });
+    res.json({ package: rows[0] });
+  } catch (err) { next(err); }
+});
+
+// ── Admin: create a package ───────────────────────────────────
+router.post('/admin/packages', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    await _ensurePackages();
+    const { slug, name } = req.body;
+    if (!slug || !name) return res.status(400).json({ error: 'slug and name are required' });
+    const { rows } = await query(
+      `INSERT INTO corporate_packages
+         (slug, name, tagline, monthly_fee_aed, annual_fee_aed, sessions_per_month, features, is_featured, sort_order)
+       VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8,$9) RETURNING *`,
+      [
+        String(slug).toLowerCase().replace(/[^a-z0-9-]/g, '-'),
+        name,
+        req.body.tagline || null,
+        Math.max(0, Math.round(Number(req.body.monthly_fee_aed) || 0)),
+        req.body.annual_fee_aed == null ? null : Math.max(0, Math.round(Number(req.body.annual_fee_aed))),
+        Math.max(0, Math.round(Number(req.body.sessions_per_month) || 0)),
+        JSON.stringify(Array.isArray(req.body.features) ? req.body.features.map(String) : []),
+        !!req.body.is_featured,
+        Math.round(Number(req.body.sort_order) || 99),
+      ]
+    );
+    res.status(201).json({ package: rows[0] });
+  } catch (err) {
+    if (err.code === '23505') return res.status(409).json({ error: 'A package with that slug already exists' });
+    next(err);
+  }
+});
+
+// ── Admin: delete a package ───────────────────────────────────
+router.delete('/admin/packages/:id', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    await _ensurePackages();
+    const { rows } = await query(
+      'SELECT COUNT(*)::int AS n FROM corporate_accounts WHERE package_id = $1', [req.params.id]
+    );
+    if (rows[0].n) {
+      // Never orphan a signed client's pricing — deactivate instead.
+      await query('UPDATE corporate_packages SET is_active=false, updated_at=NOW() WHERE id=$1', [req.params.id]);
+      return res.json({ deactivated: true, accounts_using: rows[0].n });
+    }
+    await query('DELETE FROM corporate_packages WHERE id = $1', [req.params.id]);
+    res.json({ deleted: true });
+  } catch (err) { next(err); }
+});
+
+// ── Private-session delivery counter ──────────────────────────
+// "3 of 4 delivered this month" — what the founder invoices against
+// and what HR wants to see. Counts corporate-only sessions belonging
+// to the account within the given month.
+async function _sessionDelivery(accountId, monthStart) {
+  const start = monthStart || new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+  try {
+    const { rows } = await query(
+      `SELECT
+         COUNT(*) FILTER (WHERE s.scheduled_at < NOW())  AS delivered,
+         COUNT(*) FILTER (WHERE s.scheduled_at >= NOW()) AS scheduled
+       FROM sessions s
+       WHERE COALESCE(s.is_corporate_only,false) = true
+         AND s.corporate_account_id = $1
+         AND s.status <> 'cancelled'
+         AND s.scheduled_at >= $2
+         AND s.scheduled_at <  ($2::timestamptz + INTERVAL '1 month')`,
+      [accountId, start]
+    );
+    const { rows: ent } = await query(
+      `SELECT COALESCE(a.sessions_per_month, p.sessions_per_month, 0) AS entitled
+         FROM corporate_accounts a
+         LEFT JOIN corporate_packages p ON p.id = a.package_id
+        WHERE a.id = $1`,
+      [accountId]
+    );
+    return {
+      month: start,
+      delivered: Number(rows[0].delivered) || 0,
+      scheduled: Number(rows[0].scheduled) || 0,
+      entitled: Number((ent[0] || {}).entitled) || 0,
+    };
+  } catch (e) {
+    if (e.code === '42P01' || e.code === '42703') return { delivered: 0, scheduled: 0, entitled: 0 };
+    throw e;
+  }
+}
+
+// ── GET /api/corporate/admin/accounts/:id/delivery ────────────
+router.get('/admin/accounts/:id/delivery', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    await _ensurePackages();
+    res.json(await _sessionDelivery(req.params.id));
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/corporate/company/:id/delivery (company admin) ───
+// Same numbers, for the company's own dashboard.
+router.get('/company/:id/delivery', authenticate, _requireCompanyAdminFor, async (req, res, next) => {
+  try {
+    await _ensurePackages();
+    res.json(await _sessionDelivery(req.params.id));
+  } catch (err) { next(err); }
+});
+
 // CORPORATE ACCOUNTS
 router.get('/admin/accounts', authenticate, requireAdmin, async (req, res, next) => {
   try {
@@ -330,7 +581,8 @@ router.patch('/admin/accounts/:id', authenticate, requireAdmin, async (req, res,
   try {
     const allowed = ['company_name','industry','contact_name','contact_email','contact_phone',
                      'billing_address','trade_license_number','employee_cap','monthly_fee_aed',
-                     'per_employee_aed','start_date','end_date','status','notes','logo_url'];
+                     'per_employee_aed','start_date','end_date','status','notes','logo_url',
+                     'package_id','sessions_per_month'];
     const sets = []; const params = [];
     for (const k of allowed) {
       if (k in (req.body || {})) { params.push(req.body[k]); sets.push(`${k} = $${params.length}`); }

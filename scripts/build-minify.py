@@ -132,6 +132,8 @@ def main() -> None:
         'admin/wearables.min.js',
         'admin/founder.min.js',
         'admin/surveys.min.js',
+        'admin/appeals.min.js',
+        'admin/coachPayouts.min.js',
         'admin/corporate.min.js',
         'admin/init.min.js',          # last so its hook into showAdminSection wraps everything else
     ]
