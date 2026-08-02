@@ -47,6 +47,12 @@ export function DeviceWeekCard() {
   const active = (q.data.connections || []).filter((c) => c.status === 'active');
   const enabledProviders = (q.data.available || []).filter((p) => p.enabled);
 
+  // Device sync is off server-side (2026-08: Strava's API became
+  // subscriber-only). With nothing connectable and nothing connected,
+  // hide the card entirely rather than occupying prime Home real estate
+  // with a row of dead "coming soon" chips.
+  if (!enabledProviders.length && !active.length) return null;
+
   const connect = async (provider: string) => {
     try {
       setConnecting(provider);

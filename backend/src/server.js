@@ -895,7 +895,11 @@ if (require.main === module) {
     // FRONTEND_URL changes (e.g. the atthepark.world cutover).
     try {
       const strava = require('./services/wearables/strava');
-      if (typeof strava.ensureWebhookSubscription === 'function') {
+      // Skipped while device sync is off (WEARABLES_ENABLED != true) —
+      // Strava's API is subscriber-only and returns 403 Application
+      // Inactive, so there's nothing to register.
+      const wearablesOn = String(process.env.WEARABLES_ENABLED || '').toLowerCase() === 'true';
+      if (wearablesOn && typeof strava.ensureWebhookSubscription === 'function') {
         const base = (process.env.FRONTEND_URL || '').replace(/\/+$/, '');
         const callback = `${base}/api/wearables/webhooks/strava`;
         setTimeout(() => {

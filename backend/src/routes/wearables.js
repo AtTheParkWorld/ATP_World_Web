@@ -41,6 +41,11 @@ const challengeProgress = require('../services/challengeProgress');
 const wcrypt = require('../services/wearableCrypto');
 const wearableDedup = require('../services/wearableDedup');
 
+// Device sync master switch — see GET /providers for the full rationale.
+// Default OFF: Strava's API became paid-subscriber-only, so connecting
+// would fail for every member. Set WEARABLES_ENABLED=true to restore.
+const WEARABLES_ENABLED = String(process.env.WEARABLES_ENABLED || '').toLowerCase() === 'true';
+
 function _publicBaseUrl(req) {
   // Honour Render's forwarded proto/host so OAuth redirects don't break
   // behind the proxy. FRONTEND_URL takes precedence when set.
@@ -218,6 +223,9 @@ async function _syncOne(conn, opts = {}) {
 
 // Expose _syncOne and a "sync all due connections" helper to the worker.
 async function _syncAllDue(maxAgeMin = 60) {
+  // Feature off → don't poll. Every provider call would 403 anyway and
+  // we'd just fill the sync log with noise every 15 minutes.
+  if (!WEARABLES_ENABLED) return { connections: 0, workouts: 0, metrics: 0, skipped: 'wearables_disabled' };
   const { rows } = await query(
     `SELECT * FROM wearable_connections
       WHERE status = 'active'
@@ -252,10 +260,17 @@ router.get('/providers', (req, res) => {
     // Whether Strava will actually PUSH events to us — populated by
     // GET /api/wearables/strava-subscription (kept out of this public
     // response since it costs a Strava API round-trip).
+    // Master switch. Strava made API access a paid-subscriber feature
+    // (2026-08) and ATP's app is Inactive as a result, so device sync
+    // ships OFF: every provider reports disabled and the clients render
+    // a clean "coming soon" instead of a connect button that 403s.
+    // Flip WEARABLES_ENABLED=true (with a Strava subscription in place)
+    // to bring the whole feature back — no code change needed.
+    wearables_enabled: WEARABLES_ENABLED,
     providers: providers.list().map(p => ({
       name: p.name,
       displayName: p.displayName,
-      enabled: typeof p.enabled === 'function' ? p.enabled() : false,
+      enabled: WEARABLES_ENABLED && (typeof p.enabled === 'function' ? p.enabled() : false),
       redirect_uri: `${baseUrl}/api/wearables/callback/${p.name}`,
       callback_domain: baseUrl.replace(/^https?:\/\//, ''),
     })),

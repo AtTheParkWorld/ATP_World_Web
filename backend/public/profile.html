@@ -6317,6 +6317,34 @@ function renderWearableProviders(connections, available) {
   // their OAuth apps are approved. Exception: a provider the member
   // already has an ACTIVE connection to keeps its functional card so
   // Disconnect (token wipe — see privacy widget) always works.
+  // 2026-08: Strava made API access a paid-subscriber feature and ATP's
+  // application is Inactive, so device sync ships OFF entirely — the
+  // server reports every provider disabled (WEARABLES_ENABLED). A
+  // connect button that always 403s is worse than an honest
+  // "coming soon", so when nothing is live we show one clean message.
+  var anyLive = (available || []).some(function(p){ return p && p.enabled; });
+  if (!anyLive) {
+    var stillConnected = connections.filter(function(c){ return c && c.status === 'active'; });
+    host.style.gridTemplateColumns = '1fr';
+    host.innerHTML =
+      '<div style="border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:20px;background:rgba(255,255,255,.02);text-align:center">' +
+        '<div style="font-size:26px;margin-bottom:8px">⌚</div>' +
+        '<div style="font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;color:var(--white);margin-bottom:6px">Device sync — coming soon</div>' +
+        '<div style="font-size:13px;color:var(--muted);line-height:1.6;max-width:420px;margin:0 auto">' +
+          'We\'re finalising our watch integrations. Your sessions, points and streaks all keep working as normal — check-in at a session and everything counts.' +
+        '</div>' +
+      '</div>' +
+      // Anyone who connected before keeps a working Disconnect so their
+      // stored tokens can always be wiped (privacy promise).
+      stillConnected.map(function(c){
+        return '<div style="margin-top:10px;border:1px solid rgba(255,255,255,.10);border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
+            '<div style="font-size:13px;color:var(--light)">' + escapeHtml(c.provider) + ' — previously connected</div>' +
+            '<button class="wear-disconnect" data-provider="' + escapeHtml(c.provider) + '" style="background:transparent;border:1px solid rgba(239,68,68,.4);color:#f87171;padding:7px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Disconnect</button>' +
+          '</div>';
+      }).join('');
+    return;
+  }
+
   var LIVE_PROVIDERS = { strava: true };
   var COMING_SOON = [
     { name: 'garmin',   displayName: 'Garmin'   },
