@@ -68,6 +68,17 @@ export interface Session {
   coach_name: string | null;
   registrations_count: number;
   waitlist_count: number;
+  // Private company sessions. The backend already gates visibility +
+  // booking server-side (only that company's active employees ever see
+  // these rows), so the client treats them as purely presentational.
+  // NOTE: GET /api/sessions returns all four; GET /api/sessions/:id
+  // currently only returns the two `sessions` columns (it selects s.*
+  // without joining corporate_accounts), hence the optional company
+  // name/logo — always render with a "Private session" fallback.
+  is_corporate_only?: boolean;
+  corporate_account_id?: string | null;
+  corporate_company_name?: string | null;
+  corporate_logo_url?: string | null;
   // Decorated by backend _decorateLiveStatus
   is_live_now?: boolean;
   minutes_until_start?: number;

@@ -11,8 +11,45 @@ import { memo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import type { Session } from '@/lib/api/sessions';
+import { IconLock } from '@/lib/components/icons';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { timeShort, relativeStartLabel } from '@/lib/utils/date';
+
+/** Premium gold reserved for company-exclusive + paid perks (mirrors
+ *  the web's #f5c042 — 1-on-1 coaching, gifts, paid price pills). */
+const CORP_GOLD        = '#f5c042';
+const CORP_GOLD_FILL   = 'rgba(245,192,66,0.12)';
+const CORP_GOLD_STROKE = 'rgba(245,192,66,0.32)';
+
+/**
+ * Private-company session pill. Sized/typed to match the card's other
+ * chips (10px, uppercase, widest tracking, bodyBold) but in gold with a
+ * hairline outline + padlock so it reads as an exclusive perk rather
+ * than as another tribe tag.
+ */
+export function CorporateSessionBadge({ companyName }: { companyName?: string | null }) {
+  const label = (companyName || '').trim() || 'Private session';
+  return (
+    <View
+      className="flex-row items-center rounded-full px-2 py-0.5"
+      style={{
+        backgroundColor: CORP_GOLD_FILL,
+        borderWidth: 1,
+        borderColor: CORP_GOLD_STROKE,
+        flexShrink: 1,
+      }}
+    >
+      <IconLock size={9} color={CORP_GOLD} strokeWidth={2.5} />
+      <Text
+        numberOfLines={1}
+        style={{ fontFamily: fontFamily.bodyBold, color: CORP_GOLD, marginLeft: 4 }}
+        className="text-[10px] uppercase tracking-widest"
+      >
+        {label}
+      </Text>
+    </View>
+  );
+}
 
 interface Props {
   session: Session;
@@ -57,6 +94,9 @@ function _SessionCard({ session, compact, onPress }: Props) {
                   Live
                 </Text>
               </View>
+            )}
+            {!!session.is_corporate_only && (
+              <CorporateSessionBadge companyName={session.corporate_company_name} />
             )}
           </View>
           <Text

@@ -137,12 +137,15 @@ router.get('/bookings', authenticate, async (req, res, next) => {
               s.scheduled_at, s.location, s.location_maps_url,
               s.session_type, s.description,
               s.duration_mins, s.capacity,
+              s.is_corporate_only, s.corporate_account_id,
+              ca.company_name AS corporate_company_name,
               t.name AS tribe_name, t.color AS tribe_color,
               c.name AS city_name
        FROM bookings b
        JOIN sessions s ON s.id = b.session_id
        LEFT JOIN tribes t ON t.id = s.tribe_id
        LEFT JOIN cities c ON c.id = s.city_id
+       LEFT JOIN corporate_accounts ca ON ca.id = s.corporate_account_id
        WHERE b.member_id = $1
        ORDER BY s.scheduled_at DESC
        LIMIT 50`,

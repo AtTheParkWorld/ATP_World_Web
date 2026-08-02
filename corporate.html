@@ -5,9 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ATP for Companies · The wellness program that actually works</title>
   <link rel=icon type=image/png sizes=32x32 href=/favicon-32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16.png><link rel=icon href=/favicon.ico><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png>
-  <meta name="description" content="ATP Corporate Wellness — Dubai's largest free outdoor fitness community, now an employee benefit. Higher participation than gyms, lower cost than apps, measurable outcomes.">
+  <meta name="description" content="ATP Corporate Wellness — Dubai's largest free outdoor fitness community, now an employee benefit. Private sessions for your team only, monthly participation reporting, and free access for all staff. One flat monthly fee, never per employee.">
   <meta property="og:title" content="ATP × Your Company · Real wellness, real participation">
-  <meta property="og:description" content="The corporate wellness program that doesn't end with an unused login.">
+  <meta property="og:description" content="Private company sessions, proof of participation, and free ATP for every employee — one flat monthly fee.">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <style>
@@ -73,8 +73,10 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
 .stat-detail{font-size:12px;color:var(--muted);margin-top:6px;line-height:1.5}
 
 /* Comparison table */
-.cmp{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;margin-top:24px}
-.cmp > div{padding:16px 20px;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px;color:var(--light)}
+/* flex:none — as a flex item this grid would otherwise shrink and
+   overflow:hidden would silently eat the last comparison row */
+.cmp{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr;background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;margin-top:24px;flex:none}
+.cmp > div{padding:11px 20px;border-bottom:1px solid rgba(255,255,255,.06);font-size:13px;color:var(--light)}
 .cmp .head{background:rgba(168,255,0,.08);color:var(--green);font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
 .cmp .row-label{color:#fff;font-weight:600}
 .cmp .atp{color:var(--green);font-weight:700}
@@ -89,17 +91,35 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
 .bullet p{font-size:13px;color:var(--light);line-height:1.55}
 
 /* Pricing */
-.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:30px}
-.tier{background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:30px 26px;position:relative}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:20px}
+.tier{background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:24px 22px;position:relative}
 .tier.featured{border-color:rgba(168,255,0,.4);background:linear-gradient(180deg,rgba(168,255,0,.08),rgba(168,255,0,.02));transform:scale(1.04)}
 .tier .badge{position:absolute;top:-12px;right:18px;background:var(--green);color:#0a0a0a;padding:4px 12px;border-radius:99px;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
 .tier .name{font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#fff;margin-bottom:8px}
+.tier .tagline{font-size:12px;color:var(--muted);line-height:1.45;margin-bottom:14px}
 .tier .price{font-family:var(--ff-display);font-size:42px;font-weight:900;color:var(--green);line-height:1;letter-spacing:-.01em;margin-bottom:4px}
-.tier .price-unit{font-size:13px;color:var(--muted);margin-bottom:18px}
+.tier .price-unit{font-size:13px;color:var(--muted);margin-bottom:10px}
+.tier .annual{font-size:12px;color:var(--green-light);letter-spacing:.02em;margin-bottom:16px}
 .tier ul{list-style:none;padding:0;margin:0}
-.tier li{padding:8px 0;font-size:13px;color:var(--light);border-bottom:1px dashed rgba(255,255,255,.06);display:flex;gap:10px;align-items:flex-start}
+.tier li{padding:6px 0;font-size:13px;color:var(--light);border-bottom:1px dashed rgba(255,255,255,.06);display:flex;gap:10px;align-items:flex-start}
 .tier li::before{content:'✓';color:var(--green);font-weight:900;flex-shrink:0}
 .tier li:last-child{border-bottom:none}
+/* Pricing is rendered from the API, so the column count follows the catalogue */
+@media (min-width:901px){
+  .tiers[data-count="1"]{grid-template-columns:minmax(0,420px)}
+  .tiers[data-count="2"]{grid-template-columns:repeat(2,1fr)}
+  .tiers[data-count="4"]{grid-template-columns:repeat(4,1fr)}
+}
+
+/* Private-session mechanic — app mock */
+.appmock{background:var(--dark2);border:1px solid rgba(255,255,255,.08);border-radius:18px;padding:22px}
+.appmock .bar{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:14px;display:flex;justify-content:space-between}
+.sess{background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.07);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.sess.locked{border-color:rgba(168,255,0,.38);background:linear-gradient(135deg,rgba(168,255,0,.10),rgba(168,255,0,.02))}
+.sess .t{font-family:var(--ff-display);font-size:17px;font-weight:800;text-transform:uppercase;color:#fff;letter-spacing:.02em}
+.sess .m{font-size:12px;color:var(--muted);margin-top:4px}
+.sess .tag{display:inline-block;margin-top:10px;padding:3px 10px;border-radius:99px;font-size:10px;font-weight:900;letter-spacing:.08em;text-transform:uppercase;background:var(--green);color:#0a0a0a}
+.sess .tag.ghost{background:rgba(255,255,255,.08);color:var(--muted)}
 
 /* CTA block */
 .cta-block{margin-top:auto;padding:36px 40px;background:linear-gradient(120deg,rgba(168,255,0,.10),rgba(168,255,0,.02));border:1px solid rgba(168,255,0,.32);border-radius:18px;display:flex;justify-content:space-between;align-items:center;gap:24px}
@@ -151,7 +171,7 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
     <div style="max-width:960px;margin:auto">
       <div class="slide-title-eyebrow">The corporate wellness program for the UAE</div>
       <h1>Wellness that <span class="acc">shows up.</span></h1>
-      <p class="slide-title-sub">Every other corporate wellness app dies in week 2. ATP is the one your employees actually open — because it's tied to a real community they already know.</p>
+      <p class="slide-title-sub">Every other corporate wellness app dies in week 2. ATP is the one your employees actually open — because it's tied to a real community they already know. Private sessions for your team, proof it's working, one flat fee.</p>
       <span class="cta-btn">Powered by At The Park · est. 2015</span>
     </div>
   </section>
@@ -160,7 +180,7 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
   <section class="slide">
     <div class="slide-header">
       <div class="slide-logo">02 · The Problem</div>
-      <div class="slide-count">2 / 10</div>
+      <div class="slide-count">2 / 11</div>
     </div>
     <div class="row-2">
       <div>
@@ -186,7 +206,7 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
   <section class="slide">
     <div class="slide-header">
       <div class="slide-logo">03 · What ATP Is</div>
-      <div class="slide-count">3 / 10</div>
+      <div class="slide-count">3 / 11</div>
     </div>
     <div class="eyebrow">11 years. 7,000 members. 3 cities.</div>
     <h2 class="h2">ATP is a <span class="acc">free outdoor fitness community.</span></h2>
@@ -211,62 +231,120 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
   <section class="slide">
     <div class="slide-header">
       <div class="slide-logo">04 · The Offering</div>
-      <div class="slide-count">4 / 10</div>
+      <div class="slide-count">4 / 11</div>
     </div>
-    <div class="eyebrow">What you get</div>
-    <h2 class="h2">A wellness program <span class="acc">built around your team.</span></h2>
-    <div class="row-3" style="margin-top:30px">
-      <div class="card">
-        <div style="font-size:32px;margin-bottom:12px">🏃</div>
-        <h4 style="font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:10px">Full ATP access</h4>
-        <p style="font-size:13px;color:var(--light);line-height:1.55">Unlimited free outdoor sessions, 19 activity types, 21 certified coaches, 7 days a week — all included for every employee enrolled.</p>
+    <div class="eyebrow">What you actually buy</div>
+    <h2 class="h2">ATP is free. <span class="acc">This isn't a licence — it's a partnership.</span></h2>
+    <p class="lead" style="margin-bottom:6px">Anyone can join ATP tomorrow for AED 0, your staff included. So we don't sell you access. We sell the scarce things — coach time reserved for your team, proof it's working, and your name on the community — and the free access for your whole workforce comes with it.</p>
+    <div class="row-3" style="margin-top:24px">
+      <div class="card-green">
+        <div style="font-size:32px;margin-bottom:12px">🔒</div>
+        <h4 style="font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:10px">Private company sessions</h4>
+        <p style="font-size:13px;color:var(--light);line-height:1.55">The core of the deal. Your team only, your time, your park. These sessions are <strong style="color:#fff">visible in the ATP app and website only to your staff</strong> — nobody outside your company can see them or book a place. A dedicated coach, on your calendar, every month.</p>
       </div>
       <div class="card">
         <div style="font-size:32px;margin-bottom:12px">📊</div>
-        <h4 style="font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:10px">Monthly impact report</h4>
-        <p style="font-size:13px;color:var(--light);line-height:1.55">A real PDF every month showing participation, session count, retention. Anonymised at the individual level. Defendable to your CFO.</p>
+        <h4 style="font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:10px">Monthly participation report</h4>
+        <p style="font-size:13px;color:var(--light);line-height:1.55">A real PDF every month: how many of your people showed up, how often, which activities, month-on-month retention. Anonymised at the individual level. Defendable to your CFO.</p>
       </div>
       <div class="card">
-        <div style="font-size:32px;margin-bottom:12px">🎽</div>
-        <h4 style="font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:10px">Company sessions</h4>
-        <p style="font-size:13px;color:var(--light);line-height:1.55">Optional: 2–4 private sessions per month dedicated to your team. Bring everyone together for a yoga / running / circuit class. Built-in team-building.</p>
+        <div style="font-size:32px;margin-bottom:12px">📣</div>
+        <h4 style="font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:10px">Brand association</h4>
+        <p style="font-size:13px;color:var(--light);line-height:1.55">"Powered by [your company]" on public ATP sessions — your name in front of 7,000 members and every park we run in. Recruitment marketing that happens on a Saturday morning, not on LinkedIn.</p>
       </div>
       <div class="card">
-        <div style="font-size:32px;margin-bottom:12px">🔗</div>
-        <h4 style="font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:10px">Private signup link</h4>
-        <p style="font-size:13px;color:var(--light);line-height:1.55">One unique URL for your company. Employees sign up themselves in 30 seconds — no HR overhead, no spreadsheets, no IT setup.</p>
+        <div style="font-size:32px;margin-bottom:12px">🏃</div>
+        <h4 style="font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:10px">Free access for every employee</h4>
+        <p style="font-size:13px;color:var(--light);line-height:1.55">Included, uncapped, not metered. All 19 activity types, 21 certified coaches, 300+ sessions a month, 7 days a week — for your entire headcount. Hire 200 more people next quarter: the fee doesn't move.</p>
       </div>
       <div class="card">
         <div style="font-size:32px;margin-bottom:12px">🏆</div>
-        <h4 style="font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:10px">Internal leaderboard</h4>
-        <p style="font-size:13px;color:var(--light);line-height:1.55">Optional company-only leaderboard creates friendly internal competition. Departments vs departments. Names visible only inside your org.</p>
+        <h4 style="font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:10px">Company leaderboard</h4>
+        <p style="font-size:13px;color:var(--light);line-height:1.55">A company-only leaderboard that turns attendance into friendly internal competition. Departments vs departments. Names visible only inside your org.</p>
       </div>
       <div class="card">
         <div style="font-size:32px;margin-bottom:12px">📞</div>
         <h4 style="font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:10px">Dedicated account lead</h4>
-        <p style="font-size:13px;color:var(--light);line-height:1.55">Real person you can WhatsApp. Quarterly check-ins. Adjustments based on what your team actually uses.</p>
+        <p style="font-size:13px;color:var(--light);line-height:1.55">Real person you can WhatsApp. Your private signup link, your launch campaign, quarterly check-ins, and schedule changes based on what your team actually shows up for.</p>
       </div>
     </div>
   </section>
 
-  <!-- ═══ SLIDE 5 · ATP VS THE FIELD ═══ -->
+  <!-- ═══ SLIDE 5 · HOW PRIVATE SESSIONS WORK ═══ -->
   <section class="slide">
     <div class="slide-header">
-      <div class="slide-logo">05 · Comparison</div>
-      <div class="slide-count">5 / 10</div>
+      <div class="slide-logo">05 · Private Sessions</div>
+      <div class="slide-count">5 / 11</div>
     </div>
-    <div class="eyebrow">Honest comparison</div>
-    <h2 class="h2">Why ATP beats the alternatives <span class="acc">on every metric.</span></h2>
+    <div class="row-2">
+      <div>
+        <div class="eyebrow">The mechanic, concretely</div>
+        <h2 class="h2">Your sessions are <span class="acc">invisible to everyone else.</span></h2>
+        <p class="lead">This isn't a calendar invite or a WhatsApp group. It's built into the platform. Private company sessions live in the same app your staff already use for public ATP sessions — they're just gated to your company.</p>
+        <div class="bullets">
+          <div class="bullet"><div class="b-icon">1</div><div><h4>Your employee opens the ATP app</h4><p>Same app, same login, no separate corporate portal to learn or support.</p></div></div>
+          <div class="bullet"><div class="b-icon">2</div><div><h4>Your sessions appear alongside the public ones</h4><p>Marked with your company badge and logo, so it's obvious which sessions are yours.</p></div></div>
+          <div class="bullet"><div class="b-icon">3</div><div><h4>Nobody outside the company sees them</h4><p>The session simply doesn't exist for non-staff — not in the list, not in search, not bookable by link. Logged-out visitors never see it at all.</p></div></div>
+          <div class="bullet"><div class="b-icon">4</div><div><h4>Off-boarding is instant</h4><p>Remove someone from your company account and the private sessions vanish from their app on the next refresh.</p></div></div>
+        </div>
+      </div>
+      <div>
+        <div class="appmock">
+          <div class="bar"><span>ATP · Sessions</span><span>Thu 14 Aug</span></div>
+          <div class="sess locked">
+            <div class="t">Sunrise Circuit · Team Only</div>
+            <div class="m">06:30 · Safa Park · Coach Maria · 12 / 25 booked</div>
+            <div class="tag">Your company · Private</div>
+          </div>
+          <div class="sess">
+            <div class="t">Community 5K Run</div>
+            <div class="m">06:00 · Kite Beach · Coach Ali · Open to all</div>
+            <div class="tag ghost">Public session</div>
+          </div>
+          <div class="sess locked">
+            <div class="t">Desk-Neck Yoga · Team Only</div>
+            <div class="m">18:00 · Zabeel Park · Coach Priya · 8 / 20 booked</div>
+            <div class="tag">Your company · Private</div>
+          </div>
+          <div class="sess">
+            <div class="t">Calisthenics Basics</div>
+            <div class="m">19:00 · Al Barsha Pond · Coach Sam · Open to all</div>
+            <div class="tag ghost">Public session</div>
+          </div>
+          <p style="font-size:12px;color:var(--muted);margin-top:14px;line-height:1.5">What a member of your company sees. Everyone else sees only the two public sessions.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ SLIDE 6 · ATP VS THE FIELD ═══ -->
+  <section class="slide">
+    <div class="slide-header">
+      <div class="slide-logo">06 · Comparison</div>
+      <div class="slide-count">6 / 11</div>
+    </div>
+    <div class="eyebrow">Honest comparison · 200-person company</div>
+    <h2 class="h2">Same headcount. <span class="acc">One-quarter of the invoice.</span></h2>
     <div class="cmp">
       <div class="head"></div>
-      <div class="head" style="text-align:center">ATP</div>
+      <div class="head" style="text-align:center">ATP Champion</div>
       <div class="head" style="text-align:center">Wellness app</div>
       <div class="head" style="text-align:center">Gym subsidy</div>
 
-      <div class="row-label">Cost per employee / month</div>
-      <div class="atp" style="text-align:center">AED 80–150</div>
-      <div class="competitor" style="text-align:center">AED 90–180</div>
-      <div class="competitor" style="text-align:center">AED 200–400</div>
+      <div class="row-label">Pricing model</div>
+      <div class="atp" style="text-align:center">Flat monthly fee</div>
+      <div class="competitor" style="text-align:center">Per employee</div>
+      <div class="competitor" style="text-align:center">Per employee</div>
+
+      <div class="row-label">Cost for 200 staff / month</div>
+      <div class="atp" style="text-align:center"><strong>AED 6,000</strong></div>
+      <div class="competitor" style="text-align:center">~AED 24,000</div>
+      <div class="competitor" style="text-align:center">~AED 60,000</div>
+
+      <div class="row-label">Cost of hiring 50 more people</div>
+      <div class="atp" style="text-align:center"><strong>AED 0</strong></div>
+      <div class="competitor" style="text-align:center">+AED 6,000 / mo</div>
+      <div class="competitor" style="text-align:center">+AED 15,000 / mo</div>
 
       <div class="row-label">Month-3 engagement</div>
       <div class="atp" style="text-align:center"><strong>~64%</strong></div>
@@ -277,6 +355,11 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
       <div class="atp" style="text-align:center">✓ Core feature</div>
       <div class="competitor" style="text-align:center">— None</div>
       <div class="competitor" style="text-align:center">Coincidental</div>
+
+      <div class="row-label">Sessions for your team only</div>
+      <div class="atp" style="text-align:center">✓ 4 / month, app-gated</div>
+      <div class="competitor" style="text-align:center">— None</div>
+      <div class="competitor" style="text-align:center">Paid add-on, if at all</div>
 
       <div class="row-label">Coach quality</div>
       <div class="atp" style="text-align:center">Certified, vetted, rated</div>
@@ -298,14 +381,14 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
       <div class="competitor" style="text-align:center">4–6 weeks</div>
       <div class="competitor" style="text-align:center">Per-vendor varies</div>
     </div>
-    <p style="font-size:12px;color:var(--muted);margin-top:18px;text-align:center">Engagement numbers: Gallup 2024 wellness-program retention study + ATP internal data. Gym subsidy data: SHRM 2024 benefits survey.</p>
+    <p style="font-size:12px;color:var(--muted);margin-top:18px;text-align:center;max-width:900px;margin-left:auto;margin-right:auto;line-height:1.6">Costs modelled on 200 staff: ATP Champion is a flat AED 6,000 / month regardless of headcount; wellness apps and gym subsidies are billed per head, here at AED 120 and AED 300 / employee / month — mid-range UAE list pricing, so your own quotes will vary. Engagement numbers: Gallup 2024 wellness-program retention study + ATP internal data. Gym subsidy data: SHRM 2024 benefits survey.</p>
   </section>
 
-  <!-- ═══ SLIDE 6 · WHO IT'S FOR ═══ -->
+  <!-- ═══ SLIDE 7 · WHO IT'S FOR ═══ -->
   <section class="slide">
     <div class="slide-header">
-      <div class="slide-logo">06 · Who It's For</div>
-      <div class="slide-count">6 / 10</div>
+      <div class="slide-logo">07 · Who It's For</div>
+      <div class="slide-count">7 / 11</div>
     </div>
     <div class="row-2">
       <div>
@@ -313,7 +396,7 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
         <h2 class="h2">Made for <span class="acc">UAE companies</span> that mean it.</h2>
         <p class="lead">If your wellness budget today is a Headspace subscription nobody opens, this won't be a great fit. If you believe wellness should improve recruitment, retention, and culture — and you want to prove it — keep reading.</p>
         <div class="bullets">
-          <div class="bullet"><div class="b-icon">✓</div><div><h4>50–2,000 employees</h4><p>Sweet spot. Smaller works too with bespoke pricing.</p></div></div>
+          <div class="bullet"><div class="b-icon">✓</div><div><h4>50–2,000 employees</h4><p>Sweet spot — but the fee is flat, so the bigger your team the better the maths works for you. Under 50: talk to us anyway.</p></div></div>
           <div class="bullet"><div class="b-icon">✓</div><div><h4>UAE-based with most staff in Dubai / AD / AA / Muscat</h4><p>That's where we run sessions. Remote-only teams: not yet.</p></div></div>
           <div class="bullet"><div class="b-icon">✓</div><div><h4>Mid-tier+ benefits philosophy</h4><p>You spend on people. You want to spend it well.</p></div></div>
           <div class="bullet"><div class="b-icon">✓</div><div><h4>Culture you can name</h4><p>Tech, finance, hospitality, real estate, consulting, family offices. We've supported all.</p></div></div>
@@ -335,63 +418,24 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
     </div>
   </section>
 
-  <!-- ═══ SLIDE 7 · PRICING ═══ -->
+  <!-- ═══ SLIDE 8 · PRICING (rendered from /api/corporate/packages) ═══ -->
   <section class="slide">
     <div class="slide-header">
-      <div class="slide-logo">07 · Pricing</div>
-      <div class="slide-count">7 / 10</div>
+      <div class="slide-logo">08 · Pricing</div>
+      <div class="slide-count">8 / 11</div>
     </div>
-    <div class="eyebrow">Transparent · Per employee · Monthly</div>
-    <h2 class="h2">Three plans. <span class="acc">All include unlimited free ATP sessions.</span></h2>
-    <div class="tiers">
-      <div class="tier">
-        <div class="name">Starter</div>
-        <div class="price">AED 80</div>
-        <div class="price-unit">/ employee / month</div>
-        <ul>
-          <li>Unlimited ATP sessions for all enrolled employees</li>
-          <li>Private company signup link</li>
-          <li>Monthly engagement report (PDF)</li>
-          <li>WhatsApp account contact</li>
-          <li>50–199 employees</li>
-        </ul>
-      </div>
-      <div class="tier featured">
-        <span class="badge">Most chosen</span>
-        <div class="name">Growth</div>
-        <div class="price">AED 120</div>
-        <div class="price-unit">/ employee / month</div>
-        <ul>
-          <li>Everything in Starter</li>
-          <li><strong style="color:#fff">2 private company sessions / month</strong></li>
-          <li><strong style="color:#fff">Department leaderboard</strong></li>
-          <li>Quarterly impact review with founder</li>
-          <li>Co-branded launch campaign</li>
-          <li>200–999 employees</li>
-        </ul>
-      </div>
-      <div class="tier">
-        <div class="name">Enterprise</div>
-        <div class="price">Custom</div>
-        <div class="price-unit">starting AED 150 / employee / month</div>
-        <ul>
-          <li>Everything in Growth</li>
-          <li>4+ private company sessions / month</li>
-          <li>Custom integrations (HRIS, SSO)</li>
-          <li>Branded coach apparel for sessions</li>
-          <li>Dedicated coach team</li>
-          <li>1,000+ employees · multi-city</li>
-        </ul>
-      </div>
-    </div>
-    <p style="font-size:13px;color:var(--muted);margin-top:24px;text-align:center;max-width:680px;margin-left:auto;margin-right:auto;line-height:1.6">No setup fees. No long contracts (3-month minimum, then month-to-month). Annual payment = 15% discount. All prices VAT inclusive.</p>
+    <div class="eyebrow">Flat monthly fee · Not per head</div>
+    <h2 class="h2">One invoice. <span class="acc">However many people you hire.</span></h2>
+    <p class="lead" style="margin-bottom:0;font-size:16px">Plans differ by private sessions per month and brand visibility. Free access for your whole workforce is in every one.</p>
+    <div class="tiers" id="pkgTiers" data-count="3"></div>
+    <p style="font-size:13px;color:var(--muted);margin-top:24px;text-align:center;max-width:720px;margin-left:auto;margin-right:auto;line-height:1.6">No setup fees. No per-employee charges — 80 staff or 800, same invoice. 3-month minimum, then month-to-month. Annual payment saves 15%. All prices VAT inclusive.</p>
   </section>
 
   <!-- ═══ SLIDE 8 · ROI ═══ -->
   <section class="slide">
     <div class="slide-header">
-      <div class="slide-logo">08 · ROI</div>
-      <div class="slide-count">8 / 10</div>
+      <div class="slide-logo">09 · ROI</div>
+      <div class="slide-count">9 / 11</div>
     </div>
     <div class="row-2">
       <div>
@@ -407,13 +451,16 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
       <div>
         <div class="card-green">
           <div style="font-size:11px;color:var(--green);letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:14px">200-employee example</div>
-          <h3 style="font-family:var(--ff-display);font-size:24px;font-weight:800;text-transform:uppercase;color:#fff;line-height:1.1;margin-bottom:20px">Growth plan · AED 120 per employee</h3>
+          <h3 style="font-family:var(--ff-display);font-size:24px;font-weight:800;text-transform:uppercase;color:#fff;line-height:1.1;margin-bottom:20px">Champion · AED 6,000 / month, flat</h3>
           <div style="font-family:var(--ff-display);font-size:18px;font-weight:700;color:#fff;margin-bottom:6px">Annual investment</div>
-          <div class="big-stat">AED 288k</div>
+          <div class="big-stat">AED 72k</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:4px;line-height:1.5">AED 61,200 if paid annually. Works out to AED 30 per employee per month — and drops every time you hire.</div>
           <div style="margin:16px 0;height:1px;background:rgba(168,255,0,.2)"></div>
-          <div style="font-family:var(--ff-display);font-size:18px;font-weight:700;color:#fff;margin-bottom:6px">Expected return</div>
-          <div style="font-family:var(--ff-display);font-size:36px;font-weight:900;color:var(--gold);line-height:1">AED 580k+</div>
-          <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5">Conservative: 2× return assuming 50% participation, 30% absenteeism drop among active employees, and the median UAE salary loaded cost.</div>
+          <div style="font-family:var(--ff-display);font-size:18px;font-weight:700;color:#fff;margin-bottom:6px">Modelled annual value</div>
+          <div style="font-family:var(--ff-display);font-size:36px;font-weight:900;color:var(--gold);line-height:1">AED 580k</div>
+          <div style="font-size:12px;color:var(--muted);margin-top:8px;line-height:1.5">Estimate, not a guarantee. Same assumptions we've always used: 50% participation, a 30% absenteeism drop among active employees, and the median UAE loaded salary cost — applied to the claims above, not to our price.</div>
+          <div style="margin:16px 0;height:1px;background:rgba(168,255,0,.2)"></div>
+          <div style="font-size:13px;color:var(--light);line-height:1.6">That's roughly <strong style="color:#fff">8× the fee</strong>. Be sceptical of that number — the value comes from participation, not from what we charge. Halve the participation assumption and it's still 4×. The fee is the only figure on this slide we can promise.</div>
         </div>
       </div>
     </div>
@@ -422,8 +469,8 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
   <!-- ═══ SLIDE 9 · HOW IT LAUNCHES ═══ -->
   <section class="slide">
     <div class="slide-header">
-      <div class="slide-logo">09 · How it launches</div>
-      <div class="slide-count">9 / 10</div>
+      <div class="slide-logo">10 · How it launches</div>
+      <div class="slide-count">10 / 11</div>
     </div>
     <div class="eyebrow">From signature to first session: 5 days</div>
     <h2 class="h2">No IT project. <span class="acc">No deck reviews. No friction.</span></h2>
@@ -436,7 +483,7 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
       <div class="card" style="text-align:center">
         <div style="font-family:var(--ff-display);font-size:32px;font-weight:900;color:var(--green);line-height:1">DAY 2</div>
         <h4 style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#fff;margin:12px 0 6px">Setup</h4>
-        <p style="font-size:11px;color:var(--light);line-height:1.5">Your private signup link goes live. Logo + brand baked in.</p>
+        <p style="font-size:11px;color:var(--light);line-height:1.5">Your company account and private signup link go live. Logo + brand baked in.</p>
       </div>
       <div class="card" style="text-align:center">
         <div style="font-family:var(--ff-display);font-size:32px;font-weight:900;color:var(--green);line-height:1">DAY 3</div>
@@ -451,7 +498,7 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
       <div class="card" style="text-align:center">
         <div style="font-family:var(--ff-display);font-size:32px;font-weight:900;color:var(--green);line-height:1">DAY 5</div>
         <h4 style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#fff;margin:12px 0 6px">Train</h4>
-        <p style="font-size:11px;color:var(--light);line-height:1.5">First employees attend their first ATP session. Photos for your intranet included.</p>
+        <p style="font-size:11px;color:var(--light);line-height:1.5">Your first private company session lands in their app — team only. Photos for your intranet included.</p>
       </div>
     </div>
     <div class="tmonial" style="margin-top:36px">
@@ -463,13 +510,13 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
   <!-- ═══ SLIDE 10 · NEXT STEP ═══ -->
   <section class="slide">
     <div class="slide-header">
-      <div class="slide-logo">10 · Next Step</div>
-      <div class="slide-count">10 / 10</div>
+      <div class="slide-logo">11 · Next Step</div>
+      <div class="slide-count">11 / 11</div>
     </div>
     <div style="max-width:780px;margin:0 auto;text-align:center;padding-top:40px">
       <div class="eyebrow" style="justify-content:center">Ready to talk</div>
       <h1>15 minutes. <span class="acc">Real numbers.</span></h1>
-      <p style="font-size:18px;color:var(--light);margin:24px 0 40px;line-height:1.55">No high-pressure pitch. No hidden tier. Just a real conversation about whether ATP is the right wellness layer for your team. Worst case: you walk away with a better benchmarking number for whatever vendor you do pick.</p>
+      <p style="font-size:18px;color:var(--light);margin:24px 0 40px;line-height:1.55">No high-pressure pitch. No hidden tier, no per-head surprise on the invoice. Just a real conversation about whether ATP is the right wellness layer for your team — and if it isn't, tell your staff to join for free anyway. Worst case: you walk away with a better benchmarking number for whatever vendor you do pick.</p>
       <div style="display:flex;flex-direction:column;gap:18px;align-items:center">
         <a href="mailto:partners@atthepark.world?subject=ATP%20for%20our%20team" class="cta-btn" style="font-size:16px;padding:18px 38px">📧 partners@atthepark.world</a>
         <a href="https://wa.me/971585792378?text=Hi%20%E2%80%94%20interested%20in%20ATP%20for%20our%20company" class="cta-btn" style="font-size:16px;padding:18px 38px;background:rgba(168,255,0,.14);color:var(--green);border:1px solid var(--green)">💬 WhatsApp the founder</a>
@@ -524,6 +571,107 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
     if (e.target.closest('.deck-footer')) return;
     next();
   });
+})();
+</script>
+
+<script>
+/* Pricing slide — rendered from GET /api/corporate/packages (public, no auth)
+   so the founder can retune prices from the admin panel without a deploy.
+   A prospect must NEVER see an error here: we paint the known catalogue
+   first, then swap in the live one if (and only if) the fetch succeeds. */
+(function(){
+  var MOUNT = document.getElementById('pkgTiers');
+  if (!MOUNT) return;
+
+  // Mirrors the seed in backend/src/routes/corporate.js
+  var FALLBACK = [
+    { name: 'Partner', tagline: 'For teams getting started',
+      monthly_fee_aed: 2500, annual_fee_aed: 25500, is_featured: false,
+      features: [
+        '1 private company session / month',
+        'Unlimited free ATP access for all staff',
+        'Monthly participation report',
+        'Company leaderboard',
+        'WhatsApp account contact'
+      ] },
+    { name: 'Champion', tagline: 'Our most popular partnership',
+      monthly_fee_aed: 6000, annual_fee_aed: 61200, is_featured: true,
+      features: [
+        '4 private company sessions / month',
+        'Unlimited free ATP access for all staff',
+        'Monthly participation report',
+        'Company leaderboard',
+        '"Powered by you" on public ATP sessions',
+        'Co-branded launch campaign + photo content',
+        'Quarterly review with the founder'
+      ] },
+    { name: 'Founding Partner', tagline: 'Multi-city, maximum visibility',
+      monthly_fee_aed: 12000, annual_fee_aed: 122400, is_featured: false,
+      features: [
+        '8 private company sessions / month',
+        'Unlimited free ATP access for all staff',
+        'Monthly participation report',
+        'Company leaderboard',
+        'Premium "Powered by you" placement',
+        'Co-branded launch campaign + photo content',
+        'Quarterly review with the founder',
+        'Annual company field day',
+        'Multi-city coverage'
+      ] }
+  ];
+
+  var ENT = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
+  function esc(v){
+    return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){ return ENT[c]; });
+  }
+  function aed(n){
+    return 'AED ' + (Number(n) || 0).toLocaleString('en-US');
+  }
+  function featuresOf(p){
+    var f = p.features;
+    if (typeof f === 'string') { try { f = JSON.parse(f); } catch (e) { f = []; } }
+    return Array.isArray(f) ? f : [];
+  }
+
+  function card(p){
+    var out = '<div class="tier' + (p.is_featured ? ' featured' : '') + '">';
+    if (p.is_featured) out += '<span class="badge">Most chosen</span>';
+    out += '<div class="name">' + esc(p.name) + '</div>';
+    if (p.tagline) out += '<div class="tagline">' + esc(p.tagline) + '</div>';
+    out += '<div class="price">' + aed(p.monthly_fee_aed) + '</div>';
+    out += '<div class="price-unit">/ month · flat · any headcount</div>';
+
+    var monthly = Number(p.monthly_fee_aed) || 0;
+    var annual  = Number(p.annual_fee_aed)  || 0;
+    if (annual > 0) {
+      var save = monthly > 0 ? Math.round((1 - annual / (monthly * 12)) * 100) : 0;
+      out += '<div class="annual">or ' + aed(annual) + '/year'
+           + (save > 0 ? ' — save ' + save + '%' : '') + '</div>';
+    }
+
+    var feats = featuresOf(p);
+    if (feats.length) {
+      out += '<ul>' + feats.map(function(f){ return '<li>' + esc(f) + '</li>'; }).join('') + '</ul>';
+    }
+    return out + '</div>';
+  }
+
+  function render(list){
+    if (!list || !list.length) return;
+    MOUNT.setAttribute('data-count', String(Math.min(list.length, 4)));
+    MOUNT.innerHTML = list.map(card).join('');
+  }
+
+  render(FALLBACK);
+
+  fetch('/api/corporate/packages', { cache: 'no-cache' })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(data){
+      var live = (data && Array.isArray(data.packages) ? data.packages : [])
+        .filter(function(p){ return p && p.name && p.monthly_fee_aed != null; });
+      if (live.length) render(live);   // API is already sorted
+    })
+    .catch(function(){ /* fallback is already on screen — say nothing */ });
 })();
 </script>
 

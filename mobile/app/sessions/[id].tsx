@@ -13,17 +13,18 @@
  * background, and the user lands back on this detail screen with the
  * fresh state ("You're in").
  */
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import QRCode from 'react-native-qrcode-svg';
-import { getSession } from '@/lib/api/sessions';
+import { getSession, type Session } from '@/lib/api/sessions';
 import { createBooking, cancelBooking, listMyBookings, submitSessionFeedback, type PaymentOptions, type BookingRecord } from '@/lib/api/bookings';
 import { ApiError } from '@/lib/api/client';
 import { BookingSheet } from '@/lib/components/BookingSheet';
 import { FeedbackBlock } from '@/lib/components/FeedbackBlock';
+import { CorporateSessionBadge } from '@/lib/components/SessionCard';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { dayHeader, timeShort } from '@/lib/utils/date';
 
@@ -50,6 +51,21 @@ export default function SessionDetail() {
   const myBooking = (myBookingsQ.data || []).find(
     (b) => String(b.session_id) === sessionId && b.status !== 'cancelled'
   );
+
+  // GET /api/sessions/:id selects s.* without joining corporate_accounts,
+  // so the detail payload carries is_corporate_only but not the company
+  // name. The list endpoint does return it — reuse whatever the Sessions
+  // tab already cached so the badge can name the company. Falls back to
+  // the generic "Private session" copy when nothing is cached.
+  const corporateName = useMemo(() => {
+    if (s?.corporate_company_name) return s.corporate_company_name;
+    for (const [, data] of qc.getQueriesData<Session[]>({ queryKey: ['sessions'] })) {
+      if (!Array.isArray(data)) continue;
+      const hit = data.find((x) => x && String(x.id) === sessionId);
+      if (hit?.corporate_company_name) return hit.corporate_company_name;
+    }
+    return null;
+  }, [qc, sessionId, s]);
 
   async function onBookPress() {
     if (!s) return;
@@ -145,6 +161,11 @@ export default function SessionDetail() {
         </View>
 
         <View className="px-5 mt-2">
+          {!!s.is_corporate_only && (
+            <View className="flex-row mb-2">
+              <CorporateSessionBadge companyName={corporateName} />
+            </View>
+          )}
           {!!s.tribe_name && (
             <Text style={{ fontFamily: fontFamily.bodyBold, color: tColor }} className="text-xs uppercase tracking-widest mb-2">
               {s.tribe_name}
@@ -153,6 +174,13 @@ export default function SessionDetail() {
           <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-4xl uppercase tracking-tight">
             {s.name}
           </Text>
+          {!!s.is_corporate_only && (
+            <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-xs mt-3 leading-relaxed">
+              {corporateName
+                ? `Private session for ${corporateName} — you're seeing this because you're on their team.`
+                : `A private company session — you're seeing this because you're on the team.`}
+            </Text>
+          )}
         </View>
 
         {/* Status pill row */}

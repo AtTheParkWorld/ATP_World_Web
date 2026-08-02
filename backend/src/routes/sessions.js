@@ -329,6 +329,8 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
   try {
     const { rows } = await query(
       `SELECT s.*,
+              ca.company_name AS corporate_company_name,
+              ca.logo_url     AS corporate_logo_url,
               t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
               a.name AS activity_name, a.slug AS activity_slug, a.icon AS activity_icon,
               c.name AS city_name,
@@ -344,6 +346,7 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
        LEFT JOIN activities a ON a.id = s.activity_id
        LEFT JOIN cities c ON c.id = s.city_id
        LEFT JOIN members m ON m.id = s.coach_id
+       LEFT JOIN corporate_accounts ca ON ca.id = s.corporate_account_id
        WHERE s.id = $1`,
       [req.params.id]
     );
