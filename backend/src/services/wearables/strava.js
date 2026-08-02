@@ -100,7 +100,10 @@ async function fetchRecentWorkouts(conn, sinceUnixSec) {
   const r = await fetch(`https://www.strava.com/api/v3/athlete/activities?after=${after}&per_page=50`, {
     headers: { Authorization: `Bearer ${conn.access_token}` },
   });
-  if (!r.ok) throw new Error(`Strava activities fetch failed: ${r.status}`);
+  if (!r.ok) {
+    const body = await r.text().catch(() => '');
+    throw new Error(_explain(r.status, body) || `Strava activities fetch failed: ${r.status}`);
+  }
   const list = await r.json();
 
   // Strava's list endpoint omits the `calories` field — it's only on
@@ -193,13 +196,29 @@ function handleWebhook(body) {
 // if the public URL changes (e.g. at the atthepark.world cutover).
 //
 // Strava allows exactly ONE subscription per application.
+// Strava returns 403 {resource:'Application', field:'Status',
+// code:'Inactive'} for EVERY endpoint when the API application itself
+// is deactivated in the Strava developer dashboard. That looks like a
+// dozen unrelated failures, so translate it into one plain sentence.
+function _explain(status, bodyText) {
+  if (status === 403 && /"code"\s*:\s*"Inactive"/.test(bodyText)) {
+    return 'STRAVA APPLICATION IS INACTIVE — reactivate it at https://www.strava.com/settings/api '
+         + '(check the API agreement / app status). Until then Strava rejects all API calls, so no '
+         + 'member activities can sync by webhook OR polling.';
+  }
+  return null;
+}
+
 async function listSubscriptions() {
   const params = new URLSearchParams({
     client_id:     process.env.STRAVA_CLIENT_ID,
     client_secret: process.env.STRAVA_CLIENT_SECRET,
   });
   const r = await fetch(`${BASE}/api/v3/push_subscriptions?${params}`);
-  if (!r.ok) throw new Error(`Strava list subscriptions ${r.status}: ${(await r.text()).slice(0, 200)}`);
+  if (!r.ok) {
+    const body = await r.text();
+    throw new Error(_explain(r.status, body) || `Strava list subscriptions ${r.status}: ${body.slice(0, 200)}`);
+  }
   return r.json();
 }
 
@@ -229,7 +248,10 @@ async function createSubscription(callbackUrl) {
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body,
   });
-  if (!r.ok) throw new Error(`Strava create subscription ${r.status}: ${(await r.text()).slice(0, 300)}`);
+  if (!r.ok) {
+    const body = await r.text();
+    throw new Error(_explain(r.status, body) || `Strava create subscription ${r.status}: ${body.slice(0, 300)}`);
+  }
   return r.json();
 }
 
