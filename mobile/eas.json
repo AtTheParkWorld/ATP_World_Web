@@ -22,7 +22,8 @@
       "distribution": "internal",
       "channel": "preview",
       "ios": {
-        "simulator": false
+        "simulator": false,
+        "image": "latest"
       },
       "android": {
         "buildType": "apk"
@@ -37,6 +38,9 @@
       "autoIncrement": true,
       "env": {
         "SENTRY_ALLOW_FAILURE": "true"
+      },
+      "ios": {
+        "image": "latest"
       }
     }
   },
