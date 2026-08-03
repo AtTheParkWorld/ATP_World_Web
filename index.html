@@ -545,10 +545,14 @@ a.product-card:hover{transform:translateY(-4px)}
       19 activities, 21 expert coaches, 7 days a week. No gym fees. No excuses. Just community.
     </p>
     <div class="hero-cta-row">
-      <button class="btn-hero" onclick="document.getElementById('sessions').scrollIntoView({behavior:'smooth'})">
+      <!-- Goes straight to the sessions calendar (which opens in
+           calendar view) rather than scrolling to the homepage teaser —
+           this is the primary conversion action on the site. A real
+           anchor so it's crawlable, middle-clickable and keyboard-native. -->
+      <a href="/sessions.html" class="btn-hero" style="text-decoration:none">
         Find a session
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
-      </button>
+      </a>
     </div>
   </div>
   <div class="hero-right" aria-hidden="true">
