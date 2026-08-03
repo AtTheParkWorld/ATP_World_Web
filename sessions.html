@@ -50,18 +50,16 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .hamburger span{display:block;width:22px;height:2px;background:var(--white);border-radius:2px}
 
 /* PAGE HERO */
-.page-hero{padding:calc(var(--nav-h) + 64px) 40px 60px;background:var(--dark2);border-bottom:1px solid rgba(255,255,255,.06);position:relative;overflow:hidden}
+/* PAGE HERO — compact (was 1/4 the height per founder 2026-06-27).
+   The stats strip (.page-hero-stats) has been removed entirely.    */
+.page-hero{padding:calc(var(--nav-h) + 16px) 40px 18px;background:var(--dark2);border-bottom:1px solid rgba(255,255,255,.06);position:relative;overflow:hidden}
 .page-hero::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--green)}
-.page-hero-inner{max-width:var(--max);margin:0 auto;display:grid;grid-template-columns:1fr auto;gap:40px;align-items:end}
-.page-hero-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:14px;display:flex;align-items:center;gap:10px}
-.page-hero-label::before{content:'';display:block;width:20px;height:2px;background:var(--green)}
-.page-hero h1{font-family:var(--ff-display);font-size:clamp(52px,6vw,80px);font-weight:900;line-height:.92;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:16px}
+.page-hero-inner{max-width:var(--max);margin:0 auto;display:flex;flex-direction:column;gap:6px}
+.page-hero-label{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:4px;display:flex;align-items:center;gap:10px}
+.page-hero-label::before{content:'';display:block;width:18px;height:2px;background:var(--green)}
+.page-hero h1{font-family:var(--ff-display);font-size:clamp(26px,3.4vw,40px);font-weight:900;line-height:.95;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:4px}
 .page-hero h1 .acc{color:var(--green)}
-.page-hero-sub{font-size:16px;color:var(--light);line-height:1.65;font-weight:300;max-width:480px}
-.page-hero-stats{display:flex;gap:32px;flex-shrink:0}
-.ph-stat{text-align:right}
-.ph-stat-num{font-family:var(--ff-display);font-size:38px;font-weight:900;color:var(--green);line-height:1}
-.ph-stat-label{font-size:12px;color:var(--muted);margin-top:3px}
+.page-hero-sub{font-size:13px;color:var(--light);line-height:1.45;font-weight:300;max-width:560px}
 
 /* REVEAL */
 .reveal{opacity:0;transform:translateY(22px);transition:opacity .6s,transform .6s}
@@ -88,7 +86,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 
 /* RESPONSIVE */
 @media(max-width:1100px){.footer-top{grid-template-columns:1fr 1fr}}
-@media(max-width:900px){.nav-links{display:none}.hamburger{display:flex}.page-hero-inner{grid-template-columns:1fr}.page-hero-stats{display:none}}
+@media(max-width:900px){.nav-links{display:none}.hamburger{display:flex}}
 @media(max-width:560px){.page-hero h1{font-size:clamp(40px,12vw,56px)}.page-hero-sub{font-size:15px}}
 @media(max-width:600px){.footer-top{grid-template-columns:1fr;gap:28px}}
 
@@ -232,6 +230,32 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 .sc-live-dot{width:6px;height:6px;border-radius:50%;background:#ef4444;box-shadow:0 0 0 0 rgba(239,68,68,.7);animation:scLivePulse 1.6s ease-in-out infinite}
 @keyframes scLivePulse{0%{box-shadow:0 0 0 0 rgba(239,68,68,.7)}70%{box-shadow:0 0 0 8px rgba(239,68,68,0)}100%{box-shadow:0 0 0 0 rgba(239,68,68,0)}}
 .session-card.is-live::before{opacity:.6;box-shadow:0 0 24px rgba(239,68,68,.5)}
+
+/* ── PRIVATE COMPANY SESSION ──────────────────────────────────────
+   Sessions a company buys for its own staff. The API only ever returns
+   these rows to that company's active employees, so the badge is a
+   perk marker ("this one's yours"), never a lock-out. Gold #f5c042 —
+   the premium accent already used for paid pills, 1-on-1s and gifts —
+   keeps it clearly distinct from the lime tribe language. */
+.sc-corp{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:9px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
+  padding:2px 8px;border-radius:99px;vertical-align:middle;
+  background:rgba(245,192,66,.12);color:#f5c042;border:1px solid rgba(245,192,66,.32);
+  max-width:100%;min-width:0;
+}
+.sc-corp svg{flex-shrink:0}
+.sc-corp-name{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+/* On the card the badge owns its own line between the tribe label and
+   the session name — inline with the tribe it got crushed at 2-up grid
+   widths and pushed the tribe label onto two lines. */
+.sc-corp-row{display:flex;min-width:0}
+.sc-corp--modal{font-size:10px;padding:3px 10px;margin-left:8px}
+/* Whole card gets a quiet gold edge so the perk reads before you look
+   at the badge. Deliberately faint — the tribe rail stays the loudest
+   accent on the card. */
+.session-card.is-corporate{border-color:rgba(245,192,66,.20)}
+.session-card.is-corporate:hover{border-color:rgba(245,192,66,.42)}
 
 /* Tilt: vanilla JS sets --rx / --ry CSS vars on hover */
 .session-card[data-tilt]{transform:perspective(1100px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg))}
@@ -443,7 +467,12 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 }
 
 .cal-day{
-  position:relative;min-height:108px;padding:9px 9px 10px;
+  position:relative;
+  /* Fit the whole month on screen: 6 rows + headers should sit inside
+     the viewport. We aim for (viewport - chrome) / 6, clamped so the
+     cell never collapses below 70px or stretches past 130px. */
+  min-height:clamp(70px, calc((100vh - 340px) / 6), 130px);
+  padding:7px 8px 8px;
   background:var(--dark2);border:1px solid rgba(255,255,255,.04);border-radius:12px;
   cursor:default;transition:transform .2s ease, border-color .25s, box-shadow .25s, background .25s;
   display:flex;flex-direction:column;gap:4px;
@@ -516,6 +545,14 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
   background:linear-gradient(135deg, rgba(255,255,255,.10), rgba(255,255,255,.03));
   color:#ddd;border:1px solid rgba(255,255,255,.10);
 }
+/* Private company sessions read gold in the calendar so a member spots
+   their company's own dates instantly. Doubled selector so it also wins
+   over the 4-class :not() fallback above. */
+.cal-session-dot.is-corporate,
+.cal-session-dot.is-corporate:not(.better):not(.faster):not(.stronger){
+  background:linear-gradient(135deg, rgba(245,192,66,.20), rgba(245,192,66,.06));
+  color:#f5c042;border:1px solid rgba(245,192,66,.30);
+}
 
 .cal-more{
   font-size:10px;font-weight:700;letter-spacing:.04em;color:var(--muted);
@@ -524,6 +561,56 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 .cal-more:hover{color:var(--green);background:rgba(168,255,0,.06)}
 .cal-sessions-grid{display:none}
 .cal-sessions-grid.visible{display:grid}
+
+/* ── HOVER POPOVER ─────────────────────────────────────────────
+   Hovering a day with sessions expands a card showing the full
+   list (not just the 2 visible dots).  Pure-CSS reveal; the
+   click handler on .cal-session-dot already opens the modal,
+   so each row inside the popover is selectable.            */
+.cal-day.has-session{z-index:1}
+.cal-day.has-session:hover{z-index:60}
+.cal-popover{
+  position:absolute;left:50%;top:calc(100% + 6px);
+  transform:translateX(-50%) translateY(-4px) scale(.97);
+  min-width:260px;max-width:320px;
+  background:var(--dark);border:1px solid rgba(168,255,0,.4);
+  border-radius:12px;padding:12px;
+  box-shadow:0 22px 44px -14px rgba(0,0,0,.75), 0 0 0 1px rgba(0,0,0,.4);
+  opacity:0;pointer-events:none;
+  transition:opacity .16s ease, transform .16s ease;
+  display:flex;flex-direction:column;gap:6px;
+}
+.cal-day.has-session:hover .cal-popover{
+  opacity:1;pointer-events:auto;
+  transform:translateX(-50%) translateY(0) scale(1);
+}
+/* Bottom rows flip the popover above so it doesn't get clipped */
+.cal-day.flip-up .cal-popover{
+  top:auto;bottom:calc(100% + 6px);
+  transform:translateX(-50%) translateY(4px) scale(.97);
+}
+.cal-day.flip-up.has-session:hover .cal-popover{
+  transform:translateX(-50%) translateY(0) scale(1);
+}
+/* Edge columns slide horizontally so the popover stays in viewport */
+.cal-day.flip-left .cal-popover{left:auto;right:0;transform:translateX(0) translateY(-4px) scale(.97)}
+.cal-day.flip-left.has-session:hover .cal-popover{transform:translateX(0) translateY(0) scale(1)}
+.cal-day.flip-right .cal-popover{left:0;transform:translateX(0) translateY(-4px) scale(.97)}
+.cal-day.flip-right.has-session:hover .cal-popover{transform:translateX(0) translateY(0) scale(1)}
+
+.cal-popover-header{
+  font-family:var(--ff-display);font-size:11px;font-weight:800;
+  letter-spacing:.16em;text-transform:uppercase;color:var(--green);
+  padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08);
+}
+.cal-popover .cal-session-dot{
+  font-size:12px;padding:6px 10px;white-space:normal;text-overflow:clip;
+}
+.cal-popover .cal-session-dot .cps-meta{
+  display:block;font-size:10px;font-weight:600;opacity:.78;margin-top:2px;
+  letter-spacing:.02em;text-transform:none;
+}
+.cal-popover .sc-corp-row{margin-top:6px}
 
 
 
@@ -558,11 +645,6 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
         <h1>Find your<br><span class="acc">free session</span></h1>
         <p class="page-hero-sub">12 sessions this week across Dubai, Al Ain and Muscat. Every session is free — always has been, always will be.</p>
       </div>
-      <div class="page-hero-stats">
-        <div class="ph-stat"><div class="ph-stat-num">19</div><div class="ph-stat-label">Activities</div></div>
-        <div class="ph-stat"><div class="ph-stat-num">21</div><div class="ph-stat-label">Coaches</div></div>
-        <div class="ph-stat"><div class="ph-stat-num">AED 0</div><div class="ph-stat-label">Always</div></div>
-      </div>
     </div>
   </section>
 
@@ -580,13 +662,13 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
     <div class="sessions-toolbar">
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <p class="sessions-count"><strong id="sessionCount">12</strong> sessions this week</p>
-        <div class="view-toggle" data-active="list">
-          <button class="view-btn active" id="listViewBtn" data-atp-call="setView" data-args='["list"]'>
+        <div class="view-toggle" data-active="calendar">
+          <button class="view-btn" id="listViewBtn" data-atp-call="setView" data-args='["list"]'>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/></svg>
             List
           </button>
-          <button class="view-btn" id="calViewBtn" data-atp-call="setView" data-args='["calendar"]'>
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="12" height="11" rx="2"/><line x1="5" y1="1" x2="5" y2="5"/><line x1="11" y1="1" x2="11" y2="5"/><line x1="2" y1="7" x2="14" y2="7"/></svg>
+          <button class="view-btn active" id="calViewBtn" data-atp-call="setView" data-args='["calendar"]'>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg>
             Calendar
           </button>
         </div>
@@ -711,7 +793,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 
       <div class="loop-actions">
         <a class="loop-btn loop-btn-cal" id="calBtn" href="#" target="_blank" rel="noopener">
-          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="12" height="11" rx="2"/><line x1="5" y1="1" x2="5" y2="5"/><line x1="11" y1="1" x2="11" y2="5"/><line x1="2" y1="7" x2="14" y2="7"/><line x1="5" y1="10" x2="5" y2="10" stroke-width="2.5"/><line x1="8" y1="10" x2="8" y2="10" stroke-width="2.5"/></svg> Add to Calendar
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg> Add to Calendar
         </a>
         <a class="loop-btn loop-btn-wa" id="waBtn" href="#" target="_blank" rel="noopener">
           <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 5c0-1.7-1.3-3-3-3H5C3.3 2 2 3.3 2 5v4c0 1.7 1.3 3 3 3h1v2l2.5-2H11c1.7 0 3-1.3 3-3V5z"/></svg> Invite a Friend
@@ -722,7 +804,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 
       <div class="loop-actions">
         <button class="loop-btn loop-btn-next" data-atp-call="closeModalAndScroll">
-          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="2" y="3" width="12" height="11" rx="2"/><line x1="5" y1="1" x2="5" y2="5"/><line x1="11" y1="1" x2="11" y2="5"/><line x1="2" y1="7" x2="14" y2="7"/><path d="M6 10l2 2 3-3"/></svg> See Next Sessions
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg> See Next Sessions
         </button>
         <a class="loop-btn loop-btn-app"
           href="https://apps.apple.com/ae/app/attheparkworld/id6469771815"
@@ -750,8 +832,8 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
         </div>
       </div>
       <div class="footer-col"><h4>Sessions</h4><ul><li><a href="sessions.html">All sessions</a></li><li><a href="sessions.html?tribe=better">Better tribe</a></li><li><a href="sessions.html?tribe=faster">Faster tribe</a></li><li><a href="sessions.html?tribe=stronger">Stronger tribe</a></li></ul></div>
-      <div class="footer-col"><h4>Community</h4><ul><li><a href="community.html">Feed</a></li><li><a href="community.html#spotlights">Member stories</a></li><li><a href="community.html#leaderboard">Leaderboard</a></li><li><a href="community.html#events">Events</a></li></ul></div>
-      <div class="footer-col"><h4>ATP</h4><ul><li><a href="index.html#story">Our story</a></li><li><a href="store.html">Store</a></li><li><a href="index.html#partners">Partner with us</a></li><li><a href="https://apps.apple.com/ae/app/attheparkworld/id6469771815" target="_blank" rel="noopener">Download app</a></li></ul></div>
+      <div class="footer-col"><h4>Community</h4><ul><li><a href="community.html">Feed</a></li><li><a href="community.html">Leaderboard</a></li><li><a href="community.html">Challenges</a></li></ul></div>
+      <div class="footer-col"><h4>ATP</h4><ul><li><a href="index.html#story">Our story</a></li><li><a href="/store">Store</a></li><li><a href="index.html#partners">Partner with us</a></li><li><a href="https://apps.apple.com/ae/app/attheparkworld/id6469771815" target="_blank" rel="noopener">Download app</a></li></ul></div>
       <div class="footer-col"><h4>Support</h4><ul><li><a href="contacts.html">Contact us</a></li><li><a href="terms.html#refunds">Refund policy</a></li><li><a href="tel:+971585792378">+971 58 579 2378</a></li></ul></div>
       <div class="footer-col"><h4>Legal</h4><ul><li><a href="privacy.html">Privacy</a></li><li><a href="terms.html">Terms</a></li><li><a href="contacts.html">Contacts</a></li></ul></div>
     </div>
@@ -920,14 +1002,27 @@ function applyFilters() {
     (!loadingVisible && !errorVisible && cards.length > 0 && count === 0) ? 'flex' : 'none';
 }
 
-// URL param auto-filter on load
+// URL param auto-filter on load — e.g. /sessions.html?tribe=faster
+// from the homepage "Explore Faster" cards.
+// Previously this looked for `.filter-tab[onclick*=…]`, but the tabs
+// use data-atp-call/data-args, so the selector never matched and the
+// parameter silently did nothing. We now set the filter state directly;
+// applyFilters() runs again once the sessions have loaded, so the
+// filter holds regardless of fetch timing.
 (function(){
   var params = new URLSearchParams(window.location.search);
-  var tribe = params.get('tribe');
-  if(tribe) {
-    var btn = document.querySelector('.filter-tab[onclick*="\'' + tribe + '\'"]');
-    if(btn) btn.click();
-  }
+  var tribe = (params.get('tribe') || '').toLowerCase().trim();
+  if (!tribe) return;
+  var btn = document.querySelector(
+    '.filter-tab[data-atp-call="filterTribe"][data-args=\'["' + tribe + '"]\']'
+  );
+  if (!btn) return;                       // unknown tribe → leave on All
+  currentTribe = tribe;
+  document.querySelectorAll('.filter-tab[data-atp-call="filterTribe"]')
+    .forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  try { if (typeof populateActivityFilter === 'function') populateActivityFilter(); } catch(e) {}
+  try { if (typeof applyFilters === 'function') applyFilters(); } catch(e) {}
 })();
 
 var pendingSession = null;
@@ -977,7 +1072,10 @@ function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId)
   var sessionType = (sFull && sFull.session_type) || 'free';
 
   activeSession = { id:sessionId, name:name, tribe:tribe, dayTime:dayTime, coach:coach, loc:loc, desc:desc, day:day, time:time, session_type: sessionType };
-  document.getElementById('modalTribe').textContent = (tribe || 'ATP').toUpperCase() + ' TRIBE';
+  // innerHTML (not textContent) so the private-company badge can sit
+  // next to the tribe label. Both halves are escaped.
+  document.getElementById('modalTribe').innerHTML =
+    escapeHtml((tribe || 'ATP').toUpperCase() + ' TRIBE') + _corpBadgeHtml(sFull, 'modal');
   document.getElementById('modalName').textContent = name;
   var whenLabel = _formatBookingWhen(sFull, dayTime);
   // Single tighter block: when / where / coach on one line with bullet
@@ -1558,13 +1656,22 @@ function renderAuthNav(user) {
 
 // ── Log out ──────────────────────────────────────────────────
 function logOut() {
-  authClearUser();
-  var actions = document.querySelector('.nav-actions');
-  if(actions) {
-    actions.innerHTML =
-      '<button class="btn-ghost" onclick="openAuth(\'login\')">Log in</button>' +
-      '<button class="btn-primary" onclick="openAuth(\'signup\')">Join free →</button>';
+  // See index.html — must wipe both current AND legacy auth keys so
+  // the bundle's migrate() step can't lift a stale JWT back on the
+  // next page load.
+  try {
+    localStorage.removeItem('atp_token');
+    localStorage.removeItem('atp_member');
+    localStorage.removeItem('atp:jwt');
+    localStorage.removeItem('atp:user');
+    localStorage.removeItem('atp:ambassador');
+  } catch (_) {}
+  try { authClearUser(); } catch (_) {}
+  if (window.ATP && window.ATP.auth && window.ATP.auth.logout) {
+    try { window.ATP.auth.logout(); } catch (_) {}
   }
+  try { window.dispatchEvent(new Event('atp:logout')); } catch (_) {}
+  window.location.replace('index.html');
 }
 
 // ── Guard: require auth before booking ───────────────────────
@@ -1675,45 +1782,82 @@ function renderCalendar() {
     byDate[k].sort(function(a,b){ return new Date(a.scheduled_at) - new Date(b.scheduled_at); });
   });
 
+  // Helper — build a .cal-session-dot for any context (compact in-cell
+  // OR expanded inside the hover popover).
+  function _buildDot(s, dayName, expanded) {
+    var time  = formatSessionTime(s.scheduled_at);
+    var tribe = s.tribe_slug || '';
+    var coach = s.coach_name || 'ATP Coach';
+    var nm    = s.name || 'Session';
+    var loc   = s.location || '';
+    var safeNm = nm.replace(/"/g,'&quot;');
+    var safeLoc = loc.replace(/"/g,'&quot;');
+    var safeCoach = String(coach).replace(/"/g,'&quot;');
+    // Private company sessions go gold in the calendar; the expanded
+    // popover row also names the company on its own line.
+    var corpCls   = s.is_corporate_only ? ' is-corporate' : '';
+    var corpBadge = expanded ? _corpBadgeHtml(s, 'popover') : '';
+    var label = expanded
+      ? escapeHtml(time + ' · ' + nm)
+        + '<span class="cps-meta">' + escapeHtml(coach) + (loc ? ' · ' + escapeHtml(loc) : '') + '</span>'
+        + corpBadge
+      : escapeHtml(time + ' ' + nm);
+    return '<div class="cal-session-dot '+tribe+corpCls+'" '
+      + 'data-id="'+String(s.id).replace(/"/g,'&quot;')+'" '
+      + 'data-name="'+safeNm+'" '
+      + 'data-tribe="'+tribe+'" '
+      + 'data-daytime="'+dayName+' &middot; '+time+'" '
+      + 'data-coach="'+safeCoach+'" '
+      + 'data-loc="'+safeLoc+'" '
+      + 'data-day="'+dayName+'" '
+      + 'data-time="'+time+'">'
+      + label + '</div>';
+  }
+
   // Days of this month
   var DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var FULL_MONTHS = MONTHS;
   for(var d=1; d<=daysInMonth; d++) {
     var cellDate = new Date(year, month, d);
     var dow    = cellDate.getDay();
+    var dayName = DAY_NAMES[dow];
     var isToday = (today.getDate()===d && today.getMonth()===month && today.getFullYear()===year);
     var daySessions = byDate[_calDateKey(cellDate)] || [];
-    var cls = 'cal-day' + (isToday?' today':'') + (daySessions.length>0?' has-session':'');
+
+    // Cell position → flip classes so the hover popover stays inside
+    // the viewport (last two rows → flip up; edge columns → flip
+    // horizontally so the card doesn't clip off-screen).
+    var cellIndex   = firstDay + (d - 1);
+    var rowIndex    = Math.floor(cellIndex / 7);
+    var totalRows   = Math.ceil((firstDay + daysInMonth) / 7);
+    var flips = '';
+    if (rowIndex >= totalRows - 2) flips += ' flip-up';
+    if (dow === 0)                 flips += ' flip-right';
+    if (dow === 6)                 flips += ' flip-left';
+
+    var cls = 'cal-day' + (isToday?' today':'') + (daySessions.length>0?' has-session':'') + flips;
     var dots = '';
     var maxShow = 2;
-    daySessions.slice(0, maxShow).forEach(function(s) {
-      var dayName = DAY_NAMES[dow];
-      var time  = formatSessionTime(s.scheduled_at);
-      var tribe = s.tribe_slug || '';
-      var coach = s.coach_name || 'ATP Coach';
-      var nm    = s.name || 'Session';
-      var loc   = s.location || '';
-      // Build onclick as a data attribute to avoid quoting hell
-      var dotEl = '<div class="cal-session-dot '+tribe+'" '
-        + 'data-id="'+String(s.id).replace(/"/g,'&quot;')+'" '
-        + 'data-name="'+nm.replace(/"/g,'&quot;')+'" '
-        + 'data-tribe="'+tribe+'" '
-        + 'data-daytime="'+dayName+' &middot; '+time+'" '
-        + 'data-coach="'+String(coach).replace(/"/g,'&quot;')+'" '
-        + 'data-loc="'+loc.replace(/"/g,'&quot;')+'" '
-        + 'data-day="'+dayName+'" '
-        + 'data-time="'+time+'">'
-        + escapeHtml(time + ' ' + nm) + '</div>';
-      dots += dotEl;
-    });
+    daySessions.slice(0, maxShow).forEach(function(s){ dots += _buildDot(s, dayName, false); });
     if(daySessions.length > maxShow) {
       dots += '<div class="cal-more">+' + (daySessions.length - maxShow) + ' more</div>';
+    }
+    // Full-day popover (only when there's at least one session).
+    var popover = '';
+    if (daySessions.length > 0) {
+      var dayLabel = dayName + ' · ' + FULL_MONTHS[month] + ' ' + d;
+      var rows = daySessions.map(function(s){ return _buildDot(s, dayName, true); }).join('');
+      popover = '<div class="cal-popover">'
+        + '<div class="cal-popover-header">' + escapeHtml(dayLabel) + ' — ' + daySessions.length + ' session' + (daySessions.length === 1 ? '' : 's') + '</div>'
+        + rows
+        + '</div>';
     }
     // Count badge top-right when the day has sessions (hidden on today
     // — the TODAY pill takes that slot).
     var countBadge = daySessions.length > 0
       ? '<span class="cal-day-count">' + daySessions.length + '</span>'
       : '';
-    html += '<div class="'+cls+'"><div class="cal-day-num">'+d+'</div>'+countBadge+dots+'</div>';
+    html += '<div class="'+cls+'"><div class="cal-day-num">'+d+'</div>'+countBadge+dots+popover+'</div>';
   }
 
   // Trailing empty cells
@@ -1858,6 +2002,31 @@ function _sponsorStripHtml(s, variant) {
          inner + '</div>';
 }
 
+// Private company session badge — gold pill + padlock, rendered wherever
+// a session chip appears (card, calendar popover row, booking modal).
+// GET /api/sessions only returns is_corporate_only rows to that
+// company's own active employees, so this is purely presentational:
+// if you can see it, it's yours. variant: 'card' | 'popover' | 'modal'.
+function _corpBadgeHtml(s, variant) {
+  if (!s || !s.is_corporate_only) return '';
+  var named = String(s.corporate_company_name || '').trim();
+  var name  = named || 'Private session';
+  var px    = (variant === 'modal') ? 11 : 10;
+  var lock = '<svg width="' + px + '" height="' + px + '" viewBox="0 0 24 24" fill="none" '
+    + 'stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" '
+    + 'aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"></rect>'
+    + '<path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>';
+  var cls = 'sc-corp' + (variant === 'modal' ? ' sc-corp--modal' : '');
+  var title = named
+    ? 'Private session for ' + named + ' — you’re seeing this because you’re on their team.'
+    : 'A private company session — you’re seeing this because you’re on the team.';
+  var pill = '<span class="' + cls + '" title="' + escapeHtml(title) + '">'
+    + lock + '<span class="sc-corp-name">' + escapeHtml(name) + '</span></span>';
+  // Card + popover give the pill its own line so long company names get
+  // an ellipsis instead of crushing the label beside them.
+  return (variant === 'modal') ? pill : '<div class="sc-corp-row">' + pill + '</div>';
+}
+
 function renderSessionsGrid(sessions) {
   var grid = document.getElementById('sessionsGrid');
   if (!grid) return;
@@ -1919,8 +2088,11 @@ function renderSessionsGrid(sessions) {
       ? '<span class="sc-live-badge" title="This session is live now"><span class="sc-live-dot"></span>LIVE</span>'
       : '';
 
+    // Private company session — gold badge + quiet gold card edge.
+    var corpBadge = _corpBadgeHtml(s, 'card');
+
     var article = document.createElement('article');
-    article.className = 'session-card reveal visible' + (isLive ? ' is-live' : '');
+    article.className = 'session-card reveal visible' + (isLive ? ' is-live' : '') + (s.is_corporate_only ? ' is-corporate' : '');
     article.setAttribute('data-tribe', tribe);
     // Stable tribe_id so the tribe filter keeps working even if admin
     // renames a tribe in CMS (which changes the slug).
@@ -1949,6 +2121,7 @@ function renderSessionsGrid(sessions) {
       '</div>' +
       '<div class="sc-mid">' +
         '<div class="sc-tribe">' + escapeHtml(tribeLabel) + liveBadge + '</div>' +
+        corpBadge +
         '<h3 class="sc-name">' + escapeHtml(s.name) + '</h3>' +
         '<p class="sc-loc">' + escapeHtml(loc) + escapeHtml(cityTag) + '</p>' +
       '</div>' +
@@ -2161,6 +2334,10 @@ async function loadSessions() {
     }).catch(function() {});
   }
   loadSessions();
+  // Calendar is the default landing view per founder (2026-06-27).
+  // setView() is safe to call before loadSessions() resolves — it just
+  // toggles visibility; the renderer fires when data lands.
+  try { setView('calendar'); } catch (_) {}
 })();
 
 </script>

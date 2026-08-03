@@ -1002,14 +1002,27 @@ function applyFilters() {
     (!loadingVisible && !errorVisible && cards.length > 0 && count === 0) ? 'flex' : 'none';
 }
 
-// URL param auto-filter on load
+// URL param auto-filter on load — e.g. /sessions.html?tribe=faster
+// from the homepage "Explore Faster" cards.
+// Previously this looked for `.filter-tab[onclick*=…]`, but the tabs
+// use data-atp-call/data-args, so the selector never matched and the
+// parameter silently did nothing. We now set the filter state directly;
+// applyFilters() runs again once the sessions have loaded, so the
+// filter holds regardless of fetch timing.
 (function(){
   var params = new URLSearchParams(window.location.search);
-  var tribe = params.get('tribe');
-  if(tribe) {
-    var btn = document.querySelector('.filter-tab[onclick*="\'' + tribe + '\'"]');
-    if(btn) btn.click();
-  }
+  var tribe = (params.get('tribe') || '').toLowerCase().trim();
+  if (!tribe) return;
+  var btn = document.querySelector(
+    '.filter-tab[data-atp-call="filterTribe"][data-args=\'["' + tribe + '"]\']'
+  );
+  if (!btn) return;                       // unknown tribe → leave on All
+  currentTribe = tribe;
+  document.querySelectorAll('.filter-tab[data-atp-call="filterTribe"]')
+    .forEach(function(b){ b.classList.remove('active'); });
+  btn.classList.add('active');
+  try { if (typeof populateActivityFilter === 'function') populateActivityFilter(); } catch(e) {}
+  try { if (typeof applyFilters === 'function') applyFilters(); } catch(e) {}
 })();
 
 var pendingSession = null;

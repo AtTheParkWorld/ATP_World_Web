@@ -675,32 +675,32 @@ a.product-card:hover{transform:translateY(-4px)}
       <article class="tribe-card reveal">
         <p class="tribe-tag">For the mind + body</p>
         <h3 class="tribe-name">Better</h3>
-        <p class="tribe-count">5 activities · Yoga-focused</p>
+        <p class="tribe-count" data-tribe-count="better">5 activities · Yoga-focused</p>
         <div class="tribe-divider"></div>
         <p class="tribe-desc">Breathe deeper. Move with intention. Reconnect body and mind through yoga, pilates, and sound healing.</p>
         <ul class="tribe-activities"><li>Traditional yoga</li><li>Hatha &amp; ashtanga</li><li>Pilates &amp; yoga</li><li>Sound healing</li></ul>
-        <p class="tribe-next">Next session: Today, 7:00 PM · DIC Amphitheatre</p>
-        <a href="sessions.html" class="tribe-cta-ghost">Explore Better →</a>
+        <p class="tribe-next" data-tribe-next="better">Next session: loading…</p>
+        <a href="sessions.html?tribe=better" class="tribe-cta-ghost">Explore Better →</a>
       </article>
       <article class="tribe-card featured reveal rd1">
         <p class="tribe-tag">For the runner + cyclist</p>
         <h3 class="tribe-name">Faster</h3>
-        <p class="tribe-count">3 activities · Endurance</p>
+        <p class="tribe-count" data-tribe-count="faster">3 activities · Endurance</p>
         <div class="tribe-divider"></div>
         <p class="tribe-desc">Push your pace. Chase your PB. Running, cycling, and swimming communities training side by side.</p>
         <ul class="tribe-activities"><li>Community running</li><li>Group cycling</li><li>Open water swimming</li></ul>
-        <p class="tribe-next">Next session: Tomorrow, 7:00 AM · Dubai Marina</p>
-        <a href="sessions.html" class="tribe-cta">Explore Faster →</a>
+        <p class="tribe-next" data-tribe-next="faster">Next session: loading…</p>
+        <a href="sessions.html?tribe=faster" class="tribe-cta">Explore Faster →</a>
       </article>
       <article class="tribe-card reveal rd2">
         <p class="tribe-tag">For the athlete in you</p>
         <h3 class="tribe-name">Stronger</h3>
-        <p class="tribe-count">11 activities · High intensity</p>
+        <p class="tribe-count" data-tribe-count="stronger">11 activities · High intensity</p>
         <div class="tribe-divider"></div>
         <p class="tribe-desc">Burn. Build. Repeat. From kickboxing to military bootcamp — the most diverse tribe in the UAE.</p>
         <ul class="tribe-activities"><li>Cardio calisthenics</li><li>Kickboxing</li><li>Military bootcamp</li><li>CrossTraining + more</li></ul>
-        <p class="tribe-next">Next session: Today, 7:00 PM · Skydive Dubai</p>
-        <a href="sessions.html" class="tribe-cta-ghost">Explore Stronger →</a>
+        <p class="tribe-next" data-tribe-next="stronger">Next session: loading…</p>
+        <a href="sessions.html?tribe=stronger" class="tribe-cta-ghost">Explore Stronger →</a>
       </article>
     </div>
   </div>
@@ -990,6 +990,76 @@ var obs = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.is
 document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
 
 
+
+// ── TRIBE CARDS: live activity counts + real next session ───
+// Both lines used to be hardcoded ("11 activities", "Next session:
+// Today, 7:00 PM · Skydive Dubai") and drifted from reality — a
+// visitor could be told a session is "Today" when the next one is
+// next week. Now both come from the upcoming-sessions feed.
+(function () {
+  var countEls = document.querySelectorAll('[data-tribe-count]');
+  var nextEls  = document.querySelectorAll('[data-tribe-next]');
+  if (!countEls.length && !nextEls.length) return;
+
+  // Descriptor kept per tribe so the count line still reads like copy
+  // ("6 activities · Endurance") rather than a bare number.
+  var FLAVOUR = { better: 'Yoga-focused', faster: 'Endurance', stronger: 'High intensity' };
+
+  function fmtWhen(iso) {
+    var d = new Date(iso);
+    if (isNaN(d)) return '';
+    var now = new Date();
+    var startOf = function (x) { return new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime(); };
+    var days = Math.round((startOf(d) - startOf(now)) / 86400000);
+    var time = d.toLocaleTimeString('en-GB', { hour: 'numeric', minute: '2-digit', hour12: true }).toUpperCase();
+    if (days === 0) return 'Today, ' + time;
+    if (days === 1) return 'Tomorrow, ' + time;
+    return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }) + ', ' + time;
+  }
+
+  fetch('/api/sessions?status=upcoming&limit=200', { cache: 'no-cache' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      var list = (d && d.sessions) || [];
+      if (!list.length) throw new Error('no sessions');
+
+      var byTribe = {};
+      list.forEach(function (s) {
+        var slug = (s.tribe_slug || '').toLowerCase();
+        if (!slug) return;
+        var b = byTribe[slug] || (byTribe[slug] = { activities: {}, next: null });
+        if (s.activity_name) b.activities[s.activity_name] = 1;
+        var when = s.scheduled_at && new Date(s.scheduled_at);
+        if (when && !isNaN(when) && when >= new Date()) {
+          if (!b.next || when < new Date(b.next.scheduled_at)) b.next = s;
+        }
+      });
+
+      countEls.forEach(function (el) {
+        var slug = el.getAttribute('data-tribe-count');
+        var b = byTribe[slug];
+        if (!b) return;                                   // keep fallback copy
+        var n = Object.keys(b.activities).length;
+        if (!n) return;
+        el.textContent = n + ' activit' + (n === 1 ? 'y' : 'ies')
+          + (FLAVOUR[slug] ? ' · ' + FLAVOUR[slug] : '');
+      });
+
+      nextEls.forEach(function (el) {
+        var slug = el.getAttribute('data-tribe-next');
+        var s = byTribe[slug] && byTribe[slug].next;
+        if (!s) { el.textContent = 'Next session: check the calendar'; return; }
+        var when = fmtWhen(s.scheduled_at);
+        el.textContent = 'Next session: ' + when + (s.location ? ' · ' + s.location : '');
+      });
+    })
+    .catch(function () {
+      // Never leave "loading…" on screen — fall back to a neutral line.
+      nextEls.forEach(function (el) {
+        if (/loading/i.test(el.textContent)) el.textContent = 'Next session: see the calendar';
+      });
+    });
+})();
 
 // ── PARTNERS STRIP: admin-managed, clickable ────────────────
 // Renders from Admin → Partners → Directory. A partner whose
