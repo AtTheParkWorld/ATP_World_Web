@@ -2,21 +2,11 @@
   "expo": {
     "name": "At The Park",
     "slug": "atp-mobile",
-    "version": "1.0.0",
+    "version": "1.1.0",
     "orientation": "portrait",
     "scheme": "atp",
     "userInterfaceStyle": "dark",
     "icon": "./assets/images/icon.png",
-    "splash": {
-      "image": "./assets/images/splash.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#0a0a0a"
-    },
-    "notification": {
-      "icon": "./assets/images/notification-icon.png",
-      "color": "#A8FF00"
-    },
-    "newArchEnabled": true,
     "assetBundlePatterns": [
       "**/*"
     ],
@@ -101,6 +91,26 @@
           "url": "https://sentry.io/",
           "organization": "atthepark",
           "project": "atp-mobile"
+        }
+      ],
+      "expo-image",
+      "expo-localization",
+      "expo-status-bar",
+      "expo-web-browser",
+      "expo-video",
+      [
+        "@stripe/stripe-react-native",
+        {
+          "merchantIdentifier": "",
+          "enableGooglePay": false
+        }
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/images/splash.png",
+          "resizeMode": "contain",
+          "backgroundColor": "#0a0a0a"
         }
       ]
     ],

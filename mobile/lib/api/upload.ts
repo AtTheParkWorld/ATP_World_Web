@@ -13,7 +13,7 @@
  * in the post's `media` array.
  */
 import { launchImageLibraryAsync, MediaTypeOptions, requestMediaLibraryPermissionsAsync } from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
+import * as FileSystem from 'expo-file-system/legacy';
 import { api } from './client';
 
 export interface UploadUrlResponse {
@@ -75,7 +75,7 @@ export async function pickAndUploadMedia(opts: { kind?: 'post' | 'avatar' } = {}
 
   // Size check via the filesystem — cheaper than reading the whole file
   // into memory, works for file:// (iOS) and content:// (Android) URIs.
-  const info = await FileSystem.getInfoAsync(uri, { size: true });
+  const info = await FileSystem.getInfoAsync(uri, { size: true } as FileSystem.InfoOptions & { size?: boolean });
   const size = (info.exists && 'size' in info ? (info as any).size : 0) || 0;
   if (size > signed.max_size_bytes) {
     throw new Error(`File is too large (${Math.round(size / 1024 / 1024)}MB). Max ${Math.round(signed.max_size_bytes / 1024 / 1024)}MB.`);

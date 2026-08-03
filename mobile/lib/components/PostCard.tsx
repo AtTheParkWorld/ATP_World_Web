@@ -15,8 +15,8 @@
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Image, Platform, Pressable, Share, Text, View } from 'react-native';
 import { router } from 'expo-router';
-import { Video, ResizeMode } from 'expo-av';
-import * as FileSystem from 'expo-file-system';
+import { VideoView, useVideoPlayer } from 'expo-video';
+import * as FileSystem from 'expo-file-system/legacy';
 // Lazily required inside onSavePress — expo-media-library is a NATIVE
 // module, so a statically-imported reference would crash this whole
 // component on any binary built before it was added (e.g. testers still
@@ -49,15 +49,21 @@ function isVideoMedia(m: { src: string; type?: string }): boolean {
  */
 function FeedVideo({ uri }: { uri: string }) {
   const [muted, setMuted] = useState(true);
+  // expo-video (expo-av was removed from the SDK): the player object
+  // owns playback state; autoplay muted + loop reproduces the old
+  // Instagram-style behaviour exactly.
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = true;
+    p.muted = true;
+    p.play();
+  });
   return (
-    <Pressable onPress={() => setMuted((v) => !v)}>
-      <Video
-        source={{ uri }}
+    <Pressable onPress={() => { const next = !muted; setMuted(next); player.muted = next; }}>
+      <VideoView
+        player={player}
         style={{ width: '100%', aspectRatio: 4 / 3, marginTop: 12, borderRadius: 14, backgroundColor: '#000' }}
-        resizeMode={ResizeMode.COVER}
-        shouldPlay
-        isLooping
-        isMuted={muted}
+        contentFit="cover"
+        nativeControls={false}
       />
       <View
         style={{

@@ -11,7 +11,7 @@ import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Video, ResizeMode } from 'expo-av';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import { listLiveStreams, trackView } from '@/lib/api/streams';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
@@ -20,7 +20,6 @@ export default function LivePlayer() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const streamId = String(id || '');
   const qc = useQueryClient();
-  const videoRef = useRef<Video>(null);
 
   const liveQ = useQuery({
     queryKey: ['live-streams'],
@@ -99,15 +98,7 @@ export default function LivePlayer() {
               </Pressable>
             </View>
           ) : hlsUrl ? (
-            <Video
-              ref={videoRef}
-              source={{ uri: hlsUrl }}
-              style={{ width: '100%', height: '100%' }}
-              resizeMode={ResizeMode.CONTAIN}
-              shouldPlay
-              isLooping={false}
-              useNativeControls
-            />
+            <HlsPlayer url={hlsUrl} />
           ) : (
             <View className="flex-1 items-center justify-center">
               <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm">
@@ -167,5 +158,25 @@ export default function LivePlayer() {
         </View>
       </ScrollView>
     </SafeAreaView>
+  );
+}
+
+
+/**
+ * HLS live player (expo-video). Mounted only once the stream URL
+ * exists, so the hook receives it directly — no ref/source juggling.
+ */
+function HlsPlayer({ url }: { url: string }) {
+  const player = useVideoPlayer(url, (p) => {
+    p.loop = false;
+    p.play();
+  });
+  return (
+    <VideoView
+      player={player}
+      style={{ width: '100%', height: '100%' }}
+      contentFit="contain"
+      nativeControls
+    />
   );
 }
