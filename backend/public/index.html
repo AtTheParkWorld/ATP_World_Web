@@ -853,12 +853,16 @@ a.product-card:hover{transform:translateY(-4px)}
         <p class="pitch-why">Our audience is <strong>health-conscious, loyal, and active</strong> — exactly the people sport, wellness, nutrition, hospitality, and lifestyle brands want to reach. Because everything we do is free, the community trusts us completely. That trust extends to the brands we choose to work with.</p>
       </div>
     </div>
-    <div class="partners-grid reveal">
+    <!-- Partner tiles are admin-managed: Admin → Partners → Directory.
+         Each partner's "Website URL" makes its tile clickable (new tab).
+         The hardcoded names below are the fallback shown until the
+         directory has entries, so the strip is never empty. -->
+    <div class="partners-grid reveal" id="partnersGrid">
       <div class="partner-tile"><div class="partner-name">Dusit Thani</div></div>
       <div class="partner-tile"><div class="partner-name">Al Wasl Water</div></div>
       <div class="partner-tile"><div class="partner-name">DIC</div></div>
       <div class="partner-tile"><div class="partner-name">Satyug Yoga</div></div>
-      <div class="partner-tile partner-tile-open"><div class="partner-name-open">Your brand here</div></div>
+      <div class="partner-tile partner-tile-open"><a href="business.html" style="text-decoration:none"><div class="partner-name-open">Your brand here</div></a></div>
     </div>
     <div class="partner-cta-strip reveal">
       <div class="partner-cta-text">
@@ -982,6 +986,53 @@ var obs = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.is
 document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
 
 
+
+// ── PARTNERS STRIP: admin-managed, clickable ────────────────
+// Renders from Admin → Partners → Directory. A partner whose
+// "Website URL" is set becomes a clickable tile (new tab, noopener);
+// one without a URL renders exactly as before, just not clickable.
+// If the directory is empty or the call fails we leave the hardcoded
+// fallback tiles in place — the strip must never render empty in
+// front of a prospect.
+(function () {
+  var grid = document.getElementById('partnersGrid');
+  if (!grid) return;
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  // Only http(s) — never let an admin-entered javascript:/data: URL
+  // become a live link on the homepage.
+  function safeUrl(u) {
+    var s = String(u || '').trim();
+    return /^https?:\/\//i.test(s) ? s : '';
+  }
+
+  fetch('/api/partners/directory', { cache: 'no-cache' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      var list = (d && d.partners) || [];
+      if (!list.length) return;                 // keep the fallback tiles
+
+      var tiles = list.map(function (p) {
+        var name = esc(p.name || '');
+        var url  = safeUrl(p.website_url);
+        var inner = '<div class="partner-name">' + name + '</div>';
+        return url
+          ? '<a class="partner-tile" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer"'
+            + ' style="text-decoration:none" aria-label="' + name + ' — opens in a new tab">' + inner + '</a>'
+          : '<div class="partner-tile">' + inner + '</div>';
+      }).join('');
+
+      grid.innerHTML = tiles +
+        '<a class="partner-tile partner-tile-open" href="business.html" style="text-decoration:none">' +
+          '<div class="partner-name-open">Your brand here</div>' +
+        '</a>';
+    })
+    .catch(function () { /* fallback tiles stay */ });
+})();
 
 // ── INDEX SHOP: Squatwolf-style carousel ────────────────────
 (function() {

@@ -49,7 +49,7 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .nav-actions{display:flex;align-items:center;gap:12px}
 .btn-ghost{font-size:13px;font-weight:600;color:var(--white);border:1px solid rgba(255,255,255,.2);padding:9px 20px;border-radius:var(--radius);background:transparent;transition:border-color .2s}
 .btn-ghost:hover{border-color:var(--white)}
-.btn-primary{font-size:13px;font-weight:700;background:var(--green);color:var(--white);padding:10px 22px;border-radius:var(--radius);border:none;letter-spacing:.03em;transition:background .2s,transform .15s}
+.btn-primary{font-size:13px;font-weight:700;background:var(--green);color:var(--black);padding:10px 22px;border-radius:var(--radius);border:none;letter-spacing:.03em;transition:background .2s,transform .15s}
 .btn-primary:hover{background:var(--green-dark);transform:translateY(-1px)}
 .hamburger{display:none;flex-direction:column;gap:5px;cursor:pointer;padding:4px}
 .hamburger span{display:block;width:22px;height:2px;background:var(--white);border-radius:2px}
@@ -79,11 +79,8 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .hero-sub{font-size:17px;line-height:1.7;color:var(--light);max-width:400px;margin-bottom:40px;font-weight:300}
 .hero-sub strong{color:var(--white);font-weight:600}
 .hero-cta-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
-.btn-hero{font-size:15px;font-weight:700;background:var(--green);color:var(--white);padding:16px 36px;border-radius:var(--radius);border:none;letter-spacing:.02em;transition:background .2s,transform .15s;display:inline-flex;align-items:center;gap:8px}
+.btn-hero{font-size:15px;font-weight:700;background:var(--green);color:var(--black);padding:16px 36px;border-radius:var(--radius);border:none;letter-spacing:.02em;transition:background .2s,transform .15s;display:inline-flex;align-items:center;gap:8px}
 .btn-hero:hover{background:var(--green-dark);transform:translateY(-2px)}
-.btn-hero-sec{font-size:14px;font-weight:500;color:var(--light);display:inline-flex;align-items:center;gap:6px;border:none;background:none;transition:color .2s}
-.btn-hero-sec:hover{color:var(--white)}
-.btn-hero-sec span{text-decoration:underline;text-underline-offset:3px}
 /* Right column is now decoration-only — green frame + live label sit
    above the full-section video. No background colour because the video
    shows through; no border-left because the green ::before stripe
@@ -91,26 +88,19 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .hero-right{position:relative;overflow:hidden;background:transparent;z-index:2}
 .hero-img-placeholder{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px}
 .hero-img-placeholder .img-note{font-size:11px;color:#444;letter-spacing:.08em;text-transform:uppercase;text-align:center;line-height:1.8;max-width:200px}
-.hero-right::after{content:'';position:absolute;bottom:0;left:0;width:100%;height:4px;background:var(--green);z-index:3}
 /* Vertical column-divider stripe removed per founder request — the
    full-section video reads better without a hard line through the middle. */
-/* LIVE MEMBER COUNTER */
-.live-counter{display:inline-flex;align-items:center;gap:12px;margin-bottom:28px}
-.lc-pulse{position:relative;width:10px;height:10px;flex-shrink:0}
-.lc-pulse-dot{position:absolute;inset:0;background:var(--green);border-radius:50%}
-.lc-pulse-ring{position:absolute;inset:-4px;border:2px solid var(--green);border-radius:50%;animation:ring-out 2s ease-out infinite;opacity:0}
+/* HERO MEMBER COUNTER — "We are XXXX ATP Members". Hydrates live
+   from /api/stats/public via the generic [data-stat] hydrator. Sized
+   to carry the social-proof weight that the removed 4-stat strip
+   used to provide. */
+.member-counter{display:inline-flex;align-items:baseline;gap:10px 14px;flex-wrap:wrap;margin-bottom:28px;font-family:var(--ff-display);text-transform:uppercase;letter-spacing:.02em;line-height:1}
+.mc-prefix,.mc-suffix{font-size:clamp(20px,2.4vw,28px);font-weight:800;color:var(--white)}
+.mc-num{font-size:clamp(44px,6.5vw,80px);font-weight:900;color:var(--green);letter-spacing:-.02em;line-height:.9;font-feature-settings:"tnum";font-variant-numeric:tabular-nums}
+.mc-pulse{position:relative;width:10px;height:10px;display:inline-block;align-self:center;margin-left:4px}
+.mc-pulse-dot{position:absolute;inset:0;background:var(--green);border-radius:50%}
+.mc-pulse-ring{position:absolute;inset:-4px;border:2px solid var(--green);border-radius:50%;animation:ring-out 2s ease-out infinite;opacity:0}
 @keyframes ring-out{0%{transform:scale(.5);opacity:.8}100%{transform:scale(2.2);opacity:0}}
-.lc-text{font-family:var(--ff-display);font-size:clamp(18px,2vw,24px);font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:var(--white);line-height:1}
-.lc-text strong{color:var(--green)}
-.lc-divider{width:1px;height:24px;background:rgba(255,255,255,.15);flex-shrink:0}
-.lc-sub{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);line-height:1.4}
-
-
-.hero-stats{display:flex;gap:0;margin-top:56px;padding-top:36px;border-top:1px solid rgba(255,255,255,.1)}
-.stat{flex:1;padding-right:20px;border-right:1px solid rgba(255,255,255,.1);margin-right:20px}
-.stat:last-child{border-right:none;margin-right:0;padding-right:0}
-.stat-num{font-family:var(--ff-display);font-size:40px;font-weight:900;line-height:1;color:var(--green);letter-spacing:-.02em}
-.stat-label{font-size:12px;color:var(--muted);margin-top:4px}
 .scroll-hint{position:absolute;bottom:32px;left:64px;display:flex;align-items:center;gap:10px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#444;animation:float 2.2s ease-in-out infinite}
 .scroll-hint::after{content:'';display:block;width:1px;height:36px;background:linear-gradient(to bottom,#444,transparent)}
 @keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(6px)}}
@@ -118,8 +108,8 @@ button{cursor:pointer;font-family:var(--ff-body)}
 /* TRUST TICKER */
 .trust-bar{background:var(--green);padding:13px 0;overflow:hidden}
 .trust-ticker{display:flex;gap:60px;animation:ticker 22s linear infinite;white-space:nowrap}
-.trust-ticker-item{display:flex;align-items:center;gap:12px;font-family:var(--ff-display);font-size:14px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--white);flex-shrink:0}
-.trust-ticker-item::before{content:'';display:block;width:5px;height:5px;background:rgba(255,255,255,.5);border-radius:50%}
+.trust-ticker-item{display:flex;align-items:center;gap:12px;font-family:var(--ff-display);font-size:14px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--black);flex-shrink:0}
+.trust-ticker-item::before{content:'';display:block;width:5px;height:5px;background:rgba(0,0,0,.5);border-radius:50%}
 @keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
 
 /* STORY */
@@ -129,8 +119,8 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .story-img-box::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)}
 .img-ph{font-size:11px;color:#333;letter-spacing:.08em;text-transform:uppercase;text-align:center;line-height:1.8}
 .story-badge{position:absolute;bottom:0;right:-18px;transform:translateY(50%);width:100px;height:100px;background:var(--green);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;z-index:3;border:3px solid var(--dark2)}
-.story-badge-num{font-family:var(--ff-display);font-size:32px;font-weight:900;color:var(--white);line-height:1}
-.story-badge-label{font-size:10px;font-weight:700;color:rgba(255,255,255,.85);letter-spacing:.06em;text-transform:uppercase}
+.story-badge-num{font-family:var(--ff-display);font-size:32px;font-weight:900;color:var(--black);line-height:1}
+.story-badge-label{font-size:10px;font-weight:700;color:rgba(0,0,0,.78);letter-spacing:.06em;text-transform:uppercase}
 .section-label{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:12px;display:flex;align-items:center;gap:10px}
 .section-label::before{content:'';display:block;width:20px;height:2px;background:var(--green)}
 .story-h2{font-family:var(--ff-display);font-size:clamp(40px,4.5vw,58px);font-weight:900;line-height:.95;letter-spacing:-.01em;text-transform:uppercase;margin-bottom:24px}
@@ -177,11 +167,11 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .tribe-card:hover{background:var(--dark3)}
 .tribe-card:hover::before{transform:scaleX(1)}
 .tribe-card.featured{background:var(--green)}
-.tribe-card.featured .tribe-name,.tribe-card.featured .tribe-count,.tribe-card.featured .tribe-desc,.tribe-card.featured .tribe-next{color:var(--white)}
-.tribe-card.featured .tribe-divider{background:rgba(255,255,255,.2)}
-.tribe-card.featured .tribe-activities li{color:rgba(255,255,255,.85);border-bottom-color:rgba(255,255,255,.12)}
-.tribe-card.featured .tribe-activities li::before{background:rgba(255,255,255,.6)}
-.tribe-card.featured .tribe-tag{color:rgba(255,255,255,.6)}
+.tribe-card.featured .tribe-name,.tribe-card.featured .tribe-count,.tribe-card.featured .tribe-desc,.tribe-card.featured .tribe-next{color:var(--black)}
+.tribe-card.featured .tribe-divider{background:rgba(0,0,0,.22)}
+.tribe-card.featured .tribe-activities li{color:rgba(0,0,0,.82);border-bottom-color:rgba(0,0,0,.14)}
+.tribe-card.featured .tribe-activities li::before{background:rgba(0,0,0,.55)}
+.tribe-card.featured .tribe-tag{color:rgba(0,0,0,.6)}
 .tribe-card.featured::before{display:none}
 .tribe-tag{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:14px}
 .tribe-name{font-family:var(--ff-display);font-size:48px;font-weight:900;line-height:.9;text-transform:uppercase;color:var(--white);margin-bottom:8px}
@@ -383,9 +373,8 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
   .sessions-grid{grid-template-columns:1fr}
   .shop-grid{grid-template-columns:1fr 1fr;gap:8px}
   .footer-top{grid-template-columns:1fr;gap:28px}
-  .hero-stats{flex-direction:column;gap:14px}
-  .stat{border-right:none;border-bottom:1px solid rgba(255,255,255,.1);padding-bottom:14px}
-  .stat:last-child{border-bottom:none}
+  .member-counter{gap:6px 10px}
+  .mc-num{flex-basis:100%}
 }
 
 /* ══ AUTH MODAL ══════════════════════════════════════════════ */
@@ -537,17 +526,18 @@ a.product-card:hover{transform:translateY(-4px)}
       <span class="word-alone">Alone.</span>
     </h1>
 
-    <!-- LIVE MEMBER COUNTER -->
-    <div class="live-counter" aria-live="polite" aria-label="Active ATP members">
-      <div class="lc-pulse" aria-hidden="true">
-        <div class="lc-pulse-dot"></div>
-        <div class="lc-pulse-ring"></div>
-      </div>
-      <div class="lc-text">
-        <strong id="liveCount">7,000</strong> ATP Active Members
-      </div>
-      <div class="lc-divider" aria-hidden="true"></div>
-      <div class="lc-sub">Always<br>free</div>
+    <!-- LIVE MEMBER COUNTER — hero-prominent. Hydrates from
+         /api/stats/public (data-stat="members_count") so every new
+         registration via the website OR the app bumps this number
+         within ~60 s (the stats endpoint's in-process TTL). -->
+    <div class="member-counter" aria-live="polite" aria-label="Total ATP members">
+      <span class="mc-prefix">We are</span>
+      <strong class="mc-num" data-stat="members_count">7,000</strong>
+      <span class="mc-suffix">ATP Members</span>
+      <span class="mc-pulse" aria-hidden="true">
+        <span class="mc-pulse-dot"></span>
+        <span class="mc-pulse-ring"></span>
+      </span>
     </div>
 
     <p class="hero-sub">
@@ -559,19 +549,6 @@ a.product-card:hover{transform:translateY(-4px)}
         Find a session
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
       </button>
-      <button class="btn-hero-sec"><span>Watch what we do</span>
-        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><circle cx="8" cy="8" r="6"/><path d="M6.5 6l4 2-4 2V6z" fill="currentColor" stroke="none"/></svg>
-      </button>
-    </div>
-    <!-- Hero stats (Audit 4.2) — live numbers from /api/stats/public.
-         data-stat="X" elements get hydrated by atp-stats.js on page load.
-         The static numbers below are sane fallbacks if the API is
-         unavailable so visitors never see "0" or skeleton text. -->
-    <div class="hero-stats">
-      <div class="stat"><div class="stat-num" data-stat="members_count" data-suffix="+">7,000+</div><div class="stat-label">Members</div></div>
-      <div class="stat"><div class="stat-num" data-stat="activities_count">19</div><div class="stat-label">Activities</div></div>
-      <div class="stat"><div class="stat-num" data-stat="cities_count">3</div><div class="stat-label">Cities</div></div>
-      <div class="stat"><div class="stat-num">AED 0</div><div class="stat-label">Cost to you</div></div>
     </div>
   </div>
   <div class="hero-right" aria-hidden="true">
@@ -688,7 +665,7 @@ a.product-card:hover{transform:translateY(-4px)}
         <p class="section-label">Find your fit</p>
         <h2 class="section-h2" id="tribes-heading">Your <span class="accent">tribe</span><br>is here</h2>
       </div>
-      <a href="sessions.html" class="link-arrow">All sessions <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7h10M8 3l4 4-4 4"/></svg></a>
+      <a href="sessions.html" class="link-arrow">All sessions <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg></a>
     </div>
     <div class="tribes-grid">
       <article class="tribe-card reveal">
@@ -725,6 +702,41 @@ a.product-card:hover{transform:translateY(-4px)}
   </div>
 </section>
 
+<!-- SHOP — moved up to sit directly below TRIBES per founder request
+     (2026-06-27). The carousel hydrates from the same Shopify-backed
+     endpoint as before; placement change only. -->
+<section class="shop-section" aria-labelledby="shop-heading">
+  <div class="shop-inner">
+    <div class="shop-header">
+      <div>
+        <p class="section-label reveal">ATP Store · Best sellers</p>
+        <h2 class="section-h2 reveal rd1" id="shop-heading">Our Collection</h2>
+        <p class="reveal rd2" style="font-size:14px;color:var(--muted);font-weight:300;line-height:1.5;margin-top:8px;max-width:520px">The pieces members are wearing right now — sorted by what's actually moving from the store this week.</p>
+      </div>
+      <a href="/store" class="link-arrow reveal">Shop all <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></a>
+    </div>
+
+    <div class="swf-carousel-outer reveal">
+      <button class="swf-arrow swf-arrow-prev" id="shopPrev" aria-label="Previous">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
+      </button>
+      <div class="swf-track" id="indexShopGrid">
+        <!-- 8 skeleton placeholders -->
+        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:70%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
+        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:60%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
+        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:65%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
+        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:75%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
+        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:55%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
+        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:68%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
+      </div>
+      <button class="swf-arrow swf-arrow-next" id="shopNext" aria-label="Next">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+    </div>
+
+  </div>
+</section>
+
 <!-- SESSIONS -->
 <section class="sessions-section" id="sessions" aria-labelledby="sessions-heading">
   <div class="sessions-inner">
@@ -733,7 +745,7 @@ a.product-card:hover{transform:translateY(-4px)}
         <p class="section-label">This week</p>
         <h2 class="section-h2" id="sessions-heading">What's on<br><span class="accent">near you</span></h2>
       </div>
-      <a href="sessions.html" class="link-arrow">Full calendar <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7h10M8 3l4 4-4 4"/></svg></a>
+      <a href="sessions.html" class="link-arrow">Full calendar <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"/><path d="M16 2v4"/><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/></svg></a>
     </div>
     <!-- Audit 4.2 — sessions grid hydrates from /api/stats/public/sessions
          on page load. The 4 hardcoded cards below are SEO-friendly
@@ -798,39 +810,6 @@ a.product-card:hover{transform:translateY(-4px)}
   </div>
 </section>
 
-<!-- SHOP -->
-<section class="shop-section" aria-labelledby="shop-heading">
-  <div class="shop-inner">
-    <div class="shop-header">
-      <div>
-        <p class="section-label reveal">ATP Store · Best sellers</p>
-        <h2 class="section-h2 reveal rd1" id="shop-heading">Our Collection</h2>
-        <p class="reveal rd2" style="font-size:14px;color:var(--muted);font-weight:300;line-height:1.5;margin-top:8px;max-width:520px">The pieces members are wearing right now — sorted by what's actually moving from the store this week.</p>
-      </div>
-      <a href="store.html" class="link-arrow reveal">Shop all <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 7h10M8 3l4 4-4 4"/></svg></a>
-    </div>
-
-    <div class="swf-carousel-outer reveal">
-      <button class="swf-arrow swf-arrow-prev" id="shopPrev" aria-label="Previous">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M15 18l-6-6 6-6"/></svg>
-      </button>
-      <div class="swf-track" id="indexShopGrid">
-        <!-- 8 skeleton placeholders -->
-        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:70%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
-        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:60%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
-        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:65%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
-        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:75%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
-        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:55%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
-        <div class="swf-card swf-skel"><div class="swf-img skeleton-img"></div><div class="swf-label"><div class="skel-b" style="width:68%;height:12px;border-radius:3px;background:#1e1e1e;margin:0 auto"></div></div></div>
-      </div>
-      <button class="swf-arrow swf-arrow-next" id="shopNext" aria-label="Next">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg>
-      </button>
-    </div>
-
-  </div>
-</section>
-
 <!-- APP banner relocated to just before the footer (after Final CTA). -->
 
 <!-- COACHES STRIP -->
@@ -874,12 +853,16 @@ a.product-card:hover{transform:translateY(-4px)}
         <p class="pitch-why">Our audience is <strong>health-conscious, loyal, and active</strong> — exactly the people sport, wellness, nutrition, hospitality, and lifestyle brands want to reach. Because everything we do is free, the community trusts us completely. That trust extends to the brands we choose to work with.</p>
       </div>
     </div>
-    <div class="partners-grid reveal">
+    <!-- Partner tiles are admin-managed: Admin → Partners → Directory.
+         Each partner's "Website URL" makes its tile clickable (new tab).
+         The hardcoded names below are the fallback shown until the
+         directory has entries, so the strip is never empty. -->
+    <div class="partners-grid reveal" id="partnersGrid">
       <div class="partner-tile"><div class="partner-name">Dusit Thani</div></div>
       <div class="partner-tile"><div class="partner-name">Al Wasl Water</div></div>
       <div class="partner-tile"><div class="partner-name">DIC</div></div>
       <div class="partner-tile"><div class="partner-name">Satyug Yoga</div></div>
-      <div class="partner-tile partner-tile-open"><div class="partner-name-open">Your brand here</div></div>
+      <div class="partner-tile partner-tile-open"><a href="business.html" style="text-decoration:none"><div class="partner-name-open">Your brand here</div></a></div>
     </div>
     <div class="partner-cta-strip reveal">
       <div class="partner-cta-text">
@@ -897,7 +880,7 @@ a.product-card:hover{transform:translateY(-4px)}
   <div class="final-cta-inner">
     <h2 id="cta-heading">Never.<br>Train.<br>Alone.</h2>
     <p>Join hundreds of people who show up every week — for free, for themselves, for each other.</p>
-    <a href="community.html"><button class="btn-dark" data-atp-call="openAuth" data-args='["signup"]'>Join the community — it's free <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 8h10M9 4l4 4-4 4"/></svg></button></a>
+    <a href="community.html"><button class="btn-dark" data-atp-call="openAuth" data-args='["signup"]'>Join the community — it's free <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></button></a>
   </div>
 </section>
 
@@ -1004,6 +987,53 @@ document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
 
 
 
+// ── PARTNERS STRIP: admin-managed, clickable ────────────────
+// Renders from Admin → Partners → Directory. A partner whose
+// "Website URL" is set becomes a clickable tile (new tab, noopener);
+// one without a URL renders exactly as before, just not clickable.
+// If the directory is empty or the call fails we leave the hardcoded
+// fallback tiles in place — the strip must never render empty in
+// front of a prospect.
+(function () {
+  var grid = document.getElementById('partnersGrid');
+  if (!grid) return;
+
+  function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) {
+      return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+  }
+  // Only http(s) — never let an admin-entered javascript:/data: URL
+  // become a live link on the homepage.
+  function safeUrl(u) {
+    var s = String(u || '').trim();
+    return /^https?:\/\//i.test(s) ? s : '';
+  }
+
+  fetch('/api/partners/directory', { cache: 'no-cache' })
+    .then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (d) {
+      var list = (d && d.partners) || [];
+      if (!list.length) return;                 // keep the fallback tiles
+
+      var tiles = list.map(function (p) {
+        var name = esc(p.name || '');
+        var url  = safeUrl(p.website_url);
+        var inner = '<div class="partner-name">' + name + '</div>';
+        return url
+          ? '<a class="partner-tile" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer"'
+            + ' style="text-decoration:none" aria-label="' + name + ' — opens in a new tab">' + inner + '</a>'
+          : '<div class="partner-tile">' + inner + '</div>';
+      }).join('');
+
+      grid.innerHTML = tiles +
+        '<a class="partner-tile partner-tile-open" href="business.html" style="text-decoration:none">' +
+          '<div class="partner-name-open">Your brand here</div>' +
+        '</a>';
+    })
+    .catch(function () { /* fallback tiles stay */ });
+})();
+
 // ── INDEX SHOP: Squatwolf-style carousel ────────────────────
 (function() {
   var TOKEN  = "31a1a5554b7f2fdaf2aa4dc44e13a127";
@@ -1015,7 +1045,7 @@ document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
 
     // Best sellers — Shopify's BEST_SELLING sortKey ranks by recent sales
     // velocity. Falls back to creation order if a store has no sales yet.
-    var query = "{products(first:8, sortKey: BEST_SELLING){edges{node{id title productType priceRange{minVariantPrice{amount currencyCode}}images(first:1){edges{node{url altText}}}}}}}";
+    var query = "{products(first:8, sortKey: BEST_SELLING){edges{node{id title handle productType priceRange{minVariantPrice{amount currencyCode}}images(first:1){edges{node{url altText}}}}}}}";
 
     fetch("https://" + DOMAIN + "/api/2025-01/graphql.json", {
       method: "POST",
@@ -1050,8 +1080,10 @@ document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
         var alt = imgNode ? (imgNode.altText || p.title) : p.title;
         var price = parseFloat(p.priceRange.minVariantPrice.amount);
         var cur = p.priceRange.minVariantPrice.currencyCode;
+        // Card deep-links straight to the product on the Shopify storefront.
+        var productUrl = p.handle ? "https://" + DOMAIN + "/products/" + p.handle : "/store";
         return [
-          '<a href="store.html" class="swf-card">',
+          '<a href="' + productUrl + '" class="swf-card">',
             '<div class="swf-img">',
               img ? '<img src="' + img + '" alt="' + alt + '" loading="lazy">' : '<div style="width:100%;height:100%;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:32px">🎽</div>',
             '</div>',
@@ -1094,7 +1126,7 @@ document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
       // routes members into the store even if Shopify is unreachable.
       // (Previous version overwrote a useful error card with this one,
       //  hiding diagnostic info from the page.)
-      track.innerHTML = '<a href="store.html" class="swf-card" style="min-width:100%;display:flex;align-items:center;justify-content:center;min-height:200px;border:1px solid rgba(168,255,0,.2);border-radius:12px;background:rgba(168,255,0,.04)">' +
+      track.innerHTML = '<a href="/store" class="swf-card" style="min-width:100%;display:flex;align-items:center;justify-content:center;min-height:200px;border:1px solid rgba(168,255,0,.2);border-radius:12px;background:rgba(168,255,0,.04)">' +
         '<div style="text-align:center"><div style="font-family:var(--ff-display);font-size:32px;font-weight:900;color:#A8FF00;text-transform:uppercase;letter-spacing:.04em">Shop Now</div>' +
         '<div style="font-size:13px;color:#555;margin-top:6px">View all products →</div></div></a>';
     });
@@ -1117,71 +1149,9 @@ setTimeout(function() {
 }, 2000);
 
 // Counter animation
-function animateCounter(el, target, dur){
-  dur = dur || 1400;
-  if(el.textContent.includes("AED")) return;
-  var plus = el.textContent.includes("+");
-  var st = null;
-  function step(ts){ if(!st) st=ts; var p=Math.min((ts-st)/dur,1); var e=1-Math.pow(1-p,3); el.textContent=Math.round(e*target)+(plus?"+":""); if(p<1) requestAnimationFrame(step); }
-  requestAnimationFrame(step);
-}
-var cObs = new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ animateCounter(e.target, parseInt(e.target.dataset.count)); cObs.unobserve(e.target); } }); }, {threshold:0.5});
-document.querySelectorAll(".stat-num[data-count]").forEach(function(el){ cObs.observe(el); });
-
-// ── LIVE MEMBER COUNTER ──────────────────────────────────────────
-// Base count — keep this in sync with your real member count.
-// The shared storage layer accumulates new signups on top of this.
-var ATP_BASE_COUNT = 7000;
-var ATP_STORAGE_KEY = 'atp:member_count';
-
-function formatCount(n) {
-  return n.toLocaleString('en-US');
-}
-function renderCount(n) {
-  var el = document.getElementById('liveCount');
-  if (el) el.textContent = formatCount(n);
-}
-async function loadCount() {
-  // Try to get real count from backend
-  try {
-    var resp = await fetch('/api/admin/members?limit=1');
-    var data = await resp.json();
-    if (data.total && data.total > ATP_BASE_COUNT) {
-      renderCount(data.total);
-      return data.total;
-    }
-  } catch(e) {}
-  // Fallback to stored or base
-  try {
-    var result = await window.storage.get(ATP_STORAGE_KEY, true);
-    var stored = result ? parseInt(result.value, 10) : ATP_BASE_COUNT;
-    var count = Math.max(stored, ATP_BASE_COUNT);
-    renderCount(count);
-    return count;
-  } catch(e) {
-    renderCount(ATP_BASE_COUNT);
-    return ATP_BASE_COUNT;
-  }
-}
-// Call window.atpAddMember() from your signup API callback to increment.
-window.atpAddMember = async function(delta) {
-  delta = delta || 1;
-  try {
-    var current = await loadCount();
-    var newCount = current + delta;
-    await window.storage.set(ATP_STORAGE_KEY, String(newCount), true);
-    renderCount(newCount);
-    var el = document.getElementById('liveCount');
-    if (el) {
-      el.style.transition = 'color .15s';
-      el.style.color = '#fff';
-      setTimeout(function(){ el.style.color = ''; el.style.transition = ''; }, 450);
-    }
-    return newCount;
-  } catch(e) { console.warn('ATP counter update failed:', e); }
-};
-loadCount();
-// ────────────────────────────────────────────────────────────────
+// Member counter now hydrates from /api/stats/public via the generic
+// [data-stat] handler further down the page — no per-element animator
+// or admin-API call needed here.
 
 // Read more toggle
 function toggleStory(){
@@ -1224,8 +1194,8 @@ try { localStorage.removeItem(ATP_USER_KEY); } catch(e){}
 // this page still read it; new code should not.
 function authLoadUser() {
   try {
-    if (window.ATP && typeof window.ATP.getMember === 'function') {
-      atpUser = window.ATP.getMember();
+    if (window.ATP && typeof window.ATP.getUser === 'function') {
+      atpUser = window.ATP.getUser();
     }
   } catch(e) { atpUser = null; }
 }
@@ -1291,8 +1261,29 @@ function renderAuthNav(user) {
 }
 
 // ── Log out ──────────────────────────────────────────────────
+// Critical: must wipe BOTH the current auth keys (atp_token /
+// atp_member) AND the legacy keys (atp:jwt / atp:user) the bundle's
+// migrate() step would otherwise lift back on the next page load.
+// Pre-2026-06-27 this only cleared the in-memory mirror, so the
+// JWT survived in localStorage — the next "Log in" click then saw
+// isLoggedIn()=true and silently no-op'd the modal.
 function logOut() {
-  authClearUser();
+  try {
+    localStorage.removeItem('atp_token');
+    localStorage.removeItem('atp_member');
+    localStorage.removeItem('atp:jwt');
+    localStorage.removeItem('atp:user');
+    localStorage.removeItem('atp:ambassador');
+  } catch (_) {}
+  try { authClearUser(); } catch (_) {}
+  // Best-effort backend invalidate. Don't block the UI on the round-trip.
+  if (window.ATP && window.ATP.auth && window.ATP.auth.logout) {
+    try { window.ATP.auth.logout(); } catch (_) {}
+  }
+  try { window.dispatchEvent(new Event('atp:logout')); } catch (_) {}
+  // Immediate nav rebuild so the Log in / Join free buttons appear
+  // without waiting for the round-trip.
+  try { if (typeof renderAuthNav === 'function') renderAuthNav(null); } catch (_) {}
   var actions = document.querySelector('.nav-actions');
   if(actions) {
     actions.innerHTML =
@@ -1484,7 +1475,20 @@ window.handleGoogleSignIn = async function(response) {
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(data){
       var sessions = data && data.sessions;
-      if (!Array.isArray(sessions) || sessions.length === 0) return;
+      // 2026-06-27 — when the live endpoint returns zero upcoming
+      // sessions (or fails outright), replace the static SEO fallback
+      // grid with an honest empty state.  Leaving the hardcoded
+      // "Community run / Coach Hugo" cards visible misled visitors
+      // into thinking those specific sessions still ran.
+      if (!Array.isArray(sessions) || sessions.length === 0) {
+        grid.innerHTML =
+          '<article class="session-card reveal" style="grid-column:1 / -1;text-align:center;padding:36px 28px">' +
+            '<p class="session-time" style="opacity:.7">No sessions on the calendar right now.</p>' +
+            '<h3 class="session-name" style="margin-top:6px">Check back soon.</h3>' +
+            '<p class="session-coach" style="margin-top:6px;opacity:.7">New free sessions land every week.</p>' +
+          '</article>';
+        return;
+      }
       function fmtTime(iso){
         try {
           var d = new Date(iso);
