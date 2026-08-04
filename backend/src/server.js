@@ -775,6 +775,39 @@ const PORT = process.env.PORT || 3000;
 async function _ensureBootSchema() {
   const { query } = require('./db');
 
+  // Streak foundation — the migrate-streaks endpoint was never run in
+  // production, so QR/manual CHECK-IN was hard-failing with
+  // `column "streak_at_checkin" of relation "bookings" does not exist`
+  // (found live by Fredy testing the scanner, 2026-08). Everything here
+  // is IF NOT EXISTS, so it's a no-op once healthy.
+  try {
+    await query(`CREATE TABLE IF NOT EXISTS member_streaks (
+      member_id          UUID PRIMARY KEY REFERENCES members(id) ON DELETE CASCADE,
+      current_streak     INT NOT NULL DEFAULT 0,
+      longest_streak     INT NOT NULL DEFAULT 0,
+      last_check_in_at   TIMESTAMPTZ,
+      total_check_ins    INT NOT NULL DEFAULT 0,
+      first_check_in_at  TIMESTAMPTZ,
+      updated_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS streak_at_checkin INT`);
+    await query(`CREATE TABLE IF NOT EXISTS admin_notifications (
+      id              UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+      type            VARCHAR(64) NOT NULL,
+      title           TEXT NOT NULL,
+      body            TEXT,
+      target_member_id UUID REFERENCES members(id) ON DELETE SET NULL,
+      metadata        JSONB,
+      is_read         BOOLEAN NOT NULL DEFAULT false,
+      read_by         UUID REFERENCES members(id) ON DELETE SET NULL,
+      read_at         TIMESTAMPTZ,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_admin_notif_unread ON admin_notifications (is_read, created_at DESC)`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_admin_notif_type   ON admin_notifications (type, created_at DESC)`);
+    console.log('[boot] streak schema ensured');
+  } catch (e) { console.error('[boot] streak schema:', e.message); }
+
   // Welcome discount tracking on members (v1.37)
   try {
     await query(`ALTER TABLE members
