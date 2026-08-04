@@ -97,6 +97,30 @@ async function createCheckoutSession({ member, plan, successUrl, cancelUrl }) {
   return session;
 }
 
+// ── Mobile PaymentSheet (manual capture) ─────────────────────────
+// Creates a manual-capture PaymentIntent + ephemeral key for the
+// member's Stripe customer, so the mobile PaymentSheet can collect the
+// card and place a HOLD (authorization) that we capture/cancel later.
+// Used by the coach 1-on-1 card flow: book → hold → coach confirms
+// (capture) or declines/expires (cancel = release).
+async function createManualCaptureIntent({ member, amountAed, currency = 'aed', metadata = {}, idempotencyKey }) {
+  const s = stripe();
+  const customerId = await ensureCustomer(member);
+  const ephemeralKey = await s.ephemeralKeys.create(
+    { customer: customerId },
+    { apiVersion: '2024-06-20' } // must match the SDK apiVersion above
+  );
+  const paymentIntent = await s.paymentIntents.create({
+    amount: Math.round(amountAed * 100), // AED → fils (minor units)
+    currency,
+    customer: customerId,
+    capture_method: 'manual',
+    automatic_payment_methods: { enabled: true },
+    metadata,
+  }, idempotencyKey ? { idempotencyKey } : undefined);
+  return { customerId, ephemeralKey, paymentIntent };
+}
+
 // ── Customer Portal ──────────────────────────────────────────────
 // Returns a one-time URL to Stripe's hosted Customer Portal where the
 // member can update payment method, view invoices, and cancel.
@@ -353,6 +377,68 @@ async function _confirmSessionBooking(checkoutSession) {
   } catch (e) { console.warn('[billing] paid session receipt email failed', e.message); }
 }
 
+// Keeps coach 1-on-1 card bookings in sync with their manual-capture
+// PaymentIntent. Idempotent — repeated deliveries of the same event
+// match zero rows the second time. Any PaymentIntent that isn't a coach
+// booking simply won't match a row (no-op), and pre-migration DBs
+// (missing table/columns) are tolerated so unrelated webhooks never 500.
+async function _syncCoachSessionPaymentIntent(pi, eventType) {
+  if (!pi || !pi.id) return;
+  try {
+    if (eventType === 'payment_intent.amount_capturable_updated') {
+      // The card hold just landed (authorized, awaiting manual capture).
+      const { rows } = await query(
+        `UPDATE coach_session_bookings
+            SET payment_status='requires_capture', updated_at=NOW()
+          WHERE payment_intent_id=$1
+            AND status='pending_coach'
+            AND payment_status='requires_confirmation'
+          RETURNING id, coach_id`,
+        [pi.id]
+      );
+      // First time the hold lands → tell the coach the 72h clock started.
+      if (rows.length) {
+        const b = rows[0];
+        try {
+          const { rows: ctx } = await query(
+            `SELECT o.title AS offering_title, m.first_name AS member_first
+               FROM coach_session_bookings cb
+               LEFT JOIN coach_offerings o ON o.id = cb.offering_id
+               LEFT JOIN members m ON m.id = cb.member_id
+              WHERE cb.id=$1`,
+            [b.id]
+          );
+          await query(
+            `INSERT INTO notifications (member_id, type, title, body, data)
+             VALUES ($1, 'coach_booking_request', '🕐 New session request',
+                     $2 || ' requested "' || $3 || '" — confirm within 72 hours or the card hold releases.',
+                     $4::jsonb)`,
+            [b.coach_id,
+             ctx[0]?.member_first || 'A member',
+             ctx[0]?.offering_title || '1-on-1 session',
+             JSON.stringify({ booking_id: b.id })]
+          );
+        } catch (e) { /* notifications missing — non-fatal */ }
+      }
+    } else if (eventType === 'payment_intent.canceled') {
+      // Hold released (our decline/expire, a Stripe-side cancel, or the
+      // 7-day auth timeout). Never downgrade a captured payment.
+      await query(
+        `UPDATE coach_session_bookings
+            SET payment_status='canceled',
+                status = CASE WHEN status='pending_coach' THEN 'expired' ELSE status END,
+                updated_at=NOW()
+          WHERE payment_intent_id=$1
+            AND payment_status IS DISTINCT FROM 'captured'`,
+        [pi.id]
+      );
+    }
+  } catch (e) {
+    if (e.code === '42P01' || e.code === '42703') return; // pre-migration DB
+    throw e;
+  }
+}
+
 // Top-level webhook event router. Pulls the full subscription object
 // from Stripe (so we always have current state, not just the diff that
 // triggered the event) and pushes it through syncSubscription.
@@ -410,6 +496,13 @@ async function handleWebhookEvent(event) {
         const sub = await stripe().subscriptions.retrieve(inv.subscription);
         await syncSubscription(sub);
       }
+      break;
+    }
+    case 'payment_intent.canceled':
+    case 'payment_intent.amount_capturable_updated': {
+      // Coach 1-on-1 manual-capture holds (card flow). PaymentIntents
+      // from other flows won't match a booking row — harmless no-op.
+      await _syncCoachSessionPaymentIntent(event.data.object, event.type);
       break;
     }
     default:
@@ -470,8 +563,10 @@ function constructWebhookEvent(rawBody, signatureHeader) {
 
 module.exports = {
   isConfigured,
+  stripe,
   ensureCustomer,
   createCheckoutSession,
+  createManualCaptureIntent,
   createPortalSession,
   refundStripeBooking,
   constructWebhookEvent,

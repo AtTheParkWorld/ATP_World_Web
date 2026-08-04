@@ -71,7 +71,8 @@ app.use(helmet({
                      "https://cdnjs.cloudflare.com",
                      "https://unpkg.com",                    // Swagger UI on /api/docs
                      "https://accounts.google.com",
-                     "https://appleid.cdn-apple.com"],
+                     "https://appleid.cdn-apple.com",
+                     "https://js.stripe.com"],        // Stripe.js v3 (coach 1-on-1 card payments)
       "script-src-attr": ["'unsafe-inline'"],   // permits remaining onclick=
       "style-src":  ["'self'", "'unsafe-inline'",
                      "https://fonts.googleapis.com",
@@ -95,7 +96,14 @@ app.use(helmet({
                      // R2 endpoint directly (no proxy through Render).
                      "https://*.r2.dev",
                      "https://*.r2.cloudflarestorage.com",
+                     // Stripe.js confirmPayment + telemetry (coach 1-on-1 card payments)
+                     "https://api.stripe.com",
+                     "https://r.stripe.com",
                      ...(process.env.R2_PUBLIC_BASE_URL ? [process.env.R2_PUBLIC_BASE_URL] : [])],
+      // Stripe Payment Element renders inside js.stripe.com iframes;
+      // hooks.stripe.com handles 3DS challenges. Without an explicit
+      // frame-src the helmet default-src 'self' fallback would block them.
+      "frame-src":  ["'self'", "https://js.stripe.com", "https://hooks.stripe.com"],
       "media-src":  ["'self'", "https:"],
       "frame-ancestors": ["'none'"],            // prevent clickjacking
       "object-src": ["'none'"],
@@ -901,6 +909,28 @@ async function _ensureBootSchema() {
       ADD COLUMN IF NOT EXISTS withdrew_at           TIMESTAMPTZ,
       ADD COLUMN IF NOT EXISTS refund_status         VARCHAR(20)`);
   } catch (e) { console.warn('[boot] challenges schema check:', e.message); }
+
+  // Coach 1-on-1 CARD payment flow — Stripe manual-capture holds.
+  // Extends coach_session_bookings (created by /api/auth/migrate-coach-
+  // sessions) with card-hold bookkeeping + booking-level settlement, and
+  // coach_monthly_payouts with the monthly-settle stamps. All IF NOT
+  // EXISTS; warns harmlessly if the base tables aren't migrated yet.
+  try {
+    await query(`ALTER TABLE coach_session_bookings
+      ADD COLUMN IF NOT EXISTS payment_method         VARCHAR(20) NOT NULL DEFAULT 'wallet',
+      ADD COLUMN IF NOT EXISTS payment_intent_id      VARCHAR(80),
+      ADD COLUMN IF NOT EXISTS payment_status         VARCHAR(30),
+      ADD COLUMN IF NOT EXISTS payout_settled_at      TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS payout_settlement_note TEXT`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_coach_bookings_payment_intent
+      ON coach_session_bookings(payment_intent_id) WHERE payment_intent_id IS NOT NULL`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_coach_bookings_pending_coach
+      ON coach_session_bookings(created_at) WHERE status = 'pending_coach'`);
+    await query(`ALTER TABLE coach_monthly_payouts
+      ADD COLUMN IF NOT EXISTS settled_at      TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS settlement_note TEXT`);
+    console.log('[boot] coach card-payment schema ensured');
+  } catch (e) { console.warn('[boot] coach card-payment schema:', e.message); }
 }
 
 if (require.main === module) {
@@ -980,6 +1010,13 @@ if (require.main === module) {
           if (r && r.expired) console.log(`[gifts] expired ${r.expired} unredeemed gifts`);
         }
       } catch (e) { console.error('[gifts] auto-expire tick failed:', e.message); }
+      try {
+        // Card holds: release + expire bookings the coach ignored for 72h.
+        if (typeof coachSessionsRouter.autoExpirePendingCoachBookings === 'function') {
+          const r = await coachSessionsRouter.autoExpirePendingCoachBookings();
+          if (r && r.expired) console.log(`[coach-1on1] expired ${r.expired} unconfirmed card bookings`);
+        }
+      } catch (e) { console.error('[coach-1on1] auto-expire tick failed:', e.message); }
     };
     setTimeout(() => { sessionsTick(); setInterval(sessionsTick, 60 * 60 * 1000); }, 90 * 1000);
 

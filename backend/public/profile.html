@@ -6939,9 +6939,16 @@ function loadCoachBookings() {
     .then(function(r){ return r.json(); })
     .then(function(d){
       var list = (d && d.bookings) || [];
+      // Card-paid requests awaiting the coach's yes/no (72h window).
+      // Split out first so they never land in Upcoming/Past buckets.
+      var requests = list.filter(function(b){ return b.status === 'pending_coach'; });
+      list = list.filter(function(b){ return b.status !== 'pending_coach'; });
       var upcoming = list.filter(function(b){ return ['confirmed','pending_payment','in_progress'].includes(b.status) && new Date(b.scheduled_at) > new Date(Date.now() - 3600000); });
       var past = list.filter(function(b){ return !upcoming.includes(b); });
-      var html = '<div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:10px">Upcoming · ' + upcoming.length + '</div>';
+      var html = '<div style="font-size:11px;color:#f5c042;letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:10px">⏳ Session requests · ' + requests.length + '</div>';
+      html += requests.length ? requests.map(_renderRequestRow).join('') :
+        '<div style="padding:16px;border:1px dashed rgba(245,192,66,.25);border-radius:10px;text-align:center;color:var(--muted);font-size:12px;margin-bottom:16px">No pending requests. Card-paid bookings land here — you have 72h to confirm before the member\'s hold is released.</div>';
+      html += '<div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin:20px 0 10px">Upcoming · ' + upcoming.length + '</div>';
       html += upcoming.length ? upcoming.map(_renderBookingRow).join('') :
         '<div style="padding:24px;border:1px dashed rgba(255,255,255,.1);border-radius:10px;text-align:center;color:var(--muted);font-size:13px;margin-bottom:16px">Nothing booked yet. Once members book, they appear here.</div>';
       html += '<div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin:20px 0 10px">Past · ' + past.length + '</div>';
@@ -6951,10 +6958,78 @@ function loadCoachBookings() {
     });
 }
 
+// Card-flow request row — pending_coach: member paid by card (hold),
+// coach has 72h to Confirm (capture) or Decline (release the hold).
+function _renderRequestRow(b) {
+  var when = new Date(b.scheduled_at);
+  var member = ((b.member_first_name || '') + ' ' + (b.member_last_name || '')).trim() || 'ATP member';
+  var payout = (b.coach_payout_aed != null) ? b.coach_payout_aed : Math.round((b.price_paid_aed || 0) * 0.9);
+  var deadline = b.created_at ? new Date(new Date(b.created_at).getTime() + 72 * 3600000) : null;
+  var hoursLeft = deadline ? Math.max(0, Math.round((deadline - Date.now()) / 3600000)) : null;
+  return '<div style="background:rgba(245,192,66,.05);border:1px solid rgba(245,192,66,.35);border-radius:10px;padding:14px;margin-bottom:8px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">' +
+      '<div style="flex:1;min-width:200px">' +
+        '<div style="font-family:var(--ff-display);font-size:14px;font-weight:800;color:#fff;text-transform:uppercase;margin-bottom:4px">' + _chEsc(b.offering_title || '1-on-1 session') + '</div>' +
+        '<div style="font-size:12px;color:var(--light)">requested by ' + _chEsc(member) + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:4px">' + when.toLocaleDateString() + ' · ' + when.toLocaleTimeString(undefined, {hour:'2-digit',minute:'2-digit'}) + ' · ' + b.duration_min + ' min</div>' +
+        (b.member_note ? '<div style="font-size:11px;color:#aaa;margin-top:6px;font-style:italic;background:rgba(255,255,255,.03);padding:6px 10px;border-radius:4px">"' + _chEsc(b.member_note) + '"</div>' : '') +
+        '<div style="font-size:11px;color:#f5c042;margin-top:6px">' + (hoursLeft !== null ? '⏳ ~' + hoursLeft + 'h left to respond' : '⏳ Respond within 72h') + ' — their card is only charged when you confirm</div>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">' +
+        '<span style="font-family:var(--ff-display);font-size:18px;font-weight:900;color:#f5c042">AED ' + payout + '</span>' +
+        '<div style="display:flex;gap:6px">' +
+          '<button data-atp-call="chCoachConfirm" data-args=\'["' + b.id + '"]\' style="font-size:11px;padding:6px 14px;background:#A8FF00;color:#0a0a0a;border:none;border-radius:6px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:.05em">✓ Confirm</button>' +
+          '<button data-atp-call="chCoachDecline" data-args=\'["' + b.id + '"]\' style="font-size:11px;padding:6px 14px;background:transparent;border:1px solid rgba(239,68,68,.35);color:#ff8a8a;border-radius:6px;font-weight:700;cursor:pointer">Decline</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function chCoachConfirm(id, btn) {
+  if (!confirm('Confirm this session? The member\'s card is charged now and the slot is locked in.')) return;
+  if (btn) btn.disabled = true;
+  fetch('/api/coach-sessions/bookings/' + id + '/coach-confirm', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + _chToken() },
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d && d.error) { alert(d.error); if (btn) btn.disabled = false; return; }
+    loadCoachBookings();
+  }).catch(function(){ alert('Network error — try again.'); if (btn) btn.disabled = false; });
+}
+
+function chCoachDecline(id, btn) {
+  var reason = prompt('Why are you declining? The member sees this and their card hold is released in full.');
+  if (reason === null) return;   // Cancel pressed — do nothing
+  if (btn) btn.disabled = true;
+  fetch('/api/coach-sessions/bookings/' + id + '/coach-decline', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _chToken() },
+    body: JSON.stringify({ reason: reason.trim() || null }),
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d && d.error) { alert(d.error); if (btn) btn.disabled = false; return; }
+    loadCoachBookings();
+  }).catch(function(){ alert('Network error — try again.'); if (btn) btn.disabled = false; });
+}
+
+// Card-flow completion — confirmed sessions whose time has passed:
+// coach attests the session happened, earnings move to accrued.
+function chConfirmAttendance(id, btn) {
+  if (!confirm('Confirm the session took place? Your earnings for it move to accrued.')) return;
+  if (btn) btn.disabled = true;
+  fetch('/api/coach-sessions/bookings/' + id + '/coach-complete', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + _chToken() },
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d && d.error) { alert(d.error); if (btn) btn.disabled = false; return; }
+    loadCoachBookings();
+  }).catch(function(){ alert('Network error — try again.'); if (btn) btn.disabled = false; });
+}
+
 function _renderBookingRow(b) {
   var when = new Date(b.scheduled_at);
   var member = (b.member_first_name || '') + ' ' + (b.member_last_name || '');
-  var statusColor = ({ completed:'#A8FF00', confirmed:'#f5c042', cancelled_by_member:'#888', cancelled_by_coach:'#888', no_show:'#ef4444' })[b.status] || '#888';
+  var statusColor = ({ completed:'#A8FF00', confirmed:'#f5c042', pending_coach:'#f5c042', declined:'#888', expired:'#666', payment_failed:'#ef4444', cancelled_by_member:'#888', cancelled_by_coach:'#888', no_show:'#ef4444' })[b.status] || '#888';
   var isUpcoming = ['confirmed','pending_payment','in_progress'].includes(b.status) && when > new Date(Date.now() - 3600000);
   var streamUrl = b.stream_room_id ? '/stream-broadcast.html?room=' + b.stream_room_id : null;
   return '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px;margin-bottom:8px">' +
@@ -6969,7 +7044,7 @@ function _renderBookingRow(b) {
         '<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:' + statusColor + ';background:rgba(255,255,255,.05);padding:3px 7px;border-radius:3px">' + b.status.replace(/_/g, ' ') + '</span>' +
         '<span style="font-family:var(--ff-display);font-size:18px;font-weight:900;color:#f5c042">AED ' + b.coach_payout_aed + '</span>' +
         (isUpcoming && streamUrl ? '<a href="' + streamUrl + '" target="_blank" style="font-size:11px;padding:6px 12px;background:#ef4444;color:#fff;border-radius:6px;text-decoration:none;font-weight:700">🎥 Go Live</a>' : '') +
-        (b.status === 'confirmed' && when < new Date() ? '<button data-atp-call="completeBooking" data-args=\'["' + b.id + '"]\' style="font-size:11px;padding:6px 12px;background:#A8FF00;color:#0a0a0a;border:none;border-radius:6px;font-weight:700;cursor:pointer">Mark complete</button>' : '') +
+        (b.status === 'confirmed' && when < new Date() ? '<button data-atp-call="chConfirmAttendance" data-args=\'["' + b.id + '"]\' style="font-size:11px;padding:6px 12px;background:#A8FF00;color:#0a0a0a;border:none;border-radius:6px;font-weight:700;cursor:pointer">Confirm attendance</button>' : '') +
       '</div>' +
     '</div>' +
   '</div>';
@@ -6995,6 +7070,11 @@ function loadCoachEarnings() {
   Promise.all([
     fetch('/api/coach-sessions/wallet/me', { headers: { Authorization: 'Bearer ' + _chToken() } }).then(function(r){ return r.json(); }),
     fetch('/api/coach-sessions/me/bank-account', { headers: { Authorization: 'Bearer ' + _chToken() } }).then(function(r){ return r.json(); }),
+    // Card-flow session earnings breakdown — fail-soft (null) so the
+    // rest of the tab still renders if the endpoint is unavailable.
+    fetch('/api/coach-sessions/earnings/me', { headers: { Authorization: 'Bearer ' + _chToken() } })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .catch(function(){ return null; }),
   ]).then(function(out){
     var w = (out[0] && out[0].wallet) || { balance_aed: 0, pending_aed: 0 };
     var month = (out[0] && out[0].coach_earnings_this_month) || null;
@@ -7015,6 +7095,63 @@ function loadCoachEarnings() {
           '<div style="font-size:12px;color:var(--muted);margin-top:6px">Sessions · AED ' + (month && month.gross_aed || 0).toLocaleString() + ' gross</div>' +
         '</div>' +
       '</div>';
+
+    // ── Session earnings (card-paid 1-on-1s) ─────────────────
+    // Four lifecycle totals + per-booking rows. upcoming = confirmed
+    // not yet delivered · accrued = delivered, awaiting payout (lime)
+    // · settled = already paid out (muted) · lifetime = all-time.
+    var earn = out[2];
+    if (earn && (earn.upcoming_aed != null || earn.accrued_aed != null || earn.rows)) {
+      var eRows = earn.rows || [];
+      var _earnTile = function(label, val, color, sub) {
+        return '<div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px 16px">' +
+          '<div style="font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:6px">' + label + '</div>' +
+          '<div style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:' + color + ';line-height:1">AED ' + (Number(val) || 0).toLocaleString() + '</div>' +
+          '<div style="font-size:10px;color:var(--muted);margin-top:5px">' + sub + '</div>' +
+        '</div>';
+      };
+      var _earnChip = function(state) {
+        var s = String(state || '').toLowerCase();
+        var map = {
+          accrued:  ['#A8FF00', 'rgba(168,255,0,.14)'],
+          upcoming: ['#f5c042', 'rgba(245,192,66,.12)'],
+          settled:  ['#888',    'rgba(255,255,255,.05)'],
+        };
+        var c = map[s] || ['#888', 'rgba(255,255,255,.05)'];
+        return '<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:' + c[0] + ';background:' + c[1] + ';padding:3px 8px;border-radius:3px">' + _chEsc(s.replace(/_/g, ' ') || '—') + '</span>';
+      };
+      html += '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;margin-bottom:14px">' +
+        '<div style="font-family:var(--ff-display);font-size:14px;font-weight:800;color:#fff;text-transform:uppercase;margin-bottom:12px">📈 Session earnings</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px">' +
+          _earnTile('Upcoming', earn.upcoming_aed, '#f5c042', 'Confirmed, not yet delivered') +
+          _earnTile('Accrued', earn.accrued_aed, '#A8FF00', 'Delivered · next payout') +
+          _earnTile('Settled', earn.settled_aed, '#aaa', 'Already paid out') +
+          _earnTile('Lifetime', earn.lifetime_aed, '#fff', 'All-time earnings') +
+        '</div>';
+      if (!eRows.length) {
+        html += '<div style="padding:12px;text-align:center;color:var(--muted);font-size:12px">No card-paid sessions yet — they\'ll show up here the moment one is booked.</div>';
+      } else {
+        html += '<div style="background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.05);border-radius:10px;overflow:hidden">';
+        html += eRows.slice(0, 25).map(function(r){
+          var amt = (r.coach_payout_aed != null) ? r.coach_payout_aed
+                  : (r.amount_aed != null) ? r.amount_aed
+                  : (r.payout_aed != null) ? r.payout_aed : 0;
+          var who = ((r.member_first_name || '') + ' ' + (r.member_last_name || '')).trim();
+          var whenRaw = r.scheduled_at || r.created_at;
+          var whenTxt = whenRaw ? new Date(whenRaw).toLocaleDateString() : '';
+          return '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px">' +
+            '<div style="min-width:0"><div style="color:#fff">' + _chEsc(r.offering_title || r.title || '1-on-1 session') + (who ? ' <span style="color:var(--muted)">· ' + _chEsc(who) + '</span>' : '') + '</div>' +
+              '<div style="font-size:11px;color:var(--muted)">' + whenTxt + '</div></div>' +
+            '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0">' +
+              _earnChip(r.state || r.status) +
+              '<span style="font-family:var(--ff-display);font-size:16px;font-weight:900;color:#fff">AED ' + amt + '</span>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+        html += '</div>';
+      }
+      html += '</div>';
+    }
 
     // Bank account section
     html += '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px;margin-bottom:14px">' +

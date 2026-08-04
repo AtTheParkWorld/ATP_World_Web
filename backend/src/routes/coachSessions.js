@@ -27,6 +27,12 @@
 const router = require('express').Router();
 const { query, transaction } = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const billing = require('../services/billing');
+
+// How long a coach has to confirm (capture) or decline (release) a
+// card-hold booking before it auto-expires. Stripe card auths live ~7
+// days, so 72h leaves plenty of margin.
+const COACH_CONFIRM_WINDOW_HOURS = 72;
 
 const PLATFORM_FEE_PCT = 10;
 
@@ -446,13 +452,100 @@ router.post('/book', authenticate, async (req, res, next) => {
       const { rows: conflicts } = await query(
         `SELECT id FROM coach_session_bookings
           WHERE coach_id=$1
-            AND status IN ('pending_payment','confirmed','in_progress')
+            AND status IN ('pending_payment','pending_coach','confirmed','in_progress')
             AND scheduled_at IS NOT NULL
             AND scheduled_at < ($2::timestamptz + ($3 || ' minutes')::interval)
             AND ($2::timestamptz < scheduled_at + (duration_min || ' minutes')::interval)`,
         [offering.coach_id, scheduledAt.toISOString(), offering.duration_min]
       );
       if (conflicts.length) return res.status(409).json({ error: 'This slot is no longer available — please pick another.' });
+    }
+
+    // ── CARD payment path (Stripe manual-capture hold) ───────────
+    // body.payment === 'card' → no wallet/points movement. We create the
+    // booking as 'pending_coach' + a manual-capture PaymentIntent. The
+    // mobile PaymentSheet confirms the PI (card authorized = HOLD, not
+    // charged). The coach then has 72h to confirm (capture) or decline
+    // (cancel = release); silence auto-expires the hold.
+    if ((b.payment || 'wallet') === 'card') {
+      if (isGift) {
+        return res.status(400).json({ error: "Card payment for gifts isn't available yet — gifts are wallet-only for now." });
+      }
+      if ((parseInt(b.points_to_use, 10) || 0) > 0) {
+        return res.status(400).json({ error: "Points can't be combined with card payment yet — pay fully by card or use your wallet." });
+      }
+      if (!billing.isConfigured()) {
+        return res.status(503).json({ error: 'Stripe is not configured yet.' });
+      }
+
+      const cardPrice = offering.price_aed;
+      const cardSplit = _splitPrice(cardPrice);
+      const cardRoomId = 'atp-coach-' + Date.now().toString(36) + '-' + Math.random().toString(36).slice(2, 8);
+
+      const { rows: cbr } = await query(
+        `INSERT INTO coach_session_bookings
+           (offering_id, coach_id, member_id, payer_id, scheduled_at, duration_min,
+            price_paid_aed, platform_fee_aed, coach_payout_aed, points_used,
+            status, stream_room_id, member_note, is_gift,
+            payment_method, payment_status)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,0,'pending_coach',$10,$11,false,'card','requires_confirmation')
+         RETURNING *`,
+        [offering.id, offering.coach_id, req.member.id, req.member.id,
+         scheduledAt.toISOString(), offering.duration_min,
+         cardPrice, cardSplit.platform_fee_aed, cardSplit.coach_payout_aed,
+         cardRoomId, b.member_note || null]
+      );
+      const cardBooking = cbr[0];
+
+      // Full member row so ensureCustomer can lazy-create the customer.
+      const { rows: memberRows } = await query(
+        `SELECT id, email, first_name, last_name, phone, stripe_customer_id
+           FROM members WHERE id=$1`,
+        [req.member.id]
+      );
+
+      let intent;
+      try {
+        intent = await billing.createManualCaptureIntent({
+          member: memberRows[0],
+          amountAed: cardPrice,
+          metadata: {
+            type:        'coach_session_booking',
+            booking_id:  cardBooking.id,
+            offering_id: offering.id,
+            coach_id:    offering.coach_id,
+            member_id:   req.member.id,
+          },
+          // Same-key retries return the SAME PaymentIntent — no double holds.
+          idempotencyKey: `coach_pi_${cardBooking.id}`,
+        });
+      } catch (e) {
+        // Don't strand a pending_coach row that blocks the slot for 72h.
+        await query(
+          `DELETE FROM coach_session_bookings WHERE id=$1 AND status='pending_coach'`,
+          [cardBooking.id]
+        ).catch(() => {});
+        throw e;
+      }
+
+      await query(
+        `UPDATE coach_session_bookings SET payment_intent_id=$1, updated_at=NOW() WHERE id=$2`,
+        [intent.paymentIntent.id, cardBooking.id]
+      );
+      cardBooking.payment_intent_id = intent.paymentIntent.id;
+
+      // Same shape as the group-session mobile checkout so clients reuse
+      // their PaymentSheet code verbatim.
+      return res.json({
+        success: true,
+        booking: cardBooking,
+        payment: {
+          payment_intent_client_secret: intent.paymentIntent.client_secret,
+          ephemeral_key:                intent.ephemeralKey.secret,
+          customer_id:                  intent.customerId,
+          publishable_key:              process.env.STRIPE_PUBLISHABLE_KEY || null,
+        },
+      });
     }
 
     // Compute payment
@@ -592,7 +685,7 @@ router.post('/:id/cancel', authenticate, async (req, res, next) => {
     );
     if (!bRows.length) return res.status(404).json({ error: 'Booking not found' });
     const booking = bRows[0];
-    if (['completed','cancelled_by_member','cancelled_by_coach'].includes(booking.status)) {
+    if (['completed','cancelled_by_member','cancelled_by_coach','declined','expired','payment_failed'].includes(booking.status)) {
       return res.status(400).json({ error: 'This booking is already finalised.' });
     }
 
@@ -601,6 +694,30 @@ router.post('/:id/cancel', authenticate, async (req, res, next) => {
     if (req.member.id === booking.payer_id) actor = 'member';
     else if (req.member.id === booking.coach_id) actor = 'coach';
     else return res.status(403).json({ error: 'Not your booking to cancel' });
+
+    // CARD bookings never touched the wallet, so the wallet refund
+    // matrix below must not run for them. While the coach hasn't
+    // confirmed yet the money is only a hold — cancelling the
+    // PaymentIntent releases it in full, nothing was charged. Once
+    // captured (confirmed), refunds are a support flow in v1.
+    if (booking.payment_method === 'card') {
+      if (booking.status !== 'pending_coach') {
+        return res.status(400).json({ error: 'Card bookings can only be cancelled while the coach confirmation is pending. Contact support for refunds on confirmed sessions.' });
+      }
+      if (booking.payment_intent_id && billing.isConfigured()) {
+        try { await billing.stripe().paymentIntents.cancel(booking.payment_intent_id); }
+        catch (e) { console.warn('[coach-1on1] cancel: PI release failed (auto-releases in 7d):', e.message); }
+      }
+      const cardStatus = actor === 'coach' ? 'cancelled_by_coach' : 'cancelled_by_member';
+      await query(
+        `UPDATE coach_session_bookings SET
+           status=$1, payment_status='canceled', cancellation_actor=$2,
+           cancellation_reason=$3, cancelled_at=NOW(), updated_at=NOW()
+         WHERE id=$4 AND status='pending_coach'`,
+        [cardStatus, actor, reason || null, booking.id]
+      );
+      return res.json({ success: true, refund_aed: 0, hold_released: true, actor });
+    }
 
     // Compute refund matrix
     const now = new Date();
@@ -723,6 +840,11 @@ router.post('/:id/complete', authenticate, async (req, res, next) => {
     if (req.member.id !== booking.coach_id && !req.member.is_admin) {
       return res.status(403).json({ error: 'Only the coach (or admin) can mark this complete' });
     }
+    // Card bookings accrue their payout via coach_monthly_payouts, not
+    // the wallet pending→balance move below — wrong endpoint for them.
+    if (booking.payment_method === 'card') {
+      return res.status(400).json({ error: 'Card bookings are completed via POST /api/coach-sessions/bookings/:id/coach-complete.' });
+    }
     if (booking.status === 'completed') return res.json({ success: true, already_completed: true });
     if (booking.status !== 'confirmed' && booking.status !== 'in_progress') {
       return res.status(400).json({ error: 'Booking is not in a state that can be completed.' });
@@ -776,6 +898,347 @@ router.post('/:id/complete', authenticate, async (req, res, next) => {
     res.json({ success: true });
   } catch (err) { next(err); }
 });
+
+// ════════════════════════════════════════════════════════════════
+// CARD FLOW — coach confirm/decline/complete, earnings, settlement
+// (Stripe manual-capture holds; see POST /book payment:'card')
+// ════════════════════════════════════════════════════════════════
+
+// Booking + display context in one fetch (offering title, names for copy).
+async function _loadCoachBooking(id) {
+  const { rows } = await query(
+    `SELECT b.*, o.title AS offering_title,
+            c.first_name AS coach_first_name, c.last_name AS coach_last_name,
+            m.first_name AS member_first_name
+       FROM coach_session_bookings b
+       LEFT JOIN coach_offerings o ON o.id = b.offering_id
+       LEFT JOIN members c ON c.id = b.coach_id
+       LEFT JOIN members m ON m.id = b.member_id
+      WHERE b.id = $1`,
+    [id]
+  );
+  return rows[0] || null;
+}
+
+// Best-effort notification — never fails the money path.
+async function _notify(memberId, type, title, body, data) {
+  try {
+    await query(
+      `INSERT INTO notifications (member_id, type, title, body, data)
+       VALUES ($1,$2,$3,$4,$5::jsonb)`,
+      [memberId, type, title, body, JSON.stringify(data || {})]
+    );
+  } catch (e) { /* notifications missing — non-fatal */ }
+}
+
+function _coachName(booking) {
+  return ((booking.coach_first_name || '') + ' ' + (booking.coach_last_name || '')).trim() || 'Your coach';
+}
+
+// ── POST /api/coach-sessions/bookings/:id/coach-confirm ─────────
+// The coach accepts the request → we CAPTURE the card hold. Success:
+// status 'confirmed', member notified. Capture failure (hold expired /
+// insufficient at capture time): status 'payment_failed', hold released,
+// member asked to rebook.
+router.post('/bookings/:id/coach-confirm', authenticate, async (req, res, next) => {
+  try {
+    if (!billing.isConfigured()) return res.status(503).json({ error: 'Stripe is not configured yet.' });
+    const booking = await _loadCoachBooking(req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (booking.coach_id !== req.member.id) return res.status(403).json({ error: 'Only the coach can confirm this booking.' });
+    if (booking.status !== 'pending_coach') {
+      return res.status(400).json({ error: `Booking is ${booking.status} — only pending requests can be confirmed.` });
+    }
+    if (booking.payment_method !== 'card' || !booking.payment_intent_id) {
+      return res.status(400).json({ error: 'No card hold on this booking.' });
+    }
+
+    try {
+      await billing.stripe().paymentIntents.capture(booking.payment_intent_id);
+    } catch (e) {
+      // Hold gone (expired auth, card issue). Release whatever is left,
+      // flip to payment_failed, tell the member to rebook.
+      await query(
+        `UPDATE coach_session_bookings
+            SET status='payment_failed', payment_status='capture_failed', updated_at=NOW()
+          WHERE id=$1 AND status='pending_coach'`,
+        [booking.id]
+      );
+      try { await billing.stripe().paymentIntents.cancel(booking.payment_intent_id); }
+      catch (e2) { /* already canceled/expired — fine */ }
+      await _notify(booking.member_id, 'coach_session_payment_failed',
+        '💳 Card hold expired',
+        'Your card hold expired — please rebook',
+        { booking_id: booking.id });
+      return res.status(402).json({ error: 'Card capture failed — the hold may have expired. The member has been asked to rebook.', detail: e.message });
+    }
+
+    await query(
+      `UPDATE coach_session_bookings
+          SET status='confirmed', payment_status='captured', updated_at=NOW()
+        WHERE id=$1`,
+      [booking.id]
+    );
+    await _notify(booking.member_id, 'coach_session_confirmed',
+      '✅ Session confirmed',
+      `✅ ${_coachName(booking)} confirmed your session — you're booked!`,
+      { booking_id: booking.id });
+    res.json({ success: true, status: 'confirmed' });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/coach-sessions/bookings/:id/coach-decline ─────────
+// Body: { reason }. Cancels the PaymentIntent (releases the hold —
+// member is never charged), status 'declined', member notified with
+// the coach's reason.
+router.post('/bookings/:id/coach-decline', authenticate, async (req, res, next) => {
+  try {
+    if (!billing.isConfigured()) return res.status(503).json({ error: 'Stripe is not configured yet.' });
+    const reason = (req.body?.reason || '').trim();
+    const booking = await _loadCoachBooking(req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (booking.coach_id !== req.member.id) return res.status(403).json({ error: 'Only the coach can decline this booking.' });
+    if (booking.status !== 'pending_coach') {
+      return res.status(400).json({ error: `Booking is ${booking.status} — only pending requests can be declined.` });
+    }
+
+    if (booking.payment_intent_id) {
+      try { await billing.stripe().paymentIntents.cancel(booking.payment_intent_id); }
+      catch (e) {
+        // Already canceled / never authorized — the hold auto-releases
+        // within 7 days regardless, so don't block the decline.
+        console.warn('[coach-1on1] decline: PI cancel failed:', e.message);
+      }
+    }
+
+    await query(
+      `UPDATE coach_session_bookings
+          SET status='declined', payment_status='canceled',
+              cancellation_actor='coach', cancellation_reason=$1,
+              cancelled_at=NOW(), updated_at=NOW()
+        WHERE id=$2 AND status='pending_coach'`,
+      [reason || null, booking.id]
+    );
+    await _notify(booking.member_id, 'coach_session_declined',
+      '😔 Session declined',
+      `${_coachName(booking)} can't take this session${reason ? ` — "${reason}"` : ''}. Your card was not charged.`,
+      { booking_id: booking.id, reason: reason || null });
+    res.json({ success: true, status: 'declined' });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/coach-sessions/bookings/:id/coach-complete ────────
+// After the session happened, the coach confirms attendance. Status →
+// 'completed' and the 90% payout ACCRUES into coach_monthly_payouts
+// (the table GET /admin/payouts reads) for the current month. Admin
+// settles monthly by bank transfer via /admin/payouts/:coachId/settle.
+router.post('/bookings/:id/coach-complete', authenticate, async (req, res, next) => {
+  try {
+    const booking = await _loadCoachBooking(req.params.id);
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    if (booking.coach_id !== req.member.id && !req.member.is_admin) {
+      return res.status(403).json({ error: 'Only the coach (or admin) can mark this complete' });
+    }
+    if (booking.payment_method !== 'card') {
+      return res.status(400).json({ error: 'Wallet bookings are completed via POST /api/coach-sessions/:id/complete.' });
+    }
+    if (booking.status === 'completed') return res.json({ success: true, already_completed: true });
+    if (booking.status !== 'confirmed') {
+      return res.status(400).json({ error: `Booking is ${booking.status} — only confirmed sessions can be completed.` });
+    }
+    if (booking.scheduled_at && new Date(booking.scheduled_at) > new Date()) {
+      return res.status(400).json({ error: 'You can mark a session complete only after its scheduled time.' });
+    }
+
+    await transaction(async (client) => {
+      const { rowCount } = await client.query(
+        `UPDATE coach_session_bookings
+            SET status='completed',
+                attendance_ended_at=COALESCE(attendance_ended_at, NOW()),
+                updated_at=NOW()
+          WHERE id=$1 AND status='confirmed'`,
+        [booking.id]
+      );
+      if (!rowCount) return; // raced with another completion
+
+      // Accrue the coach's 90% into the monthly payout row admin reads.
+      // Completions land in the CURRENT month; admin settles after month
+      // end, so the upserted row is normally still unsettled. (Booking-
+      // level payout_settled_at is the settlement source of truth.)
+      await client.query(
+        `INSERT INTO coach_monthly_payouts
+           (coach_id, period_start, period_end, amount_aed, session_count, status)
+         VALUES ($1,
+                 DATE_TRUNC('month', NOW())::date,
+                 (DATE_TRUNC('month', NOW()) + INTERVAL '1 month' - INTERVAL '1 day')::date,
+                 $2, 1, 'pending')
+         ON CONFLICT (coach_id, period_start) DO UPDATE SET
+           amount_aed    = coach_monthly_payouts.amount_aed + EXCLUDED.amount_aed,
+           session_count = coach_monthly_payouts.session_count + 1`,
+        [booking.coach_id, booking.coach_payout_aed]
+      );
+
+      // Feedback prompt to the member (same idiom as the wallet flow).
+      try {
+        await client.query(
+          `INSERT INTO notifications (member_id, type, title, body, data)
+           VALUES ($1, 'coach_session_feedback_request',
+                   'How was your session?',
+                   'Rate your ' || $2 || ' session — your coach reads every word.',
+                   $3::jsonb)`,
+          [booking.member_id, booking.offering_title || '1-on-1',
+           JSON.stringify({ coach_booking_id: booking.id })]
+        );
+      } catch (e) { /* notifications missing — non-fatal */ }
+    });
+
+    res.json({ success: true, status: 'completed', accrued_aed: booking.coach_payout_aed });
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/coach-sessions/earnings/me ─────────────────────────
+// The coach's card-flow earnings, any time. PII-light: member FIRST
+// name only. Wallet-flow earnings remain visible via /wallet/me.
+//   upcoming_aed — confirmed sessions still in the future (captured)
+//   accrued_aed  — completed, not yet settled by admin
+//   settled_aed  — completed + settled (bank transfer done)
+//   lifetime_aed — accrued + settled
+router.get('/earnings/me', authenticate, _requireCoach, async (req, res, next) => {
+  try {
+    const { rows: agg } = await query(
+      `SELECT
+         COALESCE(SUM(coach_payout_aed) FILTER (WHERE status='confirmed' AND scheduled_at > NOW()), 0)::int AS upcoming_aed,
+         COALESCE(SUM(coach_payout_aed) FILTER (WHERE status='completed' AND payout_settled_at IS NULL), 0)::int AS accrued_aed,
+         COALESCE(SUM(coach_payout_aed) FILTER (WHERE status='completed' AND payout_settled_at IS NOT NULL), 0)::int AS settled_aed
+       FROM coach_session_bookings
+      WHERE coach_id=$1 AND payment_method='card'`,
+      [req.member.id]
+    );
+    const a = agg[0];
+    const { rows } = await query(
+      `SELECT b.id,
+              m.first_name AS member_first_name,
+              b.scheduled_at,
+              b.price_paid_aed,
+              b.price_paid_aed  AS price_aed,
+              b.coach_payout_aed,
+              b.coach_payout_aed AS coach_share_aed,
+              CASE
+                WHEN b.status='completed' AND b.payout_settled_at IS NOT NULL THEN 'settled'
+                WHEN b.status='completed' THEN 'accrued'
+                ELSE 'upcoming'
+              END AS state
+         FROM coach_session_bookings b
+         JOIN members m ON m.id = b.member_id
+        WHERE b.coach_id=$1 AND b.payment_method='card'
+          AND (b.status='completed' OR (b.status='confirmed' AND b.scheduled_at > NOW()))
+        ORDER BY b.scheduled_at DESC NULLS LAST LIMIT 200`,
+      [req.member.id]
+    );
+    res.json({
+      upcoming_aed: a.upcoming_aed,
+      accrued_aed:  a.accrued_aed,
+      settled_aed:  a.settled_aed,
+      lifetime_aed: a.accrued_aed + a.settled_aed,
+      rows,
+    });
+  } catch (err) {
+    if (err.code === '42P01' || err.code === '42703') {
+      return res.json({ upcoming_aed: 0, accrued_aed: 0, settled_aed: 0, lifetime_aed: 0, rows: [] });
+    }
+    next(err);
+  }
+});
+
+// ── POST /api/coach-sessions/admin/payouts/:coachId/settle ──────
+// Body: { note }. Admin did the monthly bank transfer → stamp ALL of
+// this coach's unsettled completed card accruals settled: booking rows
+// (source of truth for earnings/me) + the coach_monthly_payouts rows
+// that GET /admin/payouts lists.
+router.post('/admin/payouts/:coachId/settle', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const note = (req.body?.note || '').trim() || null;
+    const result = await transaction(async (client) => {
+      const { rows: settled } = await client.query(
+        `UPDATE coach_session_bookings
+            SET payout_settled_at=NOW(), payout_settlement_note=$2, updated_at=NOW()
+          WHERE coach_id=$1 AND payment_method='card'
+            AND status='completed' AND payout_settled_at IS NULL
+          RETURNING id, coach_payout_aed`,
+        [req.params.coachId, note]
+      );
+      const { rowCount: payoutRows } = await client.query(
+        `UPDATE coach_monthly_payouts
+            SET settled_at=NOW(), settlement_note=$2,
+                status='settled', transferred_at=COALESCE(transferred_at, NOW())
+          WHERE coach_id=$1 AND settled_at IS NULL`,
+        [req.params.coachId, note]
+      );
+      return { settled, payoutRows };
+    });
+    const amountAed = result.settled.reduce((s, r) => s + (r.coach_payout_aed || 0), 0);
+    res.json({
+      success: true,
+      bookings_settled: result.settled.length,
+      amount_aed: amountAed,
+      payout_rows_settled: result.payoutRows,
+    });
+  } catch (err) { next(err); }
+});
+
+// ── AUTO-EXPIRE UNCONFIRMED CARD HOLDS ─────────────────────────
+// Called hourly by server.js's sessionsTick. Any booking still
+// 'pending_coach' after 72h: release the hold (cancel PI — guarded,
+// Stripe auto-releases at ~7 days anyway), status 'expired', notify
+// both sides. Fire-and-forget safe: per-row try/catch, race-safe flip.
+async function autoExpirePendingCoachBookings() {
+  const { rows: stale } = await query(
+    `SELECT b.id, b.coach_id, b.member_id, b.payment_intent_id,
+            o.title AS offering_title,
+            c.first_name AS coach_first,
+            m.first_name AS member_first
+       FROM coach_session_bookings b
+       LEFT JOIN coach_offerings o ON o.id = b.offering_id
+       LEFT JOIN members c ON c.id = b.coach_id
+       LEFT JOIN members m ON m.id = b.member_id
+      WHERE b.status='pending_coach'
+        AND b.payment_method='card'
+        AND b.created_at < NOW() - INTERVAL '${COACH_CONFIRM_WINDOW_HOURS} hours'`
+  ).catch(() => ({ rows: [] })); // pre-migration schema — nothing to do
+
+  let expired = 0;
+  for (const bk of stale) {
+    try {
+      // Race-safe claim: only the tick that flips the row does the rest.
+      const { rowCount } = await query(
+        `UPDATE coach_session_bookings
+            SET status='expired', payment_status='canceled', updated_at=NOW()
+          WHERE id=$1 AND status='pending_coach'`,
+        [bk.id]
+      );
+      if (!rowCount) continue;
+      expired++;
+
+      if (bk.payment_intent_id && billing.isConfigured()) {
+        try { await billing.stripe().paymentIntents.cancel(bk.payment_intent_id); }
+        catch (e) { console.warn(`[coach-1on1] expire ${bk.id}: PI cancel failed (auto-releases in 7d):`, e.message); }
+      }
+
+      await _notify(bk.member_id, 'coach_session_expired',
+        '⏰ Booking request expired',
+        `${bk.coach_first || 'The coach'} didn't confirm in time, so your card hold was released — you haven't been charged. Please rebook.`,
+        { booking_id: bk.id });
+      await _notify(bk.coach_id, 'coach_session_expired_coach',
+        '⏰ You missed a booking request',
+        `${bk.member_first || 'A member'}'s "${bk.offering_title || '1-on-1'}" request expired after ${COACH_CONFIRM_WINDOW_HOURS}h — their card hold was released.`,
+        { booking_id: bk.id });
+      console.log(`[coach-1on1] expired unconfirmed card booking ${bk.id}`);
+    } catch (e) {
+      console.error(`[coach-1on1] failed to expire ${bk.id}:`, e.message);
+    }
+  }
+  return { expired };
+}
 
 // ── GET /api/coach-sessions/me/gifts ─────────────────────────────
 // Gifts received by the caller that haven't been redeemed yet.
@@ -841,7 +1304,7 @@ router.post('/:id/redeem-gift', authenticate, async (req, res, next) => {
     const { rows: conflicts } = await query(
       `SELECT id FROM coach_session_bookings
         WHERE coach_id=$1 AND id <> $2
-          AND status IN ('pending_payment','confirmed','in_progress')
+          AND status IN ('pending_payment','pending_coach','confirmed','in_progress')
           AND scheduled_at IS NOT NULL
           AND scheduled_at < ($3::timestamptz + ($4 || ' minutes')::interval)
           AND ($3::timestamptz < scheduled_at + (duration_min || ' minutes')::interval)`,
@@ -1201,3 +1664,4 @@ async function sendGiftExpiryReminders() {
 module.exports = router;
 module.exports.autoExpireGifts = autoExpireGifts;
 module.exports.sendGiftExpiryReminders = sendGiftExpiryReminders;
+module.exports.autoExpirePendingCoachBookings = autoExpirePendingCoachBookings;

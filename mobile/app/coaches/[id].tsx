@@ -3,14 +3,17 @@ import { WEB_BASE } from '@/lib/api/client';
  * Coach detail. Hero photo, headline, bio, specialties, rating.
  * Reads from the nested coach response (profile/social/stats sub-objects).
  *
- * "Book a 1:1 session" deep-links to the web for now; native coach-
- * session booking lands in Phase 7.
+ * 1:1 booking: coaches with active priced offerings get the native
+ * "Book & pay by card" flow (/coaches/book — Stripe card HOLD, coach
+ * confirms within 72h). Coaches without offerings fall back to the
+ * web booking link.
  */
 import { Image, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { getCoach } from '@/lib/api/coaches';
+import { getPublicOfferings } from '@/lib/api/coachSessions';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
 
@@ -23,6 +26,12 @@ export default function CoachDetail() {
     queryFn:  () => getCoach(coachId).then(r => r.coach),
     enabled:  !!coachId,
   });
+  const offersQ = useQuery({
+    queryKey: ['coach-public-offerings', coachId],
+    queryFn:  () => getPublicOfferings(coachId),
+    enabled:  !!coachId,
+  });
+  const offerings = (offersQ.data?.offerings || []).filter((o) => Number(o.price_aed) > 0);
 
   const c = q.data;
   const profile = c?.profile;
@@ -78,6 +87,43 @@ export default function CoachDetail() {
             </Text>
           )}
         </View>
+
+        {/* 1:1 offerings — native card-hold booking */}
+        {offerings.length > 0 && (
+          <View className="px-5 mt-2 mb-4">
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-2">
+              1-on-1 sessions
+            </Text>
+            <View className="gap-2">
+              {offerings.map((o) => (
+                <View key={o.id} className="bg-atp-dark border border-white/5 rounded-atp p-4">
+                  <View className="flex-row items-center justify-between">
+                    <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm flex-1 pr-3">
+                      {o.title}
+                    </Text>
+                    <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green, fontVariant: ['tabular-nums'] }} className="text-sm">
+                      AED {Number(o.price_aed).toLocaleString()}
+                    </Text>
+                  </View>
+                  <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-1" numberOfLines={2}>
+                    {o.duration_min} min{o.description ? ` · ${o.description}` : ''}
+                  </Text>
+                  <Pressable
+                    onPress={() => router.push(`/coaches/book?coach=${coachId}&offering=${o.id}`)}
+                    className="mt-3 rounded-atp py-2.5 items-center bg-atp-green/15 border border-atp-green/50 active:opacity-80"
+                  >
+                    <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs uppercase tracking-widest">
+                      Book &amp; pay by card
+                    </Text>
+                  </Pressable>
+                </View>
+              ))}
+            </View>
+            <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[11px] mt-2">
+              Card is only charged once the coach confirms your request.
+            </Text>
+          </View>
+        )}
 
         {!!profile?.specialties && profile.specialties.length > 0 && (
           <View className="px-5 mt-2">
@@ -145,18 +191,23 @@ export default function CoachDetail() {
         )}
       </ScrollView>
 
-      {/* Sticky CTA — web-side booking until native ships in Phase 7 */}
-      {!!c?.slug && profile?.accepts_private_sessions && (
+      {/* Sticky CTA — native card-hold booking when the coach has
+          priced offerings; web fallback otherwise. */}
+      {((offerings.length > 0) || (!!c?.slug && profile?.accepts_private_sessions)) && (
         <View className="absolute bottom-0 left-0 right-0 px-5 pb-7 pt-3 bg-atp-black border-t border-white/5">
           <Pressable
-            onPress={() => Linking.openURL(`${WEB_BASE}/coach/${c.slug}?book=1`)}
+            onPress={() =>
+              offerings.length > 0
+                ? router.push(`/coaches/book?coach=${coachId}`)
+                : Linking.openURL(`${WEB_BASE}/coach/${c!.slug}?book=1`)
+            }
             className="rounded-atp py-4 items-center bg-atp-green active:opacity-80"
           >
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.black }} className="text-base uppercase tracking-widest">
               Book a 1:1 session
             </Text>
           </Pressable>
-          {!!profile.private_session_info && (
+          {!!profile?.private_session_info && (
             <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs text-center mt-2">
               {profile.private_session_info}
             </Text>

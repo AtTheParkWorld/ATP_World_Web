@@ -4,6 +4,9 @@
   <link rel="stylesheet" href="/atp.min.css">
   <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
   <script src="/atp.bundle.min.js"></script>
+  <!-- Stripe.js v3 — card payments for 1-on-1 bookings (Payment Element).
+       Must load from js.stripe.com (PCI); origin allowed in server.js CSP. -->
+  <script src="https://js.stripe.com/v3/"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -366,7 +369,7 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     <div style="max-width:980px;margin:0 auto">
       <div style="display:inline-flex;align-items:center;gap:10px;font-size:11px;color:#f5c042;letter-spacing:.18em;text-transform:uppercase;font-weight:700;margin-bottom:14px"><span style="display:block;width:24px;height:2px;background:#f5c042"></span>Premium 1-on-1</div>
       <h2 style="font-family:'Barlow Condensed',sans-serif;font-size:clamp(32px,4.5vw,52px);font-weight:900;line-height:1;text-transform:uppercase;letter-spacing:-.01em;color:#fff;margin-bottom:12px">Book a <span style="color:#f5c042">1-on-1</span> with me</h2>
-      <p style="font-size:15px;color:#aaa;line-height:1.6;max-width:640px;margin-bottom:28px">Private online coaching, tailored to your goals. Pay from your ATP wallet (you can mix in points). Cancel up to 24h before for a full refund.</p>
+      <p style="font-size:15px;color:#aaa;line-height:1.6;max-width:640px;margin-bottom:28px">Private online coaching, tailored to your goals. Pay by card (you're only charged once the coach confirms) or from your ATP wallet with points. Cancel up to 24h before for a full refund.</p>
       <div id="cp-offerings-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>
     </div>
   </section>
@@ -873,6 +876,27 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
   var GIFT_SEARCH_LOADING = false;
   var GIFT_MESSAGE = '';
   var GIFT_SEARCH_TIMER = null;
+  // ── Card payment state (Stripe hold flow) ─────────────────
+  // Live publishable key — public by design; same key the mobile app
+  // ships in mobile/app.json → expo.extra.stripePublishableKey.
+  var STRIPE_PK = 'pk_live_51NuUbjCpx56yuxucR7wdVZrCa9ZvSw7V248pL9uye0VjO3e5IaGmaJjZiUzYy250NajJk1EjK7nDhvAwisQDM54v00OfpMDXN3';
+  var PAYMENT_METHOD = 'card';      // 'card' | 'wallet' — direct bookings only; gifts stay wallet
+  var STRIPE = null;                // Stripe() instance, lazy
+  var STRIPE_ELEMENTS = null;       // Elements instance for the active payment
+  var CARD_BOOKING = null;          // booking row returned by /book with payment:'card'
+
+  function getStripe() {
+    if (!STRIPE && window.Stripe) {
+      try { STRIPE = window.Stripe(STRIPE_PK); } catch (e) { STRIPE = null; }
+    }
+    return STRIPE;
+  }
+
+  function coachDisplayName() {
+    var el = document.getElementById('cp-hero-name');
+    var n = el ? (el.textContent || '').trim() : '';
+    return (n && n !== '—') ? n : 'the coach';
+  }
 
   function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -928,6 +952,9 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     SELECTED_DATE = null;
     SELECTED_TIME = null;
     POINTS_TO_USE = 0;
+    PAYMENT_METHOD = 'card';
+    STRIPE_ELEMENTS = null;
+    CARD_BOOKING = null;
     IS_GIFT = false;
     GIFT_RECIPIENT = null;
     GIFT_SEARCH_RESULTS = [];
@@ -958,6 +985,8 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
 
   window.cpCloseBookingModal = function() {
     document.getElementById('cp-book-modal').style.display = 'none';
+    STRIPE_ELEMENTS = null;   // drop any mounted Payment Element
+    CARD_BOOKING = null;
   };
 
   function renderModal() {
@@ -969,6 +998,8 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     var pointsValueAed = Math.floor(POINTS_TO_USE / 10);
     var walletDebit = Math.max(0, o.price_aed - pointsValueAed);
     var canAfford = WALLET.balance_aed >= walletDebit;
+    var usingCard = !IS_GIFT && PAYMENT_METHOD === 'card';
+    var canConfirm = usingCard || canAfford;
 
     card.innerHTML =
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:16px">' +
@@ -1017,27 +1048,48 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
               '<textarea id="cp-note" rows="2" placeholder="Marathon pacing, running form, race-day strategy…" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:13px;font-family:inherit;resize:vertical"></textarea></div>'
             : '') +
 
-          // Payment section
-          '<div style="margin-bottom:14px;padding:14px;background:rgba(245,192,66,.04);border:1px solid rgba(245,192,66,.2);border-radius:8px">' +
-            '<div style="font-size:11px;color:#f5c042;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:10px">' + (IS_GIFT ? 'Payment' : '4. Payment') + '</div>' +
-            '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#aaa"><span>Wallet balance available</span><strong style="color:#fff">AED ' + WALLET.balance_aed + '</strong></div>' +
-            '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#aaa"><span>Points available</span><strong style="color:#fff">' + POINTS_BALANCE + ' pts (worth AED ' + Math.floor(POINTS_BALANCE / 10) + ')</strong></div>' +
-            (maxPoints > 0 ?
-              '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)">' +
-                '<label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:6px">Use points (1 pt = AED 0.10)</label>' +
-                '<input type="range" id="cp-points-slider" min="0" max="' + maxPoints + '" step="10" value="' + POINTS_TO_USE + '" oninput="cpUpdatePoints(this.value)" style="width:100%;cursor:pointer">' +
-                '<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-top:4px"><span>0 pts</span><strong style="color:#f5c042">Using: ' + POINTS_TO_USE + ' pts (AED ' + pointsValueAed + ')</strong><span>' + maxPoints + ' pts</span></div>' +
-              '</div>' : '') +
-            '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(245,192,66,.3);display:flex;justify-content:space-between;font-size:15px"><span style="color:#fff;font-weight:700">Wallet charge</span><strong style="color:#f5c042;font-family:\'Barlow Condensed\',sans-serif;font-size:22px;font-weight:900">AED ' + walletDebit + '</strong></div>' +
-          '</div>' +
-
-          (!canAfford
-            ? '<div style="padding:12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:12px;color:#ff8a8a;margin-bottom:14px">⚠ Wallet balance too low. Need AED ' + walletDebit + ', you have AED ' + WALLET.balance_aed + '. Contact ATP to top up.</div>'
+          // Payment method toggle — card (Stripe hold) vs wallet+points.
+          // Gifts stay wallet-only: the card contract covers direct bookings.
+          (!IS_GIFT
+            ? '<div style="margin-bottom:14px"><label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">4. How do you want to pay?</label>' +
+              '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;background:rgba(255,255,255,.03);padding:4px;border-radius:8px">' +
+                '<button onclick="cpSetPayMethod(\'card\')" style="padding:10px 12px;background:' + (usingCard ? '#f5c042' : 'transparent') + ';color:' + (usingCard ? '#0a0a0a' : '#888') + ';border:none;border-radius:6px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:11px;cursor:pointer;font-family:inherit">💳 Card</button>' +
+                '<button onclick="cpSetPayMethod(\'wallet\')" style="padding:10px 12px;background:' + (!usingCard ? '#f5c042' : 'transparent') + ';color:' + (!usingCard ? '#0a0a0a' : '#888') + ';border:none;border-radius:6px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:11px;cursor:pointer;font-family:inherit">ATP wallet + points</button>' +
+              '</div></div>'
             : '') +
 
-          '<button onclick="cpConfirmBooking()" ' + (canAfford ? '' : 'disabled') + ' style="width:100%;background:' + (canAfford ? '#f5c042' : 'rgba(255,255,255,.1)') + ';color:' + (canAfford ? '#0a0a0a' : '#666') + ';border:none;border-radius:8px;padding:14px;font-weight:800;font-size:14px;letter-spacing:.05em;text-transform:uppercase;cursor:' + (canAfford ? 'pointer' : 'not-allowed') + '">' + (IS_GIFT ? '🎁 Send the gift →' : 'Confirm booking →') + '</button>'
+          // Payment section — card summary OR the wallet/points combo
+          (usingCard
+            ? '<div style="margin-bottom:14px;padding:14px;background:rgba(245,192,66,.04);border:1px solid rgba(245,192,66,.2);border-radius:8px">' +
+                '<div style="font-size:11px;color:#f5c042;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:10px">Card payment</div>' +
+                '<div style="display:flex;justify-content:space-between;font-size:15px;padding:4px 0"><span style="color:#fff;font-weight:700">Hold on your card</span><strong style="color:#f5c042;font-family:\'Barlow Condensed\',sans-serif;font-size:22px;font-weight:900">AED ' + o.price_aed + '</strong></div>' +
+                '<div style="font-size:12px;color:#888;line-height:1.5;margin-top:6px">We place a hold — your card is only charged when the coach confirms (within 72h). If they decline or don\'t respond, the hold is released.</div>' +
+              '</div>'
+            : '<div style="margin-bottom:14px;padding:14px;background:rgba(245,192,66,.04);border:1px solid rgba(245,192,66,.2);border-radius:8px">' +
+                '<div style="font-size:11px;color:#f5c042;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:10px">' + (IS_GIFT ? 'Payment' : 'Wallet payment') + '</div>' +
+                '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#aaa"><span>Wallet balance available</span><strong style="color:#fff">AED ' + WALLET.balance_aed + '</strong></div>' +
+                '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#aaa"><span>Points available</span><strong style="color:#fff">' + POINTS_BALANCE + ' pts (worth AED ' + Math.floor(POINTS_BALANCE / 10) + ')</strong></div>' +
+                (maxPoints > 0 ?
+                  '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)">' +
+                    '<label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:6px">Use points (1 pt = AED 0.10)</label>' +
+                    '<input type="range" id="cp-points-slider" min="0" max="' + maxPoints + '" step="10" value="' + POINTS_TO_USE + '" oninput="cpUpdatePoints(this.value)" style="width:100%;cursor:pointer">' +
+                    '<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-top:4px"><span>0 pts</span><strong style="color:#f5c042">Using: ' + POINTS_TO_USE + ' pts (AED ' + pointsValueAed + ')</strong><span>' + maxPoints + ' pts</span></div>' +
+                  '</div>' : '') +
+                '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(245,192,66,.3);display:flex;justify-content:space-between;font-size:15px"><span style="color:#fff;font-weight:700">Wallet charge</span><strong style="color:#f5c042;font-family:\'Barlow Condensed\',sans-serif;font-size:22px;font-weight:900">AED ' + walletDebit + '</strong></div>' +
+              '</div>') +
+
+          (!usingCard && !canAfford
+            ? '<div style="padding:12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:12px;color:#ff8a8a;margin-bottom:14px">⚠ Wallet balance too low. Need AED ' + walletDebit + ', you have AED ' + WALLET.balance_aed + '. Pay by card instead, or contact ATP to top up.</div>'
+            : '') +
+
+          '<button onclick="cpConfirmBooking()" ' + (canConfirm ? '' : 'disabled') + ' style="width:100%;background:' + (canConfirm ? '#f5c042' : 'rgba(255,255,255,.1)') + ';color:' + (canConfirm ? '#0a0a0a' : '#666') + ';border:none;border-radius:8px;padding:14px;font-weight:800;font-size:14px;letter-spacing:.05em;text-transform:uppercase;cursor:' + (canConfirm ? 'pointer' : 'not-allowed') + '">' + (IS_GIFT ? '🎁 Send the gift →' : (usingCard ? 'Continue to card payment →' : 'Confirm booking →')) + '</button>'
         : '');
   }
+
+  window.cpSetPayMethod = function(m) {
+    PAYMENT_METHOD = (m === 'wallet') ? 'wallet' : 'card';
+    renderModal();
+  };
 
   window.cpSetGiftMode = function(on) {
     IS_GIFT = !!on;
@@ -1333,6 +1385,40 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     // Direct booking requires date + time. Gift requires only a recipient.
     if (!IS_GIFT && (!SELECTED_DATE || !SELECTED_TIME)) return;
     if (IS_GIFT && !GIFT_RECIPIENT) return;
+
+    // ── Card path (direct bookings only) ──────────────────────
+    // POST /book with payment:'card' → booking + PaymentIntent client
+    // secret → mount a Stripe Payment Element as the next modal step.
+    if (!IS_GIFT && PAYMENT_METHOD === 'card') {
+      var cdt = new Date(SELECTED_DATE);
+      var cparts = SELECTED_TIME.split(':');
+      cdt.setHours(parseInt(cparts[0],10), parseInt(cparts[1],10), 0, 0);
+      var cardBody = {
+        offering_id: SELECTED_OFFERING.id,
+        scheduled_at: cdt.toISOString(),
+        member_note: (document.getElementById('cp-note') || {}).value || '',
+        payment: 'card',
+      };
+      var cardEl = document.getElementById('cp-book-modal-card');
+      cardEl.style.opacity = 0.6;
+      fetch('/api/coach-sessions/book', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+        body: JSON.stringify(cardBody),
+      })
+        .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, body: d }; }); })
+        .then(function(out){
+          cardEl.style.opacity = 1;
+          if (!out.ok) {
+            alert((out.body && out.body.error) || 'Booking failed');
+            return;
+          }
+          renderCardPaymentStep(out.body);
+        })
+        .catch(function(){ alert('Network error — try again.'); cardEl.style.opacity = 1; });
+      return;
+    }
+
     var body = {
       offering_id: SELECTED_OFFERING.id,
       points_to_use: POINTS_TO_USE,
@@ -1394,6 +1480,122 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
         }
       })
       .catch(function(){ alert('Network error — try again.'); card.style.opacity = 1; });
+  };
+
+  // ── CARD PAYMENT STEP (Stripe Payment Element) ─────────────
+  // Shown after /book returns { booking, payment:{ payment_intent_client_secret } }.
+  // confirmPayment places a HOLD (manual capture) — the member is only
+  // charged when the coach confirms within 72h.
+  function renderCardPaymentStep(resp) {
+    var card = document.getElementById('cp-book-modal-card');
+    if (!card) return;
+    CARD_BOOKING = (resp && resp.booking) || {};
+    var clientSecret = resp && resp.payment && resp.payment.payment_intent_client_secret;
+    var stripe = getStripe();
+    var o = SELECTED_OFFERING || {};
+
+    if (!clientSecret || !stripe) {
+      // Stripe.js blocked/failed or backend didn't return a secret —
+      // fail soft, no charge was made, the request expires server-side.
+      card.innerHTML =
+        '<div style="text-align:center;padding:20px 10px">' +
+          '<div style="font-size:40px;margin-bottom:12px">💳</div>' +
+          '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:24px;font-weight:900;color:#fff;text-transform:uppercase;margin-bottom:10px">Card payment unavailable</div>' +
+          '<p style="font-size:13px;color:#aaa;line-height:1.55;margin-bottom:18px">We couldn\'t start the card payment. Nothing was charged and this request will expire automatically — try again, or pay from your ATP wallet.</p>' +
+          '<button onclick="cpCloseBookingModal()" style="background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;padding:12px 28px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">Close</button>' +
+        '</div>';
+      return;
+    }
+
+    var when = CARD_BOOKING.scheduled_at ? new Date(CARD_BOOKING.scheduled_at) : null;
+    var whenTxt = when
+      ? when.toLocaleDateString() + ' · ' + when.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+      : '';
+
+    card.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:16px">' +
+        '<div>' +
+          '<div style="font-size:11px;color:#f5c042;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:4px">💳 Card payment</div>' +
+          '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:22px;font-weight:800;text-transform:uppercase;line-height:1.1">' + esc(o.title || '1-on-1 session') + '</div>' +
+          '<div style="font-size:12px;color:#888;margin-top:4px">' + esc(whenTxt) + (whenTxt ? ' · ' : '') + (o.duration_min || CARD_BOOKING.duration_min || '') + ' min · AED ' + (o.price_aed || CARD_BOOKING.price_paid_aed || '') + '</div>' +
+        '</div>' +
+        '<button onclick="cpCancelCardPayment()" style="background:none;border:none;color:#888;font-size:22px;cursor:pointer;padding:4px 8px">×</button>' +
+      '</div>' +
+      '<div id="cp-payment-el" style="margin-bottom:14px;min-height:120px"></div>' +
+      '<div id="cp-pay-msg" role="alert" style="min-height:18px;font-size:12px;color:#ff8a8a;line-height:1.5;margin-bottom:10px"></div>' +
+      '<button id="cp-pay-btn" onclick="cpSubmitCardPayment()" style="width:100%;background:#f5c042;color:#0a0a0a;border:none;border-radius:8px;padding:14px;font-weight:800;font-size:14px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer">Place hold — AED ' + (o.price_aed || '') + '</button>' +
+      '<button onclick="cpCancelCardPayment()" style="width:100%;background:transparent;border:none;color:#888;font-size:12px;padding:12px 0 2px;cursor:pointer">Cancel — nothing is charged</button>' +
+      '<div style="font-size:11px;color:#666;line-height:1.5;margin-top:10px;text-align:center">Your card is only charged when ' + esc(coachDisplayName()) + ' confirms (within 72h). Declined or no answer → the hold is released.</div>';
+
+    STRIPE_ELEMENTS = stripe.elements({
+      clientSecret: clientSecret,
+      appearance: {
+        theme: 'night',
+        variables: {
+          colorPrimary: '#f5c042',
+          colorBackground: '#161616',
+          colorText: '#ffffff',
+          colorDanger: '#ff8a8a',
+          borderRadius: '6px',
+          fontFamily: "'DM Sans', sans-serif",
+        },
+      },
+      fonts: [{ cssSrc: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap' }],
+    });
+    var payEl = STRIPE_ELEMENTS.create('payment');
+    payEl.mount('#cp-payment-el');
+  }
+
+  window.cpSubmitCardPayment = function() {
+    var stripe = getStripe();
+    if (!stripe || !STRIPE_ELEMENTS) return;
+    var btn = document.getElementById('cp-pay-btn');
+    var msg = document.getElementById('cp-pay-msg');
+    var o = SELECTED_OFFERING || {};
+    if (btn) { btn.disabled = true; btn.textContent = 'Processing…'; btn.style.opacity = '.7'; }
+    if (msg) msg.textContent = '';
+    stripe.confirmPayment({
+      elements: STRIPE_ELEMENTS,
+      confirmParams: { return_url: location.origin + location.pathname + location.search },
+      redirect: 'if_required',   // stay in the modal unless the method forces a redirect (3DS handled inline)
+    }).then(function(res){
+      if (res.error) {
+        // Declined / validation / 3DS abandoned — let them fix and retry.
+        if (msg) msg.textContent = res.error.message || 'Payment didn\'t go through — check your card details and try again.';
+        if (btn) { btn.disabled = false; btn.textContent = 'Place hold — AED ' + (o.price_aed || ''); btn.style.opacity = '1'; }
+        return;
+      }
+      renderCardHoldSuccess();
+    }).catch(function(){
+      if (msg) msg.textContent = 'Network error — your card was not charged. Try again.';
+      if (btn) { btn.disabled = false; btn.textContent = 'Place hold — AED ' + (o.price_aed || ''); btn.style.opacity = '1'; }
+    });
+  };
+
+  function renderCardHoldSuccess() {
+    var card = document.getElementById('cp-book-modal-card');
+    if (!card) return;
+    var b = CARD_BOOKING || {};
+    var o = SELECTED_OFFERING || {};
+    var when = b.scheduled_at ? new Date(b.scheduled_at) : null;
+    card.innerHTML =
+      '<div style="text-align:center;padding:20px 10px">' +
+        '<div style="font-size:48px;margin-bottom:14px">⏳</div>' +
+        '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:28px;font-weight:900;color:#fff;text-transform:uppercase;margin-bottom:10px">Hold placed</div>' +
+        '<p style="font-size:14px;color:#aaa;margin-bottom:18px;line-height:1.55">Hold placed — ' + esc(coachDisplayName()) + ' has 72h to confirm; you\'re only charged on confirmation. We\'ll notify you either way, and if they decline or don\'t respond the hold is released in full.</p>' +
+        '<div style="background:rgba(245,192,66,.06);border:1px solid rgba(245,192,66,.32);border-radius:8px;padding:14px;font-size:13px;color:#fff;margin-bottom:18px">' +
+          (when ? when.toLocaleDateString() + ' · ' + when.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) + ' · ' : '') +
+          (o.duration_min || b.duration_min || '') + ' min · AED ' + (o.price_aed || b.price_paid_aed || '') +
+        '</div>' +
+        '<p style="font-size:12px;color:#888;margin-bottom:18px;line-height:1.5">Track this request any time under Bookings on your profile.</p>' +
+        '<button onclick="cpCloseBookingModal()" style="background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;padding:12px 28px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">Done</button>' +
+      '</div>';
+    STRIPE_ELEMENTS = null;
+  }
+
+  window.cpCancelCardPayment = function() {
+    if (!confirm('Cancel the card payment? Nothing is charged — this booking request will expire automatically.')) return;
+    cpCloseBookingModal();
   };
 
   // Boot — wait for the main coach renderer to populate the page
