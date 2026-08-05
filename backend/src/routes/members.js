@@ -38,7 +38,17 @@ router.get('/profile', authenticate, async (req, res, next) => {
       [req.member.id]
     );
     if (!rows.length) return res.status(404).json({ error: 'Member not found' });
-    res.json({ member: rows[0] });
+    const member = rows[0];
+    // Compute completion live from the same field map the PATCH path
+    // uses, so stored stale percentages (pre-fix rows) self-correct on
+    // read and the app can render actionable "Add X" chips.
+    const fields = _completionFields(member);
+    const filled = fields.filter((f) => f.filled).length;
+    member.profile_complete_pct = Math.round((filled / fields.length) * 100);
+    member.profile_missing = fields
+      .filter((f) => !f.filled)
+      .map(({ field, label }) => ({ field, label }));
+    res.json({ member });
   } catch (err) { next(err); }
 });
 
@@ -687,6 +697,25 @@ router.get('/leaderboard', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// Shared field map for completion % + the "what's missing" chips the
+// clients render. label = member-facing copy.
+function _completionFields(m) {
+  return [
+    { field: 'first_name',   label: 'First name',        filled: !!m.first_name },
+    { field: 'last_name',    label: 'Last name',         filled: !!m.last_name },
+    { field: 'email',        label: 'Email',             filled: !!m.email },
+    { field: 'phone',        label: 'Phone number',      filled: !!m.phone },
+    { field: 'avatar_url',   label: 'Profile photo',     filled: !!m.avatar_url },
+    { field: 'date_of_birth',label: 'Date of birth',     filled: !!m.date_of_birth },
+    { field: 'gender',       label: 'Gender',            filled: !!m.gender },
+    { field: 'nationality',  label: 'Nationality',       filled: !!m.nationality },
+    { field: 'city_id',      label: 'City',              filled: !!m.city_id },
+    { field: 'sports_preferences', label: 'Favourite sports', filled: (m.sports_preferences?.length || 0) > 0 },
+    { field: 'top_size',     label: 'Top size',          filled: !!m.top_size },
+    { field: 'bottom_size',  label: 'Bottom size',       filled: !!m.bottom_size },
+  ];
+}
+
 // ── HELPER: recalculate profile completion ────────────────────
 async function updateProfileCompletion(memberId) {
   const { rows } = await query(
@@ -698,12 +727,12 @@ async function updateProfileCompletion(memberId) {
   );
   if (!rows.length) return;
   const m = rows[0];
-  const fields = [
-    m.first_name, m.last_name, m.email, m.phone, m.avatar_url,
-    m.date_of_birth, m.gender, m.nationality, m.city_id,
-    m.sports_preferences?.length > 0, m.top_size, m.bottom_size, m.padel_level,
-  ];
-  const filled  = fields.filter(Boolean).length;
+  // padel_level deliberately NOT counted (founder bug report: members
+  // with everything filled were stuck at 85% because sport-specific
+  // fields they'd never touch were in the denominator). Only fields
+  // every member can and should fill count toward 100%.
+  const fields = _completionFields(m);
+  const filled  = fields.filter((f) => f.filled).length;
   const pct     = Math.round((filled / fields.length) * 100);
 
   await query(
