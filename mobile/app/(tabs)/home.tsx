@@ -207,7 +207,10 @@ function QuickAction({ label, icon, emoji, onPress }: { label: string; icon?: Ic
   return (
     <Pressable
       onPress={onPress}
-      className="flex-1 bg-atp-dark rounded-atp-lg border border-white/5 p-4 items-center active:opacity-70"
+      // Press feel: slight sink + dim reads as a physical button rather
+      // than a plain opacity flash.
+      style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.96 : 1 }] })}
+      className="flex-1 bg-atp-dark rounded-atp-lg border border-white/5 p-4 items-center active:opacity-80"
     >
       {icon
         ? <Icon name={icon} size={26} color={colors.green} />
