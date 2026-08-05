@@ -3592,7 +3592,7 @@ router.post('/admin-issue-welcome-discount', authenticate, requireAdmin, async (
     const memberId = req.body?.member_id;
     if (!memberId) return res.status(400).json({ error: 'member_id required' });
     const { rows } = await query(
-      `SELECT id, first_name, last_name, email, member_number, welcome_discount_code
+      `SELECT id, first_name, last_name, email, member_number, welcome_discount_code, welcome_discount_pct
          FROM members WHERE id=$1 LIMIT 1`,
       [memberId]
     );

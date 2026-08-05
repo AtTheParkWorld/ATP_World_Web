@@ -5525,7 +5525,7 @@ function renderWelcomeDiscount(m) {
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">' +
         '<div style="flex:1;min-width:240px">' +
           '<div style="font-size:11px;color:#f5c042;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:4px">🎁 Welcome gift</div>' +
-          '<div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:#fff;line-height:1.1">20% off your first order</div>' +
+          '<div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:#fff;line-height:1.1">' + (Number(m.welcome_discount_pct) || 20) + '% off your first order</div>' +
           '<div style="font-size:12px;color:var(--muted);margin-top:4px">' +
             (daysLeft != null
               ? (daysLeft <= 7

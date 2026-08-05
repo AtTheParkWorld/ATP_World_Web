@@ -816,6 +816,29 @@ async function _ensureBootSchema() {
     console.log('[boot] streak schema ensured');
   } catch (e) { console.error('[boot] streak schema:', e.message); }
 
+  // Welcome-discount settings — founder-editable from Admin → Settings
+  // → Config (previously env-only). Seeded once; edits live in the DB.
+  try {
+    const welcomeKeys = [
+      ['welcome_discount_percentage', '20', 'Welcome discount %',
+       'Percentage off a new member\'s first store order (1-100). Applies to codes issued AFTER the change.'],
+      ['welcome_discount_expiry_days', '60', 'Welcome discount validity (days)',
+       'How many days a new member has to use their welcome code.'],
+    ];
+    for (const [k, v, lbl, desc] of welcomeKeys) {
+      await query(
+        `INSERT INTO system_config (key, value, label, description) VALUES ($1, $2::jsonb, $3, $4)
+         ON CONFLICT (key) DO NOTHING`,
+        [k, v, lbl, desc]
+      );
+    }
+  } catch (e) { console.error('[boot] welcome-discount config:', e.message); }
+
+  // Founder-editable welcome % — the pct each member actually got.
+  try {
+    await query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS welcome_discount_pct INT`);
+  } catch (e) { console.error('[boot] welcome pct column:', e.message); }
+
   // Welcome discount tracking on members (v1.37)
   try {
     await query(`ALTER TABLE members

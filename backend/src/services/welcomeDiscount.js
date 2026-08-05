@@ -15,9 +15,29 @@ const crypto = require('crypto');
 const { query } = require('../db');
 const shopify = require('./shopify');
 
-// Default offer config — tweak via env if you ever run a different promo.
-const WELCOME_PERCENTAGE  = Number(process.env.WELCOME_DISCOUNT_PERCENTAGE || 20);
-const WELCOME_EXPIRY_DAYS = Number(process.env.WELCOME_DISCOUNT_EXPIRY_DAYS || 60);
+// Offer config — founder-editable in Admin → Settings → Config
+// (system_config keys welcome_discount_percentage / _expiry_days).
+// Env vars remain the fallback, then the hard defaults. Read per issue,
+// not at module load, so an admin edit applies to the NEXT signup with
+// no restart. Changes never touch already-issued codes.
+const ENV_PERCENTAGE  = Number(process.env.WELCOME_DISCOUNT_PERCENTAGE || 20);
+const ENV_EXPIRY_DAYS = Number(process.env.WELCOME_DISCOUNT_EXPIRY_DAYS || 60);
+
+async function _getWelcomeConfig() {
+  let percentage = ENV_PERCENTAGE, expiryDays = ENV_EXPIRY_DAYS;
+  try {
+    const { rows } = await query(
+      `SELECT key, value FROM system_config
+        WHERE key IN ('welcome_discount_percentage','welcome_discount_expiry_days')`
+    );
+    for (const r of rows) {
+      const n = Number(typeof r.value === 'string' ? JSON.parse(r.value) : r.value);
+      if (r.key === 'welcome_discount_percentage' && n >= 1 && n <= 100) percentage = Math.round(n);
+      if (r.key === 'welcome_discount_expiry_days' && n >= 1 && n <= 365) expiryDays = Math.round(n);
+    }
+  } catch (e) { /* pre-migration DB — env/defaults apply */ }
+  return { percentage, expiryDays };
+}
 
 function _generateCode(memberNumber) {
   // Human-readable + unique. Format: WELCOME-XXXXXX (6 random base32 chars)
@@ -58,6 +78,7 @@ async function issueWelcomeDiscount(member) {
     // Column might not exist yet on pre-boot DB. Fall through to issue.
   }
 
+  const { percentage: WELCOME_PERCENTAGE, expiryDays: WELCOME_EXPIRY_DAYS } = await _getWelcomeConfig();
   const code = _generateCode(member.member_number);
   const expiresAt = new Date(Date.now() + WELCOME_EXPIRY_DAYS * 24 * 3600 * 1000);
 
@@ -67,7 +88,7 @@ async function issueWelcomeDiscount(member) {
       code,
       percentage: WELCOME_PERCENTAGE,
       expiresAt,
-      title: 'ATP welcome 20% — ' + (member.member_number || member.id),
+      title: 'ATP welcome ' + WELCOME_PERCENTAGE + '% — ' + (member.member_number || member.id),
       usageLimit: 1,
     });
   } catch (e) {
@@ -79,11 +100,12 @@ async function issueWelcomeDiscount(member) {
   try {
     await query(
       `UPDATE members
-          SET welcome_discount_code        = $1,
+          SET welcome_discount_pct        = $4,
+              welcome_discount_code        = $1,
               welcome_discount_issued_at   = NOW(),
               welcome_discount_expires_at  = $2
         WHERE id = $3`,
-      [shopifyResult.code, expiresAt.toISOString(), member.id]
+      [shopifyResult.code, expiresAt.toISOString(), member.id, WELCOME_PERCENTAGE]
     );
   } catch (e) {
     console.warn('[welcome-discount] db persist failed:', e.message);
@@ -120,6 +142,7 @@ async function issueWelcomeDiscount(member) {
 
 module.exports = {
   issueWelcomeDiscount,
-  WELCOME_PERCENTAGE,
-  WELCOME_EXPIRY_DAYS,
+  WELCOME_PERCENTAGE: ENV_PERCENTAGE,
+  WELCOME_EXPIRY_DAYS: ENV_EXPIRY_DAYS,
+  _getWelcomeConfig,
 };
