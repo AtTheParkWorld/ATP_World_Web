@@ -91,6 +91,9 @@ import { IconEdit as _Ed }         from './IconEdit';
 import { IconInfo as _If }         from './IconInfo';
 import { IconShield as _Sh }       from './IconShield';
 import { IconCalendar as _Ca }     from './IconCalendar';
+import { IconShare as _Shr }       from './IconShare';
+import { IconDownload as _Dl }     from './IconDownload';
+import { IconChevronRight as _Cr } from './IconChevronRight';
 import type { IconProps } from './types';
 
 export type IconName =
@@ -98,7 +101,7 @@ export type IconName =
   | 'live' | 'story' | 'profile' | 'eye' | 'target' | 'gift' | 'bolt'
   | 'dumbbell' | 'wallet' | 'inbox' | 'clipboard' | 'ticket' | 'heart'
   | 'bag' | 'help' | 'no-entry' | 'notification' | 'edit' | 'info' | 'shield'
-  | 'calendar';
+  | 'calendar' | 'share' | 'download' | 'chevron-right';
 
 const MAP: Record<IconName, React.FC<IconProps>> = {
   'location':     _L,
@@ -129,6 +132,9 @@ const MAP: Record<IconName, React.FC<IconProps>> = {
   'info':         _If,
   'shield':       _Sh,
   'calendar':     _Ca,
+  'share':        _Shr,
+  'download':     _Dl,
+  'chevron-right': _Cr,
 };
 
 export function Icon({ name, ...rest }: IconProps & { name: IconName }) {
