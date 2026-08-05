@@ -838,6 +838,11 @@ async function _ensureBootSchema() {
   try {
     await query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS welcome_discount_pct INT`);
   } catch (e) { console.error('[boot] welcome pct column:', e.message); }
+  try {
+    await query(`ALTER TABLE members
+      ADD COLUMN IF NOT EXISTS welcome_reminder_7d_at   TIMESTAMPTZ,
+      ADD COLUMN IF NOT EXISTS welcome_reminder_last_at TIMESTAMPTZ`);
+  } catch (e) { console.error('[boot] welcome reminder columns:', e.message); }
 
   // Welcome discount tracking on members (v1.37)
   try {
@@ -1100,6 +1105,58 @@ if (require.main === module) {
           else console.log(`[maintenance] ${job} ✓`, JSON.stringify(body).slice(0, 120));
         } catch (e) { console.error(`[maintenance] ${job} failed:`, e.message); }
       }
+      // Welcome-discount expiry reminders (founder journey 3.1):
+      // once at ~7 days out, once on the final day. In-app notification
+      // always; OneSignal push when configured. Dedupe via the stamped
+      // member columns, so each fires exactly once even across restarts.
+      try {
+        const { rows: expiring } = await query(
+          `SELECT id, first_name, welcome_discount_code, welcome_discount_pct,
+                  welcome_discount_expires_at,
+                  (welcome_discount_expires_at <= NOW() + INTERVAL '1 day') AS is_last_day
+             FROM members
+            WHERE welcome_discount_code IS NOT NULL
+              AND welcome_discount_used_at IS NULL
+              AND welcome_discount_expires_at > NOW()
+              AND (
+                    (welcome_discount_expires_at <= NOW() + INTERVAL '1 day'
+                       AND welcome_reminder_last_at IS NULL)
+                 OR (welcome_discount_expires_at <= NOW() + INTERVAL '7 days'
+                       AND welcome_discount_expires_at >  NOW() + INTERVAL '1 day'
+                       AND welcome_reminder_7d_at IS NULL)
+                  )
+            LIMIT 500`
+        );
+        let push = null;
+        try { push = require('./services/push'); } catch (e) {}
+        for (const m of expiring) {
+          const pct  = m.welcome_discount_pct || 20;
+          const last = m.is_last_day;
+          const title = last
+            ? '🎁 Last chance — your welcome discount expires today'
+            : `⏳ Your ${pct}% welcome discount expires in 7 days`;
+          const body = last
+            ? `Code ${m.welcome_discount_code} stops working at midnight. Treat yourself before it goes 💚`
+            : `Use code ${m.welcome_discount_code} in the ATP Store before ${new Date(m.welcome_discount_expires_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })}.`;
+          try {
+            await query(
+              `INSERT INTO notifications (member_id, type, title, body, data)
+               VALUES ($1, 'welcome_discount_expiry', $2, $3, $4::jsonb)`,
+              [m.id, title, body, JSON.stringify({ code: m.welcome_discount_code, last_day: last })]
+            );
+            await query(
+              `UPDATE members SET ${last ? 'welcome_reminder_last_at' : 'welcome_reminder_7d_at'} = NOW() WHERE id = $1`,
+              [m.id]
+            );
+            if (push && typeof push.isConfigured === 'function' && push.isConfigured()
+                && typeof push.sendPush === 'function') {
+              push.sendPush(m.id, { title, body, push_type: 'welcome_discount_expiry' }).catch(() => {});
+            }
+          } catch (e) { console.error('[maintenance] welcome reminder failed for', m.id, e.message); }
+        }
+        if (expiring.length) console.log(`[maintenance] sent ${expiring.length} welcome-discount expiry reminders`);
+      } catch (e) { console.error('[maintenance] welcome reminders:', e.message); }
+
       // Prune revoked/expired refresh tokens — table grew unbounded.
       try {
         const { rowCount } = await query(
