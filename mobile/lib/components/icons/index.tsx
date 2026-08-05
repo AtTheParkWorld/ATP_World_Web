@@ -51,6 +51,9 @@ export { IconShield }         from './IconShield';
 export { IconHome }           from './IconHome';
 export { IconCalendar }       from './IconCalendar';
 export { IconCommunity }      from './IconCommunity';
+export { IconShare }          from './IconShare';
+export { IconDownload }       from './IconDownload';
+export { IconChevronRight }   from './IconChevronRight';
 // Tab-bar-specific marks — hand-coded SVG with continuous active-state
 // animation (sparkle, beat, shimmer, bounce, ripple). See app/(tabs)/_layout.tsx.
 export { IconTabHome }        from './IconTabHome';

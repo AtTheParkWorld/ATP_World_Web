@@ -6,12 +6,15 @@
  *  - Avatar + name + tribe + member#
  *  - "My Next Session" card (shared with Home; founder 2026-08-01)
  *  - QR card (member_number encoded; ambassadors scan it at sessions)
- *  - Profile completion progress (drives the +200 pts profile_complete bonus)
+ *  - Profile completion progress (drives the +200 pts profile_complete
+ *    bonus) with tappable "Add <field>" chips from profile_missing
  *  - Stat strip: sessions / streak / friends
- *  - Quick links: Edit profile · Settings · Privacy · Help · About
+ *  - Grouped settings cards (founder 2026-08-05: premium look):
+ *    Activity · Community · Account · Privacy & Support — each an
+ *    iOS-style rounded surface card with hairline-separated rows
  *  - Sign out (always visible so a broken session is recoverable)
  */
-import { useEffect } from 'react';
+import { useEffect, type ReactNode } from 'react';
 import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
@@ -116,23 +119,61 @@ export default function Profile() {
             scanned at check-in, reachable from Home → booked session →
             Tap to show QR). */}
 
-        {/* Profile completion */}
+        {/* Profile completion — % from the API plus actionable "Add X"
+            chips built from profile_missing (backend computes both live,
+            so the list is exactly what's left to fill). */}
         {m?.profile_complete_pct != null && m.profile_complete_pct < 100 && (
           <View className="px-5 mt-5">
-            <Pressable
-              onPress={() => router.push('/profile/edit')}
-              className="bg-atp-dark border border-white/5 rounded-atp p-4 active:opacity-80"
-            >
-              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs uppercase tracking-widest">
-                Profile {m.profile_complete_pct}% complete
-              </Text>
-              <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm mt-1">
-                Finish your profile to claim +200 pts.
-              </Text>
-              <View className="mt-3 h-1.5 bg-atp-dark-3 rounded-full overflow-hidden">
-                <View className="h-full bg-atp-green" style={{ width: `${m.profile_complete_pct}%` }} />
+            <View className="bg-atp-dark border border-white/5 rounded-atp-lg p-4">
+              <View className="flex-row items-center justify-between">
+                <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs uppercase tracking-widest">
+                  Profile {m.profile_complete_pct}% complete
+                </Text>
+                <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[11px]">
+                  +200 pts when done
+                </Text>
               </View>
-            </Pressable>
+              <View className="mt-3 h-1.5 bg-atp-dark-3 rounded-full overflow-hidden">
+                <View className="h-full bg-atp-green rounded-full" style={{ width: `${m.profile_complete_pct}%` }} />
+              </View>
+              {(m.profile_missing?.length ?? 0) > 0 ? (
+                <View className="flex-row flex-wrap gap-2 mt-3.5">
+                  {(m.profile_missing as { field: string; label: string }[]).map(({ field, label }) => (
+                    <Pressable
+                      key={field}
+                      onPress={() => router.push('/profile/edit')}
+                      style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.96 : 1 }] })}
+                      className="flex-row items-center border border-atp-green/40 bg-atp-green/10 rounded-full px-3 py-1.5 active:opacity-80"
+                    >
+                      <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs">
+                        {'+ '}{label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              ) : (
+                // Older cached payloads may lack profile_missing — keep
+                // the pre-chips tap-through-to-edit affordance.
+                <Pressable onPress={() => router.push('/profile/edit')} className="mt-2 active:opacity-80">
+                  <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm">
+                    Finish your profile to claim +200 pts.
+                  </Text>
+                </Pressable>
+              )}
+            </View>
+          </View>
+        )}
+
+        {/* Complete state — quiet one-liner (reads more premium than a
+            vanished card: confirms there's nothing left to chase). */}
+        {m?.profile_complete_pct != null && m.profile_complete_pct >= 100 && (
+          <View className="px-5 mt-5">
+            <View className="flex-row items-center justify-center gap-2 py-1">
+              <Icon name="check" size={14} color={colors.green} />
+              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest">
+                Profile complete
+              </Text>
+            </View>
           </View>
         )}
 
@@ -147,23 +188,21 @@ export default function Profile() {
 
         {/* Role-specific tools (Ambassador / Coach) */}
         {(m?.is_ambassador || (m as any)?.is_coach) && (
-          <View className="px-5 mt-7 gap-2">
-            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-1">
-              {(m?.is_ambassador && (m as any)?.is_coach) ? 'Ambassador + Coach tools' : m?.is_ambassador ? 'Ambassador tools' : 'Coach tools'}
-            </Text>
+          <SettingsGroup title={(m?.is_ambassador && (m as any)?.is_coach) ? 'Ambassador + Coach tools' : m?.is_ambassador ? 'Ambassador tools' : 'Coach tools'}>
             {m?.is_ambassador && (
-              <LinkRow label="Ambassador dashboard" icon="ticket" onPress={() => router.push('/ambassador')} />
+              <SettingsRow label="Ambassador dashboard" icon="ticket" onPress={() => router.push('/ambassador')} last={!(m as any)?.is_coach} />
             )}
             {(m as any)?.is_coach && (
-              <LinkRow label="Coach dashboard" icon="dumbbell" onPress={() => router.push('/coach')} />
+              <SettingsRow label="Coach dashboard" icon="dumbbell" onPress={() => router.push('/coach')} last />
             )}
-          </View>
+          </SettingsGroup>
         )}
 
         {/* Be a Supporter */}
         <View className="px-5 mt-7">
           <Pressable
             onPress={() => router.push('/supporter')}
+            style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.96 : 1 }] })}
             className="bg-atp-green/10 border border-atp-green/40 rounded-atp-lg p-4 active:opacity-80 flex-row items-center"
           >
             <View style={{ marginRight: 12 }}>
@@ -179,25 +218,35 @@ export default function Profile() {
                   : 'Keep ATP free for everyone. Unlock tribe-only sessions + live streams.'}
               </Text>
             </View>
-            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }}>›</Text>
+            <Icon name="chevron-right" size={16} color={colors.green} />
           </Pressable>
         </View>
 
-        {/* Quick links */}
-        <View className="px-5 mt-7 gap-2">
-          <LinkRow label="My bookings"    icon="calendar"     onPress={() => router.push('/bookings')} />
-          <LinkRow label="Leaderboard"    icon="trophy"       onPress={() => router.push('/leaderboard')} />
-          <LinkRow label="Challenges"     icon="target"       onPress={() => router.push('/challenges')} />
-          <LinkRow label="Messages"       icon="chat"         onPress={() => router.push('/messages')} />
-          <LinkRow label="Stories"        icon="story"        onPress={() => router.push('/blog')} />
-          <LinkRow label="ATP Store"      icon="bag"          onPress={() => router.push('/store')} />
-          <LinkRow label="Edit profile"   icon="edit"         onPress={() => router.push('/profile/edit')} />
-          <LinkRow label="Notifications"  icon="notification" onPress={() => router.push('/profile/notifications')} />
-          <LinkRow label="Privacy"        icon="shield"       onPress={() => router.push('/profile/privacy')} />
-          <LinkRow label="Blocked members" icon="no-entry"    onPress={() => router.push('/profile/blocked')} />
-          <LinkRow label="Help & support"  icon="help"        onPress={() => router.push('/profile/help')} />
-          <LinkRow label="About"           icon="info" onPress={() => router.push('/profile/about')} />
-        </View>
+        {/* Grouped settings — iOS-style cards, one card per concern.
+            Same destinations as the old flat "Quick links" list. */}
+        <SettingsGroup title="Activity">
+          <SettingsRow label="My bookings"  icon="calendar" onPress={() => router.push('/bookings')} />
+          <SettingsRow label="Leaderboard"  icon="trophy"   onPress={() => router.push('/leaderboard')} />
+          <SettingsRow label="Challenges"   icon="target"   onPress={() => router.push('/challenges')} last />
+        </SettingsGroup>
+
+        <SettingsGroup title="Community">
+          <SettingsRow label="Messages"  icon="chat"  onPress={() => router.push('/messages')} />
+          <SettingsRow label="Stories"   icon="story" onPress={() => router.push('/blog')} />
+          <SettingsRow label="ATP Store" icon="bag"   onPress={() => router.push('/store')} last />
+        </SettingsGroup>
+
+        <SettingsGroup title="Account">
+          <SettingsRow label="Edit profile"  icon="edit"         onPress={() => router.push('/profile/edit')} />
+          <SettingsRow label="Notifications" icon="notification" onPress={() => router.push('/profile/notifications')} last />
+        </SettingsGroup>
+
+        <SettingsGroup title="Privacy & support">
+          <SettingsRow label="Privacy"         icon="shield"   onPress={() => router.push('/profile/privacy')} />
+          <SettingsRow label="Blocked members" icon="no-entry" onPress={() => router.push('/profile/blocked')} />
+          <SettingsRow label="Help & support"  icon="help"     onPress={() => router.push('/profile/help')} />
+          <SettingsRow label="About"           icon="info"     onPress={() => router.push('/profile/about')} last />
+        </SettingsGroup>
 
         {/* Sign out */}
         <View className="px-5 mt-7">
@@ -206,7 +255,8 @@ export default function Profile() {
               await signOut();
               router.replace('/(auth)/welcome');
             }}
-            className="rounded-atp border border-white/10 py-3 items-center bg-atp-dark active:opacity-80"
+            style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.96 : 1 }] })}
+            className="rounded-atp-lg border border-white/10 py-3.5 items-center bg-atp-dark active:opacity-80"
           >
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.danger }} className="text-sm uppercase tracking-widest">
               Sign out
@@ -231,23 +281,62 @@ function StatTile({ label, value }: { label: string; value: string }) {
   );
 }
 
-function LinkRow({ label, icon, emoji, onPress }: { label: string; icon?: IconName; emoji?: string; onPress: () => void }) {
+/**
+ * Grouped-settings card (founder 2026-08-05: premium look for the
+ * profile "drop down tabs"). Micro-header + one rounded surface card;
+ * children are SettingsRows separated by hairlines.
+ */
+function SettingsGroup({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <View className="px-5 mt-6">
+      <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-2 ml-1">
+        {title}
+      </Text>
+      <View className="bg-atp-dark border border-white/5 rounded-atp-lg overflow-hidden">
+        {children}
+      </View>
+    </View>
+  );
+}
+
+function SettingsRow({
+  label,
+  subtitle,
+  icon,
+  onPress,
+  last = false,
+}: {
+  label: string;
+  subtitle?: string;
+  icon: IconName;
+  onPress: () => void;
+  last?: boolean;
+}) {
   return (
     <Pressable
       onPress={onPress}
-      className="flex-row items-center bg-atp-dark border border-white/5 rounded-atp px-4 py-3.5 active:opacity-70"
+      // Same press feel as Home's Quick Actions: slight sink reads as a
+      // physical button rather than a plain opacity flash.
+      style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.96 : 1 }] })}
+      className={`flex-row items-center px-4 py-3 active:bg-white/5 ${last ? '' : 'border-b border-white/5'}`}
     >
-      {icon ? (
-        <View style={{ marginRight: 12, width: 24, alignItems: 'center' }}>
-          <Icon name={icon} size={20} color={colors.green} />
-        </View>
-      ) : (
-        <Text style={{ fontSize: 18, marginRight: 12 }}>{emoji}</Text>
-      )}
-      <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm flex-1">
-        {label}
-      </Text>
-      <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }}>›</Text>
+      <View
+        style={{ width: 34, height: 34, marginRight: 12 }}
+        className="rounded-atp bg-white/5 items-center justify-center"
+      >
+        <Icon name={icon} size={18} color={colors.green} />
+      </View>
+      <View className="flex-1">
+        <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">
+          {label}
+        </Text>
+        {!!subtitle && (
+          <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-0.5">
+            {subtitle}
+          </Text>
+        )}
+      </View>
+      <Icon name="chevron-right" size={16} color={colors.muted} />
     </Pressable>
   );
 }

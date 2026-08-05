@@ -4,15 +4,19 @@
  * parent overrides onPress.
  *
  * Variants:
- *   - default: full card with title + time + city + capacity
- *   - compact: tighter spacing for Home's stacked carousel
+ *   - default: full card with title + time + city + capacity. If the
+ *     session has an intro_video_url it autoplays muted + looping at
+ *     the top of the card (mobile stand-in for the web hover preview).
+ *   - compact: tighter spacing for Home's stacked carousel (no video)
  */
 import { memo } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { router } from 'expo-router';
+import { VideoView, useVideoPlayer } from 'expo-video';
 import type { Session } from '@/lib/api/sessions';
 import { IconLock } from '@/lib/components/icons';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
+import { absUrl } from '@/lib/utils/imageUrl';
 import { timeShort, relativeStartLabel } from '@/lib/utils/date';
 
 /** Premium gold reserved for company-exclusive + paid perks (mirrors
@@ -51,6 +55,30 @@ export function CorporateSessionBadge({ companyName }: { companyName?: string | 
   );
 }
 
+/**
+ * Mobile translation of the website's hover-preview: /sessions plays
+ * `intro_video_url` in a popup while the cursor hovers a card. Touch
+ * has no hover, so cards WITH a video autoplay it muted + looping
+ * inline (Instagram-feed style) — same pattern as PostCard's FeedVideo.
+ * This component is only ever MOUNTED when the session has a video, so
+ * video-less cards (the majority) pay zero player cost.
+ */
+function SessionPreviewVideo({ uri }: { uri: string }) {
+  const player = useVideoPlayer(uri, (p) => {
+    p.loop = true;
+    p.muted = true;
+    p.play();
+  });
+  return (
+    <VideoView
+      player={player}
+      style={{ width: '100%', aspectRatio: 16 / 9, borderRadius: 12, backgroundColor: '#000', marginBottom: 12 }}
+      contentFit="cover"
+      nativeControls={false}
+    />
+  );
+}
+
 interface Props {
   session: Session;
   compact?: boolean;
@@ -76,6 +104,16 @@ function _SessionCard({ session, compact, onPress }: Props) {
         className="absolute top-0 left-0 bottom-0 rounded-l-atp-lg"
         style={{ width: 4, backgroundColor: tColor }}
       />
+
+      {/* Hover-preview video, mobile edition — autoplay muted + loop.
+          Full-size cards only (compact rails stay text-only), and only
+          mounted when the session actually has a video. pointerEvents
+          "none" keeps the whole card tappable through the video. */}
+      {!compact && !!session.intro_video_url && (
+        <View pointerEvents="none">
+          <SessionPreviewVideo uri={absUrl(session.intro_video_url)!} />
+        </View>
+      )}
 
       <View className="flex-row items-start justify-between">
         <View className="flex-1 pr-3">

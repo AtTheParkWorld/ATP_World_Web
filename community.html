@@ -51,10 +51,9 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .page-hero h1{font-family:var(--ff-display);font-size:clamp(52px,6vw,80px);font-weight:900;line-height:.92;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:16px}
 .page-hero h1 .acc{color:var(--green)}
 .page-hero-sub{font-size:16px;color:var(--light);line-height:1.65;font-weight:300;max-width:480px}
-.page-hero-stats{display:flex;gap:32px}
-.ph-stat{text-align:right}
-.ph-stat-num{font-family:var(--ff-display);font-size:38px;font-weight:900;color:var(--green);line-height:1}
-.ph-stat-label{font-size:12px;color:var(--muted);margin-top:3px}
+/* .page-hero-stats / .ph-stat / .ph-stat-num / .ph-stat-label removed
+   2026-06-27 per founder — the stats card was redundant with the
+   homepage's "We are X ATP Members" counter. */
 
 /* TABS */
 .comm-tabs-bar{background:var(--dark2);border-bottom:1px solid rgba(255,255,255,.07);position:sticky;top:var(--nav-h);z-index:50}
@@ -72,7 +71,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 /* ── FEED ── */
 .post-composer{background:var(--dark2);border-radius:var(--radius-lg);border:1px solid rgba(255,255,255,.07);margin-bottom:20px;overflow:hidden}
 .composer-header{display:flex;align-items:center;gap:12px;padding:16px 18px 0}
-.composer-av{width:38px;height:38px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:16px;font-weight:900;color:#fff;flex-shrink:0}
+.composer-av{width:38px;height:38px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:16px;font-weight:900;color:#0a0a0a;flex-shrink:0}
 .composer-input{flex:1;background:var(--dark3);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:11px 14px;color:var(--white);font-size:13px;font-family:var(--ff-body);resize:none;min-height:80px;transition:border-color .2s;width:100%}
 .composer-input:focus{outline:none;border-color:rgba(168,255,0,.4)}
 .composer-media-preview{display:flex;gap:8px;flex-wrap:wrap;padding:0 18px;margin-top:10px;min-height:0}
@@ -84,7 +83,16 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .composer-media-btns{display:flex;gap:8px}
 .composer-media-btn{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);background:none;border:1px solid rgba(255,255,255,.1);padding:7px 12px;border-radius:var(--radius);cursor:pointer;transition:all .2s}
 .composer-media-btn:hover{border-color:var(--green);color:var(--green)}
-.post-btn{font-size:13px;font-weight:700;background:var(--green);color:#fff;border:none;padding:9px 22px;border-radius:var(--radius);cursor:pointer;transition:background .2s}
+.composer-media-btn.active-tags{border-color:var(--green);color:var(--green)}
+/* TAG A FRIEND — composer panel of accepted-friend chips. Selection is
+   sent as tagged_member_ids (max 10, validated server-side). */
+.composer-tags{padding:10px 18px 0;display:none}
+.composer-tags.open{display:block}
+.composer-tags-title{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:8px}
+.tag-chip{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:600;color:var(--light);background:transparent;border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:5px 12px;margin:0 6px 6px 0;cursor:pointer;transition:all .2s}
+.tag-chip:hover{border-color:rgba(168,255,0,.5)}
+.tag-chip.sel{border-color:var(--green);color:var(--green);background:rgba(168,255,0,.08)}
+.post-btn{font-size:13px;font-weight:700;background:var(--green);color:#0a0a0a;border:none;padding:9px 22px;border-radius:var(--radius);cursor:pointer;transition:background .2s}
 .post-btn:hover{background:var(--green-dark)}
 .post-btn:disabled{opacity:.5;cursor:not-allowed}
 
@@ -103,6 +111,12 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .post-time{font-size:11px;color:var(--muted);margin-top:1px}
 .post-menu{background:none;border:none;color:var(--muted);cursor:pointer;padding:4px 8px;font-size:18px;line-height:1;border-radius:4px;transition:color .2s}
 .post-menu:hover{color:var(--white)}
+/* TAG A FRIEND — "with @Name" line rendered under the post header. */
+.post-tagged{font-size:12px;color:var(--muted);padding:10px 16px 0}
+.post-tagged .tagged-name{color:var(--green);font-weight:600}
+/* Toast — used by share/download + tag feedback. */
+.atp-toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(8px);background:var(--dark2);border:1px solid rgba(168,255,0,.35);color:var(--white);font-size:13px;font-weight:600;padding:10px 18px;border-radius:8px;z-index:700;opacity:0;transition:opacity .25s,transform .25s;pointer-events:none;max-width:90vw;text-align:center}
+.atp-toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 .post-content{font-size:14px;color:var(--light);line-height:1.65;padding:12px 16px;white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere}
 .comment-text,.comment-reply{white-space:pre-wrap;word-wrap:break-word;overflow-wrap:anywhere}
 
@@ -151,7 +165,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .comment-input-wrap{display:flex;gap:8px;margin-top:8px}
 .comment-input{flex:1;background:var(--dark3);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:8px 14px;color:var(--white);font-size:12px;font-family:var(--ff-body);transition:border-color .2s}
 .comment-input:focus{outline:none;border-color:rgba(168,255,0,.4)}
-.comment-send{background:var(--green);border:none;color:#fff;width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s}
+.comment-send{background:var(--green);border:none;color:#0a0a0a;width:32px;height:32px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .2s}
 .comment-send:hover{background:var(--green-dark)}
 .friend-req-btn{font-size:11px;font-weight:700;padding:4px 10px;border-radius:12px;border:1px solid rgba(168,255,0,.3);background:rgba(168,255,0,.06);color:var(--green);cursor:pointer;transition:all .2s;margin-left:auto;white-space:nowrap}
 .friend-req-btn:hover{background:rgba(168,255,0,.15)}
@@ -212,7 +226,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .challenge-av{width:28px;height:28px;border-radius:50%;background:var(--dark3);border:2px solid var(--dark2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--white);margin-left:-8px}
 .challenge-av:first-child{margin-left:0}
 .challenge-count{font-size:12px;color:var(--muted)}
-.challenge-join-btn{font-size:12px;font-weight:700;padding:7px 18px;border-radius:var(--radius);background:var(--green);border:none;color:#fff;cursor:pointer;transition:background .2s}
+.challenge-join-btn{font-size:12px;font-weight:700;padding:7px 18px;border-radius:var(--radius);background:var(--green);border:none;color:#0a0a0a;cursor:pointer;transition:background .2s}
 .challenge-join-btn:hover{background:var(--green-dark)}
 .challenge-join-btn.joined{background:rgba(168,255,0,.1);color:var(--green);border:1px solid rgba(168,255,0,.3)}
 
@@ -233,7 +247,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .5s,transform .5s}
 .reveal.visible{opacity:1;transform:none}
 
-@media(max-width:900px){.nav-links{display:none}.hamburger{display:flex}.comm-layout{grid-template-columns:1fr;padding:24px 16px 80px}.comm-sidebar{position:static}.page-hero-inner{grid-template-columns:1fr}.page-hero-stats{display:none}.comm-tabs-inner{padding:0 16px}.page-hero{padding-left:24px;padding-right:24px}}
+@media(max-width:900px){.nav-links{display:none}.hamburger{display:flex}.comm-layout{grid-template-columns:1fr;padding:24px 16px 80px}.comm-sidebar{position:static}.comm-tabs-inner{padding:0 16px}.page-hero{padding-left:24px;padding-right:24px}}
 @media(max-width:560px){.page-hero{padding:calc(var(--nav-h) + 72px) 18px 36px}.page-hero h1{font-size:clamp(40px,12vw,56px)}.page-hero-sub{font-size:15px}.comm-tab{font-size:13px;padding:12px 14px}}
 
 /* ══ AUTH MODAL ══════════════════════════════════════════════ */
@@ -319,12 +333,6 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
         <h1>Never train<br><span class="acc">alone.</span></h1>
         <p class="page-hero-sub">7,000 people showing up every week. Share sessions, take on challenges, read the blog.</p>
       </div>
-      <div class="page-hero-stats">
-        <!-- MOCK: no public GET /api/members/count endpoint (only admin-scoped) -->
-        <div class="ph-stat"><div class="ph-stat-num">7,000+</div><div class="ph-stat-label">Members</div></div>
-        <!-- Cities count populated from GET /api/cities at runtime -->
-        <div class="ph-stat"><div class="ph-stat-num">3</div><div class="ph-stat-label">Cities</div></div>
-      </div>
     </div>
   </section>
 
@@ -351,6 +359,12 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             <textarea class="composer-input" id="postText" placeholder="Share a session recap, milestone or shoutout…" maxlength="500" oninput="updatePostBtn()"></textarea>
           </div>
           <div class="composer-media-preview" id="mediaPreview"></div>
+          <!-- TAG A FRIEND — accepted friends load lazily on first open;
+               selection posts as tagged_member_ids (max 10). -->
+          <div class="composer-tags" id="tagFriendsPanel">
+            <div class="composer-tags-title">Tag friends <span id="tagCount"></span></div>
+            <div id="tagFriendsList" style="font-size:12px;color:var(--muted)">Loading friends…</div>
+          </div>
           <!-- Rulebook ref: R-PO-002 — 500-char hard limit. Counter goes
                amber at 450, red at 480 to warn before hitting the cap. -->
           <div style="display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);padding:0 18px;line-height:1.5;gap:12px">
@@ -366,6 +380,10 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
               <button class="composer-media-btn" onclick="document.getElementById('vidInput').click()">
                 <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="1" y="3" width="10" height="10" rx="2"/><path d="M11 6l4-2v8l-4-2V6z"/></svg>
                 Video
+              </button>
+              <button class="composer-media-btn" id="tagFriendsBtn" onclick="toggleTagFriends()">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="5" r="3"/><path d="M2 14c0-3 2.7-4.5 6-4.5s6 1.5 6 4.5"/></svg>
+                Tag friends
               </button>
             </div>
             <button class="post-btn" id="postBtn" disabled data-atp-call="submitPost">Post</button>
@@ -430,31 +448,27 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
     <!-- SIDEBAR -->
     <aside class="comm-sidebar">
-      <!-- MOCK: no GET /api/community/next-session endpoint yet — sessions.html has its own /sessions wiring -->
+      <!-- Next Session — pulls the truly-next upcoming session from
+           /api/stats/public/sessions.  Replaced 2026-06-27 — used to
+           be a hardcoded mock ("Community Run · Dubai Marina Walk")
+           that was wrong + never matched the real calendar. -->
       <div class="sidebar-widget">
         <div class="sw-title">Next Session</div>
-        <div class="sw-body">
-          <div style="background:var(--green);border-radius:var(--radius);padding:14px">
-            <div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(255,255,255,.7);margin-bottom:4px">Tonight · 7:00 PM</div>
-            <div style="font-family:var(--ff-display);font-size:20px;font-weight:800;color:white;text-transform:uppercase">Community Run</div>
-            <div style="font-size:12px;color:rgba(255,255,255,.7);margin-top:2px">Dubai Marina Walk</div>
-          </div>
-          <a href="sessions.html" style="display:block;margin-top:12px;text-align:center;font-size:13px;font-weight:600;color:var(--green)">View all sessions →</a>
+        <div class="sw-body" id="sidebarNextSession">
+          <div style="font-size:13px;color:var(--muted)">Loading…</div>
         </div>
       </div>
       <div class="sidebar-widget">
         <div class="sw-title">Active Challenges</div>
         <div class="sw-body" id="sidebarChallenges"></div>
       </div>
+      <!-- Latest 5 member feedback comments. The "My Profile" link
+           that lived here was redundant — the top-right nav already
+           routes to /profile.  Replaced 2026-06-27 per founder. -->
       <div class="sidebar-widget">
-        <div class="sw-body" style="padding:0">
-          <a href="profile.html" style="display:flex;align-items:center;gap:12px;padding:16px 18px;text-decoration:none;transition:background .2s;border-radius:var(--radius-lg)">
-            <div style="width:42px;height:42px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:18px;font-weight:900;color:#fff;flex-shrink:0" id="sidebarAv">FM</div>
-            <div>
-              <div style="font-size:13px;font-weight:700;color:var(--white)">My Profile</div>
-              <div style="font-size:12px;color:var(--muted);margin-top:1px">Streak · Wallet · Tribe →</div>
-            </div>
-          </a>
+        <div class="sw-title">Latest Member Feedback</div>
+        <div class="sw-body" id="sidebarFeedback">
+          <div style="font-size:13px;color:var(--muted)">Loading feedback…</div>
         </div>
       </div>
     </aside>
@@ -535,7 +549,10 @@ function loadTribeFeed() {
       }
       // Reuse buildPostCard — the tribe feed cards look identical to
       // the main feed, just filtered. Adapter normalises the shape.
-      container.innerHTML = posts.map(_adaptFeedRow).map(buildPostCard).join('');
+      // Keep the adapted rows in TRIBE_POSTS so share/download handlers
+      // (which look posts up by real id) work on this tab too.
+      TRIBE_POSTS = posts.map(_adaptFeedRow);
+      container.innerHTML = TRIBE_POSTS.map(buildPostCard).join('');
     })
     .catch(function(){
       container.innerHTML = '<div class="atp-empty" style="padding:48px 24px;text-align:center;color:var(--muted)">Couldn’t load tribe feed — try again.</div>';
@@ -552,6 +569,7 @@ function _adaptFeedRow(p) {
   var initials = ((p.first_name || ' ').charAt(0) + (p.last_name || ' ').charAt(0)).toUpperCase();
   return {
     id:         p.id,
+    realId:     p.id,
     av:         initials,
     author:     author,
     tribe:      p.tribe_name || '',
@@ -562,60 +580,22 @@ function _adaptFeedRow(p) {
     media:      Array.isArray(p.media) ? p.media : [],
     likes:      Number(p.likes_count) || 0,
     comments:   [],
+    tagged:     Array.isArray(p.tagged_members) ? p.tagged_members : [],
     friendAdded:false,
   };
 }
 
 // ── DATA ────────────────────────────────────────────────────
-var POSTS = [
-  {id:1,av:"F",author:"Fredy M.",tribe:"Stronger",time:"2h ago",text:"Just finished the <strong>Military Bootcamp</strong> at Al Formal Park. Absolute madness — but the kind of madness you love. Who else was there today? 💪",media:[],likes:24,comments:[
-    {av:"J",author:"Jay A.",text:"Was there! Best session this month 🔥",replies:[]},
-    {av:"V",author:"Valentina R.",text:"I was there too! See you next week 🙌",replies:[{av:"F",author:"Fredy M.",text:"Amazing! Keep it up 💚"}]}
-  ],friendAdded:false},
-  {id:2,av:"J",author:"Jay A.",tribe:"Faster",time:"5h ago",text:"Marathon training update: Week 8 done. 34km this week. The <strong>community run group</strong> is keeping me accountable like nothing else. Can't thank you all enough. 🏃",media:[],likes:41,comments:[
-    {av:"G",author:"Gwen G.",text:"Incredible dedication! You've got this 🏃‍♀️",replies:[]}
-  ],friendAdded:false},
-  {id:3,av:"G",author:"Gwen G.",tribe:"Better",time:"Yesterday",text:"First time doing <strong>Sound Healing</strong> yesterday and wow. I didn't know I needed that. Highly recommend to anyone feeling stressed. Thank you Manju! 🧘",media:[],likes:33,comments:[],friendAdded:false},
-];
+// POSTS seed removed (audit): the feed hydrates from /api/community —
+// no fabricated posts while loading or on API failure.
+var POSTS = [];
+// Adapted rows from the "Your Tribe" tab — kept so post lookups by
+// real (UUID) id work for cards rendered in that container too.
+var TRIBE_POSTS = [];
 
-var LB_DATA = {
-  mtd:[
-    {init:"J",name:"Jay Ashar",tribe:"Faster",pts:270,chg:2},
-    {init:"V",name:"Valentina R.",tribe:"Stronger",pts:220,chg:-1},
-    {init:"G",name:"Gwen Gaje",tribe:"Better",pts:190,chg:1},
-    {init:"H",name:"Hugo M.",tribe:"Faster",pts:170,chg:0},
-    {init:"S",name:"Shodhan K.",tribe:"Stronger",pts:150,chg:2},
-    {init:"M",name:"Manju P.",tribe:"Better",pts:140,chg:-1},
-    {init:"F",name:"Fredy M.",tribe:"Stronger",pts:130,chg:0,you:true},
-    {init:"T",name:"Tatiana M.",tribe:"Better",pts:120,chg:1},
-    {init:"C",name:"Carlos V.",tribe:"Faster",pts:110,chg:-2},
-    {init:"P",name:"Priya N.",tribe:"Better",pts:100,chg:0},
-  ],
-  ytd:[
-    {init:"J",name:"Jay Ashar",tribe:"Faster",pts:1270,chg:0},
-    {init:"V",name:"Valentina R.",tribe:"Stronger",pts:1180,chg:0},
-    {init:"G",name:"Gwen Gaje",tribe:"Better",pts:1040,chg:0},
-    {init:"F",name:"Fredy M.",tribe:"Stronger",pts:830,chg:0,you:true},
-    {init:"H",name:"Hugo M.",tribe:"Faster",pts:980,chg:0},
-    {init:"S",name:"Shodhan K.",tribe:"Stronger",pts:910,chg:0},
-    {init:"M",name:"Manju P.",tribe:"Better",pts:870,chg:0},
-    {init:"T",name:"Tatiana M.",tribe:"Better",pts:790,chg:0},
-    {init:"C",name:"Carlos V.",tribe:"Faster",pts:740,chg:0},
-    {init:"P",name:"Priya N.",tribe:"Better",pts:710,chg:0},
-  ],
-  all:[
-    {init:"F",name:"Fredy M.",tribe:"Stronger",pts:8300,chg:0,you:true},
-    {init:"T",name:"Tatiana M.",tribe:"Better",pts:7900,chg:0},
-    {init:"J",name:"Jay Ashar",tribe:"Faster",pts:3200,chg:0},
-    {init:"V",name:"Valentina R.",tribe:"Stronger",pts:2800,chg:0},
-    {init:"G",name:"Gwen Gaje",tribe:"Better",pts:2400,chg:0},
-    {init:"H",name:"Hugo M.",tribe:"Faster",pts:2100,chg:0},
-    {init:"S",name:"Shodhan K.",tribe:"Stronger",pts:1900,chg:0},
-    {init:"M",name:"Manju P.",tribe:"Better",pts:1800,chg:0},
-    {init:"C",name:"Carlos V.",tribe:"Faster",pts:1600,chg:0},
-    {init:"P",name:"Priya N.",tribe:"Better",pts:1500,chg:0},
-  ]
-};
+// LB_DATA seed removed (audit): the leaderboard renders from the API
+// only; failures show an empty state instead of fabricated members.
+var LB_DATA = { mtd: [], ytd: [], all: [] };
 
 var CHALLENGES = [
   {id:1,icon:"🏃",title:"July Run Challenge",desc:"Complete 8 running sessions this month. Track your consistency and push the pace.",type:"monthly",metric:"Sessions",target:8,unit:"sessions",participants:127,joined:true,done:6},
@@ -823,6 +803,9 @@ async function submitPost() {
 }
 
 function createPost(txt, media) {
+  // Capture tagged friends BEFORE clearing the composer state.
+  var taggedIds = _selectedTagIds();
+
   // Clear composer immediately
   var postTextEl = document.getElementById("postText");
   var previewEl  = document.getElementById("mediaPreview");
@@ -831,6 +814,7 @@ function createPost(txt, media) {
   mediaFiles = [];
   if (previewEl) { previewEl.innerHTML = ""; previewEl.classList.remove("has-items"); }
   if (btnEl) btnEl.disabled = true;
+  _resetTagFriends();
 
   // Backend requires auth — guard
   if (typeof isApiLoggedIn === 'function' && !isApiLoggedIn()) {
@@ -839,11 +823,82 @@ function createPost(txt, media) {
   }
   // media from file reader is data URLs — send as an array of {type,src} entries
   var mediaPayload = (media || []).map(function(m){ return { type: m.type, src: m.src }; });
-  apiPost('/community/posts', { content: txt, media: mediaPayload })
+  var body = { content: txt, media: mediaPayload };
+  if (taggedIds.length) body.tagged_member_ids = taggedIds;
+  apiPost('/community/posts', body)
     .then(function(){ loadFeed(); })
     .catch(function(err){
       alert('Could not post: ' + (err && err.message ? err.message : 'Please try again.'));
     });
+}
+
+// ── TAG A FRIEND (composer) ──────────────────────────────────
+// Accepted friends load lazily the first time the panel opens (via
+// the same /members/friends endpoint the friends UI uses — the ATP
+// client calls it members.getFriends). Selection is chip-based and
+// capped at 10 to match the backend's MAX_TAGGED.
+var tagFriends = { open:false, loaded:false, list:[], selected:{} };
+
+function _selectedTagIds() { return Object.keys(tagFriends.selected); }
+
+function _resetTagFriends() {
+  tagFriends.selected = {};
+  tagFriends.open = false;
+  var panel = document.getElementById('tagFriendsPanel');
+  if (panel) panel.classList.remove('open');
+  renderTagFriends();
+}
+
+function toggleTagFriends() {
+  if (typeof isApiLoggedIn === 'function' && !isApiLoggedIn()) {
+    if (typeof openAuth === 'function') openAuth('login');
+    return;
+  }
+  var panel = document.getElementById('tagFriendsPanel');
+  if (!panel) return;
+  tagFriends.open = !tagFriends.open;
+  panel.classList.toggle('open', tagFriends.open);
+  if (tagFriends.open && !tagFriends.loaded) {
+    apiGet('/members/friends').then(function(d){
+      tagFriends.loaded = true;
+      tagFriends.list = (d.friendships || []).filter(function(f){ return f.status === 'accepted'; });
+      renderTagFriends();
+    }).catch(function(){
+      var host = document.getElementById('tagFriendsList');
+      if (host) host.textContent = 'Couldn’t load friends — try again.';
+    });
+  }
+}
+
+function renderTagFriends() {
+  var host = document.getElementById('tagFriendsList');
+  if (!host) return;
+  var cnt = _selectedTagIds().length;
+  var cEl = document.getElementById('tagCount');
+  if (cEl) cEl.textContent = cnt ? '· ' + cnt + '/10' : '';
+  var btn = document.getElementById('tagFriendsBtn');
+  if (btn) btn.classList.toggle('active-tags', cnt > 0);
+  if (!tagFriends.loaded) return;
+  if (!tagFriends.list.length) {
+    host.textContent = 'No accepted friends yet — add friends from the feed to tag them.';
+    return;
+  }
+  host.innerHTML = tagFriends.list.map(function(f){
+    var nm = ((f.first_name || '') + ' ' + (f.last_name || '')).trim() || 'Member';
+    var sel = !!tagFriends.selected[f.friend_id];
+    return '<button type="button" class="tag-chip' + (sel ? ' sel' : '') + '" onclick="toggleTagFriend(\'' + escapeHtml(String(f.friend_id)) + '\')">' +
+      (sel ? '✓ ' : '') + escapeHtml(nm) + '</button>';
+  }).join('');
+}
+
+function toggleTagFriend(id) {
+  if (tagFriends.selected[id]) {
+    delete tagFriends.selected[id];
+  } else {
+    if (_selectedTagIds().length >= 10) { atpToast('You can tag up to 10 friends.'); return; }
+    tagFriends.selected[id] = true;
+  }
+  renderTagFriends();
 }
 
 function renderPosts() {
@@ -863,6 +918,9 @@ function buildPostCard(post) {
   // ci) are coerced to numbers below; media src attributes get the
   // same escaping treatment so " can't break the quote.
   var _pid = Number(post.id) || 0;
+  // Real (UUID) post id — the share/download handlers look posts up by
+  // this, since the numeric coercion above collapses UUID ids to 0.
+  var _rid = escapeHtml(String(post.realId || post.id || ''));
   var mediaHtml = "";
   if(post.media && post.media.length > 0) {
     var items = post.media.map(function(m, i) {
@@ -934,6 +992,12 @@ function buildPostCard(post) {
       '</div>'+
       '<button class="post-menu" onclick="togglePostMenu('+_pid+')">···</button>'+
     '</div>'+
+    // TAG A FRIEND — "with @Name" line when the poster tagged friends.
+    (post.tagged && post.tagged.length ?
+      '<div class="post-tagged">with ' + post.tagged.map(function(t){
+        var nm = ((t.first_name || '') + ' ' + (t.last_name || '')).trim() || 'a friend';
+        return '<span class="tagged-name">@' + escapeHtml(nm) + '</span>';
+      }).join(', ') + '</div>' : '')+
     (post.text ? '<div class="post-content">'+escapeHtml(post.text)+'</div>' : '')+
     mediaHtml+
     '<div class="post-actions">'+
@@ -946,14 +1010,22 @@ function buildPostCard(post) {
         post.comments.length+
       '</button>'+
       '<div class="share-dropdown">'+
-        '<button class="post-action-btn" onclick="toggleShare('+_pid+')">'+
-          '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="3" r="1.5"/><circle cx="4" cy="8" r="1.5"/><circle cx="12" cy="13" r="1.5"/><path d="M5.5 9l5 3M5.5 7l5-3"/></svg>'+
+        '<button class="post-action-btn" onclick="toggleShare(\''+_rid+'\')">'+
+          // Lucide "share-2" — exact geometry, matches the app's IconShare.
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98"/><path d="m15.41 6.51-6.83 3.98"/></svg>'+
           'Share'+
         '</button>'+
-        '<div class="share-menu" id="share-'+_pid+'">'+
-          '<button class="share-item" onclick="shareWhatsApp('+_pid+')"><div class="share-item-icon" style="background:#25d366">💬</div>Share on WhatsApp</button>'+
-          '<button class="share-item" onclick="downloadMedia('+_pid+')"><div class="share-item-icon" style="background:rgba(255,255,255,.08)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 13h12"/></svg></div>Download</button>'+
-          '<button class="share-item" onclick="copyPostLink('+_pid+')"><div class="share-item-icon" style="background:rgba(255,255,255,.08)">🔗</div>Copy link</button>'+
+        '<div class="share-menu" id="share-'+_rid+'">'+
+          '<button class="share-item" onclick="shareWhatsApp(\''+_rid+'\')"><div class="share-item-icon" style="background:#25d366">💬</div>Share on WhatsApp</button>'+
+          // Download + native Share only make sense on media posts —
+          // text-only cards keep just WhatsApp + Copy link.
+          (post.media && post.media.length ?
+            // Lucide "share-2" + "download" — exact geometry so these
+            // line up with the rest of the icon set (app + web).
+            '<button class="share-item" onclick="sharePostNative(\''+_rid+'\')"><div class="share-item-icon" style="background:rgba(168,255,0,.14)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98"/><path d="m15.41 6.51-6.83 3.98"/></svg></div>Share…</button>'+
+            '<button class="share-item" onclick="downloadMedia(\''+_rid+'\')"><div class="share-item-icon" style="background:rgba(255,255,255,.08)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></div>Download</button>'
+            : '')+
+          '<button class="share-item" onclick="copyPostLink(\''+_rid+'\')"><div class="share-item-icon" style="background:rgba(255,255,255,.08)">🔗</div>Copy link</button>'+
         '</div>'+
       '</div>'+
     '</div>'+
@@ -1154,25 +1226,105 @@ document.addEventListener("click",function(e){
   if(!e.target.closest(".share-dropdown")) document.querySelectorAll(".share-menu").forEach(function(m){m.classList.remove("open");});
 });
 
+// Look a post up by its real (UUID) id across both feed containers.
+function _findPost(id) {
+  var match = function(p){ return String(p.realId || p.id) === String(id); };
+  return POSTS.find(match) || TRIBE_POSTS.find(match);
+}
+
+// Toast — lightweight feedback for share/download/tag actions (the
+// page otherwise leans on alert(), which is too heavy for these).
+var _toastTimer = null;
+function atpToast(msg) {
+  var el = document.getElementById('atpToast');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'atpToast';
+    el.className = 'atp-toast';
+    document.body.appendChild(el);
+  }
+  el.textContent = msg;
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2600);
+}
+
+function _postPageLink(id) {
+  return window.location.origin + '/community.html#post-' + id;
+}
+
+function _copyToClipboard(txt) {
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(txt).then(
+      function(){ atpToast('Link copied to clipboard'); },
+      function(){ atpToast('Could not copy the link'); }
+    );
+  } else {
+    atpToast('Sharing is not supported in this browser');
+  }
+}
+
 function shareWhatsApp(id) {
-  var post = POSTS.find(function(p){return p.id===id;});
-  var text = encodeURIComponent("Check this out on ATP Community: "+(post.text||"")+"\nhttps://attheparkworld.github.io/ATP_World_Web/community.html");
+  var post = _findPost(id);
+  var text = encodeURIComponent("Check this out on ATP Community: "+((post && post.text)||"")+"\n"+_postPageLink(id));
   window.open("https://wa.me/?text="+text,"_blank");
 }
 
-function downloadMedia(id) {
-  var post = POSTS.find(function(p){return p.id===id;});
-  if(!post||!post.media||!post.media.length){alert("No media to download.");return;}
-  post.media.forEach(function(m,i){
-    var a=document.createElement("a");
-    a.href=m.src;a.download="atp-post-"+id+"-"+i+(m.type==="video"?".mp4":".jpg");
-    document.body.appendChild(a);a.click();document.body.removeChild(a);
-  });
+// Native share — navigator.share where the browser supports it
+// (mobile Safari/Chrome), copy-link + toast everywhere else.
+function sharePostNative(id) {
+  var post = _findPost(id);
+  var mediaUrl = (post && post.media && post.media.length && post.media[0].src)
+    ? new URL(post.media[0].src, window.location.origin).href
+    : null;
+  var url = mediaUrl || _postPageLink(id);
+  if (navigator.share) {
+    navigator.share({
+      title: 'ATP Community',
+      text:  (post && post.text) || 'Check this out on ATP Community',
+      url:   url,
+    }).catch(function(err){
+      // User dismissing the sheet is not an error worth surfacing.
+      if (err && err.name !== 'AbortError') _copyToClipboard(url);
+    });
+  } else {
+    _copyToClipboard(url);
+  }
+}
+
+// Download — fetch each media item as a blob first so the anchor's
+// download attribute works for cross-origin R2 URLs too (a plain
+// href+download on another origin just navigates instead of saving).
+async function downloadMedia(id) {
+  var post = _findPost(id);
+  if(!post||!post.media||!post.media.length){atpToast("No media to download.");return;}
+  atpToast('Preparing download…');
+  for (var i = 0; i < post.media.length; i++) {
+    var m = post.media[i];
+    if (!m || !m.src) continue;
+    var abs = new URL(m.src, window.location.origin).href;
+    var ext = m.type === "video" ? ".mp4" : ".jpg";
+    var name = "atp-post-" + String(id).slice(0, 8) + "-" + (i + 1) + ext;
+    try {
+      var resp = await fetch(abs);
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+      var blob = await resp.blob();
+      var blobUrl = URL.createObjectURL(blob);
+      var a = document.createElement("a");
+      a.href = blobUrl; a.download = name;
+      document.body.appendChild(a); a.click(); document.body.removeChild(a);
+      setTimeout((function(u){ return function(){ URL.revokeObjectURL(u); }; })(blobUrl), 5000);
+    } catch (e) {
+      // Blob fetch blocked (e.g. R2 bucket without CORS) — open the
+      // file in a new tab so the member can still save it manually.
+      window.open(abs, "_blank");
+    }
+  }
+  atpToast("Download started");
 }
 
 function copyPostLink(id) {
-  navigator.clipboard&&navigator.clipboard.writeText("https://attheparkworld.github.io/ATP_World_Web/community.html#post-"+id);
-  alert("Link copied!");
+  _copyToClipboard(_postPageLink(id));
 }
 
 function togglePostMenu(id) {}
@@ -1190,7 +1342,10 @@ async function renderLeaderboard() {
   // Try API first
   if (window.ATP) {
     try {
-      var result = await window.ATP.members.leaderboard(currentPeriod);
+      // Audit fix: the live client's method is getLeaderboard —
+      // `leaderboard` never existed, so this always threw and the page
+      // showed the fake LB_DATA seed.
+      var result = await window.ATP.members.getLeaderboard(currentPeriod);
       var data = result.leaderboard.map(function(m, i) {
         return {
           init: m.first_name[0],
@@ -1201,14 +1356,14 @@ async function renderLeaderboard() {
           tribe_color: m.tribe_color || null,
           pts: m.period_points,
           chg: 0,
-          you: m.id === (window.ATP.getUser() && window.ATP.getUser().memberId)
+          you: m.id === ((window.ATP.getUser() || {}).id || (window.ATP.getUser() || {}).memberId)
         };
       });
       _renderLeaderboardRows(data);
       return;
     } catch(e) { /* fall through to static data */ }
   }
-  var data = LB_DATA[currentPeriod].slice().sort(function(a,b){return b.pts-a.pts;});
+  var data = (LB_DATA[currentPeriod] || []).slice().sort(function(a,b){return b.pts-a.pts;});
   _renderLeaderboardRows(data);
 }
 function _renderLeaderboardRows(data) {
@@ -1464,13 +1619,22 @@ function renderAuthNav(user) {
 
 // ── Log out ──────────────────────────────────────────────────
 function logOut() {
-  authClearUser();
-  var actions = document.querySelector('.nav-actions');
-  if(actions) {
-    actions.innerHTML =
-      '<button class="btn-ghost" onclick="openAuth(\'login\')">Log in</button>' +
-      '<button class="btn-primary" onclick="openAuth(\'signup\')">Join free →</button>';
+  // See index.html — must wipe both current AND legacy auth keys so
+  // the bundle's migrate() step can't lift a stale JWT back on the
+  // next page load.
+  try {
+    localStorage.removeItem('atp_token');
+    localStorage.removeItem('atp_member');
+    localStorage.removeItem('atp:jwt');
+    localStorage.removeItem('atp:user');
+    localStorage.removeItem('atp:ambassador');
+  } catch (_) {}
+  try { authClearUser(); } catch (_) {}
+  if (window.ATP && window.ATP.auth && window.ATP.auth.logout) {
+    try { window.ATP.auth.logout(); } catch (_) {}
   }
+  try { window.dispatchEvent(new Event('atp:logout')); } catch (_) {}
+  window.location.replace('index.html');
 }
 
 // ── Guard: require auth before booking ───────────────────────
@@ -1631,6 +1795,7 @@ function mapApiPost(p) {
     comments: [],  // loaded on demand via /comments
     commentsCount: parseInt(p.comments_count) || 0,
     liked:    !!p.liked_by_me,
+    tagged:   Array.isArray(p.tagged_members) ? p.tagged_members : [],
     friendAdded: true,
     memberId: p.member_id,
     commentsLoaded: false,
@@ -1748,18 +1913,110 @@ async function loadChallenges() {
 }
 
 // ── HERO CITIES COUNT ────────────────────────────────────────
-async function loadCitiesStat() {
+function _initials(first, last) {
+  return ((first||'?')[0] + ((last||'')[0]||'')).toUpperCase();
+}
+function _fbTimeAgo(iso) {
+  if (!iso) return '';
+  var s = Math.floor((Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60)    return s + 's';
+  if (s < 3600)  return Math.floor(s/60) + 'm';
+  if (s < 86400) return Math.floor(s/3600) + 'h';
+  if (s < 604800) return Math.floor(s/86400) + 'd';
+  return new Date(iso).toLocaleDateString();
+}
+function _escapeHtml(s) {
+  return String(s||'').replace(/[&<>"']/g, function(c){
+    return ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' })[c];
+  });
+}
+
+// Next Session — pulls the truly-next upcoming session from the public
+// stats endpoint, which already filters scheduled_at > NOW() and skips
+// cancelled/completed.  Replaces the hardcoded "Tonight · Community
+// Run · Dubai Marina Walk" mock that never matched the real calendar.
+async function loadNextSession() {
+  var host = document.getElementById('sidebarNextSession');
+  if (!host) return;
   try {
-    var data = await apiGet('/cities');
-    var cities = data.cities || [];
-    if (!cities.length) return;
-    var statEls = document.querySelectorAll('.page-hero-stats .ph-stat');
-    // second stat is cities
-    if (statEls.length >= 2) {
-      var numEl = statEls[1].querySelector('.ph-stat-num');
-      if (numEl) numEl.textContent = cities.length;
+    var resp = await fetch('/api/stats/public/sessions?limit=1', { cache: 'no-cache' });
+    var data = resp.ok ? await resp.json() : null;
+    var s    = data && Array.isArray(data.sessions) ? data.sessions[0] : null;
+    if (!s) {
+      host.innerHTML =
+        '<div style="font-size:13px;color:var(--muted)">No upcoming sessions yet.</div>' +
+        '<a href="sessions.html" style="display:block;margin-top:10px;text-align:center;font-size:13px;font-weight:600;color:var(--green)">Open the calendar →</a>';
+      return;
     }
-  } catch (err) { /* leave mock */ }
+    // Friendly relative day: Today / Tomorrow / Weekday DD MMM
+    var when = new Date(s.scheduled_at);
+    var now  = new Date();
+    var startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    var diffDays = Math.floor((new Date(when.getFullYear(), when.getMonth(), when.getDate()) - startOfToday) / 86400000);
+    var dayLabel;
+    if (diffDays === 0)      dayLabel = 'Today';
+    else if (diffDays === 1) dayLabel = 'Tomorrow';
+    else dayLabel = when.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
+    var timeLabel = when.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+    var loc = (s.location || s.city_name || '').toString();
+    function esc(x){ return String(x||'').replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+    host.innerHTML =
+      '<div style="background:var(--green);border-radius:var(--radius);padding:14px">' +
+        '<div style="font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:rgba(0,0,0,.65);margin-bottom:4px">' +
+          esc(dayLabel) + ' · ' + esc(timeLabel) +
+        '</div>' +
+        '<div style="font-family:var(--ff-display);font-size:20px;font-weight:800;color:#0a0a0a;text-transform:uppercase;line-height:1.1">' +
+          esc(s.name || 'ATP Session') +
+        '</div>' +
+        (loc ? '<div style="font-size:12px;color:rgba(0,0,0,.7);margin-top:4px">' + esc(loc) + '</div>' : '') +
+      '</div>' +
+      '<a href="sessions.html" style="display:block;margin-top:12px;text-align:center;font-size:13px;font-weight:600;color:var(--green)">View all sessions →</a>';
+  } catch (err) {
+    host.innerHTML =
+      '<div style="font-size:13px;color:var(--muted)">Couldn’t load next session.</div>' +
+      '<a href="sessions.html" style="display:block;margin-top:10px;text-align:center;font-size:13px;font-weight:600;color:var(--green)">Open the calendar →</a>';
+  }
+}
+
+// Latest 5 member feedback comments — sits where "My Profile" used to,
+// gives visitors a real social-proof signal on the community page.
+async function loadRecentFeedback() {
+  var host = document.getElementById('sidebarFeedback');
+  if (!host) return;
+  try {
+    var data = await apiGet('/sessions/recent-feedback?limit=5');
+    var rows = (data && data.feedback) || [];
+    if (!rows.length) {
+      host.innerHTML = '<div style="font-size:13px;color:var(--muted)">No feedback yet — be the first after your next session.</div>';
+      return;
+    }
+    host.innerHTML = rows.map(function(r) {
+      var name = ((r.first_name||'') + ' ' + (r.last_name||'')).trim() || 'Member';
+      var stars = '★'.repeat(r.rating || 0) + '☆'.repeat(Math.max(0, 5 - (r.rating || 0)));
+      return (
+        '<div style="display:flex;gap:10px;padding:12px 4px;border-bottom:1px solid rgba(255,255,255,.05);align-items:flex-start">' +
+          '<div style="width:32px;height:32px;border-radius:50%;background:var(--green);display:flex;align-items:center;justify-content:center;' +
+            'font-family:var(--ff-display);font-size:12px;font-weight:900;color:#0a0a0a;flex-shrink:0">' +
+            _escapeHtml(_initials(r.first_name, r.last_name)) +
+          '</div>' +
+          '<div style="min-width:0;flex:1">' +
+            '<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">' +
+              '<span style="font-size:12px;font-weight:700;color:var(--white)">' + _escapeHtml(name) + '</span>' +
+              (r.is_ambassador ? '<span style="font-size:9px;font-weight:800;letter-spacing:.08em;color:var(--green);text-transform:uppercase;background:rgba(168,255,0,.12);padding:1px 5px;border-radius:99px">AMB</span>' : '') +
+              '<span style="font-size:11px;color:#f0c040;letter-spacing:.5px" title="' + (r.rating||0) + '/5">' + stars + '</span>' +
+              '<span style="font-size:10px;color:var(--muted);margin-left:auto">' + _escapeHtml(_fbTimeAgo(r.created_at)) + '</span>' +
+            '</div>' +
+            '<div style="font-size:12px;color:var(--light);line-height:1.45;margin-top:3px">' + _escapeHtml(r.comment) + '</div>' +
+            (r.session_name ? '<div style="font-size:10px;color:var(--muted);margin-top:4px;text-transform:uppercase;letter-spacing:.08em">' + _escapeHtml(r.session_name) + '</div>' : '') +
+          '</div>' +
+        '</div>'
+      );
+    }).join('');
+    // Strip the last divider for cleanliness
+    host.lastElementChild && (host.lastElementChild.style.borderBottom = 'none');
+  } catch (err) {
+    host.innerHTML = '<div style="font-size:13px;color:var(--muted)">Couldn’t load feedback right now.</div>';
+  }
 }
 
 // ── INIT KICKOFF ─────────────────────────────────────────────
@@ -1768,7 +2025,8 @@ async function loadCitiesStat() {
   loadFeed();
   loadChallenges();
   loadLeaderboard();
-  loadCitiesStat();
+  loadRecentFeedback();
+  loadNextSession();
 
   // Sync atp-api.js session into legacy atpUser if available (keeps nav in sync)
   if (window.ATP && typeof window.ATP.init === 'function') {
@@ -1801,22 +2059,13 @@ async function loadCitiesStat() {
 
 </script>
 
-<footer class="footer-min" role="contentinfo" style="background:#111111;padding:40px 40px 28px;border-top:1px solid rgba(255,255,255,.06);font-family:'DM Sans',sans-serif">
-  <div class="footer-top" style="max-width:1320px;margin:0 auto 28px;display:flex;justify-content:flex-end">
-    <div class="footer-col">
-      <h4 style="font-family:'Barlow Condensed',sans-serif;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#fff;margin:0 0 12px">Legal</h4>
-      <ul style="list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:8px">
-        <li><a href="privacy.html" style="font-size:13px;color:#888;text-decoration:none">Privacy</a></li>
-        <li><a href="terms.html" style="font-size:13px;color:#888;text-decoration:none">Terms</a></li>
-        <li><a href="contacts.html" style="font-size:13px;color:#888;text-decoration:none">Contacts</a></li>
-      </ul>
-    </div>
-  </div>
-  <div style="max-width:1320px;margin:0 auto;padding-top:20px;border-top:1px solid rgba(255,255,255,.06);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px">
-    <p style="font-size:12px;color:#888;margin:0">© 2026 At The Park. All rights reserved. Dubai, United Arab Emirates.</p>
-    <nav class="footer-legal" aria-label="Account" style="display:flex;gap:20px"><a href="/join?mode=login" style="font-size:12px;color:#888;text-decoration:none">Log in</a><a href="/join" style="font-size:12px;color:#A8FF00;text-decoration:none">Join free →</a></nav>
-  </div>
-</footer>
+<!-- Footer — mounts the canonical brand/legal footer from the shared
+     bundle (atp-components.js → mountFooter).  The old single-column
+     'footer-min' stub looked broken on this page (only Legal column,
+     flex-end alignment, no logo / socials / nav columns).  Switching
+     to #atp-footer-host gives community parity with index.html /
+     sessions.html / profile.html. -->
+<div id="atp-footer-host"></div>
 
 </body>
 </html>

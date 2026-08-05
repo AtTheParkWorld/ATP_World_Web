@@ -35,6 +35,7 @@ import type { Post } from '@/lib/api/community';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
 import { Avatar } from '@/lib/components/Avatar';
+import { IconChat, IconDownload, IconHeart, IconShare } from '@/lib/components/icons';
 
 function isVideoMedia(m: { src: string; type?: string }): boolean {
   if (m.type === 'video') return true;
@@ -224,17 +225,24 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
         )
       )}
 
-      {/* Footer */}
+      {/* Footer — one consistent action row. Every action uses the
+          in-app icon system at the same 18px / stroke 2, muted when
+          inactive; the heart goes danger-red + beats when liked. */}
       <View className="flex-row items-center gap-5 mt-3 pt-3 border-t border-white/5">
-        <Pressable onPress={onLikePress} className="flex-row items-center gap-2 active:opacity-60">
-          <Text style={{ fontSize: 16 }}>{post.liked_by_me ? '❤️' : '🤍'}</Text>
-          <Text style={{ fontFamily: fontFamily.bodyBold, color: post.liked_by_me ? colors.danger : colors.light }} className="text-sm">
+        <Pressable onPress={onLikePress} hitSlop={8} className="flex-row items-center gap-1.5 active:opacity-60">
+          <IconHeart
+            size={18}
+            strokeWidth={2}
+            color={post.liked_by_me ? colors.danger : colors.muted}
+            active={!!post.liked_by_me}
+          />
+          <Text style={{ fontFamily: fontFamily.bodyBold, color: post.liked_by_me ? colors.danger : colors.muted }} className="text-xs">
             {post.likes_count}
           </Text>
         </Pressable>
-        <View className="flex-row items-center gap-2">
-          <Text style={{ fontSize: 16 }}>💬</Text>
-          <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.light }} className="text-sm">
+        <View className="flex-row items-center gap-1.5">
+          <IconChat size={18} strokeWidth={2} color={colors.muted} />
+          <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs">
             {post.comments_count}
           </Text>
         </View>
@@ -243,7 +251,7 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
         {!!mediaUrl && (
           <View className="flex-row items-center gap-4 ml-auto">
             <Pressable onPress={onSharePress} hitSlop={8} className="flex-row items-center gap-1.5 active:opacity-60">
-              <Text style={{ fontSize: 13 }}>📤</Text>
+              <IconShare size={18} strokeWidth={2} color={colors.muted} />
               <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs">
                 Share
               </Text>
@@ -251,7 +259,7 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
             <Pressable onPress={onSavePress} disabled={saving} hitSlop={8} className="flex-row items-center gap-1.5 active:opacity-60">
               {saving
                 ? <ActivityIndicator size="small" color={colors.muted} />
-                : <Text style={{ fontSize: 13 }}>⬇️</Text>}
+                : <IconDownload size={18} strokeWidth={2} color={colors.muted} />}
               <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs">
                 {saving ? 'Saving…' : 'Save'}
               </Text>

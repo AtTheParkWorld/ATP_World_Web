@@ -1011,7 +1011,8 @@ function buildPostCard(post) {
       '</button>'+
       '<div class="share-dropdown">'+
         '<button class="post-action-btn" onclick="toggleShare(\''+_rid+'\')">'+
-          '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="3" r="1.5"/><circle cx="4" cy="8" r="1.5"/><circle cx="12" cy="13" r="1.5"/><path d="M5.5 9l5 3M5.5 7l5-3"/></svg>'+
+          // Lucide "share-2" — exact geometry, matches the app's IconShare.
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98"/><path d="m15.41 6.51-6.83 3.98"/></svg>'+
           'Share'+
         '</button>'+
         '<div class="share-menu" id="share-'+_rid+'">'+
@@ -1019,8 +1020,10 @@ function buildPostCard(post) {
           // Download + native Share only make sense on media posts —
           // text-only cards keep just WhatsApp + Copy link.
           (post.media && post.media.length ?
-            '<button class="share-item" onclick="sharePostNative(\''+_rid+'\')"><div class="share-item-icon" style="background:rgba(168,255,0,.14)">📤</div>Share…</button>'+
-            '<button class="share-item" onclick="downloadMedia(\''+_rid+'\')"><div class="share-item-icon" style="background:rgba(255,255,255,.08)"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 2v8M5 7l3 3 3-3"/><path d="M2 13h12"/></svg></div>Download</button>'
+            // Lucide "share-2" + "download" — exact geometry so these
+            // line up with the rest of the icon set (app + web).
+            '<button class="share-item" onclick="sharePostNative(\''+_rid+'\')"><div class="share-item-icon" style="background:rgba(168,255,0,.14)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98"/><path d="m15.41 6.51-6.83 3.98"/></svg></div>Share…</button>'+
+            '<button class="share-item" onclick="downloadMedia(\''+_rid+'\')"><div class="share-item-icon" style="background:rgba(255,255,255,.08)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></div>Download</button>'
             : '')+
           '<button class="share-item" onclick="copyPostLink(\''+_rid+'\')"><div class="share-item-icon" style="background:rgba(255,255,255,.08)">🔗</div>Copy link</button>'+
         '</div>'+

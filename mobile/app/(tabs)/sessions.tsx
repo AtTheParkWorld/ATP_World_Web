@@ -2,15 +2,19 @@
  * Sessions tab — calendar-first layout, matching the website's
  * sessions page UX.
  *
- * Composition (top → bottom):
- *   1. Tribe filter row  — All / Better / Faster / Stronger pills
- *   2. Week strip         — 14 days starting from today, horizontal pills.
- *                            Day name + date number + small count badge.
- *                            Tap to focus that day. Today is auto-selected
- *                            on mount.
- *   3. City + Activity filter row (horizontal pills). Options are
- *      DYNAMIC (founder 2026-08-01): derived from an unfiltered
- *      ['sessions','facets'] query so a city/activity only gets a pill
+ * Composition (top → bottom) — SLIM by design (founder 2026-08-05:
+ * "the calendar still takes too much space — the session list is the
+ * hero"). The whole control area is 3 thin rows:
+ *   1. Header             — page title only, no subtitle.
+ *   2. Week strip         — 14 days starting from today, tiny ~40px
+ *                            pills (day-of-week micro-label + date
+ *                            number + availability dot). Tap to focus
+ *                            that day. Today is auto-selected on mount.
+ *   3. ONE filter chips row — tribes · cities · activities as small
+ *      chips separated by hairline dividers. Tap to select, tap the
+ *      active chip again to clear. City/activity options stay DYNAMIC
+ *      (founder 2026-08-01): derived from an unfiltered
+ *      ['sessions','facets'] query so a city/activity only gets a chip
  *      if at least one upcoming session actually has it. Tribes stay
  *      static (always the 3 tribes).
  *   4. Sessions list      — only sessions for the focused day; each card
@@ -29,11 +33,31 @@ import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { listSessions, listTribes, type Session } from '@/lib/api/sessions';
 import { SessionCard } from '@/lib/components/SessionCard';
-import { FilterPills } from '@/lib/components/FilterPills';
-import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
+import { colors, fontFamily } from '@/lib/theme/tokens';
 import { LoadError } from '@/lib/components/LoadError';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+/**
+ * Tiny filter chip — deliberately smaller than FilterPills so the
+ * whole filter set reads as one slim control row. Tap toggles: tapping
+ * the active chip clears its facet (no "All" pills = less noise).
+ */
+function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      className={`rounded-full px-3 py-1 border active:opacity-70 ${active ? 'bg-atp-green border-atp-green' : 'bg-white/5 border-white/10'}`}
+    >
+      <Text
+        style={{ fontFamily: fontFamily.bodyBold, color: active ? colors.black : colors.light, letterSpacing: 1 }}
+        className="text-[10px] uppercase"
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
 
 function ymd(d: Date): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
@@ -133,31 +157,22 @@ export default function Sessions() {
 
   return (
     <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>
-      {/* Header */}
-      <View className="px-5 pt-3 pb-3 border-b border-white/5">
-        <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-3xl uppercase tracking-tight">
+      {/* Header — title only; the list header below already announces
+          the focused day + count, so no subtitle here. */}
+      <View className="px-5 pt-2 pb-1">
+        <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-2xl uppercase tracking-tight">
           Sessions
         </Text>
-        <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm mt-1">
-          {sessionsQ.data?.length || 0} upcoming · pick a day
-        </Text>
       </View>
 
-      {/* Tribe filter row (mirrors the website's primary filter bar) */}
-      <View className="px-2.5 pt-3">
-        <FilterPills
-          options={tribeOptions}
-          value={tribeSlug}
-          onChange={(v) => setTribeSlug(v as string | null)}
-          allLabel="All tribes"
-        />
-      </View>
-
-      {/* Week strip */}
+      {/* Week strip — slim single row of ~40px pills. flexGrow:0 pins
+          the ScrollView to its content height so it can never expand
+          into space meant for the list. */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 10, paddingBottom: 10, gap: 6 }}
+        style={{ flexGrow: 0 }}
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 6, paddingBottom: 6, gap: 5 }}
       >
         {days.map((d) => {
           const k     = ymd(d);
@@ -168,57 +183,70 @@ export default function Sessions() {
             <Pressable
               key={k}
               onPress={() => setFocusedDay(k)}
-              className={`px-2 py-1.5 rounded-atp-lg border min-w-[45px] items-center active:opacity-70 ${isFocused ? 'bg-atp-green border-atp-green' : count > 0 ? 'bg-atp-dark border-white/10' : 'bg-atp-dark border-white/5'}`}
+              className={`w-10 py-1 rounded-lg items-center active:opacity-70 ${isFocused ? 'bg-atp-green' : 'bg-white/5'}`}
             >
               <Text
                 style={{ fontFamily: fontFamily.bodyBold, color: isFocused ? colors.black : colors.muted, letterSpacing: 1 }}
-                className="text-[10px] uppercase"
+                className="text-[9px] uppercase"
               >
                 {isToday ? 'Today' : DAY_NAMES[d.getDay()]}
               </Text>
               <Text
-                style={{ fontFamily: fontFamily.displayBlack, color: isFocused ? colors.black : count > 0 ? colors.white : colors.muted }}
-                className="text-base mt-0.5"
+                style={{ fontFamily: fontFamily.bodyBold, color: isFocused ? colors.black : count > 0 ? colors.white : colors.muted }}
+                className="text-sm"
               >
                 {d.getDate()}
               </Text>
-              {count > 0 && (
-                <View
-                  className="mt-1 px-1.5 rounded-full"
-                  style={{ backgroundColor: isFocused ? 'rgba(0,0,0,0.18)' : 'rgba(168,255,0,0.18)' }}
-                >
-                  <Text
-                    style={{ fontFamily: fontFamily.bodyBold, color: isFocused ? colors.black : colors.green }}
-                    className="text-[10px]"
-                  >
-                    {count}
-                  </Text>
-                </View>
-              )}
+              {/* Availability dot — replaces the old count badge; always
+                  rendered (transparent when empty) so pill heights match. */}
+              <View
+                className="rounded-full"
+                style={{
+                  width: 3, height: 3, marginTop: 1, marginBottom: 2,
+                  backgroundColor: count > 0 ? (isFocused ? colors.black : colors.green) : 'transparent',
+                }}
+              />
             </Pressable>
           );
         })}
       </ScrollView>
 
-      {/* Secondary filters (city + activity) */}
-      <View className="border-b border-white/5 pb-3">
-        <View className="px-2.5 pb-1">
-          <FilterPills
-            options={cityOptions}
-            value={cityId}
-            onChange={(v) => setCityId(v as string | null)}
-            allLabel="All cities"
+      {/* ONE filter chips row — tribes · cities · activities. Hairline
+          dividers separate the groups; tap the active chip to clear. */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        style={{ flexGrow: 0 }}
+        className="border-b border-white/5"
+        contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 2, paddingBottom: 8, gap: 6, alignItems: 'center' }}
+      >
+        {tribeOptions.map((o) => (
+          <Chip
+            key={`t-${o.value}`}
+            label={o.label}
+            active={tribeSlug === o.value}
+            onPress={() => setTribeSlug(tribeSlug === o.value ? null : o.value)}
           />
-        </View>
-        <View className="px-2.5 pt-1">
-          <FilterPills
-            options={activityOptions}
-            value={activityId}
-            onChange={(v) => setActivityId(v as string | null)}
-            allLabel="All activities"
+        ))}
+        {cityOptions.length > 0 && <View className="w-px h-3.5 bg-white/10 mx-0.5" />}
+        {cityOptions.map((o) => (
+          <Chip
+            key={`c-${o.value}`}
+            label={o.label}
+            active={cityId === o.value}
+            onPress={() => setCityId(cityId === o.value ? null : o.value)}
           />
-        </View>
-      </View>
+        ))}
+        {activityOptions.length > 0 && <View className="w-px h-3.5 bg-white/10 mx-0.5" />}
+        {activityOptions.map((o) => (
+          <Chip
+            key={`a-${o.value}`}
+            label={o.label}
+            active={activityId === o.value}
+            onPress={() => setActivityId(activityId === o.value ? null : o.value)}
+          />
+        ))}
+      </ScrollView>
 
       {/* Sessions list — animated reveal on day change */}
       {sessionsQ.isLoading ? (
@@ -241,6 +269,7 @@ export default function Sessions() {
       ) : (
         <FlatList
           key={focusedDay}              /* force re-mount so FadeInDown fires on day change */
+          className="flex-1"
           data={focusedSessions}
           keyExtractor={(item) => String(item.id)}
           renderItem={({ item, index }) => (

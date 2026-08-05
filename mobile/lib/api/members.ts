@@ -27,6 +27,8 @@ export interface MemberProfile {
   bottom_size: string | null;
   padel_level: string | null;
   profile_complete_pct: number | null;
+  /** Unfilled completion fields, computed live by the backend. Empty when 100%. */
+  profile_missing?: { field: string; label: string }[];
   points_balance: number;
   is_ambassador: boolean;
   joined_at: string;
