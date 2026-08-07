@@ -114,6 +114,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
                 s.location, s.location_maps_url, s.session_type, s.price,
                 s.price_points, s.currency_code,
                 s.capacity, s.points_reward, s.status, s.is_live_enabled,
+                s.duration_mins, s.is_streamable, s.is_online, s.stream_url,
                 s.session_category, s.sport_type, s.courts, s.cancellation_reason,
                 s.city_id, s.coach_id, s.activity_id, s.tribe_id, s.intro_video_url,
                 s.sponsor_name, s.sponsor_logo_url, s.sponsor_url,
@@ -148,6 +149,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
                 s.location, s.location_maps_url, s.session_type, s.price,
                 0 AS price_points, NULL AS currency_code,
                 s.capacity, s.points_reward, s.status, s.is_live_enabled,
+                s.duration_mins, NULL AS is_streamable, NULL AS is_online, NULL AS stream_url,
                 s.session_category, s.sport_type, s.courts, s.cancellation_reason,
                 s.city_id, s.coach_id, s.activity_id, s.tribe_id, NULL AS intro_video_url,
                 NULL AS sponsor_name, NULL AS sponsor_logo_url, NULL AS sponsor_url,
@@ -1214,6 +1216,79 @@ router.patch('/:id/cancel', authenticate, requireAdmin, async (req, res, next) =
 });
 
 // ── PATCH /api/sessions/series/:name/cancel ───────────────────
+// ── Series helpers (founder 2026-08-07: "save on one session should
+// ask whether to apply to the whole series"). A series is every
+// UPCOMING session sharing the same name (case-insensitive) in the
+// same city — the same grouping series/cancel already uses.
+
+// How many OTHER upcoming sessions are in this series? The admin UI
+// asks this before offering the "apply to whole series" choice.
+router.get('/admin/series-count', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const name = String(req.query.name || '').trim();
+    if (!name) return res.status(400).json({ error: 'name required' });
+    const params = [name];
+    let where = `LOWER(name)=LOWER($1) AND status='upcoming' AND scheduled_at >= NOW()`;
+    if (req.query.city_id)    { params.push(req.query.city_id);    where += ` AND city_id=$${params.length}`; }
+    if (req.query.exclude_id) { params.push(req.query.exclude_id); where += ` AND id<>$${params.length}`; }
+    const { rows } = await query(`SELECT COUNT(*)::int AS n FROM sessions WHERE ${where}`, params);
+    res.json({ count: rows[0].n });
+  } catch (err) { next(err); }
+});
+
+// Apply an edit to every upcoming session in the series. Dynamic SET
+// from an allowlist — scheduled_at is deliberately NOT allowed (each
+// occurrence keeps its own date/time), and ambassador assignments stay
+// per-session. match_name is the series' ORIGINAL name so renaming one
+// session can rename the whole series.
+router.patch('/admin/series-update', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const matchName = String(req.body.match_name || req.body.name || '').trim();
+    if (!matchName) return res.status(400).json({ error: 'match_name required' });
+
+    const ALLOWED = [
+      'name','description','location','location_maps_url','session_type',
+      'capacity','duration_mins','points_reward','is_live_enabled',
+      'session_category','sport_type','price','price_points','currency_code',
+      'coach_id','tribe_id','activity_id','city_id','intro_video_url',
+      'sponsor_name','sponsor_logo_url','sponsor_url',
+      'is_streamable','is_online','stream_url',
+      'is_corporate_only','corporate_account_id',
+    ];
+    const sets = [];
+    const params = [];
+    for (const col of ALLOWED) {
+      if (req.body[col] === undefined) continue;
+      params.push(req.body[col] === '' ? null : req.body[col]);
+      sets.push(`${col}=$${params.length}`);
+    }
+    // courts is JSONB — stringify like PUT /:id does
+    if (req.body.courts !== undefined) {
+      params.push(req.body.courts ? JSON.stringify(req.body.courts) : null);
+      sets.push(`courts=$${params.length}`);
+    }
+    if (!sets.length) return res.status(400).json({ error: 'no fields to update' });
+
+    params.push(matchName);
+    let where = `LOWER(name)=LOWER($${params.length}) AND status='upcoming' AND scheduled_at >= NOW()`;
+    if (req.body.match_city_id) { params.push(req.body.match_city_id); where += ` AND city_id=$${params.length}`; }
+    if (req.body.exclude_id)    { params.push(req.body.exclude_id);    where += ` AND id<>$${params.length}`; }
+
+    try {
+      const { rows } = await query(
+        `UPDATE sessions SET ${sets.join(', ')}, updated_at=NOW() WHERE ${where} RETURNING id`,
+        params
+      );
+      res.json({ updated: rows.length, ids: rows.map(r => r.id) });
+    } catch (e) {
+      // Pre-migration DB missing one of the newer columns — retry with
+      // only the columns that exist rather than failing the whole save.
+      if (e.code !== '42703') throw e;
+      res.status(409).json({ error: 'A column in this update does not exist on this database yet. The single session was saved; series apply skipped.' });
+    }
+  } catch (err) { next(err); }
+});
+
 router.patch('/series/cancel', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { name, city_id, reason } = req.body;

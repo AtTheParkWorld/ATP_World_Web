@@ -496,83 +496,36 @@ function editSessionById(id) {
 async function duplicateSessionById(id) {
   var s = SESSIONS_CACHE[id];
   if (!s) return;
-  resetSessionForm();
 
-  // Re-load the dependent dropdowns and AWAIT them before pre-selecting
-  // values. Without this, a quick click after opening the Sessions section
-  // could land before the async loads finish — the dropdowns would still
-  // be empty and `select.value = id` would silently fail (which is why
-  // coach, tribe and city were "not transferring").
+  // Founder 2026-08-07: "many details do not duplicate". Root cause —
+  // this used to copy from the sessions LIST row, which lacks several
+  // columns (duration, streaming, online link, corporate scope), and
+  // the hand-written copy below it missed still more. Now: fetch the
+  // FULL row, let editSession() populate EVERY field it knows about
+  // (one source of truth, incl. assigned ambassadors), then flip the
+  // form back into CREATE mode so Save spawns new rows.
   try {
-    await Promise.all([
-      (typeof loadCoaches === 'function' ? loadCoaches() : Promise.resolve()),
-      (typeof loadTribes === 'function' ? loadTribes() : Promise.resolve()),
-      (typeof loadCities === 'function' ? loadCities() : Promise.resolve()),
-    ]);
-  } catch (e) { /* dropdowns may be partially loaded; we still try to set values */ }
+    var full = await apiGet('/sessions/' + id);
+    if (full && full.session) s = Object.assign({}, s, full.session);
+    else if (full && full.id) s = Object.assign({}, s, full);
+  } catch (e) { /* fall back to the cached row — better than nothing */ }
 
-  // Title hint — duplicate flow. With sName now a SELECT, just pick
-  // the same template name (no "(copy)" suffix — Postgres would reject
-  // it anyway since templates are a finite list).
-  if (typeof loadSessionTemplates === 'function') loadSessionTemplates(s.name);
-  var nameEl = document.getElementById('sName');
-  if (nameEl && s.name) {
-    if (nameEl.tagName === 'SELECT') {
-      var present = Array.from(nameEl.options).some(function(o){ return o.value === s.name; });
-      if (!present) {
-        var o = document.createElement('option');
-        o.value = s.name; o.textContent = s.name + ' (legacy)';
-        nameEl.appendChild(o);
-      }
-      nameEl.value = s.name;
-    } else {
-      nameEl.value = s.name;
-    }
-  }
-  // Common fields
-  var setVal = function(elId, v){ var el = document.getElementById(elId); if (el) el.value = v == null ? '' : v; };
-  setVal('sDesc',     s.description);
-  setVal('sLoc',      s.location);
-  setVal('sMaps',     s.location_maps_url);
-  setVal('sDuration', s.duration_mins || 60);
-  setVal('sCap',      s.capacity || 30);
-  setVal('sPoints',   s.points_reward || 10);
-  setVal('sType',     s.session_type || 'free');
-  if (document.getElementById('sPrice'))       document.getElementById('sPrice').value       = (s.price && Number(s.price) > 0) ? Number(s.price).toFixed(2) : '';
-  if (document.getElementById('sPricePoints')) document.getElementById('sPricePoints').value = s.price_points || '';
-  if (document.getElementById('sCurrency'))    document.getElementById('sCurrency').value    = s.currency_code || 'AED';
-  if (s.coach_id) document.getElementById('sCoach').value = s.coach_id;
-  if (s.tribe_id) document.getElementById('sTribe').value = s.tribe_id;
-  var introEl = document.getElementById('sIntroVideo');
-  if (introEl) introEl.value = s.intro_video_url || '';
-  // Sponsor "Powered by" — carry the partnership over to the duplicate.
-  setVal('sSponsorName', s.sponsor_name);
-  setVal('sSponsorLogo', s.sponsor_logo_url);
-  setVal('sSponsorUrl',  s.sponsor_url);
-  // Activity (cascading on tribe — defer so the dropdown is populated first)
-  setTimeout(function(){
-    if (typeof filterActivitiesByTribe === 'function') filterActivitiesByTribe();
-    var actEl = document.getElementById('sActivity');
-    if (actEl && s.activity_id) actEl.value = s.activity_id;
-  }, 50);
-  // City / country
-  var cityObj = (typeof ALL_CITIES !== 'undefined' ? ALL_CITIES : []).find(function(c){ return c.id === s.city_id; });
-  if (cityObj) {
-    document.getElementById('sCountry').value = cityObj.country || 'UAE';
-    if (typeof filterCitiesByCountry === 'function') filterCitiesByCountry();
-    document.getElementById('sCity').value = s.city_id;
-  }
-  if (typeof selectCategory === 'function') selectCategory(s.session_category || 'regular');
-  if (s.sport_type) { var sp = document.getElementById('sSport'); if (sp) sp.value = s.sport_type; }
-  if (s.courts) {
-    var nc = document.getElementById('sNumCourts'); if (nc) nc.value = s.courts.length;
-    if (typeof buildCourtsUI === 'function') buildCourtsUI();
-  }
-  // Title + UI cues so the admin knows they're starting a fresh row, not editing
+  await editSession(s);
+
+  // Back to CREATE mode: clear identity + schedule, keep everything else.
+  SESSION_EDIT_ID = null;
+  var editIdEl = document.getElementById('sEditId'); if (editIdEl) editIdEl.value = '';
+  document.getElementById('sStartDate').value = '';
+  document.getElementById('sEndDate').value = '';
+  document.querySelectorAll('.day-check-btn input').forEach(function(cb){ cb.checked = false; });
+  var dtc = document.getElementById('dayTimesContainer'); if (dtc) dtc.innerHTML = '';
+
   var fTitle = document.getElementById('sessionFormTitle');
   if (fTitle) fTitle.textContent = 'Duplicate Session — pick new days & times';
   var subBtn = document.getElementById('sessionSubmitLabel');
   if (subBtn) subBtn.textContent = '✓ Create copy';
+  var cancelBtn = document.getElementById('cancelEditBtn');
+  if (cancelBtn) cancelBtn.style.display = 'none';
   var section = document.getElementById('sessionFormSection');
   if (section) section.scrollIntoView({behavior:'smooth'});
   if (typeof showToast === 'function') showToast('📋 Duplicated — pick days &amp; times; everything else is pre-filled');
@@ -773,6 +726,53 @@ async function createSession() {
 
     if (data.sessions || data.session) {
       var count = data.sessions ? data.sessions.length : 1;
+
+      // Founder 2026-08-07: after editing one occurrence, offer to apply
+      // the same changes to the WHOLE series (other upcoming sessions
+      // with the same name in the same city). The single session is
+      // already saved at this point — this only propagates.
+      if (isEdit) {
+        try {
+          var orig = SESSIONS_CACHE[SESSION_EDIT_ID] || {};
+          var seriesName = orig.name || name;         // match on the ORIGINAL name
+          var cRes = await fetch('/api/sessions/admin/series-count?name=' + encodeURIComponent(seriesName)
+            + (orig.city_id ? '&city_id=' + encodeURIComponent(orig.city_id) : '')
+            + '&exclude_id=' + encodeURIComponent(SESSION_EDIT_ID), {
+            headers: { 'Authorization': 'Bearer ' + token }
+          });
+          var cData = cRes.ok ? await cRes.json() : null;
+          var others = (cData && cData.count) || 0;
+          if (others > 0 && confirm(
+            'This session is part of a series — there ' + (others === 1 ? 'is 1 other upcoming "' : 'are ' + others + ' other upcoming "')
+            + seriesName + '" session' + (others === 1 ? '' : 's') + '.\n\n'
+            + 'OK  = apply these changes to the WHOLE series\n'
+            + 'Cancel = save only this one session')) {
+            var seriesPayload = Object.assign({}, payload, {
+              match_name: seriesName,
+              match_city_id: orig.city_id || null,
+              exclude_id: SESSION_EDIT_ID,
+            });
+            // Per-occurrence fields must never propagate.
+            delete seriesPayload.scheduled_at;
+            delete seriesPayload.repeat_dates;
+            delete seriesPayload.assigned_ambassador_ids;
+            var sRes = await fetch('/api/sessions/admin/series-update', {
+              method: 'PATCH',
+              headers: {'Content-Type':'application/json','Authorization':'Bearer '+token},
+              body: JSON.stringify(seriesPayload)
+            });
+            var sData = await sRes.json();
+            if (sRes.ok && sData && typeof sData.updated === 'number') {
+              showToast('✅ Applied to ' + (sData.updated + 1) + ' sessions in the series');
+            } else {
+              showToast('⚠️ This session saved, but series apply failed: ' + ((sData && sData.error) || 'unknown error'), true);
+            }
+          }
+        } catch (e) {
+          showToast('⚠️ This session saved, but series apply failed: ' + (e && e.message || e), true);
+        }
+      }
+
       msgEl.textContent = isEdit ? '✅ Session updated!' : '✅ '+count+' session(s) created!';
       msgEl.style.cssText = 'display:block;background:#0d1a0a;color:#A8FF00;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
       resetSessionForm();
@@ -1198,8 +1198,17 @@ async function onSessionTemplateChange() {
     var res = await fetch('/api/sessions/admin/templates/last-details?name=' + encodeURIComponent(name), {
       headers: { 'Authorization': 'Bearer ' + token }
     });
+    if (!res.ok) {
+      // Founder 2026-08-07: this used to fail SILENTLY, which read as
+      // "the feature is not coming". Every path now says something.
+      if (typeof showToast === 'function') showToast('❌ Auto-fill failed (HTTP ' + res.status + ') — reload the page and try again', true);
+      return;
+    }
     var data = await res.json();
-    if (!data || !data.defaults) return;
+    if (!data || !data.defaults) {
+      if (typeof showToast === 'function') showToast('ℹ️ First "' + name + '" session — fill in the details once and they will auto-fill next time');
+      return;
+    }
     var d = data.defaults;
     var setVal = function(id, v){ var el = document.getElementById(id); if (el && (v != null)) el.value = v; };
     setVal('sDesc',     d.description);
@@ -1218,7 +1227,9 @@ async function onSessionTemplateChange() {
     if (d.currency_code)setVal('sCurrency',    d.currency_code);
     // Visual confirmation
     if (typeof showToast === 'function') showToast('✅ Auto-populated from last "' + name + '"');
-  } catch (e) { /* silent — template details endpoint may not be deployed yet */ }
+  } catch (e) {
+    if (typeof showToast === 'function') showToast('❌ Auto-fill failed: ' + (e && e.message || e), true);
+  }
 }
 window.onSessionTemplateChange = onSessionTemplateChange;
 
