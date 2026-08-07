@@ -15,7 +15,7 @@ source and .min so Railway serves pre-minified assets without needing a
 build step on its end.
 """
 from __future__ import annotations
-import pathlib, sys, time
+import hashlib, pathlib, re, sys, time
 
 try:
     import rjsmin, csscompressor
@@ -144,6 +144,43 @@ def main() -> None:
             admin_bundle += '/* ===== ' + src + ' ===== */\n' + p.read_text() + '\n'
     write_both('admin/bundle.min.js', admin_bundle)
     print(f'  admin/bundle.min.js            {humanise(len(admin_bundle)):>7s}  ({len(admin_parts)} sources)')
+
+    # ── Cache-busting (2026-08-07) ──────────────────────────────
+    # Browsers cached admin/bundle.min.js indefinitely: the founder
+    # was staring at week-old admin code after a deploy and new
+    # features "didn't exist". Stamp every bundle/min reference in the
+    # HTML pages with ?v=<content-hash> so a new build is a new URL —
+    # cached copies die the moment the content actually changes.
+    print('\nCache-bust:')
+    busted_assets = {
+        '/atp.bundle.min.js':   hashlib.sha1(public_bundle.encode()).hexdigest()[:10],
+        '/admin/bundle.min.js': hashlib.sha1(admin_bundle.encode()).hexdigest()[:10],
+    }
+    for css in CSS_TARGETS:
+        rel = '/' + css.replace('.css', '.min.css')
+        p = ROOT / rel.lstrip('/')
+        if p.exists():
+            busted_assets[rel] = hashlib.sha1(p.read_bytes()).hexdigest()[:10]
+
+    html_pages = sorted(
+        set((ROOT / 'backend/public').glob('*.html')) | set(ROOT.glob('*.html'))
+    )
+    stamped = 0
+    for page in html_pages:
+        html = page.read_text()
+        orig = html
+        for url, ver in busted_assets.items():
+            # Replace both unversioned and previously-versioned refs.
+            html = re.sub(
+                r'((?:src|href)=")' + re.escape(url) + r'(?:\?v=[0-9a-f]+)?(")',
+                r'\g<1>' + url + '?v=' + ver + r'\g<2>',
+                html,
+            )
+        if html != orig:
+            page.write_text(html)
+            stamped += 1
+    print(f'  {stamped} page(s) stamped with content-hash versions '
+          f'({", ".join(v for v in busted_assets.values())})')
 
     total_in = js_in + css_in
     total_out = js_out + css_out
