@@ -26,6 +26,26 @@ import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { StreakBadge } from '@/lib/components/StreakBadge';
 import { MyNextSession } from '@/lib/components/MyNextSession';
 import { Icon, type IconName } from '@/lib/components/icons';
+import Constants from 'expo-constants';
+import * as Updates from 'expo-updates';
+
+/**
+ * "ATP 1.1.0 (15) · ota 4f2c9ab" — version, TestFlight build number,
+ * and the id of the over-the-air update currently running. During
+ * testing this is the single source of truth for what a phone is
+ * actually showing; "embedded" means no OTA has been applied yet.
+ */
+function buildStamp(): string {
+  const version = Constants.expoConfig?.version ?? '—';
+  const build =
+    Constants.expoConfig?.ios?.buildNumber ??
+    (Constants.expoConfig as any)?.android?.versionCode ??
+    '—';
+  const ota = Updates.isEmbeddedLaunch
+    ? 'embedded'
+    : (Updates.updateId?.slice(0, 7) ?? 'embedded');
+  return `ATP ${version} (${build}) · ota ${ota}`;
+}
 
 export default function Profile() {
   const qc = useQueryClient();
@@ -262,6 +282,16 @@ export default function Profile() {
               Sign out
             </Text>
           </Pressable>
+        </View>
+
+        {/* Build stamp — tiny, but it ends the "is this the new version?"
+            guessing game during testing: the app number is the binary
+            from TestFlight, the short id after it changes every time an
+            over-the-air update lands. */}
+        <View className="px-5 mt-5 items-center">
+          <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[10px] tracking-wider">
+            {buildStamp()}
+          </Text>
         </View>
       </ScrollView>
     </SafeAreaView>
