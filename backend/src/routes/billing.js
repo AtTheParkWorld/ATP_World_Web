@@ -193,6 +193,84 @@ router.post('/portal', authenticate, async (req, res, next) => {
 });
 
 // ── ADMIN: subscription plans CRUD (Theme 5d / #37) ──────────────
+// ── GET /api/billing/admin/webhook-check ─────────────────────────
+// Founder-facing diagnostic (2026-08-07). "Are the Stripe webhooks set
+// up?" is otherwise unanswerable without opening the Stripe dashboard,
+// and a missing event silently breaks coach payouts — the hold is
+// placed but we never learn it succeeded. This asks Stripe directly
+// which endpoints exist and whether each event we handle is enabled.
+//
+// REQUIRED_EVENTS must stay in sync with handleWebhookEvent's switch
+// in services/billing.js.
+const REQUIRED_EVENTS = [
+  'checkout.session.completed',
+  'customer.subscription.created',
+  'customer.subscription.updated',
+  'customer.subscription.deleted',
+  'customer.subscription.trial_will_end',
+  'invoice.payment_succeeded',
+  'invoice.payment_failed',
+  'payment_intent.canceled',
+  'payment_intent.amount_capturable_updated',
+];
+
+router.get('/admin/webhook-check', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    if (!billing.isConfigured()) {
+      return res.json({
+        configured: false,
+        error: 'Stripe secret key is not set on this server.',
+        required_events: REQUIRED_EVENTS,
+      });
+    }
+
+    const list = await billing.stripe().webhookEndpoints.list({ limit: 20 });
+
+    // An endpoint subscribed to '*' receives everything.
+    const covers = (ep, evt) =>
+      (ep.enabled_events || []).includes('*') ||
+      (ep.enabled_events || []).includes(evt);
+
+    const endpoints = list.data.map((ep) => ({
+      id: ep.id,
+      url: ep.url,
+      status: ep.status,
+      api_version: ep.api_version,
+      enabled_events: ep.enabled_events,
+      missing_events: REQUIRED_EVENTS.filter((e) => !covers(ep, e)),
+    }));
+
+    // Green only if ONE enabled endpoint covers every event on its own —
+    // events split across two endpoints still work, but that is fragile
+    // and worth surfacing rather than blessing.
+    const healthy = endpoints.filter(
+      (ep) => ep.status === 'enabled' && ep.missing_events.length === 0
+    );
+    const globallyMissing = REQUIRED_EVENTS.filter(
+      (e) => !list.data.some((ep) => ep.status === 'enabled' && covers(ep, e))
+    );
+
+    res.json({
+      configured: true,
+      ok: healthy.length > 0,
+      endpoint_count: endpoints.length,
+      required_events: REQUIRED_EVENTS,
+      missing_events: globallyMissing,
+      endpoints,
+    });
+  } catch (err) {
+    // Surface Stripe's own message — a restricted key without
+    // webhook read permission is the most likely failure.
+    res.json({
+      configured: true,
+      ok: false,
+      error: err && err.message ? err.message : 'Stripe request failed',
+      required_events: REQUIRED_EVENTS,
+      endpoints: [],
+    });
+  }
+});
+
 router.get('/admin/plans', authenticate, requireAdmin, async (req, res, next) => {
   try {
     let rows;

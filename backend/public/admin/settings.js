@@ -710,7 +710,78 @@ function loadSystemConfig() {
     .then(function(data){ renderSystemConfig((data && data.config) || []); })
     .catch(function(){ document.getElementById('configList').innerHTML =
       '<div style="padding:14px;color:#f87171">Failed to load config.</div>'; });
+  renderStripeWebhookPanel();
 }
+
+// ── Stripe webhook health (founder-facing, 2026-08-07) ───────────
+// Coach payouts depend on two events that are easy to forget when
+// setting up the endpoint. Rather than asking anyone to read Stripe's
+// dashboard, ask Stripe and print a verdict.
+function _escStripe(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){
+    return { '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c];
+  });
+}
+
+function renderStripeWebhookPanel() {
+  var host = document.getElementById('configList');
+  if (!host || !host.parentNode) return;
+  if (document.getElementById('stripeWebhookCard')) return;   // already mounted
+  var card = document.createElement('div');
+  card.id = 'stripeWebhookCard';
+  card.className = 'admin-card';
+  card.style.cssText = 'margin-bottom:18px;padding:16px';
+  card.innerHTML =
+    '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap">' +
+      '<div>' +
+        '<div style="font-size:14px;font-weight:800;color:#fff">Stripe webhooks</div>' +
+        '<div style="font-size:11px;color:#888;margin-top:3px">Confirms Stripe is telling us about payments. Coach payouts break silently without this.</div>' +
+      '</div>' +
+      '<button class="admin-btn admin-btn-primary" onclick="checkStripeWebhooks()">Check now</button>' +
+    '</div>' +
+    '<div id="stripeWebhookOut" style="margin-top:12px;font-size:12px;color:#666">Click "Check now".</div>';
+  host.parentNode.insertBefore(card, host);
+}
+
+function checkStripeWebhooks() {
+  var out = document.getElementById('stripeWebhookOut');
+  if (!out) return;
+  out.innerHTML = '<span style="color:#888">Asking Stripe…</span>';
+  fetch(ATP_API + '/billing/admin/webhook-check', { headers: { 'Authorization': 'Bearer ' + getToken() } })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      d = d || {};
+      if (d.configured === false || d.error) {
+        out.innerHTML = '<span style="color:#f87171">✗ ' + _escStripe(d.error || 'Stripe not configured on the server') + '</span>';
+        return;
+      }
+      var missing = d.missing_events || [];
+      var head = d.ok
+        ? '<div style="color:#A8FF00;font-weight:700">● ALL GOOD — Stripe is sending every event we need</div>'
+        : '<div style="color:#f87171;font-weight:700">○ INCOMPLETE — ' + missing.length + ' event(s) not enabled anywhere</div>';
+      var miss = missing.length
+        ? '<div style="margin-top:8px;color:#f87171">Add these in Stripe → Developers → Webhooks:<ul style="margin:6px 0 0 18px">' +
+            missing.map(function(e){ return '<li style="font-family:monospace">' + _escStripe(e) + '</li>'; }).join('') +
+          '</ul></div>'
+        : '';
+      var eps = (d.endpoints || []).map(function(ep){
+        var dot = ep.status === 'enabled' ? '#A8FF00' : '#f87171';
+        return '<div style="margin-top:10px;padding:10px;background:#0f0f0f;border:1px solid #222;border-radius:6px">' +
+          '<div style="color:' + dot + ';font-weight:700;font-size:11px">' + _escStripe(ep.status) + '</div>' +
+          '<div style="color:#9ad;font-size:11px;word-break:break-all;margin-top:3px">' + _escStripe(ep.url) + '</div>' +
+          '<div style="color:#666;font-size:11px;margin-top:4px">' + (ep.enabled_events || []).length + ' events enabled' +
+            (ep.missing_events && ep.missing_events.length ? ' · <span style="color:#f87171">missing ' + ep.missing_events.length + '</span>' : '') +
+          '</div>' +
+        '</div>';
+      }).join('');
+      out.innerHTML = head + miss +
+        (eps || '<div style="margin-top:8px;color:#f87171">No webhook endpoints exist in Stripe at all.</div>');
+    })
+    .catch(function(e){
+      out.innerHTML = '<span style="color:#f87171">Failed: ' + _escStripe(e && e.message || e) + '</span>';
+    });
+}
+window.checkStripeWebhooks = checkStripeWebhooks;
 
 function renderSystemConfig(rows) {
   var el = document.getElementById('configList');
