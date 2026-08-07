@@ -226,6 +226,19 @@ router.get('/admin/webhook-check', authenticate, requireAdmin, async (req, res, 
 
     const list = await billing.stripe().webhookEndpoints.list({ limit: 20 });
 
+    // Where Stripe SHOULD be sending events: this very server. Found in
+    // the wild (2026-08-07): the endpoint still pointed at the retired
+    // Railway host, so every event went to a dead server while the
+    // event list looked fine. FRONTEND_URL wins (post-cutover domain),
+    // else the host serving this request.
+    const expectedUrl =
+      (process.env.FRONTEND_URL || `${req.protocol}://${req.get('host')}`)
+        .replace(/\/$/, '') + '/api/billing/webhook';
+    const sameHost = (u) => {
+      try { return new URL(u).host === new URL(expectedUrl).host; }
+      catch { return false; }
+    };
+
     // An endpoint subscribed to '*' receives everything.
     const covers = (ep, evt) =>
       (ep.enabled_events || []).includes('*') ||
@@ -238,24 +251,38 @@ router.get('/admin/webhook-check', authenticate, requireAdmin, async (req, res, 
       api_version: ep.api_version,
       enabled_events: ep.enabled_events,
       missing_events: REQUIRED_EVENTS.filter((e) => !covers(ep, e)),
+      wrong_server: !sameHost(ep.url),
     }));
 
-    // Green only if ONE enabled endpoint covers every event on its own —
-    // events split across two endpoints still work, but that is fragile
-    // and worth surfacing rather than blessing.
+    // Green only if ONE enabled endpoint pointing at THIS server covers
+    // every event on its own.
     const healthy = endpoints.filter(
-      (ep) => ep.status === 'enabled' && ep.missing_events.length === 0
+      (ep) => ep.status === 'enabled' && !ep.wrong_server && ep.missing_events.length === 0
     );
     const globallyMissing = REQUIRED_EVENTS.filter(
-      (e) => !list.data.some((ep) => ep.status === 'enabled' && covers(ep, e))
+      (e) => !list.data.some((ep) => ep.status === 'enabled' && sameHost(ep.url) && covers(ep, e))
     );
+
+    // Proof events actually ARRIVE here: the webhook handler records
+    // every verified event in billing_events. A healthy-looking config
+    // with an old last_event is the wrong-URL smoking gun.
+    let lastEvent = null;
+    try {
+      const r = await query(
+        `SELECT event_type, processed_at FROM billing_events
+          ORDER BY processed_at DESC LIMIT 1`
+      );
+      lastEvent = r.rows[0] || null;
+    } catch (e) { /* table may not exist yet */ }
 
     res.json({
       configured: true,
       ok: healthy.length > 0,
       endpoint_count: endpoints.length,
+      expected_url: expectedUrl,
       required_events: REQUIRED_EVENTS,
       missing_events: globallyMissing,
+      last_event_received: lastEvent,
       endpoints,
     });
   } catch (err) {

@@ -756,25 +756,43 @@ function checkStripeWebhooks() {
         return;
       }
       var missing = d.missing_events || [];
+      var wrongServer = (d.endpoints || []).some(function(ep){ return ep.wrong_server && ep.status === 'enabled'; });
       var head = d.ok
-        ? '<div style="color:#A8FF00;font-weight:700">● ALL GOOD — Stripe is sending every event we need</div>'
-        : '<div style="color:#f87171;font-weight:700">○ INCOMPLETE — ' + missing.length + ' event(s) not enabled anywhere</div>';
+        ? '<div style="color:#A8FF00;font-weight:700">● ALL GOOD — Stripe is sending every event we need to this server</div>'
+        : wrongServer
+          ? '<div style="color:#f87171;font-weight:700">○ WRONG SERVER — Stripe is sending payment events to an old server, not this one</div>'
+          : '<div style="color:#f87171;font-weight:700">○ INCOMPLETE — ' + missing.length + ' event(s) not enabled anywhere</div>';
+      var expected = d.expected_url
+        ? '<div style="margin-top:8px;color:#aaa;font-size:11px">This server expects: <span style="font-family:monospace;color:#9ad;word-break:break-all">' + _escStripe(d.expected_url) + '</span></div>'
+        : '';
       var miss = missing.length
-        ? '<div style="margin-top:8px;color:#f87171">Add these in Stripe → Developers → Webhooks:<ul style="margin:6px 0 0 18px">' +
+        ? '<div style="margin-top:8px;color:#f87171">Events to enable on that endpoint:<ul style="margin:6px 0 0 18px">' +
             missing.map(function(e){ return '<li style="font-family:monospace">' + _escStripe(e) + '</li>'; }).join('') +
           '</ul></div>'
         : '';
+      var last = '';
+      if (d.last_event_received && d.last_event_received.processed_at) {
+        var when = new Date(d.last_event_received.processed_at);
+        var days = Math.floor((Date.now() - when.getTime()) / 86400000);
+        var stale = days > 7;
+        last = '<div style="margin-top:8px;font-size:11px;color:' + (stale ? '#fbbf24' : '#888') + '">Last event this server actually received: '
+          + _escStripe(d.last_event_received.event_type) + ' — ' + when.toLocaleString()
+          + (stale ? ' ⚠️ (over a week ago)' : '') + '</div>';
+      } else {
+        last = '<div style="margin-top:8px;font-size:11px;color:#fbbf24">⚠️ This server has NEVER received a Stripe event.</div>';
+      }
       var eps = (d.endpoints || []).map(function(ep){
-        var dot = ep.status === 'enabled' ? '#A8FF00' : '#f87171';
+        var dot = (ep.status === 'enabled' && !ep.wrong_server) ? '#A8FF00' : '#f87171';
         return '<div style="margin-top:10px;padding:10px;background:#0f0f0f;border:1px solid #222;border-radius:6px">' +
-          '<div style="color:' + dot + ';font-weight:700;font-size:11px">' + _escStripe(ep.status) + '</div>' +
+          '<div style="color:' + dot + ';font-weight:700;font-size:11px">' + _escStripe(ep.status) +
+            (ep.wrong_server ? ' · POINTS AT OLD SERVER — edit its URL in Stripe' : '') + '</div>' +
           '<div style="color:#9ad;font-size:11px;word-break:break-all;margin-top:3px">' + _escStripe(ep.url) + '</div>' +
           '<div style="color:#666;font-size:11px;margin-top:4px">' + (ep.enabled_events || []).length + ' events enabled' +
             (ep.missing_events && ep.missing_events.length ? ' · <span style="color:#f87171">missing ' + ep.missing_events.length + '</span>' : '') +
           '</div>' +
         '</div>';
       }).join('');
-      out.innerHTML = head + miss +
+      out.innerHTML = head + expected + miss + last +
         (eps || '<div style="margin-top:8px;color:#f87171">No webhook endpoints exist in Stripe at all.</div>');
     })
     .catch(function(e){
