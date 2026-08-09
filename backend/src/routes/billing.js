@@ -216,6 +216,11 @@ const REQUIRED_EVENTS = [
 
 router.get('/admin/webhook-check', authenticate, requireAdmin, async (req, res, next) => {
   try {
+    // A diagnostic must never be answered from cache — the founder
+    // clicked "Check now" after fixing Stripe and got a byte-identical
+    // stale reply, which read as "the fix didn't work".
+    res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+    res.set('Pragma', 'no-cache');
     if (!billing.isConfigured()) {
       return res.json({
         configured: false,
@@ -252,6 +257,7 @@ router.get('/admin/webhook-check', authenticate, requireAdmin, async (req, res, 
       enabled_events: ep.enabled_events,
       missing_events: REQUIRED_EVENTS.filter((e) => !covers(ep, e)),
       wrong_server: !sameHost(ep.url),
+      livemode: ep.livemode,
     }));
 
     // Green only if ONE enabled endpoint pointing at THIS server covers
@@ -275,11 +281,23 @@ router.get('/admin/webhook-check', authenticate, requireAdmin, async (req, res, 
       lastEvent = r.rows[0] || null;
     } catch (e) { /* table may not exist yet */ }
 
+    // Which Stripe account + mode is this server's key actually talking
+    // to? A live-vs-test or wrong-account key explains "I fixed it in the
+    // dashboard but the checker disagrees" better than anything else.
+    let account = null;
+    try {
+      const acct = await billing.stripe().accounts.retrieve();
+      account = { id: acct.id, name: acct.settings?.dashboard?.display_name || null };
+    } catch (e) { /* restricted key may not allow account read */ }
+
     res.json({
       configured: true,
       ok: healthy.length > 0,
       endpoint_count: endpoints.length,
       expected_url: expectedUrl,
+      account,
+      key_mode: (process.env.STRIPE_SECRET_KEY || '').startsWith('sk_test') ? 'test' : 'live',
+      checked_at: new Date().toISOString(),
       required_events: REQUIRED_EVENTS,
       missing_events: globallyMissing,
       last_event_received: lastEvent,

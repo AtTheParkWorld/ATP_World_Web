@@ -747,7 +747,12 @@ function checkStripeWebhooks() {
   var out = document.getElementById('stripeWebhookOut');
   if (!out) return;
   out.innerHTML = '<span style="color:#888">Asking Stripe…</span>';
-  fetch(ATP_API + '/billing/admin/webhook-check', { headers: { 'Authorization': 'Bearer ' + getToken() } })
+  // cache:no-store + a unique query param: without these the browser
+  // replayed a saved response and "Check now" showed a stale verdict.
+  fetch(ATP_API + '/billing/admin/webhook-check?t=' + Date.now(), {
+    cache: 'no-store',
+    headers: { 'Authorization': 'Bearer ' + getToken() },
+  })
     .then(function(r){ return r.json(); })
     .then(function(d){
       d = d || {};
@@ -790,10 +795,18 @@ function checkStripeWebhooks() {
           '<div style="color:#666;font-size:11px;margin-top:4px">' + (ep.enabled_events || []).length + ' events enabled' +
             (ep.missing_events && ep.missing_events.length ? ' · <span style="color:#f87171">missing ' + ep.missing_events.length + '</span>' : '') +
           '</div>' +
+          // Endpoint id + mode: compare these against the Stripe page to
+          // tell "same object, stale read" from "two different objects".
+          '<div style="color:#555;font-size:10px;margin-top:4px;font-family:monospace">' + _escStripe(ep.id || '') +
+            ' · ' + (ep.livemode === false ? 'TEST mode' : 'live mode') + '</div>' +
         '</div>';
       }).join('');
+      var who = '<div style="margin-top:10px;font-size:10px;color:#555">Checked ' +
+        (d.checked_at ? new Date(d.checked_at).toLocaleTimeString() : 'now') +
+        ' · server key: ' + _escStripe(d.key_mode || '?') + ' mode' +
+        (d.account && d.account.id ? ' · account ' + _escStripe(d.account.id) : '') + '</div>';
       out.innerHTML = head + expected + miss + last +
-        (eps || '<div style="margin-top:8px;color:#f87171">No webhook endpoints exist in Stripe at all.</div>');
+        (eps || '<div style="margin-top:8px;color:#f87171">No webhook endpoints exist in Stripe at all.</div>') + who;
     })
     .catch(function(e){
       out.innerHTML = '<span style="color:#f87171">Failed: ' + _escStripe(e && e.message || e) + '</span>';
