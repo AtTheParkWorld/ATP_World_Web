@@ -757,7 +757,16 @@ function checkStripeWebhooks() {
     .then(function(d){
       d = d || {};
       if (d.configured === false || d.error) {
-        out.innerHTML = '<span style="color:#f87171">✗ ' + _escStripe(d.error || 'Stripe not configured on the server') + '</span>';
+        var keyInfo = '';
+        if (d.key_last4) {
+          keyInfo = '<div style="margin-top:8px;font-size:11px;color:#aaa">Key on the server: ' + _escStripe(d.key_mode || '?') +
+            ' mode, ends in <span style="font-family:monospace;color:#9ad">' + _escStripe(d.key_last4) + '</span>' +
+            ' — compare with the last 4 characters shown on Stripe\u2019s API keys page.</div>';
+        }
+        if (d.key_had_whitespace) {
+          keyInfo += '<div style="margin-top:6px;font-size:11px;color:#fbbf24">⚠️ The pasted key had an invisible space/line-break around it — the server now removes that automatically, so if this was the cause it is already fixed: click Check now again.</div>';
+        }
+        out.innerHTML = '<span style="color:#f87171">✗ ' + _escStripe(d.error || 'Stripe not configured on the server') + '</span>' + keyInfo;
         return;
       }
       var missing = d.missing_events || [];

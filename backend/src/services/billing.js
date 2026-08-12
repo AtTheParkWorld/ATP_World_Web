@@ -25,7 +25,10 @@ const { query, transaction } = require('../db');
 let _stripe = null;
 function stripe() {
   if (_stripe) return _stripe;
-  const key = process.env.STRIPE_SECRET_KEY;
+  // trim(): env values pasted through dashboards routinely pick up a
+  // trailing newline or space, and Stripe then rejects the key as
+  // invalid even though it LOOKS right (founder hit this 2026-08-09).
+  const key = (process.env.STRIPE_SECRET_KEY || '').trim();
   if (!key) {
     const e = new Error('Stripe is not configured. Set STRIPE_SECRET_KEY in your environment.');
     e.status = 503;

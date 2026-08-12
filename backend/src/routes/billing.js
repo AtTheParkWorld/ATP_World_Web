@@ -296,7 +296,12 @@ router.get('/admin/webhook-check', authenticate, requireAdmin, async (req, res, 
       endpoint_count: endpoints.length,
       expected_url: expectedUrl,
       account,
-      key_mode: (process.env.STRIPE_SECRET_KEY || '').startsWith('sk_test') ? 'test' : 'live',
+      key_mode: (process.env.STRIPE_SECRET_KEY || '').trim().startsWith('sk_test') ? 'test' : 'live',
+      // Last 4 of the key (Stripe itself displays this in dashboards and
+      // error messages — safe) + whether the raw env value carries
+      // whitespace, so a mangled paste is visible from the admin panel.
+      key_last4: (process.env.STRIPE_SECRET_KEY || '').trim().slice(-4),
+      key_had_whitespace: (process.env.STRIPE_SECRET_KEY || '') !== (process.env.STRIPE_SECRET_KEY || '').trim(),
       checked_at: new Date().toISOString(),
       required_events: REQUIRED_EVENTS,
       missing_events: globallyMissing,
@@ -310,6 +315,9 @@ router.get('/admin/webhook-check', authenticate, requireAdmin, async (req, res, 
       configured: true,
       ok: false,
       error: err && err.message ? err.message : 'Stripe request failed',
+      key_mode: (process.env.STRIPE_SECRET_KEY || '').trim().startsWith('sk_test') ? 'test' : 'live',
+      key_last4: (process.env.STRIPE_SECRET_KEY || '').trim().slice(-4),
+      key_had_whitespace: (process.env.STRIPE_SECRET_KEY || '') !== (process.env.STRIPE_SECRET_KEY || '').trim(),
       required_events: REQUIRED_EVENTS,
       endpoints: [],
     });
