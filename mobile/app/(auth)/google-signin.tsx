@@ -34,10 +34,11 @@ export default function GoogleSignInScreen() {
 
   useEffect(() => {
     if (response?.type === 'success' && response.params.id_token) {
+      const idToken = response.params.id_token;
       (async () => {
         setBusy(true);
         try {
-          await signInWithGoogle(response.params.id_token);
+          await signInWithGoogle(idToken);
           router.replace('/(tabs)/home');
         } catch (err) {
           if (err instanceof AccountSuspendedError) {

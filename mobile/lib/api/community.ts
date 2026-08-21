@@ -79,23 +79,23 @@ export function deletePost(postId: number): Promise<void> {
   return api.delete(`/community/posts/${postId}`);
 }
 
-export function toggleLike(postId: number): Promise<{ liked: boolean }> {
+export function toggleLike(postId: string | number): Promise<{ liked: boolean }> {
   return api.post(`/community/posts/${postId}/like`);
 }
 
-export function getComments(postId: number): Promise<{ comments: Comment[] }> {
+export function getComments(postId: string | number): Promise<{ comments: Comment[] }> {
   return api.get(`/community/posts/${postId}/comments`);
 }
 
-export function createComment(postId: number, content: string): Promise<{ comment: Comment }> {
+export function createComment(postId: string | number, content: string): Promise<{ comment: Comment }> {
   return api.post(`/community/posts/${postId}/comments`, { content });
 }
 
-export function deleteComment(postId: number, commentId: number): Promise<void> {
+export function deleteComment(postId: string | number, commentId: string | number): Promise<void> {
   return api.delete(`/community/posts/${postId}/comments/${commentId}`);
 }
 
-export function reportPost(postId: number, reason: string): Promise<{ message: string }> {
+export function reportPost(postId: string | number, reason: string): Promise<{ message: string }> {
   return api.post(`/community/posts/${postId}/report`, { reason });
 }
 

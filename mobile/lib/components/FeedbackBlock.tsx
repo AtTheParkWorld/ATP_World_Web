@@ -15,7 +15,7 @@ import { submitSessionFeedback } from '@/lib/api/bookings';
 import { ApiError } from '@/lib/api/client';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 
-export function FeedbackBlock({ bookingId }: { bookingId: number }) {
+export function FeedbackBlock({ bookingId }: { bookingId: string | number }) {
   const qc = useQueryClient();
   const [rating, setRating]   = useState(0);
   const [comment, setComment] = useState('');

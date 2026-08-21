@@ -28,8 +28,8 @@ function compareSemver(a: string, b: string): number {
   while (A.length < B.length) A.push(0);
   while (B.length < A.length) B.push(0);
   for (let i = 0; i < A.length; i++) {
-    if (A[i] < B[i]) return -1;
-    if (A[i] > B[i]) return  1;
+    if (A[i]! < B[i]!) return -1;
+    if (A[i]! > B[i]!) return  1;
   }
   return 0;
 }

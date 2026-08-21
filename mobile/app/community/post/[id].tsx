@@ -67,7 +67,7 @@ export default function PostDetail() {
   });
 
   const deleteCommentMu = useMutation({
-    mutationFn: (commentId: number) => deleteComment(postId, commentId),
+    mutationFn: (commentId: string | number) => deleteComment(postId, commentId),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['comments', postId] }),
   });
 

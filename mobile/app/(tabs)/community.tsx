@@ -80,7 +80,7 @@ function FeedView() {
   });
 
   const likeMu = useMutation({
-    mutationFn: (postId: number) => toggleLike(postId),
+    mutationFn: (postId: string | number) => toggleLike(postId),
     onMutate: async (postId) => {
       await qc.cancelQueries({ queryKey: ['feed'] });
       const prev = qc.getQueryData<Post[]>(['feed']);
@@ -212,7 +212,7 @@ function FriendsView() {
   });
 
   const respondMu = useMutation({
-    mutationFn: ({ id, status }: { id: number; status: 'accepted' | 'declined' }) =>
+    mutationFn: ({ id, status }: { id: string | number; status: 'accepted' | 'declined' }) =>
       respondToRequest(id, status),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['friends'] }),
   });

@@ -110,7 +110,7 @@ export function DeviceWeekCard() {
 
   // ── Connected: stats mirror ────────────────────────────────────
   const week = q.data.week || {};
-  const provider = active[0];
+  const provider = active[0]!; // non-empty — the !active.length branch returned above
   const label = provider.provider.charAt(0).toUpperCase() + provider.provider.slice(1);
 
   return (

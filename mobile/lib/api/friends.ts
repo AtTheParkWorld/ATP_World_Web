@@ -45,7 +45,7 @@ export function sendFriendRequest(targetId: string): Promise<{ message: string; 
   return api.post('/members/friends/request', { target_id: targetId });
 }
 
-export function respondToRequest(friendshipId: number, status: 'accepted' | 'declined'): Promise<{ message: string }> {
+export function respondToRequest(friendshipId: string | number, status: 'accepted' | 'declined'): Promise<{ message: string }> {
   return api.patch(`/members/friends/${friendshipId}`, { status });
 }
 

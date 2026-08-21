@@ -56,7 +56,7 @@ export interface CreateBookingResponse {
   payment_options?: PaymentOptions;
 }
 
-export function createBooking(sessionId: number): Promise<CreateBookingResponse> {
+export function createBooking(sessionId: string | number): Promise<CreateBookingResponse> {
   return api.post('/bookings', { session_id: sessionId });
 }
 
@@ -66,7 +66,7 @@ export interface PayWithPointsResponse {
   points_spent: number;
 }
 
-export function payWithPoints(bookingId: number): Promise<PayWithPointsResponse> {
+export function payWithPoints(bookingId: string | number): Promise<PayWithPointsResponse> {
   return api.post(`/bookings/${bookingId}/pay-with-points`);
 }
 
@@ -80,11 +80,11 @@ export interface StripeCheckoutResponse {
   checkout_url?: string;
 }
 
-export function startStripeCheckout(bookingId: number): Promise<StripeCheckoutResponse> {
+export function startStripeCheckout(bookingId: string | number): Promise<StripeCheckoutResponse> {
   return api.post(`/bookings/${bookingId}/checkout`, { client: 'mobile' });
 }
 
-export function cancelBooking(bookingId: number): Promise<void> {
+export function cancelBooking(bookingId: string | number): Promise<void> {
   return api.delete(`/bookings/${bookingId}`);
 }
 

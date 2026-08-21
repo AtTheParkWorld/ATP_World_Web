@@ -74,9 +74,9 @@ export interface PatchProfileBody {
   date_of_birth?: string;
   gender?: string;
   nationality?: string;
-  city_id?: number;
+  city_id?: string | number;
   country_id?: number;
-  tribe_id?: number;
+  tribe_id?: string | number;
   sports_preferences?: string[];
   top_size?: string;
   bottom_size?: string;
