@@ -5934,12 +5934,23 @@ function renderMyOneOnOnes(list) {
     var timeStr = when.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
     var streamUrl = b.stream_room_id ? '/stream-watch.html?room=' + encodeURIComponent(b.stream_room_id) : null;
 
+    // Members must be able to tell a HOLD from a CONFIRMED session —
+    // pending_coach used to render with no status at all and read as
+    // booked, then "disappear" if the coach declined.
+    var mStatus = ({
+      pending_coach:   { label: '⏳ Awaiting coach confirmation', color: '#f5c042' },
+      pending_payment: { label: '⏳ Payment processing',          color: '#f5c042' },
+      confirmed:       { label: '✓ Confirmed',                    color: '#A8FF00' },
+      in_progress:     { label: '● In progress',                  color: '#ef4444' },
+    })[b.status];
+
     return '<div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;margin-top:10px">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">' +
         '<div style="flex:1;min-width:200px">' +
           '<div style="font-family:var(--ff-display);font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.02em;line-height:1.15">' +
             (b.offering_title || '1-on-1 session').replace(/[<>&]/g, '') +
           '</div>' +
+          (mStatus ? '<span style="display:inline-block;margin-top:6px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:' + mStatus.color + ';background:rgba(255,255,255,.05);padding:3px 8px;border-radius:3px">' + mStatus.label + '</span>' : '') +
           '<div style="font-size:12px;color:var(--muted);margin-top:4px">with ' + coachName.replace(/[<>&]/g, '') + ' · ' + b.duration_min + ' min</div>' +
           '<div style="font-size:13px;color:#f5c042;font-weight:600;margin-top:6px">' + dateStr + ' at ' + timeStr +
             (minsUntil > 0 && minsUntil < 1440 ? ' <span style="color:#A8FF00;font-size:11px;font-weight:500">· in ' + (minsUntil < 60 ? minsUntil + ' min' : Math.floor(minsUntil / 60) + 'h ' + (minsUntil % 60) + 'm') + '</span>' : '') +
@@ -7030,6 +7041,8 @@ function _renderBookingRow(b) {
   var when = new Date(b.scheduled_at);
   var member = (b.member_first_name || '') + ' ' + (b.member_last_name || '');
   var statusColor = ({ completed:'#A8FF00', confirmed:'#f5c042', pending_coach:'#f5c042', declined:'#888', expired:'#666', payment_failed:'#ef4444', cancelled_by_member:'#888', cancelled_by_coach:'#888', no_show:'#ef4444' })[b.status] || '#888';
+  // Human labels — raw DB states like pending_coach read as broken UI.
+  var statusLabel = ({ completed:'Completed', confirmed:'Confirmed', pending_coach:'New request', pending_payment:'Payment processing', in_progress:'In progress', declined:'Declined', expired:'Expired', payment_failed:'Payment failed', cancelled_by_member:'Cancelled by member', cancelled_by_coach:'Cancelled by you', no_show:'No-show' })[b.status] || b.status.replace(/_/g, ' ');
   var isUpcoming = ['confirmed','pending_payment','in_progress'].includes(b.status) && when > new Date(Date.now() - 3600000);
   var streamUrl = b.stream_room_id ? '/stream-broadcast.html?room=' + b.stream_room_id : null;
   return '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px;margin-bottom:8px">' +
@@ -7041,7 +7054,7 @@ function _renderBookingRow(b) {
         (b.member_note ? '<div style="font-size:11px;color:#aaa;margin-top:6px;font-style:italic;background:rgba(255,255,255,.03);padding:6px 10px;border-radius:4px">"' + _chEsc(b.member_note) + '"</div>' : '') +
       '</div>' +
       '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">' +
-        '<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:' + statusColor + ';background:rgba(255,255,255,.05);padding:3px 7px;border-radius:3px">' + b.status.replace(/_/g, ' ') + '</span>' +
+        '<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:' + statusColor + ';background:rgba(255,255,255,.05);padding:3px 7px;border-radius:3px">' + statusLabel + '</span>' +
         '<span style="font-family:var(--ff-display);font-size:18px;font-weight:900;color:#f5c042">AED ' + b.coach_payout_aed + '</span>' +
         (isUpcoming && streamUrl ? '<a href="' + streamUrl + '" target="_blank" style="font-size:11px;padding:6px 12px;background:#ef4444;color:#fff;border-radius:6px;text-decoration:none;font-weight:700">🎥 Go Live</a>' : '') +
         (b.status === 'confirmed' && when < new Date() ? '<button data-atp-call="chConfirmAttendance" data-args=\'["' + b.id + '"]\' style="font-size:11px;padding:6px 12px;background:#A8FF00;color:#0a0a0a;border:none;border-radius:6px;font-weight:700;cursor:pointer">Confirm attendance</button>' : '') +

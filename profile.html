@@ -142,7 +142,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
 .profile-hero{max-width:1200px;margin:0 auto;padding:0 40px;position:relative}
 .profile-avatar-wrap{position:absolute;top:-56px;left:40px}
-.profile-avatar{width:112px;height:112px;border-radius:50%;background:var(--green);border:4px solid var(--black);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:44px;font-weight:900;color:#fff;position:relative;overflow:hidden;cursor:pointer}
+.profile-avatar{width:112px;height:112px;border-radius:50%;background:var(--green);border:4px solid var(--black);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:44px;font-weight:900;color:#0a0a0a;position:relative;overflow:hidden;cursor:pointer}
 .profile-avatar img{width:100%;height:100%;object-fit:cover;display:block}
 .avatar-upload{position:absolute;inset:0;background:rgba(0,0,0,.5);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .2s;border-radius:50%}
 .profile-avatar:hover .avatar-upload{opacity:1}
@@ -162,7 +162,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .profile-actions{display:flex;gap:8px;flex-wrap:wrap}
 .pf-btn{font-size:12px;font-weight:700;padding:9px 18px;border-radius:var(--radius);border:1px solid rgba(255,255,255,.15);background:transparent;color:var(--white);cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:6px}
 .pf-btn:hover{border-color:var(--green);color:var(--green)}
-.pf-btn.primary{background:var(--green);border-color:var(--green);color:#fff}
+.pf-btn.primary{background:var(--green);border-color:var(--green);color:#0a0a0a}
 .pf-btn.primary:hover{background:var(--green-dark)}
 
 /* ── STATS BAR ── */
@@ -226,8 +226,8 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .streak-days{font-size:14px;color:var(--light);font-weight:500;margin-top:4px}
 .streak-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:16px}
 .streak-day{aspect-ratio:1;border-radius:6px;background:rgba(255,255,255,.05);display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:var(--muted)}
-.streak-day.done{background:var(--green);color:#fff}
-.streak-day.today{background:var(--green);box-shadow:0 0 0 2px rgba(168,255,0,.4);color:#fff}
+.streak-day.done{background:var(--green);color:#0a0a0a}
+.streak-day.today{background:var(--green);box-shadow:0 0 0 2px rgba(168,255,0,.4);color:#0a0a0a}
 .streak-day.missed{background:rgba(239,68,68,.15);color:rgba(239,68,68,.6)}
 
 /* Streak progression bar (Theme 3 / #10.5, 10.6) */
@@ -312,7 +312,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .friend-tribe-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--tribe-color,var(--green));margin-right:5px;vertical-align:middle;box-shadow:0 0 0 1.5px rgba(255,255,255,.12)}
 .friend-tribe-label{font-size:11px;color:var(--tribe-color,var(--green));font-weight:700;letter-spacing:.04em}
 .friend-btn{font-size:11px;font-weight:700;padding:5px 12px;border-radius:6px;border:1px solid rgba(255,255,255,.12);background:transparent;color:var(--white);cursor:pointer;transition:all .2s}
-.friend-btn.accept{background:var(--green);border-color:var(--green);color:#fff}
+.friend-btn.accept{background:var(--green);border-color:var(--green);color:#0a0a0a}
 .friend-btn.accept:hover{background:var(--green-dark)}
 .friend-btn.decline:hover{border-color:#ef4444;color:#ef4444}
 
@@ -359,7 +359,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .padel-row{display:flex;gap:8px}
 .padel-btn{flex:1;padding:10px;border-radius:var(--radius);border:1px solid rgba(255,255,255,.1);background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;transition:all .18s;text-align:center}
 .padel-btn.sel{border-color:var(--green);color:var(--green);background:rgba(168,255,0,.08)}
-.form-save-btn{width:100%;padding:14px;background:var(--green);color:#fff;font-size:14px;font-weight:800;border:none;border-radius:var(--radius);cursor:pointer;margin-top:24px;letter-spacing:.04em;text-transform:uppercase;transition:background .2s}
+.form-save-btn{width:100%;padding:14px;background:var(--green);color:#0a0a0a;font-size:14px;font-weight:800;border:none;border-radius:var(--radius);cursor:pointer;margin-top:24px;letter-spacing:.04em;text-transform:uppercase;transition:background .2s}
 .form-save-btn:hover{background:var(--green-dark)}
 
 /* ── REFERRAL ── */
@@ -654,19 +654,8 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
     <button onclick="cancelDeletion()" style="background:#A8FF00;color:#0a0a0a;border:none;padding:10px 20px;border-radius:8px;font-weight:800;font-size:13px;letter-spacing:.04em;cursor:pointer">Keep my account</button>
   </div>
 
-  <!-- Pick-your-tribe nudge (R-TR-005 / OQ-16). Populated by
-       loadTribeNudge() — shows only when the current member has no
-       tribe_id set. CTA opens the Edit Profile tab + scrolls to the
-       tribe selector. Closes when the member picks a tribe and saves. -->
-  <div id="tribeNudge" style="display:none;max-width:1200px;margin:0 auto 20px;padding:16px 24px;background:linear-gradient(90deg,rgba(168,255,0,.12),rgba(96,165,250,.08));border:1px solid rgba(168,255,0,.35);border-radius:12px;align-items:center;gap:16px;flex-wrap:wrap">
-    <div style="font-size:24px">🎽</div>
-    <div style="flex:1;min-width:240px">
-      <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:3px">Pick your tribe</div>
-      <div style="font-size:12px;color:#ddd;line-height:1.55">Better, Faster, or Stronger? Tribes power your community feed, leaderboard, and identity across ATP. Takes 5 seconds.</div>
-    </div>
-    <button onclick="openTribePicker()" style="background:#A8FF00;color:#0a0a0a;border:none;padding:10px 20px;border-radius:8px;font-weight:800;font-size:13px;letter-spacing:.04em;cursor:pointer">Pick a tribe →</button>
-    <button onclick="dismissTribeNudge()" style="background:none;color:#888;border:none;padding:6px 8px;font-size:12px;cursor:pointer" title="Dismiss for this session">×</button>
-  </div>
+  <!-- Pick-your-tribe nudge was here; moved BELOW the completion bar
+       so the floating profile-avatar no longer overlaps it. -->
 
   <!-- HERO -->
   <div class="profile-hero">
@@ -703,8 +692,33 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
         </button>
         <button class="pf-btn" data-atp-call="showTab" data-args='["notifications"]'>
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1a5 5 0 015 5v3l1.5 2.5H1.5L3 9V6a5 5 0 015-5z"/><path d="M6.5 13.5a1.5 1.5 0 003 0"/></svg>
-          <span id="notifCount" style="display:none;background:var(--green);color:#fff;width:18px;height:18px;border-radius:50%;font-size:10px;align-items:center;justify-content:center">0</span>
+          <span id="notifCount" style="display:none;background:var(--green);color:#0a0a0a;width:18px;height:18px;border-radius:50%;font-size:10px;align-items:center;justify-content:center">0</span>
         </button>
+        <!-- Streak chip — compact, expandable.  Click toggles a small
+             dropdown with the progress bar + best + next milestone +
+             inspirational copy.  Same data source as the My Streak
+             tab (renderStreak() populates both).  Lives in
+             .profile-actions per founder 2026-06-27. -->
+        <div class="profile-menu-wrap" id="streakChipWrap" style="position:relative">
+          <button class="pf-btn" id="streakChipBtn" type="button" onclick="toggleStreakDropdown(event)" aria-expanded="false" aria-label="Current streak — tap for details">
+            <span id="streakChipFire">🔥</span>
+            <span><strong id="streakChipCurrent" style="font-family:var(--ff-display);font-size:14px;color:var(--green)">0</strong> <span style="color:var(--muted);font-weight:600;font-size:11px;letter-spacing:.05em">days</span></span>
+          </button>
+          <div id="streakDropdown" class="profile-menu" role="menu" aria-labelledby="streakChipBtn" style="min-width:280px;padding:16px">
+            <div style="font-family:var(--ff-display);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--green);margin-bottom:10px">🔥 Current Streak</div>
+            <div style="display:flex;align-items:baseline;gap:10px;margin-bottom:6px">
+              <div style="font-family:var(--ff-display);font-size:42px;font-weight:900;color:var(--white);line-height:.9" id="streakDropdownCurrent">0</div>
+              <div style="font-size:12px;color:var(--muted)" id="streakDropdownDaysLabel">days in a row</div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:12px" id="streakDropdownBest">Personal best: 0 days</div>
+            <div style="height:8px;background:rgba(255,255,255,.08);border-radius:8px;overflow:hidden;margin-bottom:12px">
+              <div id="streakDropdownFill" style="height:100%;width:0;background:linear-gradient(90deg,#A8FF00,#C6FF55);border-radius:8px;transition:width .6s cubic-bezier(.4,0,.2,1)"></div>
+            </div>
+            <div style="font-size:11px;color:var(--light);line-height:1.5;margin-bottom:8px" id="streakDropdownNext">Next milestone: 7 days → admin shout-out + 1 day from 2× points</div>
+            <div style="font-size:12px;color:var(--white);line-height:1.5" id="streakDropdownInspire">Get checked in by an Ambassador to start your streak.</div>
+            <button type="button" data-atp-call="showTab" data-args='["streak"]' style="margin-top:14px;background:transparent;border:1px solid rgba(168,255,0,.4);color:var(--green);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:8px 14px;border-radius:6px;cursor:pointer;width:100%">Open full view →</button>
+          </div>
+        </div>
         <button class="pf-btn" data-atp-call="showTab" data-args='["friends"]'>Friend requests <span id="friendReqCount" style="display:none;background:rgba(168,255,0,.15);color:var(--green);padding:1px 7px;border-radius:10px;font-size:11px;margin-left:2px">0</span></button>
         <!-- Manage Coach Profile — only shown if isCoach=true. Lives here
              (next to Edit Profile) instead of in the role-banner-card to
@@ -738,7 +752,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             <button class="menu-item" data-tab="challenges"   data-atp-call="showTab" data-args='["challenges"]'  role="menuitem">🎯 Challenges</button>
             <div class="profile-menu-divider"></div>
             <div class="menu-section-label">Community</div>
-            <button class="menu-item" data-tab="tribe"        data-atp-call="showTab" data-args='["tribe"]'       role="menuitem">👥 My Tribe</button>
+            <button class="menu-item" data-tab="tribe"        data-atp-call="showTab" data-args='["tribe"]'       role="menuitem">👥 My Crew</button>
             <button class="menu-item" data-tab="friends"      data-atp-call="showTab" data-args='["friends"]'     role="menuitem">🤝 Friends</button>
             <button class="menu-item" data-tab="myposts"      data-atp-call="showTab" data-args='["myposts"]'     role="menuitem">📝 My Posts</button>
             <div class="profile-menu-divider"></div>
@@ -765,6 +779,22 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
         <div id="completionBar" style="height:100%;width:0;background:linear-gradient(90deg,var(--green),#C6FF55);border-radius:6px;transition:width .6s cubic-bezier(.4,0,.2,1)"></div>
       </div>
     </div>
+  </div>
+
+  <!-- Pick-your-tribe nudge (R-TR-005 / OQ-16). Populated by
+       loadTribeNudge() — shows only when the current member has no
+       tribe_id set. CTA opens the Edit Profile tab + scrolls to the
+       tribe selector. Closes when the member picks a tribe and saves.
+       Lives here (BELOW completion bar, ABOVE role banner) so the
+       floating profile-avatar never overlaps it. -->
+  <div id="tribeNudge" style="display:none;max-width:1200px;margin:0 auto 14px;padding:16px 24px;background:linear-gradient(90deg,rgba(168,255,0,.12),rgba(96,165,250,.08));border:1px solid rgba(168,255,0,.35);border-radius:12px;align-items:center;gap:16px;flex-wrap:wrap">
+    <div style="font-size:24px">🎽</div>
+    <div style="flex:1;min-width:240px">
+      <div style="font-size:14px;font-weight:700;color:#fff;margin-bottom:3px">Pick your tribe</div>
+      <div style="font-size:12px;color:#ddd;line-height:1.55">Better, Faster, or Stronger? Tribes power your community feed, leaderboard, and identity across ATP. Takes 5 seconds.</div>
+    </div>
+    <button onclick="openTribePicker()" style="background:#A8FF00;color:#0a0a0a;border:none;padding:10px 20px;border-radius:8px;font-weight:800;font-size:13px;letter-spacing:.04em;cursor:pointer">Pick a tribe →</button>
+    <button onclick="dismissTribeNudge()" style="background:none;color:#888;border:none;padding:6px 8px;font-size:12px;cursor:pointer" title="Dismiss for this session">×</button>
   </div>
 
   <!-- ROLE BANNER — different content based on member's role tier -->
@@ -816,6 +846,19 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
     <div class="pstat"><div class="pstat-num" id="statChallenges">0</div><div class="pstat-label">Challenges</div></div>
   </div>
 
+  <!-- BOOKED SESSIONS — promoted out of the Overview panel 2026-06-27.
+       Sits directly under the stats bar so members see their next
+       bookings at a glance regardless of which profile tab is active.
+       The .widget container keeps the same dark-card visual; the
+       #upcomingSessions id is preserved so loadBookings() still
+       populates the same node. -->
+  <div style="max-width:1200px;margin:24px auto 16px;padding:0 40px">
+    <div class="widget">
+      <div class="widget-head"><span class="widget-title">Booked Sessions</span><span class="widget-action" onclick="window.location='sessions.html'">Book more →</span></div>
+      <div class="widget-body" id="upcomingSessions"></div>
+    </div>
+  </div>
+
   <!-- TABS -->
   <!-- .profile-tabs-wrap removed in v1.40 — every tab destination now
        lives in the hamburger menu (#profileMenu) inside .profile-meta. -->
@@ -827,29 +870,10 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 
       <!-- OVERVIEW -->
       <div class="profile-panel active" id="panel-overview">
-        <!-- Referral mini-hero — first thing visible on the profile so the
-             member's friendly code is always one tap away from being shared.
-             Populated by applyMemberToPage() from m.referral_code. -->
-        <div class="ref-hero-mini" id="overviewRefHero" style="display:flex;align-items:center;gap:18px;background:linear-gradient(120deg,rgba(168,255,0,.12),rgba(168,255,0,.04));border:1px solid rgba(168,255,0,.28);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:16px;flex-wrap:wrap">
-          <div style="flex:1;min-width:220px">
-            <div style="display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);font-weight:700;margin-bottom:6px">
-              <span>★ Your referral code</span>
-              <span id="overviewRefTribe" style="display:none;font-size:10px;letter-spacing:.08em;color:var(--green-light);background:rgba(168,255,0,.12);border:1px solid rgba(168,255,0,.28);border-radius:999px;padding:2px 8px"></span>
-            </div>
-            <div id="overviewRefCode" style="font-family:var(--ff-display);font-size:28px;font-weight:900;color:var(--white);letter-spacing:.04em;line-height:1.05">…</div>
-            <div style="font-size:12px;color:var(--muted);margin-top:6px">Share your code — earn <strong style="color:var(--green)">50 pts</strong> on their first session, plus 1–2 pts every time they check-in.</div>
-          </div>
-          <div class="share-row">
-            <button class="share-btn share-btn--whatsapp" data-atp-call="shareReferralWhatsApp" aria-label="Share on WhatsApp">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4l-2-1c-.3-.1-.5-.1-.7.1-.2.2-.7.8-.9 1-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.4-.5-.6-.5h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.2 0 1.3.9 2.5 1 2.7.1.2 1.8 2.7 4.4 3.8 1.6.7 2.2.7 3 .6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.4c1.5.8 3.1 1.2 4.8 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18.3c-1.5 0-3-.4-4.3-1.2l-.3-.2-3.2.8.9-3-.2-.3c-.9-1.4-1.4-3-1.4-4.6 0-4.6 3.7-8.3 8.3-8.3s8.3 3.7 8.3 8.3-3.7 8.5-8.1 8.5z"/></svg>
-              WhatsApp
-            </button>
-            <button class="share-btn" data-atp-call="copyReferralCode" aria-label="Copy referral code">
-              <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="9" height="9" rx="1"/><path d="M3 12H2a1 1 0 01-1-1V2a1 1 0 011-1h9a1 1 0 011 1v1"/></svg>
-              <span id="overviewRefCopyLabel">Copy code</span>
-            </button>
-          </div>
-        </div>
+        <!-- Referral hero relocated to the bottom of this panel as a
+             combined "Code + My Crew" card (2026-06-27 per founder).
+             See #overviewRefHero below.  Top of Overview now starts
+             with the corporate badge. -->
 
         <!-- Corporate membership badge — shown when this member belongs to
              a company via ATP Corporative. Populated from /api/corporate/me.
@@ -866,9 +890,10 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
              case we want to restore the bigger grid later. -->
         <div id="featuredStoreHost" style="display:none"></div>
 
-        <!-- Mini premium banner — only shows for free members. Same renderer
-             as the wallet card but in compact mode so it's not too pushy. -->
-        <div id="premiumBanner" style="margin-bottom:16px"></div>
+        <!-- #premiumBanner removed 2026-06-27 — it duplicated the
+             sidebar's "Support the Community" .sub-card right next
+             to it.  The .sub-card stays (compact, sticky, less
+             pushy); the renderer is no-op'd in the JS path below. -->
 
         <!-- Pending feedback prompt — auto-populates from
              /api/coach-sessions/me/pending-feedback when the member
@@ -898,45 +923,79 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
           <div id="feedbackModalCard" style="background:#111;border:1px solid rgba(245,192,66,.32);border-radius:14px;max-width:440px;width:100%;padding:28px;color:#fff;text-align:center"></div>
         </div>
 
-        <!-- Offers quick-access — surfaces a featured partner offer + a
-             link to the full /offers.html. Populated by JS below; hides
-             itself silently if there's nothing to show. -->
-        <a id="profileOffersCard" href="/offers" style="display:none;text-decoration:none;color:inherit;background:linear-gradient(120deg,rgba(245,192,66,.14),rgba(168,255,0,.06));border:1px solid rgba(245,192,66,.32);border-radius:var(--radius-lg);padding:18px 20px;margin-bottom:16px;align-items:center;gap:18px;flex-wrap:wrap;transition:transform .15s,box-shadow .2s">
-          <div style="flex:1;min-width:220px">
-            <div style="display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#f5c042;font-weight:700;margin-bottom:6px">
-              <span id="offersCardEyebrow">★ Member offers</span>
-            </div>
-            <div id="offersCardTitle" style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--white);letter-spacing:.02em;line-height:1.1;text-transform:uppercase">Discounts, race tickets &amp; more</div>
-            <div id="offersCardSub" style="font-size:12px;color:var(--muted);margin-top:6px">Turn your ATP points into discount codes. New drops every week.</div>
+        <!-- WEARABLE MIRROR — surfaces the member's most recent device
+             data (Garmin / Strava / Fitbit / Apple Health) in the slot
+             vacated by the moved offers card.  Populated by
+             renderWearableOverviewMirror() — silent empty state when no
+             device is connected (CTA to Devices tab). -->
+        <div class="widget" id="wearableOverviewMirror" style="margin-bottom:16px">
+          <div class="widget-head">
+            <span class="widget-title">⌚ My device this week</span>
+            <span class="widget-action" data-atp-call="showTab" data-args='["devices"]'>Full view →</span>
           </div>
-          <span style="background:#f5c042;color:#0a0a0a;padding:11px 18px;border-radius:6px;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap">See offers →</span>
-        </a>
+          <div class="widget-body" id="wearableOverviewBody">
+            <div style="font-size:13px;color:var(--muted)">Loading…</div>
+          </div>
+        </div>
 
-        <div class="widget">
-          <div class="widget-head"><span class="widget-title">🔥 Current Streak</span><span class="widget-action" data-atp-call="showTab" data-args='["streak"]'>Full view →</span></div>
-          <div class="widget-body">
-            <!-- Mini version of the streak progression bar — populated by renderStreak() so this stays in sync with the My Streak tab -->
-            <div class="streak-hero">
-              <div class="streak-fire-big" id="streakFireMini">💤</div>
-              <div>
-                <div class="streak-num-big" id="streakCurrentMini">0</div>
-                <div class="streak-days" id="streakDaysLabelMini">days in a row · Best: 0 days</div>
-              </div>
-            </div>
-            <div style="margin-top:14px">
-              <div class="streak-progress-track" style="height:10px">
-                <div class="streak-progress-fill" id="streakProgressFillMini" style="width:0%"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="widget">
-          <div class="widget-head"><span class="widget-title">📅 Upcoming Sessions</span><span class="widget-action" onclick="window.location='sessions.html'">Book more →</span></div>
-          <div class="widget-body" id="upcomingSessions"></div>
-        </div>
+        <!-- Streak widget was here; redesigned into a compact expandable
+             chip inside .profile-meta — see #streakChip above. -->
+        <!-- "Booked Sessions" was here; promoted to a full-width strip
+             right below .profile-stats-bar so it's the first thing
+             after the stat tiles. -->
         <div class="widget">
           <div class="widget-head"><span class="widget-title">🏆 Recent Achievements</span><span class="widget-action" data-atp-call="showTab" data-args='["achievements"]'>All →</span></div>
           <div class="widget-body"><div class="achievement-grid" id="achieveMini"></div></div>
+        </div>
+
+        <!-- REFERRAL CODE + MY CREW (combined card, relocated to bottom
+             2026-06-27 per founder).  Same #overviewRefHero / #overviewRefCode
+             / #overviewRefCopyLabel ids so applyMemberToPage() and the
+             share + copy handlers all keep working unchanged.  The
+             crew preview is populated by loadReferrals() into
+             #overviewCrewList + #overviewCrewCount. -->
+        <div id="overviewRefHero" style="display:flex;flex-direction:column;background:linear-gradient(180deg, rgba(168,255,0,.10), rgba(168,255,0,.02));border:1px solid rgba(168,255,0,.28);border-radius:var(--radius-lg);padding:22px 22px 18px;margin-top:8px">
+          <!-- Top section: code + share -->
+          <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+            <div style="flex:1;min-width:220px">
+              <div style="display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);font-weight:700;margin-bottom:6px">
+                <span>★ Your referral code</span>
+                <span id="overviewRefTribe" style="display:none;font-size:10px;letter-spacing:.08em;color:var(--green-light);background:rgba(168,255,0,.12);border:1px solid rgba(168,255,0,.28);border-radius:999px;padding:2px 8px"></span>
+              </div>
+              <div id="overviewRefCode" style="font-family:var(--ff-display);font-size:28px;font-weight:900;color:var(--white);letter-spacing:.04em;line-height:1.05">…</div>
+              <div style="font-size:12px;color:var(--muted);margin-top:6px">Share your code — earn <strong style="color:var(--green)">50 pts</strong> on their first session, plus 1–2 pts every time they check-in.</div>
+            </div>
+            <div class="share-row">
+              <button class="share-btn share-btn--whatsapp" data-atp-call="shareReferralWhatsApp" aria-label="Share on WhatsApp">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 14.4l-2-1c-.3-.1-.5-.1-.7.1-.2.2-.7.8-.9 1-.2.2-.3.2-.6.1-.3-.1-1.3-.5-2.4-1.5-.9-.8-1.5-1.8-1.7-2.1-.2-.3 0-.5.1-.6.1-.1.3-.3.4-.5.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5-.1-.1-.7-1.6-.9-2.2-.2-.6-.4-.5-.6-.5h-.5c-.2 0-.5.1-.7.3-.2.2-.9.9-.9 2.2 0 1.3.9 2.5 1 2.7.1.2 1.8 2.7 4.4 3.8 1.6.7 2.2.7 3 .6.5-.1 1.5-.6 1.7-1.2.2-.6.2-1.1.1-1.2-.1-.1-.3-.2-.6-.3zM12 2C6.5 2 2 6.5 2 12c0 1.8.5 3.5 1.3 5L2 22l5.2-1.4c1.5.8 3.1 1.2 4.8 1.2 5.5 0 10-4.5 10-10S17.5 2 12 2zm0 18.3c-1.5 0-3-.4-4.3-1.2l-.3-.2-3.2.8.9-3-.2-.3c-.9-1.4-1.4-3-1.4-4.6 0-4.6 3.7-8.3 8.3-8.3s8.3 3.7 8.3 8.3-3.7 8.5-8.1 8.5z"/></svg>
+                WhatsApp
+              </button>
+              <button class="share-btn" data-atp-call="copyReferralCode" aria-label="Copy referral code">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="4" y="4" width="9" height="9" rx="1"/><path d="M3 12H2a1 1 0 01-1-1V2a1 1 0 011-1h9a1 1 0 011 1v1"/></svg>
+                <span id="overviewRefCopyLabel">Copy code</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Divider + My Crew section -->
+          <div style="display:flex;align-items:center;gap:12px;margin:18px 0 14px">
+            <div style="flex:1;height:1px;background:linear-gradient(90deg, rgba(168,255,0,.45), rgba(168,255,0,0))"></div>
+            <div style="display:flex;align-items:center;gap:8px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--green);font-weight:800">
+              <span>👥 My Crew</span>
+              <span id="overviewCrewCount" style="font-size:10px;letter-spacing:.06em;color:var(--green-light);background:rgba(168,255,0,.12);border:1px solid rgba(168,255,0,.28);border-radius:999px;padding:2px 7px">0</span>
+            </div>
+            <div style="flex:1;height:1px;background:linear-gradient(270deg, rgba(168,255,0,.45), rgba(168,255,0,0))"></div>
+          </div>
+
+          <div id="overviewCrewList" style="display:flex;flex-direction:column;gap:8px">
+            <div style="font-size:12.5px;color:var(--muted);text-align:center;padding:14px 4px;line-height:1.55">
+              No crew yet — share your code above. The first 5 friends who join with it show up here.
+            </div>
+          </div>
+
+          <div style="margin-top:14px;text-align:center">
+            <button type="button" data-atp-call="showTab" data-args='["tribe"]' style="background:transparent;color:var(--green);border:1px solid rgba(168,255,0,.4);padding:8px 16px;border-radius:6px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer">See full crew →</button>
+          </div>
         </div>
       </div>
 
@@ -1020,7 +1079,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
       <!-- TRIBE -->
       <div class="profile-panel" id="panel-tribe">
         <div class="widget">
-          <div class="widget-head"><span class="widget-title">My Tribe</span><span style="font-size:12px;color:var(--muted)">12 people referred</span></div>
+          <div class="widget-head"><span class="widget-title">My Crew</span><span style="font-size:12px;color:var(--muted)" id="myCrewHeaderCount">0 in your crew</span></div>
           <div class="widget-body">
             <div class="referral-hero" style="margin-bottom:16px">
               <div style="font-size:13px;color:var(--muted)">Your referral code</div>
@@ -1059,6 +1118,30 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
           <div class="wallet-points">280</div>
           <div class="wallet-pts-label">points</div>
           <div class="wallet-equiv">≈ AED 10 store credit · 280 pts = 10% off next order</div>
+        </div>
+        <!-- SPEND YOUR POINTS (launch hardening) — the retired store.html
+             cart drawer owned the only redemption UI; /store now redirects
+             to the Shopify storefront, so the wallet hosts it instead.
+             POST /api/store/points/quote + /redeem, history via
+             GET /api/store/points/redemptions (src/routes/store.js).
+             Rendered by loadRedeemCard(). -->
+        <div class="widget" id="pointsRedeemCard" style="margin-top:20px;background:linear-gradient(135deg,#0f1e0a,#0a1a08);border:1px solid rgba(168,255,0,.3)">
+          <div class="widget-head">
+            <span class="widget-title">⚡ Spend your points</span>
+            <span class="widget-action" id="redeemBalanceChip" style="color:var(--green);cursor:default"></span>
+          </div>
+          <div class="widget-body">
+            <div style="font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:12px" id="redeemIntro">Swap points for a discount code, then apply it at checkout in the ATP store.</div>
+            <div id="redeemChips" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px"></div>
+            <div id="redeemQuoteLine" style="font-size:12px;color:var(--light);line-height:1.5;min-height:16px;margin-bottom:10px" aria-live="polite"></div>
+            <button id="redeemConfirmBtn" disabled style="width:100%;background:var(--green);color:#0a0a0a;border:none;font-size:12px;font-weight:800;padding:10px;border-radius:6px;cursor:pointer;text-transform:uppercase;letter-spacing:.05em;opacity:.4">Redeem</button>
+            <div id="redeemError" role="alert" style="display:none;margin-top:10px;font-size:12px;line-height:1.5;color:#ff8a8a;background:rgba(255,71,71,.08);border:1px solid rgba(255,71,71,.3);border-radius:6px;padding:10px 12px"></div>
+            <div id="redeemResult" style="display:none;margin-top:12px"></div>
+            <div id="redeemHistoryWrap" style="display:none;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)">
+              <div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;font-weight:700;margin-bottom:8px">Your codes</div>
+              <div id="redeemHistoryList"></div>
+            </div>
+          </div>
         </div>
         <!-- Theme 9 / #33 — Best-seller widget moved to the sidebar
              (#bestSellerCard) per founder request. Wallet panel keeps
@@ -1134,11 +1217,11 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
       <!-- FRIENDS -->
       <div class="profile-panel" id="panel-friends">
         <div class="widget">
-          <div class="widget-head"><span class="widget-title">Friend Requests</span><span class="member-badge" style="font-size:11px">2 pending</span></div>
+          <div class="widget-head"><span class="widget-title">Friend Requests</span><span class="member-badge" id="friendRequestsBadge" style="font-size:11px;display:none">0 pending</span></div>
           <div class="widget-body" id="friendRequests"></div>
         </div>
         <div class="widget" style="margin-top:20px">
-          <div class="widget-head"><span class="widget-title">My Friends</span></div>
+          <div class="widget-head"><span class="widget-title">My Friends</span><span class="member-badge" id="friendsListBadge" style="font-size:11px;display:none">0</span></div>
           <div class="widget-body" id="friendsList"></div>
         </div>
       </div>
@@ -1599,6 +1682,57 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
           <div style="padding:14px 0;color:var(--muted);font-size:13px;text-align:center">Loading…</div>
         </div>
       </div>
+
+      <!-- Member offers — premium redesign 2026-06-27.  Black card with
+           a top-edge gold filament + corner radial glow + watermark ★;
+           gold reserved as restraint accent (eyebrow, divider, CTA
+           outline) so the card reads luxury, not flashy.  Same
+           #profileOffersCard id so the populator JS still finds it. -->
+      <style>
+        #profileOffersCard:hover {
+          transform: translateY(-2px);
+          border-color: rgba(245,192,66,.55) !important;
+          box-shadow: 0 18px 38px -18px rgba(245,192,66,.45), 0 0 0 1px rgba(0,0,0,.5) inset !important;
+        }
+        #profileOffersCard:hover .ofc-cta {
+          background: rgba(245,192,66,.12);
+          border-color: rgba(245,192,66,.9);
+          color: #fff7d8;
+        }
+        #profileOffersCard:hover .ofc-filament {
+          opacity: 1;
+        }
+      </style>
+      <a id="profileOffersCard" href="/offers" aria-label="Member offers — premium perks for ATP members" style="display:none;flex-direction:column;text-decoration:none;color:inherit;position:relative;overflow:hidden;background:radial-gradient(120% 90% at 100% 0%, rgba(245,192,66,.10), transparent 55%), linear-gradient(180deg, #141414 0%, #0a0a0a 100%);border:1px solid rgba(245,192,66,.28);border-radius:var(--radius-lg);padding:22px 22px 18px;box-shadow:0 8px 24px -18px rgba(245,192,66,.25), 0 0 0 1px rgba(0,0,0,.4) inset;transition:transform .22s cubic-bezier(.2,.7,.2,1), border-color .22s, box-shadow .22s">
+        <!-- Top-edge gold filament -->
+        <div class="ofc-filament" aria-hidden="true" style="position:absolute;top:0;left:0;right:0;height:1.5px;background:linear-gradient(90deg, transparent 0%, #f5c042 50%, transparent 100%);opacity:.7;transition:opacity .22s"></div>
+        <!-- Watermark ★ -->
+        <div aria-hidden="true" style="position:absolute;top:-16px;right:-10px;font-family:var(--ff-display);font-size:110px;font-weight:900;color:rgba(245,192,66,.06);line-height:1;pointer-events:none;user-select:none">★</div>
+
+        <!-- Eyebrow -->
+        <div style="position:relative;display:inline-flex;align-items:center;gap:7px;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#f5c042;font-weight:800;margin-bottom:12px">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l2.39 7.36H22l-6.31 4.58L18.18 22 12 17.27 5.82 22l2.49-8.06L2 9.36h7.61z"/></svg>
+          <span id="offersCardEyebrow">Member offers</span>
+        </div>
+
+        <!-- Title -->
+        <div id="offersCardTitle" style="position:relative;font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--white);letter-spacing:.01em;line-height:1.1;text-transform:uppercase">Discounts, race tickets &amp; more</div>
+
+        <!-- Hairline gold divider -->
+        <div aria-hidden="true" style="position:relative;height:1px;background:linear-gradient(90deg, rgba(245,192,66,.45) 0%, rgba(245,192,66,0) 100%);margin:14px 0 12px"></div>
+
+        <!-- Description -->
+        <div id="offersCardSub" style="position:relative;font-size:12.5px;color:rgba(255,255,255,.65);line-height:1.55">Turn your ATP points into discount codes. New drops every week.</div>
+
+        <!-- Footer row — small badge left, outlined CTA right -->
+        <div style="position:relative;display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06)">
+          <span style="font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:rgba(245,192,66,.7);font-weight:700">Premium · Exclusive</span>
+          <span class="ofc-cta" style="background:transparent;color:#f5c042;border:1px solid rgba(245,192,66,.55);padding:7px 14px;border-radius:6px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;display:inline-flex;align-items:center;gap:6px;transition:background .2s, border-color .2s, color .2s">
+            See offers
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M5 12h14M13 5l7 7-7 7"/></svg>
+          </span>
+        </div>
+      </a>
     </aside>
   </div>
 </main>
@@ -1681,6 +1815,47 @@ function toggleProfileMenu(ev) {
   if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
 }
 window.toggleProfileMenu = toggleProfileMenu;
+
+// Streak chip dropdown — same .open class as the profile menu, same
+// outside-click + Escape close handlers (a second listener pair is
+// installed below to keep this self-contained).
+function toggleStreakDropdown(ev) {
+  if (ev) ev.stopPropagation();
+  var menu = document.getElementById('streakDropdown');
+  var btn  = document.getElementById('streakChipBtn');
+  if (!menu) return;
+  // Close the main profile menu if it's open — only one floating
+  // panel at a time keeps the action bar uncluttered.
+  var pm = document.getElementById('profileMenu');
+  if (pm && pm.classList.contains('open')) {
+    pm.classList.remove('open');
+    var pmb = document.getElementById('profileMenuBtn');
+    if (pmb) pmb.setAttribute('aria-expanded', 'false');
+  }
+  var open = menu.classList.toggle('open');
+  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+}
+window.toggleStreakDropdown = toggleStreakDropdown;
+
+document.addEventListener('click', function(ev){
+  var menu = document.getElementById('streakDropdown');
+  var btn  = document.getElementById('streakChipBtn');
+  if (!menu || !menu.classList.contains('open')) return;
+  if (btn && (ev.target === btn || btn.contains(ev.target))) return;
+  if (menu.contains(ev.target)) return;
+  menu.classList.remove('open');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+});
+document.addEventListener('keydown', function(ev){
+  if (ev.key === 'Escape') {
+    var menu = document.getElementById('streakDropdown');
+    if (menu && menu.classList.contains('open')) {
+      menu.classList.remove('open');
+      var btn = document.getElementById('streakChipBtn');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
+  }
+});
 
 // Close on outside click + Escape
 document.addEventListener('click', function(ev){
@@ -1795,7 +1970,7 @@ async function loadBookingsFromAPI() {
       renderSessions(document.getElementById('upcomingSessions'),
         SESSIONS.filter(function(s){return s.status==='upcoming';}).slice(0,3));
       renderSessions(document.getElementById('allSessions'), SESSIONS);
-      console.log('✅ Profile: loaded', SESSIONS.length, 'bookings from API');
+      
     }
   } catch(e) { console.warn('Could not load bookings from API:', e.message); }
 }
@@ -1837,26 +2012,14 @@ var TRIBE = [
   {init:"T",name:"Tom B.",joined:"Dec 2024",sessions:31,active:false},
 ];
 
-var FRIENDS_REQUESTS = [
-  {init:"L",name:"Lucas P.",meta:"Faster Tribe · 89 sessions"},
-  {init:"E",name:"Elena M.",meta:"Better Tribe · 62 sessions"},
-];
-var FRIENDS = [
-  {init:"J",name:"Jay Ashar",meta:"127 sessions · 28d streak"},
-  {init:"V",name:"Valentina R.",meta:"118 sessions · 21d streak"},
-  {init:"G",name:"Gwen Gaje",meta:"104 sessions · 14d streak"},
-  {init:"H",name:"Hugo M.",meta:"98 sessions · 10d streak"},
-];
-
-var NOTIFS = [
-  {unread:true,text:"<strong>Jay Ashar</strong> liked your session check-in",time:"2m ago"},
-  {unread:true,text:"<strong>New session</strong> added: Padel Night at JBR — book now",time:"1h ago"},
-  {unread:true,text:"<strong>Elena M.</strong> sent you a friend request",time:"3h ago"},
-  {unread:false,text:"You earned the <strong>Tribe Leader</strong> achievement 🏆",time:"Yesterday"},
-  {unread:false,text:"Your streak is at <strong>14 days</strong> — keep it up! 🔥",time:"Yesterday"},
-  {unread:false,text:"<strong>Lucas P.</strong> joined ATP via your referral link",time:"2 days ago"},
-  {unread:false,text:"New challenge available: <strong>July Bootcamp Blitz</strong>",time:"3 days ago"},
-];
+// Empty by design — populated from /api at boot.  Pre-2026-06-27 these
+// were seeded with mock entries (Lucas/Elena/Jay/etc.) which then flashed
+// on screen before loadFriends/loadNotifications resolved, and stayed
+// visible if the API call silently failed.  The render functions handle
+// empty arrays with proper empty-state copy.
+var FRIENDS_REQUESTS = [];
+var FRIENDS          = [];
+var NOTIFS           = [];
 
 var WALLET_TXNS = [
   {icon:"🔥",name:"Session attendance",date:"Today",amt:"+10",earn:true},
@@ -2103,7 +2266,7 @@ function loadAchievements() {
 function renderTribe(el) {
   if (!el) return;
   if (!TRIBE || !TRIBE.length) {
-    el.innerHTML = _atpEmpty('🌱', 'Build your tribe',
+    el.innerHTML = _atpEmpty('🌱', 'Build your crew',
       'Invite friends with your referral link — earn points when they attend their first session.',
       '<button class="atp-btn atp-btn--primary atp-empty__cta" onclick="copyReferralLink && copyReferralLink()">Copy referral link</button>');
     return;
@@ -2135,6 +2298,22 @@ function renderTribe(el) {
 function renderFriends() {
   var reqEl = document.getElementById("friendRequests");
   var lstEl = document.getElementById("friendsList");
+  // Sync widget-head badges — the hardcoded "2 pending" badge was
+  // the smoking gun on the "still shows 2 pending with nothing
+  // pending" bug.  Both badges now reflect the current array length
+  // and hide at 0.
+  var reqBadgeWidget = document.getElementById("friendRequestsBadge");
+  var lstBadgeWidget = document.getElementById("friendsListBadge");
+  if (reqBadgeWidget) {
+    var pn = (FRIENDS_REQUESTS && FRIENDS_REQUESTS.length) || 0;
+    reqBadgeWidget.textContent = pn + ' pending';
+    reqBadgeWidget.style.display = pn > 0 ? 'inline-flex' : 'none';
+  }
+  if (lstBadgeWidget) {
+    var fn = (FRIENDS && FRIENDS.length) || 0;
+    lstBadgeWidget.textContent = String(fn);
+    lstBadgeWidget.style.display = fn > 0 ? 'inline-flex' : 'none';
+  }
   if (reqEl) {
     reqEl.innerHTML = (FRIENDS_REQUESTS && FRIENDS_REQUESTS.length)
       ? FRIENDS_REQUESTS.map(function(f,i){
@@ -2460,9 +2639,12 @@ function renderPremiumCard() {
     if (bannerEl) bannerEl.innerHTML = '';
     return;
   }
-  // Free member — render upgrade card in both slots.
+  // Free member — render upgrade card in the Wallet tab.  The Overview
+  // banner slot was removed 2026-06-27 because it duplicated the
+  // sidebar's "Support the Community" .sub-card; the guard below keeps
+  // this renderer safe if the host ever gets re-added.
   if (walletEl) walletEl.innerHTML = _renderUpgradeCard(false);
-  if (bannerEl) bannerEl.innerHTML = _renderUpgradeCard(true);
+  if (bannerEl) bannerEl.innerHTML = '';
 }
 
 function _renderUpgradeCard(compact) {
@@ -2729,7 +2911,7 @@ function _atpHandleStripeReturn() {
 // Replaces the legacy "Quick Stats" sub-card. Pulls the single best-
 // selling product from Shopify (Storefront API, public token) and
 // renders a square hero image + title + price + a green "Support Now"
-// CTA that deep-links to the product on /store.html. On any failure
+// CTA that deep-links to the product on the Shopify storefront. On any failure
 // (network, no products, timeout) the card hides itself so the sidebar
 // stays clean.
 var ATP_SHOPIFY_TOKEN  = '31a1a5554b7f2fdaf2aa4dc44e13a127';
@@ -2794,7 +2976,7 @@ function loadStoreBestSellers() {
       // on the store; the explicit Support Now button is the conversion
       // point.
       body.innerHTML =
-        '<a href="store.html#' + safeHandle + '" style="text-decoration:none;color:inherit;display:block">' +
+        '<a href="https://' + ATP_SHOPIFY_DOMAIN + '/products/' + safeHandle + '" style="text-decoration:none;color:inherit;display:block">' +
           (imgUrl
             ? '<div style="aspect-ratio:1;background:#0d0d0d;border-radius:10px;overflow:hidden;margin-bottom:12px;border:1px solid rgba(255,255,255,.06)"><img src="' + imgUrl + '" alt="' + alt.replace(/"/g, '&quot;') + '" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy"></div>'
             : '<div style="aspect-ratio:1;background:#0d0d0d;border-radius:10px;margin-bottom:12px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:34px">🛒</div>') +
@@ -2804,7 +2986,7 @@ function loadStoreBestSellers() {
             : '<div style="margin-bottom:14px"></div>') +
         '</a>' +
         // The Support Now CTA — full-width, bright green, hard-to-miss.
-        '<a href="store.html#' + safeHandle + '" class="atp-btn atp-btn--primary" style="display:block;text-align:center;text-decoration:none;font-size:13px;padding:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase">Support Now \u2192</a>';
+        '<a href="https://' + ATP_SHOPIFY_DOMAIN + '/products/' + safeHandle + '" class="atp-btn atp-btn--primary" style="display:block;text-align:center;text-decoration:none;font-size:13px;padding:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase">Support Now \u2192</a>';
     })
     .catch(function(err){
       console.warn('[best-sellers] fetch failed', err && err.message);
@@ -2958,8 +3140,8 @@ function openChallengeLeaderboard(e, btn) {
 }
 
 function markAllRead() {
-  if (window.ATP && window.ATP.isLoggedIn() && window.ATP.notifications && window.ATP.notifications.readAll) {
-    window.ATP.notifications.readAll().catch(function(){});
+  if (window.ATP && window.ATP.isLoggedIn() && window.ATP.notifications && window.ATP.notifications.markAllRead) {
+    window.ATP.notifications.markAllRead().catch(function(){});
   }
   NOTIFS.forEach(function(n){n.unread=false;});
   renderNotifs();
@@ -2988,7 +3170,9 @@ function _atpReferralCode() {
 function _atpReferralUrl() {
   var code = _atpReferralCode();
   if (!code) return '';
-  return location.origin + '/?ref=' + encodeURIComponent(code);
+  // /join reads ?ref and pre-fills the signup form — the homepage never
+  // captured it, so shared links silently lost attribution.
+  return location.origin + '/join?ref=' + encodeURIComponent(code);
 }
 
 function _atpReferralMessage() {
@@ -3252,7 +3436,7 @@ function saveProfile(){
 
 function showMessage(msg){
   var toast=document.createElement("div");
-  toast.style.cssText="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:var(--green);color:#fff;padding:12px 24px;border-radius:var(--radius);font-size:14px;font-weight:700;z-index:999;animation:fadeIn .3s";
+  toast.style.cssText="position:fixed;bottom:32px;left:50%;transform:translateX(-50%);background:var(--green);color:#0a0a0a;padding:12px 24px;border-radius:var(--radius);font-size:14px;font-weight:700;z-index:999;animation:fadeIn .3s";
   toast.textContent=msg;
   document.body.appendChild(toast);
   setTimeout(function(){toast.remove();},2500);
@@ -3799,7 +3983,7 @@ function openAmbassadorApply() {
         '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;display:block;margin-bottom:4px" for="ambaSessions">Which sessions can you support? *</label><input id="ambaSessions" required placeholder="e.g. Morning Run Dubai Marina, HIIT Kite Beach" style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px"></div>' +
         '<div style="margin-bottom:10px"><label style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;display:block;margin-bottom:4px" for="ambaArea">Which area / city can you cover? *</label><input id="ambaArea" required placeholder="e.g. Dubai Marina, Al Ain, Muscat" style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px"></div>' +
         '<div style="margin-bottom:18px"><label style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#888;display:block;margin-bottom:4px" for="ambaWhy">Why do you want to be an ATP Ambassador? *</label><textarea id="ambaWhy" required rows="4" placeholder="Tell us about your motivation, availability, fitness background…" style="width:100%;background:#1a1a1a;border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:9px 12px;color:#fff;font-size:13px;resize:vertical;min-height:90px;font-family:inherit"></textarea></div>' +
-        '<button type="submit" id="ambaSubmit" style="width:100%;padding:13px;background:#A8FF00;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer">Submit application</button>' +
+        '<button type="submit" id="ambaSubmit" style="width:100%;padding:13px;background:#A8FF00;color:#0a0a0a;border:none;border-radius:10px;font-size:14px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer">Submit application</button>' +
       '</form>' +
     '</div>';
   document.body.appendChild(wrap);
@@ -4661,7 +4845,18 @@ function loadBookings() {
       };
     });
     SESSIONS = mapped;
-    var upcoming = mapped.filter(function(s){ return s.status === 'upcoming'; });
+    // 2026-06-27 — match the backend /api/sessions filter: status
+    // alone is not enough (a "confirmed" booking for a past session
+    // would otherwise still show as upcoming).  Require scheduled_at
+    // ≥ now − 2 h (same grace as the sessions endpoint, so a session
+    // currently underway still appears).
+    var graceMs = 2 * 60 * 60 * 1000;
+    var cutoff  = Date.now() - graceMs;
+    var upcoming = mapped.filter(function(s){
+      if (s.status !== 'upcoming') return false;
+      if (!s.scheduled_at) return false;
+      return new Date(s.scheduled_at).getTime() >= cutoff;
+    });
     renderSessions(document.getElementById('upcomingSessions'), upcoming.slice(0,3));
     renderSessions(document.getElementById('allSessions'), mapped);
     // Refresh the header's "Next check-in QR" button — appears only
@@ -4694,6 +4889,252 @@ function loadPoints() {
     });
     renderWallet();
   }).catch(function(){});
+}
+
+// ── Spend-your-points card (launch hardening) ─────────────────
+// The retired store.html cart drawer owned the only redemption UI;
+// /store now redirects to the Shopify storefront, so the wallet card
+// above (#pointsRedeemCard) hosts it. Contract (src/routes/store.js):
+//   POST /api/store/points/quote  { points }
+//        → { points, rate_atp_per_unit, amount_value, currency_code, member_balance }
+//   POST /api/store/points/redeem { points }
+//        → 201 { discount_code, amount_value, points_balance, expires_at,
+//                shopify_active, next_step } · 400 { error } when balance
+//        is short / below minimum. shopify_active:false = code reserved,
+//        Shopify mirror pending → member gets it by email.
+//   GET  /api/store/points/redemptions → { redemptions: [...] }
+var _REDEEM_RATE     = 28;   // pts per AED 1 — live value comes from the quote
+var _REDEEM_BALANCE  = 0;
+var _REDEEM_SELECTED = 0;    // points currently selected via a chip
+
+function _redeemHeaders(json) {
+  var h = { 'Authorization': 'Bearer ' + (localStorage.getItem('atp_token')||'') };
+  if (json) h['Content-Type'] = 'application/json';
+  return h;
+}
+
+function loadRedeemCard() {
+  var card = document.getElementById('pointsRedeemCard');
+  if (!card) return;
+  var btn = document.getElementById('redeemConfirmBtn');
+  if (btn && !btn._wired) { btn._wired = true; btn.addEventListener('click', confirmRedeem); }
+  // Quote with points:0 — cheap way to read the live rate + authoritative
+  // balance (authenticate's SELECT doesn't include points_balance).
+  fetch('/api/store/points/quote', {
+    method: 'POST',
+    headers: _redeemHeaders(true),
+    body: JSON.stringify({ points: 0 }),
+  })
+    .then(function(r){ if (!r.ok) throw new Error('quote'); return r.json(); })
+    .then(function(q){
+      _REDEEM_RATE    = Number(q.rate_atp_per_unit) > 0 ? Number(q.rate_atp_per_unit) : 28;
+      _REDEEM_BALANCE = Number(q.member_balance) || 0;
+      renderRedeemChips();
+    })
+    .catch(function(){
+      var line = document.getElementById('redeemQuoteLine');
+      if (line) line.textContent = 'Could not load redemption rates — refresh to try again.';
+    });
+  loadRedeemHistory();
+}
+
+function renderRedeemChips() {
+  var chipsEl = document.getElementById('redeemChips');
+  var balEl   = document.getElementById('redeemBalanceChip');
+  var line    = document.getElementById('redeemQuoteLine');
+  var btn     = document.getElementById('redeemConfirmBtn');
+  if (!chipsEl) return;
+  _REDEEM_SELECTED = 0;
+  if (balEl) balEl.textContent = _REDEEM_BALANCE.toLocaleString() + ' pts';
+  if (btn) { btn.disabled = true; btn.style.opacity = '.4'; btn.textContent = 'Redeem'; }
+  // Preset AED denominations, filtered to what the balance affords.
+  var options = [5, 10, 25, 50, 100].filter(function(aed){ return aed * _REDEEM_RATE <= _REDEEM_BALANCE; });
+  if (!options.length) {
+    var firstAed  = 5;
+    var shortBy   = Math.max(0, firstAed * _REDEEM_RATE - _REDEEM_BALANCE);
+    chipsEl.innerHTML = '';
+    if (line) line.textContent = 'Earn ' + shortBy.toLocaleString() + ' more points to unlock your first AED ' + firstAed + ' code (' + _REDEEM_RATE + ' pts = AED 1).';
+    return;
+  }
+  chipsEl.innerHTML = options.map(function(aed){
+    var pts = aed * _REDEEM_RATE;
+    return '<button type="button" class="redeem-chip" data-points="' + pts + '" data-aed="' + aed + '" style="background:transparent;border:1px solid rgba(168,255,0,.35);color:var(--green);padding:8px 12px;border-radius:8px;font-size:12px;font-weight:700;cursor:pointer;line-height:1.3">AED ' + aed + '<span style="display:block;font-size:10px;color:var(--muted);font-weight:600">' + pts.toLocaleString() + ' pts</span></button>';
+  }).join('');
+  if (line) line.textContent = 'Pick an amount — ' + _REDEEM_RATE + ' pts = AED 1 off at the ATP store.';
+  Array.prototype.forEach.call(chipsEl.querySelectorAll('.redeem-chip'), function(c){
+    c.addEventListener('click', function(){ selectRedeemAmount(c); });
+  });
+}
+
+function selectRedeemAmount(chip) {
+  var chipsEl = document.getElementById('redeemChips');
+  var line    = document.getElementById('redeemQuoteLine');
+  var btn     = document.getElementById('redeemConfirmBtn');
+  var err     = document.getElementById('redeemError');
+  if (err) err.style.display = 'none';
+  Array.prototype.forEach.call(chipsEl.querySelectorAll('.redeem-chip'), function(c){
+    c.style.background = 'transparent'; c.style.color = 'var(--green)';
+    var sub = c.querySelector('span'); if (sub) sub.style.color = 'var(--muted)';
+  });
+  chip.style.background = 'var(--green)'; chip.style.color = '#0a0a0a';
+  var sub = chip.querySelector('span'); if (sub) sub.style.color = 'rgba(10,10,10,.7)';
+  var pts = parseInt(chip.dataset.points, 10) || 0;
+  _REDEEM_SELECTED = pts;
+  if (line) line.textContent = 'Checking value…';
+  if (btn) { btn.disabled = true; btn.style.opacity = '.4'; }
+  // Server-side quote so the AED value shown is authoritative even if
+  // the admin changes the rate mid-session.
+  fetch('/api/store/points/quote', {
+    method: 'POST',
+    headers: _redeemHeaders(true),
+    body: JSON.stringify({ points: pts }),
+  })
+    .then(function(r){ if (!r.ok) throw new Error('quote'); return r.json(); })
+    .then(function(q){
+      if (_REDEEM_SELECTED !== pts) return; // member picked another chip meanwhile
+      var aed  = Number(q.amount_value) || Math.floor(pts / _REDEEM_RATE);
+      var left = Math.max(0, _REDEEM_BALANCE - pts);
+      if (line) line.innerHTML = 'AED <strong style="color:var(--green)">' + aed + '</strong> off · costs <strong style="color:#fff">' + pts.toLocaleString() + ' pts</strong> · leaves you ' + left.toLocaleString() + ' pts';
+      if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Redeem ' + pts.toLocaleString() + ' pts → AED ' + aed; }
+    })
+    .catch(function(){
+      if (_REDEEM_SELECTED !== pts) return;
+      // Fall back to the locally computed value — quote is preview-only.
+      var aed  = Math.floor(pts / _REDEEM_RATE);
+      var left = Math.max(0, _REDEEM_BALANCE - pts);
+      if (line) line.textContent = 'AED ' + aed + ' off · costs ' + pts.toLocaleString() + ' pts · leaves you ' + left.toLocaleString() + ' pts';
+      if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.textContent = 'Redeem ' + pts.toLocaleString() + ' pts → AED ' + aed; }
+    });
+}
+
+function confirmRedeem() {
+  var pts = _REDEEM_SELECTED;
+  if (!pts) return;
+  var aed = Math.floor(pts / _REDEEM_RATE);
+  if (!confirm('Redeem ' + pts.toLocaleString() + ' points for AED ' + aed + ' off? This can’t be undone.')) return;
+  var btn = document.getElementById('redeemConfirmBtn');
+  var err = document.getElementById('redeemError');
+  if (err) err.style.display = 'none';
+  if (btn) { btn.disabled = true; btn.style.opacity = '.6'; btn.textContent = 'Redeeming…'; }
+  fetch('/api/store/points/redeem', {
+    method: 'POST',
+    headers: _redeemHeaders(true),
+    body: JSON.stringify({ points: pts }),
+  })
+    .then(function(res){
+      return res.json().catch(function(){ return {}; }).then(function(data){
+        if (!res.ok) {
+          // 503 = redemption backend down mid-flight → points may be
+          // reserved; the code arrives by email once mirrored.
+          var msg = res.status === 503
+            ? 'Redemption is catching up — if your points were deducted, your code will be emailed to you shortly.'
+            : (data.error || 'Could not redeem right now. Try again in a minute.');
+          throw Object.assign(new Error(msg), { handled: true });
+        }
+        return data;
+      });
+    })
+    .then(function(data){
+      _REDEEM_BALANCE = Number(data.points_balance) || 0;
+      if (CURRENT_MEMBER) CURRENT_MEMBER.points_balance = _REDEEM_BALANCE;
+      // Keep the wallet hero + header stat in sync with the new balance.
+      var walletPts = document.querySelector('.wallet-points');
+      if (walletPts) walletPts.textContent = _REDEEM_BALANCE.toLocaleString();
+      var statPts = document.getElementById('statPoints');
+      if (statPts) statPts.textContent = _REDEEM_BALANCE.toLocaleString();
+      renderRedeemChips();
+      showRedeemResult(data);
+      loadRedeemHistory();
+    })
+    .catch(function(e){
+      if (btn) { btn.disabled = _REDEEM_SELECTED ? false : true; btn.style.opacity = _REDEEM_SELECTED ? '1' : '.4'; btn.textContent = 'Redeem'; }
+      if (err) {
+        err.textContent = (e && e.handled) ? e.message : 'Network error — check your connection and try again. Your points were not touched.';
+        err.style.display = 'block';
+      }
+    });
+}
+
+function showRedeemResult(data) {
+  var box = document.getElementById('redeemResult');
+  if (!box) return;
+  var code = String(data.discount_code || '');
+  var statusLine = data.shopify_active
+    ? '<div style="font-size:11px;color:var(--muted);line-height:1.5">Worth <strong style="color:#fff">AED ' + (Number(data.amount_value)||0) + '</strong> at checkout. Expires in 30 days.</div>'
+    : '<div style="font-size:11px;color:#ffc400;line-height:1.5">⚠️ Code reserved — we’ll activate it on Shopify and email it to you within the hour.</div>';
+  box.innerHTML =
+    '<div style="background:#0a0a0a;border:1px solid rgba(168,255,0,.4);border-radius:8px;padding:12px">' +
+      '<div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px">Your discount code</div>' +
+      '<div style="font-family:monospace;font-size:17px;font-weight:800;color:var(--green);letter-spacing:1px;margin-bottom:8px" id="redeemCodeText">' + code + '</div>' +
+      statusLine +
+      '<div style="display:flex;gap:8px;margin-top:10px">' +
+        '<button type="button" id="redeemCopyBtn" style="flex:1;background:transparent;border:1px solid rgba(168,255,0,.35);color:var(--green);font-size:11px;font-weight:700;padding:8px;border-radius:6px;cursor:pointer;text-transform:uppercase;letter-spacing:.05em">Copy code</button>' +
+        (data.shopify_active
+          ? '<a href="https://' + ATP_SHOPIFY_DOMAIN + '/discount/' + encodeURIComponent(code) + '" target="_blank" rel="noopener" style="flex:1;display:inline-flex;align-items:center;justify-content:center;background:var(--green);color:#0a0a0a;font-size:11px;font-weight:800;padding:8px;border-radius:6px;text-decoration:none;text-transform:uppercase;letter-spacing:.05em">Apply in store →</a>'
+          : '') +
+      '</div>' +
+    '</div>';
+  box.style.display = 'block';
+  var copyBtn = document.getElementById('redeemCopyBtn');
+  if (copyBtn) copyBtn.addEventListener('click', function(){ _redeemCopy(code, copyBtn); });
+}
+
+function _redeemCopy(code, btn) {
+  var done = function(){
+    var prev = btn.textContent;
+    btn.textContent = 'Copied ✓';
+    setTimeout(function(){ btn.textContent = prev; }, 2000);
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(code).then(done).catch(function(){ prompt('Copy your code:', code); });
+  } else {
+    prompt('Copy your code:', code);
+  }
+}
+
+function loadRedeemHistory() {
+  var wrap = document.getElementById('redeemHistoryWrap');
+  var host = document.getElementById('redeemHistoryList');
+  if (!wrap || !host) return;
+  fetch('/api/store/points/redemptions', { headers: _redeemHeaders() })
+    .then(function(r){ if (!r.ok) throw new Error('history'); return r.json(); })
+    .then(function(d){
+      var list = (d && d.redemptions) || [];
+      if (!list.length) { wrap.style.display = 'none'; return; }
+      host.innerHTML = list.slice(0, 5).map(function(r){
+        var now     = Date.now();
+        var expired = r.expires_at && new Date(r.expires_at).getTime() < now;
+        var status  = r.used_at ? 'Used'
+                    : expired   ? 'Expired'
+                    : (r.status === 'shopify_failed') ? 'Pending — emailed soon'
+                    : 'Active';
+        var color   = r.used_at || expired ? 'var(--muted)'
+                    : (r.status === 'shopify_failed') ? '#ffc400'
+                    : 'var(--green)';
+        var dim     = (r.used_at || expired) ? ';opacity:.55' : '';
+        return (
+          '<div class="redeem-hist-row" data-code="' + String(r.discount_code||'') + '" title="Tap to copy" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer' + dim + '">' +
+            '<div>' +
+              '<div style="font-family:monospace;font-size:12px;font-weight:700;color:#fff;letter-spacing:.5px">' + String(r.discount_code||'') + '</div>' +
+              '<div style="font-size:10px;color:var(--muted)">AED ' + (Number(r.amount_value)||0) + ' · ' + (Number(r.points_spent)||0).toLocaleString() + ' pts' + (r.expires_at && !expired && !r.used_at ? ' · expires ' + new Date(r.expires_at).toLocaleDateString() : '') + '</div>' +
+            '</div>' +
+            '<span style="font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:' + color + ';white-space:nowrap">' + status + '</span>' +
+          '</div>'
+        );
+      }).join('');
+      Array.prototype.forEach.call(host.querySelectorAll('.redeem-hist-row'), function(row){
+        row.addEventListener('click', function(){
+          var c = row.dataset.code;
+          if (c && navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(c);
+            var badge = row.querySelector('span');
+            if (badge) { var prev = badge.textContent; badge.textContent = 'Copied ✓'; setTimeout(function(){ badge.textContent = prev; }, 1500); }
+          }
+        });
+      });
+      wrap.style.display = 'block';
+    })
+    .catch(function(){ wrap.style.display = 'none'; });
 }
 
 // Challenges → progress cards
@@ -4820,6 +5261,37 @@ function loadReferrals() {
     var totalPts = refs.reduce(function(sum, r){ return sum + (Number(r.points_awarded)||0); }, 0);
     if (refStats[1]) refStats[1].textContent = totalPts;
     if (refStats[2]) refStats[2].textContent = TRIBE.filter(function(t){return t.active;}).length;
+
+    // Overview crew preview (2026-06-27 — combined card at bottom of Overview)
+    var crewCountEl   = document.getElementById('overviewCrewCount');
+    var crewListEl    = document.getElementById('overviewCrewList');
+    var crewHdrCount  = document.getElementById('myCrewHeaderCount');
+    var crewLen = TRIBE.length;
+    if (crewCountEl)  crewCountEl.textContent  = crewLen;
+    if (crewHdrCount) crewHdrCount.textContent = crewLen + (crewLen === 1 ? ' member in your crew' : ' members in your crew');
+    if (crewListEl) {
+      if (!crewLen) {
+        crewListEl.innerHTML =
+          '<div style="font-size:12.5px;color:var(--muted);text-align:center;padding:14px 4px;line-height:1.55">' +
+            'No crew yet — share your code above. The first 5 friends who join with it show up here.' +
+          '</div>';
+      } else {
+        crewListEl.innerHTML = TRIBE.slice(0, 5).map(function(m){
+          var activeDot = m.active
+            ? '<span title="Active last 30 days" style="width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;box-shadow:0 0 6px rgba(168,255,0,.7)"></span>'
+            : '<span title="Inactive 30+ days" style="width:7px;height:7px;border-radius:50%;background:#666;flex-shrink:0"></span>';
+          var sessions = (Number(m.sessions) || 0);
+          return '<div style="display:flex;align-items:center;gap:10px;padding:8px 10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);border-radius:8px">' +
+            '<div style="width:30px;height:30px;border-radius:50%;background:rgba(168,255,0,.15);color:var(--green);display:flex;align-items:center;justify-content:center;font-family:var(--ff-display);font-size:12px;font-weight:900;flex-shrink:0">' + escapeHtml(m.init) + '</div>' +
+            '<div style="flex:1;min-width:0">' +
+              '<div style="font-size:13px;font-weight:700;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(m.name) + '</div>' +
+              '<div style="font-size:11px;color:var(--muted);margin-top:1px">Joined ' + escapeHtml(m.joined) + ' · ' + sessions + ' session' + (sessions === 1 ? '' : 's') + '</div>' +
+            '</div>' +
+            activeDot +
+          '</div>';
+        }).join('');
+      }
+    }
   }).catch(function(){});
 }
 
@@ -4880,6 +5352,7 @@ function loadRealProfileData() {
     applyMemberToPage(m);
     loadBookings();
     loadPoints();
+    loadRedeemCard();
     loadChallenges();
     loadNotifications();
     loadReferrals();
@@ -4935,7 +5408,7 @@ function renderFeaturedStore(col, products) {
     var img = p.images && p.images.edges[0] && p.images.edges[0].node.url;
     var price = p.priceRange && p.priceRange.minVariantPrice;
     var priceStr = price ? (price.currencyCode + ' ' + Math.round(Number(price.amount))) : '';
-    return '<a href="/store.html#product/' + esc(p.handle || '') + '" style="display:block;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden;text-decoration:none;color:inherit;transition:transform .2s,border-color .2s" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.borderColor=\'rgba(168,255,0,.3)\'" onmouseout="this.style.transform=\'\';this.style.borderColor=\'rgba(255,255,255,.06)\'">' +
+    return '<a href="https://' + FEATURED_SHOPIFY_DOMAIN + '/products/' + esc(p.handle || '') + '" style="display:block;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden;text-decoration:none;color:inherit;transition:transform .2s,border-color .2s" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.borderColor=\'rgba(168,255,0,.3)\'" onmouseout="this.style.transform=\'\';this.style.borderColor=\'rgba(255,255,255,.06)\'">' +
       (img ? '<div style="aspect-ratio:1/1;background:#0a0a0a"><img src="' + esc(img) + '" alt="" style="width:100%;height:100%;object-fit:cover"></div>' : '<div style="aspect-ratio:1/1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:32px">🎽</div>') +
       '<div style="padding:10px 12px">' +
         '<div style="font-size:12px;color:#fff;font-weight:600;line-height:1.3;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(p.title || '') + '</div>' +
@@ -4950,7 +5423,7 @@ function renderFeaturedStore(col, products) {
           '<div style="font-size:11px;color:var(--green);letter-spacing:.14em;text-transform:uppercase;font-weight:700">🛍️ Featured this week</div>' +
           '<div style="font-family:var(--ff-display);font-size:20px;font-weight:800;color:#fff;line-height:1.1;margin-top:2px">' + esc(col.title || 'ATP Store') + '</div>' +
         '</div>' +
-        '<a href="/store.html" style="background:var(--green);color:#0a0a0a;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;text-transform:uppercase;letter-spacing:.05em">Shop all →</a>' +
+        '<a href="/store" style="background:var(--green);color:#0a0a0a;padding:8px 14px;border-radius:6px;font-size:12px;font-weight:700;text-decoration:none;text-transform:uppercase;letter-spacing:.05em">Shop all →</a>' +
       '</div>' +
       '<div style="display:grid;grid-template-columns:repeat(' + Math.min(products.length, 4) + ',1fr);gap:10px">' + cards + '</div>' +
     '</div>';
@@ -5014,7 +5487,7 @@ function renderFeaturedSidebarSlide() {
     return '<span onclick="jumpFeaturedSidebar(' + i + ')" style="width:' + (active ? '20' : '6') + 'px;height:6px;border-radius:3px;background:' + (active ? 'var(--green)' : 'rgba(255,255,255,.18)') + ';transition:all .3s;cursor:pointer"></span>';
   }).join('');
   body.innerHTML =
-    '<a href="/store.html#product/' + esc(p.handle || '') + '" style="display:block;text-decoration:none;color:inherit">' +
+    '<a href="https://' + FEATURED_SHOPIFY_DOMAIN + '/products/' + esc(p.handle || '') + '" style="display:block;text-decoration:none;color:inherit">' +
       (img
         ? '<div style="aspect-ratio:1/1;background:#0a0a0a;border-radius:8px;overflow:hidden;margin-bottom:10px"><img src="' + esc(img) + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'\'"></div>'
         : '<div style="aspect-ratio:1/1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:42px;border-radius:8px;margin-bottom:10px">🎽</div>') +
@@ -5037,7 +5510,7 @@ window.jumpFeaturedSidebar = jumpFeaturedSidebar;
 // Shows a one-time 20% off code to brand-new members. Hidden once the
 // code's been used (welcome_discount_used_at) or expired
 // (welcome_discount_expires_at < now). Member can copy the code with
-// one tap and jump straight to /store.html.
+// one tap and jump straight to the store.
 function renderWelcomeDiscount(m) {
   var host = document.getElementById('welcomeDiscountHost');
   if (!host) return;
@@ -5052,7 +5525,7 @@ function renderWelcomeDiscount(m) {
       '<div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap">' +
         '<div style="flex:1;min-width:240px">' +
           '<div style="font-size:11px;color:#f5c042;letter-spacing:.14em;text-transform:uppercase;font-weight:700;margin-bottom:4px">🎁 Welcome gift</div>' +
-          '<div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:#fff;line-height:1.1">20% off your first order</div>' +
+          '<div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:#fff;line-height:1.1">' + (Number(m.welcome_discount_pct) || 20) + '% off your first order</div>' +
           '<div style="font-size:12px;color:var(--muted);margin-top:4px">' +
             (daysLeft != null
               ? (daysLeft <= 7
@@ -5064,7 +5537,7 @@ function renderWelcomeDiscount(m) {
         '<div style="display:flex;align-items:center;gap:10px">' +
           '<code id="welcomeDiscountCode" style="background:rgba(0,0,0,.5);color:#f5c042;font-family:monospace;font-size:15px;padding:10px 14px;border-radius:6px;letter-spacing:.1em;font-weight:700">' + esc(m.welcome_discount_code) + '</code>' +
           '<button onclick="copyWelcomeDiscount()" style="background:transparent;border:1px solid rgba(245,192,66,.4);color:#f5c042;padding:9px 14px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">Copy</button>' +
-          '<a href="/store.html" style="background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;padding:10px 14px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;text-decoration:none">Shop →</a>' +
+          '<a href="/store" style="background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;padding:10px 14px;font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;text-decoration:none">Shop →</a>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -5461,12 +5934,23 @@ function renderMyOneOnOnes(list) {
     var timeStr = when.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' });
     var streamUrl = b.stream_room_id ? '/stream-watch.html?room=' + encodeURIComponent(b.stream_room_id) : null;
 
+    // Members must be able to tell a HOLD from a CONFIRMED session —
+    // pending_coach used to render with no status at all and read as
+    // booked, then "disappear" if the coach declined.
+    var mStatus = ({
+      pending_coach:   { label: '⏳ Awaiting coach confirmation', color: '#f5c042' },
+      pending_payment: { label: '⏳ Payment processing',          color: '#f5c042' },
+      confirmed:       { label: '✓ Confirmed',                    color: '#A8FF00' },
+      in_progress:     { label: '● In progress',                  color: '#ef4444' },
+    })[b.status];
+
     return '<div style="background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;margin-top:10px">' +
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">' +
         '<div style="flex:1;min-width:200px">' +
           '<div style="font-family:var(--ff-display);font-size:18px;font-weight:800;color:#fff;text-transform:uppercase;letter-spacing:.02em;line-height:1.15">' +
             (b.offering_title || '1-on-1 session').replace(/[<>&]/g, '') +
           '</div>' +
+          (mStatus ? '<span style="display:inline-block;margin-top:6px;font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:' + mStatus.color + ';background:rgba(255,255,255,.05);padding:3px 8px;border-radius:3px">' + mStatus.label + '</span>' : '') +
           '<div style="font-size:12px;color:var(--muted);margin-top:4px">with ' + coachName.replace(/[<>&]/g, '') + ' · ' + b.duration_min + ' min</div>' +
           '<div style="font-size:13px;color:#f5c042;font-weight:600;margin-top:6px">' + dateStr + ' at ' + timeStr +
             (minsUntil > 0 && minsUntil < 1440 ? ' <span style="color:#A8FF00;font-size:11px;font-weight:500">· in ' + (minsUntil < 60 ? minsUntil + ' min' : Math.floor(minsUntil / 60) + 'h ' + (minsUntil % 60) + 'm') + '</span>' : '') +
@@ -5688,10 +6172,70 @@ function loadWearables(force) {
       renderWearableWeek(d.week || {}, d.today || {});
       renderWearableWorkouts(d.recent_workouts || []);
       renderWearableConsent(d.consent || {});
+      renderWearableOverviewMirror(d);
       return d;
     })
-    .catch(function(){ /* table not migrated yet — silent */ return null; });
+    .catch(function(){
+      // Table not migrated yet — render empty state on the mirror so
+      // the Overview slot doesn't sit on "Loading…" forever.
+      renderWearableOverviewMirror(null);
+      return null;
+    });
   // (leaderboard fetched separately in openDevicesTab)
+}
+
+// Compact mirror of the Devices "This week" stats + a recent workout
+// line, rendered into the slot vacated by the offers card on Overview.
+// Empty state nudges to the Devices tab when no provider is connected.
+function renderWearableOverviewMirror(d) {
+  var host = document.getElementById('wearableOverviewBody');
+  if (!host) return;
+  var conns = (d && d.connections) || [];
+  var active = conns.filter(function(c){ return c.status === 'active'; });
+  if (!active.length) {
+    host.innerHTML =
+      '<div style="font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:12px">' +
+        'Sync a watch or tracker (Garmin, Strava, Fitbit, Apple Health) and we’ll show your weekly distance, calories, and active minutes right here.' +
+      '</div>' +
+      '<button type="button" data-atp-call="showTab" data-args=\'["devices"]\' style="background:rgba(168,255,0,.12);color:var(--green);border:1px solid rgba(168,255,0,.4);padding:10px 16px;border-radius:8px;font-size:12px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;cursor:pointer">Connect a device →</button>';
+    return;
+  }
+  var week  = (d && d.week)  || {};
+  var today = (d && d.today) || {};
+  var recent = ((d && d.recent_workouts) || [])[0];
+  function num(v, dp) {
+    var n = Number(v) || 0;
+    if (dp == null) return Math.round(n).toLocaleString();
+    return (n.toFixed(dp));
+  }
+  function escapeHtml(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; });
+  }
+  var providerName = (active[0] && (active[0].provider_label || active[0].provider)) || 'Connected device';
+  var recentLine = '';
+  if (recent) {
+    var rDt = recent.started_at ? new Date(recent.started_at).toLocaleDateString(undefined, { weekday:'short', day:'numeric', month:'short' }) : '';
+    var rName = recent.activity_type || recent.name || 'Workout';
+    var rDist = recent.distance_km ? num(recent.distance_km, 1) + ' km · ' : '';
+    var rMin  = recent.duration_min ? num(recent.duration_min) + ' min' : '';
+    recentLine =
+      '<div style="margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.06);font-size:12px;color:var(--muted);line-height:1.5">' +
+        'Last: <strong style="color:var(--white)">' + escapeHtml(rName) + '</strong> · ' +
+        escapeHtml(rDist + rMin) + (rDt ? ' · ' + escapeHtml(rDt) : '') +
+      '</div>';
+  }
+  host.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px">' +
+      '<span style="font-size:12px;color:var(--light)">' + escapeHtml(providerName) + '</span>' +
+      '<span style="font-size:10px;color:var(--green);font-weight:700;letter-spacing:.1em;text-transform:uppercase">● Synced</span>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;text-align:center">' +
+      '<div><div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--green);line-height:1">' + num(week.workouts) + '</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">Workouts</div></div>' +
+      '<div><div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--green);line-height:1">' + num(week.distance_km, 1) + '</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">km</div></div>' +
+      '<div><div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--green);line-height:1">' + num(week.calories) + '</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">Calories</div></div>' +
+      '<div><div style="font-family:var(--ff-display);font-size:22px;font-weight:900;color:var(--green);line-height:1">' + num(week.active_minutes) + '</div><div style="font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:4px">Active min</div></div>' +
+    '</div>' +
+    recentLine;
 }
 
 // Called whenever the member opens the Devices tab. Pulls fresh /me data,
@@ -5778,8 +6322,48 @@ function renderWearableProviders(connections, available) {
   // Map connections by provider name
   var connByName = {};
   connections.forEach(function(c){ connByName[c.provider] = c; });
-  // Always show enabled providers + phone-native option
-  var rows = (available || []).filter(function(p){ return p.enabled; }).map(function(p){
+  // Launch hardening: Strava is the only integration that's live
+  // end-to-end. The rest (Fitbit / Polar / Withings / Garmin) render
+  // as muted "Coming soon" chips — no connect button, no click — until
+  // their OAuth apps are approved. Exception: a provider the member
+  // already has an ACTIVE connection to keeps its functional card so
+  // Disconnect (token wipe — see privacy widget) always works.
+  // 2026-08: Strava made API access a paid-subscriber feature and ATP's
+  // application is Inactive, so device sync ships OFF entirely — the
+  // server reports every provider disabled (WEARABLES_ENABLED). A
+  // connect button that always 403s is worse than an honest
+  // "coming soon", so when nothing is live we show one clean message.
+  var anyLive = (available || []).some(function(p){ return p && p.enabled; });
+  if (!anyLive) {
+    var stillConnected = connections.filter(function(c){ return c && c.status === 'active'; });
+    host.style.gridTemplateColumns = '1fr';
+    host.innerHTML =
+      '<div style="border:1px solid rgba(255,255,255,.10);border-radius:12px;padding:20px;background:rgba(255,255,255,.02);text-align:center">' +
+        '<div style="font-size:26px;margin-bottom:8px">⌚</div>' +
+        '<div style="font-family:var(--ff-display);font-size:18px;font-weight:800;text-transform:uppercase;color:var(--white);margin-bottom:6px">Device sync — coming soon</div>' +
+        '<div style="font-size:13px;color:var(--muted);line-height:1.6;max-width:420px;margin:0 auto">' +
+          'We\'re finalising our watch integrations. Your sessions, points and streaks all keep working as normal — check-in at a session and everything counts.' +
+        '</div>' +
+      '</div>' +
+      // Anyone who connected before keeps a working Disconnect so their
+      // stored tokens can always be wiped (privacy promise).
+      stillConnected.map(function(c){
+        return '<div style="margin-top:10px;border:1px solid rgba(255,255,255,.10);border-radius:10px;padding:12px 14px;display:flex;justify-content:space-between;align-items:center;gap:10px">' +
+            '<div style="font-size:13px;color:var(--light)">' + escapeHtml(c.provider) + ' — previously connected</div>' +
+            '<button class="wear-disconnect" data-provider="' + escapeHtml(c.provider) + '" style="background:transparent;border:1px solid rgba(239,68,68,.4);color:#f87171;padding:7px 12px;border-radius:6px;font-size:12px;font-weight:600;cursor:pointer">Disconnect</button>' +
+          '</div>';
+      }).join('');
+    return;
+  }
+
+  var LIVE_PROVIDERS = { strava: true };
+  var COMING_SOON = [
+    { name: 'garmin',   displayName: 'Garmin'   },
+    { name: 'fitbit',   displayName: 'Fitbit'   },
+    { name: 'polar',    displayName: 'Polar'    },
+    { name: 'withings', displayName: 'Withings' },
+  ];
+  function renderFunctional(p) {
     var c = connByName[p.name];
     var connected = c && c.status === 'active';
     var needsReauth = c && c.status === 'needs_reauth';
@@ -5798,11 +6382,32 @@ function renderWearableProviders(connections, available) {
         ) +
       '</div>'
     );
-  });
-  if (!rows.length) {
-    host.innerHTML = '<div style="grid-column:1/-1;padding:20px;text-align:center;color:var(--muted);font-size:13px">No device integrations are enabled yet. Ask the admin to add Strava / Fitbit / Polar credentials to the server config.</div>';
-    return;
   }
+  function renderComingSoon(p) {
+    return (
+      '<div aria-disabled="true" style="border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px;background:transparent;opacity:.45;pointer-events:none;user-select:none">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+          '<div style="font-family:var(--ff-display);font-size:16px;font-weight:800;text-transform:uppercase;letter-spacing:.02em;color:var(--muted)">' + p.displayName + '</div>' +
+          '<span style="font-size:10px;color:var(--muted);font-weight:700;letter-spacing:.08em;text-transform:uppercase">Coming soon</span>' +
+        '</div>' +
+        '<div style="font-size:11px;color:var(--muted)">Integration in progress.</div>' +
+      '</div>'
+    );
+  }
+  var rows = [];
+  // Live providers first (from the server's enabled list, so a missing
+  // Strava credential still degrades gracefully).
+  var live = (available || []).filter(function(p){ return p.enabled && LIVE_PROVIDERS[p.name]; });
+  if (live.length) {
+    rows = live.map(renderFunctional);
+  } else {
+    rows.push('<div style="grid-column:1/-1;padding:14px;text-align:center;color:var(--muted);font-size:12px">Strava connection is offline right now — check back soon.</div>');
+  }
+  COMING_SOON.forEach(function(p){
+    var c = connByName[p.name];
+    if (c && c.status === 'active') rows.push(renderFunctional(p)); // legacy connection → keep Disconnect reachable
+    else rows.push(renderComingSoon(p));
+  });
   host.innerHTML = rows.join('');
 }
 
@@ -6345,9 +6950,16 @@ function loadCoachBookings() {
     .then(function(r){ return r.json(); })
     .then(function(d){
       var list = (d && d.bookings) || [];
+      // Card-paid requests awaiting the coach's yes/no (72h window).
+      // Split out first so they never land in Upcoming/Past buckets.
+      var requests = list.filter(function(b){ return b.status === 'pending_coach'; });
+      list = list.filter(function(b){ return b.status !== 'pending_coach'; });
       var upcoming = list.filter(function(b){ return ['confirmed','pending_payment','in_progress'].includes(b.status) && new Date(b.scheduled_at) > new Date(Date.now() - 3600000); });
       var past = list.filter(function(b){ return !upcoming.includes(b); });
-      var html = '<div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:10px">Upcoming · ' + upcoming.length + '</div>';
+      var html = '<div style="font-size:11px;color:#f5c042;letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin-bottom:10px">⏳ Session requests · ' + requests.length + '</div>';
+      html += requests.length ? requests.map(_renderRequestRow).join('') :
+        '<div style="padding:16px;border:1px dashed rgba(245,192,66,.25);border-radius:10px;text-align:center;color:var(--muted);font-size:12px;margin-bottom:16px">No pending requests. Card-paid bookings land here — you have 72h to confirm before the member\'s hold is released.</div>';
+      html += '<div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin:20px 0 10px">Upcoming · ' + upcoming.length + '</div>';
       html += upcoming.length ? upcoming.map(_renderBookingRow).join('') :
         '<div style="padding:24px;border:1px dashed rgba(255,255,255,.1);border-radius:10px;text-align:center;color:var(--muted);font-size:13px;margin-bottom:16px">Nothing booked yet. Once members book, they appear here.</div>';
       html += '<div style="font-size:11px;color:var(--muted);letter-spacing:.1em;text-transform:uppercase;font-weight:600;margin:20px 0 10px">Past · ' + past.length + '</div>';
@@ -6357,10 +6969,80 @@ function loadCoachBookings() {
     });
 }
 
+// Card-flow request row — pending_coach: member paid by card (hold),
+// coach has 72h to Confirm (capture) or Decline (release the hold).
+function _renderRequestRow(b) {
+  var when = new Date(b.scheduled_at);
+  var member = ((b.member_first_name || '') + ' ' + (b.member_last_name || '')).trim() || 'ATP member';
+  var payout = (b.coach_payout_aed != null) ? b.coach_payout_aed : Math.round((b.price_paid_aed || 0) * 0.9);
+  var deadline = b.created_at ? new Date(new Date(b.created_at).getTime() + 72 * 3600000) : null;
+  var hoursLeft = deadline ? Math.max(0, Math.round((deadline - Date.now()) / 3600000)) : null;
+  return '<div style="background:rgba(245,192,66,.05);border:1px solid rgba(245,192,66,.35);border-radius:10px;padding:14px;margin-bottom:8px">' +
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;flex-wrap:wrap">' +
+      '<div style="flex:1;min-width:200px">' +
+        '<div style="font-family:var(--ff-display);font-size:14px;font-weight:800;color:#fff;text-transform:uppercase;margin-bottom:4px">' + _chEsc(b.offering_title || '1-on-1 session') + '</div>' +
+        '<div style="font-size:12px;color:var(--light)">requested by ' + _chEsc(member) + '</div>' +
+        '<div style="font-size:11px;color:var(--muted);margin-top:4px">' + when.toLocaleDateString() + ' · ' + when.toLocaleTimeString(undefined, {hour:'2-digit',minute:'2-digit'}) + ' · ' + b.duration_min + ' min</div>' +
+        (b.member_note ? '<div style="font-size:11px;color:#aaa;margin-top:6px;font-style:italic;background:rgba(255,255,255,.03);padding:6px 10px;border-radius:4px">"' + _chEsc(b.member_note) + '"</div>' : '') +
+        '<div style="font-size:11px;color:#f5c042;margin-top:6px">' + (hoursLeft !== null ? '⏳ ~' + hoursLeft + 'h left to respond' : '⏳ Respond within 72h') + ' — their card is only charged when you confirm</div>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">' +
+        '<span style="font-family:var(--ff-display);font-size:18px;font-weight:900;color:#f5c042">AED ' + payout + '</span>' +
+        '<div style="display:flex;gap:6px">' +
+          '<button data-atp-call="chCoachConfirm" data-args=\'["' + b.id + '"]\' style="font-size:11px;padding:6px 14px;background:#A8FF00;color:#0a0a0a;border:none;border-radius:6px;font-weight:800;cursor:pointer;text-transform:uppercase;letter-spacing:.05em">✓ Confirm</button>' +
+          '<button data-atp-call="chCoachDecline" data-args=\'["' + b.id + '"]\' style="font-size:11px;padding:6px 14px;background:transparent;border:1px solid rgba(239,68,68,.35);color:#ff8a8a;border-radius:6px;font-weight:700;cursor:pointer">Decline</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function chCoachConfirm(id, btn) {
+  if (!confirm('Confirm this session? The member\'s card is charged now and the slot is locked in.')) return;
+  if (btn) btn.disabled = true;
+  fetch('/api/coach-sessions/bookings/' + id + '/coach-confirm', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + _chToken() },
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d && d.error) { alert(d.error); if (btn) btn.disabled = false; return; }
+    loadCoachBookings();
+  }).catch(function(){ alert('Network error — try again.'); if (btn) btn.disabled = false; });
+}
+
+function chCoachDecline(id, btn) {
+  var reason = prompt('Why are you declining? The member sees this and their card hold is released in full.');
+  if (reason === null) return;   // Cancel pressed — do nothing
+  if (btn) btn.disabled = true;
+  fetch('/api/coach-sessions/bookings/' + id + '/coach-decline', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + _chToken() },
+    body: JSON.stringify({ reason: reason.trim() || null }),
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d && d.error) { alert(d.error); if (btn) btn.disabled = false; return; }
+    loadCoachBookings();
+  }).catch(function(){ alert('Network error — try again.'); if (btn) btn.disabled = false; });
+}
+
+// Card-flow completion — confirmed sessions whose time has passed:
+// coach attests the session happened, earnings move to accrued.
+function chConfirmAttendance(id, btn) {
+  if (!confirm('Confirm the session took place? Your earnings for it move to accrued.')) return;
+  if (btn) btn.disabled = true;
+  fetch('/api/coach-sessions/bookings/' + id + '/coach-complete', {
+    method: 'POST',
+    headers: { Authorization: 'Bearer ' + _chToken() },
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d && d.error) { alert(d.error); if (btn) btn.disabled = false; return; }
+    loadCoachBookings();
+  }).catch(function(){ alert('Network error — try again.'); if (btn) btn.disabled = false; });
+}
+
 function _renderBookingRow(b) {
   var when = new Date(b.scheduled_at);
   var member = (b.member_first_name || '') + ' ' + (b.member_last_name || '');
-  var statusColor = ({ completed:'#A8FF00', confirmed:'#f5c042', cancelled_by_member:'#888', cancelled_by_coach:'#888', no_show:'#ef4444' })[b.status] || '#888';
+  var statusColor = ({ completed:'#A8FF00', confirmed:'#f5c042', pending_coach:'#f5c042', declined:'#888', expired:'#666', payment_failed:'#ef4444', cancelled_by_member:'#888', cancelled_by_coach:'#888', no_show:'#ef4444' })[b.status] || '#888';
+  // Human labels — raw DB states like pending_coach read as broken UI.
+  var statusLabel = ({ completed:'Completed', confirmed:'Confirmed', pending_coach:'New request', pending_payment:'Payment processing', in_progress:'In progress', declined:'Declined', expired:'Expired', payment_failed:'Payment failed', cancelled_by_member:'Cancelled by member', cancelled_by_coach:'Cancelled by you', no_show:'No-show' })[b.status] || b.status.replace(/_/g, ' ');
   var isUpcoming = ['confirmed','pending_payment','in_progress'].includes(b.status) && when > new Date(Date.now() - 3600000);
   var streamUrl = b.stream_room_id ? '/stream-broadcast.html?room=' + b.stream_room_id : null;
   return '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:14px;margin-bottom:8px">' +
@@ -6372,10 +7054,10 @@ function _renderBookingRow(b) {
         (b.member_note ? '<div style="font-size:11px;color:#aaa;margin-top:6px;font-style:italic;background:rgba(255,255,255,.03);padding:6px 10px;border-radius:4px">"' + _chEsc(b.member_note) + '"</div>' : '') +
       '</div>' +
       '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:8px">' +
-        '<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:' + statusColor + ';background:rgba(255,255,255,.05);padding:3px 7px;border-radius:3px">' + b.status.replace(/_/g, ' ') + '</span>' +
+        '<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:' + statusColor + ';background:rgba(255,255,255,.05);padding:3px 7px;border-radius:3px">' + statusLabel + '</span>' +
         '<span style="font-family:var(--ff-display);font-size:18px;font-weight:900;color:#f5c042">AED ' + b.coach_payout_aed + '</span>' +
         (isUpcoming && streamUrl ? '<a href="' + streamUrl + '" target="_blank" style="font-size:11px;padding:6px 12px;background:#ef4444;color:#fff;border-radius:6px;text-decoration:none;font-weight:700">🎥 Go Live</a>' : '') +
-        (b.status === 'confirmed' && when < new Date() ? '<button data-atp-call="completeBooking" data-args=\'["' + b.id + '"]\' style="font-size:11px;padding:6px 12px;background:#A8FF00;color:#0a0a0a;border:none;border-radius:6px;font-weight:700;cursor:pointer">Mark complete</button>' : '') +
+        (b.status === 'confirmed' && when < new Date() ? '<button data-atp-call="chConfirmAttendance" data-args=\'["' + b.id + '"]\' style="font-size:11px;padding:6px 12px;background:#A8FF00;color:#0a0a0a;border:none;border-radius:6px;font-weight:700;cursor:pointer">Confirm attendance</button>' : '') +
       '</div>' +
     '</div>' +
   '</div>';
@@ -6401,6 +7083,11 @@ function loadCoachEarnings() {
   Promise.all([
     fetch('/api/coach-sessions/wallet/me', { headers: { Authorization: 'Bearer ' + _chToken() } }).then(function(r){ return r.json(); }),
     fetch('/api/coach-sessions/me/bank-account', { headers: { Authorization: 'Bearer ' + _chToken() } }).then(function(r){ return r.json(); }),
+    // Card-flow session earnings breakdown — fail-soft (null) so the
+    // rest of the tab still renders if the endpoint is unavailable.
+    fetch('/api/coach-sessions/earnings/me', { headers: { Authorization: 'Bearer ' + _chToken() } })
+      .then(function(r){ return r.ok ? r.json() : null; })
+      .catch(function(){ return null; }),
   ]).then(function(out){
     var w = (out[0] && out[0].wallet) || { balance_aed: 0, pending_aed: 0 };
     var month = (out[0] && out[0].coach_earnings_this_month) || null;
@@ -6421,6 +7108,63 @@ function loadCoachEarnings() {
           '<div style="font-size:12px;color:var(--muted);margin-top:6px">Sessions · AED ' + (month && month.gross_aed || 0).toLocaleString() + ' gross</div>' +
         '</div>' +
       '</div>';
+
+    // ── Session earnings (card-paid 1-on-1s) ─────────────────
+    // Four lifecycle totals + per-booking rows. upcoming = confirmed
+    // not yet delivered · accrued = delivered, awaiting payout (lime)
+    // · settled = already paid out (muted) · lifetime = all-time.
+    var earn = out[2];
+    if (earn && (earn.upcoming_aed != null || earn.accrued_aed != null || earn.rows)) {
+      var eRows = earn.rows || [];
+      var _earnTile = function(label, val, color, sub) {
+        return '<div style="background:rgba(255,255,255,.02);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:14px 16px">' +
+          '<div style="font-size:10px;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:6px">' + label + '</div>' +
+          '<div style="font-family:var(--ff-display);font-size:26px;font-weight:900;color:' + color + ';line-height:1">AED ' + (Number(val) || 0).toLocaleString() + '</div>' +
+          '<div style="font-size:10px;color:var(--muted);margin-top:5px">' + sub + '</div>' +
+        '</div>';
+      };
+      var _earnChip = function(state) {
+        var s = String(state || '').toLowerCase();
+        var map = {
+          accrued:  ['#A8FF00', 'rgba(168,255,0,.14)'],
+          upcoming: ['#f5c042', 'rgba(245,192,66,.12)'],
+          settled:  ['#888',    'rgba(255,255,255,.05)'],
+        };
+        var c = map[s] || ['#888', 'rgba(255,255,255,.05)'];
+        return '<span style="font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:' + c[0] + ';background:' + c[1] + ';padding:3px 8px;border-radius:3px">' + _chEsc(s.replace(/_/g, ' ') || '—') + '</span>';
+      };
+      html += '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:20px;margin-bottom:14px">' +
+        '<div style="font-family:var(--ff-display);font-size:14px;font-weight:800;color:#fff;text-transform:uppercase;margin-bottom:12px">📈 Session earnings</div>' +
+        '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px;margin-bottom:14px">' +
+          _earnTile('Upcoming', earn.upcoming_aed, '#f5c042', 'Confirmed, not yet delivered') +
+          _earnTile('Accrued', earn.accrued_aed, '#A8FF00', 'Delivered · next payout') +
+          _earnTile('Settled', earn.settled_aed, '#aaa', 'Already paid out') +
+          _earnTile('Lifetime', earn.lifetime_aed, '#fff', 'All-time earnings') +
+        '</div>';
+      if (!eRows.length) {
+        html += '<div style="padding:12px;text-align:center;color:var(--muted);font-size:12px">No card-paid sessions yet — they\'ll show up here the moment one is booked.</div>';
+      } else {
+        html += '<div style="background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.05);border-radius:10px;overflow:hidden">';
+        html += eRows.slice(0, 25).map(function(r){
+          var amt = (r.coach_payout_aed != null) ? r.coach_payout_aed
+                  : (r.amount_aed != null) ? r.amount_aed
+                  : (r.payout_aed != null) ? r.payout_aed : 0;
+          var who = ((r.member_first_name || '') + ' ' + (r.member_last_name || '')).trim();
+          var whenRaw = r.scheduled_at || r.created_at;
+          var whenTxt = whenRaw ? new Date(whenRaw).toLocaleDateString() : '';
+          return '<div style="display:flex;justify-content:space-between;align-items:center;gap:12px;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.04);font-size:13px">' +
+            '<div style="min-width:0"><div style="color:#fff">' + _chEsc(r.offering_title || r.title || '1-on-1 session') + (who ? ' <span style="color:var(--muted)">· ' + _chEsc(who) + '</span>' : '') + '</div>' +
+              '<div style="font-size:11px;color:var(--muted)">' + whenTxt + '</div></div>' +
+            '<div style="display:flex;align-items:center;gap:10px;flex-shrink:0">' +
+              _earnChip(r.state || r.status) +
+              '<span style="font-family:var(--ff-display);font-size:16px;font-weight:900;color:#fff">AED ' + amt + '</span>' +
+            '</div>' +
+          '</div>';
+        }).join('');
+        html += '</div>';
+      }
+      html += '</div>';
+    }
 
     // Bank account section
     html += '<div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:10px;padding:16px;margin-bottom:14px">' +
@@ -6628,6 +7372,41 @@ function renderStreak(s) {
     });
   }
 
+  // Compact streak chip in .profile-meta (2026-06-27 redesign)
+  setText('streakChipCurrent',       current);
+  setText('streakDropdownCurrent',   current);
+  setText('streakDropdownDaysLabel', current === 1 ? 'day in a row' : 'days in a row');
+  var bestDd = document.getElementById('streakDropdownBest');
+  if (bestDd) bestDd.innerHTML = 'Personal best: <strong style="color:var(--white)">' + longest + '</strong> day' + (longest === 1 ? '' : 's');
+  var fillDd = document.getElementById('streakDropdownFill');
+  if (fillDd) {
+    fillDd.style.width = '0%';
+    requestAnimationFrame(function(){
+      requestAnimationFrame(function(){ fillDd.style.width = (pctRaw * 100) + '%'; });
+    });
+  }
+  // Chip fire emoji reflects active vs idle
+  var chipFire = document.getElementById('streakChipFire');
+  if (chipFire) chipFire.textContent = current > 0 ? '🔥' : '💤';
+  // Mirror milestone + inspirational copy onto the dropdown
+  var nextDd = document.getElementById('streakDropdownNext');
+  if (nextDd) {
+    if (current === 0)      nextDd.textContent = 'Next milestone: 7 days → admin shout-out + 1 day from 2× points';
+    else if (current < 7)   nextDd.textContent = 'Next milestone: ' + (7 - current) + ' more day' + (7 - current === 1 ? '' : 's') + ' to admin shout-out';
+    else if (current < 8)   nextDd.textContent = 'One more day to unlock 2× points!';
+    else                    nextDd.textContent = '⚡ 2× points zone — keep going for your longest streak';
+  }
+  var insDd = document.getElementById('streakDropdownInspire');
+  if (insDd) {
+    if (current === 0)      insDd.textContent = 'Get checked in by an Ambassador to start your streak.';
+    else if (current < 3)   insDd.textContent = 'Just getting started — keep going!';
+    else if (current < 7)   insDd.textContent = 'You’re building the habit. Show up tomorrow.';
+    else if (current < 8)   insDd.textContent = '🔥 Seven days! One more for 2× points.';
+    else if (current < 14)  insDd.textContent = '⚡ 2× points active. You’re on fire.';
+    else if (current < 30)  insDd.textContent = '🏆 Two weeks straight. The team noticed.';
+    else                    insDd.textContent = '🚀 Beyond the streak — you ARE the community.';
+  }
+
   // Double-points badge (#10.3)
   var dbBadge = document.getElementById('streakDoubleBadge');
   if (dbBadge) dbBadge.style.display = s.double_points_active ? 'inline-flex' : 'none';
@@ -6820,15 +7599,21 @@ function renderAuthNav(user) {
 
 // ── Log out ──────────────────────────────────────────────────
 function logOut() {
-  // Clear legacy auth-modal state
-  try { authClearUser(); } catch(e){}
-  // Clear real JWT + cached member
-  localStorage.removeItem('atp_token');
-  localStorage.removeItem('atp_member');
-  // Best-effort server logout (fire and forget)
+  // Clear current + legacy auth keys before anything else, so even if
+  // the backend POST fails or the bundle's migrate() runs again, no
+  // stale token can be lifted back.
+  try {
+    localStorage.removeItem('atp_token');
+    localStorage.removeItem('atp_member');
+    localStorage.removeItem('atp:jwt');
+    localStorage.removeItem('atp:user');
+    localStorage.removeItem('atp:ambassador');
+  } catch (_) {}
+  try { authClearUser(); } catch (_) {}
   if (window.ATP && window.ATP.auth && window.ATP.auth.logout) {
-    try { window.ATP.auth.logout(); } catch(e){}
+    try { window.ATP.auth.logout(); } catch (_) {}
   }
+  try { window.dispatchEvent(new Event('atp:logout')); } catch (_) {}
   window.location.replace('index.html');
 }
 
@@ -6891,11 +7676,12 @@ window.addEventListener('hashchange', function(){
   </div>
 </div>
 
-<footer class="footer-min" role="contentinfo" style="background:#111111;padding:24px 40px;border-top:1px solid rgba(255,255,255,.06);font-family:'DM Sans',sans-serif">
-  <div style="max-width:1320px;margin:0 auto;display:flex;justify-content:center;align-items:center">
-    <p style="font-size:12px;color:#888;margin:0">© 2026 At The Park. All rights reserved. Dubai, United Arab Emirates.</p>
-  </div>
-</footer>
+<!-- Footer — mounts the canonical brand/legal footer from the shared
+     bundle (atp-components.js → mountFooter), same pattern as
+     community.html: boot() auto-mounts into #atp-footer-host on
+     DOMContentLoaded, no explicit call needed. Replaces the old
+     single-line 'footer-min' stub (launch hardening). -->
+<div id="atp-footer-host"></div>
 
 </body>
 </html>
