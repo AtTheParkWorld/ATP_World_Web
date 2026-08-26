@@ -1200,8 +1200,14 @@ async function onSessionTemplateChange() {
     });
     if (!res.ok) {
       // Founder 2026-08-07: this used to fail SILENTLY, which read as
-      // "the feature is not coming". Every path now says something.
-      if (typeof showToast === 'function') showToast('❌ Auto-fill failed (HTTP ' + res.status + ') — reload the page and try again', true);
+      // "the feature is not coming". Every path now says something —
+      // including the server's actual error text, so a screenshot of
+      // the toast is enough to diagnose (added after an opaque 500,
+      // 2026-08-24).
+      var errBody = null;
+      try { errBody = await res.json(); } catch (e) {}
+      var detail = (errBody && errBody.error) ? errBody.error : ('HTTP ' + res.status + ' — reload the page and try again');
+      if (typeof showToast === 'function') showToast('❌ Auto-fill failed: ' + detail, true);
       return;
     }
     var data = await res.json();

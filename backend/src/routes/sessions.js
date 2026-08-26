@@ -1385,20 +1385,25 @@ router.get('/admin/templates/last-details', authenticate, requireAdmin, async (r
   try {
     const name = String(req.query.name || '').trim();
     if (!name) return res.status(400).json({ error: 'name required' });
+    // SELECT * — an explicit column list here 500s the whole auto-fill
+    // the moment prod lags one migration behind (founder hit an HTTP
+    // 500 on this, 2026-08-24). One row; the client ignores unknown
+    // keys and null-guards the ones it sets.
     const { rows } = await query(
-      `SELECT s.name, s.description, s.duration_mins, s.capacity, s.points_reward,
-              s.location, s.location_maps_url, s.tribe_id, s.activity_id, s.city_id,
-              s.coach_id, s.session_category, s.sport_type, s.courts,
-              s.session_type, s.price, s.price_points, s.currency_code,
-              s.is_live_enabled, s.is_streamable, s.is_online, s.stream_url
-         FROM sessions s
+      `SELECT s.* FROM sessions s
         WHERE LOWER(s.name) = LOWER($1)
         ORDER BY s.created_at DESC
         LIMIT 1`,
       [name]
     );
     res.json({ defaults: rows[0] || null });
-  } catch (err) { next(err); }
+  } catch (err) {
+    if (err.code === '42P01') return res.json({ defaults: null });
+    // Auto-fill is a convenience: degrade with the REAL reason attached
+    // so the admin toast shows it and a screenshot is diagnosable.
+    console.error('[sessions] last-details failed:', err.message);
+    res.status(500).json({ error: err.message, code: err.code || null });
+  }
 });
 
 module.exports = router;
