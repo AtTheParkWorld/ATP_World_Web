@@ -646,3 +646,138 @@ function _escAttr(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
+
+// ═══════════════════════════════════════════════════════════════
+// SPONSOR POP-UP BANNER (founder 2026-08-30) — sellable ad space
+// shown on app open + once per web visit. One active banner at a
+// time; impressions + clicks tracked per banner for sponsor reports.
+// ═══════════════════════════════════════════════════════════════
+function initPromoBannerAdmin() {
+  var host = document.getElementById('partners-pane-inquiries');
+  if (!host) return;
+  if (!document.getElementById('promoBannerCard')) {
+    var card = document.createElement('div');
+    card.id = 'promoBannerCard';
+    card.className = 'admin-card';
+    card.style.cssText = 'margin-bottom:18px;padding:18px';
+    card.innerHTML =
+      '<div style="font-size:14px;font-weight:800;color:#fff;margin-bottom:4px">📣 Sponsor pop-up banner</div>' +
+      '<div style="font-size:11px;color:#888;margin-bottom:14px">Shown once per app open (iOS + Android) and once per website visit, always closable. One banner live at a time — impressions and clicks are counted per banner for sponsor reporting.</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 140px;gap:10px;margin-bottom:10px">' +
+        '<div><label class="admin-form-label">Sponsor / campaign name</label><input class="admin-form-input" id="promoTitle" placeholder="e.g. XYZ Water — Sept"></div>' +
+        '<div><label class="admin-form-label">Type</label><select class="admin-form-select" id="promoType"><option value="image">Static picture</option><option value="video">Video</option></select></div>' +
+      '</div>' +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">' +
+        '<div><label class="admin-form-label">Media (image or video file)</label>' +
+          '<input type="file" id="promoMediaFile" accept="image/*,video/mp4,video/webm" style="font-size:11px;color:#888" onchange="_promoUpload()">' +
+          '<input type="hidden" id="promoMediaUrl">' +
+          '<div id="promoUploadState" style="font-size:10px;color:#666;margin-top:4px">Recommended: 1080×1350 image, or MP4 up to 20MB</div></div>' +
+        '<div><label class="admin-form-label">Click-through link (optional)</label><input class="admin-form-input" id="promoLink" placeholder="https://sponsor-site.com/offer"></div>' +
+      '</div>' +
+      '<div style="display:flex;align-items:center;gap:14px">' +
+        '<label style="display:flex;align-items:center;gap:7px;font-size:12px;color:#ccc;cursor:pointer"><input type="checkbox" id="promoActive" checked> Live immediately</label>' +
+        '<button class="admin-btn admin-btn-primary" onclick="savePromoBanner()">Save banner</button>' +
+      '</div>' +
+      '<div id="promoBannerList" style="margin-top:16px"></div>';
+    host.insertBefore(card, host.firstChild);
+  }
+  loadPromoBanners();
+}
+
+function _promoUpload() {
+  var type = (document.getElementById('promoType') || {}).value || 'image';
+  var state = document.getElementById('promoUploadState');
+  if (state) { state.textContent = 'Uploading…'; state.style.color = '#888'; }
+  // atpUpload (core.js) is fire-and-forget: it toasts progress itself and
+  // writes the public URL into #promoMediaUrl on success. Watch the field
+  // to flip our inline state line — no promise to chain on.
+  atpUpload('promoMediaFile', 'promoMediaUrl', type, type === 'video' ? 60 : 10);
+  var tries = 0;
+  var timer = setInterval(function(){
+    var v = (document.getElementById('promoMediaUrl') || {}).value || '';
+    if (/^https?:/.test(v)) {
+      clearInterval(timer);
+      if (state) { state.textContent = '✅ Uploaded — click Save banner'; state.style.color = '#A8FF00'; }
+    } else if (v !== 'Uploading…' || ++tries > 240) {   // reverted (failure) or 2 min timeout
+      clearInterval(timer);
+      if (state && v !== 'Uploading…') { state.textContent = 'Upload didn\u2019t finish — try again'; state.style.color = '#f87171'; }
+    }
+  }, 500);
+}
+window._promoUpload = _promoUpload;
+
+function savePromoBanner() {
+  var media = (document.getElementById('promoMediaUrl') || {}).value;
+  if (!media) { showToast('❌ Upload the image or video first', true); return; }
+  fetch(ATP_API + '/promos/admin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+    body: JSON.stringify({
+      title:     (document.getElementById('promoTitle') || {}).value || null,
+      type:      (document.getElementById('promoType') || {}).value || 'image',
+      media_url: media,
+      link_url:  (document.getElementById('promoLink') || {}).value || null,
+      is_active: !!(document.getElementById('promoActive') || {}).checked,
+    }),
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.error) { showToast('❌ ' + d.error, true); return; }
+    showToast('✅ Banner saved' + (d.banner && d.banner.is_active ? ' — LIVE now' : ''));
+    ['promoTitle','promoMediaUrl','promoLink'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
+    var f = document.getElementById('promoMediaFile'); if (f) f.value = '';
+    var s = document.getElementById('promoUploadState'); if (s) { s.textContent = 'Recommended: 1080×1350 image, or MP4 up to 20MB'; s.style.color = '#666'; }
+    loadPromoBanners();
+  }).catch(function(e){ showToast('❌ ' + e.message, true); });
+}
+window.savePromoBanner = savePromoBanner;
+
+function loadPromoBanners() {
+  var el = document.getElementById('promoBannerList');
+  if (!el) return;
+  fetch(ATP_API + '/promos/admin/list', { headers: { 'Authorization': 'Bearer ' + getToken() } })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var list = (d && d.banners) || [];
+      if (!list.length) { el.innerHTML = '<div style="font-size:11px;color:#555;padding:8px 0">No banners yet.</div>'; return; }
+      el.innerHTML = list.map(function(b){
+        var preview = b.type === 'video'
+          ? '<video src="' + _escAttr(b.media_url) + '" muted style="width:74px;height:52px;object-fit:cover;border-radius:6px;background:#000"></video>'
+          : '<img src="' + _escAttr(b.media_url) + '" style="width:74px;height:52px;object-fit:cover;border-radius:6px;background:#000" alt="">';
+        return '<div style="display:flex;align-items:center;gap:12px;padding:10px;background:#0f0f0f;border:1px solid #1e1e1e;border-radius:8px;margin-bottom:8px">' +
+          preview +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:12px;font-weight:700;color:#fff">' + _escAttr(b.title || '(untitled)') +
+              (b.is_active ? ' <span style="color:#A8FF00;font-size:10px;font-weight:800">● LIVE</span>' : '') + '</div>' +
+            '<div style="font-size:10px;color:#777;margin-top:2px">' + _escAttr(b.type) +
+              ' · 👁 ' + (b.impressions || 0) + ' views · 🖱 ' + (b.clicks || 0) + ' clicks' +
+              (b.link_url ? ' · links out' : '') + '</div>' +
+          '</div>' +
+          '<button class="admin-btn" style="font-size:10px;padding:5px 10px" onclick="togglePromoBanner(\'' + b.id + '\',' + (!b.is_active) + ')">' + (b.is_active ? 'Stop' : 'Go live') + '</button>' +
+          '<button class="admin-btn" style="font-size:10px;padding:5px 10px;color:#f87171" onclick="deletePromoBanner(\'' + b.id + '\')">Delete</button>' +
+        '</div>';
+      }).join('');
+    })
+    .catch(function(){ el.innerHTML = '<div style="font-size:11px;color:#f87171">Failed to load banners.</div>'; });
+}
+window.initPromoBannerAdmin = initPromoBannerAdmin;
+
+function togglePromoBanner(id, on) {
+  fetch(ATP_API + '/promos/admin/' + id, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+    body: JSON.stringify({ is_active: on }),
+  }).then(function(r){ return r.json(); }).then(function(d){
+    if (d.error) { showToast('❌ ' + d.error, true); return; }
+    showToast(on ? '✅ Banner is LIVE' : '✅ Banner stopped');
+    loadPromoBanners();
+  });
+}
+window.togglePromoBanner = togglePromoBanner;
+
+function deletePromoBanner(id) {
+  if (!confirm('Delete this banner? Its view/click stats are deleted with it. (Use Stop to keep the stats.)')) return;
+  fetch(ATP_API + '/promos/admin/' + id, {
+    method: 'DELETE',
+    headers: { 'Authorization': 'Bearer ' + getToken() },
+  }).then(function(r){ return r.json(); }).then(function(){ loadPromoBanners(); });
+}
+window.deletePromoBanner = deletePromoBanner;

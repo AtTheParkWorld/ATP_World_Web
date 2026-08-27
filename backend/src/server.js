@@ -729,6 +729,7 @@ const ROUTES = [
   ['surveys',      require('./routes/surveys')],
   ['coach-sessions', require('./routes/coachSessions')],
   ['corporate',    require('./routes/corporate')],
+  ['promos',       require('./routes/promos')],
 ];
 for (const [prefix, router] of ROUTES) {
   app.use('/api/'    + prefix, router);
@@ -781,6 +782,22 @@ const PORT = process.env.PORT || 3000;
 // can run at startup instead of a one-shot curl. The bigger migrations
 // (members backfill, etc.) still need the explicit /migrate-* routes.
 async function _ensureBootSchema() {
+  // Promo banners (founder 2026-08-30) — sellable sponsor pop-up.
+  await query(`CREATE TABLE IF NOT EXISTS promo_banners (
+    id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    title       VARCHAR(120),
+    type        VARCHAR(10) NOT NULL DEFAULT 'image',
+    media_url   VARCHAR(600) NOT NULL,
+    link_url    VARCHAR(600),
+    is_active   BOOLEAN NOT NULL DEFAULT false,
+    starts_at   TIMESTAMPTZ,
+    ends_at     TIMESTAMPTZ,
+    impressions INTEGER NOT NULL DEFAULT 0,
+    clicks      INTEGER NOT NULL DEFAULT 0,
+    created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  )`).catch((e) => console.warn('[boot] promo_banners ensure failed:', e.message));
+
   const { query } = require('./db');
 
   // Streak foundation — the migrate-streaks endpoint was never run in

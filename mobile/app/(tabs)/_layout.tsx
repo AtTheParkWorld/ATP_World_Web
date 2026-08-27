@@ -24,6 +24,7 @@ import { View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { useAuthStore } from '@/lib/stores/auth.store';
+import { PromoBannerModal } from '@/lib/components/PromoBannerModal';
 import {
   IconTabHome,
   IconTabSessions,
@@ -85,6 +86,8 @@ export default function TabsLayout() {
   }, [accessToken]);
 
   return (
+    <>
+    <PromoBannerModal />
     <Tabs
       screenOptions={{
         headerShown: false,
@@ -115,5 +118,9 @@ export default function TabsLayout() {
       <Tabs.Screen name="store"     options={{ title: 'Store',     tabBarIcon: ({ focused }) => <AnimatedTabIcon Component={IconTabStore}     focused={focused} /> }} />
       <Tabs.Screen name="profile"   options={{ title: 'Profile',   tabBarIcon: ({ focused }) => <AnimatedTabIcon Component={IconTabProfile}   focused={focused} /> }} />
     </Tabs>
+    </>
   );
 }
+
+/* Sponsor pop-up mounts beside the tabs so it overlays every tab once
+   per app open — see PromoBannerModal for the once-per-launch gate. */

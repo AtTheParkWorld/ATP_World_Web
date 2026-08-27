@@ -794,3 +794,60 @@
 
 /* ── GA4 (G-9H8YLZVND7) — loads ONLY after the visitor accepts analytics cookies (atp_cookie_consent='all'); then tracks pageviews + a login funnel event. Honors the PDPL/GDPR consent banner. ── */
 (function(){var ID="G-9H8YLZVND7",started=false;function consented(){try{if(window.ATPConsent)return window.ATPConsent.has('analytics');return localStorage.getItem('atp_cookie_consent')==='all';}catch(e){return false;}}function start(){if(started||!consented())return;started=true;var s=document.createElement('script');s.async=1;s.src='https://www.googletagmanager.com/gtag/js?id='+ID;document.head.appendChild(s);window.dataLayer=window.dataLayer||[];window.gtag=function(){dataLayer.push(arguments)};gtag('js',new Date());gtag('config',ID);window.addEventListener('atp:login',function(){try{gtag('event','login')}catch(e){}});}start();document.addEventListener('atp:consent',start);})();
+
+/* ── SPONSOR POP-UP BANNER (founder 2026-08-30) ─────────────────
+   Admin-managed promo (image or video) shown ONCE per browser visit
+   on member-facing pages. Always closable; click-through + view
+   counts reported for sponsor billing. Skipped on admin/ops pages
+   and inside the check-in flow where a popup would be hostile. */
+(function () {
+  var SKIP = /\/(admin|checkin|stream-broadcast|auth-verify|appeal)/;
+  if (SKIP.test(location.pathname)) return;
+
+  function show() {
+    fetch('/api/promos/active', { cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : { banner: null }; })
+      .then(function (d) {
+        var b = d && d.banner;
+        if (!b || !b.media_url) return;
+        try { if (sessionStorage.getItem('atp_promo_seen') === String(b.id)) return; } catch (e) {}
+
+        var wrap = document.createElement('div');
+        wrap.id = 'atpPromoOverlay';
+        wrap.style.cssText = 'position:fixed;inset:0;z-index:9990;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,.78);backdrop-filter:blur(4px);opacity:0;transition:opacity .25s';
+        var media = b.type === 'video'
+          ? '<video src="' + b.media_url.replace(/"/g, '&quot;') + '" autoplay muted loop playsinline style="display:block;width:100%;max-height:70vh;object-fit:contain;background:#000"></video>'
+          : '<img src="' + b.media_url.replace(/"/g, '&quot;') + '" alt="' + (b.title || 'ATP partner') + '" style="display:block;width:100%;max-height:70vh;object-fit:contain;background:#000">';
+        wrap.innerHTML =
+          '<div style="position:relative;max-width:440px;width:100%;background:#0f0f0f;border:1px solid rgba(168,255,0,.25);border-radius:var(--atp-radius-lg,16px);overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6)">' +
+            '<button id="atpPromoClose" aria-label="Close" style="position:absolute;top:10px;right:10px;z-index:2;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.55);color:#fff;font-size:17px;line-height:1;cursor:pointer">×</button>' +
+            (b.link_url ? '<a id="atpPromoLink" href="' + b.link_url.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener sponsored" style="display:block">' + media + '</a>' : media) +
+            '<div style="padding:8px 14px;display:flex;justify-content:space-between;align-items:center">' +
+              '<span style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#666">Partner message</span>' +
+              (b.title ? '<span style="font-size:10px;color:#888">' + String(b.title).replace(/[<>&]/g, '') + '</span>' : '') +
+            '</div>' +
+          '</div>';
+        document.body.appendChild(wrap);
+        requestAnimationFrame(function () { wrap.style.opacity = '1'; });
+
+        var seen = function () { try { sessionStorage.setItem('atp_promo_seen', String(b.id)); } catch (e) {} };
+        seen();
+        fetch('/api/promos/' + b.id + '/impression', { method: 'POST' }).catch(function () {});
+
+        var close = function () { wrap.style.opacity = '0'; setTimeout(function () { wrap.remove(); }, 250); };
+        document.getElementById('atpPromoClose').addEventListener('click', close);
+        wrap.addEventListener('click', function (e) { if (e.target === wrap) close(); });
+        var link = document.getElementById('atpPromoLink');
+        if (link) link.addEventListener('click', function () {
+          fetch('/api/promos/' + b.id + '/click', { method: 'POST' }).catch(function () {});
+          close();
+        });
+      })
+      .catch(function () {});
+  }
+  // Small delay so the page paints first — the popup should feel like a
+  // curtain rising on a loaded page, not a roadblock before it.
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function () { setTimeout(show, 1200); });
+  } else setTimeout(show, 1200);
+})();
