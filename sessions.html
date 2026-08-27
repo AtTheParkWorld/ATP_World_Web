@@ -976,6 +976,22 @@ function populateCityFilter() {
   if (keep && entries.some(function(e){ return e.id === keep; })) sel.value = keep;
 }
 
+// Same predicate applyFilters uses on card DOM attributes, expressed on
+// the raw session object — the calendar view renders from objects, not
+// cards, and used to ignore filters entirely (founder bug 2026-08-27:
+// "changing the tribe filter doesn't change the calendar").
+function _sessionMatchesFilters(s) {
+  var tribeOk = currentTribe === 'all'
+    || (s.tribe_id && String(s.tribe_id) === String(currentTribe))
+    || (s.tribe_slug || '') === currentTribe;
+  var dayName = s.scheduled_at ? DAY_NAMES_FULL[new Date(s.scheduled_at).getDay()] : '';
+  var actKey = String(s.activity_slug || s.activity_id || '');
+  return tribeOk
+    && (currentDay      === 'all' || dayName === currentDay)
+    && (currentActivity === 'all' || actKey === String(currentActivity))
+    && (currentCity     === 'all' || String(s.city_id || '') === String(currentCity));
+}
+
 function applyFilters() {
   var cards = document.querySelectorAll('.session-card');
   var count = 0;
@@ -1000,6 +1016,12 @@ function applyFilters() {
   // Only show "empty" when we've actually loaded and zero match current filters
   document.getElementById('emptyState').style.display =
     (!loadingVisible && !errorVisible && cards.length > 0 && count === 0) ? 'flex' : 'none';
+  // Calendar renders from session objects, not the cards hidden above —
+  // redraw it so both views always agree with the active filters.
+  var calView = document.getElementById('calView');
+  if (calView && calView.classList.contains('visible') && typeof renderCalendar === 'function') {
+    renderCalendar();
+  }
 }
 
 // URL param auto-filter on load — e.g. /sessions.html?tribe=faster
@@ -1773,7 +1795,7 @@ function renderCalendar() {
 
   // Bucket the real sessions by the local date they fall on.
   var byDate = {};
-  (CAL_REAL_SESSIONS || []).forEach(function(s){
+  (CAL_REAL_SESSIONS || []).filter(_sessionMatchesFilters).forEach(function(s){
     if (!s.scheduled_at) return;
     var key = _calDateKey(new Date(s.scheduled_at));
     (byDate[key] = byDate[key] || []).push(s);
