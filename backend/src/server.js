@@ -797,6 +797,10 @@ async function _ensureBootSchema() {
   await query(`ALTER TABLE coach_feedback ADD COLUMN IF NOT EXISTS ip_hash VARCHAR(64)`)
     .catch((e) => console.warn('[boot] coach_feedback.ip_hash:', e.message));
 
+  // Post-session feedback nudge marker (founder 2026-09-04).
+  await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS feedback_prompt_at TIMESTAMPTZ`)
+    .catch((e) => console.warn('[boot] sessions.feedback_prompt_at:', e.message));
+
   // Promo banners (founder 2026-08-30) — sellable sponsor pop-up.
   await query(`CREATE TABLE IF NOT EXISTS promo_banners (
     id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -1053,7 +1057,54 @@ if (require.main === module) {
     // their 30-day window (coach 90% / ATP 10%, no refund to sender).
     const coachSessionsRouter = require('./routes/coachSessions');
     const { autoCompleteSessions } = require('./services/points');
+    // Post-session feedback nudge (founder 2026-09-04): once a session
+    // ends, every checked-in member gets an in-app notification + push
+    // with the quick two-score feedback form. Sent once per session
+    // (feedback_prompt_at marker); only sessions that ended in the last
+    // 48h qualify so a backlog never mass-notifies stale sessions.
+    const feedbackPromptTick = async () => {
+      try {
+        const push = require('./services/push');
+        const { rows: ended } = await query(
+          `SELECT id, name, coach_id FROM sessions
+           WHERE feedback_prompt_at IS NULL
+             AND status NOT IN ('cancelled')
+             AND scheduled_at + (COALESCE(duration_mins, 60) || ' minutes')::interval < NOW()
+             AND scheduled_at > NOW() - INTERVAL '48 hours'
+           LIMIT 20`
+        );
+        for (const s of ended) {
+          const { rows: attendees } = await query(
+            `SELECT DISTINCT b.member_id FROM bookings b
+             WHERE b.session_id=$1 AND b.status='attended'`,
+            [s.id]
+          );
+          for (const a of attendees) {
+            try {
+              await query(
+                `INSERT INTO notifications (member_id, type, title, body, data)
+                 VALUES ($1,'session_feedback',$2,$3,$4)`,
+                [a.member_id, `How was ${s.name}? ⭐`,
+                 'Rate the session' + (s.coach_id ? ' and your coach' : '') + ' — takes 30 seconds, earns you points.',
+                 JSON.stringify({ session_id: s.id })]
+              ).catch(() => {});
+              if (push.isConfigured && push.isConfigured()) {
+                await push.sendPush(a.member_id, {
+                  title: `How was ${s.name}? ⭐`,
+                  body: 'Rate the session' + (s.coach_id ? ' and your coach' : '') + ' — 30 seconds, and there are points in it for you.',
+                  push_type: 'session_feedback',
+                }).catch(() => {});
+              }
+            } catch (e) { /* per-member failures never stop the pass */ }
+          }
+          await query(`UPDATE sessions SET feedback_prompt_at=NOW() WHERE id=$1`, [s.id]);
+          console.log(`[feedback-nudge] ${s.name}: prompted ${attendees.length} member(s)`);
+        }
+      } catch (e) { console.warn('[feedback-nudge] pass failed:', e.message); }
+    };
+
     const sessionsTick = async () => {
+      await feedbackPromptTick();
       try { await autoCompleteSessions(); }
       catch (e) { console.error('[sessions] auto-complete tick failed:', e.message); }
       try {

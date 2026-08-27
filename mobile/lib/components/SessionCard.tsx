@@ -171,6 +171,14 @@ function _SessionCard({ session, compact, onPress }: Props) {
             ? `Full · waitlist (${session.waitlist_count})`
             : `${session.registrations_count}${session.capacity ? '/' + session.capacity : ''} joined`}
         </Text>
+        {/* Rolling series score — full cards only (compact rails are
+            already at capacity for width). Gold to match the web's
+            rating treatment. */}
+        {!compact && session.series_rating_count > 0 && !!session.series_rating_avg && (
+          <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.warning }} className="text-xs">
+            ★ {Number(session.series_rating_avg).toFixed(1)} ({session.series_rating_count})
+          </Text>
+        )}
         <View className="ml-auto">
           <Text
             style={{

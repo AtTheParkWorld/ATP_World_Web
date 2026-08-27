@@ -296,6 +296,31 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 .modal-meta-row span{display:inline-flex;align-items:center;gap:4px}
 .modal-meta-sep{color:rgba(255,255,255,.18);font-weight:700}
 .modal-meta-desc{margin-top:10px;font-style:italic;font-size:12px;color:var(--muted);line-height:1.5;white-space:pre-wrap;word-break:break-word}
+
+/* ── SESSION SERIES RATING ── rolling score across every run of a
+   session sharing the same name. Gold #ffc400 matches the star
+   language already used on coach profiles / paid accents. */
+.modal-rating{display:flex;align-items:center;gap:7px;margin:2px 0 12px;font-size:13px;color:var(--light)}
+.modal-rating-stars{color:#ffc400;font-size:14px;letter-spacing:.05em;line-height:1}
+.modal-rating-stars .off{color:rgba(255,196,0,.25)}
+.modal-rating strong{color:var(--white);font-weight:700}
+.modal-rating-count{color:var(--muted);font-size:12px}
+/* Expandable "Member feedback (N)" under the description */
+.modal-fb{margin-top:12px;border-top:1px solid rgba(255,255,255,.06);padding-top:10px}
+.modal-fb-toggle{display:inline-flex;align-items:center;gap:6px;background:none;border:none;padding:0;cursor:pointer;font:inherit;font-size:12.5px;font-weight:600;color:var(--light);transition:color .2s}
+.modal-fb-toggle:hover{color:var(--white)}
+.modal-fb-chev{display:inline-block;transition:transform .2s;color:#ffc400;font-size:11px;line-height:1}
+.modal-fb-body{margin-top:10px;max-height:220px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;animation:fbFadeIn .25s ease}
+@keyframes fbFadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+.modal-fb-empty,.modal-fb-loading{font-size:12px;color:var(--muted);font-style:italic;padding:2px 0 4px}
+.modal-fb-item{background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:8px 10px}
+.modal-fb-item-top{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.modal-fb-stars{color:#ffc400;font-size:12px;letter-spacing:.06em;line-height:1}
+.modal-fb-who{font-size:12px;font-weight:600;color:var(--white)}
+.modal-fb-date{font-size:11px;color:var(--muted);margin-left:auto;flex-shrink:0}
+.modal-fb-comment{font-size:12.5px;color:var(--light);line-height:1.5;white-space:pre-wrap;word-break:break-word;margin:0;font-style:normal}
+/* Tiny "★ 4.5" under the time in the card's left column */
+.sc-rating{font-size:10px;font-weight:700;color:#ffc400;letter-spacing:.04em;margin-top:4px;line-height:1}
 .form-group{margin-bottom:16px}
 .form-group label{display:block;font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
 .form-group input{width:100%;background:var(--dark3);border:1px solid rgba(255,255,255,.08);border-radius:var(--radius);padding:13px 16px;color:var(--white);font-size:14px;font-family:var(--ff-body);transition:border-color .2s}
@@ -1105,6 +1130,7 @@ function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId)
   // Cuts the modal's vertical chrome by ~40% so the T&C + green button
   // sit above the fold on mobile.
   document.getElementById('modalMeta').innerHTML =
+    _seriesRatingLineHtml(sFull) +
     '<div class="modal-meta-row">' +
       '<span>📅 ' + escapeHtml(whenLabel) + '</span>' +
       '<span class="modal-meta-sep">·</span>' +
@@ -1113,7 +1139,11 @@ function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId)
       '<span>🎽 ' + escapeHtml(coach) + '</span>' +
     '</div>' +
     (desc ? '<p class="modal-meta-desc" style="white-space:pre-wrap;line-height:1.55">' + escapeHtml(desc) + '</p>' : '') +
-    _sponsorStripHtml(sFull, 'modal');
+    _sponsorStripHtml(sFull, 'modal') +
+    _feedbackSectionHtml(sessionId, sFull);
+  // Wire the freshly-rendered "Member feedback" toggle. innerHTML above
+  // replaced any previous toggle node, so no listener stacking.
+  _wireSessionFeedback(sessionId);
   document.getElementById('modalForm').style.display = 'block';
   document.getElementById('confirmPanel').style.display = 'none';
 
@@ -2049,6 +2079,120 @@ function _corpBadgeHtml(s, variant) {
   return (variant === 'modal') ? pill : '<div class="sc-corp-row">' + pill + '</div>';
 }
 
+// ── SESSION SERIES RATINGS ────────────────────────────────────────
+// /api/sessions rows carry series_rating_avg (numeric string, e.g.
+// "4.50", or null) + series_rating_count — the rolling score across
+// EVERY session sharing the same name. Parse defensively.
+function _seriesRating(s) {
+  if (!s) return null;
+  var count = parseInt(s.series_rating_count || 0, 10);
+  var avg   = parseFloat(s.series_rating_avg);
+  if (!count || !isFinite(avg) || avg <= 0) return null;
+  return { avg: Math.min(5, avg), count: count };
+}
+
+// Modal rating line: gold stars + "4.5 · 23 ratings". Empty string
+// when the series has no ratings yet, so the modal stays untouched.
+function _seriesRatingLineHtml(sFull) {
+  var r = _seriesRating(sFull);
+  if (!r) return '';
+  var lit = Math.max(0, Math.min(5, Math.round(r.avg)));
+  return '<div class="modal-rating" title="Average across all runs of this session">'
+    + '<span class="modal-rating-stars" aria-hidden="true">' + '★★★★★'.slice(0, lit)
+    +   '<span class="off">' + '★★★★★'.slice(0, 5 - lit) + '</span></span>'
+    + '<strong>' + r.avg.toFixed(1) + '</strong>'
+    + '<span class="modal-rating-count">· ' + r.count + ' rating' + (r.count === 1 ? '' : 's') + '</span>'
+    + '</div>';
+}
+
+// Collapsed "Member feedback (N)" toggle + body. N comes from the list
+// row (series_rating_count) so it shows before any fetch happens.
+function _feedbackSectionHtml(sessionId, sFull) {
+  if (!sessionId) return '';
+  var n = (sFull && parseInt(sFull.series_rating_count || 0, 10)) || 0;
+  return '<div class="modal-fb">'
+    + '<button type="button" class="modal-fb-toggle" id="modalFbToggle" aria-expanded="false" aria-controls="modalFbBody">'
+    +   '<span class="modal-fb-chev" id="modalFbChev" aria-hidden="true">▸</span>'
+    +   '<span>Member feedback (' + n + ')</span>'
+    + '</button>'
+    + '<div class="modal-fb-body" id="modalFbBody" hidden></div>'
+    + '</div>';
+}
+
+// Lazy fetch of GET /api/sessions/:id/feedback (public, no auth) —
+// only fired on first expand, cached per session id for the page life.
+// A failed fetch is evicted so a later expand can retry.
+var _sessionFeedbackCache = {};
+function _loadSessionFeedback(sessionId) {
+  if (_sessionFeedbackCache[sessionId]) return _sessionFeedbackCache[sessionId];
+  var p = fetch('/api/sessions/' + encodeURIComponent(sessionId) + '/feedback', { cache: 'no-cache' })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .catch(function(){ return null; });
+  _sessionFeedbackCache[sessionId] = p;
+  p.then(function(d){ if (!d) delete _sessionFeedbackCache[sessionId]; });
+  return p;
+}
+
+// Rows without a comment stay in the rating COUNT but are skipped in
+// the visible list — a bare star row adds noise, not signal.
+function _feedbackListHtml(d) {
+  if (!d) return '<div class="modal-fb-empty">Could not load feedback right now.</div>';
+  var rows = (d.feedback || []).filter(function(f){
+    return f && f.comment && String(f.comment).trim();
+  });
+  if (!rows.length) return '<div class="modal-fb-empty">No feedback yet for this session.</div>';
+  return rows.map(function(f){
+    var n = Math.max(0, Math.min(5, parseInt(f.rating, 10) || 0));
+    var stars = n ? '★★★★★'.slice(0, n) : '';
+    var when = '';
+    var iso = f.session_at || f.created_at;
+    if (iso) {
+      try { when = new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }); } catch (e) {}
+    }
+    return '<div class="modal-fb-item">'
+      + '<div class="modal-fb-item-top">'
+      +   (stars ? '<span class="modal-fb-stars" aria-hidden="true">' + stars + '</span>' : '')
+      +   '<span class="modal-fb-who">' + escapeHtml(f.first_name || 'ATP Member') + '</span>'
+      +   (when ? '<span class="modal-fb-date">' + escapeHtml(when) + '</span>' : '')
+      + '</div>'
+      + '<p class="modal-fb-comment">' + escapeHtml(String(f.comment).trim()) + '</p>'
+      + '</div>';
+  }).join('');
+}
+
+// Bind the toggle rendered by _feedbackSectionHtml. Called from
+// openModal() right after modalMeta.innerHTML is set, so the previous
+// modal's nodes (and their listeners) are already gone.
+function _wireSessionFeedback(sessionId) {
+  var btn  = document.getElementById('modalFbToggle');
+  var body = document.getElementById('modalFbBody');
+  var chev = document.getElementById('modalFbChev');
+  if (!btn || !body) return;
+  btn.addEventListener('click', function() {
+    var open = btn.getAttribute('aria-expanded') === 'true';
+    if (open) {
+      btn.setAttribute('aria-expanded', 'false');
+      body.hidden = true;
+      if (chev) chev.style.transform = 'rotate(0deg)';
+      return;
+    }
+    btn.setAttribute('aria-expanded', 'true');
+    body.hidden = false;
+    if (chev) chev.style.transform = 'rotate(90deg)';
+    if (body.dataset.loaded === '1') return;
+    body.innerHTML = '<div class="modal-fb-loading">Loading feedback…</div>';
+    _loadSessionFeedback(sessionId).then(function(d) {
+      // The member may have closed this modal and opened another
+      // session while we were fetching — never paint stale rows.
+      if (typeof activeSession !== 'undefined' && activeSession && activeSession.id !== sessionId) return;
+      var el = document.getElementById('modalFbBody');
+      if (!el) return;
+      if (d) el.dataset.loaded = '1';
+      el.innerHTML = _feedbackListHtml(d);
+    });
+  });
+}
+
 function renderSessionsGrid(sessions) {
   var grid = document.getElementById('sessionsGrid');
   if (!grid) return;
@@ -2113,6 +2257,15 @@ function renderSessionsGrid(sessions) {
     // Private company session — gold badge + quiet gold card edge.
     var corpBadge = _corpBadgeHtml(s, 'card');
 
+    // Series rating — tiny gold "★ 4.5" under the time when the series
+    // has ratings. Pure innerHTML addition: the card's data-* filter
+    // attributes are untouched, so applyFilters/calendar keep working.
+    var _sr = _seriesRating(s);
+    var ratingBadge = _sr
+      ? '<div class="sc-rating" title="' + _sr.avg.toFixed(1) + ' average from ' + _sr.count
+        + ' rating' + (_sr.count === 1 ? '' : 's') + ' across this session series">★ ' + _sr.avg.toFixed(1) + '</div>'
+      : '';
+
     var article = document.createElement('article');
     article.className = 'session-card reveal visible' + (isLive ? ' is-live' : '') + (s.is_corporate_only ? ' is-corporate' : '');
     article.setAttribute('data-tribe', tribe);
@@ -2140,6 +2293,7 @@ function renderSessionsGrid(sessions) {
         '<div class="sc-when-time">' + escapeHtml(_timeNum) +
           (_timeMer ? '<span class="sc-when-meridiem">' + escapeHtml(_timeMer) + '</span>' : '') +
         '</div>' +
+        ratingBadge +
       '</div>' +
       '<div class="sc-mid">' +
         '<div class="sc-tribe">' + escapeHtml(tribeLabel) + liveBadge + '</div>' +

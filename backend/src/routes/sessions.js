@@ -129,13 +129,25 @@ router.get('/', optionalAuth, async (req, res, next) => {
                 TRIM(CONCAT(m.first_name, ' ', m.last_name)) AS coach_name,
                 (SELECT COUNT(*) FROM bookings b
                  WHERE b.session_id=s.id AND b.status IN ('confirmed','attended')) AS registrations_count,
-                (SELECT COUNT(*) FROM waiting_list wl WHERE wl.session_id=s.id) AS waitlist_count
+                (SELECT COUNT(*) FROM waiting_list wl WHERE wl.session_id=s.id) AS waitlist_count,
+                NULL AS series_rating_avg, 0 AS series_rating_count,
+                sr.series_rating_avg, sr.series_rating_count
          FROM sessions s
          LEFT JOIN tribes t ON t.id = s.tribe_id
          LEFT JOIN activities a ON a.id = s.activity_id
          LEFT JOIN cities c ON c.id = s.city_id
          LEFT JOIN members m ON m.id = s.coach_id
          LEFT JOIN corporate_accounts ca ON ca.id = s.corporate_account_id
+         -- Series score (founder 2026-09-04): feedback is tied to the
+         -- session NAME so a weekly repeated session accumulates one
+         -- rolling rating across every occurrence.
+         LEFT JOIN LATERAL (
+           SELECT AVG(sf.rating)::numeric(3,2) AS series_rating_avg,
+                  COUNT(sf.id)::int            AS series_rating_count
+           FROM session_feedback sf
+           JOIN sessions s2 ON s2.id = sf.session_id
+           WHERE LOWER(s2.name) = LOWER(s.name)
+         ) sr ON true
          WHERE ${where.join(' AND ')}
          ORDER BY s.scheduled_at ASC
          LIMIT $${idx} OFFSET $${idx + 1}`,
@@ -327,6 +339,46 @@ router.get('/recent-feedback', async (req, res, next) => {
 });
 
 // ── GET /api/sessions/:id ─────────────────────────────────────
+// ── GET /api/sessions/:id/feedback — series feedback (public) ────
+// Founder 2026-09-04: on the calendar, a session's card expands to
+// show member feedback for that session NAME — every occurrence of
+// the repeated session feeds one series score + one feedback wall.
+router.get('/:id/feedback', optionalAuth, async (req, res, next) => {
+  try {
+    const { rows: sess } = await query(
+      `SELECT name FROM sessions WHERE id=$1`, [req.params.id]
+    );
+    if (!sess.length) return res.status(404).json({ error: 'Session not found' });
+    const name = sess[0].name;
+
+    const { rows: agg } = await query(
+      `SELECT AVG(sf.rating)::numeric(3,2) AS rating_avg, COUNT(sf.id)::int AS rating_count
+       FROM session_feedback sf
+       JOIN sessions s2 ON s2.id = sf.session_id
+       WHERE LOWER(s2.name) = LOWER($1)`,
+      [name]
+    );
+    const { rows: feedback } = await query(
+      `SELECT sf.rating, sf.comment, sf.created_at,
+              m.first_name, s2.scheduled_at AS session_at
+       FROM session_feedback sf
+       JOIN sessions s2 ON s2.id = sf.session_id
+       JOIN members m ON m.id = sf.member_id
+       WHERE LOWER(s2.name) = LOWER($1)
+       ORDER BY sf.created_at DESC
+       LIMIT 30`,
+      [name]
+    );
+    res.set('Cache-Control', 'no-store');
+    res.json({
+      session_name: name,
+      rating_avg: agg[0]?.rating_avg || null,
+      rating_count: agg[0]?.rating_count || 0,
+      feedback,
+    });
+  } catch (err) { next(err); }
+});
+
 router.get('/:id', optionalAuth, async (req, res, next) => {
   try {
     const { rows } = await query(

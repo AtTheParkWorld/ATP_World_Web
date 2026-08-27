@@ -19,7 +19,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import QRCode from 'react-native-qrcode-svg';
-import { getSession, type Session } from '@/lib/api/sessions';
+import { getSession, getSessionFeedback, type Session } from '@/lib/api/sessions';
 import { getStreak } from '@/lib/api/members';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { createBooking, cancelBooking, listMyBookings, submitSessionFeedback, type PaymentOptions, type BookingRecord } from '@/lib/api/bookings';
@@ -193,8 +193,15 @@ export default function SessionDetail() {
           )}
         </View>
 
-        {/* Status pill row */}
+        {/* Status pill row — series score leads the row (founder:
+            member feedback must be prominent when browsing). */}
         <View className="px-5 mt-4 flex-row flex-wrap gap-2">
+          {s.series_rating_count > 0 && !!s.series_rating_avg && (
+            <InfoPill
+              label={`★ ${Number(s.series_rating_avg).toFixed(1)} · ${s.series_rating_count} rating${s.series_rating_count === 1 ? '' : 's'}`}
+              accent={colors.warning}
+            />
+          )}
           <InfoPill label={dayHeader(s.scheduled_at)} />
           <InfoPill label={timeShort(s.scheduled_at)} />
           {!!s.city_name     && <InfoPill label={`📍 ${s.city_name}`} />}
@@ -239,6 +246,10 @@ export default function SessionDetail() {
             </Text>
           </View>
         )}
+
+        {/* Member feedback for this session series — collapsed by
+            default; the list is only fetched on first expand. */}
+        <MemberFeedback sessionId={sessionId} count={s.series_rating_count} />
 
         {/* Location */}
         {!!s.location && (
@@ -294,7 +305,7 @@ export default function SessionDetail() {
             status='attended' bookings (404 otherwise), so the block is
             gated on attendance rather than on the session being past. */}
         {myBooking?.status === 'attended' && (
-          <FeedbackBlock bookingId={myBooking.id} />
+          <FeedbackBlock bookingId={myBooking.id} coachName={s.coach_name} />
         )}
 
         {myBooking && (myBooking.qr_token || myBooking.qr_code) && myBooking.status !== 'cancelled' && (
@@ -380,6 +391,78 @@ export default function SessionDetail() {
         />
       )}
     </SafeAreaView>
+  );
+}
+
+/**
+ * Expandable "What members say" — rolling feedback across every session
+ * sharing this one's name. Collapsed row + chevron; the feedback list
+ * is fetched lazily on first expand and comment-less ratings are
+ * skipped (they already count toward the pill's average).
+ */
+function MemberFeedback({ sessionId, count }: { sessionId: string; count: number }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const feedbackQ = useQuery({
+    queryKey: ['session-feedback', sessionId],
+    queryFn:  () => getSessionFeedback(sessionId),
+    enabled:  expanded && !!sessionId,
+  });
+
+  const rows = (feedbackQ.data?.feedback || []).filter((f) => !!f.comment);
+
+  return (
+    <View className="px-5 mt-6">
+      <Pressable
+        onPress={() => setExpanded((e) => !e)}
+        className="bg-atp-dark border border-white/5 rounded-atp-lg px-4 py-3.5 flex-row items-center active:opacity-70"
+      >
+        <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.warning }} className="text-sm mr-2">★</Text>
+        <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm flex-1">
+          What members say ({count})
+        </Text>
+        <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs">
+          {expanded ? '▲' : '▼'}
+        </Text>
+      </Pressable>
+
+      {expanded && (
+        <View className="bg-atp-dark border border-white/5 rounded-atp-lg mt-2 px-4">
+          {feedbackQ.isLoading ? (
+            <View className="py-5 items-center">
+              <ActivityIndicator color={colors.warning} />
+            </View>
+          ) : feedbackQ.isError ? (
+            <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm py-4">
+              Couldn't load feedback — pull to refresh or try again later.
+            </Text>
+          ) : rows.length === 0 ? (
+            <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm py-4">
+              No feedback yet — be the first after the session.
+            </Text>
+          ) : (
+            rows.map((f, i) => (
+              <View key={`${f.created_at}-${i}`} className={`py-3.5 ${i > 0 ? 'border-t border-white/5' : ''}`}>
+                <View className="flex-row items-center">
+                  <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.warning, letterSpacing: 2 }} className="text-xs">
+                    {'★'.repeat(Math.max(1, Math.min(5, f.rating)))}
+                  </Text>
+                  <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-xs ml-2 flex-1" numberOfLines={1}>
+                    {f.first_name}
+                  </Text>
+                  <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs">
+                    {dayHeader(f.session_at)}
+                  </Text>
+                </View>
+                <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm mt-1.5 leading-relaxed">
+                  {f.comment}
+                </Text>
+              </View>
+            ))
+          )}
+        </View>
+      )}
+    </View>
   );
 }
 

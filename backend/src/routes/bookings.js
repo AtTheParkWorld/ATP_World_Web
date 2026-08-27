@@ -812,12 +812,16 @@ router.post('/:id/feedback', authenticate, async (req, res, next) => {
       return res.status(404).json({ error: 'Attended booking not found' });
     }
     const session_id = rows[0].session_id;
+    // Founder 2026-09-04: one form, two scores — the same submission may
+    // carry a coach rating that flows into the coach's public average.
+    const coachRating = Number(req.body.coach_rating) || 0;
 
     await transaction(async (client) => {
       await client.query(
         `INSERT INTO session_feedback (session_id, member_id, rating, comment)
          VALUES ($1,$2,$3,$4)
-         ON CONFLICT (session_id, member_id) DO NOTHING`,
+         ON CONFLICT (session_id, member_id)
+         DO UPDATE SET rating=EXCLUDED.rating, comment=EXCLUDED.comment`,
         [session_id, req.member.id, rating, comment]
       );
 
@@ -853,6 +857,41 @@ router.post('/:id/feedback', authenticate, async (req, res, next) => {
         );
       }
     });
+
+    // Coach score → coach_feedback → coach profile average. Same
+    // dedupe rule as rating from the coach page: a member's repeat
+    // rating updates their existing row.
+    if (coachRating >= 1 && coachRating <= 5) {
+      const { rows: sess } = await query(
+        `SELECT coach_id FROM sessions WHERE id=$1`, [session_id]
+      );
+      const coachId = sess[0]?.coach_id;
+      if (coachId) {
+        const { rows: mine } = await query(
+          `SELECT id FROM coach_feedback
+           WHERE coach_id=$1 AND member_id=$2 AND hidden_at IS NULL
+           ORDER BY created_at DESC LIMIT 1`,
+          [coachId, req.member.id]
+        );
+        if (mine.length) {
+          await query(`UPDATE coach_feedback SET rating=$1, created_at=NOW() WHERE id=$2`,
+            [coachRating, mine[0].id]);
+        } else {
+          await query(
+            `INSERT INTO coach_feedback (coach_id,member_id,rating,session_id,is_approved)
+             VALUES ($1,$2,$3,$4,true)`,
+            [coachId, req.member.id, coachRating, session_id]
+          );
+        }
+        await query(
+          `UPDATE coach_profiles SET
+             rating_avg = (SELECT AVG(rating) FROM coach_feedback WHERE coach_id=$1 AND is_approved=true),
+             rating_count = (SELECT COUNT(*) FROM coach_feedback WHERE coach_id=$1 AND is_approved=true)
+           WHERE member_id=$1`,
+          [coachId]
+        ).catch(() => {});
+      }
+    }
 
     res.json({ message: 'Feedback submitted. Thank you!' });
   } catch (err) { next(err); }

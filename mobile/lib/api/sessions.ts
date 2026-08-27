@@ -82,6 +82,11 @@ export interface Session {
   // Decorated by backend _decorateLiveStatus
   is_live_now?: boolean;
   minutes_until_start?: number;
+  // Rolling member score across all sessions sharing the same name
+  // (returned by both GET /sessions and GET /sessions/:id). avg comes
+  // back as a numeric string ("4.5") or null when count is 0.
+  series_rating_avg: string | null;
+  series_rating_count: number;
 }
 
 export interface ListSessionsParams {
@@ -104,6 +109,30 @@ export function listSessions(params: ListSessionsParams = {}): Promise<{ session
 
 export function getSession(id: string | number): Promise<{ session: Session }> {
   return api.get(`/sessions/${id}`);
+}
+
+/** One member's rating of a past run of this session series. */
+export interface SessionFeedbackEntry {
+  rating: number;
+  comment: string | null;
+  created_at: string;   // ISO — when the feedback was left
+  first_name: string;
+  session_at: string;   // ISO — when the rated session ran
+}
+
+export interface SessionFeedbackResponse {
+  session_name: string;
+  rating_avg: string | null;
+  rating_count: number;
+  feedback: SessionFeedbackEntry[];
+}
+
+/**
+ * Member feedback for the session series (all sessions sharing this
+ * session's name). GET /api/sessions/:id/feedback
+ */
+export function getSessionFeedback(id: string | number): Promise<SessionFeedbackResponse> {
+  return api.get(`/sessions/${id}/feedback`);
 }
 
 export function listCities(): Promise<{ cities: City[] }> {

@@ -100,11 +100,19 @@ export function listMyBookings(): Promise<MyBookingsResponse> {
  * Post-session rating. Backend only accepts feedback on bookings with
  * status='attended' (404 otherwise) and upserts with ON CONFLICT DO
  * NOTHING — resubmitting is a harmless 200, points are awarded once.
+ *
+ * `opts.coach_rating` (1-5, optional) additionally scores the session's
+ * coach and flows into the coach's public average.
  */
 export function submitSessionFeedback(
   bookingId: string | number,
   rating: number,
-  comment?: string
+  comment?: string,
+  opts?: { coach_rating?: number }
 ): Promise<{ message: string }> {
-  return api.post(`/bookings/${bookingId}/feedback`, { rating, comment: comment || null });
+  return api.post(`/bookings/${bookingId}/feedback`, {
+    rating,
+    comment: comment || null,
+    ...(opts?.coach_rating ? { coach_rating: opts.coach_rating } : {}),
+  });
 }
