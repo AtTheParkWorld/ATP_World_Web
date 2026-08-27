@@ -782,6 +782,8 @@ const PORT = process.env.PORT || 3000;
 // can run at startup instead of a one-shot curl. The bigger migrations
 // (members backfill, etc.) still need the explicit /migrate-* routes.
 async function _ensureBootSchema() {
+  const { query } = require('./db');
+
   // Promo banners (founder 2026-08-30) — sellable sponsor pop-up.
   await query(`CREATE TABLE IF NOT EXISTS promo_banners (
     id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
@@ -797,8 +799,6 @@ async function _ensureBootSchema() {
     created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
   )`).catch((e) => console.warn('[boot] promo_banners ensure failed:', e.message));
-
-  const { query } = require('./db');
 
   // Streak foundation — the migrate-streaks endpoint was never run in
   // production, so QR/manual CHECK-IN was hard-failing with
