@@ -65,9 +65,12 @@ async function debitFifo(client, memberId, amount) {
 // and manual admin adjustments. Everything in PARTICIPATION_REASONS is
 // skipped for free members at every award site.
 const PREMIUM_TIERS = new Set(['premium', 'premium_plus']);
+// Founder adjustments 2026-09-02: profile_complete and challenge
+// (completion reward) are earnable by ALL tiers; session_checkin has
+// its own free-tier rule in sessions.js (earn base points only while
+// on a 5+ day streak).
 const PARTICIPATION_REASONS = new Set([
-  'session_checkin', 'streak_milestone', 'profile_complete',
-  'achievement_unlocked', 'challenge', 'challenge_prize', 'anniversary',
+  'streak_milestone', 'achievement_unlocked', 'challenge_prize', 'anniversary',
 ]);
 
 async function earnsParticipationPoints(memberId, clientOrNull = null) {

@@ -508,13 +508,8 @@ router.patch('/:id/progress', authenticate, async (req, res, next) => {
       if (cp.length && !cp[0].points_awarded) {
         await transaction(async (client) => {
           const pts = cRows[0].points_reward;
-          // Participation gate (founder 2026-09-01): completion points
-          // are Premium-only. Completion itself still records.
-          const { rows: tier } = await client.query('SELECT subscription_type FROM members WHERE id=$1', [req.member.id]);
-          if (!['premium', 'premium_plus'].includes((tier[0] || {}).subscription_type)) {
-            await client.query('UPDATE challenge_participants SET points_awarded=true WHERE challenge_id=$1 AND member_id=$2', [req.params.id, req.member.id]);
-            return;
-          }
+          // Founder 2026-09-02: challenge completion rewards are for
+          // ALL tiers (gate removed).
           const { rows: m } = await client.query('SELECT points_balance FROM members WHERE id=$1 FOR UPDATE', [req.member.id]);
           const newBal = (m[0].points_balance || 0) + pts;
           await client.query(

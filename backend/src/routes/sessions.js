@@ -823,18 +823,24 @@ async function awardSessionPoints(sessionId) {
   const sessionName = session[0].name;
 
   const { rows: bookings } = await query(
-    `SELECT b.id, b.member_id, b.streak_at_checkin FROM bookings b
+    `SELECT b.id, b.member_id, b.streak_at_checkin, m.subscription_type
+     FROM bookings b
      JOIN members m ON m.id = b.member_id
      WHERE b.session_id=$1 AND b.status='attended' AND b.points_awarded=0
-       -- participation gate (founder 2026-09-01): only Premium tiers
-       -- earn attendance points; free members' rows stay untouched at
-       -- points_awarded=0, which honestly reads as "0 points earned".
-       AND m.subscription_type IN ('premium', 'premium_plus')`,
+       -- Participation rule (founder 2026-09-02): Premium tiers always
+       -- earn attendance points; FREE members earn the base amount only
+       -- while their check-in streak is 5+ days — break the streak and
+       -- the next sessions earn nothing until it's rebuilt to 5.
+       AND (m.subscription_type IN ('premium', 'premium_plus')
+            OR COALESCE(b.streak_at_checkin, 0) >= 5)`,
     [sessionId]
   );
 
   for (const booking of bookings) {
-    const mult = (booking.streak_at_checkin >= 8) ? 2 : 1;
+    const isPremium = ['premium', 'premium_plus'].includes(booking.subscription_type);
+    // 2x streak multiplier stays a Premium perk — free members on a
+    // qualifying streak earn the normal base amount.
+    const mult = (isPremium && booking.streak_at_checkin >= 8) ? 2 : 1;
     const pts  = basePts * mult;
     const description = mult === 2
       ? `2× streak bonus — ${sessionName}`

@@ -63,9 +63,6 @@ export default function Profile() {
   }, [profileQ.data, updateMember]);
 
   const m = profileQ.data || member;
-  // Participation gate (founder 2026-09-01): only Premium tiers earn
-  // points — don't promise +200 to members who won't receive it.
-  const earnsPoints = ['premium', 'premium_plus'].includes((m as any)?.subscription_type);
   const name = `${m?.first_name || ''} ${m?.last_name || ''}`.trim() || 'Member';
   const tColor = tribeColor((m as any)?.tribe_slug);
   const refreshing = profileQ.isFetching || statsQ.isFetching || streakQ.isFetching;
@@ -153,7 +150,7 @@ export default function Profile() {
                   Profile {m.profile_complete_pct}% complete
                 </Text>
                 <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[11px]">
-                  {earnsPoints ? '+200 pts when done' : 'takes 2 minutes'}
+                  +200 pts when done
                 </Text>
               </View>
               <View className="mt-3 h-1.5 bg-atp-dark-3 rounded-full overflow-hidden">
@@ -179,7 +176,7 @@ export default function Profile() {
                 // the pre-chips tap-through-to-edit affordance.
                 <Pressable onPress={() => router.push('/profile/edit')} className="mt-2 active:opacity-80">
                   <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm">
-                    {earnsPoints ? 'Finish your profile to claim +200 pts.' : 'Finish your profile so your crew recognises you.'}
+                    Finish your profile to claim +200 pts.
                   </Text>
                 </Pressable>
               )}

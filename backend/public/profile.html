@@ -3318,10 +3318,12 @@ var COMPLETION_FIELDS = [
   { test: function(){ return val('fNationality'); }, label: 'Nationality' },
   { test: function(){ return val('fGender'); },    label: 'Gender' },
   { test: function(){ return val('fCity'); },      label: 'Home city' },
-  { test: function(){ return val('fTribe'); },     label: 'Favourite tribe' },
+  // Tribe / padel / volleyball deliberately NOT counted — the canonical
+  // 12-field rule lives in backend updateProfileCompletion; counting
+  // niche fields here left members stuck at 86% with everything filled
+  // (founder bug 2026-09-02). The fields still exist and save — they
+  // just don't gate "100% complete".
   { test: function(){ return document.querySelectorAll('#sportPills .sport-pill.sel').length > 0; }, label: 'Activities' },
-  { test: function(){ return !!document.querySelector('.padel-btn[data-padel].sel'); },              label: 'Padel level' },
-  { test: function(){ return !!document.querySelector('.padel-btn[data-volley].sel'); },             label: 'Volleyball level' },
   { test: function(){ return val('fTopSize'); },   label: 'Top size' },
   { test: function(){ return val('fBotSize'); },   label: 'Bottom size' },
   { test: function(){ return CURRENT_MEMBER && CURRENT_MEMBER.avatar_url; },                         label: 'Profile photo' },
