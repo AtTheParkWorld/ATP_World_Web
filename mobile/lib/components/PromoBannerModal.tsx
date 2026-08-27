@@ -18,7 +18,7 @@ import { colors, fontFamily } from '@/lib/theme/tokens';
 
 let shownThisLaunch = false;
 
-function PromoVideo({ uri }: { uri: string }) {
+function PromoVideo({ uri, height }: { uri: string; height: number }) {
   const player = useVideoPlayer(uri, (p) => {
     p.loop = true;
     p.muted = true;
@@ -27,7 +27,7 @@ function PromoVideo({ uri }: { uri: string }) {
   return (
     <VideoView
       player={player}
-      style={{ width: '100%', aspectRatio: 4 / 5, backgroundColor: '#000' }}
+      style={{ width: '100%', height, backgroundColor: '#000' }}
       contentFit="contain"
       nativeControls={false}
     />
@@ -37,7 +37,7 @@ function PromoVideo({ uri }: { uri: string }) {
 export function PromoBannerModal() {
   const accessToken = useAuthStore((s) => s.accessToken);
   const [banner, setBanner] = useState<PromoBanner | null>(null);
-  const { width } = useWindowDimensions();
+  const { width, height } = useWindowDimensions();
 
   useEffect(() => {
     if (!accessToken || shownThisLaunch) return;
@@ -67,7 +67,11 @@ export function PromoBannerModal() {
     close();
   };
 
-  const cardWidth = Math.min(width - 44, 400);
+  // Near-full-screen (founder 2026-08-31): the card spans almost the
+  // whole viewport, media letterboxed inside; mild translucency so the
+  // app glows through behind it.
+  const cardWidth = width - 24;
+  const mediaHeight = Math.round(height * 0.68);
 
   return (
     <Modal visible transparent animationType="fade" onRequestClose={close}>
@@ -78,13 +82,13 @@ export function PromoBannerModal() {
       >
         {/* Inner pressable swallows taps so backdrop-close only fires outside the card */}
         <Pressable onPress={banner.link_url ? open : undefined} style={{ width: cardWidth }}>
-          <View className="rounded-atp-lg overflow-hidden border border-atp-green/25 bg-atp-dark">
+          <View className="rounded-atp-lg overflow-hidden border border-atp-green/25 bg-atp-dark" style={{ opacity: 0.93 }}>
             {banner.type === 'video' ? (
-              <PromoVideo uri={banner.media_url} />
+              <PromoVideo uri={banner.media_url} height={mediaHeight} />
             ) : (
               <Image
                 source={{ uri: banner.media_url }}
-                style={{ width: '100%', aspectRatio: 4 / 5, backgroundColor: '#000' }}
+                style={{ width: '100%', height: mediaHeight, backgroundColor: '#000' }}
                 resizeMode="contain"
               />
             )}

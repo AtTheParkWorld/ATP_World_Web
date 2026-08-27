@@ -814,12 +814,14 @@
 
         var wrap = document.createElement('div');
         wrap.id = 'atpPromoOverlay';
-        wrap.style.cssText = 'position:fixed;inset:0;z-index:9990;display:flex;align-items:center;justify-content:center;padding:22px;background:rgba(0,0,0,.78);backdrop-filter:blur(4px);opacity:0;transition:opacity .25s';
+        wrap.style.cssText = 'position:fixed;inset:0;z-index:9990;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.66);backdrop-filter:blur(5px);opacity:0;transition:opacity .25s';
         var media = b.type === 'video'
-          ? '<video src="' + b.media_url.replace(/"/g, '&quot;') + '" autoplay muted loop playsinline style="display:block;width:100%;max-height:70vh;object-fit:contain;background:#000"></video>'
-          : '<img src="' + b.media_url.replace(/"/g, '&quot;') + '" alt="' + (b.title || 'ATP partner') + '" style="display:block;width:100%;max-height:70vh;object-fit:contain;background:#000">';
+          ? '<video src="' + b.media_url.replace(/"/g, '&quot;') + '" autoplay muted loop playsinline style="display:block;width:100%;height:min(80vh, 100%);max-height:80vh;object-fit:contain;background:#000"></video>'
+          : '<img src="' + b.media_url.replace(/"/g, '&quot;') + '" alt="' + (b.title || 'ATP partner') + '" style="display:block;width:100%;max-height:80vh;object-fit:contain;background:#000">';
         wrap.innerHTML =
-          '<div style="position:relative;max-width:440px;width:100%;background:#0f0f0f;border:1px solid rgba(168,255,0,.25);border-radius:var(--atp-radius-lg,16px);overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6)">' +
+          // Near-full-screen canvas (founder 2026-08-31) with a mild
+          // translucency so the page glows through — an overlay, not a wall.
+          '<div style="position:relative;width:min(94vw,1200px);max-height:92vh;opacity:.93;background:rgba(15,15,15,.9);border:1px solid rgba(168,255,0,.25);border-radius:var(--atp-radius-lg,16px);overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6)">' +
             '<button id="atpPromoClose" aria-label="Close" style="position:absolute;top:10px;right:10px;z-index:2;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.55);color:#fff;font-size:17px;line-height:1;cursor:pointer">×</button>' +
             (b.link_url ? '<a id="atpPromoLink" href="' + b.link_url.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener sponsored" style="display:block">' + media + '</a>' : media) +
             '<div style="padding:8px 14px;display:flex;justify-content:space-between;align-items:center">' +
