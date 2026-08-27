@@ -801,6 +801,19 @@ async function _ensureBootSchema() {
   await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS feedback_prompt_at TIMESTAMPTZ`)
     .catch((e) => console.warn('[boot] sessions.feedback_prompt_at:', e.message));
 
+  // sessions.is_streamable was never migrated in prod — its absence made
+  // the sessions-list PRIMARY query 42703 on every request since the
+  // column entered the projection (2026-08-05), silently serving the
+  // NULL-padded fallback: card videos, sponsor branding and series
+  // ratings all quietly missing. Self-heal it (and keep the whole
+  // streaming trio ensured for good measure).
+  await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS is_streamable BOOLEAN NOT NULL DEFAULT false`)
+    .catch((e) => console.warn('[boot] sessions.is_streamable:', e.message));
+  await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS is_online BOOLEAN NOT NULL DEFAULT false`)
+    .catch(() => {});
+  await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS stream_url VARCHAR(500)`)
+    .catch(() => {});
+
   // Promo banners (founder 2026-08-30) — sellable sponsor pop-up.
   await query(`CREATE TABLE IF NOT EXISTS promo_banners (
     id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

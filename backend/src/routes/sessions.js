@@ -130,7 +130,6 @@ router.get('/', optionalAuth, async (req, res, next) => {
                 (SELECT COUNT(*) FROM bookings b
                  WHERE b.session_id=s.id AND b.status IN ('confirmed','attended')) AS registrations_count,
                 (SELECT COUNT(*) FROM waiting_list wl WHERE wl.session_id=s.id) AS waitlist_count,
-                NULL AS series_rating_avg, 0 AS series_rating_count,
                 sr.series_rating_avg, sr.series_rating_count
          FROM sessions s
          LEFT JOIN tribes t ON t.id = s.tribe_id
@@ -165,6 +164,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
                 s.session_category, s.sport_type, s.courts, s.cancellation_reason,
                 s.city_id, s.coach_id, s.activity_id, s.tribe_id, NULL AS intro_video_url,
                 NULL AS sponsor_name, NULL AS sponsor_logo_url, NULL AS sponsor_url,
+                NULL AS series_rating_avg, 0 AS series_rating_count,
                 t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
                 a.name AS activity_name, a.slug AS activity_slug, a.icon AS activity_icon,
                 c.name AS city_name,
