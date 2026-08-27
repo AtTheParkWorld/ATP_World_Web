@@ -20,6 +20,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import QRCode from 'react-native-qrcode-svg';
 import { getSession, type Session } from '@/lib/api/sessions';
+import { getStreak } from '@/lib/api/members';
+import { useAuthStore } from '@/lib/stores/auth.store';
 import { createBooking, cancelBooking, listMyBookings, submitSessionFeedback, type PaymentOptions, type BookingRecord } from '@/lib/api/bookings';
 import { ApiError } from '@/lib/api/client';
 import { BookingSheet } from '@/lib/components/BookingSheet';
@@ -32,6 +34,14 @@ export default function SessionDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const sessionId = String(id || '');
   const qc = useQueryClient();
+  // Points-rule labelling (founder 2026-09-02): free members earn
+  // attendance points only while on a 5+ day streak — the reward pill
+  // must not promise points they won't receive. Premium always earns;
+  // a free member on a qualifying streak earns the base amount.
+  const member = useAuthStore((s) => s.member) as any;
+  const streakQ = useQuery({ queryKey: ['streak'], queryFn: () => getStreak().then((r) => r.streak) });
+  const isPremium = ['premium', 'premium_plus'].includes(member?.subscription_type);
+  const earnsAtCheckin = isPremium || (streakQ.data?.current_streak ?? 0) >= 5;
 
   const sessionQ = useQuery({
     queryKey: ['session', sessionId],
@@ -190,7 +200,12 @@ export default function SessionDetail() {
           {!!s.city_name     && <InfoPill label={`📍 ${s.city_name}`} />}
           {!!s.activity_name && <InfoPill label={`${s.activity_icon || '•'} ${s.activity_name}`} />}
           <InfoPill label={priceLbl} accent={s.session_type === 'paid' ? colors.warning : colors.green} />
-          {s.points_reward ? <InfoPill label={`+${s.points_reward} pts`} accent={colors.green} /> : null}
+          {s.points_reward ? (
+            <InfoPill
+              label={earnsAtCheckin ? `+${s.points_reward} pts` : `+${s.points_reward} pts with Premium ⭐`}
+              accent={colors.green}
+            />
+          ) : null}
         </View>
 
         {/* Capacity bar */}
@@ -299,7 +314,7 @@ export default function SessionDetail() {
               </Text>
               <Text style={{ fontFamily: fontFamily.body, color: '#666' }} className="text-xs mt-1 text-center">
                 An ambassador will scan this to confirm your attendance
-                {s.points_reward ? ` and credit +${s.points_reward} pts` : ''}.
+                {s.points_reward && earnsAtCheckin ? ` and credit +${s.points_reward} pts` : ''}.
               </Text>
             </View>
           </View>
