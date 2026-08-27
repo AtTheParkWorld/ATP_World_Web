@@ -784,6 +784,19 @@ const PORT = process.env.PORT || 3000;
 async function _ensureBootSchema() {
   const { query } = require('./db');
 
+  // Coach feedback v2 (founder 2026-09-03): public rating — visitors
+  // may rate without an account (member_id nullable + visitor_name,
+  // ip_hash rate-limits drive-bys), and deletes become SOFT (hidden_at)
+  // so the star score keeps counting after the text is removed.
+  await query(`ALTER TABLE coach_feedback ALTER COLUMN member_id DROP NOT NULL`)
+    .catch(() => {});
+  await query(`ALTER TABLE coach_feedback ADD COLUMN IF NOT EXISTS visitor_name VARCHAR(80)`)
+    .catch((e) => console.warn('[boot] coach_feedback.visitor_name:', e.message));
+  await query(`ALTER TABLE coach_feedback ADD COLUMN IF NOT EXISTS hidden_at TIMESTAMPTZ`)
+    .catch((e) => console.warn('[boot] coach_feedback.hidden_at:', e.message));
+  await query(`ALTER TABLE coach_feedback ADD COLUMN IF NOT EXISTS ip_hash VARCHAR(64)`)
+    .catch((e) => console.warn('[boot] coach_feedback.ip_hash:', e.message));
+
   // Promo banners (founder 2026-08-30) — sellable sponsor pop-up.
   await query(`CREATE TABLE IF NOT EXISTS promo_banners (
     id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

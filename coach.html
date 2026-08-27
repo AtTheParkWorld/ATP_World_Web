@@ -4,6 +4,9 @@
   <link rel="stylesheet" href="/atp.min.css?v=e5a5b459d0">
   <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
   <script src="/atp.bundle.min.js?v=0c7a40834d"></script>
+  <!-- Stripe.js v3 — card payments for 1-on-1 bookings (Payment Element).
+       Must load from js.stripe.com (PCI); origin allowed in server.js CSP. -->
+  <script src="https://js.stripe.com/v3/"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -143,6 +146,29 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
 .cp-review-avatar{width:32px;height:32px;border-radius:50%;background:rgba(168,255,0,.16);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
 .cp-review-name{font-size:13px;font-weight:700;color:#fff}
 .cp-review-meta{font-size:11px;color:var(--muted);margin-top:1px}
+.cp-reviews-empty{padding:22px 24px;background:var(--dark2);border:1px dashed var(--line);border-radius:var(--radius-lg);color:var(--muted);font-size:13px;text-align:center}
+
+/* ── 8b. RATE THIS COACH ─────────────────────────────────── */
+.cp-rate{margin-top:22px;background:var(--dark2);border:1px solid rgba(168,255,0,.22);border-radius:var(--radius-lg);padding:26px 28px;max-width:560px}
+.cp-rate-title{font-family:var(--ff-display);font-size:22px;font-weight:900;text-transform:uppercase;color:#fff;letter-spacing:.01em;margin-bottom:4px}
+.cp-rate-sub{font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:16px}
+.cp-rate-stars{display:flex;gap:6px;margin-bottom:16px}
+.cp-rate-star{font-size:30px;line-height:1;color:rgba(255,255,255,.22);background:none;border:none;cursor:pointer;padding:2px 4px;transition:color .12s,transform .12s}
+.cp-rate-star.lit{color:#ffc400}
+.cp-rate-star:hover{transform:scale(1.15)}
+.cp-rate-field{margin-bottom:12px}
+.cp-rate-field label{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:6px}
+.cp-rate-field input,.cp-rate-field textarea{width:100%;background:#070b06;border:1px solid var(--line);border-radius:var(--radius);padding:11px 13px;color:#fff;font-size:14px;font-family:inherit;resize:vertical;transition:border-color .15s}
+.cp-rate-field input:focus,.cp-rate-field textarea:focus{outline:none;border-color:var(--green)}
+.cp-rate-field input::placeholder,.cp-rate-field textarea::placeholder{color:rgba(255,255,255,.32)}
+.cp-rate-btn{background:var(--green);color:#0a0a0a;border:none;border-radius:var(--radius);padding:12px 26px;font-size:13px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;transition:background .15s,transform .15s}
+.cp-rate-btn:hover:not(:disabled){background:var(--green-light);transform:translateY(-1px)}
+.cp-rate-btn:disabled{opacity:.5;cursor:not-allowed}
+.cp-rate-msg{font-size:13px;min-height:18px;margin-top:10px;line-height:1.5}
+.cp-rate-msg.error{color:#fca5a5}
+.cp-rate-msg.ok{color:var(--green)}
+.cp-rate-thanks{padding:18px 20px;background:rgba(168,255,0,.08);border:1px solid rgba(168,255,0,.4);border-radius:var(--radius);color:#dff5c5;font-size:14px;line-height:1.6}
+.cp-rate-thanks strong{display:block;color:var(--green-light);font-size:15px;margin-bottom:4px}
 
 /* ── 9. CREDENTIALS ──────────────────────────────────────── */
 .cp-creds-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:24px}
@@ -303,10 +329,34 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     <div class="cp-gallery" id="cp-gallery"></div>
   </section>
 
-  <!-- 8. REVIEWS -->
+  <!-- 8. REVIEWS + RATE THIS COACH -->
   <section class="cp-section" id="cp-reviews-section" style="display:none">
     <div class="cp-section-title">What members <span class="acc">say</span></div>
+    <div class="cp-section-sub" id="cp-reviews-summary" style="display:none"></div>
     <div class="cp-reviews" id="cp-reviews"></div>
+
+    <!-- Rate this coach — open to everyone (members AND visitors, no login wall) -->
+    <div class="cp-rate" id="cp-rate">
+      <div class="cp-rate-title">Rate this <span style="color:var(--green)">coach</span></div>
+      <div class="cp-rate-sub" id="cp-rate-sub">Trained with this coach? Tap the stars — a comment is optional.</div>
+      <div class="cp-rate-stars" id="cp-rate-stars" role="radiogroup" aria-label="Your rating (1 to 5 stars)">
+        <button type="button" class="cp-rate-star" data-star="1" aria-label="1 star">★</button>
+        <button type="button" class="cp-rate-star" data-star="2" aria-label="2 stars">★</button>
+        <button type="button" class="cp-rate-star" data-star="3" aria-label="3 stars">★</button>
+        <button type="button" class="cp-rate-star" data-star="4" aria-label="4 stars">★</button>
+        <button type="button" class="cp-rate-star" data-star="5" aria-label="5 stars">★</button>
+      </div>
+      <div class="cp-rate-field" id="cp-rate-name-field" style="display:none">
+        <label for="cp-rate-name">Your name (optional)</label>
+        <input id="cp-rate-name" type="text" maxlength="80" placeholder="e.g. Sara" autocomplete="name">
+      </div>
+      <div class="cp-rate-field">
+        <label for="cp-rate-comment">Comment (optional)</label>
+        <textarea id="cp-rate-comment" rows="3" maxlength="1000" placeholder="What was the session like?"></textarea>
+      </div>
+      <button type="button" class="cp-rate-btn" id="cp-rate-btn" disabled>Submit rating</button>
+      <div class="cp-rate-msg" id="cp-rate-msg" role="status" aria-live="polite"></div>
+    </div>
   </section>
 
   <!-- 9. CREDENTIALS -->
@@ -366,7 +416,7 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     <div style="max-width:980px;margin:0 auto">
       <div style="display:inline-flex;align-items:center;gap:10px;font-size:11px;color:#f5c042;letter-spacing:.18em;text-transform:uppercase;font-weight:700;margin-bottom:14px"><span style="display:block;width:24px;height:2px;background:#f5c042"></span>Premium 1-on-1</div>
       <h2 style="font-family:'Barlow Condensed',sans-serif;font-size:clamp(32px,4.5vw,52px);font-weight:900;line-height:1;text-transform:uppercase;letter-spacing:-.01em;color:#fff;margin-bottom:12px">Book a <span style="color:#f5c042">1-on-1</span> with me</h2>
-      <p style="font-size:15px;color:#aaa;line-height:1.6;max-width:640px;margin-bottom:28px">Private online coaching, tailored to your goals. Pay from your ATP wallet (you can mix in points). Cancel up to 24h before for a full refund.</p>
+      <p style="font-size:15px;color:#aaa;line-height:1.6;max-width:640px;margin-bottom:28px">Private online coaching, tailored to your goals. Pay by card (you're only charged once the coach confirms) or from your ATP wallet with points. Cancel up to 24h before for a full refund.</p>
       <div id="cp-offerings-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px"></div>
     </div>
   </section>
@@ -619,50 +669,18 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
       show('cp-gallery-section');
     }
 
-    /* Reviews — merge coach-direct + session feedback into one chronological list,
-       labeled distinctly so visitors know which is which. Admins see a small × delete. */
-    var sessionFb = (data && data.session_feedback) || [];
-    var isAdminViewer = (function () {
-      try { var m = JSON.parse(localStorage.getItem('atp_member') || '{}'); return !!m.is_admin; }
-      catch (e) { return false; }
-    })();
-    var merged = []
-      .concat(feedback.map(function (r) { return Object.assign({}, r, { _kind: 'coach' }); }))
-      .concat(sessionFb.map(function (r) { return Object.assign({}, r, { _kind: 'session' }); }))
-      .sort(function (a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+    /* Reviews — the section is ALWAYS shown now (the rate block lives in
+       it and visitors must be able to rate even a review-less coach). */
+    renderReviewsList(feedback, (data && data.session_feedback) || []);
+    updateRatingSummary(st);
+    show('cp-reviews-section');
 
-    if (merged.length) {
-      document.getElementById('cp-reviews').innerHTML = merged.map(function (r) {
-        var name     = ((r.first_name || '') + ' ' + (r.last_name || '')).trim() || 'ATP Member';
-        var initials = ((r.first_name || ' ')[0] + (r.last_name || ' ')[0]).toUpperCase().trim() || '·';
-        var stars    = '★'.repeat(r.rating || 0) + '☆'.repeat(Math.max(0, 5 - (r.rating || 0)));
-        var when     = r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : '';
-        var sessionAt = r.session_at ? new Date(r.session_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-
-        var typeChip = r._kind === 'coach'
-          ? '<span style="display:inline-block;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--green);background:rgba(168,255,0,.1);border:1px solid rgba(168,255,0,.3);padding:2px 8px;border-radius:10px;margin-bottom:8px">Direct feedback</span>'
-          : '<span style="display:inline-block;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#ffc400;background:rgba(255,196,0,.08);border:1px solid rgba(255,196,0,.28);padding:2px 8px;border-radius:10px;margin-bottom:8px">Session: ' + escapeHtml(r.session_name || 'Session') + (sessionAt ? ' · ' + escapeHtml(sessionAt) : '') + '</span>';
-
-        var deleteBtn = isAdminViewer
-          ? '<button onclick="cpDeleteFeedback(\'' + escapeHtml(r._kind) + '\',\'' + escapeHtml(r.id) + '\',this)" title="Delete (admin only)" style="position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.4);color:#fca5a5;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">×</button>'
-          : '';
-
-        return '<div class="cp-review" style="position:relative">'
-          +   deleteBtn
-          +   typeChip
-          +   '<div class="cp-review-stars">' + stars + '</div>'
-          +   (r.comment ? '<div class="cp-review-text">"' + escapeHtml(r.comment) + '"</div>' : '')
-          +   '<div class="cp-review-author">'
-          +     '<div class="cp-review-avatar">' + escapeHtml(initials) + '</div>'
-          +     '<div><div class="cp-review-name">' + escapeHtml(name) + '</div><div class="cp-review-meta">' + escapeHtml(when) + '</div></div>'
-          +   '</div>'
-          + '</div>';
-      }).join('');
-      show('cp-reviews-section');
-    }
-
-    // Cache the coach id so admin delete can target the right endpoint
+    // Cache the coach id so admin delete + the rate block target the right endpoint
     window.__CP_COACH_ID = c.id;
+
+    /* Rate-this-coach block — logged-in members send their bearer token
+       (repeat ratings update their previous one); visitors go anonymous. */
+    initRateBlock(c.id);
 
     /* Credentials */
     var certs = arr(p.certifications);
@@ -710,6 +728,181 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     hide('cp-loading');
     document.getElementById('cp-profile').classList.remove('hidden');
     document.getElementById('cp-profile').classList.add('fade-in');
+  }
+
+  /* ── Reviews list + rating summary (reused after a new rating) ── */
+  function renderReviewsList(feedback, sessionFb) {
+    var isAdminViewer = (function () {
+      try { var m = JSON.parse(localStorage.getItem('atp_member') || '{}'); return !!m.is_admin; }
+      catch (e) { return false; }
+    })();
+    var merged = []
+      .concat((feedback || []).map(function (r) { return Object.assign({}, r, { _kind: 'coach' }); }))
+      .concat((sessionFb || []).map(function (r) { return Object.assign({}, r, { _kind: 'session' }); }))
+      .sort(function (a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+
+    var box = document.getElementById('cp-reviews');
+    if (!box) return;
+    if (!merged.length) {
+      box.innerHTML = '<div class="cp-reviews-empty" style="grid-column:1/-1">No reviews yet — be the first to rate this coach below.</div>';
+      return;
+    }
+    box.innerHTML = merged.map(function (r) {
+      var name     = ((r.first_name || '') + ' ' + (r.last_name || '')).trim() || 'ATP Member';
+      var initials = ((r.first_name || ' ')[0] + (r.last_name || ' ')[0]).toUpperCase().trim() || '·';
+      var stars    = '★'.repeat(r.rating || 0) + '☆'.repeat(Math.max(0, 5 - (r.rating || 0)));
+      var when     = r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : '';
+      var sessionAt = r.session_at ? new Date(r.session_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+
+      var typeChip = r._kind === 'coach'
+        ? '<span style="display:inline-block;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--green);background:rgba(168,255,0,.1);border:1px solid rgba(168,255,0,.3);padding:2px 8px;border-radius:10px;margin-bottom:8px">Direct feedback</span>'
+        : '<span style="display:inline-block;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#ffc400;background:rgba(255,196,0,.08);border:1px solid rgba(255,196,0,.28);padding:2px 8px;border-radius:10px;margin-bottom:8px">Session: ' + escapeHtml(r.session_name || 'Session') + (sessionAt ? ' · ' + escapeHtml(sessionAt) : '') + '</span>';
+
+      var deleteBtn = isAdminViewer
+        ? '<button onclick="cpDeleteFeedback(\'' + escapeHtml(r._kind) + '\',\'' + escapeHtml(r.id) + '\',this)" title="Delete (admin only)" style="position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.4);color:#fca5a5;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">×</button>'
+        : '';
+
+      return '<div class="cp-review" style="position:relative">'
+        +   deleteBtn
+        +   typeChip
+        +   '<div class="cp-review-stars">' + stars + '</div>'
+        +   (r.comment ? '<div class="cp-review-text">"' + escapeHtml(r.comment) + '"</div>' : '')
+        +   '<div class="cp-review-author">'
+        +     '<div class="cp-review-avatar">' + escapeHtml(initials) + '</div>'
+        +     '<div><div class="cp-review-name">' + escapeHtml(name) + '</div><div class="cp-review-meta">' + escapeHtml(when) + '</div></div>'
+        +   '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  function updateRatingSummary(st) {
+    var el = document.getElementById('cp-reviews-summary');
+    if (!el) return;
+    var count = (st && st.rating_count) || 0;
+    if (count > 0) {
+      el.innerHTML = '<span style="color:#ffc400">★</span> <strong style="color:#fff">'
+        + Number(st.rating_avg).toFixed(1) + '</strong> average · '
+        + count + ' rating' + (count === 1 ? '' : 's');
+      el.style.display = '';
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  /* ── Rate this coach — interactive stars + optional comment.
+     No login wall: with an atp_token we send it (member path — repeat
+     ratings update the previous one); without, the API takes the rating
+     anonymously (1/coach/day per IP, a 429 is a friendly notice). ── */
+  var RATE_SELECTED = 0;
+
+  function paintRateStars(n) {
+    var btns = document.querySelectorAll('#cp-rate-stars .cp-rate-star');
+    Array.prototype.forEach.call(btns, function (b) {
+      b.classList.toggle('lit', Number(b.getAttribute('data-star')) <= n);
+    });
+  }
+
+  function getToken() {
+    try { return localStorage.getItem('atp_token') || ''; } catch (e) { return ''; }
+  }
+
+  function initRateBlock(coachId) {
+    var starsWrap = document.getElementById('cp-rate-stars');
+    var btn = document.getElementById('cp-rate-btn');
+    if (!starsWrap || !btn) return;
+
+    // Visitors get an optional name field; members are already known.
+    var loggedIn = !!getToken();
+    if (!loggedIn) {
+      var nameField = document.getElementById('cp-rate-name-field');
+      if (nameField) nameField.style.display = '';
+    } else {
+      var sub = document.getElementById('cp-rate-sub');
+      if (sub) sub.textContent = 'Trained with this coach? Tap the stars — rating again later simply updates your previous one.';
+    }
+
+    starsWrap.addEventListener('click', function (ev) {
+      var t = ev.target.closest('.cp-rate-star');
+      if (!t) return;
+      RATE_SELECTED = Number(t.getAttribute('data-star')) || 0;
+      paintRateStars(RATE_SELECTED);
+      btn.disabled = RATE_SELECTED === 0;
+    });
+    starsWrap.addEventListener('mouseover', function (ev) {
+      var t = ev.target.closest('.cp-rate-star');
+      if (t) paintRateStars(Number(t.getAttribute('data-star')) || 0);
+    });
+    starsWrap.addEventListener('mouseleave', function () { paintRateStars(RATE_SELECTED); });
+
+    btn.addEventListener('click', function () { submitRating(coachId); });
+  }
+
+  function submitRating(coachId) {
+    if (!RATE_SELECTED) return;
+    var btn = document.getElementById('cp-rate-btn');
+    var msg = document.getElementById('cp-rate-msg');
+    var token = getToken();
+    var headers = { 'Content-Type': 'application/json' };
+    if (token) headers.Authorization = 'Bearer ' + token;
+
+    var body = { rating: RATE_SELECTED };
+    var commentEl = document.getElementById('cp-rate-comment');
+    var comment = commentEl ? commentEl.value.trim() : '';
+    if (comment) body.comment = comment.slice(0, 1000);
+    if (!token) {
+      var nameEl = document.getElementById('cp-rate-name');
+      var vn = nameEl ? nameEl.value.trim() : '';
+      if (vn) body.visitor_name = vn.slice(0, 80);
+    }
+
+    btn.disabled = true; btn.textContent = 'Sending…';
+    msg.textContent = ''; msg.className = 'cp-rate-msg';
+
+    fetch('/api/coaches/' + encodeURIComponent(coachId) + '/feedback', {
+      method: 'POST', headers: headers, body: JSON.stringify(body)
+    })
+      .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; }); })
+      .then(function (res) {
+        if (res.status === 429) {
+          // Daily visitor throttle — a friendly notice, NOT an error tone.
+          btn.disabled = false; btn.textContent = 'Submit rating';
+          msg.textContent = (res.body && res.body.error) || 'You already rated this coach today — thank you!';
+          msg.className = 'cp-rate-msg ok';
+          return;
+        }
+        if (!res.ok) {
+          btn.disabled = false; btn.textContent = 'Submit rating';
+          msg.textContent = (res.body && res.body.error) || 'Couldn\'t save your rating — please try again.';
+          msg.className = 'cp-rate-msg error';
+          return;
+        }
+        // Thank-you state + refresh the list and score
+        var block = document.getElementById('cp-rate');
+        if (block) {
+          block.innerHTML = '<div class="cp-rate-thanks"><strong>✓ Thank you!</strong>'
+            + 'Your ' + RATE_SELECTED + '-star rating is in'
+            + (comment ? ', comment included' : '') + '.'
+            + (token ? ' Come back any time — rating again updates your previous one.' : '')
+            + '</div>';
+        }
+        refreshReviews();
+      })
+      .catch(function () {
+        btn.disabled = false; btn.textContent = 'Submit rating';
+        msg.textContent = 'Network error — please try again.';
+        msg.className = 'cp-rate-msg error';
+      });
+  }
+
+  function refreshReviews() {
+    if (!target) return;
+    fetchCoach(target).then(function (d) {
+      var st = (d && d.coach && d.coach.stats) || {};
+      setText('cp-stat-rating',  st.rating_avg ? Number(st.rating_avg).toFixed(1) : '—');
+      setText('cp-stat-reviews', st.rating_count || 0);
+      updateRatingSummary(st);
+      renderReviewsList((d && d.feedback) || [], (d && d.session_feedback) || []);
+    }).catch(function () { /* the thank-you card already confirmed the save */ });
   }
 
   function submitContactForm(coachId) {
@@ -873,6 +1066,27 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
   var GIFT_SEARCH_LOADING = false;
   var GIFT_MESSAGE = '';
   var GIFT_SEARCH_TIMER = null;
+  // ── Card payment state (Stripe hold flow) ─────────────────
+  // Live publishable key — public by design; same key the mobile app
+  // ships in mobile/app.json → expo.extra.stripePublishableKey.
+  var STRIPE_PK = 'pk_live_51NuUbjCpx56yuxucR7wdVZrCa9ZvSw7V248pL9uye0VjO3e5IaGmaJjZiUzYy250NajJk1EjK7nDhvAwisQDM54v00OfpMDXN3';
+  var PAYMENT_METHOD = 'card';      // 'card' | 'wallet' — direct bookings only; gifts stay wallet
+  var STRIPE = null;                // Stripe() instance, lazy
+  var STRIPE_ELEMENTS = null;       // Elements instance for the active payment
+  var CARD_BOOKING = null;          // booking row returned by /book with payment:'card'
+
+  function getStripe() {
+    if (!STRIPE && window.Stripe) {
+      try { STRIPE = window.Stripe(STRIPE_PK); } catch (e) { STRIPE = null; }
+    }
+    return STRIPE;
+  }
+
+  function coachDisplayName() {
+    var el = document.getElementById('cp-hero-name');
+    var n = el ? (el.textContent || '').trim() : '';
+    return (n && n !== '—') ? n : 'the coach';
+  }
 
   function esc(s){ return String(s == null ? '' : s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
@@ -928,6 +1142,9 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     SELECTED_DATE = null;
     SELECTED_TIME = null;
     POINTS_TO_USE = 0;
+    PAYMENT_METHOD = 'card';
+    STRIPE_ELEMENTS = null;
+    CARD_BOOKING = null;
     IS_GIFT = false;
     GIFT_RECIPIENT = null;
     GIFT_SEARCH_RESULTS = [];
@@ -958,6 +1175,8 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
 
   window.cpCloseBookingModal = function() {
     document.getElementById('cp-book-modal').style.display = 'none';
+    STRIPE_ELEMENTS = null;   // drop any mounted Payment Element
+    CARD_BOOKING = null;
   };
 
   function renderModal() {
@@ -969,6 +1188,8 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     var pointsValueAed = Math.floor(POINTS_TO_USE / 10);
     var walletDebit = Math.max(0, o.price_aed - pointsValueAed);
     var canAfford = WALLET.balance_aed >= walletDebit;
+    var usingCard = !IS_GIFT && PAYMENT_METHOD === 'card';
+    var canConfirm = usingCard || canAfford;
 
     card.innerHTML =
       '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:16px">' +
@@ -1017,27 +1238,48 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
               '<textarea id="cp-note" rows="2" placeholder="Marathon pacing, running form, race-day strategy…" style="width:100%;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.12);border-radius:6px;padding:10px 12px;color:#fff;font-size:13px;font-family:inherit;resize:vertical"></textarea></div>'
             : '') +
 
-          // Payment section
-          '<div style="margin-bottom:14px;padding:14px;background:rgba(245,192,66,.04);border:1px solid rgba(245,192,66,.2);border-radius:8px">' +
-            '<div style="font-size:11px;color:#f5c042;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:10px">' + (IS_GIFT ? 'Payment' : '4. Payment') + '</div>' +
-            '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#aaa"><span>Wallet balance available</span><strong style="color:#fff">AED ' + WALLET.balance_aed + '</strong></div>' +
-            '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#aaa"><span>Points available</span><strong style="color:#fff">' + POINTS_BALANCE + ' pts (worth AED ' + Math.floor(POINTS_BALANCE / 10) + ')</strong></div>' +
-            (maxPoints > 0 ?
-              '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)">' +
-                '<label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:6px">Use points (1 pt = AED 0.10)</label>' +
-                '<input type="range" id="cp-points-slider" min="0" max="' + maxPoints + '" step="10" value="' + POINTS_TO_USE + '" oninput="cpUpdatePoints(this.value)" style="width:100%;cursor:pointer">' +
-                '<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-top:4px"><span>0 pts</span><strong style="color:#f5c042">Using: ' + POINTS_TO_USE + ' pts (AED ' + pointsValueAed + ')</strong><span>' + maxPoints + ' pts</span></div>' +
-              '</div>' : '') +
-            '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(245,192,66,.3);display:flex;justify-content:space-between;font-size:15px"><span style="color:#fff;font-weight:700">Wallet charge</span><strong style="color:#f5c042;font-family:\'Barlow Condensed\',sans-serif;font-size:22px;font-weight:900">AED ' + walletDebit + '</strong></div>' +
-          '</div>' +
-
-          (!canAfford
-            ? '<div style="padding:12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:12px;color:#ff8a8a;margin-bottom:14px">⚠ Wallet balance too low. Need AED ' + walletDebit + ', you have AED ' + WALLET.balance_aed + '. Contact ATP to top up.</div>'
+          // Payment method toggle — card (Stripe hold) vs wallet+points.
+          // Gifts stay wallet-only: the card contract covers direct bookings.
+          (!IS_GIFT
+            ? '<div style="margin-bottom:14px"><label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:8px">4. How do you want to pay?</label>' +
+              '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;background:rgba(255,255,255,.03);padding:4px;border-radius:8px">' +
+                '<button onclick="cpSetPayMethod(\'card\')" style="padding:10px 12px;background:' + (usingCard ? '#f5c042' : 'transparent') + ';color:' + (usingCard ? '#0a0a0a' : '#888') + ';border:none;border-radius:6px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:11px;cursor:pointer;font-family:inherit">💳 Card</button>' +
+                '<button onclick="cpSetPayMethod(\'wallet\')" style="padding:10px 12px;background:' + (!usingCard ? '#f5c042' : 'transparent') + ';color:' + (!usingCard ? '#0a0a0a' : '#888') + ';border:none;border-radius:6px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;font-size:11px;cursor:pointer;font-family:inherit">ATP wallet + points</button>' +
+              '</div></div>'
             : '') +
 
-          '<button onclick="cpConfirmBooking()" ' + (canAfford ? '' : 'disabled') + ' style="width:100%;background:' + (canAfford ? '#f5c042' : 'rgba(255,255,255,.1)') + ';color:' + (canAfford ? '#0a0a0a' : '#666') + ';border:none;border-radius:8px;padding:14px;font-weight:800;font-size:14px;letter-spacing:.05em;text-transform:uppercase;cursor:' + (canAfford ? 'pointer' : 'not-allowed') + '">' + (IS_GIFT ? '🎁 Send the gift →' : 'Confirm booking →') + '</button>'
+          // Payment section — card summary OR the wallet/points combo
+          (usingCard
+            ? '<div style="margin-bottom:14px;padding:14px;background:rgba(245,192,66,.04);border:1px solid rgba(245,192,66,.2);border-radius:8px">' +
+                '<div style="font-size:11px;color:#f5c042;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:10px">Card payment</div>' +
+                '<div style="display:flex;justify-content:space-between;font-size:15px;padding:4px 0"><span style="color:#fff;font-weight:700">Hold on your card</span><strong style="color:#f5c042;font-family:\'Barlow Condensed\',sans-serif;font-size:22px;font-weight:900">AED ' + o.price_aed + '</strong></div>' +
+                '<div style="font-size:12px;color:#888;line-height:1.5;margin-top:6px">We place a hold — your card is only charged when the coach confirms (within 72h). If they decline or don\'t respond, the hold is released.</div>' +
+              '</div>'
+            : '<div style="margin-bottom:14px;padding:14px;background:rgba(245,192,66,.04);border:1px solid rgba(245,192,66,.2);border-radius:8px">' +
+                '<div style="font-size:11px;color:#f5c042;letter-spacing:.08em;text-transform:uppercase;font-weight:700;margin-bottom:10px">' + (IS_GIFT ? 'Payment' : 'Wallet payment') + '</div>' +
+                '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#aaa"><span>Wallet balance available</span><strong style="color:#fff">AED ' + WALLET.balance_aed + '</strong></div>' +
+                '<div style="display:flex;justify-content:space-between;font-size:13px;padding:4px 0;color:#aaa"><span>Points available</span><strong style="color:#fff">' + POINTS_BALANCE + ' pts (worth AED ' + Math.floor(POINTS_BALANCE / 10) + ')</strong></div>' +
+                (maxPoints > 0 ?
+                  '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.06)">' +
+                    '<label style="font-size:11px;color:#888;letter-spacing:.08em;text-transform:uppercase;font-weight:600;display:block;margin-bottom:6px">Use points (1 pt = AED 0.10)</label>' +
+                    '<input type="range" id="cp-points-slider" min="0" max="' + maxPoints + '" step="10" value="' + POINTS_TO_USE + '" oninput="cpUpdatePoints(this.value)" style="width:100%;cursor:pointer">' +
+                    '<div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-top:4px"><span>0 pts</span><strong style="color:#f5c042">Using: ' + POINTS_TO_USE + ' pts (AED ' + pointsValueAed + ')</strong><span>' + maxPoints + ' pts</span></div>' +
+                  '</div>' : '') +
+                '<div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(245,192,66,.3);display:flex;justify-content:space-between;font-size:15px"><span style="color:#fff;font-weight:700">Wallet charge</span><strong style="color:#f5c042;font-family:\'Barlow Condensed\',sans-serif;font-size:22px;font-weight:900">AED ' + walletDebit + '</strong></div>' +
+              '</div>') +
+
+          (!usingCard && !canAfford
+            ? '<div style="padding:12px;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:8px;font-size:12px;color:#ff8a8a;margin-bottom:14px">⚠ Wallet balance too low. Need AED ' + walletDebit + ', you have AED ' + WALLET.balance_aed + '. Pay by card instead, or contact ATP to top up.</div>'
+            : '') +
+
+          '<button onclick="cpConfirmBooking()" ' + (canConfirm ? '' : 'disabled') + ' style="width:100%;background:' + (canConfirm ? '#f5c042' : 'rgba(255,255,255,.1)') + ';color:' + (canConfirm ? '#0a0a0a' : '#666') + ';border:none;border-radius:8px;padding:14px;font-weight:800;font-size:14px;letter-spacing:.05em;text-transform:uppercase;cursor:' + (canConfirm ? 'pointer' : 'not-allowed') + '">' + (IS_GIFT ? '🎁 Send the gift →' : (usingCard ? 'Continue to card payment →' : 'Confirm booking →')) + '</button>'
         : '');
   }
+
+  window.cpSetPayMethod = function(m) {
+    PAYMENT_METHOD = (m === 'wallet') ? 'wallet' : 'card';
+    renderModal();
+  };
 
   window.cpSetGiftMode = function(on) {
     IS_GIFT = !!on;
@@ -1333,6 +1575,40 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     // Direct booking requires date + time. Gift requires only a recipient.
     if (!IS_GIFT && (!SELECTED_DATE || !SELECTED_TIME)) return;
     if (IS_GIFT && !GIFT_RECIPIENT) return;
+
+    // ── Card path (direct bookings only) ──────────────────────
+    // POST /book with payment:'card' → booking + PaymentIntent client
+    // secret → mount a Stripe Payment Element as the next modal step.
+    if (!IS_GIFT && PAYMENT_METHOD === 'card') {
+      var cdt = new Date(SELECTED_DATE);
+      var cparts = SELECTED_TIME.split(':');
+      cdt.setHours(parseInt(cparts[0],10), parseInt(cparts[1],10), 0, 0);
+      var cardBody = {
+        offering_id: SELECTED_OFFERING.id,
+        scheduled_at: cdt.toISOString(),
+        member_note: (document.getElementById('cp-note') || {}).value || '',
+        payment: 'card',
+      };
+      var cardEl = document.getElementById('cp-book-modal-card');
+      cardEl.style.opacity = 0.6;
+      fetch('/api/coach-sessions/book', {
+        method: 'POST',
+        headers: Object.assign({ 'Content-Type': 'application/json' }, authHeaders()),
+        body: JSON.stringify(cardBody),
+      })
+        .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, body: d }; }); })
+        .then(function(out){
+          cardEl.style.opacity = 1;
+          if (!out.ok) {
+            alert((out.body && out.body.error) || 'Booking failed');
+            return;
+          }
+          renderCardPaymentStep(out.body);
+        })
+        .catch(function(){ alert('Network error — try again.'); cardEl.style.opacity = 1; });
+      return;
+    }
+
     var body = {
       offering_id: SELECTED_OFFERING.id,
       points_to_use: POINTS_TO_USE,
@@ -1394,6 +1670,122 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
         }
       })
       .catch(function(){ alert('Network error — try again.'); card.style.opacity = 1; });
+  };
+
+  // ── CARD PAYMENT STEP (Stripe Payment Element) ─────────────
+  // Shown after /book returns { booking, payment:{ payment_intent_client_secret } }.
+  // confirmPayment places a HOLD (manual capture) — the member is only
+  // charged when the coach confirms within 72h.
+  function renderCardPaymentStep(resp) {
+    var card = document.getElementById('cp-book-modal-card');
+    if (!card) return;
+    CARD_BOOKING = (resp && resp.booking) || {};
+    var clientSecret = resp && resp.payment && resp.payment.payment_intent_client_secret;
+    var stripe = getStripe();
+    var o = SELECTED_OFFERING || {};
+
+    if (!clientSecret || !stripe) {
+      // Stripe.js blocked/failed or backend didn't return a secret —
+      // fail soft, no charge was made, the request expires server-side.
+      card.innerHTML =
+        '<div style="text-align:center;padding:20px 10px">' +
+          '<div style="font-size:40px;margin-bottom:12px">💳</div>' +
+          '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:24px;font-weight:900;color:#fff;text-transform:uppercase;margin-bottom:10px">Card payment unavailable</div>' +
+          '<p style="font-size:13px;color:#aaa;line-height:1.55;margin-bottom:18px">We couldn\'t start the card payment. Nothing was charged and this request will expire automatically — try again, or pay from your ATP wallet.</p>' +
+          '<button onclick="cpCloseBookingModal()" style="background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;padding:12px 28px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">Close</button>' +
+        '</div>';
+      return;
+    }
+
+    var when = CARD_BOOKING.scheduled_at ? new Date(CARD_BOOKING.scheduled_at) : null;
+    var whenTxt = when
+      ? when.toLocaleDateString() + ' · ' + when.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+      : '';
+
+    card.innerHTML =
+      '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:16px">' +
+        '<div>' +
+          '<div style="font-size:11px;color:#f5c042;letter-spacing:.12em;text-transform:uppercase;font-weight:700;margin-bottom:4px">💳 Card payment</div>' +
+          '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:22px;font-weight:800;text-transform:uppercase;line-height:1.1">' + esc(o.title || '1-on-1 session') + '</div>' +
+          '<div style="font-size:12px;color:#888;margin-top:4px">' + esc(whenTxt) + (whenTxt ? ' · ' : '') + (o.duration_min || CARD_BOOKING.duration_min || '') + ' min · AED ' + (o.price_aed || CARD_BOOKING.price_paid_aed || '') + '</div>' +
+        '</div>' +
+        '<button onclick="cpCancelCardPayment()" style="background:none;border:none;color:#888;font-size:22px;cursor:pointer;padding:4px 8px">×</button>' +
+      '</div>' +
+      '<div id="cp-payment-el" style="margin-bottom:14px;min-height:120px"></div>' +
+      '<div id="cp-pay-msg" role="alert" style="min-height:18px;font-size:12px;color:#ff8a8a;line-height:1.5;margin-bottom:10px"></div>' +
+      '<button id="cp-pay-btn" onclick="cpSubmitCardPayment()" style="width:100%;background:#f5c042;color:#0a0a0a;border:none;border-radius:8px;padding:14px;font-weight:800;font-size:14px;letter-spacing:.05em;text-transform:uppercase;cursor:pointer">Place hold — AED ' + (o.price_aed || '') + '</button>' +
+      '<button onclick="cpCancelCardPayment()" style="width:100%;background:transparent;border:none;color:#888;font-size:12px;padding:12px 0 2px;cursor:pointer">Cancel — nothing is charged</button>' +
+      '<div style="font-size:11px;color:#666;line-height:1.5;margin-top:10px;text-align:center">Your card is only charged when ' + esc(coachDisplayName()) + ' confirms (within 72h). Declined or no answer → the hold is released.</div>';
+
+    STRIPE_ELEMENTS = stripe.elements({
+      clientSecret: clientSecret,
+      appearance: {
+        theme: 'night',
+        variables: {
+          colorPrimary: '#f5c042',
+          colorBackground: '#161616',
+          colorText: '#ffffff',
+          colorDanger: '#ff8a8a',
+          borderRadius: '6px',
+          fontFamily: "'DM Sans', sans-serif",
+        },
+      },
+      fonts: [{ cssSrc: 'https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&display=swap' }],
+    });
+    var payEl = STRIPE_ELEMENTS.create('payment');
+    payEl.mount('#cp-payment-el');
+  }
+
+  window.cpSubmitCardPayment = function() {
+    var stripe = getStripe();
+    if (!stripe || !STRIPE_ELEMENTS) return;
+    var btn = document.getElementById('cp-pay-btn');
+    var msg = document.getElementById('cp-pay-msg');
+    var o = SELECTED_OFFERING || {};
+    if (btn) { btn.disabled = true; btn.textContent = 'Processing…'; btn.style.opacity = '.7'; }
+    if (msg) msg.textContent = '';
+    stripe.confirmPayment({
+      elements: STRIPE_ELEMENTS,
+      confirmParams: { return_url: location.origin + location.pathname + location.search },
+      redirect: 'if_required',   // stay in the modal unless the method forces a redirect (3DS handled inline)
+    }).then(function(res){
+      if (res.error) {
+        // Declined / validation / 3DS abandoned — let them fix and retry.
+        if (msg) msg.textContent = res.error.message || 'Payment didn\'t go through — check your card details and try again.';
+        if (btn) { btn.disabled = false; btn.textContent = 'Place hold — AED ' + (o.price_aed || ''); btn.style.opacity = '1'; }
+        return;
+      }
+      renderCardHoldSuccess();
+    }).catch(function(){
+      if (msg) msg.textContent = 'Network error — your card was not charged. Try again.';
+      if (btn) { btn.disabled = false; btn.textContent = 'Place hold — AED ' + (o.price_aed || ''); btn.style.opacity = '1'; }
+    });
+  };
+
+  function renderCardHoldSuccess() {
+    var card = document.getElementById('cp-book-modal-card');
+    if (!card) return;
+    var b = CARD_BOOKING || {};
+    var o = SELECTED_OFFERING || {};
+    var when = b.scheduled_at ? new Date(b.scheduled_at) : null;
+    card.innerHTML =
+      '<div style="text-align:center;padding:20px 10px">' +
+        '<div style="font-size:48px;margin-bottom:14px">⏳</div>' +
+        '<div style="font-family:\'Barlow Condensed\',sans-serif;font-size:28px;font-weight:900;color:#fff;text-transform:uppercase;margin-bottom:10px">Hold placed</div>' +
+        '<p style="font-size:14px;color:#aaa;margin-bottom:18px;line-height:1.55">Hold placed — ' + esc(coachDisplayName()) + ' has 72h to confirm; you\'re only charged on confirmation. We\'ll notify you either way, and if they decline or don\'t respond the hold is released in full.</p>' +
+        '<div style="background:rgba(245,192,66,.06);border:1px solid rgba(245,192,66,.32);border-radius:8px;padding:14px;font-size:13px;color:#fff;margin-bottom:18px">' +
+          (when ? when.toLocaleDateString() + ' · ' + when.toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' }) + ' · ' : '') +
+          (o.duration_min || b.duration_min || '') + ' min · AED ' + (o.price_aed || b.price_paid_aed || '') +
+        '</div>' +
+        '<p style="font-size:12px;color:#888;margin-bottom:18px;line-height:1.5">Track this request any time under Bookings on your profile.</p>' +
+        '<button onclick="cpCloseBookingModal()" style="background:#f5c042;color:#0a0a0a;border:none;border-radius:6px;padding:12px 28px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;cursor:pointer">Done</button>' +
+      '</div>';
+    STRIPE_ELEMENTS = null;
+  }
+
+  window.cpCancelCardPayment = function() {
+    if (!confirm('Cancel the card payment? Nothing is charged — this booking request will expire automatically.')) return;
+    cpCloseBookingModal();
   };
 
   // Boot — wait for the main coach renderer to populate the page

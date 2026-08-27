@@ -953,32 +953,10 @@
             <!-- Upcoming Sessions -->
             <div id="coachModalSessions" style="margin-bottom:28px"></div>
 
-            <!-- DIRECT MEMBER FEEDBACK (key feature) -->
-            <div id="coachModalFeedbackForm" style="margin-bottom:24px;padding:20px;background:#0f0f0f;border-radius:12px;border:1px solid #1a1a1a">
-              <div style="font-size:13px;font-weight:800;color:#A8FF00;margin-bottom:12px;text-transform:uppercase;letter-spacing:.08em">⭐ Leave Feedback</div>
-              <div style="font-size:12px;color:#888;margin-bottom:14px">Share your experience. Only members who have attended a session can leave feedback.</div>
-              <div style="display:flex;gap:10px;margin-bottom:12px;align-items:center">
-                <span style="font-size:12px;color:#888;min-width:60px">Rating:</span>
-                <div id="feedbackStars" style="display:flex;gap:4px;cursor:pointer">
-                  <span class="fb-star" data-v="1" style="font-size:24px;color:#333">★</span>
-                  <span class="fb-star" data-v="2" style="font-size:24px;color:#333">★</span>
-                  <span class="fb-star" data-v="3" style="font-size:24px;color:#333">★</span>
-                  <span class="fb-star" data-v="4" style="font-size:24px;color:#333">★</span>
-                  <span class="fb-star" data-v="5" style="font-size:24px;color:#333">★</span>
-                </div>
-                <span id="feedbackRatingLabel" style="font-size:12px;color:#A8FF00;margin-left:10px"></span>
-              </div>
-              <textarea id="feedbackComment" class="admin-form-input" rows="3" placeholder="How was your session? What did you enjoy most?" style="width:100%;font-family:inherit;resize:vertical"></textarea>
-              <div style="display:flex;gap:10px;margin-top:12px;align-items:center">
-                <button class="admin-btn admin-btn-primary" style="font-size:12px;padding:8px 20px" data-atp-call="submitCoachFeedback">Submit Feedback</button>
-                <span id="feedbackMsg" style="font-size:12px"></span>
-              </div>
-            </div>
-
-            <!-- Reviews Display -->
-            <div id="coachModalFeedback" style="margin-bottom:20px"></div>
-
             <!-- Admin Actions -->
+            <!-- (Feedback form + reviews list removed 2026-08-28 — founder:
+                 admin edits profiles, no feedback UI. The read-only rating
+                 summary in the hero stays: that's stats, not feedback.) -->
             <div style="padding-top:20px;border-top:1px solid #1a1a1a;display:flex;gap:10px;flex-wrap:wrap">
               <button class="admin-btn admin-btn-primary" id="coachFeatureBtn" style="font-size:12px;padding:8px 16px" data-atp-call="toggleCoachFeature">⭐ Feature</button>
               <button class="admin-btn" style="font-size:12px;padding:8px 16px" data-atp-call="openCoachEditor">✏️ Edit Profile</button>
@@ -990,33 +968,54 @@
       </div>
     </div>
 
-    <!-- COACH PROFILE EDITOR MODAL -->
-    <div id="coachEditorModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:10000;align-items:center;justify-content:center;overflow-y:auto">
-      <div style="background:#0d0d0d;border:1px solid #1a1a1a;border-radius:16px;width:92%;max-width:640px;margin:20px auto;padding:28px">
+    <!-- COACH PROFILE EDITOR MODAL — full parity with the coach's own
+         profile editor (founder 2026-08-28: admin can edit everything the
+         coach can, pictures included, plus admin-only slug + featured). -->
+    <div id="coachEditorModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:10000;align-items:flex-start;justify-content:center;overflow-y:auto;padding:24px 12px">
+      <div style="background:#0d0d0d;border:1px solid #1a1a1a;border-radius:16px;width:100%;max-width:760px;margin:auto;padding:28px">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid #1a1a1a">
           <div>
             <div style="font-family:var(--ff-display);font-size:18px;font-weight:900" id="coachEditorTitle">Edit Coach Profile</div>
-            <div style="font-size:12px;color:#555;margin-top:3px">Make this profile shine — detailed profiles attract more members</div>
+            <div style="font-size:12px;color:#555;margin-top:3px">Full edit — everything the coach can change on their own profile, pictures included</div>
           </div>
           <button class="admin-btn" onclick="document.getElementById('coachEditorModal').style.display='none'" style="padding:6px 12px">✕</button>
         </div>
         <div id="coachEditorMsg" style="display:none;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px"></div>
+
+        <!-- Identity -->
+        <div style="font-size:12px;color:#555;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Identity</div>
+        <div class="admin-form-grid" style="margin-bottom:18px">
+          <div class="admin-form-group">
+            <label class="admin-form-label" for="ceDisplayName">Display name</label>
+            <input class="admin-form-input" type="text" id="ceDisplayName" placeholder="Coach Carlos">
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-form-label" for="ceSlug">Profile slug (admin only — /coach/…)</label>
+            <input class="admin-form-input" type="text" id="ceSlug" placeholder="carlos-santos">
+          </div>
+          <div class="admin-form-group full">
+            <label class="admin-form-label" for="ceTagline">Tagline (one line under the name)</label>
+            <input class="admin-form-input" type="text" id="ceTagline" placeholder="Making padel simple, one rally at a time">
+          </div>
+        </div>
+
+        <!-- About -->
+        <div style="font-size:12px;color:#555;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">About</div>
         <div class="admin-form-group" style="margin-bottom:14px">
-          <label class="admin-form-label" for="ceBio">Bio (tell the community who you are)</label>
+          <label class="admin-form-label" for="ceBio">Bio (tell the community who they are)</label>
           <textarea class="admin-form-input" id="ceBio" rows="4" placeholder="Certified padel coach with 8 years experience helping players from Beginner to Pro. Based in Dubai Marina, I specialize in..." style="resize:vertical;min-height:80px;font-family:inherit"></textarea>
         </div>
-        <div class="admin-form-grid">
+        <div class="admin-form-group" style="margin-bottom:18px">
+          <label class="admin-form-label" for="cePhilosophy">Coaching philosophy</label>
+          <textarea class="admin-form-input" id="cePhilosophy" rows="3" placeholder="Technique first, fitness always, fun forever..." style="resize:vertical;min-height:60px;font-family:inherit"></textarea>
+        </div>
+
+        <!-- Experience & skills -->
+        <div style="font-size:12px;color:#555;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Experience &amp; Skills</div>
+        <div class="admin-form-grid" style="margin-bottom:18px">
           <div class="admin-form-group">
             <label class="admin-form-label" for="ceYears">Years Experience</label>
             <input class="admin-form-input" type="number" id="ceYears" min="0" max="60" placeholder="5" aria-label="5">
-          </div>
-          <div class="admin-form-group">
-            <label class="admin-form-label" for="ceInsta">Instagram (without @)</label>
-            <input class="admin-form-input" type="text" id="ceInsta" placeholder="yourhandle" aria-label="yourhandle">
-          </div>
-          <div class="admin-form-group">
-            <label class="admin-form-label" for="ceTiktok">TikTok (without @)</label>
-            <input class="admin-form-input" type="text" id="ceTiktok" placeholder="yourhandle" aria-label="yourhandle">
           </div>
           <div class="admin-form-group">
             <label class="admin-form-label" for="ceLangs">Languages (comma-separated)</label>
@@ -1031,6 +1030,94 @@
             <input class="admin-form-input" type="text" id="ceCerts" placeholder="NASM-CPT, FIP Padel Level 2, ACE Certified" aria-label="NASM-CPT, FIP Padel Level 2, ACE Certified">
           </div>
         </div>
+
+        <!-- Pictures & media -->
+        <div style="font-size:12px;color:#555;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Pictures &amp; Media</div>
+        <div style="background:#0f0f0f;border:1px solid #1a1a1a;border-radius:12px;padding:16px;margin-bottom:18px">
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+            <img id="cePhotoThumb" alt="" style="display:none;width:56px;height:56px;object-fit:cover;border-radius:50%;border:1px solid #1a1a1a;background:#111;flex-shrink:0" onerror="this.style.display='none'">
+            <div style="flex:1">
+              <label class="admin-form-label" for="cePhotoUrl">Profile photo URL</label>
+              <input class="admin-form-input" type="text" id="cePhotoUrl" placeholder="https://…/photo.jpg" oninput="_ceThumb('cePhotoThumb', this.value)">
+            </div>
+            <input type="file" id="cePhotoFile" accept="image/*" style="display:none" onchange="_ceUpload('cePhotoFile','cePhotoUrl','image',15,'cePhotoThumb')">
+            <button class="admin-btn" style="font-size:12px;padding:8px 14px;align-self:flex-end" onclick="document.getElementById('cePhotoFile').click()">📁 Upload</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+            <img id="ceCoverThumb" alt="" style="display:none;width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #1a1a1a;background:#111;flex-shrink:0" onerror="this.style.display='none'">
+            <div style="flex:1">
+              <label class="admin-form-label" for="ceCoverUrl">Cover image URL</label>
+              <input class="admin-form-input" type="text" id="ceCoverUrl" placeholder="https://…/cover.jpg" oninput="_ceThumb('ceCoverThumb', this.value)">
+            </div>
+            <input type="file" id="ceCoverFile" accept="image/*" style="display:none" onchange="_ceUpload('ceCoverFile','ceCoverUrl','image',15,'ceCoverThumb')">
+            <button class="admin-btn" style="font-size:12px;padding:8px 14px;align-self:flex-end" onclick="document.getElementById('ceCoverFile').click()">📁 Upload</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="flex:1">
+              <label class="admin-form-label" for="ceVideoUrl">Intro video URL</label>
+              <input class="admin-form-input" type="text" id="ceVideoUrl" placeholder="https://…/intro.mp4 or YouTube link">
+            </div>
+            <input type="file" id="ceVideoFile" accept="video/mp4,video/webm" style="display:none" onchange="_ceUpload('ceVideoFile','ceVideoUrl','video',100)">
+            <button class="admin-btn" style="font-size:12px;padding:8px 14px;align-self:flex-end" onclick="document.getElementById('ceVideoFile').click()">📁 Upload</button>
+          </div>
+        </div>
+
+        <!-- Gallery -->
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-size:12px;color:#555;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Gallery <span id="ceGalleryCount" style="color:#A8FF00;margin-left:6px">0 / 12</span></div>
+          <div>
+            <input type="file" id="ceGalleryFile" accept="image/*" style="display:none" onchange="_ceGalleryUpload()">
+            <input type="hidden" id="ceGalleryUrl">
+            <button class="admin-btn" style="font-size:12px;padding:6px 14px" onclick="document.getElementById('ceGalleryFile').click()">＋ Add photo</button>
+          </div>
+        </div>
+        <div id="ceGalleryList" style="margin-bottom:18px"></div>
+
+        <!-- Private sessions -->
+        <div style="font-size:12px;color:#555;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Private Sessions</div>
+        <div style="background:#0f0f0f;border:1px solid #1a1a1a;border-radius:12px;padding:16px;margin-bottom:18px">
+          <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#ccc;cursor:pointer;margin-bottom:10px">
+            <input type="checkbox" id="cePrivate"> Accepts private 1-on-1 sessions
+          </label>
+          <label class="admin-form-label" for="cePrivateInfo">Private session info (rates, availability, how to book)</label>
+          <textarea class="admin-form-input" id="cePrivateInfo" rows="3" placeholder="AED 250/hr, mornings only — DM on Instagram to book..." style="resize:vertical;min-height:60px;font-family:inherit"></textarea>
+        </div>
+
+        <!-- Social links -->
+        <div style="font-size:12px;color:#555;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Social Links</div>
+        <div class="admin-form-grid" style="margin-bottom:18px">
+          <div class="admin-form-group">
+            <label class="admin-form-label" for="ceInsta">Instagram (without @)</label>
+            <input class="admin-form-input" type="text" id="ceInsta" placeholder="yourhandle" aria-label="yourhandle">
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-form-label" for="ceTiktok">TikTok (without @)</label>
+            <input class="admin-form-input" type="text" id="ceTiktok" placeholder="yourhandle" aria-label="yourhandle">
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-form-label" for="ceWhatsapp">WhatsApp link</label>
+            <input class="admin-form-input" type="text" id="ceWhatsapp" placeholder="https://wa.me/9715…">
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-form-label" for="ceWebsite">Website</label>
+            <input class="admin-form-input" type="text" id="ceWebsite" placeholder="https://…">
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-form-label" for="ceYoutube">YouTube</label>
+            <input class="admin-form-input" type="text" id="ceYoutube" placeholder="https://youtube.com/@…">
+          </div>
+          <div class="admin-form-group">
+            <label class="admin-form-label" for="ceLinkedin">LinkedIn</label>
+            <input class="admin-form-input" type="text" id="ceLinkedin" placeholder="https://linkedin.com/in/…">
+          </div>
+        </div>
+
+        <!-- Admin-only -->
+        <div style="font-size:12px;color:#555;margin-bottom:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">Admin</div>
+        <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:#ccc;cursor:pointer;background:#0f0f0f;border:1px solid #1a1a1a;border-radius:12px;padding:14px 16px">
+          <input type="checkbox" id="ceFeatured"> ⭐ Featured coach (highlighted on the public site)
+        </label>
+
         <div style="display:flex;gap:10px;margin-top:20px;padding-top:16px;border-top:1px solid #1a1a1a">
           <button class="admin-btn admin-btn-primary" style="padding:10px 20px;font-size:13px" data-atp-call="saveCoachProfile">✓ Save Profile</button>
           <button class="admin-btn" style="padding:10px 20px;font-size:13px" onclick="document.getElementById('coachEditorModal').style.display='none'">Cancel</button>
@@ -2041,7 +2128,7 @@
 <div class="admin-toast" id="adminToast"></div>
 <!-- Admin modules — load order matters: core defines globals + showAdminSection
      hook in init.js wires the per-section loaders, so init.js must come last. -->
-<script src="/admin/bundle.min.js?v=7d22ac5190"></script>
+<script src="/admin/bundle.min.js?v=b028b6f5ff"></script>
 
 
 

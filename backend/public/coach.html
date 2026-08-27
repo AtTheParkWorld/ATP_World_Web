@@ -146,6 +146,29 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
 .cp-review-avatar{width:32px;height:32px;border-radius:50%;background:rgba(168,255,0,.16);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800}
 .cp-review-name{font-size:13px;font-weight:700;color:#fff}
 .cp-review-meta{font-size:11px;color:var(--muted);margin-top:1px}
+.cp-reviews-empty{padding:22px 24px;background:var(--dark2);border:1px dashed var(--line);border-radius:var(--radius-lg);color:var(--muted);font-size:13px;text-align:center}
+
+/* ── 8b. RATE THIS COACH ─────────────────────────────────── */
+.cp-rate{margin-top:22px;background:var(--dark2);border:1px solid rgba(168,255,0,.22);border-radius:var(--radius-lg);padding:26px 28px;max-width:560px}
+.cp-rate-title{font-family:var(--ff-display);font-size:22px;font-weight:900;text-transform:uppercase;color:#fff;letter-spacing:.01em;margin-bottom:4px}
+.cp-rate-sub{font-size:13px;color:var(--muted);line-height:1.55;margin-bottom:16px}
+.cp-rate-stars{display:flex;gap:6px;margin-bottom:16px}
+.cp-rate-star{font-size:30px;line-height:1;color:rgba(255,255,255,.22);background:none;border:none;cursor:pointer;padding:2px 4px;transition:color .12s,transform .12s}
+.cp-rate-star.lit{color:#ffc400}
+.cp-rate-star:hover{transform:scale(1.15)}
+.cp-rate-field{margin-bottom:12px}
+.cp-rate-field label{display:block;font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:rgba(255,255,255,.55);margin-bottom:6px}
+.cp-rate-field input,.cp-rate-field textarea{width:100%;background:#070b06;border:1px solid var(--line);border-radius:var(--radius);padding:11px 13px;color:#fff;font-size:14px;font-family:inherit;resize:vertical;transition:border-color .15s}
+.cp-rate-field input:focus,.cp-rate-field textarea:focus{outline:none;border-color:var(--green)}
+.cp-rate-field input::placeholder,.cp-rate-field textarea::placeholder{color:rgba(255,255,255,.32)}
+.cp-rate-btn{background:var(--green);color:#0a0a0a;border:none;border-radius:var(--radius);padding:12px 26px;font-size:13px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;cursor:pointer;transition:background .15s,transform .15s}
+.cp-rate-btn:hover:not(:disabled){background:var(--green-light);transform:translateY(-1px)}
+.cp-rate-btn:disabled{opacity:.5;cursor:not-allowed}
+.cp-rate-msg{font-size:13px;min-height:18px;margin-top:10px;line-height:1.5}
+.cp-rate-msg.error{color:#fca5a5}
+.cp-rate-msg.ok{color:var(--green)}
+.cp-rate-thanks{padding:18px 20px;background:rgba(168,255,0,.08);border:1px solid rgba(168,255,0,.4);border-radius:var(--radius);color:#dff5c5;font-size:14px;line-height:1.6}
+.cp-rate-thanks strong{display:block;color:var(--green-light);font-size:15px;margin-bottom:4px}
 
 /* ── 9. CREDENTIALS ──────────────────────────────────────── */
 .cp-creds-grid{display:grid;grid-template-columns:1.4fr 1fr;gap:24px}
@@ -306,10 +329,34 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     <div class="cp-gallery" id="cp-gallery"></div>
   </section>
 
-  <!-- 8. REVIEWS -->
+  <!-- 8. REVIEWS + RATE THIS COACH -->
   <section class="cp-section" id="cp-reviews-section" style="display:none">
     <div class="cp-section-title">What members <span class="acc">say</span></div>
+    <div class="cp-section-sub" id="cp-reviews-summary" style="display:none"></div>
     <div class="cp-reviews" id="cp-reviews"></div>
+
+    <!-- Rate this coach — open to everyone (members AND visitors, no login wall) -->
+    <div class="cp-rate" id="cp-rate">
+      <div class="cp-rate-title">Rate this <span style="color:var(--green)">coach</span></div>
+      <div class="cp-rate-sub" id="cp-rate-sub">Trained with this coach? Tap the stars — a comment is optional.</div>
+      <div class="cp-rate-stars" id="cp-rate-stars" role="radiogroup" aria-label="Your rating (1 to 5 stars)">
+        <button type="button" class="cp-rate-star" data-star="1" aria-label="1 star">★</button>
+        <button type="button" class="cp-rate-star" data-star="2" aria-label="2 stars">★</button>
+        <button type="button" class="cp-rate-star" data-star="3" aria-label="3 stars">★</button>
+        <button type="button" class="cp-rate-star" data-star="4" aria-label="4 stars">★</button>
+        <button type="button" class="cp-rate-star" data-star="5" aria-label="5 stars">★</button>
+      </div>
+      <div class="cp-rate-field" id="cp-rate-name-field" style="display:none">
+        <label for="cp-rate-name">Your name (optional)</label>
+        <input id="cp-rate-name" type="text" maxlength="80" placeholder="e.g. Sara" autocomplete="name">
+      </div>
+      <div class="cp-rate-field">
+        <label for="cp-rate-comment">Comment (optional)</label>
+        <textarea id="cp-rate-comment" rows="3" maxlength="1000" placeholder="What was the session like?"></textarea>
+      </div>
+      <button type="button" class="cp-rate-btn" id="cp-rate-btn" disabled>Submit rating</button>
+      <div class="cp-rate-msg" id="cp-rate-msg" role="status" aria-live="polite"></div>
+    </div>
   </section>
 
   <!-- 9. CREDENTIALS -->
@@ -622,50 +669,18 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
       show('cp-gallery-section');
     }
 
-    /* Reviews — merge coach-direct + session feedback into one chronological list,
-       labeled distinctly so visitors know which is which. Admins see a small × delete. */
-    var sessionFb = (data && data.session_feedback) || [];
-    var isAdminViewer = (function () {
-      try { var m = JSON.parse(localStorage.getItem('atp_member') || '{}'); return !!m.is_admin; }
-      catch (e) { return false; }
-    })();
-    var merged = []
-      .concat(feedback.map(function (r) { return Object.assign({}, r, { _kind: 'coach' }); }))
-      .concat(sessionFb.map(function (r) { return Object.assign({}, r, { _kind: 'session' }); }))
-      .sort(function (a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+    /* Reviews — the section is ALWAYS shown now (the rate block lives in
+       it and visitors must be able to rate even a review-less coach). */
+    renderReviewsList(feedback, (data && data.session_feedback) || []);
+    updateRatingSummary(st);
+    show('cp-reviews-section');
 
-    if (merged.length) {
-      document.getElementById('cp-reviews').innerHTML = merged.map(function (r) {
-        var name     = ((r.first_name || '') + ' ' + (r.last_name || '')).trim() || 'ATP Member';
-        var initials = ((r.first_name || ' ')[0] + (r.last_name || ' ')[0]).toUpperCase().trim() || '·';
-        var stars    = '★'.repeat(r.rating || 0) + '☆'.repeat(Math.max(0, 5 - (r.rating || 0)));
-        var when     = r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : '';
-        var sessionAt = r.session_at ? new Date(r.session_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
-
-        var typeChip = r._kind === 'coach'
-          ? '<span style="display:inline-block;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--green);background:rgba(168,255,0,.1);border:1px solid rgba(168,255,0,.3);padding:2px 8px;border-radius:10px;margin-bottom:8px">Direct feedback</span>'
-          : '<span style="display:inline-block;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#ffc400;background:rgba(255,196,0,.08);border:1px solid rgba(255,196,0,.28);padding:2px 8px;border-radius:10px;margin-bottom:8px">Session: ' + escapeHtml(r.session_name || 'Session') + (sessionAt ? ' · ' + escapeHtml(sessionAt) : '') + '</span>';
-
-        var deleteBtn = isAdminViewer
-          ? '<button onclick="cpDeleteFeedback(\'' + escapeHtml(r._kind) + '\',\'' + escapeHtml(r.id) + '\',this)" title="Delete (admin only)" style="position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.4);color:#fca5a5;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">×</button>'
-          : '';
-
-        return '<div class="cp-review" style="position:relative">'
-          +   deleteBtn
-          +   typeChip
-          +   '<div class="cp-review-stars">' + stars + '</div>'
-          +   (r.comment ? '<div class="cp-review-text">"' + escapeHtml(r.comment) + '"</div>' : '')
-          +   '<div class="cp-review-author">'
-          +     '<div class="cp-review-avatar">' + escapeHtml(initials) + '</div>'
-          +     '<div><div class="cp-review-name">' + escapeHtml(name) + '</div><div class="cp-review-meta">' + escapeHtml(when) + '</div></div>'
-          +   '</div>'
-          + '</div>';
-      }).join('');
-      show('cp-reviews-section');
-    }
-
-    // Cache the coach id so admin delete can target the right endpoint
+    // Cache the coach id so admin delete + the rate block target the right endpoint
     window.__CP_COACH_ID = c.id;
+
+    /* Rate-this-coach block — logged-in members send their bearer token
+       (repeat ratings update their previous one); visitors go anonymous. */
+    initRateBlock(c.id);
 
     /* Credentials */
     var certs = arr(p.certifications);
@@ -713,6 +728,181 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     hide('cp-loading');
     document.getElementById('cp-profile').classList.remove('hidden');
     document.getElementById('cp-profile').classList.add('fade-in');
+  }
+
+  /* ── Reviews list + rating summary (reused after a new rating) ── */
+  function renderReviewsList(feedback, sessionFb) {
+    var isAdminViewer = (function () {
+      try { var m = JSON.parse(localStorage.getItem('atp_member') || '{}'); return !!m.is_admin; }
+      catch (e) { return false; }
+    })();
+    var merged = []
+      .concat((feedback || []).map(function (r) { return Object.assign({}, r, { _kind: 'coach' }); }))
+      .concat((sessionFb || []).map(function (r) { return Object.assign({}, r, { _kind: 'session' }); }))
+      .sort(function (a, b) { return new Date(b.created_at) - new Date(a.created_at); });
+
+    var box = document.getElementById('cp-reviews');
+    if (!box) return;
+    if (!merged.length) {
+      box.innerHTML = '<div class="cp-reviews-empty" style="grid-column:1/-1">No reviews yet — be the first to rate this coach below.</div>';
+      return;
+    }
+    box.innerHTML = merged.map(function (r) {
+      var name     = ((r.first_name || '') + ' ' + (r.last_name || '')).trim() || 'ATP Member';
+      var initials = ((r.first_name || ' ')[0] + (r.last_name || ' ')[0]).toUpperCase().trim() || '·';
+      var stars    = '★'.repeat(r.rating || 0) + '☆'.repeat(Math.max(0, 5 - (r.rating || 0)));
+      var when     = r.created_at ? new Date(r.created_at).toLocaleDateString('en-GB', { month: 'short', year: 'numeric' }) : '';
+      var sessionAt = r.session_at ? new Date(r.session_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+
+      var typeChip = r._kind === 'coach'
+        ? '<span style="display:inline-block;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--green);background:rgba(168,255,0,.1);border:1px solid rgba(168,255,0,.3);padding:2px 8px;border-radius:10px;margin-bottom:8px">Direct feedback</span>'
+        : '<span style="display:inline-block;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#ffc400;background:rgba(255,196,0,.08);border:1px solid rgba(255,196,0,.28);padding:2px 8px;border-radius:10px;margin-bottom:8px">Session: ' + escapeHtml(r.session_name || 'Session') + (sessionAt ? ' · ' + escapeHtml(sessionAt) : '') + '</span>';
+
+      var deleteBtn = isAdminViewer
+        ? '<button onclick="cpDeleteFeedback(\'' + escapeHtml(r._kind) + '\',\'' + escapeHtml(r.id) + '\',this)" title="Delete (admin only)" style="position:absolute;top:10px;right:10px;width:24px;height:24px;border-radius:50%;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.4);color:#fca5a5;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0">×</button>'
+        : '';
+
+      return '<div class="cp-review" style="position:relative">'
+        +   deleteBtn
+        +   typeChip
+        +   '<div class="cp-review-stars">' + stars + '</div>'
+        +   (r.comment ? '<div class="cp-review-text">"' + escapeHtml(r.comment) + '"</div>' : '')
+        +   '<div class="cp-review-author">'
+        +     '<div class="cp-review-avatar">' + escapeHtml(initials) + '</div>'
+        +     '<div><div class="cp-review-name">' + escapeHtml(name) + '</div><div class="cp-review-meta">' + escapeHtml(when) + '</div></div>'
+        +   '</div>'
+        + '</div>';
+    }).join('');
+  }
+
+  function updateRatingSummary(st) {
+    var el = document.getElementById('cp-reviews-summary');
+    if (!el) return;
+    var count = (st && st.rating_count) || 0;
+    if (count > 0) {
+      el.innerHTML = '<span style="color:#ffc400">★</span> <strong style="color:#fff">'
+        + Number(st.rating_avg).toFixed(1) + '</strong> average · '
+        + count + ' rating' + (count === 1 ? '' : 's');
+      el.style.display = '';
+    } else {
+      el.style.display = 'none';
+    }
+  }
+
+  /* ── Rate this coach — interactive stars + optional comment.
+     No login wall: with an atp_token we send it (member path — repeat
+     ratings update the previous one); without, the API takes the rating
+     anonymously (1/coach/day per IP, a 429 is a friendly notice). ── */
+  var RATE_SELECTED = 0;
+
+  function paintRateStars(n) {
+    var btns = document.querySelectorAll('#cp-rate-stars .cp-rate-star');
+    Array.prototype.forEach.call(btns, function (b) {
+      b.classList.toggle('lit', Number(b.getAttribute('data-star')) <= n);
+    });
+  }
+
+  function getToken() {
+    try { return localStorage.getItem('atp_token') || ''; } catch (e) { return ''; }
+  }
+
+  function initRateBlock(coachId) {
+    var starsWrap = document.getElementById('cp-rate-stars');
+    var btn = document.getElementById('cp-rate-btn');
+    if (!starsWrap || !btn) return;
+
+    // Visitors get an optional name field; members are already known.
+    var loggedIn = !!getToken();
+    if (!loggedIn) {
+      var nameField = document.getElementById('cp-rate-name-field');
+      if (nameField) nameField.style.display = '';
+    } else {
+      var sub = document.getElementById('cp-rate-sub');
+      if (sub) sub.textContent = 'Trained with this coach? Tap the stars — rating again later simply updates your previous one.';
+    }
+
+    starsWrap.addEventListener('click', function (ev) {
+      var t = ev.target.closest('.cp-rate-star');
+      if (!t) return;
+      RATE_SELECTED = Number(t.getAttribute('data-star')) || 0;
+      paintRateStars(RATE_SELECTED);
+      btn.disabled = RATE_SELECTED === 0;
+    });
+    starsWrap.addEventListener('mouseover', function (ev) {
+      var t = ev.target.closest('.cp-rate-star');
+      if (t) paintRateStars(Number(t.getAttribute('data-star')) || 0);
+    });
+    starsWrap.addEventListener('mouseleave', function () { paintRateStars(RATE_SELECTED); });
+
+    btn.addEventListener('click', function () { submitRating(coachId); });
+  }
+
+  function submitRating(coachId) {
+    if (!RATE_SELECTED) return;
+    var btn = document.getElementById('cp-rate-btn');
+    var msg = document.getElementById('cp-rate-msg');
+    var token = getToken();
+    var headers = { 'Content-Type': 'application/json' };
+    if (token) headers.Authorization = 'Bearer ' + token;
+
+    var body = { rating: RATE_SELECTED };
+    var commentEl = document.getElementById('cp-rate-comment');
+    var comment = commentEl ? commentEl.value.trim() : '';
+    if (comment) body.comment = comment.slice(0, 1000);
+    if (!token) {
+      var nameEl = document.getElementById('cp-rate-name');
+      var vn = nameEl ? nameEl.value.trim() : '';
+      if (vn) body.visitor_name = vn.slice(0, 80);
+    }
+
+    btn.disabled = true; btn.textContent = 'Sending…';
+    msg.textContent = ''; msg.className = 'cp-rate-msg';
+
+    fetch('/api/coaches/' + encodeURIComponent(coachId) + '/feedback', {
+      method: 'POST', headers: headers, body: JSON.stringify(body)
+    })
+      .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, status: r.status, body: b }; }); })
+      .then(function (res) {
+        if (res.status === 429) {
+          // Daily visitor throttle — a friendly notice, NOT an error tone.
+          btn.disabled = false; btn.textContent = 'Submit rating';
+          msg.textContent = (res.body && res.body.error) || 'You already rated this coach today — thank you!';
+          msg.className = 'cp-rate-msg ok';
+          return;
+        }
+        if (!res.ok) {
+          btn.disabled = false; btn.textContent = 'Submit rating';
+          msg.textContent = (res.body && res.body.error) || 'Couldn\'t save your rating — please try again.';
+          msg.className = 'cp-rate-msg error';
+          return;
+        }
+        // Thank-you state + refresh the list and score
+        var block = document.getElementById('cp-rate');
+        if (block) {
+          block.innerHTML = '<div class="cp-rate-thanks"><strong>✓ Thank you!</strong>'
+            + 'Your ' + RATE_SELECTED + '-star rating is in'
+            + (comment ? ', comment included' : '') + '.'
+            + (token ? ' Come back any time — rating again updates your previous one.' : '')
+            + '</div>';
+        }
+        refreshReviews();
+      })
+      .catch(function () {
+        btn.disabled = false; btn.textContent = 'Submit rating';
+        msg.textContent = 'Network error — please try again.';
+        msg.className = 'cp-rate-msg error';
+      });
+  }
+
+  function refreshReviews() {
+    if (!target) return;
+    fetchCoach(target).then(function (d) {
+      var st = (d && d.coach && d.coach.stats) || {};
+      setText('cp-stat-rating',  st.rating_avg ? Number(st.rating_avg).toFixed(1) : '—');
+      setText('cp-stat-reviews', st.rating_count || 0);
+      updateRatingSummary(st);
+      renderReviewsList((d && d.feedback) || [], (d && d.session_feedback) || []);
+    }).catch(function () { /* the thank-you card already confirmed the save */ });
   }
 
   function submitContactForm(coachId) {

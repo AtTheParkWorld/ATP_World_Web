@@ -1,5 +1,7 @@
 /* ════════════════════════════════════════════════════════════════
- * ATP Admin — Coaches: grid, modal, profile editor, feedback, feature toggle
+ * ATP Admin — Coaches: grid, modal, full profile editor, feature toggle
+ * (Feedback/rating UI removed 2026-08-28 — founder: admin fully edits
+ * coach profiles, same options as the coach self-editor, no feedback.)
  * Extracted from admin/main.js (Phase 3a module split).
  * Loaded as classic <script src> from admin.html in dependency order.
  * ════════════════════════════════════════════════════════════════ */
@@ -177,7 +179,6 @@ async function openCoachModal(coachId) {
   modal.style.display = 'flex';
   document.getElementById('coachModalAvatar').textContent = '…';
   document.getElementById('coachModalName').textContent = 'Loading...';
-  window._feedbackRating = 0;
 
   try {
     var token = getToken();
@@ -281,108 +282,170 @@ async function openCoachModal(coachId) {
         }).join('')
       : '';
 
-    // Feedback display (below form)
-    var feedback = data.feedback||[];
-    document.getElementById('coachModalFeedback').innerHTML = feedback.length
-      ? '<div style="font-size:12px;color:#555;margin-bottom:12px;font-weight:700;text-transform:uppercase;letter-spacing:.08em">💬 Member Reviews</div>' +
-        feedback.slice(0,10).map(function(f) {
-          var st = '';
-          for (var i=1;i<=5;i++) st += '<span style="color:'+(i<=f.rating?'#FFD700':'#333')+'">★</span>';
-          var dt = f.created_at ? new Date(f.created_at).toLocaleDateString('en-GB',{month:'short',year:'numeric'}) : '';
-          var initials = ((f.first_name||'?')[0]+(f.last_name||'?')[0]).toUpperCase();
-          return '<div style="background:#0f0f0f;border-radius:10px;padding:14px;margin-bottom:10px;border:1px solid #1a1a1a">' +
-            '<div style="display:flex;justify-content:space-between;margin-bottom:8px;align-items:center">' +
-              '<div style="display:flex;align-items:center;gap:8px">' +
-                '<div style="width:32px;height:32px;border-radius:50%;background:#1a2a0a;color:#A8FF00;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800">'+initials+'</div>' +
-                '<div><div style="font-weight:700;font-size:12px;color:#fff">'+f.first_name+' '+f.last_name+'</div><div style="font-size:10px;color:#555">'+dt+'</div></div>' +
-              '</div>' +
-              '<div style="font-size:14px">'+st+'</div>' +
-            '</div>' +
-            (f.comment ? '<div style="font-size:13px;color:#aaa;line-height:1.6;margin-top:8px">'+f.comment+'</div>' : '') +
-          '</div>';
-        }).join('')
-      : '<div style="font-size:12px;color:#333;font-style:italic;padding:16px;text-align:center;background:#0f0f0f;border-radius:8px">No reviews yet. Be the first to leave feedback!</div>';
-
     // Feature button label
     var featBtn = document.getElementById('coachFeatureBtn');
     if (featBtn) featBtn.textContent = c.is_featured ? '⭐ Unfeature' : '⭐ Feature';
-
-    // Wire up the feedback stars interaction
-    setupFeedbackStars();
 
   } catch(e) {
     document.getElementById('coachModalName').textContent = 'Error: '+e.message;
   }
 }
 
-function setupFeedbackStars() {
-  document.querySelectorAll('.fb-star').forEach(function(el) {
-    el.onmouseenter = function() {
-      var v = parseInt(this.dataset.v);
-      document.querySelectorAll('.fb-star').forEach(function(s) {
-        s.style.color = parseInt(s.dataset.v) <= v ? '#FFD700' : '#333';
-      });
-    };
-    el.onclick = function() {
-      var v = parseInt(this.dataset.v);
-      window._feedbackRating = v;
-      document.getElementById('feedbackRatingLabel').textContent = v + ' / 5';
-    };
-  });
-  var row = document.getElementById('feedbackStars');
-  if (row) row.onmouseleave = function() {
-    var v = window._feedbackRating || 0;
-    document.querySelectorAll('.fb-star').forEach(function(s) {
-      s.style.color = parseInt(s.dataset.v) <= v ? '#FFD700' : '#333';
-    });
+/* ── Coach profile editor (admin full-parity) ─────────────────
+ * Founder 2026-08-28: admin can fully edit a coach's profile — the same
+ * options coaches have on their own profiles, pictures included.
+ * IMPORTANT: PUT /api/coaches/:id overwrites EVERY profile column
+ * (missing keys become null), so every save must send the complete
+ * field set built from the freshly-loaded coach. */
+
+function _coachArr(v) {
+  try { return Array.isArray(v) ? v : JSON.parse(v || '[]'); } catch (e) { return []; }
+}
+
+/* Build the complete PUT payload from a flattened coach object so partial
+ * updates (e.g. the feature toggle) never blank out the rest of the profile. */
+function _coachPutPayload(c) {
+  var yrs = parseInt(c.years_experience, 10);
+  return {
+    slug:                     c.slug || null,
+    display_name:             c.display_name || null,
+    tagline:                  c.tagline || null,
+    bio:                      c.bio || null,
+    philosophy:               c.philosophy || null,
+    cover_image_url:          c.cover_image_url || null,
+    profile_photo_url:        c.profile_photo_url || null,
+    intro_video_url:          c.intro_video_url || null,
+    specialties:              _coachArr(c.specialties),
+    certifications:           _coachArr(c.certifications),
+    languages:                _coachArr(c.languages),
+    gallery_urls:             _coachArr(c.gallery_urls).slice(0, 12),
+    accepts_private_sessions: !!c.accepts_private_sessions,
+    private_session_info:     c.private_session_info || null,
+    instagram:                c.instagram || null,
+    tiktok:                   c.tiktok || null,
+    whatsapp_url:             c.whatsapp_url || null,
+    website_url:              c.website_url || null,
+    youtube_url:              c.youtube_url || null,
+    linkedin_url:             c.linkedin_url || null,
+    years_experience:         isNaN(yrs) ? null : yrs,
+    is_featured:              !!c.is_featured,
   };
 }
 
-async function submitCoachFeedback() {
-  var msg = document.getElementById('feedbackMsg');
-  var rating = window._feedbackRating || 0;
-  var comment = document.getElementById('feedbackComment').value.trim();
-  if (!rating) {
-    msg.textContent = '⚠️ Please select a rating';
-    msg.style.color = '#f87171';
-    return;
-  }
-  try {
-    var token = getToken();
-    var res = await fetch(ATP_API+'/coaches/'+CURRENT_COACH_ID+'/feedback', {
-      method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-      body: JSON.stringify({rating, comment})
-    });
-    var d = await res.json();
-    if (d.success) {
-      msg.textContent = '✅ Thank you for your feedback!';
-      msg.style.color = '#A8FF00';
-      document.getElementById('feedbackComment').value = '';
-      window._feedbackRating = 0;
-      setTimeout(function() { openCoachModal(CURRENT_COACH_ID); }, 1200);
-    } else {
-      msg.textContent = '❌ ' + (d.error || 'Failed');
-      msg.style.color = '#f87171';
-    }
-  } catch(e) {
-    msg.textContent = '❌ ' + e.message;
-    msg.style.color = '#f87171';
-  }
+// Working copy of the gallery while the editor is open (array of URLs, max 12).
+var _ceGallery = [];
+
+function _ceThumb(imgId, url) {
+  var img = document.getElementById(imgId);
+  if (!img) return;
+  var ok = /^https?:\/\/|^\//.test(url || '');
+  img.src = ok ? url : '';
+  img.style.display = ok ? 'block' : 'none';
 }
 
+/* Poll a URL field that atpUpload (core.js, fire-and-forget) writes into.
+ * Same watch pattern as _promoUpload in admin/partners.js. */
+function _ceWatchField(fieldId, onDone) {
+  var tries = 0;
+  var timer = setInterval(function() {
+    var v = (document.getElementById(fieldId) || {}).value || '';
+    if (/^https?:/.test(v)) { clearInterval(timer); if (onDone) onDone(v); }
+    else if (v !== 'Uploading…' || ++tries > 240) { clearInterval(timer); } // failed / 2 min timeout
+  }, 500);
+}
+
+function _ceUpload(fileId, urlId, kind, maxMB, thumbId) {
+  atpUpload(fileId, urlId, kind, maxMB);
+  _ceWatchField(urlId, function(url) { if (thumbId) _ceThumb(thumbId, url); });
+}
+
+function _ceGalleryUpload() {
+  if (_ceGallery.length >= 12) {
+    showToast('❌ Gallery is full (max 12) — remove a photo first', true);
+    var f = document.getElementById('ceGalleryFile');
+    if (f) f.value = '';
+    return;
+  }
+  var hidden = document.getElementById('ceGalleryUrl');
+  if (hidden) hidden.value = '';
+  atpUpload('ceGalleryFile', 'ceGalleryUrl', 'image', 15);
+  _ceWatchField('ceGalleryUrl', function(url) {
+    if (_ceGallery.length < 12) _ceGallery.push(url);
+    if (hidden) hidden.value = '';
+    _ceRenderGallery();
+  });
+}
+
+function _ceGalleryRemove(i) {
+  _ceGallery.splice(i, 1);
+  _ceRenderGallery();
+}
+
+function _ceRenderGallery() {
+  var count = document.getElementById('ceGalleryCount');
+  if (count) count.textContent = _ceGallery.length + ' / 12';
+  var list = document.getElementById('ceGalleryList');
+  if (!list) return;
+  if (!_ceGallery.length) {
+    list.innerHTML = '<div style="font-size:12px;color:#444;font-style:italic;padding:14px;text-align:center;background:#0f0f0f;border:1px solid #1a1a1a;border-radius:8px">No gallery photos yet — add up to 12.</div>';
+    return;
+  }
+  list.innerHTML = _ceGallery.map(function(u, i) {
+    return '<div style="display:flex;align-items:center;gap:10px;background:#0f0f0f;border:1px solid #1a1a1a;border-radius:8px;padding:6px 10px;margin-bottom:6px">' +
+      '<img src="' + u + '" alt="" style="width:44px;height:44px;object-fit:cover;border-radius:6px;background:#111;flex-shrink:0" onerror="this.style.opacity=.2">' +
+      '<div style="flex:1;font-size:11px;color:#888;word-break:break-all;line-height:1.4">' + u + '</div>' +
+      '<button class="admin-btn" style="font-size:11px;padding:4px 10px;color:#f87171;flex-shrink:0" onclick="_ceGalleryRemove(' + i + ')">✕ Remove</button>' +
+    '</div>';
+  }).join('');
+}
+
+// Referenced from inline on* attributes in admin.html (same belt-and-braces
+// as window._promoUpload in admin/partners.js).
+window._ceThumb = _ceThumb;
+window._ceUpload = _ceUpload;
+window._ceGalleryUpload = _ceGalleryUpload;
+window._ceGalleryRemove = _ceGalleryRemove;
 
 function openCoachEditor() {
   var c = window._editingCoach;
   if (!c) { alert('No coach loaded'); return; }
-  document.getElementById('coachEditorTitle').textContent = 'Edit Profile — ' + c.first_name + ' ' + c.last_name;
-  document.getElementById('ceBio').value = c.bio || '';
-  document.getElementById('ceYears').value = c.years_experience || '';
-  document.getElementById('ceInsta').value = c.instagram || '';
-  document.getElementById('ceTiktok').value = c.tiktok || '';
-  var parseArr = function(v){ try{ return Array.isArray(v)?v:JSON.parse(v||'[]'); }catch(e){ return []; } };
-  document.getElementById('ceLangs').value = parseArr(c.languages).join(', ');
-  document.getElementById('ceSpecs').value = parseArr(c.specialties).join(', ');
-  document.getElementById('ceCerts').value = parseArr(c.certifications).join(', ');
+  document.getElementById('coachEditorTitle').textContent =
+    'Edit Profile — ' + ((c.first_name || '') + ' ' + (c.last_name || '')).trim();
+  var set = function(id, v) { var el = document.getElementById(id); if (el) el.value = (v == null ? '' : v); };
+  var chk = function(id, v) { var el = document.getElementById(id); if (el) el.checked = !!v; };
+  // Identity + about
+  set('ceDisplayName', c.display_name);
+  set('ceSlug', c.slug);
+  set('ceTagline', c.tagline);
+  set('ceBio', c.bio);
+  set('cePhilosophy', c.philosophy);
+  // Experience & skills
+  set('ceYears', c.years_experience || '');
+  set('ceLangs', _coachArr(c.languages).join(', '));
+  set('ceSpecs', _coachArr(c.specialties).join(', '));
+  set('ceCerts', _coachArr(c.certifications).join(', '));
+  // Pictures & media
+  set('cePhotoUrl', c.profile_photo_url);
+  set('ceCoverUrl', c.cover_image_url);
+  set('ceVideoUrl', c.intro_video_url);
+  _ceThumb('cePhotoThumb', c.profile_photo_url);
+  _ceThumb('ceCoverThumb', c.cover_image_url);
+  _ceGallery = _coachArr(c.gallery_urls).slice(0, 12);
+  _ceRenderGallery();
+  // Private sessions
+  chk('cePrivate', c.accepts_private_sessions);
+  set('cePrivateInfo', c.private_session_info);
+  // Social
+  set('ceInsta', c.instagram);
+  set('ceTiktok', c.tiktok);
+  set('ceWhatsapp', c.whatsapp_url);
+  set('ceWebsite', c.website_url);
+  set('ceYoutube', c.youtube_url);
+  set('ceLinkedin', c.linkedin_url);
+  // Admin-only
+  chk('ceFeatured', c.is_featured);
+  var msgEl = document.getElementById('coachEditorMsg');
+  if (msgEl) msgEl.style.display = 'none';
   // Hide coach modal, show editor
   document.getElementById('coachModal').style.display = 'none';
   document.getElementById('coachEditorModal').style.display = 'flex';
@@ -392,16 +455,35 @@ async function saveCoachProfile() {
   var c = window._editingCoach;
   if (!c) return;
   var msgEl = document.getElementById('coachEditorMsg');
+  var val = function(id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  var orNull = function(s) { return s || null; };
   var splitCsv = function(s) { return (s||'').split(',').map(function(x){return x.trim();}).filter(Boolean); };
+  // Never persist the atpUpload in-flight placeholder ('Uploading…') or junk.
+  var mediaUrl = function(id) { var v = val(id); return /^https?:\/\/|^\//.test(v) ? v : null; };
+  var yrs = parseInt(val('ceYears'), 10);
   var payload = {
-    bio: document.getElementById('ceBio').value.trim(),
-    years_experience: parseInt(document.getElementById('ceYears').value) || 0,
-    instagram: document.getElementById('ceInsta').value.trim().replace(/^@/,''),
-    tiktok: document.getElementById('ceTiktok').value.trim().replace(/^@/,''),
-    languages: splitCsv(document.getElementById('ceLangs').value),
-    specialties: splitCsv(document.getElementById('ceSpecs').value),
-    certifications: splitCsv(document.getElementById('ceCerts').value),
-    is_featured: !!c.is_featured
+    slug:                     orNull(val('ceSlug').toLowerCase()),
+    display_name:             orNull(val('ceDisplayName')),
+    tagline:                  orNull(val('ceTagline')),
+    bio:                      orNull(val('ceBio')),
+    philosophy:               orNull(val('cePhilosophy')),
+    cover_image_url:          mediaUrl('ceCoverUrl'),
+    profile_photo_url:        mediaUrl('cePhotoUrl'),
+    intro_video_url:          mediaUrl('ceVideoUrl'),
+    specialties:              splitCsv(val('ceSpecs')),
+    certifications:           splitCsv(val('ceCerts')),
+    languages:                splitCsv(val('ceLangs')),
+    gallery_urls:             _ceGallery.slice(0, 12),
+    accepts_private_sessions: !!(document.getElementById('cePrivate') || {}).checked,
+    private_session_info:     orNull(val('cePrivateInfo')),
+    instagram:                orNull(val('ceInsta').replace(/^@/,'')),
+    tiktok:                   orNull(val('ceTiktok').replace(/^@/,'')),
+    whatsapp_url:             orNull(val('ceWhatsapp')),
+    website_url:              orNull(val('ceWebsite')),
+    youtube_url:              orNull(val('ceYoutube')),
+    linkedin_url:             orNull(val('ceLinkedin')),
+    years_experience:         isNaN(yrs) ? null : yrs,
+    is_featured:              !!(document.getElementById('ceFeatured') || {}).checked,
   };
   try {
     var token = getToken();
@@ -412,6 +494,7 @@ async function saveCoachProfile() {
     });
     var d = await res.json();
     if (d.success) {
+      showToast('✅ Coach profile saved');
       msgEl.textContent = '✅ Profile saved!';
       msgEl.style.cssText = 'display:block;background:#0d1a0a;color:#A8FF00;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px';
       setTimeout(function() {
@@ -423,6 +506,7 @@ async function saveCoachProfile() {
       throw new Error(d.error || 'Failed to save');
     }
   } catch(e) {
+    showToast('❌ ' + e.message, true);
     msgEl.textContent = '❌ ' + e.message;
     msgEl.style.cssText = 'display:block;background:#2a1010;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:13px';
   }
@@ -439,18 +523,27 @@ function copyCoachProfileLink() {
 
 async function toggleCoachFeature() {
   if (!CURRENT_COACH_ID) return;
-  var token = getToken();
-  // Get current state
-  var res = await fetch(ATP_API+'/coaches/'+CURRENT_COACH_ID, {headers:{'Authorization':'Bearer '+token}});
-  var data = await res.json();
-  var c = _flattenCoachShape(data.coach);
-  var newFeatured = !c.is_featured;
-  await fetch(ATP_API+'/coaches/'+CURRENT_COACH_ID, {
-    method:'PUT', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-    body: JSON.stringify({is_featured: newFeatured})
-  });
-  showToast(newFeatured ? '⭐ Coach featured!' : '✅ Feature removed');
-  openCoachModal(CURRENT_COACH_ID);
-  loadCoachesSection();
+  try {
+    var token = getToken();
+    // Get current state
+    var res = await fetch(ATP_API+'/coaches/'+CURRENT_COACH_ID, {headers:{'Authorization':'Bearer '+token}});
+    var data = await res.json();
+    var c = _flattenCoachShape(data.coach);
+    // PUT overwrites every profile column, so send the full current profile
+    // with only is_featured flipped — a bare {is_featured} would blank the rest.
+    var payload = _coachPutPayload(c);
+    payload.is_featured = !c.is_featured;
+    var save = await fetch(ATP_API+'/coaches/'+CURRENT_COACH_ID, {
+      method:'PUT', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body: JSON.stringify(payload)
+    });
+    var d = await save.json();
+    if (!d.success) throw new Error(d.error || 'Failed to update');
+    showToast(payload.is_featured ? '⭐ Coach featured!' : '✅ Feature removed');
+    openCoachModal(CURRENT_COACH_ID);
+    loadCoachesSection();
+  } catch(e) {
+    showToast('❌ ' + e.message, true);
+  }
 }
 

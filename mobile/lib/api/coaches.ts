@@ -55,10 +55,39 @@ export interface Coach {
   stats:          CoachStats;
 }
 
+/** One feedback row on a coach. Author name comes flattened from the
+ *  members join — first_name may be a visitor name with empty last_name. */
+export interface CoachFeedback {
+  id:         string;
+  rating:     number;          // 1–5
+  comment:    string | null;
+  created_at: string;
+  first_name: string;
+  last_name:  string;
+}
+
+export interface CoachDetailResponse {
+  coach:              Coach;
+  feedback:           CoachFeedback[];
+  upcoming_sessions?: unknown[];
+}
+
 export function listCoaches(): Promise<{ coaches: Coach[] }> {
   return api.get('/coaches');
 }
 
-export function getCoach(id: string): Promise<{ coach: Coach }> {
+export function getCoach(id: string): Promise<CoachDetailResponse> {
   return api.get(`/coaches/${id}`);
+}
+
+/** Submit a 1–5 star rating (+ optional comment ≤1000 chars). Re-rating
+ *  the same coach UPDATES the member's previous rating server-side. */
+export function rateCoach(id: string, input: { rating: number; comment?: string }): Promise<{ ok?: boolean }> {
+  return api.post(`/coaches/${id}/feedback`, input);
+}
+
+/** Admin or the coach themself. Soft-delete: the comment disappears but
+ *  the star score still counts toward the average. */
+export function deleteCoachFeedback(coachId: string, feedbackId: string): Promise<{ ok?: boolean }> {
+  return api.delete(`/coaches/${coachId}/feedback/${feedbackId}`);
 }

@@ -8,11 +8,12 @@ import { WEB_BASE } from '@/lib/api/client';
  * confirms within 72h). Coaches without offerings fall back to the
  * web booking link.
  */
-import { Image, Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
-import { getCoach } from '@/lib/api/coaches';
+import { getCoach, rateCoach, type CoachFeedback } from '@/lib/api/coaches';
 import { getPublicOfferings } from '@/lib/api/coachSessions';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
@@ -21,9 +22,11 @@ export default function CoachDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const coachId = String(id || '');
 
+  // Full detail response — coach + feedback list ride the same query so a
+  // single refetch after rating refreshes both the average and the list.
   const q = useQuery({
     queryKey: ['coach', coachId],
-    queryFn:  () => getCoach(coachId).then(r => r.coach),
+    queryFn:  () => getCoach(coachId),
     enabled:  !!coachId,
   });
   const offersQ = useQuery({
@@ -33,7 +36,8 @@ export default function CoachDetail() {
   });
   const offerings = (offersQ.data?.offerings || []).filter((o) => Number(o.price_aed) > 0);
 
-  const c = q.data;
+  const c = q.data?.coach;
+  const feedback = q.data?.feedback || [];
   const profile = c?.profile;
   const social  = c?.social;
   const stats   = c?.stats;
@@ -189,6 +193,28 @@ export default function CoachDetail() {
             </Pressable>
           </View>
         )}
+
+        {/* Rate this coach — POST upserts, so re-rating just updates yours */}
+        {!!c && (
+          <View className="px-5 mt-8">
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-2">
+              Rate this coach
+            </Text>
+            <RateCoachCard coachId={coachId} onSubmitted={() => q.refetch()} />
+          </View>
+        )}
+
+        {/* Feedback list */}
+        {feedback.length > 0 && (
+          <View className="px-5 mt-8">
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-2">
+              What members say ({feedback.length})
+            </Text>
+            <View className="gap-2">
+              {feedback.map((f) => <FeedbackRow key={f.id} f={f} />)}
+            </View>
+          </View>
+        )}
       </ScrollView>
 
       {/* Sticky CTA — native card-hold booking when the coach has
@@ -215,5 +241,108 @@ export default function CoachDetail() {
         </View>
       )}
     </SafeAreaView>
+  );
+}
+
+/** Static 1–5 star strip. Filled = lime, empty = muted outline. */
+function Stars({ rating, size = 13 }: { rating: number; size?: number }) {
+  const r = Math.max(0, Math.min(5, Math.round(rating)));
+  return (
+    <Text style={{ fontSize: size, letterSpacing: 1 }}>
+      <Text style={{ color: colors.green }}>{'★'.repeat(r)}</Text>
+      <Text style={{ color: colors.muted }}>{'☆'.repeat(5 - r)}</Text>
+    </Text>
+  );
+}
+
+/** Tap-to-rate card: 5 stars + optional comment. Success shows an inline
+ *  confirmation and the parent refetches so the list + average update. */
+function RateCoachCard({ coachId, onSubmitted }: { coachId: string; onSubmitted: () => void }) {
+  const [rating, setRating]       = useState(0);
+  const [comment, setComment]     = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [done, setDone]           = useState(false);
+
+  async function submit() {
+    if (!rating || submitting) return;
+    setSubmitting(true);
+    try {
+      await rateCoach(coachId, { rating, comment: comment.trim() || undefined });
+      setDone(true);
+      onSubmitted();
+    } catch (err) {
+      Alert.alert('Could not submit rating', (err as Error).message || 'Try again.');
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <View className="bg-atp-dark border border-white/5 rounded-atp-lg p-4">
+      <View className="flex-row justify-center gap-2 py-1">
+        {[1, 2, 3, 4, 5].map((n) => (
+          <Pressable
+            key={n}
+            onPress={() => { setRating(n); setDone(false); }}
+            hitSlop={6}
+            style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.96 : 1 }] })}
+          >
+            <Text style={{ fontSize: 28, color: n <= rating ? colors.green : colors.muted }}>
+              {n <= rating ? '★' : '☆'}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      <TextInput
+        value={comment}
+        onChangeText={(t) => { setComment(t); setDone(false); }}
+        placeholder="Add a comment (optional)"
+        placeholderTextColor={colors.muted}
+        multiline
+        maxLength={1000}
+        style={{ fontFamily: fontFamily.body, color: colors.white, minHeight: 64, textAlignVertical: 'top' }}
+        className="bg-atp-dark-3 border border-white/10 rounded-atp px-4 py-3 text-sm mt-3"
+      />
+      {done ? (
+        <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs text-center mt-4">
+          Thanks — your rating is in.
+        </Text>
+      ) : (
+        <Pressable
+          onPress={submit}
+          disabled={!rating || submitting}
+          style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.96 : 1 }] })}
+          className={`mt-4 rounded-atp py-3 items-center ${rating ? 'bg-atp-green' : 'bg-atp-dark-3'}`}
+        >
+          {submitting
+            ? <ActivityIndicator color={colors.black} size="small" />
+            : <Text style={{ fontFamily: fontFamily.bodyBold, color: rating ? colors.black : colors.muted }} className="text-xs uppercase tracking-widest">
+                Submit rating
+              </Text>}
+        </Pressable>
+      )}
+    </View>
+  );
+}
+
+function FeedbackRow({ f }: { f: CoachFeedback }) {
+  const name = `${f.first_name || 'Member'} ${f.last_name || ''}`.trim();
+  return (
+    <View className="bg-atp-dark border border-white/5 rounded-atp p-4">
+      <View className="flex-row items-center justify-between">
+        <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm flex-1 pr-3" numberOfLines={1}>
+          {name}
+        </Text>
+        <Stars rating={f.rating} />
+      </View>
+      <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[11px] mt-0.5">
+        {new Date(f.created_at).toLocaleDateString()}
+      </Text>
+      {!!f.comment && (
+        <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm mt-2 leading-relaxed">
+          {f.comment}
+        </Text>
+      )}
+    </View>
   );
 }

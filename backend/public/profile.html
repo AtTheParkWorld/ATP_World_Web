@@ -1609,13 +1609,16 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
           </div>
         </div>
 
-        <!-- RECENT FEEDBACK FROM MEMBERS -->
+        <!-- MY FEEDBACK — everything members + visitors left on this coach.
+             The coach can remove any DIRECT comment (soft delete server-side:
+             the words disappear everywhere, the star keeps counting). -->
         <div class="widget">
           <div class="widget-head">
-            <span class="widget-title">Recent feedback</span>
+            <span class="widget-title">My feedback</span>
             <span style="font-size:12px;color:var(--muted)" id="coachFeedbackCount">—</span>
           </div>
           <div class="widget-body">
+            <div style="font-size:11px;color:var(--muted);line-height:1.5;margin-bottom:10px">You can remove any direct comment you'd rather not display — the star rating still counts toward your average.</div>
             <div class="coach-feedback-list" id="coachFeedbackList">
               <div style="padding:14px 0;color:var(--muted);font-size:13px;text-align:center">No reviews yet — keep coaching, the feedback will follow.</div>
             </div>
@@ -4563,7 +4566,10 @@ function renderCoachFeedback(coachRows, sessionRows, coachId) {
   // Stash coach id so the delete handler can build the right URL
   window.__PROFILE_COACH_ID = coachId;
 
-  // Admin viewer? Members can't delete; only admins see the × control
+  // Delete visibility — this widget only renders on the coach's OWN hub,
+  // and the API lets the coach themself remove DIRECT feedback (soft
+  // delete: comment gone, star still counts). Session-feedback deletion
+  // stays admin-only (the DELETE route is requireAdmin).
   var isAdminViewer = (function () {
     try { return !!(CURRENT_MEMBER && CURRENT_MEMBER.is_admin); } catch (e) { return false; }
   })();
@@ -4578,8 +4584,12 @@ function renderCoachFeedback(coachRows, sessionRows, coachId) {
       ? '<span style="display:inline-block;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--green);background:rgba(168,255,0,.1);border:1px solid rgba(168,255,0,.3);padding:2px 8px;border-radius:10px;margin-right:8px">Direct</span>'
       : '<span style="display:inline-block;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#ffc400;background:rgba(255,196,0,.08);border:1px solid rgba(255,196,0,.28);padding:2px 8px;border-radius:10px;margin-right:8px">Session: ' + escapeHtml(r.session_name || 'Session') + (sessionAt ? ' · ' + escapeHtml(sessionAt) : '') + '</span>';
 
-    var deleteBtn = isAdminViewer
-      ? '<button onclick="profileDeleteFeedback(\'' + escapeHtml(r._kind) + '\',\'' + escapeHtml(r.id) + '\',this)" title="Delete (admin only)" style="margin-left:auto;width:24px;height:24px;border-radius:50%;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.4);color:#fca5a5;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0">×</button>'
+    var canDelete = (r._kind === 'coach') || isAdminViewer;
+    var deleteTitle = r._kind === 'coach'
+      ? 'Remove comment — the star rating still counts'
+      : 'Delete (admin only)';
+    var deleteBtn = canDelete
+      ? '<button onclick="profileDeleteFeedback(\'' + escapeHtml(r._kind) + '\',\'' + escapeHtml(r.id) + '\',this)" title="' + deleteTitle + '" aria-label="Delete this feedback" style="margin-left:auto;width:24px;height:24px;border-radius:50%;background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.4);color:#fca5a5;font-size:14px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0">×</button>'
       : '';
 
     return ''
@@ -4595,7 +4605,10 @@ function renderCoachFeedback(coachRows, sessionRows, coachId) {
 }
 
 function profileDeleteFeedback(kind, feedbackId, btn) {
-  if (!confirm('Delete this ' + (kind === 'coach' ? 'direct feedback' : 'session feedback') + '? This cannot be undone.')) return;
+  var ask = kind === 'coach'
+    ? 'Remove this comment from your profile?\n\nThe written comment disappears everywhere, but the star rating still counts toward your average. This cannot be undone.'
+    : 'Delete this session feedback? This cannot be undone.';
+  if (!confirm(ask)) return;
   var coachId = window.__PROFILE_COACH_ID || (CURRENT_MEMBER && CURRENT_MEMBER.id);
   if (!coachId) return;
   var path = kind === 'coach'
@@ -4610,13 +4623,25 @@ function profileDeleteFeedback(kind, feedbackId, btn) {
         if (window.ATPComponents) ATPComponents.toast((res.body && res.body.error) || 'Couldn\'t delete', 'danger');
         return;
       }
+      var note = kind === 'coach'
+        ? 'Comment removed — the star rating still counts toward your average.'
+        : 'Feedback removed';
       var card = btn && btn.closest('.coach-feedback-row');
       if (card) {
         card.style.transition = 'opacity .2s, transform .2s';
         card.style.opacity = '0'; card.style.transform = 'scale(.96)';
         setTimeout(function () { card.remove(); }, 220);
       }
-      if (window.ATPComponents) ATPComponents.toast('Feedback removed', 'success');
+      if (window.ATPComponents) {
+        ATPComponents.toast(note, 'success');
+      } else if (card) {
+        // Inline fallback when the toast helper isn't available
+        var inline = document.createElement('div');
+        inline.style.cssText = 'padding:10px 14px;margin-bottom:10px;background:rgba(168,255,0,.08);border:1px solid rgba(168,255,0,.35);border-radius:8px;color:#dff5c5;font-size:12px;line-height:1.5';
+        inline.textContent = note;
+        card.parentNode.insertBefore(inline, card);
+        setTimeout(function () { inline.remove(); }, 6000);
+      }
     })
     .catch(function () {
       if (btn) { btn.disabled = false; btn.textContent = '×'; }

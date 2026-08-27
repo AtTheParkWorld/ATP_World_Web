@@ -152,11 +152,12 @@ async function loadCoachExtras(coachRow, res, next) {
     // 1. Coach-direct feedback (member rated the coach)
     const { rows: feedback } = await query(
       `SELECT cf.id, cf.rating, cf.comment, cf.created_at,
-              m2.first_name, m2.last_name
+              COALESCE(m2.first_name, cf.visitor_name, 'Visitor') AS first_name,
+              CASE WHEN m2.id IS NULL THEN '' ELSE m2.last_name END AS last_name
        FROM coach_feedback cf
-       JOIN members m2 ON m2.id=cf.member_id
-       WHERE cf.coach_id=$1 AND cf.is_approved=true
-       ORDER BY cf.created_at DESC LIMIT 12`,
+       LEFT JOIN members m2 ON m2.id=cf.member_id
+       WHERE cf.coach_id=$1 AND cf.is_approved=true AND cf.hidden_at IS NULL
+       ORDER BY cf.created_at DESC LIMIT 24`,
       [coachRow.id]
     ).catch(() => ({ rows: [] }));
 
@@ -192,28 +193,25 @@ async function loadCoachExtras(coachRow, res, next) {
   } catch (err) { next(err); }
 }
 
-// ── DELETE /api/coaches/:id/feedback/:feedbackId — admin moderation ─
-// Removes a coach_feedback row and recomputes the coach's rolling
-// rating_avg / rating_count. Admin-only by design — the schema lets a
-// member upsert their own row but never delete; this endpoint is the
-// moderation hook.
-router.delete('/:id/feedback/:feedbackId', authenticate, requireAdmin, async (req, res, next) => {
+// ── DELETE /api/coaches/:id/feedback/:feedbackId — hide a feedback ─
+// Founder 2026-09-03: admin AND the coach themself may delete a
+// feedback, but it's a SOFT delete — the written comment disappears
+// from every profile while the star rating keeps counting toward the
+// coach's average and total (deleting words must not launder scores).
+router.delete('/:id/feedback/:feedbackId', authenticate, async (req, res, next) => {
   try {
+    if (!req.member.is_admin && req.member.id !== req.params.id) {
+      return res.status(403).json({ error: 'Only the coach or an admin can remove feedback' });
+    }
     const { rows } = await query(
-      `DELETE FROM coach_feedback
-       WHERE id=$1 AND coach_id=$2
+      `UPDATE coach_feedback SET hidden_at=NOW()
+       WHERE id=$1 AND coach_id=$2 AND hidden_at IS NULL
        RETURNING id`,
       [req.params.feedbackId, req.params.id]
     );
-    if (!rows.length) return res.status(404).json({ error: 'Feedback not found' });
-    await query(
-      `UPDATE coach_profiles SET
-         rating_avg   = COALESCE((SELECT AVG(rating)::numeric(3,2) FROM coach_feedback WHERE coach_id=$1 AND is_approved=true), 0),
-         rating_count = (SELECT COUNT(*) FROM coach_feedback WHERE coach_id=$1 AND is_approved=true)
-       WHERE member_id=$1`,
-      [req.params.id]
-    );
-    res.json({ success: true });
+    if (!rows.length) return res.status(404).json({ error: 'Feedback not found (or already removed)' });
+    // Deliberately NO rating recompute — the score stays in the count.
+    res.json({ success: true, note: 'Comment hidden; the star rating still counts toward the average.' });
   } catch (err) { next(err); }
 });
 
@@ -420,27 +418,64 @@ router.post('/:id/upload', authenticate, async (req, res, next) => {
 });
 
 // ── POST /api/coaches/:id/feedback — member leaves rating ───
-router.post('/:id/feedback', authenticate, async (req, res, next) => {
+// Founder 2026-09-03: rating is PUBLIC — members and plain visitors
+// can score a coach from the public profile (attendance no longer
+// required). Members are deduped per coach (re-rating updates their
+// row); anonymous visitors are rate-limited to one rating per coach
+// per 24h per IP (hashed — the raw address is never stored).
+router.post('/:id/feedback', optionalAuth, async (req, res, next) => {
   try {
     const { rating, comment, session_id } = req.body;
     if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: 'Rating 1-5 required' });
-    if (!req.member.is_admin) {
-      const { rows: attended } = await query(
-        `SELECT 1 FROM bookings b
-         JOIN sessions s ON s.id=b.session_id
-         WHERE b.member_id=$1 AND s.coach_id=$2 AND b.status IN ('attended','confirmed')
-         LIMIT 1`,
-        [req.member.id, req.params.id]
-      );
-      if (!attended.length) return res.status(403).json({ error: 'You can only leave feedback after attending a session with this coach' });
-    }
-    await query(
-      `INSERT INTO coach_feedback (coach_id,member_id,rating,comment,session_id,is_approved)
-       VALUES ($1,$2,$3,$4,$5,true)
-       ON CONFLICT (coach_id,member_id,session_id) DO UPDATE
-       SET rating=EXCLUDED.rating, comment=EXCLUDED.comment, created_at=NOW()`,
-      [req.params.id, req.member.id, rating, comment||null, session_id||null]
+    const cleanComment = (comment || '').toString().slice(0, 1000) || null;
+
+    // Coach must exist (and be a coach) — anonymous writes especially
+    // must never create rows against arbitrary ids.
+    const { rows: coach } = await query(
+      `SELECT 1 FROM members WHERE id=$1 AND is_coach=true`, [req.params.id]
     );
+    if (!coach.length) return res.status(404).json({ error: 'Coach not found' });
+
+    if (req.member && req.member.id) {
+      // Member path — one live rating per coach; rating again updates it.
+      const { rows: mine } = await query(
+        `SELECT id FROM coach_feedback
+         WHERE coach_id=$1 AND member_id=$2 AND hidden_at IS NULL
+         ORDER BY created_at DESC LIMIT 1`,
+        [req.params.id, req.member.id]
+      );
+      if (mine.length) {
+        await query(
+          `UPDATE coach_feedback SET rating=$1, comment=$2, created_at=NOW() WHERE id=$3`,
+          [rating, cleanComment, mine[0].id]
+        );
+      } else {
+        await query(
+          `INSERT INTO coach_feedback (coach_id,member_id,rating,comment,session_id,is_approved)
+           VALUES ($1,$2,$3,$4,$5,true)`,
+          [req.params.id, req.member.id, rating, cleanComment, session_id || null]
+        );
+      }
+    } else {
+      // Visitor path — hashed-IP throttle: one per coach per day.
+      const ip = (req.headers['x-forwarded-for'] || req.ip || '').toString().split(',')[0].trim();
+      const ipHash = crypto.createHash('sha256').update(ip + '|' + req.params.id).digest('hex');
+      const { rows: recent } = await query(
+        `SELECT 1 FROM coach_feedback
+         WHERE coach_id=$1 AND ip_hash=$2 AND created_at > NOW() - INTERVAL '24 hours' LIMIT 1`,
+        [req.params.id, ipHash]
+      );
+      if (recent.length) return res.status(429).json({ error: 'You already rated this coach today — thank you!' });
+      const visitorName = ((req.body.visitor_name || '').toString().trim().slice(0, 80)) || null;
+      await query(
+        `INSERT INTO coach_feedback (coach_id,member_id,visitor_name,ip_hash,rating,comment,is_approved)
+         VALUES ($1,NULL,$2,$3,$4,$5,true)`,
+        [req.params.id, visitorName, ipHash, rating, cleanComment]
+      );
+    }
+
+    // Rolling score counts EVERY rating ever left (hidden included —
+    // founder rule: deleting a feedback removes the words, not the score).
     await query(
       `UPDATE coach_profiles SET
          rating_avg = (SELECT AVG(rating) FROM coach_feedback WHERE coach_id=$1 AND is_approved=true),

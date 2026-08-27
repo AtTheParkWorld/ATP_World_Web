@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { listMyCoachThreads, getMyWallet, listMyOfferings } from '@/lib/api/coach';
+import { deleteCoachFeedback, getCoach, type CoachFeedback } from '@/lib/api/coaches';
 import {
   coachCompleteBooking, coachConfirmBooking, coachDeclineBooking,
   getMyCoachEarnings, listMyCoachSessionBookings,
@@ -80,6 +81,14 @@ export default function CoachIndex() {
     queryFn:  () => getMyCoachEarnings(),
     enabled:  !!coachId,
   });
+  // My public feedback — same query key as the public /coaches/[id] screen
+  // so the two stay in sync after a delete.
+  const feedbackQ = useQuery({
+    queryKey: ['coach', coachId],
+    queryFn:  () => getCoach(coachId),
+    enabled:  !!coachId,
+  });
+  const myFeedback = feedbackQ.data?.feedback || [];
 
   const myBookings = (bookingsQ.data || []).filter((b) => String(b.coach_id) === coachId);
   const requests   = myBookings.filter((b) => b.status === 'pending_coach');
@@ -91,6 +100,33 @@ export default function CoachIndex() {
 
   const [busyBookingId, setBusyBookingId] = useState<string | null>(null);
   const [declining, setDeclining] = useState<CoachSessionBooking | null>(null);
+  const [deletingFbId, setDeletingFbId] = useState<string | null>(null);
+
+  /** Soft-delete one feedback row (comment goes, star score stays). */
+  function onDeleteFeedback(f: CoachFeedback) {
+    Alert.alert(
+      'Remove this feedback?',
+      'The comment will be removed but the star rating still counts toward your average.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Remove',
+          style: 'destructive',
+          onPress: async () => {
+            setDeletingFbId(f.id);
+            try {
+              await deleteCoachFeedback(coachId, f.id);
+              await qc.invalidateQueries({ queryKey: ['coach', coachId] });
+            } catch (err) {
+              Alert.alert('Could not remove', (err as Error).message || 'Try again.');
+            } finally {
+              setDeletingFbId(null);
+            }
+          },
+        },
+      ]
+    );
+  }
 
   /** Optimistically drop the booking from the cached list, then refetch. */
   function settleBooking(id: string, nextStatus: string) {
@@ -165,6 +201,7 @@ export default function CoachIndex() {
                 qc.invalidateQueries({ queryKey: ['coach-offerings'] }),
                 qc.invalidateQueries({ queryKey: ['coach-session-bookings'] }),
                 qc.invalidateQueries({ queryKey: ['coach-earnings'] }),
+                qc.invalidateQueries({ queryKey: ['coach', coachId] }),
                 qc.invalidateQueries({ queryKey: ['sessions'] }),
               ]);
             }}
@@ -339,6 +376,58 @@ export default function CoachIndex() {
                 </View>
               )}
             </View>
+          )}
+        </View>
+
+        {/* My feedback — what members see on my public profile */}
+        <View className="px-5 mt-7">
+          <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-3">
+            My feedback{myFeedback.length > 0 ? ` (${myFeedback.length})` : ''}
+          </Text>
+          {feedbackQ.isError ? (
+            <LoadError onRetry={() => feedbackQ.refetch()} message="Couldn't load feedback" />
+          ) : feedbackQ.isLoading ? (
+            <ActivityIndicator color={colors.green} />
+          ) : myFeedback.length === 0 ? (
+            <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm">
+              No feedback yet. Members can rate you from your public profile.
+            </Text>
+          ) : (
+            myFeedback.map((f) => (
+              <View key={f.id} className="bg-atp-dark border border-white/5 rounded-atp p-4 mb-2">
+                <View className="flex-row items-center">
+                  <View className="flex-1 pr-3">
+                    <View className="flex-row items-center">
+                      <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm flex-shrink pr-2" numberOfLines={1}>
+                        {`${f.first_name || 'Member'} ${f.last_name || ''}`.trim()}
+                      </Text>
+                      <Text style={{ fontSize: 12, letterSpacing: 1 }}>
+                        <Text style={{ color: colors.green }}>{'★'.repeat(Math.max(0, Math.min(5, Math.round(f.rating))))}</Text>
+                        <Text style={{ color: colors.muted }}>{'☆'.repeat(5 - Math.max(0, Math.min(5, Math.round(f.rating))))}</Text>
+                      </Text>
+                    </View>
+                    <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[11px] mt-0.5">
+                      {new Date(f.created_at).toLocaleDateString()}
+                    </Text>
+                  </View>
+                  <Pressable
+                    onPress={() => onDeleteFeedback(f)}
+                    disabled={deletingFbId !== null}
+                    hitSlop={8}
+                    className="w-7 h-7 rounded-full bg-atp-dark-3 border border-white/10 items-center justify-center active:opacity-70"
+                  >
+                    {deletingFbId === f.id
+                      ? <ActivityIndicator color={colors.muted} size="small" />
+                      : <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted, fontSize: 13, lineHeight: 15 }}>×</Text>}
+                  </Pressable>
+                </View>
+                {!!f.comment && (
+                  <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-xs mt-2 leading-relaxed">
+                    {f.comment}
+                  </Text>
+                )}
+              </View>
+            ))
           )}
         </View>
 
