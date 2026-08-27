@@ -10,12 +10,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getReferrals, type CrewMember } from '@/lib/api/members';
+import { WEB_BASE } from '@/lib/api/client';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { Avatar } from '@/lib/components/Avatar';
 import { Icon } from '@/lib/components/icons';
 import { colors, fontFamily } from '@/lib/theme/tokens';
-
-const WEB_BASE = 'https://www.atthepark.world';
 
 function shareInvite(code?: string | null) {
   const url = `${WEB_BASE}/join?ref=${encodeURIComponent(code || '')}`;
