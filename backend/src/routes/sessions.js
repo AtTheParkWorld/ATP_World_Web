@@ -824,7 +824,12 @@ async function awardSessionPoints(sessionId) {
 
   const { rows: bookings } = await query(
     `SELECT b.id, b.member_id, b.streak_at_checkin FROM bookings b
-     WHERE b.session_id=$1 AND b.status='attended' AND b.points_awarded=0`,
+     JOIN members m ON m.id = b.member_id
+     WHERE b.session_id=$1 AND b.status='attended' AND b.points_awarded=0
+       -- participation gate (founder 2026-09-01): only Premium tiers
+       -- earn attendance points; free members' rows stay untouched at
+       -- points_awarded=0, which honestly reads as "0 points earned".
+       AND m.subscription_type IN ('premium', 'premium_plus')`,
     [sessionId]
   );
 

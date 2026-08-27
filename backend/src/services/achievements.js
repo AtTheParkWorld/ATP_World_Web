@@ -36,7 +36,16 @@ async function _award(client, memberId, achievement, awardedBy) {
   );
   if (!ins.length) return false; // already had it
 
+  // Participation gate (founder 2026-09-01): the badge itself unlocks
+  // for everyone — only the points ride requires a Premium tier.
+  let tierOk = false;
   if (pts > 0) {
+    const { rows: tier } = await client.query(
+      'SELECT subscription_type FROM members WHERE id=$1', [memberId]
+    );
+    tierOk = ['premium', 'premium_plus'].includes((tier[0] || {}).subscription_type);
+  }
+  if (pts > 0 && tierOk) {
     const { rows: m } = await client.query(
       'SELECT points_balance FROM members WHERE id=$1 FOR UPDATE',
       [memberId]

@@ -58,8 +58,33 @@ async function debitFifo(client, memberId, amount) {
   return touched;
 }
 
+// ── PARTICIPATION GATE (founder rule 2026-09-01) ──────────────
+// Only Premium and Premium Plus members earn PARTICIPATION points.
+// Free members keep: referral-family earnings (referral_signup,
+// tribe_checkin, tribe_premium_renewal), refunds of points they spent,
+// and manual admin adjustments. Everything in PARTICIPATION_REASONS is
+// skipped for free members at every award site.
+const PREMIUM_TIERS = new Set(['premium', 'premium_plus']);
+const PARTICIPATION_REASONS = new Set([
+  'session_checkin', 'streak_milestone', 'profile_complete',
+  'achievement_unlocked', 'challenge', 'challenge_prize', 'anniversary',
+]);
+
+async function earnsParticipationPoints(memberId, clientOrNull = null) {
+  const run = clientOrNull ? clientOrNull.query.bind(clientOrNull) : query;
+  const { rows } = await run('SELECT subscription_type FROM members WHERE id=$1', [memberId]);
+  return PREMIUM_TIERS.has(((rows[0] || {}).subscription_type || 'free'));
+}
+
 // ── AWARD POINTS ──────────────────────────────────────────────
 async function awardPoints(memberId, amount, reason, description, referenceId = null) {
+  // Central gate for callers routed through here (profile_complete,
+  // streak_milestone). Never gates spends/refunds (amount <= 0 or
+  // non-participation reasons).
+  if (amount > 0 && PARTICIPATION_REASONS.has(reason)) {
+    const earns = await earnsParticipationPoints(memberId).catch(() => false);
+    if (!earns) return { skipped: true, reason: 'free_tier_no_participation_points' };
+  }
   return transaction(async (client) => {
     const { rows } = await client.query(
       'SELECT points_balance FROM members WHERE id=$1 FOR UPDATE',
@@ -135,6 +160,8 @@ async function processAnniversaries() {
      WHERE EXTRACT(MONTH FROM joined_at) = EXTRACT(MONTH FROM NOW())
        AND EXTRACT(DAY FROM joined_at) = EXTRACT(DAY FROM NOW())
        AND is_banned = false
+       -- participation gate: anniversary points are premium-only
+       AND subscription_type IN ('premium', 'premium_plus')
        AND joined_at < NOW() - INTERVAL '364 days'`
   );
 
@@ -359,6 +386,8 @@ async function autoCompleteSessions() {
 }
 
 module.exports = {
+  earnsParticipationPoints,
+  PREMIUM_TIERS,
   awardPoints,
   debitFifo,
   processAnniversaries,

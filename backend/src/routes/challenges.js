@@ -360,7 +360,16 @@ router.patch('/:id/close', authenticate, requireAdmin, async (req, res, next) =>
     const winners = [];
     for (let i = 0; i < top.length; i++) {
       const t   = top[i];
-      const pts = (c.prize_type === 'points') ? (slotPoints[i] || 0) : 0;
+      let pts = (c.prize_type === 'points') ? (slotPoints[i] || 0) : 0;
+      // Participation gate (founder 2026-09-01): free members don't earn
+      // prize points — EXCEPT in paid-entry challenges, where they staked
+      // their own points to compete; confiscating the pot after taking
+      // the fee would be indefensible. Flagged to the founder as a
+      // deliberate carve-out.
+      if (pts > 0 && !((c.entry_cost_points || 0) > 0)) {
+        const { rows: tier } = await query('SELECT subscription_type FROM members WHERE id=$1', [t.member_id]);
+        if (!['premium', 'premium_plus'].includes((tier[0] || {}).subscription_type)) pts = 0;
+      }
       await transaction(async (client) => {
         await client.query(
           'UPDATE challenge_participants SET final_rank=$1, prize_points_awarded=$2 WHERE id=$3',
@@ -499,6 +508,13 @@ router.patch('/:id/progress', authenticate, async (req, res, next) => {
       if (cp.length && !cp[0].points_awarded) {
         await transaction(async (client) => {
           const pts = cRows[0].points_reward;
+          // Participation gate (founder 2026-09-01): completion points
+          // are Premium-only. Completion itself still records.
+          const { rows: tier } = await client.query('SELECT subscription_type FROM members WHERE id=$1', [req.member.id]);
+          if (!['premium', 'premium_plus'].includes((tier[0] || {}).subscription_type)) {
+            await client.query('UPDATE challenge_participants SET points_awarded=true WHERE challenge_id=$1 AND member_id=$2', [req.params.id, req.member.id]);
+            return;
+          }
           const { rows: m } = await client.query('SELECT points_balance FROM members WHERE id=$1 FOR UPDATE', [req.member.id]);
           const newBal = (m[0].points_balance || 0) + pts;
           await client.query(
