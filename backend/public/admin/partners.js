@@ -671,7 +671,7 @@ function initPromoBannerAdmin() {
         '<div><label class="admin-form-label">Media (image or video file)</label>' +
           '<input type="file" id="promoMediaFile" accept="image/*,video/mp4,video/webm" style="font-size:11px;color:#888" onchange="_promoUpload()">' +
           '<input type="hidden" id="promoMediaUrl">' +
-          '<div id="promoUploadState" style="font-size:10px;color:#666;margin-top:4px">Recommended: 1080×1350 image, or MP4 up to 20MB</div></div>' +
+          '<div id="promoUploadState" style="font-size:10px;color:#666;margin-top:4px">Recommended: 1080×1350 image, or MP4 up to 100MB (shorter loads faster)</div></div>' +
         '<div><label class="admin-form-label">Click-through link (optional)</label><input class="admin-form-input" id="promoLink" placeholder="https://sponsor-site.com/offer"></div>' +
       '</div>' +
       '<div style="display:flex;align-items:center;gap:14px">' +
@@ -691,7 +691,7 @@ function _promoUpload() {
   // atpUpload (core.js) is fire-and-forget: it toasts progress itself and
   // writes the public URL into #promoMediaUrl on success. Watch the field
   // to flip our inline state line — no promise to chain on.
-  atpUpload('promoMediaFile', 'promoMediaUrl', type, type === 'video' ? 60 : 10);
+  atpUpload('promoMediaFile', 'promoMediaUrl', type, type === 'video' ? 100 : 15);
   var tries = 0;
   var timer = setInterval(function(){
     var v = (document.getElementById('promoMediaUrl') || {}).value || '';
@@ -724,7 +724,7 @@ function savePromoBanner() {
     showToast('✅ Banner saved' + (d.banner && d.banner.is_active ? ' — LIVE now' : ''));
     ['promoTitle','promoMediaUrl','promoLink'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
     var f = document.getElementById('promoMediaFile'); if (f) f.value = '';
-    var s = document.getElementById('promoUploadState'); if (s) { s.textContent = 'Recommended: 1080×1350 image, or MP4 up to 20MB'; s.style.color = '#666'; }
+    var s = document.getElementById('promoUploadState'); if (s) { s.textContent = 'Recommended: 1080×1350 image, or MP4 up to 100MB (shorter loads faster)'; s.style.color = '#666'; }
     loadPromoBanners();
   }).catch(function(e){ showToast('❌ ' + e.message, true); });
 }

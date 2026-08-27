@@ -211,6 +211,13 @@ function atpUpload(fileInputId, urlFieldId, kind, maxMB) {
     .then(function(){ return tryR2(); })
     .catch(function(e){
       if (e === 'R2_NOT_CONFIGURED') {
+        // The legacy path ships the file base64-inside-JSON through the
+        // server, whose body limit is 15MB. Refuse big files with a real
+        // explanation instead of a cryptic 413 (raised for 100MB promo
+        // videos, 2026-08-31).
+        if (f.size > 10 * 1024 * 1024) {
+          throw new Error('Files over 10MB need R2 storage, which is not configured on the server — ask Claude to set it up.');
+        }
         return tryLegacyBase64();
       }
       throw e;
