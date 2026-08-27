@@ -824,10 +824,7 @@
           '<div style="position:relative;width:min(94vw,1200px);max-height:92vh;opacity:.93;background:rgba(15,15,15,.9);border:1px solid rgba(168,255,0,.25);border-radius:var(--atp-radius-lg,16px);overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6)">' +
             '<button id="atpPromoClose" aria-label="Close" style="position:absolute;top:10px;right:10px;z-index:2;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.55);color:#fff;font-size:17px;line-height:1;cursor:pointer">×</button>' +
             (b.link_url ? '<a id="atpPromoLink" href="' + b.link_url.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener sponsored" style="display:block">' + media + '</a>' : media) +
-            '<div style="padding:8px 14px;display:flex;justify-content:space-between;align-items:center">' +
-              '<span style="font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:#666">Partner message</span>' +
-              (b.title ? '<span style="font-size:10px;color:#888">' + String(b.title).replace(/[<>&]/g, '') + '</span>' : '') +
-            '</div>' +
+
           '</div>';
         document.body.appendChild(wrap);
         requestAnimationFrame(function () { wrap.style.opacity = '1'; });

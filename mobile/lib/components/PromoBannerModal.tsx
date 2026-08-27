@@ -92,16 +92,13 @@ export function PromoBannerModal() {
                 resizeMode="contain"
               />
             )}
-            <View className="flex-row items-center justify-between px-4 py-2.5">
-              <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[9px] uppercase tracking-[0.14em]">
-                Partner message
-              </Text>
-              {!!banner.link_url && (
+            {!!banner.link_url && (
+              <View className="flex-row items-center justify-end px-4 py-2.5">
                 <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-[11px] uppercase tracking-widest">
                   Learn more →
                 </Text>
-              )}
-            </View>
+              </View>
+            )}
           </View>
           {/* Close — outside the card corner, 44pt hit area */}
           <Pressable
