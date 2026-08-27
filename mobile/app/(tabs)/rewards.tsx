@@ -171,6 +171,17 @@ function WalletView() {
             +500 pts when they attend their first session.
           </Text>
         </Pressable>
+        <Pressable
+          onPress={() => router.push('/crew')}
+          className="bg-atp-dark border border-white/10 rounded-atp p-4 mt-2 active:opacity-80 flex-row items-center justify-between"
+        >
+          <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm uppercase tracking-widest">
+            My Crew
+          </Text>
+          <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm">
+            See who joined with your code →
+          </Text>
+        </Pressable>
       </View>
     </ScrollView>
   );

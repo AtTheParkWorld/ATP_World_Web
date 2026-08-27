@@ -251,6 +251,7 @@ export default function Profile() {
         </SettingsGroup>
 
         <SettingsGroup title="Community">
+          <SettingsRow label="My Crew"   icon="users" onPress={() => router.push('/crew')} />
           <SettingsRow label="Messages"  icon="chat"  onPress={() => router.push('/messages')} />
           <SettingsRow label="Stories"   icon="story" onPress={() => router.push('/blog')} />
           <SettingsRow label="ATP Store" icon="bag"   onPress={() => router.push('/store')} last />

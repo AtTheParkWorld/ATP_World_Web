@@ -54,7 +54,9 @@ export default function Home() {
   }, [qc]);
 
   const sessions = sessionsQ.data || [];
-  const name     = member?.first_name || 'Athlete';
+  // `me` prefers the live profile fetch — `member` alone is the login-
+  // time cache and shows a stale name after a profile edit elsewhere.
+  const name     = me?.first_name || 'Athlete';
 
   return (
     <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>

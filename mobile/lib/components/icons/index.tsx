@@ -52,6 +52,7 @@ export { IconHome }           from './IconHome';
 export { IconCalendar }       from './IconCalendar';
 export { IconCommunity }      from './IconCommunity';
 export { IconShare }          from './IconShare';
+export { IconUsers }          from './IconUsers';
 export { IconDownload }       from './IconDownload';
 export { IconChevronRight }   from './IconChevronRight';
 // Tab-bar-specific marks — hand-coded SVG with continuous active-state
@@ -95,6 +96,7 @@ import { IconInfo as _If }         from './IconInfo';
 import { IconShield as _Sh }       from './IconShield';
 import { IconCalendar as _Ca }     from './IconCalendar';
 import { IconShare as _Shr }       from './IconShare';
+import { IconUsers as _Usr }       from './IconUsers';
 import { IconDownload as _Dl }     from './IconDownload';
 import { IconChevronRight as _Cr } from './IconChevronRight';
 import type { IconProps } from './types';
@@ -104,7 +106,7 @@ export type IconName =
   | 'live' | 'story' | 'profile' | 'eye' | 'target' | 'gift' | 'bolt'
   | 'dumbbell' | 'wallet' | 'inbox' | 'clipboard' | 'ticket' | 'heart'
   | 'bag' | 'help' | 'no-entry' | 'notification' | 'edit' | 'info' | 'shield'
-  | 'calendar' | 'share' | 'download' | 'chevron-right';
+  | 'calendar' | 'share' | 'download' | 'chevron-right' | 'users';
 
 const MAP: Record<IconName, React.FC<IconProps>> = {
   'location':     _L,
@@ -136,6 +138,7 @@ const MAP: Record<IconName, React.FC<IconProps>> = {
   'shield':       _Sh,
   'calendar':     _Ca,
   'share':        _Shr,
+  'users':        _Usr,
   'download':     _Dl,
   'chevron-right': _Cr,
 };

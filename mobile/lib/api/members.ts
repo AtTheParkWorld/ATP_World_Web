@@ -91,3 +91,24 @@ export function patchProfile(body: PatchProfileBody): Promise<{ message: string 
 export function patchAvatar(avatar_url: string): Promise<{ avatar_url: string }> {
   return api.patch('/members/avatar', { avatar_url });
 }
+
+// ── My Crew (referrals) ─────────────────────────────────────────
+// Members who joined with your referral code. Mirrors the website's
+// "My Crew" tab (GET /api/members/referrals).
+export interface CrewMember {
+  id: string | number;             // referral row id
+  created_at: string;
+  points_awarded: number | null;
+  member_id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  subscription_type: string | null;
+  last_session_at: string | null;
+  sessions_count: number | string; // pg COUNT comes back as string
+  points_from_member: number | string;
+}
+
+export function getReferrals(): Promise<{ referrals: CrewMember[] }> {
+  return api.get('/members/referrals');
+}
