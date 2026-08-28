@@ -202,6 +202,37 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .profile-menu-divider{height:1px;background:rgba(255,255,255,.06);margin:6px 4px}
 .profile-menu .menu-section-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;font-weight:700;padding:8px 14px 4px}
 @media(max-width:600px){.profile-menu{right:auto;left:0;min-width:200px}}
+
+/* ── CHAT PANEL (founder 2026-08-28 "enable reply from the website") ──
+   Desktop: fixed 380px right drawer. Mobile (≤600px): full-width
+   bottom sheet. Opened from the bell dropdown's Messages rows. */
+.chat-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.55);backdrop-filter:blur(3px);z-index:640;opacity:0;pointer-events:none;transition:opacity .22s}
+.chat-backdrop.open{opacity:1;pointer-events:auto}
+.chat-panel{position:fixed;top:0;right:0;bottom:0;width:380px;max-width:100vw;background:var(--dark2);border-left:1px solid rgba(255,255,255,.1);z-index:650;display:flex;flex-direction:column;transform:translateX(105%);transition:transform .25s cubic-bezier(.4,0,.2,1);box-shadow:-16px 0 48px rgba(0,0,0,.5)}
+.chat-panel.open{transform:none}
+.chat-head{display:flex;align-items:center;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.08);flex-shrink:0}
+.chat-head-name{flex:1;min-width:0;font-family:var(--ff-display);font-size:15px;font-weight:800;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-close{background:transparent;border:none;color:var(--muted);font-size:18px;cursor:pointer;width:32px;height:32px;border-radius:8px;flex-shrink:0;line-height:1}
+.chat-close:hover{background:rgba(255,255,255,.06);color:var(--white)}
+.chat-thread{flex:1;overflow-y:auto;padding:16px 14px;display:flex;flex-direction:column;gap:8px}
+.chat-day{align-self:center;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:4px 10px;background:rgba(255,255,255,.04);border-radius:10px;margin:6px 0 2px}
+.chat-msg{display:flex;flex-direction:column;max-width:78%}
+.chat-msg.in{align-self:flex-start;align-items:flex-start}
+.chat-msg.out{align-self:flex-end;align-items:flex-end}
+.chat-msg.pending{opacity:.6}
+.chat-bubble{padding:9px 12px;border-radius:14px;font-size:13px;line-height:1.45;overflow-wrap:anywhere;white-space:pre-wrap}
+.chat-msg.in .chat-bubble{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);color:var(--light);border-bottom-left-radius:4px}
+.chat-msg.out .chat-bubble{background:var(--green);color:#0a0a0a;font-weight:600;border-bottom-right-radius:4px}
+.chat-time{font-size:9.5px;color:var(--muted);margin-top:3px;padding:0 4px}
+.chat-composer{display:flex;gap:8px;align-items:flex-end;padding:12px 14px;border-top:1px solid rgba(255,255,255,.08);flex-shrink:0;background:var(--dark2)}
+.chat-input{flex:1;min-height:40px;max-height:120px;resize:none;background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--white);font-size:13px;font-family:inherit;line-height:1.4;padding:10px 12px;outline:none}
+.chat-input:focus{border-color:rgba(168,255,0,.45)}
+.chat-send{background:var(--green);color:#0a0a0a;border:none;border-radius:10px;font-weight:800;font-size:12px;letter-spacing:.05em;text-transform:uppercase;padding:0 16px;height:40px;cursor:pointer;flex-shrink:0;font-family:inherit}
+.chat-send:disabled{opacity:.5;cursor:default}
+@media(max-width:600px){
+  .chat-panel{top:auto;left:0;right:0;bottom:0;width:100%;height:78vh;border-left:none;border-top:1px solid rgba(255,255,255,.1);border-radius:16px 16px 0 0;transform:translateY(105%)}
+  .chat-panel.open{transform:none}
+}
 .ptab{font-size:13px;font-weight:600;color:var(--muted);padding:16px 20px;border-bottom:2px solid transparent;background:none;border-top:none;border-left:none;border-right:none;cursor:pointer;white-space:nowrap;transition:color .2s,border-color .2s;letter-spacing:.02em}
 .ptab:hover{color:var(--light)}
 .ptab.active{color:var(--white);border-bottom-color:var(--green)}
@@ -690,23 +721,24 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="4" height="4"/><rect x="10" y="2" width="4" height="4"/><rect x="2" y="10" width="4" height="4"/><path d="M10 10h1M13 10h1M10 13h4"/></svg>
           Next check-in QR
         </button>
-        <button class="pf-btn" data-atp-call="showTab" data-args='["notifications"]'>
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1a5 5 0 015 5v3l1.5 2.5H1.5L3 9V6a5 5 0 015-5z"/><path d="M6.5 13.5a1.5 1.5 0 003 0"/></svg>
-          <span id="notifCount" style="display:none;background:var(--green);color:#0a0a0a;width:18px;height:18px;border-radius:50%;font-size:10px;align-items:center;justify-content:center">0</span>
-        </button>
-        <!-- Message bell (founder 2026-08-28) — TOTAL unread DM count from
-             GET /api/community/messages, polled on load + every 60s.
-             Dropdown lists up to 6 conversations. The website has no DM
-             composer — members reply from the ATP app. -->
-        <div class="profile-menu-wrap" id="msgBellWrap">
-          <button class="pf-btn" id="msgBellBtn" type="button" onclick="toggleMsgDropdown(event)" aria-expanded="false" aria-label="Messages — tap for unread conversations">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2a5 5 0 015 5v2.5L14.5 12H1.5L3 9.5V7a5 5 0 015-5z"/><path d="M6.5 14a1.5 1.5 0 003 0"/><circle cx="13" cy="3" r="2.2" fill="currentColor" stroke="none"/></svg>
-            <span id="msgBellBadge" style="display:none;background:var(--green);color:#0a0a0a;min-width:18px;height:18px;padding:0 5px;border-radius:10px;font-size:10px;font-weight:800;align-items:center;justify-content:center">0</span>
+        <!-- ONE bell (founder 2026-08-28 "consolidate messages and
+             notification bells") — single lime badge = unread
+             notifications + total unread DMs, polled on load + every
+             60s. Dropdown: Messages section (rows open the chat panel
+             — the site now has a real composer) + latest Notifications
+             + footer link to the full Notifications tab. -->
+        <div class="profile-menu-wrap" id="bellWrap">
+          <button class="pf-btn" id="bellBtn" type="button" onclick="toggleBellDropdown(event)" aria-expanded="false" aria-label="Messages and notifications">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1a5 5 0 015 5v3l1.5 2.5H1.5L3 9V6a5 5 0 015-5z"/><path d="M6.5 13.5a1.5 1.5 0 003 0"/></svg>
+            <span id="bellBadge" style="display:none;background:var(--green);color:#0a0a0a;min-width:18px;height:18px;padding:0 5px;border-radius:10px;font-size:10px;font-weight:800;align-items:center;justify-content:center">0</span>
           </button>
-          <div id="msgDropdown" class="profile-menu" role="menu" aria-labelledby="msgBellBtn" style="min-width:300px;max-width:340px;padding:10px">
+          <div id="bellDropdown" class="profile-menu" role="menu" aria-labelledby="bellBtn" style="min-width:300px;max-width:340px;padding:10px">
             <div style="font-family:var(--ff-display);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--green);padding:4px 8px 10px">💬 Messages</div>
-            <div id="msgDropdownList"><div style="padding:14px 8px;color:var(--muted);font-size:12px;text-align:center">Loading…</div></div>
-            <div style="margin-top:8px;padding:10px 8px 4px;border-top:1px solid rgba(255,255,255,.06);font-size:11px;color:var(--muted);text-align:center">Reply from the ATP app 📱</div>
+            <div id="bellMsgList"><div style="padding:12px 8px;color:var(--muted);font-size:12px;text-align:center">Loading…</div></div>
+            <div class="profile-menu-divider" style="margin:10px 4px"></div>
+            <div style="font-family:var(--ff-display);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--green);padding:4px 8px 10px">🔔 Notifications</div>
+            <div id="bellNotifList"><div style="padding:12px 8px;color:var(--muted);font-size:12px;text-align:center">Loading…</div></div>
+            <button type="button" onclick="openAllNotifications()" style="margin-top:8px;width:100%;background:transparent;border:none;border-top:1px solid rgba(255,255,255,.06);padding:10px 8px 4px;font-size:11px;font-weight:700;letter-spacing:.05em;color:var(--green);cursor:pointer;text-align:center;font-family:inherit">All notifications →</button>
           </div>
         </div>
         <!-- Streak chip — compact, expandable.  Click toggles a small
@@ -1744,6 +1776,29 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 <!-- ════════════════════════════════════════════════════════ -->
 
 
+<!-- ══ CHAT PANEL (founder 2026-08-28 "enable reply from the website") ══
+     Right-side drawer (bottom sheet on mobile) opened from the bell
+     dropdown's Messages rows. GET /api/community/messages/:memberId
+     auto-marks incoming as read server-side; the composer POSTs to the
+     same path. Thread re-polls every 10s while open (interval cleared
+     on close). Backdrop click, Escape, and ✕ all close it. -->
+<div class="chat-backdrop" id="chatBackdrop" onclick="closeChatPanel()"></div>
+<div class="chat-panel" id="chatPanel" role="dialog" aria-modal="true" aria-labelledby="chatPanelName">
+  <div class="chat-head">
+    <div id="chatPanelAvatar" style="width:32px;height:32px;border-radius:50%;background:rgba(168,255,0,.12);color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;flex-shrink:0">M</div>
+    <div class="chat-head-name" id="chatPanelName">Messages</div>
+    <button type="button" class="chat-close" onclick="closeChatPanel()" aria-label="Close chat">✕</button>
+  </div>
+  <div class="chat-thread" id="chatThread">
+    <div style="color:var(--muted);font-size:12px;text-align:center;padding:20px 0">Loading…</div>
+  </div>
+  <div class="chat-composer">
+    <textarea class="chat-input" id="chatInput" rows="1" placeholder="Write a message… (Enter to send)" aria-label="Message"></textarea>
+    <button type="button" class="chat-send" id="chatSendBtn" onclick="sendChatMessage()">Send</button>
+  </div>
+</div>
+
+
 <script>
 var LOGO_SRC = "/atp-logo-transparent.webp";
 (function(){
@@ -1861,18 +1916,24 @@ document.addEventListener('keydown', function(ev){
   }
 });
 
-// ── MESSAGE BELL (founder 2026-08-28) ─────────────────────────
-// Unread-DM bell in .profile-actions. Same dropdown pattern as the
-// streak chip. Data: GET /api/community/messages → { conversations:
-// [{ id, last_message_at, other_id, other_first, other_last,
-//    other_avatar, last_message, unread_count }] }.
-// unread_count arrives as a string (pg COUNT) → parseInt.
-// The website has no DM composer — the dropdown is read-only and the
-// footer points members at the ATP app to reply.
-function toggleMsgDropdown(ev) {
+// ── ONE BELL — MESSAGES + NOTIFICATIONS (founder 2026-08-28) ──
+// "enable reply from the website. consolidate messages and
+// notification bells." Single topbar bell (#bellBtn): one lime badge
+// (#bellBadge) = unread notifications + total unread DMs. The dropdown
+// has a Messages section (rows open the chat panel — real composer,
+// see CHAT PANEL below) and a Notifications section (latest 4 + a
+// footer link to the full tab). Same dropdown pattern as the streak
+// chip. Data:
+//   GET /api/community/messages → { conversations: [{ id,
+//     last_message_at, other_id, other_first, other_last,
+//     other_avatar, last_message, unread_count }] }
+//     (unread_count arrives as a string — pg COUNT — → parseInt)
+//   window.ATP.notifications.list() → NOTIFS via loadNotifications,
+//     which sets NOTIF_UNREAD_COUNT and calls updateBellBadge().
+function toggleBellDropdown(ev) {
   if (ev) ev.stopPropagation();
-  var menu = document.getElementById('msgDropdown');
-  var btn  = document.getElementById('msgBellBtn');
+  var menu = document.getElementById('bellDropdown');
+  var btn  = document.getElementById('bellBtn');
   if (!menu) return;
   // Only one floating panel at a time — close the others if open.
   ['profileMenu', 'streakDropdown'].forEach(function(id){
@@ -1885,13 +1946,17 @@ function toggleMsgDropdown(ev) {
   });
   var open = menu.classList.toggle('open');
   if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-  if (open) loadUnreadMessages(); // fresh list on open
+  if (open) {
+    // Fresh data on open — both sections + the combined badge.
+    loadUnreadMessages();
+    try { loadNotifications(); } catch(e) {}
+  }
 }
-window.toggleMsgDropdown = toggleMsgDropdown;
+window.toggleBellDropdown = toggleBellDropdown;
 
 document.addEventListener('click', function(ev){
-  var menu = document.getElementById('msgDropdown');
-  var btn  = document.getElementById('msgBellBtn');
+  var menu = document.getElementById('bellDropdown');
+  var btn  = document.getElementById('bellBtn');
   if (!menu || !menu.classList.contains('open')) return;
   if (btn && (ev.target === btn || btn.contains(ev.target))) return;
   if (menu.contains(ev.target)) return;
@@ -1900,16 +1965,29 @@ document.addEventListener('click', function(ev){
 });
 document.addEventListener('keydown', function(ev){
   if (ev.key === 'Escape') {
-    var menu = document.getElementById('msgDropdown');
+    var menu = document.getElementById('bellDropdown');
     if (menu && menu.classList.contains('open')) {
       menu.classList.remove('open');
-      var btn = document.getElementById('msgBellBtn');
+      var btn = document.getElementById('bellBtn');
       if (btn) btn.setAttribute('aria-expanded', 'false');
     }
   }
 });
 
+function closeBellDropdown() {
+  var menu = document.getElementById('bellDropdown');
+  if (menu) menu.classList.remove('open');
+  var btn = document.getElementById('bellBtn');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+function openAllNotifications() {
+  closeBellDropdown();
+  try { showTab('notifications'); } catch(e) {}
+}
+window.openAllNotifications = openAllNotifications;
+
 var MSG_CONVERSATIONS = [];
+var NOTIF_UNREAD_COUNT = 0; // kept in sync by loadNotifications / markAllRead
 function loadUnreadMessages() {
   var token; try { token = localStorage.getItem('atp_token'); } catch(e){}
   if (!token) return;
@@ -1918,42 +1996,244 @@ function loadUnreadMessages() {
     .then(function(d){
       if (!d || !Array.isArray(d.conversations)) return;
       MSG_CONVERSATIONS = d.conversations;
-      renderMsgBell();
+      updateBellBadge();
+      renderBellDropdown();
     })
     .catch(function(){});
 }
-function renderMsgBell() {
-  var total = 0;
+
+// Single lime badge = unread notifications + total unread DMs.
+function updateBellBadge() {
+  var total = NOTIF_UNREAD_COUNT || 0;
   MSG_CONVERSATIONS.forEach(function(c){ total += parseInt(c.unread_count, 10) || 0; });
-  var badge = document.getElementById('msgBellBadge');
+  var badge = document.getElementById('bellBadge');
   if (badge) {
     badge.textContent = total > 99 ? '99+' : String(total);
     badge.style.display = total > 0 ? 'inline-flex' : 'none';
   }
-  var list = document.getElementById('msgDropdownList');
-  if (!list) return;
-  if (!MSG_CONVERSATIONS.length) {
-    list.innerHTML = '<div style="padding:14px 8px;color:var(--muted);font-size:12px;text-align:center">No messages yet.</div>';
+}
+
+function renderBellDropdown() {
+  // Messages section — top 5 conversations; a row opens the chat panel.
+  var list = document.getElementById('bellMsgList');
+  if (list) {
+    if (!MSG_CONVERSATIONS.length) {
+      list.innerHTML = '<div style="padding:12px 8px;color:var(--muted);font-size:12px;text-align:center">No messages yet.</div>';
+    } else {
+      list.innerHTML = MSG_CONVERSATIONS.slice(0, 5).map(function(c, i){
+        var name = ((c.other_first || '') + ' ' + (c.other_last || '')).trim() || 'ATP member';
+        var unread = parseInt(c.unread_count, 10) || 0;
+        var snippet = c.last_message == null ? '' : String(c.last_message);
+        if (snippet.length > 52) snippet = snippet.slice(0, 52) + '…';
+        var initial = name.charAt(0).toUpperCase();
+        return '<div role="button" tabindex="0" onclick="openChatFromBell(' + i + ')" onkeydown="if(event.key===\'Enter\')openChatFromBell(' + i + ')" style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px;cursor:pointer' + (unread ? ';background:rgba(168,255,0,.06)' : '') + '">' +
+          '<div style="width:30px;height:30px;border-radius:50%;background:rgba(168,255,0,.12);color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">' + escapeHtml(initial) + '</div>' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:13px;font-weight:700;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(name) + '</div>' +
+            (snippet ? '<div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(snippet) + '</div>' : '') +
+          '</div>' +
+          (unread ? '<span style="background:rgba(168,255,0,.15);color:var(--green);padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;flex-shrink:0">' + unread + '</span>' : '') +
+        '</div>';
+      }).join('');
+    }
+  }
+  // Notifications section — latest 4 from NOTIFS (rawTitle/rawBody are
+  // set in loadNotifications; unread rows tinted lime).
+  var nl = document.getElementById('bellNotifList');
+  if (nl) {
+    if (!NOTIFS || !NOTIFS.length) {
+      nl.innerHTML = '<div style="padding:12px 8px;color:var(--muted);font-size:12px;text-align:center">You\'re all caught up.</div>';
+    } else {
+      nl.innerHTML = NOTIFS.slice(0, 4).map(function(n){
+        var line = ((n.rawTitle || '') + ' ' + (n.rawBody || '')).trim() || 'Notification';
+        if (line.length > 64) line = line.slice(0, 64) + '…';
+        return '<div style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px' + (n.unread ? ';background:rgba(168,255,0,.06)' : '') + '">' +
+          '<span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;' + (n.unread ? 'background:var(--green)' : 'background:transparent;border:1px solid rgba(255,255,255,.15)') + '"></span>' +
+          '<div style="flex:1;min-width:0;font-size:12px;color:' + (n.unread ? 'var(--white)' : 'var(--muted)') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(line) + '</div>' +
+          '<span style="font-size:10px;color:var(--muted);flex-shrink:0">' + escapeHtml(n.time || '') + '</span>' +
+        '</div>';
+      }).join('');
+    }
+  }
+}
+
+function openChatFromBell(i) {
+  var c = MSG_CONVERSATIONS[i];
+  if (!c) return;
+  closeBellDropdown();
+  var name = ((c.other_first || '') + ' ' + (c.other_last || '')).trim() || 'ATP member';
+  openChatPanel(c.other_id, name);
+}
+window.openChatFromBell = openChatFromBell;
+
+// Poll every 60s — messages + notifications together, so the combined
+// badge stays honest (load-time fetches happen in loadRealProfileData).
+setInterval(function(){
+  loadUnreadMessages();
+  try { if (window.ATP && window.ATP.isLoggedIn()) loadNotifications(); } catch(e) {}
+}, 60000);
+
+// ── CHAT PANEL (founder 2026-08-28 "enable reply from the website") ──
+// Right drawer (bottom sheet ≤600px) — markup is static at the bottom
+// of <body>. GET /api/community/messages/:memberId (ascending, LIMIT
+// 100) auto-marks incoming as read server-side, so every thread fetch
+// also refreshes the conversations + bell badge. Re-polls every 10s
+// while open; interval cleared on close. My bubbles = lime (compare
+// sender_id against CURRENT_MEMBER.id), incoming = dark card.
+var CHAT_OTHER_ID = null;
+var CHAT_POLL = null;
+var CHAT_LAST_COUNT = -1;
+
+function openChatPanel(memberId, name) {
+  if (memberId == null) return;
+  CHAT_OTHER_ID = memberId;
+  CHAT_LAST_COUNT = -1;
+  var nameEl = document.getElementById('chatPanelName');
+  if (nameEl) nameEl.textContent = name || 'ATP member';
+  var avEl = document.getElementById('chatPanelAvatar');
+  if (avEl) avEl.textContent = (name || 'M').charAt(0).toUpperCase();
+  var thread = document.getElementById('chatThread');
+  if (thread) thread.innerHTML = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:20px 0">Loading…</div>';
+  var bd = document.getElementById('chatBackdrop');
+  var panel = document.getElementById('chatPanel');
+  if (bd) bd.classList.add('open');
+  if (panel) panel.classList.add('open');
+  fetchChatThread(true);
+  if (CHAT_POLL) clearInterval(CHAT_POLL);
+  CHAT_POLL = setInterval(function(){ fetchChatThread(false); }, 10000);
+  var input = document.getElementById('chatInput');
+  if (input) setTimeout(function(){ try { input.focus(); } catch(e){} }, 260);
+}
+window.openChatPanel = openChatPanel;
+
+function closeChatPanel() {
+  CHAT_OTHER_ID = null;
+  if (CHAT_POLL) { clearInterval(CHAT_POLL); CHAT_POLL = null; }
+  var bd = document.getElementById('chatBackdrop');
+  var panel = document.getElementById('chatPanel');
+  if (bd) bd.classList.remove('open');
+  if (panel) panel.classList.remove('open');
+}
+window.closeChatPanel = closeChatPanel;
+
+document.addEventListener('keydown', function(ev){
+  if (ev.key === 'Escape' && CHAT_OTHER_ID != null) closeChatPanel();
+});
+
+function fetchChatThread(forceScroll) {
+  var id = CHAT_OTHER_ID;
+  if (id == null) return;
+  var token; try { token = localStorage.getItem('atp_token'); } catch(e){}
+  if (!token) return;
+  fetch('/api/community/messages/' + encodeURIComponent(id), { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      if (CHAT_OTHER_ID !== id) return; // closed / switched while in flight
+      if (!d || !Array.isArray(d.messages)) return;
+      renderChatThread(d.messages, forceScroll);
+      // Server marked incoming as read → drop the counts immediately.
+      loadUnreadMessages();
+    })
+    .catch(function(){});
+}
+
+function renderChatThread(messages, forceScroll) {
+  var thread = document.getElementById('chatThread');
+  if (!thread) return;
+  var nearBottom = (thread.scrollHeight - thread.scrollTop - thread.clientHeight) < 90;
+  var grew = messages.length !== CHAT_LAST_COUNT;
+  CHAT_LAST_COUNT = messages.length;
+  if (!messages.length) {
+    thread.innerHTML = '<div style="color:var(--muted);font-size:12px;text-align:center;padding:24px 12px;line-height:1.6">No messages yet.<br>Say hi 👋</div>';
     return;
   }
-  list.innerHTML = MSG_CONVERSATIONS.slice(0, 6).map(function(c){
-    var name = ((c.other_first || '') + ' ' + (c.other_last || '')).trim() || 'ATP member';
-    var unread = parseInt(c.unread_count, 10) || 0;
-    var snippet = c.last_message == null ? '' : String(c.last_message);
-    if (snippet.length > 52) snippet = snippet.slice(0, 52) + '…';
-    var initial = name.charAt(0).toUpperCase();
-    return '<div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px' + (unread ? ';background:rgba(168,255,0,.06)' : '') + '">' +
-      '<div style="width:30px;height:30px;border-radius:50%;background:rgba(168,255,0,.12);color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">' + escapeHtml(initial) + '</div>' +
-      '<div style="flex:1;min-width:0">' +
-        '<div style="font-size:13px;font-weight:700;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(name) + '</div>' +
-        (snippet ? '<div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(snippet) + '</div>' : '') +
-      '</div>' +
-      (unread ? '<span style="background:rgba(168,255,0,.15);color:var(--green);padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;flex-shrink:0">' + unread + '</span>' : '') +
+  var myId = CURRENT_MEMBER && CURRENT_MEMBER.id;
+  var html = '';
+  var lastDay = '';
+  messages.forEach(function(m){
+    var dt = new Date(m.created_at);
+    var bad = isNaN(dt.getTime());
+    var day = bad ? '' : dt.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+    if (day && day !== lastDay) { // date divider when the day changes
+      html += '<div class="chat-day">' + escapeHtml(day) + '</div>';
+      lastDay = day;
+    }
+    var mine = String(m.sender_id) === String(myId);
+    var time = bad ? '' : dt.toLocaleTimeString([], { hour:'2-digit', minute:'2-digit' });
+    html += '<div class="chat-msg ' + (mine ? 'out' : 'in') + '">' +
+      '<div class="chat-bubble">' + escapeHtml(m.content == null ? '' : String(m.content)) + '</div>' +
+      (time ? '<div class="chat-time">' + escapeHtml(time) + '</div>' : '') +
     '</div>';
-  }).join('');
+  });
+  thread.innerHTML = html;
+  if (forceScroll || (grew && nearBottom)) thread.scrollTop = thread.scrollHeight;
 }
-// Poll every 60s (load-time fetch happens in loadRealProfileData).
-setInterval(loadUnreadMessages, 60000);
+
+// Optimistic bubble shown between POST and the authoritative re-fetch.
+function appendPendingBubble(text) {
+  var thread = document.getElementById('chatThread');
+  if (!thread) return;
+  var wrap = document.createElement('div');
+  wrap.className = 'chat-msg out pending';
+  var b = document.createElement('div');
+  b.className = 'chat-bubble';
+  b.textContent = text; // textContent — no HTML injection possible
+  wrap.appendChild(b);
+  var t = document.createElement('div');
+  t.className = 'chat-time';
+  t.textContent = 'Sending…';
+  wrap.appendChild(t);
+  thread.appendChild(wrap);
+  thread.scrollTop = thread.scrollHeight;
+}
+
+function sendChatMessage() {
+  var id = CHAT_OTHER_ID;
+  if (id == null) return;
+  var input = document.getElementById('chatInput');
+  var btn = document.getElementById('chatSendBtn');
+  var text = input ? input.value.trim() : '';
+  if (!text) return;
+  var token; try { token = localStorage.getItem('atp_token'); } catch(e){}
+  if (!token) return;
+  if (btn) btn.disabled = true;
+  if (input) input.value = '';
+  appendPendingBubble(text);
+  fetch('/api/community/messages/' + encodeURIComponent(id), {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+    body: JSON.stringify({ content: text }),
+  })
+    .then(function(r){
+      return r.json().then(function(d){ return { ok: r.ok, d: d || {} }; })
+        .catch(function(){ return { ok: r.ok, d: {} }; });
+    })
+    .then(function(res){
+      if (btn) btn.disabled = false;
+      if (!res.ok || res.d.error) throw new Error(res.d.error || 'Send failed');
+      fetchChatThread(true); // authoritative thread replaces the pending bubble
+    })
+    .catch(function(){
+      if (btn) btn.disabled = false;
+      if (input && !input.value) input.value = text; // hand the draft back for retry
+      if (window.ATPComponents && ATPComponents.toast) ATPComponents.toast('Message not sent — try again', 'danger');
+      fetchChatThread(false); // re-render clears the stuck pending bubble
+    });
+}
+window.sendChatMessage = sendChatMessage;
+
+// Enter sends, Shift+Enter = newline. The panel markup is static (end
+// of <body>, above this script), so wiring once here is safe.
+(function(){
+  var input = document.getElementById('chatInput');
+  if (!input) return;
+  input.addEventListener('keydown', function(ev){
+    if (ev.key === 'Enter' && !ev.shiftKey) {
+      ev.preventDefault();
+      sendChatMessage();
+    }
+  });
+})();
 
 // ── AMBASSADOR DASHBOARD — REAL DATA (founder 2026-08-28) ─────
 // Replaces the hardcoded demo rows. Loaded every time the Ambassador
@@ -3335,8 +3615,10 @@ function markAllRead() {
   }
   NOTIFS.forEach(function(n){n.unread=false;});
   renderNotifs();
-  var notifCount = document.getElementById('notifCount');
-  if (notifCount) { notifCount.textContent = '0'; notifCount.style.display = 'none'; }
+  // Consolidated bell (2026-08-28): zero the notif share of the badge
+  // (unread DMs keep their own count) + un-tint the dropdown rows.
+  NOTIF_UNREAD_COUNT = 0;
+  try { updateBellBadge(); renderBellDropdown(); } catch(e) {}
 }
 
 // Accept/Decline persist through PATCH /api/members/friends/:id —
@@ -5480,16 +5762,19 @@ function loadNotifications() {
         unread: !n.read_at,
         text:   text,
         time:   formatDateShort(n.created_at),
+        // Raw title/body for the consolidated bell dropdown one-liners
+        // (escaped at render time in renderBellDropdown).
+        rawTitle: n.title || '',
+        rawBody:  n.body  || '',
       };
     });
     renderNotifs();
-    // Notification badge count
-    var notifCount = document.getElementById('notifCount');
-    if (notifCount) {
-      var unread = (data.unread_count != null) ? data.unread_count : NOTIFS.filter(function(n){return n.unread;}).length;
-      notifCount.textContent = unread;
-      notifCount.style.display = unread > 0 ? 'inline-flex' : 'none';
-    }
+    // Consolidated bell (2026-08-28): the unread-notification count
+    // feeds the single lime badge shared with unread DMs.
+    NOTIF_UNREAD_COUNT = (data.unread_count != null)
+      ? (Number(data.unread_count) || 0)
+      : NOTIFS.filter(function(n){return n.unread;}).length;
+    try { updateBellBadge(); renderBellDropdown(); } catch(e) {}
   }).catch(function(){});
 }
 
