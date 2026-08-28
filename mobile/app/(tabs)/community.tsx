@@ -196,6 +196,22 @@ function CoachesView() {
 /* ─────────────────────────────────────────────────────────────── */
 /* Friends                                                         */
 /* ─────────────────────────────────────────────────────────────── */
+function MessageChip({ memberId }: { memberId: string }) {
+  return (
+    <Pressable
+      onPress={() => router.push(`/messages/${memberId}`)}
+      hitSlop={6}
+      style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.94 : 1 }] })}
+      className="flex-row items-center gap-1.5 bg-atp-green/15 border border-atp-green/40 rounded-full px-3 py-1.5 active:opacity-80"
+    >
+      <Icon name="chat" size={14} color={colors.green} />
+      <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-[11px] uppercase tracking-widest">
+        Message
+      </Text>
+    </Pressable>
+  );
+}
+
 function FriendsView() {
   const qc = useQueryClient();
   const me = useAuthStore((s) => s.member);
@@ -287,6 +303,7 @@ function FriendsView() {
                       </Text>
                     )}
                   </View>
+                  <MessageChip memberId={f.friend_id} />
                   <Pressable
                     onPress={() => respondMu.mutate({ id: f.id, status: 'accepted' })}
                     className="bg-atp-green rounded-atp px-3 py-2 active:opacity-80"
@@ -334,17 +351,7 @@ function FriendsView() {
           {/* Message next to the name (founder 2026-09-05). Nested
               Pressable wins the tap, so the row still opens the profile
               everywhere else. */}
-          <Pressable
-            onPress={() => router.push(`/messages/${item.friend_id}`)}
-            hitSlop={6}
-            style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.94 : 1 }] })}
-            className="flex-row items-center gap-1.5 bg-atp-green/15 border border-atp-green/40 rounded-full px-3 py-1.5 active:opacity-80"
-          >
-            <Icon name="chat" size={14} color={colors.green} />
-            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-[11px] uppercase tracking-widest">
-              Message
-            </Text>
-          </Pressable>
+          <MessageChip memberId={item.friend_id} />
         </Pressable>
       )}
       ListFooterComponent={
@@ -356,7 +363,8 @@ function FriendsView() {
             {sent.map((f) => (
               <View key={f.id} className="bg-atp-dark border border-dashed border-white/10 rounded-atp p-3 mb-2 flex-row items-center gap-3">
                 <FriendAvatar friend={f} />
-                <Text style={{ fontFamily: fontFamily.body, color: colors.light }}>{f.first_name} {f.last_name}</Text>
+                <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="flex-1">{f.first_name} {f.last_name}</Text>
+                <MessageChip memberId={f.friend_id} />
               </View>
             ))}
           </View>

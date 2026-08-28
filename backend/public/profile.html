@@ -2325,7 +2325,7 @@ function renderFriends() {
             "<div class='friend-info'><div class='friend-name'>"+escapeHtml(f.name)+"</div><div class='friend-meta'>"+escapeHtml(f.meta)+"</div></div>"+
             "<div class='friend-actions'>"+
               "<button class='friend-btn accept' onclick='acceptFriend("+(Number(i)||0)+",this)'>Accept</button>"+
-              "<button class='friend-btn' onclick='declineFriend("+(Number(i)||0)+")'>Decline</button>"+
+              "<button class='friend-btn' onclick='declineFriend("+(Number(i)||0)+",this)'>Decline</button>"+
             "</div>"+
           "</div>";
         }).join("")
@@ -3152,15 +3152,40 @@ function markAllRead() {
   if (notifCount) { notifCount.textContent = '0'; notifCount.style.display = 'none'; }
 }
 
-function acceptFriend(i,btn){
-  FRIENDS.unshift(FRIENDS_REQUESTS[i]);
-  FRIENDS_REQUESTS.splice(i,1);
-  renderFriends();
+// Accept/Decline persist through PATCH /api/members/friends/:id —
+// these were pure local-array theatre before (the DB row never left
+// 'pending', so the requester's app showed pending forever).
+function _respondFriend(i, btn, status){
+  var f = FRIENDS_REQUESTS[i];
+  if (!f || !f.friendship_id) { alert('Could not find this request — refresh the page.'); return; }
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  fetch('/api/members/friends/' + encodeURIComponent(f.friendship_id), {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + (localStorage.getItem('atp_token') || ''),
+    },
+    body: JSON.stringify({ status: status }),
+  })
+    .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, d: d || {} }; }); })
+    .then(function(res){
+      if (!res.ok || res.d.error) throw new Error(res.d.error || 'Request failed');
+      if (status === 'accepted') {
+        f.id = f.friend_id;   // FRIENDS rows key on the other member's id
+        f.meta = 'Friends since today';
+        FRIENDS.unshift(f);
+      }
+      FRIENDS_REQUESTS.splice(i, 1);
+      renderFriends();
+    })
+    .catch(function(e){
+      if (btn) { btn.disabled = false; btn.textContent = status === 'accepted' ? 'Accept' : 'Decline'; }
+      var msg = 'Could not ' + (status === 'accepted' ? 'accept' : 'decline') + ': ' + (e.message || e);
+      if (window.ATPComponents && ATPComponents.toast) ATPComponents.toast(msg); else alert(msg);
+    });
 }
-function declineFriend(i){
-  FRIENDS_REQUESTS.splice(i,1);
-  renderFriends();
-}
+function acceptFriend(i,btn){ _respondFriend(i, btn, 'accepted'); }
+function declineFriend(i,btn){ _respondFriend(i, btn, 'declined'); }
 
 // Returns the member's shareable code — prefers the new friendly
 // referral_code (e.g. "fredy-a7k") and falls back to legacy member_number
@@ -5346,6 +5371,12 @@ function loadFriends() {
     });
     FRIENDS_REQUESTS = pending.map(function(f){
       return {
+        // friendship row id — REQUIRED so Accept/Decline can hit the
+        // API (they used to be display-only and never persisted, which
+        // left the requester seeing "pending" forever — founder repro
+        // 2026-09-06).
+        friendship_id: f.id,
+        friend_id:     f.friend_id,
         init: initialsOf(f.first_name, f.last_name),
         name: (f.first_name||'') + ' ' + (f.last_name||''),
         meta: 'Wants to connect',
