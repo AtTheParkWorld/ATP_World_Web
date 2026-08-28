@@ -11,7 +11,7 @@ import { colors, fontFamily } from '@/lib/theme/tokens';
 const FAQS = [
   {
     q: 'How do I earn points?',
-    a: 'Book and attend free sessions, hit attendance streaks, refer friends who attend their first session, and complete your profile (one-time +200 pts).',
+    a: 'Attend sessions. Free members earn attendance points while holding a 5+ day streak (break it and points pause until you\'re back to 5). Premium and Premium Plus members always earn — and a 5+ day streak doubles their points (2×). You can also refer friends who attend their first session, and complete your profile (one-time +200 pts).',
   },
   {
     q: 'Why didn\'t my booking confirm?',

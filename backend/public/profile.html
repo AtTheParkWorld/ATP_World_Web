@@ -694,6 +694,21 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1a5 5 0 015 5v3l1.5 2.5H1.5L3 9V6a5 5 0 015-5z"/><path d="M6.5 13.5a1.5 1.5 0 003 0"/></svg>
           <span id="notifCount" style="display:none;background:var(--green);color:#0a0a0a;width:18px;height:18px;border-radius:50%;font-size:10px;align-items:center;justify-content:center">0</span>
         </button>
+        <!-- Message bell (founder 2026-08-28) — TOTAL unread DM count from
+             GET /api/community/messages, polled on load + every 60s.
+             Dropdown lists up to 6 conversations. The website has no DM
+             composer — members reply from the ATP app. -->
+        <div class="profile-menu-wrap" id="msgBellWrap">
+          <button class="pf-btn" id="msgBellBtn" type="button" onclick="toggleMsgDropdown(event)" aria-expanded="false" aria-label="Messages — tap for unread conversations">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 2a5 5 0 015 5v2.5L14.5 12H1.5L3 9.5V7a5 5 0 015-5z"/><path d="M6.5 14a1.5 1.5 0 003 0"/><circle cx="13" cy="3" r="2.2" fill="currentColor" stroke="none"/></svg>
+            <span id="msgBellBadge" style="display:none;background:var(--green);color:#0a0a0a;min-width:18px;height:18px;padding:0 5px;border-radius:10px;font-size:10px;font-weight:800;align-items:center;justify-content:center">0</span>
+          </button>
+          <div id="msgDropdown" class="profile-menu" role="menu" aria-labelledby="msgBellBtn" style="min-width:300px;max-width:340px;padding:10px">
+            <div style="font-family:var(--ff-display);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--green);padding:4px 8px 10px">💬 Messages</div>
+            <div id="msgDropdownList"><div style="padding:14px 8px;color:var(--muted);font-size:12px;text-align:center">Loading…</div></div>
+            <div style="margin-top:8px;padding:10px 8px 4px;border-top:1px solid rgba(255,255,255,.06);font-size:11px;color:var(--muted);text-align:center">Reply from the ATP app 📱</div>
+          </div>
+        </div>
         <!-- Streak chip — compact, expandable.  Click toggles a small
              dropdown with the progress bar + best + next milestone +
              inspirational copy.  Same data source as the My Streak
@@ -714,11 +729,17 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             <div style="height:8px;background:rgba(255,255,255,.08);border-radius:8px;overflow:hidden;margin-bottom:12px">
               <div id="streakDropdownFill" style="height:100%;width:0;background:linear-gradient(90deg,#A8FF00,#C6FF55);border-radius:8px;transition:width .6s cubic-bezier(.4,0,.2,1)"></div>
             </div>
-            <div style="font-size:11px;color:var(--light);line-height:1.5;margin-bottom:8px" id="streakDropdownNext">Next milestone: 7 days → admin shout-out + 1 day from 2× points</div>
+            <div style="font-size:11px;color:var(--light);line-height:1.5;margin-bottom:8px" id="streakDropdownNext">Hit a 5-day streak to activate session points — Premium members earn 2× instead</div>
             <div style="font-size:12px;color:var(--white);line-height:1.5" id="streakDropdownInspire">Get checked in by an Ambassador to start your streak.</div>
             <button type="button" data-atp-call="showTab" data-args='["streak"]' style="margin-top:14px;background:transparent;border:1px solid rgba(168,255,0,.4);color:var(--green);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:8px 14px;border-radius:6px;cursor:pointer;width:100%">Open full view →</button>
           </div>
         </div>
+        <!-- Profile-completion chip (founder 2026-08-28) — replaces the
+             full-width completion bar card to save vertical space. Label
+             kept in sync by updateProfileCompletion(). Click → edit form. -->
+        <button class="pf-btn" id="completionChipBtn" type="button" onclick="openProfileCompletionEdit()" title="Profile completion — tap to finish your profile">
+          <span id="completionChipLabel">▰ 0% complete</span>
+        </button>
         <button class="pf-btn" data-atp-call="showTab" data-args='["friends"]'>Friend requests <span id="friendReqCount" style="display:none;background:rgba(168,255,0,.15);color:var(--green);padding:1px 7px;border-radius:10px;font-size:11px;margin-left:2px">0</span></button>
         <!-- Manage Coach Profile — only shown if isCoach=true. Lives here
              (next to Edit Profile) instead of in the role-banner-card to
@@ -768,18 +789,9 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
     </div>
   </div>
 
-  <!-- PROFILE COMPLETION BAR (#8) — recalculates as the member fills the edit form -->
-  <div style="max-width:1200px;margin:0 auto 14px;padding:0 40px">
-    <div style="background:var(--dark2);border:1px solid rgba(255,255,255,.07);border-radius:var(--radius-lg);padding:14px 18px">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-        <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Profile completion</span>
-        <span id="completionLabel" style="font-size:12px;color:var(--light);font-weight:600">0% complete</span>
-      </div>
-      <div style="height:6px;background:rgba(255,255,255,.06);border-radius:6px;overflow:hidden">
-        <div id="completionBar" style="height:100%;width:0;background:linear-gradient(90deg,var(--green),#C6FF55);border-radius:6px;transition:width .6s cubic-bezier(.4,0,.2,1)"></div>
-      </div>
-    </div>
-  </div>
+  <!-- PROFILE COMPLETION (#8) — the full-width bar card was replaced by
+       the compact #completionChipBtn chip in .profile-actions
+       (founder 2026-08-28). updateProfileCompletion() drives the chip. -->
 
   <!-- Pick-your-tribe nudge (R-TR-005 / OQ-16). Populated by
        loadTribeNudge() — shows only when the current member has no
@@ -1030,11 +1042,11 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             <!-- ANIMATED PROGRESSION BAR (#10.5, 10.6) -->
             <div style="margin-bottom:8px;display:flex;justify-content:space-between;align-items:center">
               <span style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Progression</span>
-              <span style="font-size:11px;color:var(--muted)" id="streakNextLabel">Next milestone: 7 days → 2× points</span>
+              <span style="font-size:11px;color:var(--muted)" id="streakNextLabel">Next milestone: 5 days</span>
             </div>
             <div class="streak-progress-track">
               <div class="streak-progress-fill" id="streakProgressFill" style="width:0%"></div>
-              <div class="streak-progress-marker" style="left:calc(7/14 * 100%)" title="2× points unlocks at day 8">
+              <div class="streak-progress-marker" style="left:calc(5/14 * 100%)" title="Milestone at day 5 — session points activate (Premium: 2×)">
                 <span class="marker-flag">⚡</span>
               </div>
               <div class="streak-tick-row">
@@ -1354,36 +1366,24 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
           </div>
           <div class="ambassador-card-title">ATP Ambassador</div>
           <div class="ambassador-card-desc">As an ATP Ambassador you can check in members at sessions by scanning their QR code. You have access to the live session dashboard and attendance records.</div>
+          <!-- Web scanner removed (founder 2026-08-28) — laptops can't scan.
+               Check-ins happen from the ATP app; "Go Live" stays. -->
+          <div style="font-size:12px;color:var(--muted);margin-bottom:12px">📱 Check members in by scanning their QR from the ATP app at the session.</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
-            <a href="checkin.html" class="ambassador-scan-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><path d="M8 12h8M12 8v8"/></svg>
-              Open Check-in Scanner
-            </a>
             <a href="stream-broadcast.html" class="ambassador-scan-btn" style="background:#ef4444;color:#fff">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
               Go Live
             </a>
           </div>
         </div>
+        <!-- Today's Sessions — REAL data (founder 2026-08-28). Populated by
+             loadAmbTodaySessions() from GET /api/sessions?status=upcoming,
+             filtered to the next 24h. Rows are informational — no
+             click-through (check-ins happen from the app). -->
         <div class="widget">
-          <div class="widget-head"><span class="widget-title">Today's Sessions</span><span style="font-size:12px;color:var(--muted)">Tap to manage</span></div>
-          <div class="widget-body">
-            <div class="session-row" style="cursor:pointer" onclick="window.location='checkin.html?session=community-run'">
-              <div class="session-dot faster"></div>
-              <div class="session-info"><div class="session-name">Community Run</div><div class="session-meta">Tonight · 7:00 PM · Dubai Marina</div></div>
-              <div style="display:flex;align-items:center;gap:8px">
-                <span style="font-size:11px;color:var(--green);font-weight:700">24 booked</span>
-                <span class="session-status upcoming">Check in →</span>
-              </div>
-            </div>
-            <div class="session-row" style="cursor:pointer" onclick="window.location='checkin.html'">
-              <div class="session-dot stronger"></div>
-              <div class="session-info"><div class="session-name">Military Bootcamp</div><div class="session-meta">Tomorrow · 6:30 AM · Al Formal Park</div></div>
-              <div style="display:flex;align-items:center;gap:8px">
-                <span style="font-size:11px;color:var(--green);font-weight:700">18 booked</span>
-                <span class="session-status upcoming">Check in →</span>
-              </div>
-            </div>
+          <div class="widget-head"><span class="widget-title">Today's Sessions</span><span style="font-size:12px;color:var(--muted)">Next 24 hours</span></div>
+          <div class="widget-body" id="ambTodaySessions">
+            <div style="padding:18px 0;color:var(--muted);font-size:13px;text-align:center">Loading…</div>
           </div>
         </div>
         <div class="widget">
@@ -1395,10 +1395,10 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
                 <th style="text-align:left;padding:8px 0;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Session</th>
                 <th style="text-align:right;padding:8px 0;font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">Time</th>
               </tr></thead>
+              <!-- REAL rows (founder 2026-08-28) — loadAmbCheckinHistory()
+                   from GET /api/sessions/ambassador/checkin-history. -->
               <tbody id="checkinHistory">
-                <tr style="border-bottom:1px solid rgba(255,255,255,.04)"><td style="padding:10px 0;color:var(--white)">Jay Ashar</td><td style="color:var(--muted)">Community Run</td><td style="text-align:right;color:var(--green);font-weight:700">7:02 PM</td></tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,.04)"><td style="padding:10px 0;color:var(--white)">Valentina R.</td><td style="color:var(--muted)">Community Run</td><td style="text-align:right;color:var(--green);font-weight:700">7:04 PM</td></tr>
-                <tr style="border-bottom:1px solid rgba(255,255,255,.04)"><td style="padding:10px 0;color:var(--white)">Gwen Gaje</td><td style="color:var(--muted)">Community Run</td><td style="text-align:right;color:var(--green);font-weight:700">7:07 PM</td></tr>
+                <tr><td colspan="3" style="padding:14px 0;color:var(--muted);text-align:center;font-size:13px">Loading…</td></tr>
               </tbody>
             </table>
           </div>
@@ -1432,12 +1432,10 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             <span class="ambassador-badge">📷 Scanner</span>
           </div>
           <div class="ambassador-card-title">Check in your members</div>
-          <div class="ambassador-card-desc">Scan members' QR codes to mark attendance at the sessions you coach. Same tool the ATP Ambassadors use — your check-ins count toward each member's streak and points.</div>
+          <div class="ambassador-card-desc">Mark attendance at the sessions you coach — your check-ins count toward each member's streak and points.</div>
+          <!-- Web scanner removed (founder 2026-08-28) — laptops can't scan. -->
+          <div style="font-size:12px;color:var(--muted);margin-bottom:12px">📱 Check members in by scanning their QR from the ATP app at the session.</div>
           <div style="display:flex;gap:10px;flex-wrap:wrap">
-            <a href="checkin.html" class="ambassador-scan-btn">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7V5a2 2 0 012-2h2M17 3h2a2 2 0 012 2v2M21 17v2a2 2 0 01-2 2h-2M7 21H5a2 2 0 01-2-2v-2"/><path d="M8 12h8M12 8v8"/></svg>
-              Open Check-in Scanner
-            </a>
             <a href="stream-broadcast.html" class="ambassador-scan-btn" style="background:#ef4444;color:#fff">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="6"/></svg>
               Go Live · Coaching or Community
@@ -1788,6 +1786,9 @@ function showTab(name, btn) {
   }
   // Theme 14 — lazy-load own posts when the My Posts tab opens
   if (name === 'myposts') { try { loadMyPosts(); } catch(e) {} }
+  // Ambassador dashboard — real data (founder 2026-08-28): today's
+  // sessions + check-in history load fresh every time the tab opens.
+  if (name === 'ambassador') { try { loadAmbassadorDashboard(); } catch(e) {} }
   // Clear the unread-notif badge when the member opens the Notifications
   // tab (also marks all server-side as read).
   if (name === 'notifications') { try { markAllRead(); } catch(e) {} }
@@ -1859,6 +1860,192 @@ document.addEventListener('keydown', function(ev){
     }
   }
 });
+
+// ── MESSAGE BELL (founder 2026-08-28) ─────────────────────────
+// Unread-DM bell in .profile-actions. Same dropdown pattern as the
+// streak chip. Data: GET /api/community/messages → { conversations:
+// [{ id, last_message_at, other_id, other_first, other_last,
+//    other_avatar, last_message, unread_count }] }.
+// unread_count arrives as a string (pg COUNT) → parseInt.
+// The website has no DM composer — the dropdown is read-only and the
+// footer points members at the ATP app to reply.
+function toggleMsgDropdown(ev) {
+  if (ev) ev.stopPropagation();
+  var menu = document.getElementById('msgDropdown');
+  var btn  = document.getElementById('msgBellBtn');
+  if (!menu) return;
+  // Only one floating panel at a time — close the others if open.
+  ['profileMenu', 'streakDropdown'].forEach(function(id){
+    var other = document.getElementById(id);
+    if (other && other.classList.contains('open')) {
+      other.classList.remove('open');
+      var ob = document.getElementById(id === 'profileMenu' ? 'profileMenuBtn' : 'streakChipBtn');
+      if (ob) ob.setAttribute('aria-expanded', 'false');
+    }
+  });
+  var open = menu.classList.toggle('open');
+  if (btn) btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+  if (open) loadUnreadMessages(); // fresh list on open
+}
+window.toggleMsgDropdown = toggleMsgDropdown;
+
+document.addEventListener('click', function(ev){
+  var menu = document.getElementById('msgDropdown');
+  var btn  = document.getElementById('msgBellBtn');
+  if (!menu || !menu.classList.contains('open')) return;
+  if (btn && (ev.target === btn || btn.contains(ev.target))) return;
+  if (menu.contains(ev.target)) return;
+  menu.classList.remove('open');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+});
+document.addEventListener('keydown', function(ev){
+  if (ev.key === 'Escape') {
+    var menu = document.getElementById('msgDropdown');
+    if (menu && menu.classList.contains('open')) {
+      menu.classList.remove('open');
+      var btn = document.getElementById('msgBellBtn');
+      if (btn) btn.setAttribute('aria-expanded', 'false');
+    }
+  }
+});
+
+var MSG_CONVERSATIONS = [];
+function loadUnreadMessages() {
+  var token; try { token = localStorage.getItem('atp_token'); } catch(e){}
+  if (!token) return;
+  fetch('/api/community/messages', { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      if (!d || !Array.isArray(d.conversations)) return;
+      MSG_CONVERSATIONS = d.conversations;
+      renderMsgBell();
+    })
+    .catch(function(){});
+}
+function renderMsgBell() {
+  var total = 0;
+  MSG_CONVERSATIONS.forEach(function(c){ total += parseInt(c.unread_count, 10) || 0; });
+  var badge = document.getElementById('msgBellBadge');
+  if (badge) {
+    badge.textContent = total > 99 ? '99+' : String(total);
+    badge.style.display = total > 0 ? 'inline-flex' : 'none';
+  }
+  var list = document.getElementById('msgDropdownList');
+  if (!list) return;
+  if (!MSG_CONVERSATIONS.length) {
+    list.innerHTML = '<div style="padding:14px 8px;color:var(--muted);font-size:12px;text-align:center">No messages yet.</div>';
+    return;
+  }
+  list.innerHTML = MSG_CONVERSATIONS.slice(0, 6).map(function(c){
+    var name = ((c.other_first || '') + ' ' + (c.other_last || '')).trim() || 'ATP member';
+    var unread = parseInt(c.unread_count, 10) || 0;
+    var snippet = c.last_message == null ? '' : String(c.last_message);
+    if (snippet.length > 52) snippet = snippet.slice(0, 52) + '…';
+    var initial = name.charAt(0).toUpperCase();
+    return '<div style="display:flex;align-items:center;gap:10px;padding:8px;border-radius:8px' + (unread ? ';background:rgba(168,255,0,.06)' : '') + '">' +
+      '<div style="width:30px;height:30px;border-radius:50%;background:rgba(168,255,0,.12);color:var(--green);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;flex-shrink:0">' + escapeHtml(initial) + '</div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-size:13px;font-weight:700;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(name) + '</div>' +
+        (snippet ? '<div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(snippet) + '</div>' : '') +
+      '</div>' +
+      (unread ? '<span style="background:rgba(168,255,0,.15);color:var(--green);padding:1px 8px;border-radius:10px;font-size:11px;font-weight:700;flex-shrink:0">' + unread + '</span>' : '') +
+    '</div>';
+  }).join('');
+}
+// Poll every 60s (load-time fetch happens in loadRealProfileData).
+setInterval(loadUnreadMessages, 60000);
+
+// ── AMBASSADOR DASHBOARD — REAL DATA (founder 2026-08-28) ─────
+// Replaces the hardcoded demo rows. Loaded every time the Ambassador
+// tab opens (showTab hook) + once on boot if the panel is visible.
+function loadAmbassadorDashboard() {
+  try { loadAmbTodaySessions(); } catch(e) {}
+  try { loadAmbCheckinHistory(); } catch(e) {}
+}
+
+// Today's Sessions — public endpoint, filtered to the next 24h.
+// Sessions already underway (API's 2h grace window) still count as
+// "today". Rows are informational — no click-through to a scanner.
+function loadAmbTodaySessions() {
+  var el = document.getElementById('ambTodaySessions');
+  if (!el) return;
+  fetch('/api/sessions?status=upcoming&limit=100')
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      var list = (d && Array.isArray(d.sessions)) ? d.sessions : [];
+      var now = Date.now();
+      var next = list.filter(function(s){
+        if (!s || !s.scheduled_at) return false;
+        var t = new Date(s.scheduled_at).getTime();
+        if (!isFinite(t)) return false;
+        var diff = t - now;
+        return diff <= 24 * 3600 * 1000 && diff >= -2 * 3600 * 1000;
+      });
+      if (!next.length) {
+        el.innerHTML = '<div style="padding:18px 0;color:var(--muted);font-size:13px;text-align:center">No sessions in the next 24 hours.</div>';
+        return;
+      }
+      el.innerHTML = next.map(function(s){
+        var when = new Date(s.scheduled_at);
+        var dayLabel = when.toDateString() === new Date().toDateString() ? 'Today' : 'Tomorrow';
+        var timeStr = when.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+        var slug = String(s.tribe_slug || '').toLowerCase();
+        var hasDot = (slug === 'faster' || slug === 'stronger' || slug === 'better');
+        var booked = parseInt(s.registrations_count, 10) || 0;
+        return '<div class="session-row">' +
+          '<div class="session-dot' + (hasDot ? ' ' + slug : '') + '"' + (hasDot ? '' : ' style="background:rgba(255,255,255,.25)"') + '></div>' +
+          '<div class="session-info">' +
+            '<div class="session-name">' + escapeHtml(s.name || 'Session') + '</div>' +
+            '<div class="session-meta">' + escapeHtml(dayLabel + ' · ' + timeStr + (s.location ? ' · ' + s.location : '')) + '</div>' +
+          '</div>' +
+          '<span style="font-size:11px;color:var(--green);font-weight:700;flex-shrink:0">' + booked + ' booked</span>' +
+        '</div>';
+      }).join('');
+    })
+    .catch(function(){
+      el.innerHTML = '<div style="padding:18px 0;color:var(--muted);font-size:13px;text-align:center">Couldn’t load sessions — try again shortly.</div>';
+    });
+}
+
+// My Check-in History — every booking this ambassador scanned in.
+// GET /api/sessions/ambassador/checkin-history (bearer) →
+// { history: [{ checked_in_at, session_name, first_name, last_name }] }
+function loadAmbCheckinHistory() {
+  var tb = document.getElementById('checkinHistory');
+  if (!tb) return;
+  var token; try { token = localStorage.getItem('atp_token'); } catch(e){}
+  if (!token) return;
+  fetch('/api/sessions/ambassador/checkin-history', { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      var rows = (d && Array.isArray(d.history)) ? d.history : [];
+      if (!rows.length) {
+        tb.innerHTML = '<tr><td colspan="3" style="padding:14px 0;color:var(--muted);text-align:center;font-size:13px">No check-ins yet — scan members at your next session.</td></tr>';
+        return;
+      }
+      tb.innerHTML = rows.map(function(h){
+        var name = ((h.first_name || '') + ' ' + (h.last_name || '')).trim() || 'Member';
+        var dt = h.checked_in_at ? new Date(h.checked_in_at) : null;
+        var timeStr = (dt && isFinite(dt.getTime()))
+          ? dt.toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) + ' · ' + dt.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })
+          : '—';
+        return '<tr style="border-bottom:1px solid rgba(255,255,255,.04)">' +
+          '<td style="padding:10px 0;color:var(--white)">' + escapeHtml(name) + '</td>' +
+          '<td style="color:var(--muted)">' + escapeHtml(h.session_name || 'Session') + '</td>' +
+          '<td style="text-align:right;color:var(--green);font-weight:700;white-space:nowrap">' + escapeHtml(timeStr) + '</td>' +
+        '</tr>';
+      }).join('');
+    })
+    .catch(function(){
+      tb.innerHTML = '<tr><td colspan="3" style="padding:14px 0;color:var(--muted);text-align:center;font-size:13px">Couldn’t load history — try again shortly.</td></tr>';
+    });
+}
+// Boot-time load if the ambassador panel is already visible (e.g. a
+// future default-tab change) — otherwise the showTab hook covers it.
+try {
+  var _ambPanelBoot = document.getElementById('panel-ambassador');
+  if (_ambPanelBoot && _ambPanelBoot.classList.contains('active')) loadAmbassadorDashboard();
+} catch (e) {}
 
 // Close on outside click + Escape
 document.addEventListener('click', function(ev){
@@ -3361,11 +3548,29 @@ function updateProfileCompletion() {
   var hits = 0;
   COMPLETION_FIELDS.forEach(function(f){ try { if (f.test()) hits++; } catch(e){} });
   var pct = Math.round(hits * 100 / COMPLETION_FIELDS.length);
-  var bar = document.getElementById('completionBar');
-  var lbl = document.getElementById('completionLabel');
-  if (bar) bar.style.width = pct + '%';
-  if (lbl) lbl.textContent = pct + '% complete · ' + hits + ' of ' + COMPLETION_FIELDS.length + ' fields';
+  // Compact chip in .profile-actions (replaced the full-width bar card,
+  // founder 2026-08-28). Lime + checkmark at 100%.
+  var chip = document.getElementById('completionChipBtn');
+  var lbl  = document.getElementById('completionChipLabel');
+  if (lbl) lbl.textContent = (pct >= 100) ? '✓ Profile complete' : '▰ ' + pct + '% complete';
+  if (chip) {
+    chip.style.color       = (pct >= 100) ? 'var(--green)' : '';
+    chip.style.borderColor = (pct >= 100) ? 'rgba(168,255,0,.5)' : '';
+    chip.title = 'Profile completion — ' + hits + ' of ' + COMPLETION_FIELDS.length + ' fields' +
+                 (pct >= 100 ? '' : ' · tap to finish your profile');
+  }
 }
+// Chip click → open the edit form and drop focus on the first field.
+function openProfileCompletionEdit() {
+  try { showTab('edit'); } catch (e) {}
+  var panel = document.getElementById('panel-edit');
+  if (panel && panel.scrollIntoView) {
+    setTimeout(function(){ panel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80);
+  }
+  var f = document.getElementById('fFirstName');
+  if (f) { try { f.focus({ preventScroll: true }); } catch (e) { try { f.focus(); } catch (e2) {} } }
+}
+window.openProfileCompletionEdit = openProfileCompletionEdit;
 
 function saveProfile(){
   if (!window.ATP || !window.ATP.isLoggedIn()) {
@@ -3963,10 +4168,11 @@ function renderRoleBanner(opts) {
     card.className = 'role-banner-card amber';
     icon.textContent  = '⭐';
     title.textContent = 'You\u2019re an ATP Ambassador';
-    sub.textContent   = 'Open the scanner to check members in at sessions, or apply to become a Coach.';
+    // Web scanner removed (founder 2026-08-28) — laptops can't scan;
+    // check-ins happen from the ATP app.
+    sub.textContent   = 'Check members in by scanning their QR from the ATP app at the session, or apply to become a Coach.';
     actions.innerHTML =
-      '<a class="pf-btn primary" href="checkin.html">Open scanner</a>' +
-      '<a class="pf-btn"         data-atp-call="showTab" data-args=\'["ambassador"]\'>View dashboard</a>';
+      '<a class="pf-btn primary" data-atp-call="showTab" data-args=\'["ambassador"]\'>View dashboard</a>';
   } else {
     // Plain member — encourage upgrade path
     card.className = 'role-banner-card member';
@@ -4183,14 +4389,16 @@ function renderCoachMySessions(sessions) {
     var whenStr = when ? when.toLocaleDateString(undefined, {weekday:'short', month:'short', day:'numeric'}) +
                           ' · ' + when.toLocaleTimeString(undefined, {hour:'numeric', minute:'2-digit'}) : '';
     var reg = (s.registered != null ? s.registered : 0) + (s.capacity ? ' / ' + s.capacity : '');
-    return '<div class="session-row" style="cursor:pointer" onclick="window.location=\'/checkin.html?session=' + encodeURIComponent(s.id) + '\'">' +
+    // Web scanner removed (founder 2026-08-28) — rows are informational;
+    // coaches check members in from the ATP app at the session.
+    return '<div class="session-row">' +
              '<div class="session-info">' +
                '<div class="session-name">' + escapeHtml(s.name || 'Session') + '</div>' +
                '<div class="session-meta">' + escapeHtml(whenStr) + (s.location ? ' · ' + escapeHtml(s.location) : '') + '</div>' +
              '</div>' +
              '<div style="display:flex;align-items:center;gap:8px">' +
                '<span style="font-size:11px;color:var(--green);font-weight:700">' + escapeHtml(String(reg)) + '</span>' +
-               '<span class="session-status upcoming">Check in →</span>' +
+               '<span class="session-status upcoming">Upcoming</span>' +
              '</div>' +
            '</div>';
   }).join('');
@@ -5416,6 +5624,7 @@ function loadRealProfileData() {
     loadReferrals();
     loadFriends();
     loadStreak();
+    loadUnreadMessages();
     loadAchievements();
     loadOffersTeaser();
     loadWearables();
@@ -7446,59 +7655,76 @@ function renderStreak(s) {
   // Chip fire emoji reflects active vs idle
   var chipFire = document.getElementById('streakChipFire');
   if (chipFire) chipFire.textContent = current > 0 ? '🔥' : '💤';
-  // Mirror milestone + inspirational copy onto the dropdown
+  // Mirror milestone + inspirational copy onto the dropdown.
+  // Milestone is 5 days (founder 2026-08-28, was 7/8) and the line is
+  // tier-aware via CURRENT_MEMBER.subscription_type — see
+  // _streakMilestoneCopy() / _streakInspireCopy().
   var nextDd = document.getElementById('streakDropdownNext');
-  if (nextDd) {
-    if (current === 0)      nextDd.textContent = 'Next milestone: 7 days → admin shout-out + 1 day from 2× points';
-    else if (current < 7)   nextDd.textContent = 'Next milestone: ' + (7 - current) + ' more day' + (7 - current === 1 ? '' : 's') + ' to admin shout-out';
-    else if (current < 8)   nextDd.textContent = 'One more day to unlock 2× points!';
-    else                    nextDd.textContent = '⚡ 2× points zone — keep going for your longest streak';
-  }
+  if (nextDd) nextDd.textContent = _streakMilestoneCopy(current);
   var insDd = document.getElementById('streakDropdownInspire');
-  if (insDd) {
-    if (current === 0)      insDd.textContent = 'Get checked in by an Ambassador to start your streak.';
-    else if (current < 3)   insDd.textContent = 'Just getting started — keep going!';
-    else if (current < 7)   insDd.textContent = 'You’re building the habit. Show up tomorrow.';
-    else if (current < 8)   insDd.textContent = '🔥 Seven days! One more for 2× points.';
-    else if (current < 14)  insDd.textContent = '⚡ 2× points active. You’re on fire.';
-    else if (current < 30)  insDd.textContent = '🏆 Two weeks straight. The team noticed.';
-    else                    insDd.textContent = '🚀 Beyond the streak — you ARE the community.';
-  }
+  if (insDd) insDd.textContent = _streakInspireCopy(current);
 
   // Double-points badge (#10.3)
   var dbBadge = document.getElementById('streakDoubleBadge');
   if (dbBadge) dbBadge.style.display = s.double_points_active ? 'inline-flex' : 'none';
 
-  // Next milestone copy
+  // Next milestone copy (5-day milestone, tier-aware — founder 2026-08-28)
   var nextLbl = document.getElementById('streakNextLabel');
-  if (nextLbl) {
-    if (current === 0) nextLbl.textContent = 'Next milestone: 7 days → admin notification + 1 day from 2× points';
-    else if (current < 7) nextLbl.textContent = 'Next milestone: ' + (7 - current) + ' more day' + (7 - current === 1 ? '' : 's') + ' to admin shout-out';
-    else if (current < 8) nextLbl.textContent = 'One more day to unlock 2× points!';
-    else nextLbl.textContent = '⚡ 2× points zone — keep going for your longest streak';
-  }
+  if (nextLbl) nextLbl.textContent = _streakMilestoneCopy(current);
 
   // Inspirational copy
   var inspire = document.getElementById('streakInspire');
-  if (inspire) {
-    if (current === 0)      inspire.textContent = 'Get checked in by an Ambassador to start your streak.';
-    else if (current < 3)   inspire.textContent = 'Just getting started — keep going!';
-    else if (current < 7)   inspire.textContent = 'You\u2019re building the habit. Show up tomorrow.';
-    else if (current < 8)   inspire.textContent = '🔥 Seven days! One more for 2× points.';
-    else if (current < 14)  inspire.textContent = '⚡ 2× points active. You\u2019re on fire.';
-    else if (current < 30)  inspire.textContent = '🏆 Two weeks straight. The team noticed.';
-    else                    inspire.textContent = '🚀 Beyond the streak — you ARE the community.';
-  }
+  if (inspire) inspire.textContent = _streakInspireCopy(current);
 
-  // Fire emoji intensity (applied to both the full and mini widgets)
+  // Fire emoji intensity (applied to both the full and mini widgets).
+  // ⚡ threshold moved 8 → 5 with the new 5-day milestone.
   var fireEmoji = (current >= 30) ? '🚀'
                 : (current >= 14) ? '🏆'
-                : (current >= 8)  ? '⚡'
+                : (current >= 5)  ? '⚡'
                 : (current >= 1)  ? '🔥'
                                   : '💤';
   ['streakFire','streakFireMini'].forEach(function(id){
     var el = document.getElementById(id); if (el) el.textContent = fireEmoji;
   });
+}
+
+// ── Streak milestone copy — 5-day milestone, tier-aware ────────
+// Founder 2026-08-28: milestone moved 7/8 days → 5 days. Premium and
+// Premium+ hit 2× points at 5 days; free members activate session
+// points at 5 days (Premium earns 2× instead). Reads
+// CURRENT_MEMBER.subscription_type (set by applyMemberToPage before
+// loadStreak runs, so renderStreak sees the right tier).
+function _streakIsPremium() {
+  var sub = ((typeof CURRENT_MEMBER !== 'undefined' && CURRENT_MEMBER && CURRENT_MEMBER.subscription_type) || '').toLowerCase();
+  return sub === 'premium' || sub === 'premium_plus';
+}
+function _streakMilestoneCopy(current) {
+  var premium = _streakIsPremium();
+  if (current >= 5) {
+    return premium
+      ? '⚡ 5-day streak active — 2× points on every session'
+      : '🔥 5-day streak active — session points unlocked. Premium members earn 2× instead';
+  }
+  var base = premium
+    ? '5-day streak = 2× points on every session'
+    : 'Hit a 5-day streak to activate session points — Premium members earn 2× instead';
+  if (current > 0) {
+    var left = 5 - current;
+    return 'Next milestone: ' + left + ' more day' + (left === 1 ? '' : 's') + ' — ' + base;
+  }
+  return base;
+}
+function _streakInspireCopy(current) {
+  if (current === 0)  return 'Get checked in by an Ambassador to start your streak.';
+  if (current < 3)    return 'Just getting started — keep going!';
+  if (current < 5)    return 'You’re building the habit. Show up tomorrow.';
+  if (current < 14) {
+    return _streakIsPremium()
+      ? '⚡ 2× points active. You’re on fire.'
+      : '🔥 Five days straight — session points active. You’re on fire.';
+  }
+  if (current < 30)   return '🏆 Two weeks straight. The team noticed.';
+  return '🚀 Beyond the streak — you ARE the community.';
 }
 
 loadRealProfileData();

@@ -884,15 +884,17 @@ async function awardSessionPoints(sessionId) {
        -- while their check-in streak is 5+ days — break the streak and
        -- the next sessions earn nothing until it's rebuilt to 5.
        AND (m.subscription_type IN ('premium', 'premium_plus')
-            OR COALESCE(b.streak_at_checkin, 0) >= 5)`,
-    [sessionId]
+            OR COALESCE(b.streak_at_checkin, 0) >= $2)`,
+    [sessionId, await require('../services/streak').getDoubleThreshold()]
   );
 
+  const doubleThr = await require('../services/streak').getDoubleThreshold();
   for (const booking of bookings) {
     const isPremium = ['premium', 'premium_plus'].includes(booking.subscription_type);
     // 2x streak multiplier stays a Premium perk — free members on a
-    // qualifying streak earn the normal base amount.
-    const mult = (isPremium && booking.streak_at_checkin >= 8) ? 2 : 1;
+    // qualifying streak earn the normal base amount. Threshold comes
+    // from Admin -> System Config (default 5 days, founder 2026-09-07).
+    const mult = (isPremium && booking.streak_at_checkin >= doubleThr) ? 2 : 1;
     const pts  = basePts * mult;
     const description = mult === 2
       ? `2× streak bonus — ${sessionName}`
@@ -1466,6 +1468,30 @@ router.get('/admin/templates/last-details', authenticate, requireAdmin, async (r
     // so the admin toast shows it and a screenshot is diagnosable.
     console.error('[sessions] last-details failed:', err.message);
     res.status(500).json({ error: err.message, code: err.code || null });
+  }
+});
+
+// ── GET /api/sessions/ambassador/checkin-history ────────────────
+// Real check-in history for the web ambassador dashboard (founder
+// 2026-09-07: it was hardcoded demo rows). Every booking THIS member
+// scanned in, newest first.
+router.get('/ambassador/checkin-history', authenticate, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT b.checked_in_at, s.name AS session_name,
+              m.first_name, m.last_name
+       FROM bookings b
+       JOIN sessions s ON s.id = b.session_id
+       JOIN members m ON m.id = b.member_id
+       WHERE b.checked_in_by = $1 AND b.checked_in_at IS NOT NULL
+       ORDER BY b.checked_in_at DESC
+       LIMIT 25`,
+      [req.member.id]
+    );
+    res.json({ history: rows });
+  } catch (err) {
+    if (err.code === '42703') return res.json({ history: [] });
+    next(err);
   }
 });
 

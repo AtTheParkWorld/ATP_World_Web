@@ -1362,7 +1362,7 @@ router.post('/migrate-referral-economy', async (req, res, next) => {
       ['tribe_checkin_points_premium',    '2',   'Tribe check-in (premium)',   'Points awarded to the referrer each time their invitee (premium member) gets checked in at a session.'],
       ['premium_renewal_referrer_points', '200', 'Premium renewal referrer bonus', 'Points awarded to a premium referrer when their invitee renews a premium subscription.'],
       ['inactivity_days',                 '30',  'Inactivity threshold (days)',  'Number of days without a check-in before a member is marked inactive.'],
-      ['streak_double_threshold',         '8',   'Streak 2× points threshold (days)', 'Streak length at which point payouts double.'],
+      ['streak_double_threshold',         '5',   'Streak milestone (days)', 'Streak length at which Premium points double and free members start earning attendance points.'],
     ];
     for (const [k, v, lbl, desc] of seed) {
       ops.push(query(

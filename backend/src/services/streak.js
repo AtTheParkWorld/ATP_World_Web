@@ -35,7 +35,25 @@
 const { query } = require('../db');
 const points = require('./points');
 
-const POINTS_DOUBLE_THRESHOLD = 8;
+// Founder 2026-09-07: streak milestone is 5 days (was 8, and the admin
+// System Config key existed but was never read — now it is, cached).
+// For PREMIUM tiers a 5+ day streak doubles points; for FREE members a
+// 5+ day streak is what ACTIVATES attendance points at all (1x).
+const DEFAULT_DOUBLE_THRESHOLD = 5;
+let _thrCache = { value: DEFAULT_DOUBLE_THRESHOLD, at: 0 };
+async function getDoubleThreshold() {
+  if (Date.now() - _thrCache.at < 60_000) return _thrCache.value;
+  try {
+    const { rows } = await query(
+      `SELECT value FROM system_config WHERE key='streak_double_threshold'`
+    );
+    const raw = rows[0] ? JSON.parse(rows[0].value) : null;
+    const n = parseInt(raw, 10);
+    _thrCache = { value: n >= 1 && n <= 365 ? n : DEFAULT_DOUBLE_THRESHOLD, at: Date.now() };
+  } catch (e) { _thrCache = { value: DEFAULT_DOUBLE_THRESHOLD, at: Date.now() }; }
+  return _thrCache.value;
+}
+const POINTS_DOUBLE_THRESHOLD = DEFAULT_DOUBLE_THRESHOLD;
 const ADMIN_NOTIF_THRESHOLD   = 7;
 
 // Milestone definitions for member-facing notifications + bonus pts.
@@ -303,6 +321,7 @@ async function getStreakSummary(memberId) {
 }
 
 module.exports = {
+  getDoubleThreshold,
   recordCheckin,
   pointsMultiplier,
   getStreakSummary,

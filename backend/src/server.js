@@ -797,6 +797,13 @@ async function _ensureBootSchema() {
   await query(`ALTER TABLE coach_feedback ADD COLUMN IF NOT EXISTS ip_hash VARCHAR(64)`)
     .catch((e) => console.warn('[boot] coach_feedback.ip_hash:', e.message));
 
+  // Streak milestone is 5 days now (founder 2026-09-07). One-shot: move
+  // the stored config off the old 7/8 defaults; a custom value the
+  // founder set to anything else is left alone.
+  await query(`UPDATE system_config SET value='5'
+               WHERE key='streak_double_threshold' AND value IN ('7','8','"7"','"8"')`)
+    .catch(() => {});
+
   // Post-session feedback nudge marker (founder 2026-09-04).
   await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS feedback_prompt_at TIMESTAMPTZ`)
     .catch((e) => console.warn('[boot] sessions.feedback_prompt_at:', e.message));

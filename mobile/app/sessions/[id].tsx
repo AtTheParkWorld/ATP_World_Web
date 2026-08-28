@@ -209,7 +209,7 @@ export default function SessionDetail() {
           <InfoPill label={priceLbl} accent={s.session_type === 'paid' ? colors.warning : colors.green} />
           {s.points_reward ? (
             <InfoPill
-              label={earnsAtCheckin ? `+${s.points_reward} pts` : `+${s.points_reward} pts with Premium ⭐`}
+              label={earnsAtCheckin ? `+${s.points_reward} pts` : `+${s.points_reward} pts · Premium ⭐ or 5-day streak`}
               accent={colors.green}
             />
           ) : null}
