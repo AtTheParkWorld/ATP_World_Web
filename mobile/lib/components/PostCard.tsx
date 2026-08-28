@@ -167,7 +167,12 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
             borderWidth={1}
           />
         </Pressable>
-        <View className="flex-1">
+        {/* Name taps through to the profile exactly like the avatar
+            (founder 2026-09-05: name/photo must open the member). */}
+        <Pressable
+          onPress={onAvatarPress || (() => router.push(`/community/members/${post.member_id}`))}
+          className="flex-1"
+        >
           <View className="flex-row items-center gap-2">
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">
               {post.first_name} {post.last_name}
@@ -190,7 +195,7 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
               {timeAgo(post.created_at)}
             </Text>
           </View>
-        </View>
+        </Pressable>
       </View>
 
       {/* Tagged friends — "with @Name" */}

@@ -19,6 +19,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getFeed, toggleLike, type Post } from '@/lib/api/community';
 import { listCoaches } from '@/lib/api/coaches';
 import { listFriends, respondToRequest, searchMembers, type Friendship } from '@/lib/api/friends';
+import { Icon } from '@/lib/components/icons';
 import { PostCard } from '@/lib/components/PostCard';
 import { SegmentedControl } from '@/lib/components/SegmentedControl';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
@@ -330,6 +331,20 @@ function FriendsView() {
               </Text>
             )}
           </View>
+          {/* Message next to the name (founder 2026-09-05). Nested
+              Pressable wins the tap, so the row still opens the profile
+              everywhere else. */}
+          <Pressable
+            onPress={() => router.push(`/messages/${item.friend_id}`)}
+            hitSlop={6}
+            style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.94 : 1 }] })}
+            className="flex-row items-center gap-1.5 bg-atp-green/15 border border-atp-green/40 rounded-full px-3 py-1.5 active:opacity-80"
+          >
+            <Icon name="chat" size={14} color={colors.green} />
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-[11px] uppercase tracking-widest">
+              Message
+            </Text>
+          </Pressable>
         </Pressable>
       )}
       ListFooterComponent={
