@@ -25,6 +25,7 @@ import { Avatar } from '@/lib/components/Avatar';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { StreakBadge } from '@/lib/components/StreakBadge';
 import { MyNextSession } from '@/lib/components/MyNextSession';
+import { NotificationBell } from '@/lib/components/NotificationBell';
 import { Icon, type IconName } from '@/lib/components/icons';
 import Constants from 'expo-constants';
 import * as Updates from 'expo-updates';
@@ -86,8 +87,14 @@ export default function Profile() {
           />
         }
       >
+        {/* Bell sits top-right of the identity block — same inbox the
+            Home bell opens (founder 2026-09-09). */}
+        <View className="flex-row justify-end px-5 pt-3">
+          <NotificationBell />
+        </View>
+
         {/* Identity */}
-        <View className="items-center pt-6 pb-3 px-5">
+        <View className="items-center pt-1 pb-3 px-5">
           <Pressable onPress={() => router.push('/profile/edit')}>
             <Avatar
               uri={m?.avatar_url}

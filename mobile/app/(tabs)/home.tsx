@@ -26,6 +26,7 @@ import { listSessions, type Session } from '@/lib/api/sessions';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { SessionCard } from '@/lib/components/SessionCard';
 import { StreakBadge } from '@/lib/components/StreakBadge';
+import { NotificationBell } from '@/lib/components/NotificationBell';
 import { Avatar } from '@/lib/components/Avatar';
 import { DeviceWeekCard } from '@/lib/components/DeviceWeekCard';
 import { MyNextSession } from '@/lib/components/MyNextSession';
@@ -91,6 +92,7 @@ export default function Home() {
             </Text>
           </View>
           <StreakBadge streak={streakQ.data || null} compact />
+          <NotificationBell />
         </View>
 
         {/* Primary CTAs — the two things a member most wants to do
