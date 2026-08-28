@@ -1471,6 +1471,36 @@ router.get('/admin/templates/last-details', authenticate, requireAdmin, async (r
   }
 });
 
+// ── GET /api/sessions/ambassador/my-sessions ────────────────────
+// Upcoming sessions THIS member is assigned to as ambassador (founder
+// 2026-09-08: the dashboard listed every session in the next 24h, not
+// the ones they were nominated for).
+router.get('/ambassador/my-sessions', authenticate, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT s.id, s.name, s.scheduled_at, s.location, s.duration_mins,
+              t.slug AS tribe_slug, t.name AS tribe_name, c.name AS city_name,
+              (SELECT COUNT(*) FROM bookings b
+                WHERE b.session_id = s.id AND b.status IN ('confirmed','attended')) AS registrations_count
+       FROM session_ambassadors sa
+       JOIN sessions s ON s.id = sa.session_id
+       LEFT JOIN tribes t ON t.id = s.tribe_id
+       LEFT JOIN cities c ON c.id = s.city_id
+       WHERE sa.ambassador_id = $1
+         AND s.status = 'upcoming'
+         AND s.scheduled_at > NOW() - INTERVAL '2 hours'
+       ORDER BY s.scheduled_at ASC
+       LIMIT 20`,
+      [req.member.id]
+    );
+    res.json({ sessions: rows });
+  } catch (err) {
+    // Table absent on a pre-migration DB → empty list, never a 500.
+    if (err.code === '42P01' || err.code === '42703') return res.json({ sessions: [] });
+    next(err);
+  }
+});
+
 // ── GET /api/sessions/ambassador/checkin-history ────────────────
 // Real check-in history for the web ambassador dashboard (founder
 // 2026-09-07: it was hardcoded demo rows). Every booking THIS member

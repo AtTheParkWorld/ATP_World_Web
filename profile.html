@@ -766,12 +766,6 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             <button type="button" data-atp-call="showTab" data-args='["streak"]' style="margin-top:14px;background:transparent;border:1px solid rgba(168,255,0,.4);color:var(--green);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:8px 14px;border-radius:6px;cursor:pointer;width:100%">Open full view →</button>
           </div>
         </div>
-        <!-- Profile-completion chip (founder 2026-08-28) — replaces the
-             full-width completion bar card to save vertical space. Label
-             kept in sync by updateProfileCompletion(). Click → edit form. -->
-        <button class="pf-btn" id="completionChipBtn" type="button" onclick="openProfileCompletionEdit()" title="Profile completion — tap to finish your profile">
-          <span id="completionChipLabel">▰ 0% complete</span>
-        </button>
         <button class="pf-btn" data-atp-call="showTab" data-args='["friends"]'>Friend requests <span id="friendReqCount" style="display:none;background:rgba(168,255,0,.15);color:var(--green);padding:1px 7px;border-radius:10px;font-size:11px;margin-left:2px">0</span></button>
         <!-- Manage Coach Profile — only shown if isCoach=true. Lives here
              (next to Edit Profile) instead of in the role-banner-card to
@@ -780,9 +774,14 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 8a3 3 0 100-6 3 3 0 000 6zm-6 7a6 6 0 0112 0H2z"/></svg>
           Manage Coach
         </button>
-        <button class="pf-btn primary" data-atp-call="showTab" data-args='["edit"]'>
+        <!-- Edit Profile carries the completion % (founder 2026-09-08:
+             one button, not two). Colour is the progress signal —
+             red ≤50%, orange 51-99%, lime at 100% — painted by
+             updateProfileCompletion(). -->
+        <button class="pf-btn primary" id="editProfileBtn" type="button" onclick="openProfileCompletionEdit()" title="Edit your profile">
           <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 2l3 3-9 9H2v-3l9-9z"/></svg>
           Edit Profile
+          <span id="editProfilePct" style="font-weight:800;opacity:.9">—</span>
         </button>
         <!-- Hamburger menu — replaces the .profile-tabs strip (v1.40).
              All 14 tab destinations live in this dropdown. Click outside
@@ -1097,7 +1096,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             </div>
 
             <div style="margin-top:18px;padding:14px 16px;background:rgba(168,255,0,.06);border:1px solid rgba(168,255,0,.18);border-radius:var(--radius);font-size:13px;color:#bbb;line-height:1.6">
-              <strong style="color:var(--green)">How it works.</strong> Days 1–7 earn standard points per session. Day 8 onwards earns <strong style="color:var(--green)">double points</strong>. Miss a day and the streak resets. You only count if an ATP Ambassador scans you in at the session.
+              <span id="streakHowItWorks"><strong style="color:var(--green)">How it works.</strong> Hold a <strong style="color:var(--green)">5-day streak</strong> to activate session points. Premium members earn from day one and go <strong style="color:var(--green)">2×</strong> at 5 days. Miss a day and the streak resets. You only count if an ATP Ambassador scans you in at the session.</span>
             </div>
           </div>
         </div>
@@ -1413,7 +1412,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
              filtered to the next 24h. Rows are informational — no
              click-through (check-ins happen from the app). -->
         <div class="widget">
-          <div class="widget-head"><span class="widget-title">Today's Sessions</span><span style="font-size:12px;color:var(--muted)">Next 24 hours</span></div>
+          <div class="widget-head"><span class="widget-title">Upcoming ambassador sessions</span><span style="font-size:12px;color:var(--muted)">Sessions you're assigned to</span></div>
           <div class="widget-body" id="ambTodaySessions">
             <div style="padding:18px 0;color:var(--muted);font-size:13px;text-align:center">Loading…</div>
           </div>
@@ -2249,25 +2248,26 @@ function loadAmbassadorDashboard() {
 function loadAmbTodaySessions() {
   var el = document.getElementById('ambTodaySessions');
   if (!el) return;
-  fetch('/api/sessions?status=upcoming&limit=100')
+  // Only the sessions this ambassador was nominated for (founder
+  // 2026-09-08) — server-side via session_ambassadors, so no client
+  // filtering and no other ambassadors' sessions leaking in.
+  fetch('/api/sessions/ambassador/my-sessions', {
+    headers: { 'Authorization': 'Bearer ' + (localStorage.getItem('atp_token') || '') },
+  })
     .then(function(r){ return r.ok ? r.json() : null; })
     .then(function(d){
-      var list = (d && Array.isArray(d.sessions)) ? d.sessions : [];
-      var now = Date.now();
-      var next = list.filter(function(s){
-        if (!s || !s.scheduled_at) return false;
-        var t = new Date(s.scheduled_at).getTime();
-        if (!isFinite(t)) return false;
-        var diff = t - now;
-        return diff <= 24 * 3600 * 1000 && diff >= -2 * 3600 * 1000;
-      });
+      var next = (d && Array.isArray(d.sessions)) ? d.sessions : [];
       if (!next.length) {
-        el.innerHTML = '<div style="padding:18px 0;color:var(--muted);font-size:13px;text-align:center">No sessions in the next 24 hours.</div>';
+        el.innerHTML = '<div style="padding:18px 0;color:var(--muted);font-size:13px;text-align:center">No upcoming sessions assigned to you yet.</div>';
         return;
       }
       el.innerHTML = next.map(function(s){
         var when = new Date(s.scheduled_at);
-        var dayLabel = when.toDateString() === new Date().toDateString() ? 'Today' : 'Tomorrow';
+        var today = new Date();
+        var tomorrow = new Date(today.getTime() + 86400000);
+        var dayLabel = when.toDateString() === today.toDateString() ? 'Today'
+                     : when.toDateString() === tomorrow.toDateString() ? 'Tomorrow'
+                     : when.toLocaleDateString(undefined, { weekday: 'short', day: 'numeric', month: 'short' });
         var timeStr = when.toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
         var slug = String(s.tribe_slug || '').toLowerCase();
         var hasDot = (slug === 'faster' || slug === 'stronger' || slug === 'better');
@@ -3830,16 +3830,23 @@ function updateProfileCompletion() {
   var hits = 0;
   COMPLETION_FIELDS.forEach(function(f){ try { if (f.test()) hits++; } catch(e){} });
   var pct = Math.round(hits * 100 / COMPLETION_FIELDS.length);
-  // Compact chip in .profile-actions (replaced the full-width bar card,
-  // founder 2026-08-28). Lime + checkmark at 100%.
-  var chip = document.getElementById('completionChipBtn');
-  var lbl  = document.getElementById('completionChipLabel');
-  if (lbl) lbl.textContent = (pct >= 100) ? '✓ Profile complete' : '▰ ' + pct + '% complete';
-  if (chip) {
-    chip.style.color       = (pct >= 100) ? 'var(--green)' : '';
-    chip.style.borderColor = (pct >= 100) ? 'rgba(168,255,0,.5)' : '';
-    chip.title = 'Profile completion — ' + hits + ' of ' + COMPLETION_FIELDS.length + ' fields' +
-                 (pct >= 100 ? '' : ' · tap to finish your profile');
+  // The Edit Profile button IS the completion indicator (founder
+  // 2026-09-08 — one button instead of a separate chip). Colour ramps
+  // red → orange → lime so "unfinished" is visible at a glance.
+  var btn = document.getElementById('editProfileBtn');
+  var pctEl = document.getElementById('editProfilePct');
+  var tone = (pct >= 100) ? { bg: 'var(--green)',  fg: '#0a0a0a' }
+           : (pct >= 51)  ? { bg: '#f59e0b',       fg: '#0a0a0a' }
+                          : { bg: '#ef4444',       fg: '#ffffff' };
+  if (pctEl) pctEl.textContent = (pct >= 100) ? '✓ 100%' : pct + '%';
+  if (btn) {
+    btn.style.background  = tone.bg;
+    btn.style.borderColor = tone.bg;
+    btn.style.color       = tone.fg;
+    btn.title = (pct >= 100)
+      ? 'Profile complete — all ' + COMPLETION_FIELDS.length + ' fields filled'
+      : 'Profile ' + pct + '% complete — ' + hits + ' of ' + COMPLETION_FIELDS.length +
+        ' fields · tap to finish it';
   }
 }
 // Chip click → open the edit form and drop focus on the first field.
@@ -7888,6 +7895,7 @@ function loadStreak() {
 }
 
 function renderStreak(s) {
+  try { _paintStreakHowItWorks(); } catch (e) {}
   var current = s.current || 0;
   var longest = s.longest || 0;
   var setText = function(id, v){ var el = document.getElementById(id); if (el) el.textContent = v; };
@@ -7983,6 +7991,21 @@ function _streakIsPremium() {
   var sub = ((typeof CURRENT_MEMBER !== 'undefined' && CURRENT_MEMBER && CURRENT_MEMBER.subscription_type) || '').toLowerCase();
   return sub === 'premium' || sub === 'premium_plus';
 }
+// "How it works" paragraph — same tier split as the milestone copy.
+function _paintStreakHowItWorks() {
+  var el = document.getElementById('streakHowItWorks');
+  if (!el) return;
+  var g = '<strong style="color:var(--green)">';
+  el.innerHTML = _streakIsPremium()
+    ? g + 'How it works.</strong> You earn points at every session you\u2019re scanned into. Hit a ' +
+      g + '5-day streak</strong> and every session pays ' + g + 'double points</strong> while your ' +
+      'subscription is active. Miss a day and the streak resets.'
+    : g + 'How it works.</strong> Hold a ' + g + '5-day streak</strong> to activate session points \u2014 ' +
+      'miss a day and points pause until you\u2019re back to 5. ' + g + 'Premium members</strong> earn from ' +
+      'day one and go ' + g + '2\u00d7</strong> at 5 days. You only count if an ATP Ambassador scans you in.';
+}
+window._paintStreakHowItWorks = _paintStreakHowItWorks;
+
 function _streakMilestoneCopy(current) {
   var premium = _streakIsPremium();
   if (current >= 5) {
