@@ -227,7 +227,7 @@ export default function CoachIndex() {
           />
           <StatTile
             label="Wallet (AED)"
-            value={walletQ.data ? walletQ.data.balance_aed.toLocaleString() : '—'}
+            value={walletQ.data ? aed(walletQ.data.balance_aed) : '—'}
             accent={colors.green}
           />
           <StatTile

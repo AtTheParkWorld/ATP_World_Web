@@ -63,13 +63,51 @@ export function listMyOfferings(): Promise<{ offerings: CoachOffering[] }> {
   return api.get('/coach-sessions/me/offerings');
 }
 
+/**
+ * Wallet shape as the API ACTUALLY returns it (founder crash
+ * 2026-09-19): GET /coach-sessions/wallet/me responds with
+ * `{ wallet: { balance_aed, pending_aed }, transactions,
+ * coach_earnings_this_month }` — the balance is NESTED. The client
+ * previously typed it as a flat object, so `data.balance_aed` was
+ * undefined and `.toLocaleString()` on it crashed the coach dashboard.
+ * `paid_out_aed` and `recent_payouts` never existed at all.
+ *
+ * We flatten here so both screens keep the shape they already use, and
+ * coerce numerics — Postgres returns numeric columns as strings.
+ */
+export interface CoachWalletTxn {
+  id: string;
+  amount_aed: number;
+  balance_after: number | null;
+  txn_type: string | null;
+  description: string | null;
+  created_at: string;
+}
+
 export interface CoachWallet {
   balance_aed: number;
   pending_aed: number;
+  /** Derived: total credited historically (no API field for it). */
   paid_out_aed: number;
-  recent_payouts: Array<{ id: string; amount_aed: number; status: string; created_at: string }>;
+  transactions: CoachWalletTxn[];
+  /** Kept for the wallet screen's payout list — transactions serve it. */
+  recent_payouts: CoachWalletTxn[];
+  coach_earnings_this_month: { session_count: number; gross_aed: number; cancellation_aed: number } | null;
 }
 
-export function getMyWallet(): Promise<CoachWallet> {
-  return api.get('/coach-sessions/wallet/me');
+export async function getMyWallet(): Promise<CoachWallet> {
+  const r: any = await api.get('/coach-sessions/wallet/me');
+  const w = r?.wallet || {};
+  const txns: CoachWalletTxn[] = Array.isArray(r?.transactions) ? r.transactions : [];
+  const paidOut = txns
+    .filter((t) => (t.txn_type || '').toLowerCase().includes('payout'))
+    .reduce((sum, t) => sum + Math.abs(Number(t.amount_aed) || 0), 0);
+  return {
+    balance_aed: Number(w.balance_aed) || 0,
+    pending_aed: Number(w.pending_aed) || 0,
+    paid_out_aed: paidOut,
+    transactions: txns,
+    recent_payouts: txns.filter((t) => (t.txn_type || '').toLowerCase().includes('payout')).slice(0, 10),
+    coach_earnings_this_month: r?.coach_earnings_this_month || null,
+  };
 }

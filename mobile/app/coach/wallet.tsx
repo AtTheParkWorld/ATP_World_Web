@@ -47,7 +47,7 @@ export default function CoachWallet() {
                   Available
                 </Text>
                 <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.green }} className="text-5xl mt-1">
-                  AED {(q.data?.balance_aed ?? 0).toLocaleString()}
+                  AED {(Number(q.data?.balance_aed) || 0).toLocaleString()}
                 </Text>
                 <View className="flex-row gap-3 mt-4">
                   <View className="flex-1 bg-atp-dark-3 rounded-atp p-3">
@@ -55,7 +55,7 @@ export default function CoachWallet() {
                       Pending
                     </Text>
                     <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.warning }} className="text-lg mt-1">
-                      AED {(q.data?.pending_aed ?? 0).toLocaleString()}
+                      AED {(Number(q.data?.pending_aed) || 0).toLocaleString()}
                     </Text>
                   </View>
                   <View className="flex-1 bg-atp-dark-3 rounded-atp p-3">
@@ -63,7 +63,7 @@ export default function CoachWallet() {
                       Paid out (lifetime)
                     </Text>
                     <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.light }} className="text-lg mt-1">
-                      AED {(q.data?.paid_out_aed ?? 0).toLocaleString()}
+                      AED {(Number(q.data?.paid_out_aed) || 0).toLocaleString()}
                     </Text>
                   </View>
                 </View>
@@ -97,14 +97,14 @@ export default function CoachWallet() {
                   <View key={p.id} className="bg-atp-dark border border-white/5 rounded-atp p-3 mb-2 flex-row items-center justify-between">
                     <View>
                       <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">
-                        AED {p.amount_aed.toLocaleString()}
+                        AED {(Number(p.amount_aed) || 0).toLocaleString()}
                       </Text>
                       <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-0.5">
                         {new Date(p.created_at).toLocaleDateString()}
                       </Text>
                     </View>
-                    <Text style={{ fontFamily: fontFamily.bodyBold, color: p.status === 'paid' ? colors.green : colors.warning }} className="text-xs uppercase tracking-widest">
-                      {p.status}
+                    <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs uppercase tracking-widest">
+                      {p.description || p.txn_type || 'Payout'}
                     </Text>
                   </View>
                 ))

@@ -54,7 +54,7 @@ export default function CoachOfferings() {
                   </View>
                   <View className="flex-row items-center gap-3 mt-3">
                     <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-sm">
-                      AED {o.price_aed.toLocaleString()}
+                      AED {(Number(o.price_aed) || 0).toLocaleString()}
                     </Text>
                     <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs">
                       · {o.duration_mins} min · max {o.max_participants}
