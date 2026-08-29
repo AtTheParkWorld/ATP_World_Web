@@ -21,6 +21,21 @@ export interface Achievement {
   unlocked: boolean;
   progress: number;
   progress_pct: number;
+  /** Collectible fields (founder 2026-09-12). */
+  rarity?: 'standard' | 'rare' | 'legendary' | string;
+  max_recipients?: number | null;
+  claimed_count?: number;
+  spots_left?: number | null;
+  sold_out?: boolean;
+  edition_closed?: boolean;
+  available_until?: string | null;
+}
+
+/** Small helper so every surface labels rarity identically. */
+export function rarityLabel(r?: string | null): string | null {
+  if (r === 'legendary') return '👑 Legendary';
+  if (r === 'rare') return '⭐ Rare';
+  return null;
 }
 
 export function getMyAchievements(): Promise<{

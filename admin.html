@@ -1545,6 +1545,33 @@
                 <div><label class="admin-form-label" for="achPoints">Points reward</label><input class="admin-form-input" type="number" id="achPoints" value="0" min="0"></div>
                 <div><label class="admin-form-label" for="achSort" title="Lower numbers appear first in lists. Default 100 leaves room to insert items above/below.">Display order <span style="color:#666;font-weight:400;font-size:10px">(lower = first)</span></label><input class="admin-form-input" type="number" id="achSort" value="100" min="0" title="Lower = appears first"></div>
               </div>
+              <!-- Collectible controls (founder 2026-09-12): scarcity +
+                   rarity + a window for special editions. -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+                <div>
+                  <label class="admin-form-label">Rarity</label>
+                  <select class="admin-form-select" id="achRarity">
+                    <option value="standard">Standard</option>
+                    <option value="rare">Rare ⭐</option>
+                    <option value="legendary">Legendary 👑</option>
+                  </select>
+                </div>
+                <div>
+                  <label class="admin-form-label">Limit — how many can ever earn it</label>
+                  <input class="admin-form-input" id="achMaxRecipients" type="number" min="1" placeholder="Leave empty = unlimited">
+                </div>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
+                <div>
+                  <label class="admin-form-label">Available from (optional)</label>
+                  <input class="admin-form-input" id="achFrom" type="date">
+                </div>
+                <div>
+                  <label class="admin-form-label">Available until (optional)</label>
+                  <input class="admin-form-input" id="achUntil" type="date">
+                </div>
+              </div>
+              <div style="font-size:11px;color:#666;margin-bottom:14px">Leave the dates empty for a permanent badge. Set both for a special edition — outside the window nobody new can earn it, and holders keep theirs forever.</div>
               <label style="display:flex;align-items:center;gap:8px;font-size:12px;color:#aaa;margin-bottom:14px"><input type="checkbox" id="achActive" checked> Active</label>
               <div style="display:flex;gap:8px">
                 <button class="admin-btn admin-btn-primary" data-atp-call="saveAchievement" style="font-size:12px">Save</button>
@@ -2128,7 +2155,7 @@
 <div class="admin-toast" id="adminToast"></div>
 <!-- Admin modules — load order matters: core defines globals + showAdminSection
      hook in init.js wires the per-section loaders, so init.js must come last. -->
-<script src="/admin/bundle.min.js?v=b028b6f5ff"></script>
+<script src="/admin/bundle.min.js?v=b6f853ee18"></script>
 
 
 

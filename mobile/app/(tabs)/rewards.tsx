@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getBalance, getPointsHistory, listOffers, listMyRedemptions } from '@/lib/api/rewards';
-import { getMyAchievements } from '@/lib/api/achievements';
+import { getMyAchievements, rarityLabel } from '@/lib/api/achievements';
 import { SegmentedControl } from '@/lib/components/SegmentedControl';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { absUrl } from '@/lib/utils/imageUrl';
@@ -358,11 +358,32 @@ function BadgesView() {
           </Text>
           <View className="flex-row flex-wrap gap-3">
             {unlocked.map((a) => (
-              <View key={a.id} className="w-[30%] bg-atp-dark border border-atp-green/40 rounded-atp p-3 items-center">
-                <Text style={{ fontSize: 28 }}>{a.icon || '🏆'}</Text>
+              <View
+                key={a.id}
+                className="w-[30%] bg-atp-dark rounded-atp p-3 items-center border"
+                style={{ borderColor: a.rarity === 'legendary' ? '#f5c042' : a.rarity === 'rare' ? '#9ad4ff' : 'rgba(168,255,0,0.4)' }}
+              >
+                {a.badge_image_url ? (
+                  <Image source={{ uri: a.badge_image_url }} style={{ width: 44, height: 44, borderRadius: 22 }} resizeMode="cover" />
+                ) : (
+                  <Text style={{ fontSize: 28 }}>{a.icon || '🏆'}</Text>
+                )}
                 <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-xs text-center mt-1" numberOfLines={2}>
                   {a.name}
                 </Text>
+                {!!rarityLabel(a.rarity) && (
+                  <Text
+                    style={{ fontFamily: fontFamily.bodyBold, color: a.rarity === 'legendary' ? '#f5c042' : '#9ad4ff' }}
+                    className="text-[9px] mt-0.5"
+                  >
+                    {rarityLabel(a.rarity)}
+                  </Text>
+                )}
+                {a.max_recipients != null && (
+                  <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[9px] mt-0.5">
+                    {a.claimed_count ?? 0}/{a.max_recipients}
+                  </Text>
+                )}
               </View>
             ))}
           </View>
@@ -399,9 +420,26 @@ function BadgesView() {
                   <View className="h-1.5 bg-atp-dark-3 rounded-full overflow-hidden">
                     <View className="h-full bg-atp-green" style={{ width: `${a.progress_pct}%` }} />
                   </View>
-                  <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[10px] mt-1">
-                    {a.progress} / {a.criteria_value} {a.criteria_type}
-                  </Text>
+                  <View className="flex-row items-center justify-between mt-1">
+                    <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[10px]">
+                      {a.progress} / {a.criteria_value} {a.criteria_type}
+                    </Text>
+                    {/* Scarcity is the whole point of a limited badge —
+                        say how many are left, or that it's gone. */}
+                    {a.sold_out ? (
+                      <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-[10px]">
+                        All {a.max_recipients} claimed
+                      </Text>
+                    ) : a.edition_closed ? (
+                      <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-[10px]">
+                        Edition closed
+                      </Text>
+                    ) : a.spots_left != null ? (
+                      <Text style={{ fontFamily: fontFamily.bodyBold, color: '#f5c042' }} className="text-[10px]">
+                        Only {a.spots_left} left
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
               </View>
             ))}

@@ -13,11 +13,14 @@ const achievements = require('../services/achievements');
 router.get('/', async (req, res, next) => {
   try {
     const { rows } = await query(
-      `SELECT id, name, description, icon, badge_image_url,
-              points_reward, criteria_type, criteria_value, sort_order
-       FROM achievements
-       WHERE is_active = true
-       ORDER BY sort_order ASC, created_at ASC`
+      `SELECT a.id, a.name, a.description, a.icon, a.badge_image_url,
+              a.points_reward, a.criteria_type, a.criteria_value, a.sort_order,
+              a.rarity, a.max_recipients, a.available_from, a.available_until,
+              (SELECT COUNT(*)::int FROM member_achievements ma
+                WHERE ma.achievement_id = a.id) AS claimed_count
+       FROM achievements a
+       WHERE a.is_active = true
+       ORDER BY a.sort_order ASC, a.created_at ASC`
     );
     res.json({ achievements: rows });
   } catch (err) { next(err); }
@@ -33,6 +36,9 @@ router.get('/me', authenticate, async (req, res, next) => {
     const { rows } = await query(
       `SELECT a.id, a.name, a.description, a.icon, a.badge_image_url,
               a.points_reward, a.criteria_type, a.criteria_value, a.sort_order,
+              a.rarity, a.max_recipients, a.available_from, a.available_until,
+              (SELECT COUNT(*)::int FROM member_achievements m2
+                WHERE m2.achievement_id = a.id) AS claimed_count,
               ma.unlocked_at, ma.points_credited
        FROM achievements a
        LEFT JOIN member_achievements ma
@@ -62,11 +68,22 @@ router.get('/me', authenticate, async (req, res, next) => {
       else if (a.criteria_type === 'streak')     progress = cur.streak;
       else if (a.criteria_type === 'referrals')  progress = cur.active_referrals;
       const pct = targetVal > 0 ? Math.min(100, Math.round((progress / targetVal) * 100)) : 0;
+      // Collectible state, computed once here so every client agrees.
+      const now = Date.now();
+      const opened = !a.available_from  || new Date(a.available_from).getTime()  <= now;
+      const closed = !!a.available_until && new Date(a.available_until).getTime() < now;
+      const claimed = a.claimed_count || 0;
+      const full = a.max_recipients != null && claimed >= a.max_recipients;
       return {
         ...a,
         unlocked:    !!a.unlocked_at,
         progress,
         progress_pct: a.unlocked_at ? 100 : pct,
+        spots_left:  a.max_recipients == null ? null : Math.max(0, a.max_recipients - claimed),
+        // Claimable only while the edition is open and the cap has room
+        // — the UI greys out what can no longer be earned.
+        sold_out:    full,
+        edition_closed: closed || !opened,
       };
     });
 
@@ -84,7 +101,9 @@ router.get('/admin', authenticate, requireAdmin, async (req, res, next) => {
     const { rows } = await query(
       `SELECT id, name, description, icon, badge_image_url, points_reward,
               criteria_type, criteria_value, sort_order, is_active, created_at,
-              (SELECT COUNT(*) FROM member_achievements WHERE achievement_id=achievements.id)::int AS unlocked_count
+              rarity, max_recipients, available_from, available_until,
+              (SELECT COUNT(*) FROM member_achievements WHERE achievement_id=achievements.id)::int AS unlocked_count,
+              (SELECT COUNT(*) FROM member_achievements WHERE achievement_id=achievements.id)::int AS claimed_count
        FROM achievements ORDER BY sort_order ASC, created_at ASC`
     );
     res.json({ achievements: rows });
@@ -96,7 +115,17 @@ router.post('/admin', authenticate, requireAdmin, async (req, res, next) => {
     const {
       name, description, icon, badge_image_url, points_reward = 0,
       criteria_type = 'manual', criteria_value, sort_order = 100, is_active = true,
+      max_recipients = null, rarity = 'standard',
+      available_from = null, available_until = null,
     } = req.body;
+    const RARITIES = ['standard', 'rare', 'legendary'];
+    if (!RARITIES.includes(rarity)) {
+      return res.status(400).json({ error: 'rarity must be one of ' + RARITIES.join(', ') });
+    }
+    const cap = max_recipients === null || max_recipients === '' ? null : parseInt(max_recipients, 10);
+    if (cap !== null && (!Number.isFinite(cap) || cap < 1)) {
+      return res.status(400).json({ error: 'max_recipients must be a positive number (or empty for unlimited)' });
+    }
     if (!name || !name.trim()) return res.status(400).json({ error: 'name required' });
     const validTypes = ['manual', 'sessions', 'streak', 'referrals'];
     if (!validTypes.includes(criteria_type)) {
@@ -104,10 +133,12 @@ router.post('/admin', authenticate, requireAdmin, async (req, res, next) => {
     }
     const { rows } = await query(
       `INSERT INTO achievements (name, description, icon, badge_image_url, points_reward,
-                                 criteria_type, criteria_value, sort_order, is_active, created_by)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING *`,
+                                 criteria_type, criteria_value, sort_order, is_active, created_by,
+                                 max_recipients, rarity, available_from, available_until)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
       [name.trim(), description || null, icon || null, badge_image_url || null,
-       points_reward, criteria_type, criteria_value || null, sort_order, is_active, req.member.id]
+       points_reward, criteria_type, criteria_value || null, sort_order, is_active, req.member.id,
+       cap, rarity, available_from || null, available_until || null]
     );
     audit.log(req, 'achievement.created', 'achievement', rows[0].id, { name });
     res.status(201).json({ achievement: rows[0] });
@@ -117,6 +148,7 @@ router.post('/admin', authenticate, requireAdmin, async (req, res, next) => {
 router.patch('/admin/:id', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const fields = ['name', 'description', 'icon', 'badge_image_url',
+                    'max_recipients', 'rarity', 'available_from', 'available_until',
                     'points_reward', 'criteria_type', 'criteria_value',
                     'sort_order', 'is_active'];
     const updates = []; const params = []; let idx = 1;

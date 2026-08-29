@@ -813,6 +813,17 @@ async function _ensureBootSchema() {
                WHERE key='streak_double_threshold' AND value IN ('7','8','"7"','"8"')`)
     .catch(() => {});
 
+  // Collectible badges (founder 2026-09-12): scarcity caps + rarity
+  // tiers + availability windows for special editions.
+  await query(`ALTER TABLE achievements ADD COLUMN IF NOT EXISTS max_recipients INTEGER`)
+    .catch((e) => console.warn('[boot] achievements.max_recipients:', e.message));
+  await query(`ALTER TABLE achievements ADD COLUMN IF NOT EXISTS rarity VARCHAR(20) NOT NULL DEFAULT 'standard'`)
+    .catch((e) => console.warn('[boot] achievements.rarity:', e.message));
+  await query(`ALTER TABLE achievements ADD COLUMN IF NOT EXISTS available_from TIMESTAMPTZ`)
+    .catch(() => {});
+  await query(`ALTER TABLE achievements ADD COLUMN IF NOT EXISTS available_until TIMESTAMPTZ`)
+    .catch(() => {});
+
   // Post-session feedback nudge marker (founder 2026-09-04).
   await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS feedback_prompt_at TIMESTAMPTZ`)
     .catch((e) => console.warn('[boot] sessions.feedback_prompt_at:', e.message));

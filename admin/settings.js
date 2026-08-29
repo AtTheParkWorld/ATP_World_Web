@@ -591,6 +591,7 @@ function renderAchievementsAdmin(list) {
             '<span>·</span>' +
             '<span>' + (a.unlocked_count || 0) + ' unlocked</span>' +
           '</div>' +
+          (_achMeta(a) ? '<div style="font-size:10px;color:#A8FF00;margin:-4px 0 10px;font-weight:700">' + _achMeta(a) + '</div>' : '') +
           '<div style="display:flex;gap:6px">' +
             '<button class="admin-btn" style="font-size:11px;padding:5px 10px;flex:1" data-atp-call="editAchievement" data-args=\'["' + a.id + '"]\'>Edit</button>' +
             '<button class="admin-btn" style="font-size:11px;padding:5px 10px" data-atp-call="awardAchievementPrompt" data-args=\'["' + a.id + '"]\' title="Manually award to a member">+👤</button>' +
@@ -601,10 +602,21 @@ function renderAchievementsAdmin(list) {
     '</div>';
 }
 
+// Scarcity/rarity summary for an achievement row.
+function _achMeta(a) {
+  var bits = [];
+  if (a.rarity && a.rarity !== 'standard') bits.push(a.rarity === 'legendary' ? '👑 Legendary' : '⭐ Rare');
+  if (a.max_recipients != null) bits.push((a.claimed_count || 0) + '/' + a.max_recipients + ' claimed');
+  if (a.available_until) bits.push('until ' + String(a.available_until).slice(0, 10));
+  return bits.join(' · ');
+}
+window._achMeta = _achMeta;
+
 function showAchievementForm() {
   document.getElementById('achievementFormWrap').style.display = 'block';
   document.getElementById('achievementFormTitle').textContent = 'New achievement';
-  ['achEditId','achName','achDesc','achIcon','achBadge'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
+  ['achEditId','achName','achDesc','achIcon','achBadge','achMaxRecipients','achFrom','achUntil'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
+  var rr = document.getElementById('achRarity'); if (rr) rr.value = 'standard';
   document.getElementById('achCriteriaType').value = 'manual';
   document.getElementById('achCriteriaValue').value = '0';
   document.getElementById('achPoints').value = '0';
@@ -634,6 +646,12 @@ function editAchievement(e, btn) {
       document.getElementById('achPoints').value       = a.points_reward || 0;
       document.getElementById('achSort').value         = a.sort_order || 100;
       document.getElementById('achActive').checked     = !!a.is_active;
+      var _v = function(id, val){ var el = document.getElementById(id); if (el) el.value = val; };
+      _v('achRarity', a.rarity || 'standard');
+      _v('achMaxRecipients', a.max_recipients == null ? '' : a.max_recipients);
+      // <input type=date> only accepts YYYY-MM-DD
+      _v('achFrom',  a.available_from  ? String(a.available_from).slice(0, 10)  : '');
+      _v('achUntil', a.available_until ? String(a.available_until).slice(0, 10) : '');
     });
 }
 function saveAchievement() {
@@ -648,6 +666,11 @@ function saveAchievement() {
     points_reward:   Number(document.getElementById('achPoints').value) || 0,
     sort_order:      Number(document.getElementById('achSort').value) || 100,
     is_active:       document.getElementById('achActive').checked,
+    rarity:          (document.getElementById('achRarity') || {}).value || 'standard',
+    max_recipients:  ((document.getElementById('achMaxRecipients') || {}).value || '') === ''
+                       ? null : Number((document.getElementById('achMaxRecipients') || {}).value),
+    available_from:  (document.getElementById('achFrom')  || {}).value || null,
+    available_until: (document.getElementById('achUntil') || {}).value || null,
   };
   if (!body.name) { showToast('Name required', true); return; }
   var url    = id ? (ATP_API + '/achievements/admin/' + id) : (ATP_API + '/achievements/admin');

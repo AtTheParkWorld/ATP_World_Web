@@ -27,14 +27,27 @@ const { query, transaction } = require('../db');
 async function _award(client, memberId, achievement, awardedBy) {
   const pts = achievement.points_reward || 0;
   // Insert the unlock — UNIQUE prevents double-award even under concurrency
+  // Collectible rules (founder 2026-09-12):
+  //  - max_recipients caps how many members can ever hold the badge
+  //  - available_from/until bound a special edition to its window
+  // Both are enforced INSIDE the insert so two simultaneous check-ins
+  // can't push a "100 only" badge to 101. NULL = unlimited / always on.
   const { rows: ins } = await client.query(
     `INSERT INTO member_achievements (member_id, achievement_id, points_credited, awarded_by)
-     VALUES ($1, $2, $3, $4)
+     SELECT $1, a.id, $3, $4
+       FROM achievements a
+      WHERE a.id = $2
+        AND (a.available_from  IS NULL OR a.available_from  <= NOW())
+        AND (a.available_until IS NULL OR a.available_until >= NOW())
+        AND (a.max_recipients  IS NULL OR (
+              SELECT COUNT(*) FROM member_achievements ma WHERE ma.achievement_id = a.id
+            ) < a.max_recipients)
      ON CONFLICT (member_id, achievement_id) DO NOTHING
      RETURNING id`,
     [memberId, achievement.id, pts, awardedBy || null]
   );
-  if (!ins.length) return false; // already had it
+  // No row → already held it, the edition closed, or the cap is full.
+  if (!ins.length) return false;
 
   // Participation gate (founder 2026-09-01): the badge itself unlocks
   // for everyone — only the points ride requires a Premium tier.
