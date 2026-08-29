@@ -1,12 +1,12 @@
 /**
- * Edit profile form. Covers the high-value fields only:
- *   first/last name, phone, date_of_birth (text), gender, nationality,
- *   city, top size, bottom size, padel level.
+ * Edit profile — full parity with the website form (founder 2026-09-10:
+ * the app was missing country, city, activities, tribe, volleyball
+ * level, email visibility and any way to change a password).
  *
- * Tribe is intentionally not editable here — that's a separate
- * onboarding flow because changing tribe mid-membership affects
- * leaderboards. Avatar upload waits on the R2 signed-PUT plumbing,
- * coming in Phase 7/8.
+ * Everything here is already accepted by PATCH /members/profile; the
+ * screen simply never offered it. Email is shown read-only (there is no
+ * self-serve email-change endpoint — support handles it), and the
+ * password section posts to /auth/change-password.
  */
 import { useEffect, useState } from 'react';
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
@@ -14,6 +14,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getProfile, patchProfile, patchAvatar } from '@/lib/api/members';
+import { listCities, listTribes, listActivities, listCountries } from '@/lib/api/sessions';
+import { changePassword } from '@/lib/api/auth';
 import { pickAndUploadMedia } from '@/lib/api/upload';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { Avatar } from '@/lib/components/Avatar';
@@ -34,8 +36,25 @@ export default function EditProfile() {
     nationality:   '',
     top_size:      '',
     bottom_size:   '',
-    padel_level:   '',
+    padel_level:      '',
+    volleyball_level: '',
   });
+  // Pickers keep their own state — ids, not free text.
+  const [countryId, setCountryId] = useState<number | null>(null);
+  const [cityId,    setCityId]    = useState<string | null>(null);
+  const [tribeId,   setTribeId]   = useState<string | null>(null);
+  const [sports,    setSports]    = useState<string[]>([]);
+
+  // Password change (collapsed until tapped)
+  const [pwOpen, setPwOpen]   = useState(false);
+  const [pwCur,  setPwCur]    = useState('');
+  const [pwNew,  setPwNew]    = useState('');
+  const [pwNew2, setPwNew2]   = useState('');
+
+  const countriesQ  = useQuery({ queryKey: ['countries'],  queryFn: () => listCountries().then(r => r.countries),  staleTime: 1000 * 60 * 30 });
+  const citiesQ     = useQuery({ queryKey: ['cities'],     queryFn: () => listCities().then(r => r.cities),        staleTime: 1000 * 60 * 30 });
+  const tribesQ     = useQuery({ queryKey: ['tribes'],     queryFn: () => listTribes().then(r => r.tribes),        staleTime: 1000 * 60 * 30 });
+  const activitiesQ = useQuery({ queryKey: ['activities'], queryFn: () => listActivities().then(r => r.activities), staleTime: 1000 * 60 * 30 });
 
   useEffect(() => {
     if (!profileQ.data) return;
@@ -48,8 +67,17 @@ export default function EditProfile() {
       nationality:   profileQ.data.nationality   || '',
       top_size:      profileQ.data.top_size      || '',
       bottom_size:   profileQ.data.bottom_size   || '',
-      padel_level:   profileQ.data.padel_level   || '',
+      padel_level:      profileQ.data.padel_level              || '',
+      volleyball_level: (profileQ.data as any).volleyball_level || '',
     });
+    const d: any = profileQ.data;
+    setCountryId(d.country_id ?? null);
+    setCityId(d.city_id ? String(d.city_id) : null);
+    setTribeId(d.tribe_id ? String(d.tribe_id) : null);
+    // sports_preferences stores activity NAMES (same as the website).
+    let prefs = d.sports_preferences;
+    if (typeof prefs === 'string') { try { prefs = JSON.parse(prefs); } catch { prefs = []; } }
+    setSports(Array.isArray(prefs) ? prefs : []);
   }, [profileQ.data]);
 
   const avatarMu = useMutation({
@@ -81,7 +109,12 @@ export default function EditProfile() {
       nationality:   form.nationality.trim() || undefined,
       top_size:      form.top_size            || undefined,
       bottom_size:   form.bottom_size         || undefined,
-      padel_level:   form.padel_level         || undefined,
+      padel_level:      form.padel_level         || undefined,
+      volleyball_level: form.volleyball_level    || undefined,
+      country_id:    countryId ?? undefined,
+      city_id:       cityId    ?? undefined,
+      tribe_id:      tribeId   ?? undefined,
+      sports_preferences: sports,
     }),
     onSuccess: async () => {
       await qc.invalidateQueries({ queryKey: ['profile'] });
@@ -91,6 +124,26 @@ export default function EditProfile() {
     },
     onError: (err) => Alert.alert('Could not save', (err as Error).message || 'Try again.'),
   });
+
+  const pwMu = useMutation({
+    mutationFn: () => changePassword(pwCur, pwNew),
+    onSuccess: () => {
+      setPwCur(''); setPwNew(''); setPwNew2(''); setPwOpen(false);
+      Alert.alert('Password updated', 'Use your new password next time you sign in.');
+    },
+    onError: (err) => Alert.alert('Could not change password', (err as Error).message || 'Try again.'),
+  });
+
+  const submitPassword = () => {
+    if (pwNew.length < 8) { Alert.alert('Too short', 'Your new password needs at least 8 characters.'); return; }
+    if (pwNew !== pwNew2) { Alert.alert('They don\u2019t match', 'The two new-password fields are different.'); return; }
+    pwMu.mutate();
+  };
+
+  // Cities filter to the chosen country when the data carries country_id.
+  const cities = (citiesQ.data || []).filter(
+    (c: any) => countryId == null || c.country_id == null || Number(c.country_id) === Number(countryId)
+  );
 
   return (
     <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>
@@ -147,24 +200,220 @@ export default function EditProfile() {
           <Field label="Date of birth (YYYY-MM-DD)" value={form.date_of_birth} onChange={(v) => setForm((f) => ({ ...f, date_of_birth: v }))} keyboardType="numbers-and-punctuation" />
           <Field label="Gender"      value={form.gender}        onChange={(v) => setForm((f) => ({ ...f, gender: v }))} />
           <Field label="Nationality" value={form.nationality}   onChange={(v) => setForm((f) => ({ ...f, nationality: v }))} autoCapitalize="words" />
+
+          {/* ── Where I live ─────────────────────────────────── */}
+          <SectionHeader label="Where I live" />
+          <ChipPicker
+            label="Country"
+            options={(countriesQ.data || []).map((c) => ({ key: String(c.id), label: c.name }))}
+            selectedKey={countryId == null ? null : String(countryId)}
+            onSelect={(k) => {
+              const next = k == null ? null : Number(k);
+              setCountryId(next);
+              // City must belong to the country — drop a now-invalid pick.
+              const stillValid = (citiesQ.data || []).some(
+                (c: any) => String(c.id) === String(cityId) && (c.country_id == null || Number(c.country_id) === next)
+              );
+              if (!stillValid) setCityId(null);
+            }}
+            empty="No countries configured yet."
+          />
+          <ChipPicker
+            label="City"
+            options={cities.map((c: any) => ({ key: String(c.id), label: c.name }))}
+            selectedKey={cityId}
+            onSelect={setCityId}
+            empty="No cities for this country yet."
+          />
+
+          {/* ── Training ─────────────────────────────────────── */}
+          <SectionHeader label="Training" />
+          <ChipPicker
+            label="Favourite tribe"
+            options={(tribesQ.data || []).map((tr) => ({ key: String(tr.id), label: tr.name }))}
+            selectedKey={tribeId}
+            onSelect={setTribeId}
+            empty="No tribes configured yet."
+          />
+          <MultiChipPicker
+            label="Favourite activities"
+            options={(activitiesQ.data || []).map((a) => ({ key: a.name, label: `${a.icon ? a.icon + ' ' : ''}${a.name}` }))}
+            selected={sports}
+            onToggle={(k) => setSports((s) => (s.includes(k) ? s.filter((x) => x !== k) : [...s, k]))}
+            empty="No activities configured yet."
+          />
+          <Field label="Padel level"      value={form.padel_level}      onChange={(v) => setForm((f) => ({ ...f, padel_level: v }))} />
+          <Field label="Volleyball level" value={form.volleyball_level} onChange={(v) => setForm((f) => ({ ...f, volleyball_level: v }))} />
+
+          {/* ── Kit ──────────────────────────────────────────── */}
+          <SectionHeader label="Kit size" />
           <Field label="Top size"    value={form.top_size}      onChange={(v) => setForm((f) => ({ ...f, top_size: v }))} />
           <Field label="Bottom size" value={form.bottom_size}   onChange={(v) => setForm((f) => ({ ...f, bottom_size: v }))} />
-          <Field label="Padel level" value={form.padel_level}   onChange={(v) => setForm((f) => ({ ...f, padel_level: v }))} />
 
-          <View className="mt-4 bg-atp-dark border border-white/5 rounded-atp p-3">
-            <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs">
-              Email + tribe changes are managed by ATP support. Need a change? Tap Help & support on Profile.
+          {/* ── Account ──────────────────────────────────────── */}
+          <SectionHeader label="Account" />
+          <View className="mb-4">
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-2">
+              Email
+            </Text>
+            <View className="bg-atp-dark border border-white/5 rounded-atp px-4 py-3">
+              <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-base">
+                {profileQ.data?.email || '—'}
+              </Text>
+            </View>
+            <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[11px] mt-1.5">
+              Your email is your sign-in — ATP support can change it for you (Profile → Help & support).
             </Text>
           </View>
+
+          {!pwOpen ? (
+            <Pressable
+              onPress={() => setPwOpen(true)}
+              style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}
+              className="bg-atp-dark border border-white/10 rounded-atp px-4 py-3.5 active:opacity-80"
+            >
+              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">
+                Change my password
+              </Text>
+            </Pressable>
+          ) : (
+            <View className="bg-atp-dark border border-white/10 rounded-atp p-4">
+              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm mb-3">
+                Change my password
+              </Text>
+              <Field label="Current password" value={pwCur}  onChange={setPwCur}  secureTextEntry />
+              <Field label="New password"     value={pwNew}  onChange={setPwNew}  secureTextEntry />
+              <Field label="Repeat new password" value={pwNew2} onChange={setPwNew2} secureTextEntry />
+              <View className="flex-row gap-2">
+                <Pressable
+                  onPress={submitPassword}
+                  disabled={pwMu.isPending}
+                  className={`flex-1 rounded-atp py-3 items-center ${pwMu.isPending ? 'bg-atp-dark-3' : 'bg-atp-green active:opacity-80'}`}
+                >
+                  <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.black }} className="text-xs uppercase tracking-widest">
+                    {pwMu.isPending ? 'Saving…' : 'Update password'}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => { setPwOpen(false); setPwCur(''); setPwNew(''); setPwNew2(''); }}
+                  className="px-4 rounded-atp border border-white/10 items-center justify-center active:opacity-70"
+                >
+                  <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs uppercase tracking-widest">
+                    Cancel
+                  </Text>
+                </Pressable>
+              </View>
+              <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[11px] mt-2">
+                At least 8 characters. Signed in with Apple or Google? You may not have a password yet — leave "current" blank.
+              </Text>
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
 
+function SectionHeader({ label }: { label: string }) {
+  return (
+    <Text
+      style={{ fontFamily: fontFamily.bodyBold, color: colors.green }}
+      className="text-[11px] uppercase tracking-widest mt-3 mb-3"
+    >
+      {label}
+    </Text>
+  );
+}
+
+/** Single-select chip row — tapping the selected chip clears it. */
+function ChipPicker(props: {
+  label: string;
+  options: { key: string; label: string }[];
+  selectedKey: string | null;
+  onSelect: (key: string | null) => void;
+  empty?: string;
+}) {
+  return (
+    <View className="mb-4">
+      <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-2">
+        {props.label}
+      </Text>
+      {props.options.length === 0 ? (
+        <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs">
+          {props.empty || 'Nothing to pick yet.'}
+        </Text>
+      ) : (
+        <View className="flex-row flex-wrap gap-2">
+          {props.options.map((o) => {
+            const on = props.selectedKey === o.key;
+            return (
+              <Pressable
+                key={o.key}
+                onPress={() => props.onSelect(on ? null : o.key)}
+                style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.96 : 1 }] })}
+                className={`rounded-full px-3.5 py-2 border ${on ? 'bg-atp-green border-atp-green' : 'bg-atp-dark border-white/10'}`}
+              >
+                <Text
+                  style={{ fontFamily: fontFamily.bodyBold, color: on ? colors.black : colors.light }}
+                  className="text-xs"
+                >
+                  {o.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+}
+
+/** Multi-select chips (activities). */
+function MultiChipPicker(props: {
+  label: string;
+  options: { key: string; label: string }[];
+  selected: string[];
+  onToggle: (key: string) => void;
+  empty?: string;
+}) {
+  return (
+    <View className="mb-4">
+      <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-2">
+        {props.label}
+      </Text>
+      {props.options.length === 0 ? (
+        <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs">
+          {props.empty || 'Nothing to pick yet.'}
+        </Text>
+      ) : (
+        <View className="flex-row flex-wrap gap-2">
+          {props.options.map((o) => {
+            const on = props.selected.includes(o.key);
+            return (
+              <Pressable
+                key={o.key}
+                onPress={() => props.onToggle(o.key)}
+                style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.96 : 1 }] })}
+                className={`rounded-full px-3.5 py-2 border ${on ? 'bg-atp-green border-atp-green' : 'bg-atp-dark border-white/10'}`}
+              >
+                <Text
+                  style={{ fontFamily: fontFamily.bodyBold, color: on ? colors.black : colors.light }}
+                  className="text-xs"
+                >
+                  {o.label}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      )}
+    </View>
+  );
+}
+
 function Field(props: {
   label: string; value: string; onChange: (v: string) => void;
-  keyboardType?: any; autoCapitalize?: any; textContentType?: any;
+  keyboardType?: any; autoCapitalize?: any; textContentType?: any; secureTextEntry?: boolean;
 }) {
   return (
     <View className="mb-4">
@@ -177,6 +426,7 @@ function Field(props: {
         keyboardType={props.keyboardType}
         autoCapitalize={props.autoCapitalize || 'none'}
         textContentType={props.textContentType}
+        secureTextEntry={props.secureTextEntry}
         placeholderTextColor={colors.muted}
         style={{ fontFamily: fontFamily.body, color: colors.white }}
         className="bg-atp-dark border border-white/10 rounded-atp px-4 py-3 text-base"

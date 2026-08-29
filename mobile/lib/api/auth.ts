@@ -170,3 +170,12 @@ export async function logoutAllDevices(): Promise<void> {
     await useAuthStore.getState().signOut();
   }
 }
+
+/**
+ * Change password. `current_password` is required for normal sessions;
+ * the backend waives it only for a fresh magic-link login (the
+ * forgot-password path), so we always send what the member typed.
+ */
+export function changePassword(current_password: string, new_password: string): Promise<{ message: string }> {
+  return api.post('/auth/change-password', { current_password, new_password });
+}

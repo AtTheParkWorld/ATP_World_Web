@@ -146,3 +146,15 @@ export function listActivities(): Promise<{ activities: Activity[] }> {
 export function listTribes(): Promise<{ tribes: Tribe[] }> {
   return api.get('/sessions/tribes');
 }
+
+export interface Country {
+  id: number;
+  code: string;
+  name: string;
+  currency_code?: string | null;
+}
+
+/** Active countries — powers the "country I live in" picker. */
+export function listCountries(): Promise<{ countries: Country[] }> {
+  return api.get('/countries');
+}

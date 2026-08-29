@@ -21,6 +21,11 @@ router.get('/profile', authenticate, async (req, res, next) => {
               m.phone, m.avatar_url, m.avatar_gallery, m.date_of_birth,
               m.gender, m.nationality, m.city_id, m.subscription_type,
               m.sports_preferences, m.top_size, m.bottom_size, m.padel_level,
+              -- Edit-profile parity (founder 2026-09-10): the app form
+              -- needs these to PREFILL; without them country/tribe/
+              -- volleyball rendered blank even when set.
+              m.country_id, m.tribe_id, m.volleyball_level,
+              t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
               m.profile_complete_pct, m.points_balance, m.is_ambassador,
               COALESCE(m.referral_code, m.member_number) AS referral_code,
               m.joined_at, m.email_verified,
@@ -34,6 +39,7 @@ router.get('/profile', authenticate, async (req, res, next) => {
               ) s) AS current_streak
        FROM members m
        LEFT JOIN cities c ON c.id = m.city_id
+       LEFT JOIN tribes t ON t.id = m.tribe_id
        WHERE m.id = $1`,
       [req.member.id]
     );
