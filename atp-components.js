@@ -867,7 +867,7 @@
     tribe_checkin_points_premium: 2,
     premium_renewal_referrer_points: 200,
     streak_double_threshold: 5,
-    store_credit_atp_per_unit: 28,
+    store_credit_atp_per_unit: 10,
     store_credit_currency: 'AED',
     welcome_discount_percentage: 20,
     welcome_discount_expiry_days: 60,

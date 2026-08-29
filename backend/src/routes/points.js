@@ -51,10 +51,13 @@ router.patch('/config', authenticate, requireAdmin, async (req, res, next) => {
 
 // ── POST /api/points/redeem ───────────────────────────────────
 // Member redeems points as store discount.
-// Rulebook ref: R-PT-008 (OQ-13). Conversion is 28 pts ≈ 0.10 AED; the
-// floor of 280 pts (≈ 1 AED) prevents micro-redemptions from spamming
-// Shopify with single-cent discount codes.
-const MIN_REDEEM_PTS = 280;
+// Rulebook ref: R-PT-008 (OQ-13). Conversion and the minimum both come
+// from the admin-configured rate (services/pointsRate) — this endpoint
+// used to hardcode `pts / 28 * 0.1`, which disagreed with the store's
+// own quote by 28x once the founder retuned the economy (audit
+// 2026-09-16). The floor is 1 unit of currency, which still prevents
+// micro-redemptions spamming Shopify with single-cent codes.
+const pointsRate = require('../services/pointsRate');
 router.post('/redeem', authenticate, async (req, res, next) => {
   try {
     const { points_to_redeem } = req.body;
@@ -63,6 +66,7 @@ router.post('/redeem', authenticate, async (req, res, next) => {
     if (!pts || pts <= 0) {
       return res.status(400).json({ error: 'points_to_redeem must be a positive number' });
     }
+    const MIN_REDEEM_PTS = await pointsRate.minRedeemPoints();
     if (pts < MIN_REDEEM_PTS) {
       return res.status(400).json({
         error: `Minimum redemption is ${MIN_REDEEM_PTS} points (≈ 1 AED).`,
@@ -84,8 +88,9 @@ router.post('/redeem', authenticate, async (req, res, next) => {
       });
     }
 
-    // 280 pts = 10% discount; calculate AED value
-    const aedValue = Math.floor(pts / 28) * 0.1; // simplified calculation
+    // Value at the admin-configured rate — the ONLY conversion in the
+    // codebase now (services/pointsRate).
+    const { value: aedValue } = await pointsRate.pointsToCurrency(pts);
 
     const newBalance = balance - pts;
     await transaction(async (client) => {

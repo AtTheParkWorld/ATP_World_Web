@@ -214,19 +214,10 @@ router.delete('/reviews/:product_id(*)', authenticate, async (req, res, next) =>
 // POINTS REDEMPTION
 // ════════════════════════════════════════════════════════════════
 
-// Read the points-per-currency-unit from system_config (Theme 4) so
-// the rate stays admin-tunable. Falls back to 28 = "28 pts per AED".
-async function _getRate() {
-  try {
-    const { rows } = await query(`SELECT value FROM system_config WHERE key='store_credit_atp_per_unit'`);
-    if (rows[0]) {
-      const v = rows[0].value;
-      const n = typeof v === 'number' ? v : Number(typeof v === 'string' ? v.replace(/^"|"$/g, '') : v);
-      if (n > 0) return n;
-    }
-  } catch (e) { /* table may not exist on a fresh install */ }
-  return 28;
-}
+// Points-per-currency-unit lives in services/pointsRate — one shared
+// definition so the store quote and /points/redeem can never disagree
+// (they did, by 28x, until the 2026-09-16 audit).
+const _getRate = require('../services/pointsRate').getPointsRate;
 
 // POST /api/store/points/quote
 // body: { points }
