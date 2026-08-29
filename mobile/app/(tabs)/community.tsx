@@ -154,8 +154,12 @@ function CoachesView() {
           className="flex-1 bg-atp-dark rounded-atp-lg border border-white/5 p-4 active:opacity-70"
         >
           <View className="w-full aspect-square rounded-atp bg-atp-dark-3 mb-3 overflow-hidden items-center justify-center">
-            {item.profile?.profile_photo_url ? (
-              <Image source={{ uri: absUrl(item.profile.profile_photo_url)! }} className="w-full h-full" resizeMode="cover" />
+            {(item.profile?.display_photo_url || item.profile?.profile_photo_url) ? (
+              <Image
+                source={{ uri: absUrl(item.profile.display_photo_url || item.profile.profile_photo_url)! }}
+                className="w-full h-full"
+                resizeMode="cover"
+              />
             ) : (
               <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.muted }} className="text-3xl">
                 {item.first_name[0]}{item.last_name[0]}

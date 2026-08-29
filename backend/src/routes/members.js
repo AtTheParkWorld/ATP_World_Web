@@ -28,6 +28,9 @@ router.get('/profile', authenticate, async (req, res, next) => {
               m.residence_country, m.residence_city,
               t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
               m.profile_complete_pct, m.points_balance, m.is_ambassador,
+              -- is_coach was never returned, so the app could never show
+              -- the Coach dashboard to a coach (founder 2026-09-18).
+              COALESCE(m.is_coach, false) AS is_coach,
               COALESCE(m.referral_code, m.member_number) AS referral_code,
               m.joined_at, m.email_verified,
               c.name AS city_name,

@@ -64,8 +64,8 @@ export default function CoachDetail() {
 
         <View className="items-center pt-3 pb-6 px-5">
           <View className="w-32 h-32 rounded-full bg-atp-dark-3 overflow-hidden items-center justify-center mb-4">
-            {profile?.profile_photo_url
-              ? <Image source={{ uri: absUrl(profile.profile_photo_url)! }} className="w-32 h-32" />
+            {(profile?.display_photo_url || profile?.profile_photo_url)
+              ? <Image source={{ uri: absUrl(profile.display_photo_url || profile.profile_photo_url)! }} className="w-32 h-32" />
               : <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.muted }} className="text-4xl">
                   {(c?.first_name || '?')[0]}{(c?.last_name || '')[0]}
                 </Text>}

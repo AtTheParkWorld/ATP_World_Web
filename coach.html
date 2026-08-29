@@ -532,6 +532,9 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     } else if (p.cover_image_url) {
       heroMedia.innerHTML = '<img src="' + escapeHtml(p.cover_image_url) + '" alt="">';
     }
+    // Fall back to the member avatar when no dedicated coach photo is
+    // set (founder 2026-09-18) — the API now supplies display_photo_url.
+    p = Object.assign({}, p, { profile_photo_url: p.display_photo_url || p.profile_photo_url });
     if (p.profile_photo_url) {
       var photoEl = document.getElementById('cp-photo');
       var fb      = document.getElementById('cp-photo-fallback');

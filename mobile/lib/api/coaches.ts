@@ -13,6 +13,8 @@ export interface CoachProfile {
   philosophy:         string | null;
   cover_image_url:    string | null;
   profile_photo_url:  string | null;
+  /** profile_photo_url, falling back to the member's avatar. */
+  display_photo_url?: string | null;
   intro_video_url:    string | null;
   specialties:        string[] | null;
   certifications:     string[] | null;

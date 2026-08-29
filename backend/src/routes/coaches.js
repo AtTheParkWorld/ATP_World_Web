@@ -50,12 +50,20 @@ function shapeCoach(row) {
     slug:           row.slug,
     city:           row.city_name,
     joined_at:      row.joined_at,
+    // The member's own avatar, so a coach who hasn't uploaded a
+    // dedicated coach photo still shows a face instead of initials
+    // (founder 2026-09-18: "I used to have a picture and it
+    // disappeared" — the coach photo field is separate from the member
+    // avatar and was empty).
+    avatar_url:     row.avatar_url || null,
     profile: {
       tagline:                  row.tagline,
       bio:                      row.bio,
       philosophy:               row.philosophy,
       cover_image_url:          row.cover_image_url,
       profile_photo_url:        row.profile_photo_url,
+      // Convenience for clients: what to actually render.
+      display_photo_url:        row.profile_photo_url || row.avatar_url || null,
       intro_video_url:          row.intro_video_url,
       specialties:              row.specialties || [],
       certifications:           row.certifications || [],
@@ -86,6 +94,7 @@ function shapeCoach(row) {
 
 const COACH_SELECT = `
   m.id, m.first_name, m.last_name, m.member_number, m.email, m.phone,
+  m.avatar_url,
   m.sports_preferences, m.padel_level, m.points_balance, m.joined_at,
   cp.slug, cp.display_name, cp.tagline, cp.bio, cp.philosophy,
   cp.cover_image_url, cp.profile_photo_url, cp.intro_video_url,

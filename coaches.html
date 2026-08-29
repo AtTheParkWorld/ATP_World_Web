@@ -317,6 +317,7 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     }
 
     var photo = '';
+    p = Object.assign({}, p, { profile_photo_url: p.display_photo_url || p.profile_photo_url });
     if (p.profile_photo_url) {
       photo = isVideoUrl(p.profile_photo_url)
         ? '<video src="' + escapeHtml(p.profile_photo_url) + '" muted autoplay loop playsinline></video>'
