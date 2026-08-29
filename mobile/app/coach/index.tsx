@@ -451,6 +451,12 @@ export default function CoachIndex() {
             onPress={() => router.push('/coach/offerings')}
           />
           <LinkRow
+            label="Edit my coach profile"
+            emoji="✏️"
+            subtitle="Photos, bio, specialties, links"
+            onPress={() => router.push('/coach/profile')}
+          />
+          <LinkRow
             label="My public profile"
             emoji="👤"
             onPress={() => router.push(`/coaches/${coachId}`)}

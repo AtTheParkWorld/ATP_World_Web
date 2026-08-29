@@ -91,3 +91,37 @@ export function rateCoach(id: string, input: { rating: number; comment?: string 
 export function deleteCoachFeedback(coachId: string, feedbackId: string): Promise<{ ok?: boolean }> {
   return api.delete(`/coaches/${coachId}/feedback/${feedbackId}`);
 }
+
+/**
+ * Update a coach profile (self or admin) — PUT /coaches/:id.
+ *
+ * IMPORTANT: the endpoint overwrites every field it accepts, so a
+ * partial body blanks whatever it omits. Always send the complete
+ * shape, seeded from the current profile.
+ */
+export interface CoachProfileUpdate {
+  display_name?: string | null;
+  tagline?: string | null;
+  bio?: string | null;
+  philosophy?: string | null;
+  cover_image_url?: string | null;
+  profile_photo_url?: string | null;
+  intro_video_url?: string | null;
+  specialties?: string[];
+  certifications?: string[];
+  languages?: string[];
+  gallery_urls?: string[];
+  accepts_private_sessions?: boolean;
+  private_session_info?: string | null;
+  instagram?: string | null;
+  tiktok?: string | null;
+  whatsapp_url?: string | null;
+  website_url?: string | null;
+  youtube_url?: string | null;
+  linkedin_url?: string | null;
+  years_experience?: number | null;
+}
+
+export function updateCoachProfile(id: string, body: CoachProfileUpdate): Promise<any> {
+  return api.put(`/coaches/${id}`, body);
+}

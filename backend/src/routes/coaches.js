@@ -436,6 +436,15 @@ router.post('/:id/feedback', optionalAuth, async (req, res, next) => {
     );
     if (!coach.length) return res.status(404).json({ error: 'Coach not found' });
 
+    // A coach rating themselves is not feedback (founder 2026-09-17).
+    // Enforced server-side so it holds however the request arrives.
+    if (req.member && req.member.id === req.params.id) {
+      return res.status(403).json({
+        error: 'You cannot rate your own coach profile.',
+        code: 'SELF_RATING',
+      });
+    }
+
     if (req.member && req.member.id) {
       // Member path — one live rating per coach; rating again updates it.
       const { rows: mine } = await query(

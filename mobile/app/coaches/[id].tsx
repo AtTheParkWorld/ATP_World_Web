@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { getCoach, rateCoach, type CoachFeedback } from '@/lib/api/coaches';
+import { useAuthStore } from '@/lib/stores/auth.store';
 import { getPublicOfferings } from '@/lib/api/coachSessions';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
@@ -21,6 +22,8 @@ import { absUrl } from '@/lib/utils/imageUrl';
 export default function CoachDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const coachId = String(id || '');
+  const me = useAuthStore((s) => s.member) as any;
+  const isMe = !!me?.id && String(me.id) === coachId;
 
   // Full detail response — coach + feedback list ride the same query so a
   // single refetch after rating refreshes both the average and the list.
@@ -200,7 +203,11 @@ export default function CoachDetail() {
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-2">
               Rate this coach
             </Text>
-            <RateCoachCard coachId={coachId} onSubmitted={() => q.refetch()} />
+            {/* A coach can't rate themselves (founder 2026-09-17) — the
+                backend refuses it too; this just avoids offering it. */}
+            {!isMe && (
+              <RateCoachCard coachId={coachId} onSubmitted={() => q.refetch()} />
+            )}
           </View>
         )}
 
