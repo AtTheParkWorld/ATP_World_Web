@@ -418,6 +418,19 @@ export default function SessionDetail() {
             </View>
             {attendeesQ.isLoading ? (
               <ActivityIndicator color={colors.green} style={{ margin: 24 }} />
+            ) : attendeesQ.isError ? (
+              // A failed fetch must never masquerade as "nobody booked" —
+              // that's exactly how a 500 hid a broken column (2026-09-15).
+              <View className="px-5 py-8">
+                <Text style={{ fontFamily: fontFamily.body, color: colors.danger }} className="text-sm text-center">
+                  Couldn't load the list.
+                </Text>
+                <Pressable onPress={() => attendeesQ.refetch()} className="mt-3 self-center px-4 py-2 rounded-atp border border-white/15 active:opacity-70">
+                  <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-xs uppercase tracking-widest">
+                    Try again
+                  </Text>
+                </Pressable>
+              </View>
             ) : (attendeesQ.data || []).length === 0 ? (
               <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm px-5 py-8 text-center">
                 Nobody's booked yet — be the first.

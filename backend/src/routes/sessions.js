@@ -1120,7 +1120,7 @@ router.get('/:id/attendees', authenticate, async (req, res, next) => {
     const { rows } = await query(
       `SELECT m.id, m.first_name, m.last_name, m.avatar_url,
               t.name AS tribe_name, t.slug AS tribe_slug,
-              b.status, b.registered_at
+              b.status, b.created_at AS registered_at
        FROM bookings b
        JOIN members m ON m.id = b.member_id
        LEFT JOIN tribes t ON t.id = m.tribe_id
@@ -1133,7 +1133,7 @@ router.get('/:id/attendees', authenticate, async (req, res, next) => {
               AND ((f.requester_id = $2 AND f.addressee_id = m.id)
                 OR (f.requester_id = m.id AND f.addressee_id = $2))
          )
-       ORDER BY b.registered_at ASC
+       ORDER BY b.created_at ASC
        LIMIT 200`,
       [req.params.id, req.member.id]
     );
@@ -1144,10 +1144,10 @@ router.get('/:id/attendees', authenticate, async (req, res, next) => {
       try {
         const { rows } = await query(
           `SELECT m.id, m.first_name, m.last_name, m.avatar_url,
-                  NULL AS tribe_name, NULL AS tribe_slug, b.status, b.registered_at
+                  NULL AS tribe_name, NULL AS tribe_slug, b.status, b.created_at AS registered_at
            FROM bookings b JOIN members m ON m.id = b.member_id
            WHERE b.session_id = $1 AND b.status IN ('confirmed','attended')
-           ORDER BY b.registered_at ASC LIMIT 200`,
+           ORDER BY b.created_at ASC LIMIT 200`,
           [req.params.id]
         );
         return res.json({ attendees: rows, total: rows.length });
@@ -1163,13 +1163,13 @@ router.get('/:id/attendees', authenticate, async (req, res, next) => {
 router.get('/:id/registrations', authenticate, requireScanner, async (req, res, next) => {
   try {
     const { rows } = await query(
-      `SELECT b.id, b.status, b.registered_at, b.court_name,
+      `SELECT b.id, b.status, b.created_at AS registered_at, b.court_name,
               m.first_name, m.last_name, m.member_number, m.email,
               m.padel_level, m.sports_preferences, m.points_balance
        FROM bookings b
        JOIN members m ON m.id = b.member_id
        WHERE b.session_id = $1
-       ORDER BY b.registered_at ASC`,
+       ORDER BY b.created_at ASC`,
       [req.params.id]
     );
     res.json({ registrations: rows, total: rows.length });
