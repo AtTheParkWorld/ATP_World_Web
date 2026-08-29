@@ -29,6 +29,7 @@ import { AppState } from 'react-native';
 import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import { useAuthStore } from '@/lib/stores/auth.store';
+import { RouteErrorBoundary } from '@/lib/components/RouteErrorBoundary';
 import '../global.css';
 
 const extra = (Constants.expoConfig?.extra || {}) as Record<string, string>;
@@ -100,6 +101,12 @@ async function applyPendingUpdate(): Promise<void> {
     // Offline, server down, or no matching runtime → carry on with
     // whatever version is already installed.
   }
+}
+
+// App-wide safety net: a screen error shows a readable page with the
+// message instead of the app vanishing (founder 2026-09-19).
+export function ErrorBoundary(props: { error: Error; retry: () => void }) {
+  return <RouteErrorBoundary {...props} />;
 }
 
 const queryClient = new QueryClient({

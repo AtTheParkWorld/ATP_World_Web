@@ -1,4 +1,11 @@
 import { Stack } from 'expo-router';
+import { RouteErrorBoundary } from '@/lib/components/RouteErrorBoundary';
+
+// Expo Router renders this instead of killing the app when a coach
+// screen throws (founder 2026-09-19).
+export function ErrorBoundary(props: { error: Error; retry: () => void }) {
+  return <RouteErrorBoundary {...props} />;
+}
 
 export default function CoachStack() {
   return (
