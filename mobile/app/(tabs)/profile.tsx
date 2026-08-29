@@ -15,11 +15,12 @@
  *  - Sign out (always visible so a broken session is recoverable)
  */
 import { useEffect, type ReactNode } from 'react';
-import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getProfile, getStats, getStreak } from '@/lib/api/members';
+import { getMyAchievements } from '@/lib/api/achievements';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { Avatar } from '@/lib/components/Avatar';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
@@ -57,6 +58,10 @@ export default function Profile() {
   const profileQ = useQuery({ queryKey: ['profile'], queryFn: () => getProfile().then(r => r.member) });
   const statsQ   = useQuery({ queryKey: ['stats'],   queryFn: () => getStats().then(r => r.stats) });
   const streakQ  = useQuery({ queryKey: ['streak'],  queryFn: () => getStreak().then(r => r.streak) });
+  // Badges belong on the profile — they were only reachable via
+  // Rewards → Badges, so members thought they had none (founder
+  // 2026-09-12).
+  const achQ = useQuery({ queryKey: ['achievements'], queryFn: () => getMyAchievements() });
 
   // Keep auth store member in sync with backend
   useEffect(() => {
@@ -210,6 +215,62 @@ export default function Profile() {
             <StatTile label="Sessions"   value={String(statsQ.data.total_sessions)} />
             <StatTile label="Points"     value={statsQ.data.current_balance.toLocaleString()} />
             <StatTile label="Friends"    value={String(statsQ.data.friends_count)} />
+          </View>
+        )}
+
+        {/* Badges — unlocked achievements, newest first. Tapping any of
+            them opens the full wall under Rewards. */}
+        {!!achQ.data && (
+          <View className="px-5 mt-6">
+            <Pressable
+              onPress={() => router.push('/(tabs)/rewards')}
+              style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}
+              className="flex-row items-center justify-between mb-3 active:opacity-80"
+            >
+              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest">
+                My badges
+              </Text>
+              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs uppercase tracking-widest">
+                {achQ.data.unlocked_count}/{achQ.data.achievements.length} →
+              </Text>
+            </Pressable>
+            {achQ.data.unlocked_count > 0 ? (
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginRight: -20 }} contentContainerStyle={{ paddingRight: 20 }}>
+                {achQ.data.achievements
+                  .filter((a) => a.unlocked)
+                  .map((a) => (
+                    <Pressable
+                      key={String(a.id)}
+                      onPress={() => router.push('/(tabs)/rewards')}
+                      style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.95 : 1 }] })}
+                      className="items-center mr-3 bg-atp-dark border border-atp-green/30 rounded-atp-lg px-3 py-3"
+                      accessibilityLabel={a.name}
+                    >
+                      {a.badge_image_url ? (
+                        <Image source={{ uri: a.badge_image_url }} style={{ width: 40, height: 40, borderRadius: 20 }} resizeMode="cover" />
+                      ) : (
+                        <Text style={{ fontSize: 30 }}>{a.icon || '🏅'}</Text>
+                      )}
+                      <Text
+                        numberOfLines={1}
+                        style={{ fontFamily: fontFamily.bodyBold, color: colors.light, maxWidth: 76 }}
+                        className="text-[10px] mt-1.5 text-center"
+                      >
+                        {a.name}
+                      </Text>
+                    </Pressable>
+                  ))}
+              </ScrollView>
+            ) : (
+              <Pressable
+                onPress={() => router.push('/(tabs)/rewards')}
+                className="bg-atp-dark border border-dashed border-white/10 rounded-atp-lg p-4 active:opacity-80"
+              >
+                <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm">
+                  No badges yet — attend sessions, build a streak and bring friends to start unlocking them.
+                </Text>
+              </Pressable>
+            )}
           </View>
         )}
 
