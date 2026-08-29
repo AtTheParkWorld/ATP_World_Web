@@ -9,13 +9,14 @@
  * password section posts to /auth/change-password.
  */
 import { useEffect, useState } from 'react';
-import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getProfile, patchProfile, patchAvatar } from '@/lib/api/members';
-import { listCities, listTribes, listActivities, listCountries } from '@/lib/api/sessions';
+import { listCities, listTribes, listActivities } from '@/lib/api/sessions';
 import { changePassword } from '@/lib/api/auth';
+import { WORLD_COUNTRIES } from '@/lib/data/countries';
 import { pickAndUploadMedia } from '@/lib/api/upload';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { Avatar } from '@/lib/components/Avatar';
@@ -39,8 +40,12 @@ export default function EditProfile() {
     padel_level:      '',
     volleyball_level: '',
   });
-  // Pickers keep their own state — ids, not free text.
-  const [countryId, setCountryId] = useState<number | null>(null);
+  // Residence is free text (any country/city in the world); the ATP
+  // city stays an id because it drives which sessions you see.
+  const [resCountry, setResCountry] = useState('');
+  const [resCity,    setResCity]    = useState('');
+  const [countryPickerOpen, setCountryPickerOpen] = useState(false);
+  const [countrySearch, setCountrySearch] = useState('');
   const [cityId,    setCityId]    = useState<string | null>(null);
   const [tribeId,   setTribeId]   = useState<string | null>(null);
   const [sports,    setSports]    = useState<string[]>([]);
@@ -51,7 +56,6 @@ export default function EditProfile() {
   const [pwNew,  setPwNew]    = useState('');
   const [pwNew2, setPwNew2]   = useState('');
 
-  const countriesQ  = useQuery({ queryKey: ['countries'],  queryFn: () => listCountries().then(r => r.countries),  staleTime: 1000 * 60 * 30 });
   const citiesQ     = useQuery({ queryKey: ['cities'],     queryFn: () => listCities().then(r => r.cities),        staleTime: 1000 * 60 * 30 });
   const tribesQ     = useQuery({ queryKey: ['tribes'],     queryFn: () => listTribes().then(r => r.tribes),        staleTime: 1000 * 60 * 30 });
   const activitiesQ = useQuery({ queryKey: ['activities'], queryFn: () => listActivities().then(r => r.activities), staleTime: 1000 * 60 * 30 });
@@ -71,7 +75,8 @@ export default function EditProfile() {
       volleyball_level: (profileQ.data as any).volleyball_level || '',
     });
     const d: any = profileQ.data;
-    setCountryId(d.country_id ?? null);
+    setResCountry(d.residence_country || '');
+    setResCity(d.residence_city || '');
     setCityId(d.city_id ? String(d.city_id) : null);
     setTribeId(d.tribe_id ? String(d.tribe_id) : null);
     // sports_preferences stores activity NAMES (same as the website).
@@ -111,7 +116,8 @@ export default function EditProfile() {
       bottom_size:   form.bottom_size         || undefined,
       padel_level:      form.padel_level         || undefined,
       volleyball_level: form.volleyball_level    || undefined,
-      country_id:    countryId ?? undefined,
+      residence_country: resCountry.trim() || undefined,
+      residence_city:    resCity.trim()    || undefined,
       city_id:       cityId    ?? undefined,
       tribe_id:      tribeId   ?? undefined,
       sports_preferences: sports,
@@ -139,11 +145,6 @@ export default function EditProfile() {
     if (pwNew !== pwNew2) { Alert.alert('They don\u2019t match', 'The two new-password fields are different.'); return; }
     pwMu.mutate();
   };
-
-  // Cities filter to the chosen country when the data carries country_id.
-  const cities = (citiesQ.data || []).filter(
-    (c: any) => countryId == null || c.country_id == null || Number(c.country_id) === Number(countryId)
-  );
 
   return (
     <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>
@@ -203,31 +204,35 @@ export default function EditProfile() {
 
           {/* ── Where I live ─────────────────────────────────── */}
           <SectionHeader label="Where I live" />
-          <ChipPicker
-            label="Country"
-            options={(countriesQ.data || []).map((c) => ({ key: String(c.id), label: c.name }))}
-            selectedKey={countryId == null ? null : String(countryId)}
-            onSelect={(k) => {
-              const next = k == null ? null : Number(k);
-              setCountryId(next);
-              // City must belong to the country — drop a now-invalid pick.
-              const stillValid = (citiesQ.data || []).some(
-                (c: any) => String(c.id) === String(cityId) && (c.country_id == null || Number(c.country_id) === next)
-              );
-              if (!stillValid) setCityId(null);
-            }}
-            empty="No countries configured yet."
-          />
-          <ChipPicker
-            label="City"
-            options={cities.map((c: any) => ({ key: String(c.id), label: c.name }))}
-            selectedKey={cityId}
-            onSelect={setCityId}
-            empty="No cities for this country yet."
-          />
+          <View className="mb-4">
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-2">
+              Country
+            </Text>
+            <Pressable
+              onPress={() => { setCountrySearch(''); setCountryPickerOpen(true); }}
+              style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.99 : 1 }] })}
+              className="bg-atp-dark border border-white/10 rounded-atp px-4 py-3 flex-row items-center justify-between active:opacity-80"
+            >
+              <Text
+                style={{ fontFamily: fontFamily.body, color: resCountry ? colors.white : colors.muted }}
+                className="text-base"
+              >
+                {resCountry || 'Select your country'}
+              </Text>
+              <Text style={{ color: colors.muted }}>▾</Text>
+            </Pressable>
+          </View>
+          <Field label="City" value={resCity} onChange={setResCity} autoCapitalize="words" />
 
           {/* ── Training ─────────────────────────────────────── */}
           <SectionHeader label="Training" />
+          <ChipPicker
+            label="My ATP city (where I train)"
+            options={(citiesQ.data || []).map((c: any) => ({ key: String(c.id), label: c.name }))}
+            selectedKey={cityId}
+            onSelect={setCityId}
+            empty="No ATP cities configured yet."
+          />
           <ChipPicker
             label="Favourite tribe"
             options={(tribesQ.data || []).map((tr) => ({ key: String(tr.id), label: tr.name }))}
@@ -310,6 +315,61 @@ export default function EditProfile() {
           )}
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Country picker — 198 entries, so it's a searchable sheet
+          rather than a chip wall. */}
+      <Modal visible={countryPickerOpen} animationType="slide" transparent onRequestClose={() => setCountryPickerOpen(false)}>
+        <View className="flex-1" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+          <View className="flex-1 mt-24 bg-atp-black rounded-t-3xl border-t border-white/10 overflow-hidden">
+            <View className="px-5 pt-4 pb-3 flex-row items-center border-b border-white/5">
+              <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-lg uppercase flex-1">
+                Select country
+              </Text>
+              <Pressable onPress={() => setCountryPickerOpen(false)} hitSlop={10} className="px-2 py-1">
+                <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-base">✕</Text>
+              </Pressable>
+            </View>
+            <View className="px-5 py-3">
+              <TextInput
+                value={countrySearch}
+                onChangeText={setCountrySearch}
+                placeholder="Search…"
+                placeholderTextColor={colors.muted}
+                autoCorrect={false}
+                style={{ fontFamily: fontFamily.body, color: colors.white }}
+                className="bg-atp-dark border border-white/10 rounded-atp px-4 py-3 text-base"
+              />
+            </View>
+            <FlatList
+              data={WORLD_COUNTRIES.filter((c) => c.toLowerCase().includes(countrySearch.trim().toLowerCase()))}
+              keyExtractor={(c) => c}
+              keyboardShouldPersistTaps="handled"
+              contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 40 }}
+              renderItem={({ item }) => {
+                const on = item === resCountry;
+                return (
+                  <Pressable
+                    onPress={() => { setResCountry(item); setCountryPickerOpen(false); }}
+                    className={`px-4 py-3.5 mb-1.5 rounded-atp border ${on ? 'bg-atp-green/10 border-atp-green/40' : 'bg-atp-dark border-white/5'}`}
+                  >
+                    <Text
+                      style={{ fontFamily: on ? fontFamily.bodyBold : fontFamily.body, color: on ? colors.green : colors.white }}
+                      className="text-base"
+                    >
+                      {item}
+                    </Text>
+                  </Pressable>
+                );
+              }}
+              ListEmptyComponent={
+                <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm px-1">
+                  No country matches that search.
+                </Text>
+              }
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

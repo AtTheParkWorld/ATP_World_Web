@@ -797,6 +797,15 @@ async function _ensureBootSchema() {
   await query(`ALTER TABLE coach_feedback ADD COLUMN IF NOT EXISTS ip_hash VARCHAR(64)`)
     .catch((e) => console.warn('[boot] coach_feedback.ip_hash:', e.message));
 
+  // Residence (founder 2026-09-11): "where I live" is demographic and
+  // must accept ANY country — distinct from members.country_id, which
+  // is an FK to the OPERATING countries table (UAE/Oman) that drives
+  // subscription pricing. Free text keeps the two from colliding.
+  await query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS residence_country VARCHAR(80)`)
+    .catch((e) => console.warn('[boot] members.residence_country:', e.message));
+  await query(`ALTER TABLE members ADD COLUMN IF NOT EXISTS residence_city VARCHAR(120)`)
+    .catch((e) => console.warn('[boot] members.residence_city:', e.message));
+
   // Streak milestone is 5 days now (founder 2026-09-07). One-shot: move
   // the stored config off the old 7/8 defaults; a custom value the
   // founder set to anything else is left alone.

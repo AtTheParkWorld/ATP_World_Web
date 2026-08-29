@@ -25,6 +25,7 @@ router.get('/profile', authenticate, async (req, res, next) => {
               -- needs these to PREFILL; without them country/tribe/
               -- volleyball rendered blank even when set.
               m.country_id, m.tribe_id, m.volleyball_level,
+              m.residence_country, m.residence_city,
               t.name AS tribe_name, t.slug AS tribe_slug, t.color AS tribe_color,
               m.profile_complete_pct, m.points_balance, m.is_ambassador,
               COALESCE(m.referral_code, m.member_number) AS referral_code,
@@ -65,6 +66,7 @@ router.patch('/profile', authenticate, async (req, res, next) => {
       'first_name','last_name','phone','date_of_birth','gender',
       'nationality','city_id','country_id','tribe_id','sports_preferences',
       'top_size','bottom_size','padel_level','volleyball_level',
+      'residence_country','residence_city',
     ];
     // JSONB columns on the members table. node-pg passes raw JS
     // arrays as Postgres arrays (text[]) by default, which fails on

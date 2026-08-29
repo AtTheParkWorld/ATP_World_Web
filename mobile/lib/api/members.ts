@@ -26,6 +26,8 @@ export interface MemberProfile {
   top_size: string | null;
   bottom_size: string | null;
   padel_level: string | null;
+  residence_country?: string | null;
+  residence_city?: string | null;
   profile_complete_pct: number | null;
   /** Unfilled completion fields, computed live by the backend. Empty when 100%. */
   profile_missing?: { field: string; label: string }[];
@@ -82,6 +84,10 @@ export interface PatchProfileBody {
   bottom_size?: string;
   padel_level?: string;
   volleyball_level?: string;
+  /** Residence — free text, any country/city (distinct from the
+   *  operating-country FK that drives subscription pricing). */
+  residence_country?: string;
+  residence_city?: string;
 }
 
 export function patchProfile(body: PatchProfileBody): Promise<{ message: string }> {
