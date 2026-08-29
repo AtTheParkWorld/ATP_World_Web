@@ -5,11 +5,12 @@
  * per-member sessions + points earned from them, plus the share-code
  * CTA so an empty crew has an obvious next step.
  */
-import { ActivityIndicator, FlatList, Pressable, RefreshControl, Share, Text, View } from 'react-native';
+import { useState } from 'react';
+import { ActivityIndicator, Alert, FlatList, Pressable, RefreshControl, Share, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getReferrals, type CrewMember } from '@/lib/api/members';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { getReferrals, joinCrew, type CrewMember, type MyReferrer } from '@/lib/api/members';
 import { WEB_BASE } from '@/lib/api/client';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { Avatar } from '@/lib/components/Avatar';
@@ -57,13 +58,82 @@ function CrewRow({ c }: { c: CrewMember }) {
   );
 }
 
+/** Founder 2026-08-30: existing members can join someone's crew by
+ *  entering that member's code. One crew forever — once you're in one
+ *  this card collapses into a "you're in X's crew" chip. */
+function JoinCrewCard({ myReferrer, onJoined }: { myReferrer: MyReferrer | null | undefined; onJoined: () => void }) {
+  const [code, setCode] = useState('');
+  const joinMu = useMutation({
+    mutationFn: (c: string) => joinCrew(c),
+    onSuccess: (r) => {
+      const who = `${r.referrer.first_name || ''} ${r.referrer.last_name || ''}`.trim() || 'their';
+      Alert.alert('Welcome to the crew! 🎉', `You joined ${who}'s crew.`);
+      setCode('');
+      onJoined();
+    },
+    onError: (e: any) => {
+      Alert.alert("Couldn't join", e?.message || 'Something went wrong — try again.');
+    },
+  });
+
+  if (myReferrer) {
+    const who = `${myReferrer.first_name || ''} ${myReferrer.last_name || ''}`.trim() || 'ATP member';
+    return (
+      <View className="flex-row items-center bg-atp-dark border border-white/10 rounded-atp-lg px-4 py-3 mb-5">
+        <Avatar uri={myReferrer.avatar_url} firstName={myReferrer.first_name ?? undefined} lastName={myReferrer.last_name ?? undefined} id={myReferrer.id} size="sm" />
+        <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm ml-3 flex-1">
+          You're in <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }}>{who}'s</Text> crew
+        </Text>
+        <Icon name="check" size={16} color={colors.green} />
+      </View>
+    );
+  }
+
+  return (
+    <View className="bg-atp-dark border border-white/10 rounded-atp-lg p-4 mb-5">
+      <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-xs uppercase tracking-widest">
+        In someone's crew?
+      </Text>
+      <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-1">
+        Enter their referral code to join. Heads up — crews are forever, no switching later.
+      </Text>
+      <View className="flex-row items-center gap-2 mt-3">
+        <TextInput
+          value={code}
+          onChangeText={setCode}
+          placeholder="e.g. fredy-a7k"
+          placeholderTextColor={colors.muted}
+          autoCapitalize="none"
+          autoCorrect={false}
+          style={{ fontFamily: fontFamily.body, color: colors.white }}
+          className="flex-1 bg-atp-black border border-white/10 rounded-atp px-3 py-2.5 text-sm"
+        />
+        <Pressable
+          disabled={!code.trim() || joinMu.isPending}
+          onPress={() => joinMu.mutate(code.trim())}
+          className={`rounded-atp px-4 py-2.5 ${code.trim() ? 'bg-atp-green' : 'bg-white/10'}`}
+        >
+          {joinMu.isPending ? (
+            <ActivityIndicator size="small" color={colors.black} />
+          ) : (
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: code.trim() ? colors.black : colors.muted }} className="text-xs uppercase tracking-widest">
+              Join
+            </Text>
+          )}
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
 export default function Crew() {
   const qc = useQueryClient();
   const me = useAuthStore((s) => s.member) as any;
   const code = me?.referral_code || me?.member_number;
 
-  const crewQ = useQuery({ queryKey: ['crew'], queryFn: () => getReferrals().then((r) => r.referrals) });
-  const crew = crewQ.data || [];
+  const crewQ = useQuery({ queryKey: ['crew'], queryFn: getReferrals });
+  const crew = crewQ.data?.referrals || [];
+  const myReferrer = crewQ.data?.my_referrer;
   const totalPts = crew.reduce((sum, c) => sum + (Number(c.points_from_member) || 0), 0);
 
   return (
@@ -112,6 +182,9 @@ export default function Crew() {
               <Icon name="share" size={18} color={colors.green} />
             </View>
           </Pressable>
+        }
+        ListFooterComponent={
+          <JoinCrewCard myReferrer={myReferrer} onJoined={() => qc.invalidateQueries({ queryKey: ['crew'] })} />
         }
         ListEmptyComponent={
           crewQ.isLoading ? (

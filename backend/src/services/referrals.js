@@ -261,8 +261,91 @@ async function ensureReferralCode(memberId, firstName) {
   }
 }
 
+
+/**
+ * Founder 2026-08-30: EXISTING members may join someone's crew by
+ * entering that member's referral code — signup isn't the only door
+ * anymore. Same immutability rule as signup referrals: UNIQUE
+ * (referred_id) means once you're in a crew you can't switch, so we
+ * check first and return a friendly coded error instead of a raw
+ * constraint violation.
+ *
+ * Deliberately does NOT pay the referral_signup_points bonus — that
+ * bonus is for bringing a NEW member to ATP. Joining a crew later
+ * still routes the ongoing per-check-in points to the crew leader
+ * via rewardReferrerForCheckin, which keys off the referrals row.
+ *
+ * Throws Error with .code ∈ {CODE_NOT_FOUND, SELF_REFERRAL,
+ * ALREADY_IN_CREW} for the route to map onto 4xx responses.
+ */
+async function joinCrewByCode({ memberId, referralCode }) {
+  const err = (code, message) => Object.assign(new Error(message), { code });
+  if (!memberId || !referralCode || !String(referralCode).trim()) {
+    throw err('CODE_NOT_FOUND', 'Enter a referral code.');
+  }
+  const code = String(referralCode).trim();
+
+  // Already in a crew? (checked up front for the friendly message;
+  // the UNIQUE constraint still backstops any race)
+  const { rows: existing } = await query(
+    `SELECT m.first_name, m.last_name
+       FROM referrals r JOIN members m ON m.id = r.referrer_id
+      WHERE r.referred_id = $1 LIMIT 1`,
+    [memberId]
+  );
+  if (existing.length) {
+    const who = `${existing[0].first_name || ''} ${existing[0].last_name || ''}`.trim() || 'someone';
+    throw err('ALREADY_IN_CREW', `You are already in ${who}'s crew — crews can't be changed.`);
+  }
+
+  // Resolve the code — friendly referral_code first, legacy member_number
+  // fallback, same acceptance rules as signup.
+  const { rows: refRows } = await query(
+    `SELECT id, first_name, last_name, avatar_url FROM members
+      WHERE LOWER(referral_code) = LOWER($1)
+         OR LOWER(member_number) = LOWER($1)
+      LIMIT 1`,
+    [code]
+  ).catch(async (e) => {
+    if (e.code === '42703') {
+      return query(
+        'SELECT id, first_name, last_name, avatar_url FROM members WHERE LOWER(member_number)=LOWER($1) LIMIT 1',
+        [code]
+      );
+    }
+    throw e;
+  });
+  if (!refRows.length) throw err('CODE_NOT_FOUND', 'No member found with that code. Double-check it and try again.');
+  const referrer = refRows[0];
+  if (referrer.id === memberId) throw err('SELF_REFERRAL', "That's your own code — you can't join your own crew.");
+
+  await transaction(async (client) => {
+    const ins = await client.query(
+      `INSERT INTO referrals (referrer_id, referred_id, referral_code, points_awarded)
+       VALUES ($1, $2, $3, false)
+       ON CONFLICT (referred_id) DO NOTHING
+       RETURNING id`,
+      [referrer.id, memberId, code]
+    );
+    if (!ins.rows.length) throw err('ALREADY_IN_CREW', 'You are already in a crew.');
+    // Inherit the crew leader's tribe if the joiner has none (mirrors signup).
+    try {
+      await client.query(
+        `UPDATE members
+            SET tribe_id = (SELECT tribe_id FROM members WHERE id = $1)
+          WHERE id = $2 AND tribe_id IS NULL`,
+        [referrer.id, memberId]
+      );
+    } catch (e) {
+      if (e.code !== '42703') throw e;
+    }
+  });
+  return { referrer };
+}
+
 module.exports = {
   recordSignupReferral,
+  joinCrewByCode,
   generateUniqueReferralCode,
   ensureReferralCode,
   rewardReferrerForCheckin,

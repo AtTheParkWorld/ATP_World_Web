@@ -186,6 +186,8 @@
 
     sendFriendRequest: (targetId)     => post('/members/friends/request', { target_id: targetId }),
     respondToFriend:   (id, status)   => patch(`/members/friends/${id}`, { status }),
+    // Founder 2026-08-30: existing members can join someone's crew by code.
+    joinCrew:          (code)         => post('/members/crew/join', { code }),
   };
 
   // ── SESSIONS ─────────────────────────────────────────────────

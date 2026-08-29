@@ -134,7 +134,7 @@ function showAdminSection(name, btn) {
 //   <input id="myFile" type="file" accept="image/*" style="display:none"
 //          onchange="atpUpload('myFile','myUrl','image',2)">
 //   <button onclick="document.getElementById('myFile').click()">📁 Upload</button>
-function atpUpload(fileInputId, urlFieldId, kind, maxMB) {
+function atpUpload(fileInputId, urlFieldId, kind, maxMB, onDone) {
   var input = document.getElementById(fileInputId);
   var urlField = document.getElementById(urlFieldId);
   if (!input || !urlField) return;
@@ -225,6 +225,7 @@ function atpUpload(fileInputId, urlFieldId, kind, maxMB) {
     .then(function(url){
       urlField.value = url;
       if (typeof showToast === 'function') showToast('✅ Uploaded — Save to apply');
+      if (typeof onDone === 'function') { try { onDone(url); } catch (e) {} }
     })
     .catch(function(e){
       urlField.value = prev;

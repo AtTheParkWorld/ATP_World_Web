@@ -3,7 +3,7 @@
 <head>
   <link rel="stylesheet" href="/atp.min.css?v=e5a5b459d0">
   <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
-  <script src="/atp.bundle.min.js?v=fbdcddc2c7"></script>
+  <script src="/atp.bundle.min.js?v=a1386ed42c"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -1035,6 +1035,19 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
               No crew yet — share your code above. The first 5 friends who join with it show up here.
             </div>
           </div>
+
+          <!-- Join someone's crew (founder 2026-08-30). Hidden by
+               loadReferrals() when my_referrer says you're already in one. -->
+          <div id="joinCrewBlock" style="margin-top:14px;padding:12px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:8px">
+            <div style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--white);font-weight:800">In someone's crew?</div>
+            <div style="font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.5">Enter their referral code to join. Crews are forever — no switching later.</div>
+            <div style="display:flex;gap:8px;margin-top:10px">
+              <input id="joinCrewCode" type="text" placeholder="e.g. fredy-a7k" autocapitalize="none" autocomplete="off" style="flex:1;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);border-radius:6px;color:var(--white);font-size:13px;padding:9px 12px;min-width:0">
+              <button type="button" data-atp-call="submitJoinCrew" style="background:var(--green);color:#0a0a0a;border:none;padding:9px 16px;border-radius:6px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer;white-space:nowrap">Join</button>
+            </div>
+            <div id="joinCrewMsg" style="display:none;font-size:12px;margin-top:8px"></div>
+          </div>
+          <div id="myCrewLeader" style="display:none;margin-top:14px;padding:10px 12px;background:rgba(168,255,0,.07);border:1px solid rgba(168,255,0,.25);border-radius:8px;font-size:12.5px;color:var(--light)"></div>
 
           <div style="margin-top:14px;text-align:center">
             <button type="button" data-atp-call="showTab" data-args='["tribe"]' style="background:transparent;color:var(--green);border:1px solid rgba(168,255,0,.4);padding:8px 16px;border-radius:6px;font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;cursor:pointer">See full crew →</button>
@@ -5845,8 +5858,44 @@ function loadReferrals() {
         }).join('');
       }
     }
+
+    // Join-a-crew (founder 2026-08-30): already in one → show the
+    // leader chip; not yet → leave the join input visible.
+    var joinBlock  = document.getElementById('joinCrewBlock');
+    var leaderEl   = document.getElementById('myCrewLeader');
+    var myRef = data && data.my_referrer;
+    if (joinBlock && leaderEl) {
+      if (myRef) {
+        var leaderName = ((myRef.first_name || '') + ' ' + (myRef.last_name || '')).trim() || 'an ATP member';
+        joinBlock.style.display = 'none';
+        leaderEl.style.display = 'block';
+        leaderEl.innerHTML = '✓ You\'re in <strong style="color:var(--green)">' + escapeHtml(leaderName) + '\'s</strong> crew';
+      } else {
+        joinBlock.style.display = 'block';
+        leaderEl.style.display = 'none';
+      }
+    }
   }).catch(function(){});
 }
+
+// Join someone's crew with their code (founder 2026-08-30). Wired via
+// data-atp-call from the Overview crew card.
+function submitJoinCrew() {
+  var input = document.getElementById('joinCrewCode');
+  var msg   = document.getElementById('joinCrewMsg');
+  var code  = input && input.value.trim();
+  if (!code) return;
+  if (msg) { msg.style.display = 'block'; msg.style.color = 'var(--muted)'; msg.textContent = 'Joining…'; }
+  window.ATP.members.joinCrew(code).then(function(r) {
+    var who = r && r.referrer ? (((r.referrer.first_name || '') + ' ' + (r.referrer.last_name || '')).trim() || 'the') : 'the';
+    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '🎉 Welcome — you joined ' + who + '\'s crew!'; }
+    if (input) input.value = '';
+    loadReferrals();
+  }).catch(function(e) {
+    if (msg) { msg.style.color = '#f87171'; msg.textContent = (e && e.message) || 'Couldn\'t join — try again.'; }
+  });
+}
+window.submitJoinCrew = submitJoinCrew;
 
 // Friends → friends list (only accepted, split pending for requests)
 function loadFriends() {

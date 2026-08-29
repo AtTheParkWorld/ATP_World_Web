@@ -44,20 +44,23 @@ function generateBadgeSVG(icon, title) {
 function handleBadgeUpload(event) {
   var file = event.target.files[0];
   if (!file) return;
-  if (file.size > 2 * 1024 * 1024) {
-    alert('File too large — max 2MB'); return;
-  }
+  // Preview immediately from the local file; the stored value is the
+  // R2 public URL that atpUpload writes into #cBadgeImage. Storing a
+  // URL (not a base64 data URI) keeps challenge/achievement payloads
+  // small — that's what makes the 4MB cap safe (founder 2026-08-30,
+  // raised from 2MB for the high-res badge artwork).
   var reader = new FileReader();
   reader.onload = function(e) {
-    var dataUrl = e.target.result;
-    document.getElementById('cBadgeImage').value = dataUrl;
     document.getElementById('badgePreview').innerHTML =
-      '<img src="'+dataUrl+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+      '<img src="'+e.target.result+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+  };
+  reader.readAsDataURL(file);
+  document.getElementById('badgeUploadInfo').textContent = '⏳ Uploading ' + file.name + '…';
+  atpUpload('badgeUpload', 'cBadgeImage', 'image', 4, function() {
     document.getElementById('badgeUploadInfo').textContent = '✅ Using uploaded image: ' + file.name;
     var clr = document.getElementById('clearBadgeBtn');
     if (clr) clr.style.display = 'inline-block';
-  };
-  reader.readAsDataURL(file);
+  });
 }
 
 function clearBadgeUpload() {

@@ -264,8 +264,48 @@ router.get('/referrals', authenticate, async (req, res, next) => {
        ORDER BY r.created_at DESC`,
       [req.member.id]
     );
-    res.json({ referrals: rows });
+    // Who referred ME — the crew I belong to. Null = not in a crew yet,
+    // which is what unlocks the "join a crew" input client-side.
+    let my_referrer = null;
+    try {
+      const { rows: r2 } = await query(
+        `SELECT m.id, m.first_name, m.last_name, m.avatar_url
+           FROM referrals r JOIN members m ON m.id = r.referrer_id
+          WHERE r.referred_id = $1 LIMIT 1`,
+        [req.member.id]
+      );
+      my_referrer = r2[0] || null;
+    } catch (_) { /* keep the crew list working regardless */ }
+    res.json({ referrals: rows, my_referrer });
   } catch (err) { next(err); }
+});
+
+// ── POST /api/members/crew/join ───────────────────────────────
+// Founder 2026-08-30: existing members can join someone's crew by
+// entering that member's referral code. One crew forever — if a
+// referrals row already exists for this member the service returns
+// ALREADY_IN_CREW and nothing changes.
+router.post('/crew/join', authenticate, async (req, res, next) => {
+  try {
+    const referralsSvc = require('../services/referrals');
+    const { referrer } = await referralsSvc.joinCrewByCode({
+      memberId: req.member.id,
+      referralCode: (req.body || {}).code,
+    });
+    res.json({
+      joined: true,
+      referrer: {
+        id: referrer.id,
+        first_name: referrer.first_name,
+        last_name: referrer.last_name,
+        avatar_url: referrer.avatar_url || null,
+      },
+    });
+  } catch (err) {
+    const map = { CODE_NOT_FOUND: 404, SELF_REFERRAL: 400, ALREADY_IN_CREW: 409 };
+    if (map[err.code]) return res.status(map[err.code]).json({ error: err.message, code: err.code });
+    next(err);
+  }
 });
 
 // ── GET /api/members/friends ──────────────────────────────────

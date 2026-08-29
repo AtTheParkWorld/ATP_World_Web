@@ -1,9 +1,9 @@
 import { WEB_BASE } from '@/lib/api/client';
 /**
- * Blog post detail. Renders the post body as preformatted text — most
- * ATP blog content is markdown-flavoured prose, which reads fine in a
- * monospaced fallback. Future polish: install react-native-render-html
- * to support full rich rendering with images + links.
+ * Blog post detail. Body renders through MarkdownBody, which mirrors
+ * the website's light markdown rules (##/### headings, **bold**,
+ * *italic*, lists, quotes, links, images) — founder 2026-08-30: the
+ * app was showing raw ## and ** instead of formatting.
  */
 import { Image, Linking, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,6 +11,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { getPost } from '@/lib/api/blog';
 import { colors, fontFamily } from '@/lib/theme/tokens';
+import { MarkdownBody } from '@/lib/components/MarkdownBody';
 import { absUrl } from '@/lib/utils/imageUrl';
 
 export default function BlogPostScreen() {
@@ -81,11 +82,7 @@ export default function BlogPostScreen() {
             )}
           </View>
 
-          {!!post?.body && (
-            <Text style={{ fontFamily: fontFamily.body, color: colors.white }} className="text-base leading-relaxed">
-              {post.body}
-            </Text>
-          )}
+          {!!post?.body && <MarkdownBody body={post.body} />}
         </View>
 
         {related.length > 0 && (

@@ -192,6 +192,22 @@ export interface CrewMember {
   points_from_member: number | string;
 }
 
-export function getReferrals(): Promise<{ referrals: CrewMember[] }> {
+/** The crew I belong to (whoever's code I signed up / joined with).
+ *  Null until the member joins a crew; older deploys omit the key. */
+export interface MyReferrer {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+}
+
+export function getReferrals(): Promise<{ referrals: CrewMember[]; my_referrer?: MyReferrer | null }> {
   return api.get('/members/referrals');
+}
+
+/** Join someone's crew with their referral code (founder 2026-08-30).
+ *  Server errors carry code CODE_NOT_FOUND | SELF_REFERRAL |
+ *  ALREADY_IN_CREW with a human-readable message — surface it as-is. */
+export function joinCrew(code: string): Promise<{ joined: boolean; referrer: MyReferrer }> {
+  return api.post('/members/crew/join', { code });
 }
