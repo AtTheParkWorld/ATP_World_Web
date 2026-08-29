@@ -25,6 +25,7 @@ import { useAuthStore } from '@/lib/stores/auth.store';
 import { createBooking, cancelBooking, listMyBookings, submitSessionFeedback, type PaymentOptions, type BookingRecord } from '@/lib/api/bookings';
 import { ApiError } from '@/lib/api/client';
 import { BookingSheet } from '@/lib/components/BookingSheet';
+import { SessionTerms } from '@/lib/components/SessionTerms';
 import { FeedbackBlock } from '@/lib/components/FeedbackBlock';
 import { CorporateSessionBadge } from '@/lib/components/SessionCard';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
@@ -39,6 +40,10 @@ export default function SessionDetail() {
   // must not promise points they won't receive. Premium always earns;
   // a free member on a qualifying streak earns the base amount.
   const member = useAuthStore((s) => s.member) as any;
+  // Booking terms must be accepted before the CTA arms (founder
+  // 2026-09-14) — the live text is an accident waiver + liability
+  // release + media consent, matching the website's gate.
+  const [termsOk, setTermsOk] = useState(false);
   const streakQ = useQuery({ queryKey: ['streak'], queryFn: () => getStreak().then((r) => r.streak) });
   const isPremium = ['premium', 'premium_plus'].includes(member?.subscription_type);
   const earnsAtCheckin = isPremium || (streakQ.data?.current_streak ?? 0) >= 5;
@@ -357,18 +362,27 @@ export default function SessionDetail() {
             </Pressable>
           </View>
         ) : (
-          <Pressable
-            onPress={onBookPress}
-            disabled={busy || s.status !== 'upcoming'}
-            className={`rounded-atp py-4 items-center ${busy || s.status !== 'upcoming' ? 'bg-atp-dark-3' : 'bg-atp-green active:opacity-80'}`}
-          >
-            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.black }} className="text-base">
-              {busy ? 'Booking…'
-                : s.status !== 'upcoming' ? 'Session closed'
-                : isFull ? 'Join waitlist'
-                : s.session_type === 'paid' ? 'Continue' : 'Reserve free spot'}
-            </Text>
-          </Pressable>
+          <View>
+            {s.status === 'upcoming' && (
+              <SessionTerms accepted={termsOk} onToggle={setTermsOk} />
+            )}
+            <Pressable
+              onPress={onBookPress}
+              disabled={busy || s.status !== 'upcoming' || !termsOk}
+              className={`rounded-atp py-4 items-center ${busy || s.status !== 'upcoming' || !termsOk ? 'bg-atp-dark-3' : 'bg-atp-green active:opacity-80'}`}
+            >
+              <Text
+                style={{ fontFamily: fontFamily.bodyBold, color: (busy || s.status !== 'upcoming' || !termsOk) ? colors.muted : colors.black }}
+                className="text-base"
+              >
+                {busy ? 'Booking…'
+                  : s.status !== 'upcoming' ? 'Session closed'
+                  : !termsOk ? 'Accept the terms to book'
+                  : isFull ? 'Join waitlist'
+                  : s.session_type === 'paid' ? 'Continue' : 'Reserve free spot'}
+              </Text>
+            </Pressable>
+          </View>
         )}
       </View>
 
