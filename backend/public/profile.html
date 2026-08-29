@@ -3,7 +3,7 @@
 <head>
   <link rel="stylesheet" href="/atp.min.css?v=e5a5b459d0">
   <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
-  <script src="/atp.bundle.min.js?v=0c7a40834d"></script>
+  <script src="/atp.bundle.min.js?v=f8a8dcf4ad"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -761,7 +761,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             <div style="height:8px;background:rgba(255,255,255,.08);border-radius:8px;overflow:hidden;margin-bottom:12px">
               <div id="streakDropdownFill" style="height:100%;width:0;background:linear-gradient(90deg,#A8FF00,#C6FF55);border-radius:8px;transition:width .6s cubic-bezier(.4,0,.2,1)"></div>
             </div>
-            <div style="font-size:11px;color:var(--light);line-height:1.5;margin-bottom:8px" id="streakDropdownNext">Hit a 5-day streak to activate session points — Premium members earn 2× instead</div>
+            <div style="font-size:11px;color:var(--light);line-height:1.5;margin-bottom:8px" id="streakDropdownNext" data-atp-config-tpl="Hit a {streak_double_threshold}-day streak to activate session points — Premium members earn 2× instead">Hit a 5-day streak to activate session points — Premium members earn 2× instead</div>
             <div style="font-size:12px;color:var(--white);line-height:1.5" id="streakDropdownInspire">Get checked in by an Ambassador to start your streak.</div>
             <button type="button" data-atp-call="showTab" data-args='["streak"]' style="margin-top:14px;background:transparent;border:1px solid rgba(168,255,0,.4);color:var(--green);font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:8px 14px;border-radius:6px;cursor:pointer;width:100%">Open full view →</button>
           </div>
@@ -871,7 +871,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
     <a class="onboard-card" data-atp-call="copyReferral">
       <div class="onboard-card-step">Step 3 of 3</div>
       <div class="onboard-card-title">Invite a friend</div>
-      <div class="onboard-card-desc">Earn 50 points per referral when they show up to their first session.</div>
+      <div class="onboard-card-desc" data-atp-config-tpl="Earn {referral_signup_points} points per referral when they show up to their first session.">Earn 50 points per referral when they show up to their first session.</div>
       <div class="onboard-card-arrow">Copy your referral link →</div>
     </a>
   </div>
@@ -7995,14 +7995,16 @@ function _streakIsPremium() {
 function _paintStreakHowItWorks() {
   var el = document.getElementById('streakHowItWorks');
   if (!el) return;
+  // Milestone comes from Admin → System Config, never a literal.
+  var D = (window.ATPConfig && ATPConfig.get('streak_double_threshold')) || 5;
   var g = '<strong style="color:var(--green)">';
   el.innerHTML = _streakIsPremium()
     ? g + 'How it works.</strong> You earn points at every session you\u2019re scanned into. Hit a ' +
-      g + '5-day streak</strong> and every session pays ' + g + 'double points</strong> while your ' +
+      g + D + '-day streak</strong> and every session pays ' + g + 'double points</strong> while your ' +
       'subscription is active. Miss a day and the streak resets.'
-    : g + 'How it works.</strong> Hold a ' + g + '5-day streak</strong> to activate session points \u2014 ' +
-      'miss a day and points pause until you\u2019re back to 5. ' + g + 'Premium members</strong> earn from ' +
-      'day one and go ' + g + '2\u00d7</strong> at 5 days. You only count if an ATP Ambassador scans you in.';
+    : g + 'How it works.</strong> Hold a ' + g + D + '-day streak</strong> to activate session points \u2014 ' +
+      'miss a day and points pause until you\u2019re back to ' + D + '. ' + g + 'Premium members</strong> earn from ' +
+      'day one and go ' + g + '2\u00d7</strong> at ' + D + ' days. You only count if an ATP Ambassador scans you in.';
 }
 window._paintStreakHowItWorks = _paintStreakHowItWorks;
 

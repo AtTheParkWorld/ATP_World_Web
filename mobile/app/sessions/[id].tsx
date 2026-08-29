@@ -20,6 +20,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import QRCode from 'react-native-qrcode-svg';
 import { getSession, getSessionFeedback, getSessionAttendees, type Session } from '@/lib/api/sessions';
+import { useConfig } from '@/lib/api/config';
 import { getStreak } from '@/lib/api/members';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { createBooking, cancelBooking, listMyBookings, submitSessionFeedback, type PaymentOptions, type BookingRecord } from '@/lib/api/bookings';
@@ -45,6 +46,7 @@ export default function SessionDetail() {
   // 2026-09-14) — the live text is an accident waiver + liability
   // release + media consent, matching the website's gate.
   const [termsOk, setTermsOk] = useState(false);
+  const cfg = useConfig();
   // "Who's going" — tapping the capacity bar opens the attendee list
   // (founder 2026-09-15).
   const [showWho, setShowWho] = useState(false);
@@ -55,7 +57,7 @@ export default function SessionDetail() {
   });
   const streakQ = useQuery({ queryKey: ['streak'], queryFn: () => getStreak().then((r) => r.streak) });
   const isPremium = ['premium', 'premium_plus'].includes(member?.subscription_type);
-  const earnsAtCheckin = isPremium || (streakQ.data?.current_streak ?? 0) >= 5;
+  const earnsAtCheckin = isPremium || (streakQ.data?.current_streak ?? 0) >= cfg.streak_double_threshold;
 
   const sessionQ = useQuery({
     queryKey: ['session', sessionId],
@@ -223,7 +225,7 @@ export default function SessionDetail() {
           <InfoPill label={priceLbl} accent={s.session_type === 'paid' ? colors.warning : colors.green} />
           {s.points_reward ? (
             <InfoPill
-              label={earnsAtCheckin ? `+${s.points_reward} pts` : `+${s.points_reward} pts · Premium ⭐ or 5-day streak`}
+              label={earnsAtCheckin ? `+${s.points_reward} pts` : `+${s.points_reward} pts · Premium ⭐ or ${cfg.streak_double_threshold}-day streak`}
               accent={colors.green}
             />
           ) : null}

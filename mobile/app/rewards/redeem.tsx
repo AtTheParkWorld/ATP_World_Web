@@ -13,13 +13,18 @@ import { router } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getBalance, redeemPointsForStore } from '@/lib/api/rewards';
 import { colors, fontFamily } from '@/lib/theme/tokens';
+import { useConfig } from '@/lib/api/config';
 
-const MIN = 280;
-const STEP = 28; // 28 pts = 0.10 AED
+// Redemption maths follows Admin → System Config (founder 2026-09-16):
+// a hardcoded rate here would silently disagree with the backend the
+// moment the founder retunes the points economy.
 const AED_PER_STEP = 0.10;
 
 export default function Redeem() {
   const qc = useQueryClient();
+  const cfg = useConfig();
+  const STEP = cfg.store_credit_atp_per_unit;   // pts per AED 1
+  const MIN  = STEP * 10;                        // AED 1.00 minimum
   const balanceQ = useQuery({ queryKey: ['balance'], queryFn: () => getBalance() });
   const balance = balanceQ.data?.balance || 0;
 

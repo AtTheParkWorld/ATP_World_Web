@@ -21,6 +21,7 @@ import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getProfile, getStats, getStreak } from '@/lib/api/members';
 import { getMyAchievements } from '@/lib/api/achievements';
+import { useConfig } from '@/lib/api/config';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { Avatar } from '@/lib/components/Avatar';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
@@ -62,6 +63,8 @@ export default function Profile() {
   // Rewards → Badges, so members thought they had none (founder
   // 2026-09-12).
   const achQ = useQuery({ queryKey: ['achievements'], queryFn: () => getMyAchievements() });
+  // Copy numbers come from Admin → System Config (founder 2026-09-16).
+  const cfg = useConfig();
 
   // Keep auth store member in sync with backend
   useEffect(() => {
@@ -162,7 +165,7 @@ export default function Profile() {
                   Profile {m.profile_complete_pct}% complete
                 </Text>
                 <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[11px]">
-                  +200 pts when done
+                  +{cfg.profile_complete_points} pts when done
                 </Text>
               </View>
               <View className="mt-3 h-1.5 bg-atp-dark-3 rounded-full overflow-hidden">
@@ -188,7 +191,7 @@ export default function Profile() {
                 // the pre-chips tap-through-to-edit affordance.
                 <Pressable onPress={() => router.push('/profile/edit')} className="mt-2 active:opacity-80">
                   <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm">
-                    Finish your profile to claim +200 pts.
+                    Finish your profile to claim +{cfg.profile_complete_points} pts.
                   </Text>
                 </Pressable>
               )}

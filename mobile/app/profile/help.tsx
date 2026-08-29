@@ -7,11 +7,12 @@ import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { colors, fontFamily } from '@/lib/theme/tokens';
+import { useConfig, type PublicConfig } from '@/lib/api/config';
 
-const FAQS = [
+const buildFaqs = (cfg: PublicConfig) => [
   {
     q: 'How do I earn points?',
-    a: 'Attend sessions. Free members earn attendance points while holding a 5+ day streak (break it and points pause until you\'re back to 5). Premium and Premium Plus members always earn — and a 5+ day streak doubles their points (2×). You can also refer friends who attend their first session, and complete your profile (one-time +200 pts).',
+    a: `Attend sessions. Free members earn attendance points while holding a ${cfg.streak_double_threshold}+ day streak (break it and points pause until you are back to ${cfg.streak_double_threshold}). Premium and Premium Plus members always earn — and a ${cfg.streak_double_threshold}+ day streak doubles their points (2×). You can also refer friends (+${cfg.referral_signup_points} pts each), and complete your profile (one-time +${cfg.profile_complete_points} pts).`,
   },
   {
     q: 'Why didn\'t my booking confirm?',
@@ -32,6 +33,9 @@ const FAQS = [
 ];
 
 export default function Help() {
+  // FAQ numbers follow Admin → System Config (founder 2026-09-16).
+  const cfg = useConfig();
+  const FAQS = buildFaqs(cfg);
   return (
     <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>
       <View className="px-5 pt-2 pb-3 flex-row items-center border-b border-white/5">

@@ -730,6 +730,7 @@ const ROUTES = [
   ['coach-sessions', require('./routes/coachSessions')],
   ['corporate',    require('./routes/corporate')],
   ['promos',       require('./routes/promos')],
+  ['config',       require('./routes/config')],
 ];
 for (const [prefix, router] of ROUTES) {
   app.use('/api/'    + prefix, router);

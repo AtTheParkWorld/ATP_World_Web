@@ -850,3 +850,67 @@
     document.addEventListener('DOMContentLoaded', function () { setTimeout(show, 1200); });
   } else setTimeout(show, 1200);
 })();
+
+/* ── LIVE CONFIG (founder 2026-09-16) ────────────────────────────
+   Numbers that the admin owns (Admin → System Config) must appear the
+   same everywhere and change without a deploy. Any element carrying
+   data-atp-config="key" has its text replaced with the live value;
+   data-atp-config-tpl="Earn {referral_signup_points} points" fills a
+   whole sentence. window.ATPConfig.get(key) serves page scripts.
+
+   Ships with the same defaults the API uses, so copy is never blank
+   and never waits on the network to render. */
+(function () {
+  var DEFAULTS = {
+    referral_signup_points: 50,
+    tribe_checkin_points_free: 1,
+    tribe_checkin_points_premium: 2,
+    premium_renewal_referrer_points: 200,
+    streak_double_threshold: 5,
+    store_credit_atp_per_unit: 28,
+    store_credit_currency: 'AED',
+    welcome_discount_percentage: 20,
+    welcome_discount_expiry_days: 60,
+    profile_complete_points: 200,
+  };
+  var cfg = Object.assign({}, DEFAULTS);
+  var listeners = [];
+
+  function fill(root) {
+    (root || document).querySelectorAll('[data-atp-config]').forEach(function (el) {
+      var k = el.getAttribute('data-atp-config');
+      if (cfg[k] !== undefined && cfg[k] !== null) el.textContent = String(cfg[k]);
+    });
+    (root || document).querySelectorAll('[data-atp-config-tpl]').forEach(function (el) {
+      var tpl = el.getAttribute('data-atp-config-tpl');
+      el.textContent = tpl.replace(/\{(\w+)\}/g, function (m, k) {
+        return cfg[k] !== undefined && cfg[k] !== null ? String(cfg[k]) : m;
+      });
+    });
+  }
+
+  window.ATPConfig = {
+    get: function (k) { return cfg[k]; },
+    all: function () { return Object.assign({}, cfg); },
+    /** Re-run substitution after you inject markup. */
+    apply: fill,
+    /** Called once the live values land (or immediately if already loaded). */
+    onReady: function (fn) { listeners.push(fn); if (window.ATPConfig._loaded) { try { fn(cfg); } catch (e) {} } },
+    _loaded: false,
+  };
+
+  function boot() {
+    fill(document);   // paint defaults immediately — never an empty number
+    fetch('/api/config/public')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        if (d && d.config) cfg = Object.assign(cfg, d.config);
+        window.ATPConfig._loaded = true;
+        fill(document);
+        listeners.forEach(function (fn) { try { fn(cfg); } catch (e) {} });
+      })
+      .catch(function () { window.ATPConfig._loaded = true; });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
+})();

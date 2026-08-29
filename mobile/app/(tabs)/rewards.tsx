@@ -14,6 +14,7 @@ import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getBalance, getPointsHistory, listOffers, listMyRedemptions } from '@/lib/api/rewards';
 import { getMyAchievements, rarityLabel } from '@/lib/api/achievements';
+import { useConfig } from '@/lib/api/config';
 import { SegmentedControl } from '@/lib/components/SegmentedControl';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { absUrl } from '@/lib/utils/imageUrl';
@@ -52,6 +53,7 @@ export default function Rewards() {
 /* Wallet                                                          */
 /* ─────────────────────────────────────────────────────────────── */
 function WalletView() {
+  const cfg = useConfig();
   const qc = useQueryClient();
   const me = useAuthStore((s) => s.member) as any;
 
@@ -111,7 +113,7 @@ function WalletView() {
           </Text>
         </Pressable>
         <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-2">
-          Minimum 280 points · 28 pts ≈ AED 0.10
+          Minimum {cfg.store_credit_atp_per_unit * 10} points · {cfg.store_credit_atp_per_unit} pts ≈ {cfg.store_credit_currency} 0.10
         </Text>
       </View>
 
@@ -168,7 +170,7 @@ function WalletView() {
             Invite a friend
           </Text>
           <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm mt-1">
-            +500 pts when they attend their first session.
+            +{cfg.referral_signup_points} pts when they join, then {cfg.tribe_checkin_points_free}–{cfg.tribe_checkin_points_premium} pts every time they check in.
           </Text>
         </Pressable>
         <Pressable
