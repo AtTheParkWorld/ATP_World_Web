@@ -105,7 +105,8 @@ export default function Supporter() {
               You are a {subscription.plan_name} supporter
             </Text>
             <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm">
-              Next renewal: {new Date(subscription.current_period_end).toLocaleDateString()}
+              {/* current_period_end is nullable until the Stripe webhook fills it in. */}
+              Next renewal: {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : '—'}
               {subscription.cancel_at_period_end ? ' · cancelling at period end' : ''}
             </Text>
             {!IS_IOS && (

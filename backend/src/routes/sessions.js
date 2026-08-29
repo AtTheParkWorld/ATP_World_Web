@@ -389,6 +389,9 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
               a.name AS activity_name, a.slug AS activity_slug, a.icon AS activity_icon,
               c.name AS city_name,
               m.first_name AS coach_first, m.last_name AS coach_last,
+              m.avatar_url AS coach_avatar,
+              TRIM(CONCAT(m.first_name, ' ', m.last_name)) AS coach_name,
+              sr.series_rating_avg, sr.series_rating_count,
                             (SELECT COUNT(*) FROM bookings b
                WHERE b.session_id=s.id AND b.status IN ('confirmed','attended')) AS registrations_count,
               (SELECT COUNT(*) FROM bookings b
@@ -401,6 +404,15 @@ router.get('/:id', optionalAuth, async (req, res, next) => {
        LEFT JOIN cities c ON c.id = s.city_id
        LEFT JOIN members m ON m.id = s.coach_id
        LEFT JOIN corporate_accounts ca ON ca.id = s.corporate_account_id
+       -- Same rolling series score the list carries (2026-08-30 audit:
+       -- the detail screen could never show the series chip without it).
+       LEFT JOIN LATERAL (
+         SELECT AVG(sf.rating)::numeric(3,2) AS series_rating_avg,
+                COUNT(sf.id)::int            AS series_rating_count
+         FROM session_feedback sf
+         JOIN sessions s2 ON s2.id = sf.session_id
+         WHERE LOWER(s2.name) = LOWER(s.name)
+       ) sr ON true
        WHERE s.id = $1`,
       [req.params.id]
     );
@@ -696,9 +708,11 @@ router.get('/:id/attendance', authenticate, requireScanner, async (req, res, nex
     const { rows } = await query(
       `SELECT b.id, b.status, b.qr_token, b.checked_in_at, b.check_in_method,
               m.id AS member_id, m.first_name, m.last_name,
-              m.member_number, m.avatar_url
+              m.member_number, m.avatar_url,
+              t.name AS tribe_name, t.slug AS tribe_slug
        FROM bookings b
        JOIN members m ON m.id = b.member_id
+       LEFT JOIN tribes t ON t.id = m.tribe_id
        WHERE b.session_id = $1
          AND b.status IN ('confirmed','attended')
        ORDER BY b.checked_in_at NULLS LAST, m.first_name`,

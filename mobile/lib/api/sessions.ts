@@ -2,9 +2,11 @@
  * Sessions API — wraps /api/sessions, /api/cities, /api/activities,
  * and the tribe list under /api/sessions/tribes.
  *
- * Shapes mirror the columns returned by backend/src/routes/sessions.js
- * so screens can render straight from the API payload without a
- * decoder layer.
+ * Shapes mirror the columns returned by backend/src/routes/sessions.js.
+ * Where the wire payload differs from what screens want (pg COUNT(*)
+ * comes back as a string; the detail endpoint omits the coach aliases
+ * the list endpoint has), the client functions below normalise it —
+ * see mapSession(). Verified against the live API 2026-08-30.
  */
 import { api } from './client';
 
@@ -23,10 +25,14 @@ export interface Activity {
   icon?: string | null;
 }
 
+// Real payload of GET /api/cities: { id, name, country } — country is
+// the country NAME string (e.g. "UAE", "Oman"), grouped/ordered by it.
+// There is no country_id column on this endpoint (audit 2026-08-30:
+// the previously declared `country_id` was never sent).
 export interface City {
   id: string;
   name: string;
-  country_id?: number | null;
+  country: string;
 }
 
 export interface Session {
@@ -38,12 +44,18 @@ export interface Session {
   location: string | null;
   location_maps_url: string | null;
   session_type: 'free' | 'paid' | string;
-  price: number | null;
+  // sessions.price is DECIMAL(10,2) — node-postgres serialises it as a
+  // STRING (live API returns e.g. "0.00"). Kept as-is (screens only
+  // template it); wrap in Number() before doing math with it.
+  price: number | string | null;
   price_points: number | null;
   currency_code: string | null;
   capacity: number | null;
   points_reward: number | null;
-  status: 'upcoming' | 'completed' | 'cancelled' | 'paused' | string;
+  // Stored enum is upcoming|completed|cancelled; the backend's
+  // _decorateLiveStatus rewrites it to 'live' at read time while the
+  // schedule window is open.
+  status: 'upcoming' | 'live' | 'completed' | 'cancelled' | 'paused' | string;
   is_live_enabled: boolean;
   session_category: string | null;
   sport_type: string | null;
@@ -64,29 +76,78 @@ export interface Session {
   city_name: string | null;
   coach_first: string | null;
   coach_last: string | null;
+  // Both endpoints send these since 2026-08-30 (detail gained them in
+  // the audit); mapSession() still derives coach_name from
+  // coach_first/coach_last as a fallback for older deploys.
   coach_avatar: string | null;
   coach_name: string | null;
+  // COUNT(*) subselects arrive as strings on the wire ("2"); coerced
+  // to numbers in mapSession() because screens do >=, division, etc.
   registrations_count: number;
   waitlist_count: number;
-  // Private company sessions. The backend already gates visibility +
-  // booking server-side (only that company's active employees ever see
-  // these rows), so the client treats them as purely presentational.
-  // NOTE: GET /api/sessions returns all four; GET /api/sessions/:id
-  // currently only returns the two `sessions` columns (it selects s.*
-  // without joining corporate_accounts), hence the optional company
-  // name/logo — always render with a "Private session" fallback.
+  // Detail endpoint only (GET /sessions/:id): attended bookings count
+  // + this occurrence's own AVG(rating)::numeric(3,1) (string | null).
+  attended_count?: number;
+  avg_rating?: string | null;
+  // Private company sessions. The backend gates visibility + booking
+  // server-side (only that company's active employees ever see these
+  // rows), so the client treats them as purely presentational. Both
+  // GET /sessions and GET /sessions/:id now join corporate_accounts
+  // and return all four fields (verified live 2026-08-30) — the
+  // optionality is kept for pre-migration NULL fallbacks only.
   is_corporate_only?: boolean;
   corporate_account_id?: string | null;
   corporate_company_name?: string | null;
   corporate_logo_url?: string | null;
-  // Decorated by backend _decorateLiveStatus
-  is_live_now?: boolean;
-  minutes_until_start?: number;
-  // Rolling member score across all sessions sharing the same name
-  // (returned by both GET /sessions and GET /sessions/:id). avg comes
-  // back as a numeric string ("4.5") or null when count is 0.
+  // Decorated by backend _decorateLiveStatus on BOTH list and detail:
+  // true while scheduled_at <= now < ends_at (90-min default window).
+  // (Audit 2026-08-30: replaces the phantom `is_live_now` /
+  // `minutes_until_start` fields the backend never sent.)
+  is_live: boolean;
+  // Rolling member score across all sessions sharing the same name.
+  // ONLY the list endpoint computes these (LATERAL join); the detail
+  // endpoint does not — mapSession() defaults them to null/0 there.
+  // avg comes back as a numeric string ("4.5") or null when count is 0.
+  // BACKEND-GAP: GET /api/sessions/:id lacks the series-rating LATERAL,
+  // so the detail screen's series chip can never show real data.
   series_rating_avg: string | null;
   series_rating_count: number;
+}
+
+// What actually crosses the wire before mapSession() normalises it.
+type RawSession = Omit<
+  Session,
+  'registrations_count' | 'waitlist_count' | 'attended_count'
+  | 'coach_name' | 'coach_avatar'
+  | 'series_rating_avg' | 'series_rating_count'
+> & {
+  registrations_count: number | string;
+  waitlist_count: number | string;
+  attended_count?: number | string | null;      // detail only
+  coach_name?: string | null;                    // list only
+  coach_avatar?: string | null;                  // list only
+  series_rating_avg?: string | null;             // list only
+  series_rating_count?: number | string | null;  // list only
+};
+
+/**
+ * Normalise one session row: coerce pg count strings to numbers,
+ * derive the coach aliases the detail endpoint omits, and default the
+ * list-only series fields so the shared Session type is honest for
+ * both endpoints.
+ */
+function mapSession(raw: RawSession): Session {
+  const derivedCoach = `${raw.coach_first || ''} ${raw.coach_last || ''}`.trim() || null;
+  return {
+    ...raw,
+    registrations_count: Number(raw.registrations_count) || 0,
+    waitlist_count:      Number(raw.waitlist_count) || 0,
+    attended_count:      raw.attended_count == null ? undefined : Number(raw.attended_count) || 0,
+    coach_name:          raw.coach_name ?? derivedCoach,
+    coach_avatar:        raw.coach_avatar ?? null,
+    series_rating_avg:   raw.series_rating_avg ?? null,
+    series_rating_count: Number(raw.series_rating_count ?? 0) || 0,
+  };
 }
 
 export interface ListSessionsParams {
@@ -104,11 +165,33 @@ export function listSessions(params: ListSessionsParams = {}): Promise<{ session
   const q = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') q.set(k, String(v)); });
   const qs = q.toString();
-  return api.get(`/sessions${qs ? `?${qs}` : ''}`);
+  return api.get<{ sessions: RawSession[] }>(`/sessions${qs ? `?${qs}` : ''}`)
+    .then((r) => ({ sessions: r.sessions.map(mapSession) }));
 }
 
-export function getSession(id: string | number): Promise<{ session: Session }> {
-  return api.get(`/sessions/${id}`);
+/** Ambassadors assigned to a session (admin multi-select prefill). */
+export interface AssignedAmbassador {
+  ambassador_id: string;
+  first_name: string;
+  last_name: string;
+  email: string;
+}
+
+/**
+ * Real payload of GET /api/sessions/:id (verified live 2026-08-30):
+ * { session, assigned_ambassadors, myBooking, myWaitlistPos }.
+ * myBooking is only populated when authenticated and holding a booking.
+ */
+export interface GetSessionResponse {
+  session: Session;
+  assigned_ambassadors: AssignedAmbassador[];
+  myBooking: { id: string; status: string; qr_token: string | null; checked_in_at: string | null } | null;
+  myWaitlistPos: number | null;
+}
+
+export function getSession(id: string | number): Promise<GetSessionResponse> {
+  return api.get<Omit<GetSessionResponse, 'session'> & { session: RawSession }>(`/sessions/${id}`)
+    .then((r) => ({ ...r, session: mapSession(r.session) }));
 }
 
 /** One member's rating of a past run of this session series. */

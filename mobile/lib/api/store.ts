@@ -16,35 +16,72 @@ export interface WishlistItem {
   product_title: string | null;
   product_image_url: string | null;
   added_at: string;
+  product_handle?: string | null;
+  product_price?: number | string | null;
+  product_currency?: string | null;
 }
 
-export function getWishlist(): Promise<{ items: WishlistItem[] }> {
-  return api.get('/store/wishlist');
+/** Server responds { wishlist: rows } — NOT { items }. Normalize here so
+ *  the screens' `r.items` keeps working (it was silently [] before). */
+export async function getWishlist(): Promise<{ items: WishlistItem[] }> {
+  const r = await api.get<{ wishlist?: WishlistItem[] }>('/store/wishlist');
+  return { items: r.wishlist || [] };
 }
 
 export function addToWishlist(product: {
   product_id: string;
   product_title?: string;
   product_image_url?: string;
-}): Promise<{ ok: boolean }> {
+}): Promise<{ message?: string }> {
   return api.post('/store/wishlist', product);
 }
 
-export function removeFromWishlist(productId: string): Promise<{ ok: boolean }> {
+export function removeFromWishlist(productId: string): Promise<{ message?: string }> {
   return api.delete(`/store/wishlist/${encodeURIComponent(productId)}`);
 }
 
 export interface PointsRedemptionHistoryRow {
   id: string;
   discount_code: string;
+  /** Mapped client-side from the server's `points_spent` column. */
   points_redeemed: number;
+  /** Mapped client-side from `amount_value` NUMERIC(10,2) — pg sends it
+   *  as a string, and the old phantom `aed_value` crashed the Store tab
+   *  (`undefined.toFixed`). Always a real number here. */
   aed_value: number;
-  status: 'issued' | 'used' | 'expired' | 'shopify_failed' | string;
+  currency_code?: string | null;
+  status: 'issued' | 'used' | 'expired' | 'refunded' | 'shopify_failed' | string;
   issued_at: string;
   used_at: string | null;
   expires_at: string | null;
 }
 
-export function getRedemptionHistory(): Promise<{ redemptions: PointsRedemptionHistoryRow[] }> {
-  return api.get('/store/points/redemptions');
+/** Row exactly as /store/points/redemptions sends it. */
+interface PointsRedemptionWireRow {
+  id: string;
+  points_spent: number;
+  discount_code: string;
+  amount_value: number | string | null;
+  currency_code: string | null;
+  status: string;
+  issued_at: string;
+  used_at: string | null;
+  expires_at: string | null;
+}
+
+export async function getRedemptionHistory(): Promise<{ redemptions: PointsRedemptionHistoryRow[] }> {
+  const r = await api.get<{ redemptions?: PointsRedemptionWireRow[] }>('/store/points/redemptions');
+  return {
+    redemptions: (r.redemptions || []).map((row) => ({
+      id:              row.id,
+      discount_code:   row.discount_code,
+      points_redeemed: Number(row.points_spent) || 0,
+      aed_value:       Number(row.amount_value) || 0,
+      currency_code:   row.currency_code ?? null,
+      status:          row.status,
+      issued_at:       row.issued_at,
+      used_at:         row.used_at,
+      expires_at:      row.expires_at,
+    })),
+  };
 }

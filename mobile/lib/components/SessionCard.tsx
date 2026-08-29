@@ -88,7 +88,12 @@ interface Props {
 function _SessionCard({ session, compact, onPress }: Props) {
   const isFull   = session.capacity != null && session.registrations_count >= session.capacity;
   const tColor   = tribeColor(session.tribe_slug);
-  const live     = session.is_live_now || (session.minutes_until_start != null && session.minutes_until_start >= -10 && session.minutes_until_start <= 0);
+  // Real payload (API audit 2026-08-30): the backend decorates every
+  // session with `is_live` (and flips status to 'live') while the
+  // schedule window is open — the previously read `is_live_now` /
+  // `minutes_until_start` fields were never sent, so the LIVE pill
+  // could never show.
+  const live     = session.is_live || session.status === 'live';
   const priceLbl = session.session_type === 'paid' && session.price
     ? `${session.currency_code || 'AED'} ${session.price}`
     : 'Free';

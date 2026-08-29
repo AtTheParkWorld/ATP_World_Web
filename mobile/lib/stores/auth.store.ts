@@ -39,6 +39,10 @@ export interface Member {
   is_coach?: boolean;
   is_banned?: boolean;
   member_number?: string;
+  /** Friendly share code (e.g. "fredy-a7k"). Sent by /auth/me (lazy
+   *  backfilled server-side) and by /auth/register; rewards + crew
+   *  screens fall back to member_number when absent. */
+  referral_code?: string;
   joined_at?: string;
 }
 

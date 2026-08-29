@@ -78,11 +78,11 @@ export default function SessionDetail() {
     (b) => String(b.session_id) === sessionId && b.status !== 'cancelled'
   );
 
-  // GET /api/sessions/:id selects s.* without joining corporate_accounts,
-  // so the detail payload carries is_corporate_only but not the company
-  // name. The list endpoint does return it — reuse whatever the Sessions
-  // tab already cached so the badge can name the company. Falls back to
-  // the generic "Private session" copy when nothing is cached.
+  // GET /api/sessions/:id now joins corporate_accounts and returns
+  // corporate_company_name directly (verified live, API audit
+  // 2026-08-30) — use it first. The Sessions-tab cache remains as a
+  // fallback for pre-migration backends that answer NULL, and the
+  // generic "Private session" copy covers everything else.
   const corporateName = useMemo(() => {
     if (s?.corporate_company_name) return s.corporate_company_name;
     for (const [, data] of qc.getQueriesData<Session[]>({ queryKey: ['sessions'] })) {
@@ -109,9 +109,12 @@ export default function SessionDetail() {
           qc.invalidateQueries({ queryKey: ['sessions'] }),
           qc.invalidateQueries({ queryKey: ['streak'] }),
         ]);
+        // API audit 2026-08-30: the free-booking response never
+        // carries points_awarded (points land at check-in), so no
+        // "+X pts" here — the reward pill above already explains it.
         const msg = res.status === 'waitlisted'
           ? `You're on the waitlist at position #${res.waitlist_position}. We'll text you if a spot opens.`
-          : `You're in. ${res.points_awarded ? `+${res.points_awarded} pts.` : ''} See you there.`;
+          : `You're in. See you there.`;
         Alert.alert(res.status === 'waitlisted' ? 'Waitlisted' : 'Booked', msg);
       }
     } catch (err) {

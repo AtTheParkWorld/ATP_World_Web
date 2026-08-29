@@ -6,6 +6,7 @@
  * before locally — no offset → no skew when new posts arrive.
  */
 import { api } from './client';
+import { useAuthStore } from '@/lib/stores/auth.store';
 
 export interface TaggedMember {
   id: string;
@@ -65,14 +66,30 @@ export function getMyPosts(limit = 20): Promise<{ posts: Post[] }> {
   return api.get(`/community/me/posts?limit=${limit}`);
 }
 
-export function createPost(
+export async function createPost(
   content: string,
   media: Array<{ src: string; type?: string }> = [],
   taggedMemberIds: string[] = [],
 ): Promise<{ post: Post }> {
   const body: Record<string, unknown> = { content, media };
   if (taggedMemberIds.length) body.tagged_member_ids = taggedMemberIds;
-  return api.post('/community/posts', body);
+  // 201 payload is { post: <posts RETURNING *> + tagged_members } — the
+  // raw row has NO author join, so first_name / last_name / avatar_url
+  // / liked_by_me are absent. Fill them from the signed-in member so
+  // the declared Post shape holds if a screen ever renders the result
+  // directly (today compose.tsx invalidates + refetches the feed).
+  type Wire = Omit<Post, 'first_name' | 'last_name' | 'avatar_url' | 'liked_by_me'>;
+  const res = await api.post<{ post: Wire }>('/community/posts', body);
+  const me = useAuthStore.getState().member;
+  return {
+    post: {
+      ...res.post,
+      first_name: me?.first_name ?? '',
+      last_name: me?.last_name ?? '',
+      avatar_url: me?.avatar_url ?? null,
+      liked_by_me: false, // you can't have liked a post that didn't exist
+    },
+  };
 }
 
 export function deletePost(postId: number): Promise<void> {
@@ -83,12 +100,34 @@ export function toggleLike(postId: string | number): Promise<{ liked: boolean }>
   return api.post(`/community/posts/${postId}/like`);
 }
 
-export function getComments(postId: string | number): Promise<{ comments: Comment[] }> {
-  return api.get(`/community/posts/${postId}/comments`);
+export async function getComments(postId: string | number): Promise<{ comments: Comment[] }> {
+  // Real rows: id, content, likes_count, parent_id, created_at,
+  // member_id, first_name, last_name, avatar_url — the SELECT never
+  // includes post_id, so stamp the argument in to keep Comment.post_id
+  // truthful.
+  const res = await api.get<{ comments: Array<Omit<Comment, 'post_id'>> }>(
+    `/community/posts/${postId}/comments`
+  );
+  return { comments: res.comments.map((c) => ({ ...c, post_id: postId })) };
 }
 
-export function createComment(postId: string | number, content: string): Promise<{ comment: Comment }> {
-  return api.post(`/community/posts/${postId}/comments`, { content });
+export async function createComment(postId: string | number, content: string): Promise<{ comment: Comment }> {
+  // 201 payload is { comment: <comments RETURNING *> } — id, post_id,
+  // member_id, parent_id, content, likes_count, is_deleted, created_at.
+  // No author join: fill first_name / last_name / avatar_url from the
+  // signed-in member (the commenter IS the signed-in member) so the
+  // declared Comment shape holds for optimistic renders.
+  type Wire = Omit<Comment, 'first_name' | 'last_name' | 'avatar_url'>;
+  const res = await api.post<{ comment: Wire }>(`/community/posts/${postId}/comments`, { content });
+  const me = useAuthStore.getState().member;
+  return {
+    comment: {
+      ...res.comment,
+      first_name: me?.first_name ?? '',
+      last_name: me?.last_name ?? '',
+      avatar_url: me?.avatar_url ?? null,
+    },
+  };
 }
 
 export function deleteComment(postId: string | number, commentId: string | number): Promise<void> {

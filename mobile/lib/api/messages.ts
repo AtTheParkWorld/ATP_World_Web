@@ -7,6 +7,7 @@
  * directly without juggling member_a/_b.
  */
 import { api } from './client';
+import { useAuthStore } from '@/lib/stores/auth.store';
 
 export interface Conversation {
   id: string | number;
@@ -38,10 +39,28 @@ export function getThread(memberId: string): Promise<{ messages: DirectMessage[]
   return api.get(`/community/messages/${memberId}`);
 }
 
-export function sendMessage(memberId: string, content: string): Promise<{ message: DirectMessage }> {
-  return api.post(`/community/messages/${memberId}`, { content });
+export async function sendMessage(memberId: string, content: string): Promise<{ message: DirectMessage }> {
+  // 201 payload is { message: <messages RETURNING *> } — id,
+  // conversation_id, sender_id, content, read_at, created_at. There is
+  // no member join, so first_name / last_name / avatar_url are absent.
+  // The sender IS the signed-in member — fill from the auth store so
+  // the declared DirectMessage shape holds for optimistic renders
+  // (today the thread screen invalidates + refetches).
+  type Wire = Omit<DirectMessage, 'first_name' | 'last_name' | 'avatar_url'>;
+  const res = await api.post<{ message: Wire }>(`/community/messages/${memberId}`, { content });
+  const me = useAuthStore.getState().member;
+  return {
+    message: {
+      ...res.message,
+      first_name: me?.first_name ?? '',
+      last_name: me?.last_name ?? '',
+      avatar_url: me?.avatar_url ?? null,
+    },
+  };
 }
 
-export function reportMessage(messageId: string | number, reason: string): Promise<{ ok: boolean }> {
+// Real payload is { message: 'Message reported.' } — the previously
+// declared { ok: boolean } was never sent by the backend.
+export function reportMessage(messageId: string | number, reason: string): Promise<{ message: string }> {
   return api.post(`/community/messages/${messageId}/report`, { reason });
 }

@@ -26,6 +26,9 @@ export interface MemberProfile {
   top_size: string | null;
   bottom_size: string | null;
   padel_level: string | null;
+  volleyball_level?: string | null;
+  /** Canonical tribe FK — the edit-profile form prefills from this. */
+  tribe_id?: string | number | null;
   residence_country?: string | null;
   residence_city?: string | null;
   profile_complete_pct: number | null;
@@ -33,6 +36,10 @@ export interface MemberProfile {
   profile_missing?: { field: string; label: string }[];
   points_balance: number;
   is_ambassador: boolean;
+  /** Backend sends COALESCE(is_coach,false) — gates the Coach dashboard entry. */
+  is_coach: boolean;
+  /** COALESCE(referral_code, member_number) — always present. */
+  referral_code: string;
   joined_at: string;
   email_verified: boolean;
   sessions_count?: number;
@@ -44,7 +51,24 @@ export interface StreakSummary {
   longest_streak: number;
   last_attended_at: string | null;
   is_alive: boolean;             // false if the streak grace window has expired
+  /** Always null today — the backend doesn't send grace-window hours
+   *  (see getStreak mapping). Kept so the badge's guard keeps compiling. */
   hours_until_grace_ends?: number | null;
+}
+
+/** REAL payload of GET /members/me/streak (services/streak.js
+ *  getStreakSummary) — none of the StreakSummary field names above are
+ *  what the server actually sends, so getStreak() maps them. */
+interface StreakSummaryWire {
+  current: number;               // 0 once the grace window has lapsed
+  longest: number;
+  total_check_ins: number;
+  last_check_in_at: string | null;
+  first_check_in_at: string | null;
+  weekly_avg_sessions: number;
+  double_points_active: boolean;
+  next_milestone: number;
+  timezone: string;
 }
 
 export interface MemberStats {
@@ -57,16 +81,67 @@ export interface MemberStats {
   ambassadors_referred: number;
 }
 
-export function getProfile(): Promise<{ member: MemberProfile }> {
-  return api.get('/members/profile');
+export async function getProfile(): Promise<{ member: MemberProfile }> {
+  // Wire shape matches MemberProfile except sessions_count /
+  // referrals_count: they are SELECT COUNT(*) subqueries and node-pg
+  // returns COUNT (bigint) as a STRING — coerce so the declared
+  // `number` stays true for screens.
+  type Wire = Omit<MemberProfile, 'sessions_count' | 'referrals_count'> & {
+    sessions_count?: number | string;
+    referrals_count?: number | string;
+  };
+  const res = await api.get<{ member: Wire }>('/members/profile');
+  const m = res.member;
+  return {
+    member: {
+      ...m,
+      sessions_count: m.sessions_count != null ? Number(m.sessions_count) : undefined,
+      referrals_count: m.referrals_count != null ? Number(m.referrals_count) : undefined,
+    },
+  };
 }
 
-export function getStreak(): Promise<{ streak: StreakSummary }> {
-  return api.get('/members/me/streak');
+export async function getStreak(): Promise<{ streak: StreakSummary }> {
+  // Map the real payload (StreakSummaryWire) onto the shape every
+  // screen + StreakBadge already consume. Before this mapping the
+  // declared fields were simply absent (current_streak === undefined),
+  // so the badge always showed "Start a streak".
+  const res = await api.get<{ streak: StreakSummaryWire }>('/members/me/streak');
+  const s = res.streak;
+  const current = Number(s.current) || 0;
+  return {
+    streak: {
+      current_streak: current,
+      longest_streak: Number(s.longest) || 0,
+      last_attended_at: s.last_check_in_at ?? null,
+      // The server already zeroes `current` when the grace window has
+      // lapsed (>1 day since last check-in in the member's timezone),
+      // so "alive" is exactly current > 0.
+      is_alive: current > 0,
+      // BACKEND-GAP: no grace-window-hours field exists in the payload.
+      hours_until_grace_ends: null,
+    },
+  };
 }
 
-export function getStats(): Promise<{ stats: MemberStats }> {
-  return api.get('/members/stats');
+export async function getStats(): Promise<{ stats: MemberStats }> {
+  // Every field is a COUNT(*) / SUM() (except current_balance, an
+  // INTEGER column) — pg returns the aggregates as STRINGS. Coerce all
+  // so the declared `number`s stay true (Profile renders these tiles).
+  type Wire = { [K in keyof MemberStats]: number | string };
+  const res = await api.get<{ stats: Wire }>('/members/stats');
+  const s = res.stats;
+  return {
+    stats: {
+      total_sessions: Number(s.total_sessions) || 0,
+      total_referrals: Number(s.total_referrals) || 0,
+      total_points_earned: Number(s.total_points_earned) || 0,
+      current_balance: Number(s.current_balance) || 0,
+      challenges_completed: Number(s.challenges_completed) || 0,
+      friends_count: Number(s.friends_count) || 0,
+      ambassadors_referred: Number(s.ambassadors_referred) || 0,
+    },
+  };
 }
 
 export interface PatchProfileBody {
@@ -104,7 +179,9 @@ export function patchAvatar(avatar_url: string): Promise<{ avatar_url: string }>
 export interface CrewMember {
   id: string | number;             // referral row id
   created_at: string;
-  points_awarded: number | null;
+  /** referrals.points_awarded is a BOOLEAN column ("signup bonus paid
+   *  out yet") — NOT a point amount. Points live in points_from_member. */
+  points_awarded: boolean;
   member_id: string;
   first_name: string | null;
   last_name: string | null;

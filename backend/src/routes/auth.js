@@ -109,6 +109,16 @@ async function getMemberByEmail(email) {
   }
 }
 
+// Strip server-only fields before a member row leaves the API. /auth/me
+// always did this; the login endpoints (login / google / magic-link
+// verify) shipped the raw row — including password_hash — until the
+// 2026-08-30 contract audit caught it. Mutates + returns the row (safe:
+// every caller has already finished with the hash by response time).
+function _publicMember(member) {
+  if (member && typeof member === 'object') delete member.password_hash;
+  return member;
+}
+
 // ── POST /api/auth/register ───────────────────────────────────
 router.post('/register', async (req, res, next) => {
   try {
@@ -531,12 +541,12 @@ router.post('/login', async (req, res, next) => {
       return res.json({
         access_token: generateJWT(member.id, { expiresIn: '1h' }),
         refresh_token,
-        member,
+        member: _publicMember(member),
         // Legacy alias so older clients (mid-rollout) still find it.
         token: generateJWT(member.id, { expiresIn: '1h' }),
       });
     }
-    res.json({ token: generateJWT(member.id), member });
+    res.json({ token: generateJWT(member.id), member: _publicMember(member) });
   } catch (err) { next(err); }
 });
 
@@ -703,7 +713,7 @@ router.get('/verify', async (req, res, next) => {
       return res.json({
         access_token: generateJWT(record.member_id, { via: 'magic_link', expiresIn: '1h' }),
         refresh_token,
-        member: mRows[0] || null,
+        member: _publicMember(mRows[0]) || null,
         token: generateJWT(record.member_id, { via: 'magic_link', expiresIn: '1h' }),
         isFirstLogin: !record.email_verified,
         viaMagicLink: true,
@@ -807,13 +817,13 @@ router.post('/google', async (req, res, next) => {
       return res.json({
         access_token: generateJWT(member.id, { via: 'google', expiresIn: '1h' }),
         refresh_token,
-        member,
+        member: _publicMember(member),
         token: generateJWT(member.id, { via: 'google', expiresIn: '1h' }),
         isNew: !rows.length,
       });
     }
 
-    res.json({ token: generateJWT(member.id), member, isNew: !rows.length });
+    res.json({ token: generateJWT(member.id), member: _publicMember(member), isNew: !rows.length });
   } catch (err) { next(err); }
 });
 
@@ -830,6 +840,7 @@ router.get('/me', authenticate, async (req, res, next) => {
               c.name AS city_name,
               COALESCE(t1.name, t2.name) AS tribe_name,
               COALESCE(t1.slug, t2.slug) AS tribe_slug,
+              COALESCE(t1.color, t2.color) AS tribe_color,
               co.code            AS country_code,
               co.name            AS country_name,
               co.currency_code   AS country_currency_code,

@@ -52,6 +52,8 @@ export interface Coach {
   slug:           string | null;
   city:           string | null;
   joined_at:      string;
+  /** The member's own avatar (fallback when no coach photo uploaded). */
+  avatar_url:     string | null;
   profile:        CoachProfile;
   social:         CoachSocial;
   stats:          CoachStats;
@@ -68,9 +70,23 @@ export interface CoachFeedback {
   last_name:  string;
 }
 
+/** Ratings members left on sessions this coach led (joined session info). */
+export interface CoachSessionFeedback {
+  id:           string;
+  rating:       number;
+  comment:      string | null;
+  created_at:   string;
+  first_name:   string;
+  last_name:    string;
+  session_id:   string;
+  session_name: string;
+  session_at:   string;
+}
+
 export interface CoachDetailResponse {
   coach:              Coach;
   feedback:           CoachFeedback[];
+  session_feedback?:  CoachSessionFeedback[];
   upcoming_sessions?: unknown[];
 }
 
@@ -83,14 +99,15 @@ export function getCoach(id: string): Promise<CoachDetailResponse> {
 }
 
 /** Submit a 1–5 star rating (+ optional comment ≤1000 chars). Re-rating
- *  the same coach UPDATES the member's previous rating server-side. */
-export function rateCoach(id: string, input: { rating: number; comment?: string }): Promise<{ ok?: boolean }> {
+ *  the same coach UPDATES the member's previous rating server-side.
+ *  Server responds { success: true } — there is no `ok` field. */
+export function rateCoach(id: string, input: { rating: number; comment?: string }): Promise<{ success?: boolean }> {
   return api.post(`/coaches/${id}/feedback`, input);
 }
 
 /** Admin or the coach themself. Soft-delete: the comment disappears but
  *  the star score still counts toward the average. */
-export function deleteCoachFeedback(coachId: string, feedbackId: string): Promise<{ ok?: boolean }> {
+export function deleteCoachFeedback(coachId: string, feedbackId: string): Promise<{ success?: boolean; note?: string }> {
   return api.delete(`/coaches/${coachId}/feedback/${feedbackId}`);
 }
 
@@ -124,6 +141,6 @@ export interface CoachProfileUpdate {
   years_experience?: number | null;
 }
 
-export function updateCoachProfile(id: string, body: CoachProfileUpdate): Promise<any> {
+export function updateCoachProfile(id: string, body: CoachProfileUpdate): Promise<{ success?: boolean; slug?: string | null }> {
   return api.put(`/coaches/${id}`, body);
 }

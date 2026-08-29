@@ -63,45 +63,21 @@ export function BookingSheet({ booking, opts, onClose, onSuccess }: Props) {
     }
     setBusy('card');
     try {
-      const res = await startStripeCheckout(booking.id);
-      if (!res.payment_intent_client_secret) {
-        Alert.alert(
-          'Card payment unavailable',
-          'Stripe is not configured for mobile. Please contact ATP support.'
-        );
-        return;
-      }
-      const init = await initPaymentSheet({
-        merchantDisplayName:    'ATP — At The Park',
-        paymentIntentClientSecret: res.payment_intent_client_secret,
-        customerEphemeralKeySecret: res.ephemeral_key,
-        customerId:                res.customer_id,
-        defaultBillingDetails:     {},
-        appearance: {
-          colors: {
-            primary:    colors.green,
-            background: colors.black,
-            componentBackground: colors.dark,
-            componentBorder:     'rgba(255,255,255,0.1)',
-            componentDivider:    'rgba(255,255,255,0.05)',
-            primaryText:   colors.white,
-            secondaryText: colors.light,
-            placeholderText: colors.muted,
-          },
-        },
-      });
-      if (init.error) {
-        Alert.alert('Could not start payment', init.error.message);
-        return;
-      }
-      const present = await presentPaymentSheet();
-      if (present.error) {
-        if (present.error.code !== 'Canceled') {
-          Alert.alert('Payment failed', present.error.message);
-        }
-        return;
-      }
-      onSuccess();
+      // API audit 2026-08-30: POST /bookings/:id/checkout really
+      // returns { url, session_id } — a HOSTED Stripe Checkout link
+      // for a browser redirect. The PaymentIntent client_secret +
+      // ephemeral key this sheet needs for the native PaymentSheet are
+      // NEVER sent (no such backend endpoint exists — BACKEND-GAP).
+      // Until the backend grows a PaymentIntent endpoint we keep the
+      // existing user-facing behaviour: card checkout is unavailable
+      // in the app. `res.url` is where a hosted-checkout fallback
+      // would open once product signs it off.
+      await startStripeCheckout(booking.id);
+      Alert.alert(
+        'Card payment unavailable',
+        'Stripe is not configured for mobile. Please contact ATP support.'
+      );
+      return;
     } catch (err) {
       Alert.alert('Card payment failed', (err as Error).message || 'Try again.');
     } finally {

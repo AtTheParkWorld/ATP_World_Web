@@ -32,22 +32,46 @@ export interface SubscriptionPlan {
 export interface CurrentSubscription {
   id: string;
   status: 'active' | 'trialing' | 'past_due' | 'canceled' | 'incomplete' | string;
-  current_period_start: string;
-  current_period_end: string;
+  /** Nullable in the DB — webhook fills them in after checkout, so an
+   *  'incomplete' sub can have neither period stamp yet. */
+  current_period_start: string | null;
+  current_period_end: string | null;
   cancel_at_period_end: boolean;
   cancelled_at: string | null;
-  plan_id: string;
-  plan_name: string;
+  /** Plan columns come from a LEFT JOIN (plan_id is ON DELETE SET NULL),
+   *  so all of them can be null if the plan row was deleted. */
+  plan_id: string | null;
+  plan_name: string | null;
   plan_tagline: string | null;
-  amount_cents: number;
-  currency: string;
-  interval: string;
+  amount_cents: number | null;
+  currency: string | null;
+  interval: string | null;
   features: string[] | null;
 }
 
-export function listPlans(country_code?: string): Promise<{ plans: SubscriptionPlan[]; stripe_configured: boolean }> {
+/** /billing/plans has an older-deploy fallback (undefined_column) that
+ *  omits tier/coach_sessions/annual columns — so they're optional on
+ *  the wire even though the primary SELECT always sends them. */
+type SubscriptionPlanWire =
+  Omit<SubscriptionPlan, 'tier' | 'coach_sessions_included' | 'annual_amount_cents' | 'annual_savings_label' | 'purchasable_annual'>
+  & Partial<Pick<SubscriptionPlan, 'tier' | 'coach_sessions_included' | 'annual_amount_cents' | 'annual_savings_label' | 'purchasable_annual'>>;
+
+export async function listPlans(country_code?: string): Promise<{ plans: SubscriptionPlan[]; stripe_configured: boolean }> {
   const q = country_code ? `?country_code=${encodeURIComponent(country_code)}` : '';
-  return api.get(`/billing/plans${q}`);
+  const r = await api.get<{ plans?: SubscriptionPlanWire[]; stripe_configured?: boolean }>(`/billing/plans${q}`);
+  // Fill the fallback-branch gaps with the same defaults the primary
+  // SELECT's COALESCEs use, so screens can trust the declared type.
+  const plans: SubscriptionPlan[] = (r.plans || []).map((p) => ({
+    ...p,
+    amount_cents:            Number(p.amount_cents) || 0,
+    tier:                    p.tier ?? 'premium',
+    coach_sessions_included: Number(p.coach_sessions_included) || 0,
+    annual_amount_cents:     p.annual_amount_cents ?? null,
+    annual_savings_label:    p.annual_savings_label ?? null,
+    purchasable:             !!p.purchasable,
+    purchasable_annual:      !!p.purchasable_annual,
+  }));
+  return { plans, stripe_configured: !!r.stripe_configured };
 }
 
 export function getMySubscription(): Promise<{ subscription: CurrentSubscription | null }> {

@@ -71,10 +71,10 @@ export default function EditProfile() {
       nationality:   profileQ.data.nationality   || '',
       top_size:      profileQ.data.top_size      || '',
       bottom_size:   profileQ.data.bottom_size   || '',
-      padel_level:      profileQ.data.padel_level              || '',
-      volleyball_level: (profileQ.data as any).volleyball_level || '',
+      padel_level:      profileQ.data.padel_level      || '',
+      volleyball_level: profileQ.data.volleyball_level || '',
     });
-    const d: any = profileQ.data;
+    const d = profileQ.data;
     setResCountry(d.residence_country || '');
     setResCity(d.residence_city || '');
     setCityId(d.city_id ? String(d.city_id) : null);

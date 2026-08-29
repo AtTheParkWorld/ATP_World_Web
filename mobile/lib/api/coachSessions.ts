@@ -69,6 +69,10 @@ export interface CoachSessionBooking {
   payer_id?:    string;
   scheduled_at: string | null;
   duration_min: number;
+  /** The DB column — what the server actually sends. */
+  price_paid_aed?: number;
+  /** Filled client-side from price_paid_aed (the API has no price_aed
+   *  column on bookings; screens rendered "AED 0" off the phantom). */
   price_aed:    number;
   status:       CoachBookingState;
   member_note?: string | null;
@@ -79,6 +83,13 @@ export interface CoachSessionBooking {
   coach_last_name?:   string;
   member_first_name?: string;
   member_last_name?:  string;
+}
+
+/** Raw booking row off the wire — price_aed doesn't exist server-side. */
+type CoachSessionBookingWire = Omit<CoachSessionBooking, 'price_aed'> & { price_aed?: number };
+
+function normalizeBooking(b: CoachSessionBookingWire): CoachSessionBooking {
+  return { ...b, price_aed: Number(b.price_aed ?? b.price_paid_aed) || 0 };
 }
 
 /** PaymentSheet trio — identical shape to the group-session checkout. */
@@ -92,30 +103,38 @@ export interface CardHoldPayment {
  * Book a 1:1 slot with a card hold. The returned intent is
  * manual-capture: presentPaymentSheet success == hold placed, NOT paid.
  */
-export function bookCoachSessionWithCard(input: {
+export async function bookCoachSessionWithCard(input: {
   offering_id:  string;
   scheduled_at: string; // ISO datetime
   member_note?: string;
 }): Promise<{ booking: CoachSessionBooking; payment: CardHoldPayment }> {
-  return api.post('/coach-sessions/book', { ...input, payment: 'card' });
+  const r = await api.post<{ booking: CoachSessionBookingWire; payment: CardHoldPayment }>(
+    '/coach-sessions/book', { ...input, payment: 'card' }
+  );
+  return { booking: normalizeBooking(r.booking), payment: r.payment };
 }
 
 /** All bookings the caller is involved in — as coach OR as member. */
-export function listMyCoachSessionBookings(): Promise<{ bookings: CoachSessionBooking[] }> {
-  return api.get('/coach-sessions/me/bookings');
+export async function listMyCoachSessionBookings(): Promise<{ bookings: CoachSessionBooking[] }> {
+  const r = await api.get<{ bookings?: CoachSessionBookingWire[] }>('/coach-sessions/me/bookings');
+  return { bookings: (r.bookings || []).map(normalizeBooking) };
 }
 
 // ── Coach actions on a booking ───────────────────────────────────
+// These endpoints return { success, status } — never the booking row
+// (the old { booking?, ok? } shape was a phantom).
 
-export function coachConfirmBooking(id: string): Promise<{ booking?: CoachSessionBooking; ok?: boolean }> {
+export function coachConfirmBooking(id: string): Promise<{ success?: boolean; status?: string }> {
   return api.post(`/coach-sessions/bookings/${id}/coach-confirm`);
 }
 
-export function coachDeclineBooking(id: string, reason: string): Promise<{ booking?: CoachSessionBooking; ok?: boolean }> {
+export function coachDeclineBooking(id: string, reason: string): Promise<{ success?: boolean; status?: string }> {
   return api.post(`/coach-sessions/bookings/${id}/coach-decline`, { reason });
 }
 
-export function coachCompleteBooking(id: string): Promise<{ booking?: CoachSessionBooking; ok?: boolean }> {
+export function coachCompleteBooking(id: string): Promise<{
+  success?: boolean; status?: string; already_completed?: boolean; accrued_aed?: number;
+}> {
   return api.post(`/coach-sessions/bookings/${id}/coach-complete`);
 }
 

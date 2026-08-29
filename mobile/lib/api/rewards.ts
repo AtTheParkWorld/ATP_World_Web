@@ -79,11 +79,33 @@ export function getOffer(id: string | number): Promise<{ offer: Offer }> {
   return api.get(`/offers/${id}`);
 }
 
+/**
+ * The redemption embedded in the redeem response is a NARROWER shape
+ * than the history rows (audit 2026-08-30, backend offers.js): both
+ * the fresh-issue and already_redeemed paths return only the columns
+ * of the new member_offer_redemptions row plus `offer_title` +
+ * `external_url` — NOT the joined offer/partner fields (title,
+ * offer_type, image_url, partner_name, ...) the full Redemption
+ * type carries.
+ */
+export interface IssuedRedemption {
+  id: string | number;
+  code: string;
+  points_spent: number;
+  status: 'issued' | string;
+  issued_at: string;
+  expires_at: string | null;
+  offer_title: string;
+  external_url: string | null;
+}
+
 export interface RedeemResponse {
   success: boolean;
   already_redeemed?: boolean;
-  redemption: Redemption;
-  points_balance?: number;
+  redemption: IssuedRedemption;
+  // null when the offer costs 0 points (nothing was deducted); absent
+  // on the already_redeemed path.
+  points_balance?: number | null;
 }
 
 export function redeemOffer(id: string | number): Promise<RedeemResponse> {
@@ -115,10 +137,24 @@ export interface ReferralRow {
   avatar_url: string | null;
   subscription_type: string | null;
   last_session_at: string | null;
+  // On the wire these are pg aggregate STRINGS — sessions_count is a
+  // COUNT(*) subselect and points_from_member a COALESCE(SUM(...),0)
+  // (backend members.js /referrals). Coerced to numbers below because
+  // the crew screen sums them.
   sessions_count: number;
   points_from_member: number;
 }
 
 export function getReferrals(): Promise<{ referrals: ReferralRow[] }> {
-  return api.get('/members/referrals');
+  type RawReferralRow = Omit<ReferralRow, 'sessions_count' | 'points_from_member'> & {
+    sessions_count: number | string;
+    points_from_member: number | string;
+  };
+  return api.get<{ referrals: RawReferralRow[] }>('/members/referrals').then((r) => ({
+    referrals: r.referrals.map((row) => ({
+      ...row,
+      sessions_count:     Number(row.sessions_count) || 0,
+      points_from_member: Number(row.points_from_member) || 0,
+    })),
+  }));
 }

@@ -278,12 +278,12 @@ export default function Profile() {
         )}
 
         {/* Role-specific tools (Ambassador / Coach) */}
-        {(m?.is_ambassador || (m as any)?.is_coach) && (
-          <SettingsGroup title={(m?.is_ambassador && (m as any)?.is_coach) ? 'Ambassador + Coach tools' : m?.is_ambassador ? 'Ambassador tools' : 'Coach tools'}>
+        {(m?.is_ambassador || m?.is_coach) && (
+          <SettingsGroup title={(m?.is_ambassador && m?.is_coach) ? 'Ambassador + Coach tools' : m?.is_ambassador ? 'Ambassador tools' : 'Coach tools'}>
             {m?.is_ambassador && (
-              <SettingsRow label="Ambassador dashboard" icon="ticket" onPress={() => router.push('/ambassador')} last={!(m as any)?.is_coach} />
+              <SettingsRow label="Ambassador dashboard" icon="ticket" onPress={() => router.push('/ambassador')} last={!m?.is_coach} />
             )}
-            {(m as any)?.is_coach && (
+            {m?.is_coach && (
               <SettingsRow label="Coach dashboard" icon="dumbbell" onPress={() => router.push('/coach')} last />
             )}
           </SettingsGroup>

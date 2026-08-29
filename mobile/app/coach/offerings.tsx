@@ -57,7 +57,9 @@ export default function CoachOfferings() {
                       AED {(Number(o.price_aed) || 0).toLocaleString()}
                     </Text>
                     <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs">
-                      · {o.duration_mins} min · max {o.max_participants}
+                      {/* Column is duration_min; the old duration_mins/max_participants
+                          fields never existed and rendered "undefined". */}
+                      · {Number(o.duration_min) || 0} min
                     </Text>
                   </View>
                 </View>

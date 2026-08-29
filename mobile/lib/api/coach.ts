@@ -20,12 +20,16 @@ export interface CoachThread {
   is_closed: boolean;
   message_count: number;
   last_message_preview: string | null;
-  last_message_role: 'visitor' | 'coach' | 'admin' | null;
+  /** Backend stores visitor-sent messages with from_role='member'
+   *  (never 'visitor') — see coach_messages inserts in
+   *  backend/src/routes/coaches.js. */
+  last_message_role: 'member' | 'coach' | 'admin' | null;
 }
 
 export interface CoachMessage {
   id: string;
-  from_role: 'visitor' | 'coach' | 'admin';
+  /** 'member' = the visitor side (even for anonymous visitors). */
+  from_role: 'member' | 'coach' | 'admin';
   sender_name: string;
   sender_email: string;
   message: string;
@@ -45,18 +49,25 @@ export function getCoachThread(coachId: string, threadId: string): Promise<{ thr
   return api.get(`/coaches/${coachId}/threads/${threadId}`);
 }
 
-export function replyToCoachThread(coachId: string, threadId: string, message: string): Promise<{ ok: boolean }> {
+export function replyToCoachThread(coachId: string, threadId: string, message: string): Promise<{ success: boolean }> {
   return api.post(`/coaches/${coachId}/threads/${threadId}/reply`, { message });
 }
 
+/**
+ * Row from coach_offerings (SELECT * on the backend). The column is
+ * `duration_min` (not `duration_mins`), and the table has NO
+ * max_participants column — 1:1 offerings are single-participant.
+ */
 export interface CoachOffering {
   id: string;
   title: string;
   description: string | null;
-  duration_mins: number;
+  duration_min: number;
   price_aed: number;
-  max_participants: number;
   is_active: boolean;
+  sort_order?: number;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export function listMyOfferings(): Promise<{ offerings: CoachOffering[] }> {

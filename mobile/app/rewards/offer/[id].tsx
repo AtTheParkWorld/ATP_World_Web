@@ -11,7 +11,7 @@ import { Alert, Image, Linking, Pressable, ScrollView, Text, View } from 'react-
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { getOffer, getBalance, redeemOffer, type Redemption } from '@/lib/api/rewards';
+import { getOffer, getBalance, redeemOffer, type IssuedRedemption } from '@/lib/api/rewards';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
 
@@ -23,7 +23,10 @@ export default function OfferDetail() {
   const offerQ   = useQuery({ queryKey: ['offer', offerId], queryFn: () => getOffer(offerId).then(r => r.offer), enabled: !!offerId });
   const balanceQ = useQuery({ queryKey: ['balance'],        queryFn: () => getBalance() });
 
-  const [issued, setIssued] = useState<Redemption | null>(null);
+  // API audit 2026-08-30: the redeem response embeds the narrow
+  // IssuedRedemption shape (code/expiry/offer_title), not the fully
+  // joined history row — this screen only reads code + expires_at.
+  const [issued, setIssued] = useState<IssuedRedemption | null>(null);
 
   const redeemMu = useMutation({
     mutationFn: () => redeemOffer(offerId),
