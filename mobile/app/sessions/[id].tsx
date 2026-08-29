@@ -14,12 +14,12 @@
  * fresh state ("You're in").
  */
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import QRCode from 'react-native-qrcode-svg';
-import { getSession, getSessionFeedback, type Session } from '@/lib/api/sessions';
+import { getSession, getSessionFeedback, getSessionAttendees, type Session } from '@/lib/api/sessions';
 import { getStreak } from '@/lib/api/members';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { createBooking, cancelBooking, listMyBookings, submitSessionFeedback, type PaymentOptions, type BookingRecord } from '@/lib/api/bookings';
@@ -28,6 +28,7 @@ import { BookingSheet } from '@/lib/components/BookingSheet';
 import { SessionTerms } from '@/lib/components/SessionTerms';
 import { FeedbackBlock } from '@/lib/components/FeedbackBlock';
 import { CorporateSessionBadge } from '@/lib/components/SessionCard';
+import { Avatar } from '@/lib/components/Avatar';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { dayHeader, timeShort } from '@/lib/utils/date';
 
@@ -44,6 +45,14 @@ export default function SessionDetail() {
   // 2026-09-14) — the live text is an accident waiver + liability
   // release + media consent, matching the website's gate.
   const [termsOk, setTermsOk] = useState(false);
+  // "Who's going" — tapping the capacity bar opens the attendee list
+  // (founder 2026-09-15).
+  const [showWho, setShowWho] = useState(false);
+  const attendeesQ = useQuery({
+    queryKey: ['session-attendees', sessionId],
+    queryFn: () => getSessionAttendees(sessionId).then((r) => r.attendees),
+    enabled: showWho,
+  });
   const streakQ = useQuery({ queryKey: ['streak'], queryFn: () => getStreak().then((r) => r.streak) });
   const isPremium = ['premium', 'premium_plus'].includes(member?.subscription_type);
   const earnsAtCheckin = isPremium || (streakQ.data?.current_streak ?? 0) >= 5;
@@ -220,9 +229,13 @@ export default function SessionDetail() {
           ) : null}
         </View>
 
-        {/* Capacity bar */}
+        {/* Capacity bar — tap to see who's going */}
         {s.capacity != null && (
-          <View className="px-5 mt-5">
+          <Pressable
+            onPress={() => setShowWho(true)}
+            style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.99 : 1 }] })}
+            className="px-5 mt-5 active:opacity-80"
+          >
             <View className="bg-atp-dark rounded-full h-2 overflow-hidden">
               <View
                 style={{
@@ -232,12 +245,17 @@ export default function SessionDetail() {
                 }}
               />
             </View>
-            <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-2">
-              {isFull
-                ? `Full · ${s.waitlist_count} on waitlist`
-                : `${s.registrations_count}/${s.capacity} confirmed`}
-            </Text>
-          </View>
+            <View className="flex-row items-center justify-between mt-2">
+              <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs">
+                {isFull
+                  ? `Full · ${s.waitlist_count} on waitlist`
+                  : `${s.registrations_count}/${s.capacity} confirmed`}
+              </Text>
+              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs">
+                See who's going →
+              </Text>
+            </View>
+          </Pressable>
         )}
 
         {/* Description */}
@@ -385,6 +403,60 @@ export default function SessionDetail() {
           </View>
         )}
       </View>
+
+      {/* Who's going */}
+      <Modal visible={showWho} transparent animationType="slide" onRequestClose={() => setShowWho(false)}>
+        <Pressable onPress={() => setShowWho(false)} className="flex-1 justify-end" style={{ backgroundColor: 'rgba(0,0,0,0.7)' }}>
+          <Pressable onPress={() => {}} className="bg-atp-black rounded-t-3xl border-t border-white/10" style={{ maxHeight: '75%' }}>
+            <View className="px-5 pt-4 pb-3 flex-row items-center justify-between border-b border-white/5">
+              <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-lg uppercase">
+                Who's going
+              </Text>
+              <Pressable onPress={() => setShowWho(false)} hitSlop={10}>
+                <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-lg">✕</Text>
+              </Pressable>
+            </View>
+            {attendeesQ.isLoading ? (
+              <ActivityIndicator color={colors.green} style={{ margin: 24 }} />
+            ) : (attendeesQ.data || []).length === 0 ? (
+              <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm px-5 py-8 text-center">
+                Nobody's booked yet — be the first.
+              </Text>
+            ) : (
+              <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 40 }}>
+                {(attendeesQ.data || []).map((a) => (
+                  <Pressable
+                    key={a.id}
+                    onPress={() => { setShowWho(false); router.push(`/community/members/${a.id}`); }}
+                    style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.98 : 1 }] })}
+                    className="flex-row items-center gap-3 bg-atp-dark border border-white/5 rounded-atp-lg px-4 py-3 mb-2 active:opacity-80"
+                  >
+                    <Avatar uri={a.avatar_url} firstName={a.first_name} lastName={a.last_name} id={a.id} size="md" />
+                    <View className="flex-1">
+                      <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm" numberOfLines={1}>
+                        {`${a.first_name || ''} ${a.last_name || ''}`.trim() || 'ATP member'}
+                      </Text>
+                      {!!a.tribe_name && (
+                        <Text
+                          style={{ fontFamily: fontFamily.bodyBold, color: tribeColor(a.tribe_slug) }}
+                          className="text-[10px] uppercase tracking-widest mt-0.5"
+                        >
+                          {a.tribe_name}
+                        </Text>
+                      )}
+                    </View>
+                    {a.status === 'attended' && (
+                      <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-[10px] uppercase tracking-widest">
+                        ✓ Attended
+                      </Text>
+                    )}
+                  </Pressable>
+                ))}
+              </ScrollView>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       {/* Paid-session payment sheet */}
       {sheet && (

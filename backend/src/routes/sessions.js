@@ -1105,6 +1105,58 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── GET /api/sessions/:id/attendees ──────────────────────────
+// Member-safe "who's going" list (founder 2026-09-15: tapping the
+// capacity bar should show the people). Deliberately NOT the scanner
+// roster above — this returns only what a member's public profile
+// already shows (name, photo, tribe), never email/points/level.
+//
+// Signed-in members only: an attendee list is a list of real people in
+// a real park at a known time, and anonymous scraping of that is not
+// something a fitness community should offer. Blocked pairs are hidden
+// from each other, and banned members never appear.
+router.get('/:id/attendees', authenticate, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT m.id, m.first_name, m.last_name, m.avatar_url,
+              t.name AS tribe_name, t.slug AS tribe_slug,
+              b.status, b.registered_at
+       FROM bookings b
+       JOIN members m ON m.id = b.member_id
+       LEFT JOIN tribes t ON t.id = m.tribe_id
+       WHERE b.session_id = $1
+         AND b.status IN ('confirmed','attended')
+         AND COALESCE(m.is_banned, false) = false
+         AND NOT EXISTS (
+           SELECT 1 FROM friendships f
+            WHERE f.status = 'blocked'
+              AND ((f.requester_id = $2 AND f.addressee_id = m.id)
+                OR (f.requester_id = m.id AND f.addressee_id = $2))
+         )
+       ORDER BY b.registered_at ASC
+       LIMIT 200`,
+      [req.params.id, req.member.id]
+    );
+    res.json({ attendees: rows, total: rows.length });
+  } catch (err) {
+    // Pre-migration DBs without friendships/tribes still answer.
+    if (err.code === '42P01' || err.code === '42703') {
+      try {
+        const { rows } = await query(
+          `SELECT m.id, m.first_name, m.last_name, m.avatar_url,
+                  NULL AS tribe_name, NULL AS tribe_slug, b.status, b.registered_at
+           FROM bookings b JOIN members m ON m.id = b.member_id
+           WHERE b.session_id = $1 AND b.status IN ('confirmed','attended')
+           ORDER BY b.registered_at ASC LIMIT 200`,
+          [req.params.id]
+        );
+        return res.json({ attendees: rows, total: rows.length });
+      } catch (e2) { return next(e2); }
+    }
+    next(err);
+  }
+});
+
 // ── GET /api/sessions/:id/registrations ──────────────────────
 // requireScanner: this returns booked members' email/points/level —
 // PII that ordinary members must not be able to enumerate.

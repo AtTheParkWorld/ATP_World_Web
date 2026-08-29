@@ -767,6 +767,23 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       <p class="modal-tribe" id="modalTribe"></p>
       <h2 class="modal-name" id="modalName"></h2>
       <div class="modal-meta" id="modalMeta"></div>
+      <!-- Who's going (founder 2026-09-15) — capacity doubles as the
+           entry point to the attendee list. Members only; the API
+           refuses anonymous callers, so logged-out visitors get a
+           prompt instead of names. -->
+      <div id="modalWhoWrap" style="margin:14px 0">
+        <button type="button" id="modalWhoBtn" onclick="toggleSessionAttendees()"
+                style="width:100%;text-align:left;background:none;border:none;padding:0;cursor:pointer;font:inherit">
+          <div style="height:6px;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden;margin-bottom:6px">
+            <div id="modalCapBar" style="height:100%;width:0%;background:var(--green);transition:width .3s"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;align-items:center;font-size:12px">
+            <span id="modalCapLabel" style="color:var(--muted)"></span>
+            <span style="color:var(--green);font-weight:700">See who's going →</span>
+          </div>
+        </button>
+        <div id="modalWhoList" hidden style="margin-top:10px;max-height:190px;overflow-y:auto;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:#0a0f08;padding:6px"></div>
+      </div>
       <div class="modal-member" id="modalMember" style="margin:14px 0;padding:10px 12px;background:rgba(168,255,0,.06);border:1px solid rgba(168,255,0,.2);border-radius:10px;font-size:13px;color:var(--light)">
         Booking as <strong id="modalMemberName" style="color:var(--white)"></strong>
         <span style="opacity:.7"> · </span>
@@ -1074,6 +1091,70 @@ function applyFilters() {
 
 var pendingSession = null;
 
+// ── Who's going ─────────────────────────────────────────────────
+// The capacity bar is the button: tapping it lists the members who
+// booked. GET /sessions/:id/attendees is auth-only and hides blocked
+// pairs, so this never becomes a public roster of who's in which park.
+function _paintSessionCapacity(s) {
+  var wrap = document.getElementById('modalWhoWrap');
+  var bar = document.getElementById('modalCapBar');
+  var lbl = document.getElementById('modalCapLabel');
+  var list = document.getElementById('modalWhoList');
+  if (!wrap || !bar || !lbl) return;
+  if (list) { list.hidden = true; list.innerHTML = ''; list.dataset.loaded = ''; }
+  var booked = parseInt((s && s.registrations_count) || 0, 10) || 0;
+  var cap = (s && s.capacity != null) ? parseInt(s.capacity, 10) : null;
+  bar.style.width = (cap ? Math.min(100, Math.round(booked * 100 / cap)) : 0) + '%';
+  bar.style.background = (cap && booked >= cap) ? '#ef4444' : 'var(--green)';
+  lbl.textContent = cap ? (booked + '/' + cap + ' confirmed') : (booked + ' confirmed');
+  wrap.style.display = '';
+}
+
+function toggleSessionAttendees() {
+  var list = document.getElementById('modalWhoList');
+  if (!list || !activeSession) return;
+  if (!list.hidden) { list.hidden = true; return; }
+  list.hidden = false;
+  if (list.dataset.loaded === '1') return;
+
+  var token = localStorage.getItem('atp_token') || '';
+  if (!token) {
+    list.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--muted)">Log in to see which members are going.</div>';
+    return;
+  }
+  list.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--muted)">Loading…</div>';
+  fetch('/api/sessions/' + encodeURIComponent(activeSession.id) + '/attendees', {
+    headers: { 'Authorization': 'Bearer ' + token },
+  })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      var rows = (d && d.attendees) || [];
+      if (!rows.length) {
+        list.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--muted)">Nobody\u2019s booked yet \u2014 be the first.</div>';
+        return;
+      }
+      list.dataset.loaded = '1';
+      list.innerHTML = rows.map(function(a){
+        var name = ((a.first_name || '') + ' ' + (a.last_name || '')).trim() || 'ATP member';
+        var initials = ((a.first_name || ' ')[0] + (a.last_name || ' ')[0]).trim().toUpperCase();
+        var avatar = a.avatar_url
+          ? '<img src="' + escapeHtml(a.avatar_url) + '" alt="" style="width:32px;height:32px;border-radius:50%;object-fit:cover;flex-shrink:0">'
+          : '<div style="width:32px;height:32px;border-radius:50%;background:rgba(168,255,0,.15);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;flex-shrink:0">' + escapeHtml(initials) + '</div>';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:7px 8px">' + avatar +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="font-size:13px;color:var(--white);font-weight:600">' + escapeHtml(name) + '</div>' +
+            (a.tribe_name ? '<div style="font-size:10px;color:var(--green);letter-spacing:.08em;text-transform:uppercase">' + escapeHtml(a.tribe_name) + '</div>' : '') +
+          '</div>' +
+          (a.status === 'attended' ? '<span style="font-size:10px;color:var(--green);font-weight:700">\u2713</span>' : '') +
+        '</div>';
+      }).join('');
+    })
+    .catch(function(){
+      list.innerHTML = '<div style="padding:12px;font-size:12px;color:#f87171">Could not load the list.</div>';
+    });
+}
+window.toggleSessionAttendees = toggleSessionAttendees;
+
 // Cached T&C text from CMS so we don't refetch on every modal open.
 var _atpSessionTcCache = null;
 function _loadSessionTc() {
@@ -1169,6 +1250,9 @@ function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId)
     tcText.textContent = 'Loading…';
     tcText.hidden = true;
     _loadSessionTc().then(function(text){ tcText.textContent = text; });
+  }
+  try { _paintSessionCapacity(sFull || activeSession); } catch (e) {
+    var _w = document.getElementById('modalWhoWrap'); if (_w) _w.style.display = 'none';
   }
   // Re-collapse the toggle each time. Aria + icon snap back to the
   // "click to read" state for the next booker.

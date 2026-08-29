@@ -158,3 +158,19 @@ export interface Country {
 export function listCountries(): Promise<{ countries: Country[] }> {
   return api.get('/countries');
 }
+
+export interface SessionAttendee {
+  id: string;
+  first_name: string;
+  last_name: string;
+  avatar_url: string | null;
+  tribe_name: string | null;
+  tribe_slug: string | null;
+  status: string;
+  registered_at: string;
+}
+
+/** Who's going — members only, public-profile fields only. */
+export function getSessionAttendees(id: string | number): Promise<{ attendees: SessionAttendee[]; total: number }> {
+  return api.get(`/sessions/${id}/attendees`);
+}
