@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { listPosts, listCategories, type BlogPost } from '@/lib/api/blog';
+import { getBlogHero } from '@/lib/api/cms';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
 
@@ -19,6 +20,11 @@ export default function BlogIndex() {
   const postsQ = useQuery({
     queryKey: ['blog', category],
     queryFn:  () => listPosts({ limit: 30, category: category ?? undefined }).then(r => r.posts),
+  });
+  const heroQ = useQuery({
+    queryKey: ['blog-hero'],
+    queryFn:  getBlogHero,
+    staleTime: 1000 * 60 * 10,
   });
   const catsQ = useQuery({
     queryKey: ['blog-categories'],
@@ -33,7 +39,7 @@ export default function BlogIndex() {
           <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-lg">←</Text>
         </Pressable>
         <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-lg uppercase ml-2">
-          Stories
+          Blog
         </Text>
       </View>
 
@@ -41,12 +47,39 @@ export default function BlogIndex() {
         data={postsQ.data || []}
         keyExtractor={(p) => String(p.id)}
         ListHeaderComponent={
-          <View className="px-3 pt-3 pb-2 flex-row flex-wrap gap-2">
-            <CatPill label="All" active={!category} onPress={() => setCategory(null)} />
-            {(catsQ.data || []).map((c) => (
-              <CatPill key={c.category} label={c.category} active={category === c.category} onPress={() => setCategory(c.category)} />
-            ))}
-          </View>
+          <>
+            {!!heroQ.data && (() => {
+              // Same copy the website hero shows (admin → CMS → Blog Page;
+              // founder 2026-08-30: uniform "The ATP Journal / Beyond the
+              // workout" on both surfaces). <accent>word</accent> = green.
+              const m = /^(.*?)<accent>(.+?)<\/accent>(.*)$/i.exec(heroQ.data.title);
+              return (
+                <View className="px-5 pt-5 pb-1">
+                  <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs uppercase tracking-widest">
+                    {heroQ.data.eyebrow}
+                  </Text>
+                  <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-3xl uppercase tracking-tight mt-1">
+                    {m ? (
+                      <>
+                        {m[1]}
+                        <Text style={{ color: colors.green }}>{m[2]}</Text>
+                        {m[3]}
+                      </>
+                    ) : heroQ.data.title}
+                  </Text>
+                  <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm mt-2 leading-relaxed">
+                    {heroQ.data.sub}
+                  </Text>
+                </View>
+              );
+            })()}
+            <View className="px-3 pt-3 pb-2 flex-row flex-wrap gap-2">
+              <CatPill label="All" active={!category} onPress={() => setCategory(null)} />
+              {(catsQ.data || []).map((c) => (
+                <CatPill key={c.category} label={c.category} active={category === c.category} onPress={() => setCategory(c.category)} />
+              ))}
+            </View>
+          </>
         }
         renderItem={({ item, index }) => <PostCard post={item} hero={index === 0 && !category} />}
         refreshControl={

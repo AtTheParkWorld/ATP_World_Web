@@ -149,7 +149,7 @@ export default function Home() {
           <View className="flex-row gap-3 mt-3">
             <QuickAction label="Live now"     icon="live"     onPress={() => router.push('/live')} />
             <QuickAction label="Messages"     icon="chat"     onPress={() => router.push('/messages')} />
-            <QuickAction label="Stories"      icon="story"    onPress={() => router.push('/blog')} />
+            <QuickAction label="Blog"         icon="story"    onPress={() => router.push('/blog')} />
           </View>
         </View>
 

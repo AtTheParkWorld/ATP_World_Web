@@ -88,7 +88,7 @@ export default function BlogPostScreen() {
         {related.length > 0 && (
           <View className="px-5 mt-10">
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-3">
-              Related stories
+              More from the journal
             </Text>
             {related.map((r) => (
               <Pressable

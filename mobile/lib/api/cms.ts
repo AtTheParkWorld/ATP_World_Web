@@ -26,3 +26,34 @@ export async function getSessionTerms(): Promise<string> {
     return FALLBACK_TERMS;
   }
 }
+
+// ── Blog hero (founder 2026-08-30: app and website must say the same
+// thing — "The ATP Journal / Beyond the workout", not "Stories").
+// Same source the website hydrates from (admin → CMS → Blog Page),
+// same static fallbacks as blog.html. The title supports the web's
+// <accent>…</accent> sentinel for the green word — parse client-side.
+export interface BlogHero {
+  eyebrow: string;
+  title: string;   // may contain <accent>…</accent>
+  sub: string;
+}
+
+const FALLBACK_BLOG_HERO: BlogHero = {
+  eyebrow: 'The ATP Journal',
+  title: 'Beyond the <accent>workout</accent>',
+  sub: "Coach insights, member journeys, training breakdowns, and what's actually happening on the ground in Dubai, Al Ain and Muscat. Updated regularly.",
+};
+
+export async function getBlogHero(): Promise<BlogHero> {
+  try {
+    const d: any = await api.get('/cms/blog');
+    const h = d?.content?.hero || {};
+    return {
+      eyebrow: (typeof h.eyebrow === 'string' && h.eyebrow.trim()) ? h.eyebrow : FALLBACK_BLOG_HERO.eyebrow,
+      title:   (typeof h.title === 'string' && h.title.trim())     ? h.title   : FALLBACK_BLOG_HERO.title,
+      sub:     (typeof h.sub === 'string' && h.sub.trim())         ? h.sub     : FALLBACK_BLOG_HERO.sub,
+    };
+  } catch {
+    return FALLBACK_BLOG_HERO;
+  }
+}
