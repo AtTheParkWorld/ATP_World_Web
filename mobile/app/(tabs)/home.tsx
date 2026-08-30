@@ -88,7 +88,7 @@ export default function Home() {
               style={{ fontFamily: fontFamily.displayBlack, color: colors.white }}
               className="text-lg uppercase tracking-tight"
             >
-              {name}.
+              {name}
             </Text>
           </View>
           <StreakBadge streak={streakQ.data || null} compact />

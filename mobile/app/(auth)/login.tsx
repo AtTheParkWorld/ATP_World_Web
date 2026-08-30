@@ -10,11 +10,13 @@ import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput,
 import { router, Link } from 'expo-router';
 import { login, AccountSuspendedError } from '@/lib/api/auth';
 import { colors, fontFamily } from '@/lib/theme/tokens';
+import { Icon } from '@/lib/components/icons';
 import { ApiError } from '@/lib/api/client';
 
 export default function Login() {
   const [email,   setEmail]   = useState('');
   const [pass,    setPass]    = useState('');
+  const [showPass, setShowPass] = useState(false);
   const [busy,    setBusy]    = useState(false);
   const [error,   setError]   = useState<string | null>(null);
 
@@ -82,16 +84,21 @@ export default function Login() {
             <Text style={{ fontFamily: fontFamily.bodyBold }} className="text-atp-muted text-xs uppercase tracking-widest mb-2">
               Password
             </Text>
-            <TextInput
-              value={pass}
-              onChangeText={setPass}
-              secureTextEntry
-              autoComplete="password"
-              textContentType="password"
-              placeholderTextColor={colors.muted}
-              style={{ fontFamily: fontFamily.body, color: colors.white }}
-              className="bg-atp-dark-3 border border-white/10 rounded-atp px-4 py-3 text-base"
-            />
+            <View className="bg-atp-dark-3 border border-white/10 rounded-atp flex-row items-center">
+              <TextInput
+                value={pass}
+                onChangeText={setPass}
+                secureTextEntry={!showPass}
+                autoComplete="password"
+                textContentType="password"
+                placeholderTextColor={colors.muted}
+                style={{ fontFamily: fontFamily.body, color: colors.white }}
+                className="flex-1 px-4 py-3 text-base"
+              />
+              <Pressable onPress={() => setShowPass(v => !v)} hitSlop={10} className="px-3 py-3">
+                <Icon name="eye" size={18} color={showPass ? colors.green : colors.muted} />
+              </Pressable>
+            </View>
           </View>
 
           {!!error && (

@@ -20,6 +20,7 @@ import { WORLD_COUNTRIES } from '@/lib/data/countries';
 import { pickAndUploadMedia } from '@/lib/api/upload';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { Avatar } from '@/lib/components/Avatar';
+import { Icon } from '@/lib/components/icons';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 
 export default function EditProfile() {
@@ -475,22 +476,35 @@ function Field(props: {
   label: string; value: string; onChange: (v: string) => void;
   keyboardType?: any; autoCapitalize?: any; textContentType?: any; secureTextEntry?: boolean;
 }) {
+  // Secure fields get a show/hide eye (founder 2026-08-30: no way to
+  // see what you typed on password inputs).
+  const [show, setShow] = useState(false);
+  const input = (
+    <TextInput
+      value={props.value}
+      onChangeText={props.onChange}
+      keyboardType={props.keyboardType}
+      autoCapitalize={props.autoCapitalize || 'none'}
+      textContentType={props.textContentType}
+      secureTextEntry={props.secureTextEntry && !show}
+      placeholderTextColor={colors.muted}
+      style={{ fontFamily: fontFamily.body, color: colors.white }}
+      className={props.secureTextEntry ? 'flex-1 px-4 py-3 text-base' : 'bg-atp-dark border border-white/10 rounded-atp px-4 py-3 text-base'}
+    />
+  );
   return (
     <View className="mb-4">
       <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-2">
         {props.label}
       </Text>
-      <TextInput
-        value={props.value}
-        onChangeText={props.onChange}
-        keyboardType={props.keyboardType}
-        autoCapitalize={props.autoCapitalize || 'none'}
-        textContentType={props.textContentType}
-        secureTextEntry={props.secureTextEntry}
-        placeholderTextColor={colors.muted}
-        style={{ fontFamily: fontFamily.body, color: colors.white }}
-        className="bg-atp-dark border border-white/10 rounded-atp px-4 py-3 text-base"
-      />
+      {props.secureTextEntry ? (
+        <View className="bg-atp-dark border border-white/10 rounded-atp flex-row items-center">
+          {input}
+          <Pressable onPress={() => setShow(v => !v)} hitSlop={10} className="px-3 py-3">
+            <Icon name="eye" size={18} color={show ? colors.green : colors.muted} />
+          </Pressable>
+        </View>
+      ) : input}
     </View>
   );
 }

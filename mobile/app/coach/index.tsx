@@ -214,7 +214,7 @@ export default function CoachIndex() {
             Welcome back,
           </Text>
           <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-3xl uppercase tracking-tight mt-1">
-            Coach {me?.first_name}.
+            Coach {me?.first_name}
           </Text>
         </View>
 
