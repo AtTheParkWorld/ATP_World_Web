@@ -101,6 +101,16 @@ export default function Login() {
             </View>
           </View>
 
+          {/* Forgot password directly below the inputs (founder
+              2026-08-30) — starts the magic-link flow. */}
+          <Link href="/(auth)/magic-link" asChild>
+            <Pressable className="items-start">
+              <Text style={{ fontFamily: fontFamily.body }} className="text-atp-light text-sm">
+                Forgot password?  <Text className="text-atp-green">Email me a magic link</Text>
+              </Text>
+            </Pressable>
+          </Link>
+
           {!!error && (
             <Text style={{ fontFamily: fontFamily.body, color: colors.danger }} className="text-sm mt-1">
               {error}
@@ -117,13 +127,34 @@ export default function Login() {
             </Text>
           </Pressable>
 
-          <Link href="/(auth)/magic-link" asChild>
-            <Pressable className="py-3 items-center">
-              <Text style={{ fontFamily: fontFamily.body }} className="text-atp-light text-sm">
-                Forgot your password?  <Text className="text-atp-green">Email me a link</Text>
+          {/* Social options below, same page (founder 2026-08-30). */}
+          <View className="flex-row items-center gap-3 my-3">
+            <View className="flex-1 h-px bg-white/10" />
+            <Text style={{ fontFamily: fontFamily.body }} className="text-atp-muted text-xs uppercase tracking-widest">
+              or continue with
+            </Text>
+            <View className="flex-1 h-px bg-white/10" />
+          </View>
+
+          {Platform.OS === 'ios' && (
+            <Pressable
+              onPress={() => router.push('/(auth)/apple-signin')}
+              className="bg-atp-white rounded-atp py-4 items-center active:opacity-80"
+            >
+              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.black }} className="text-base">
+                 Continue with Apple
               </Text>
             </Pressable>
-          </Link>
+          )}
+
+          <Pressable
+            onPress={() => router.push('/(auth)/google-signin')}
+            className="bg-atp-dark-3 border border-white/10 rounded-atp py-4 items-center active:opacity-80"
+          >
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-base">
+              G  Continue with Google
+            </Text>
+          </Pressable>
 
           <Link href="/(auth)/register" asChild>
             <Pressable className="py-3 items-center">
