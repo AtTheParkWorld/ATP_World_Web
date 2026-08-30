@@ -162,7 +162,7 @@ export default function Welcome() {
             className="bg-atp-dark-3 border border-white/10 rounded-atp py-4 items-center active:opacity-80"
           >
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-base">
-              G  Continue with Google
+              Continue with Google
             </Text>
           </Pressable>
 
