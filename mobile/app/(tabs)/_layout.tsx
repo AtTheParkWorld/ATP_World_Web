@@ -21,6 +21,7 @@
 import { useEffect } from 'react';
 import { Tabs, router } from 'expo-router';
 import { View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { useAuthStore } from '@/lib/stores/auth.store';
@@ -81,6 +82,7 @@ function AnimatedTabIcon({ Component, focused }: AnimatedTabIconProps) {
 
 export default function TabsLayout() {
   const accessToken = useAuthStore((s) => s.accessToken);
+  const insets = useSafeAreaInsets();
   useEffect(() => {
     if (!accessToken) router.replace('/(auth)/welcome');
   }, [accessToken]);
@@ -95,8 +97,13 @@ export default function TabsLayout() {
         tabBarStyle: {
           backgroundColor: colors.dark,
           borderTopColor: 'rgba(255,255,255,0.06)',
-          height: 82,
-          paddingBottom: 18,
+          // Sit ABOVE the system navigation bar. Android 3-button navs
+          // overlay ~48px of the screen bottom (edge-to-edge), which was
+          // hiding the tab labels behind it (founder 2026-08-30, Samsung
+          // screenshots). max() keeps the old 18px feel on inset-less
+          // devices.
+          height: 64 + Math.max(insets.bottom, 18),
+          paddingBottom: Math.max(insets.bottom, 18),
           paddingTop: 10,
         },
         tabBarActiveTintColor:   colors.green,

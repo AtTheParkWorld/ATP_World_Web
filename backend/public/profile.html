@@ -2056,10 +2056,10 @@ function renderBellDropdown() {
     if (!NOTIFS || !NOTIFS.length) {
       nl.innerHTML = '<div style="padding:12px 8px;color:var(--muted);font-size:12px;text-align:center">You\'re all caught up.</div>';
     } else {
-      nl.innerHTML = NOTIFS.slice(0, 4).map(function(n){
+      nl.innerHTML = NOTIFS.slice(0, 4).map(function(n, i){
         var line = ((n.rawTitle || '') + ' ' + (n.rawBody || '')).trim() || 'Notification';
         if (line.length > 64) line = line.slice(0, 64) + '…';
-        return '<div style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px' + (n.unread ? ';background:rgba(168,255,0,.06)' : '') + '">' +
+        return '<div role="button" tabindex="0" onclick="bellNotifClick(' + i + ')" onkeydown="if(event.key===\'Enter\')bellNotifClick(' + i + ')" style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:8px;cursor:pointer' + (n.unread ? ';background:rgba(168,255,0,.06)' : '') + '">' +
           '<span style="width:6px;height:6px;border-radius:50%;flex-shrink:0;' + (n.unread ? 'background:var(--green)' : 'background:transparent;border:1px solid rgba(255,255,255,.15)') + '"></span>' +
           '<div style="flex:1;min-width:0;font-size:12px;color:' + (n.unread ? 'var(--white)' : 'var(--muted)') + ';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + escapeHtml(line) + '</div>' +
           '<span style="font-size:10px;color:var(--muted);flex-shrink:0">' + escapeHtml(n.time || '') + '</span>' +
@@ -2068,6 +2068,17 @@ function renderBellDropdown() {
     }
   }
 }
+
+// Bell-dropdown notification rows (founder 2026-08-30): a friend
+// request jumps straight to the Friends tab; anything else opens the
+// full notifications tab.
+function bellNotifClick(i) {
+  var n = NOTIFS[i];
+  closeBellDropdown();
+  if (n && n.ntype === 'friend_request') { try { showTab('friends'); return; } catch(e) {} }
+  try { showTab('notifications'); } catch(e) {}
+}
+window.bellNotifClick = bellNotifClick;
 
 function openChatFromBell(i) {
   var c = MSG_CONVERSATIONS[i];
@@ -5773,16 +5784,23 @@ function loadNotifications() {
       var payload = n.data;
       try { if (typeof payload === 'string') payload = JSON.parse(payload); } catch(e) { payload = null; }
       var href = '';
+      var clickJs = '';
       if (payload && payload.post_id) href = 'community.html#' + payload.post_id;
       else if (n.type === 'session_cancelled' && payload && payload.session_id) href = 'sessions.html';
+      // Founder 2026-08-30: a friend request must take you to the
+      // Friends tab where accept/decline lives — not the feed.
+      else if (n.type === 'friend_request') clickJs = "showTab('friends');return false;";
       var title = n.title ? '<strong>' + n.title + '</strong> ' : '';
       var body  = n.body || '';
       var inner = title + body;
-      var text  = href ? '<a href="' + href + '" style="color:inherit;text-decoration:none">' + inner + '</a>' : inner;
+      var text  = href     ? '<a href="' + href + '" style="color:inherit;text-decoration:none">' + inner + '</a>'
+                : clickJs  ? '<a href="#" onclick="' + clickJs + '" style="color:inherit;text-decoration:none;cursor:pointer">' + inner + '</a>'
+                : inner;
       return {
         unread: !n.read_at,
         text:   text,
         time:   formatDateShort(n.created_at),
+        ntype:  n.type || '',
         // Raw title/body for the consolidated bell dropdown one-liners
         // (escaped at render time in renderBellDropdown).
         rawTitle: n.title || '',

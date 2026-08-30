@@ -9,7 +9,7 @@ import { WEB_BASE } from '@/lib/api/client';
  * web booking link.
  */
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Image, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -46,8 +46,9 @@ export default function CoachDetail() {
   const stats   = c?.stats;
 
   return (
-    <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }}>
+    <SafeAreaView className="flex-1 bg-atp-black" edges={['top', 'bottom']}>
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+      <ScrollView contentContainerStyle={{ paddingBottom: 100 }} automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled">
         <View className="px-5 pt-2 pb-3 flex-row items-center justify-between">
           <Pressable onPress={() => router.back()} className="py-2 -ml-2 px-2">
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-lg">←</Text>
@@ -223,6 +224,7 @@ export default function CoachDetail() {
           </View>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
 
       {/* Sticky CTA — native card-hold booking when the coach has
           priced offerings; web fallback otherwise. */}

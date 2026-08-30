@@ -86,12 +86,16 @@ export default function Home() {
               numberOfLines={1}
               adjustsFontSizeToFit
               style={{ fontFamily: fontFamily.displayBlack, color: colors.white }}
-              className="text-lg uppercase tracking-tight"
+              className="text-2xl uppercase tracking-tight"
             >
               {name}
             </Text>
           </View>
-          <StreakBadge streak={streakQ.data || null} compact />
+          {/* Founder 2026-08-30: no "Start a streak — book today" nag up
+              here — the badge only appears once there IS a streak. */}
+          {(streakQ.data?.current_streak ?? 0) > 0 && (
+            <StreakBadge streak={streakQ.data || null} compact />
+          )}
           <NotificationBell />
         </View>
 

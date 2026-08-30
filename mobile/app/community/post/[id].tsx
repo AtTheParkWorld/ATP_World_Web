@@ -106,7 +106,7 @@ export default function PostDetail() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-atp-black" edges={['top', 'bottom']}>
       <View className="px-5 pt-2 pb-3 flex-row items-center justify-between border-b border-white/5">
         <Pressable onPress={() => router.back()} className="py-2 -ml-2 px-2">
           <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-lg">←</Text>

@@ -11,10 +11,10 @@
  * A floating "+" button in the bottom-right opens the composer when
  * Feed is active.
  */
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { FlatList, Image, Pressable, RefreshControl, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getFeed, toggleLike, type Post } from '@/lib/api/community';
 import { listCoaches } from '@/lib/api/coaches';
@@ -32,6 +32,14 @@ type Tab = 'feed' | 'coaches' | 'friends';
 
 export default function Community() {
   const [tab, setTab] = useState<Tab>('feed');
+  // Deep links (e.g. a friend-request notification) open a specific
+  // sub-tab via /community?tab=friends (founder 2026-08-30).
+  const params = useLocalSearchParams<{ tab?: string }>();
+  useEffect(() => {
+    if (params.tab === 'feed' || params.tab === 'coaches' || params.tab === 'friends') {
+      setTab(params.tab);
+    }
+  }, [params.tab]);
 
   return (
     <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>

@@ -34,7 +34,9 @@ function notifTarget(n: AppNotification): string | null {
   if (!d) return null;
   if (d.session_id) return `/sessions/${d.session_id}`;
   if (d.post_id) return `/community/post/${d.post_id}`;
-  if (n.type === 'friend_request') return '/(tabs)/community';
+  // Founder 2026-08-30: a friend request must land on the FRIENDS tab
+  // (accept/decline lives there), not the feed.
+  if (n.type === 'friend_request') return '/(tabs)/community?tab=friends';
   return null;
 }
 

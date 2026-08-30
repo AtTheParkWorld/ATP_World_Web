@@ -99,7 +99,7 @@ export default function Compose() {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>
+    <SafeAreaView className="flex-1 bg-atp-black" edges={['top', 'bottom']}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
         <View className="px-5 pt-2 pb-3 flex-row items-center justify-between border-b border-white/5">
           <Pressable onPress={() => router.back()} className="py-2 -ml-2 px-2">
