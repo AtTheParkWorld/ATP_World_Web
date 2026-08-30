@@ -86,7 +86,7 @@ export default function Home() {
               numberOfLines={1}
               adjustsFontSizeToFit
               style={{ fontFamily: fontFamily.displayBlack, color: colors.white }}
-              className="text-2xl uppercase tracking-tight"
+              className="text-lg uppercase tracking-tight"
             >
               {name}
             </Text>
