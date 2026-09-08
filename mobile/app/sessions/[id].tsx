@@ -27,6 +27,7 @@ import { createBooking, cancelBooking, listMyBookings, submitSessionFeedback, ty
 import { ApiError } from '@/lib/api/client';
 import { BookingSheet } from '@/lib/components/BookingSheet';
 import { SessionTerms } from '@/lib/components/SessionTerms';
+import { CourtPicker } from '@/lib/components/CourtPicker';
 import { FeedbackBlock } from '@/lib/components/FeedbackBlock';
 import { CorporateSessionBadge } from '@/lib/components/SessionCard';
 import { Avatar } from '@/lib/components/Avatar';
@@ -46,6 +47,10 @@ export default function SessionDetail() {
   // 2026-09-14) — the live text is an accident waiver + liability
   // release + media consent, matching the website's gate.
   const [termsOk, setTermsOk] = useState(false);
+  // Team sports: which court the member picked (founder 2026-08-30).
+  const [court, setCourt] = useState<string | null>(null);
+  // 0 = this session runs without courts, so don't demand one.
+  const [courtCount, setCourtCount] = useState<number | null>(null);
   const cfg = useConfig();
   // "Who's going" — tapping the capacity bar opens the attendee list
   // (founder 2026-09-15).
@@ -97,7 +102,7 @@ export default function SessionDetail() {
     if (!s) return;
     setBusy(true);
     try {
-      const res = await createBooking(s.id);
+      const res = await createBooking(s.id, court);
       if (res.payment_options) {
         // Paid session — pop the sheet to pick AED vs points.
         setSheet({ booking: res.booking, opts: res.payment_options });
@@ -108,6 +113,7 @@ export default function SessionDetail() {
           qc.invalidateQueries({ queryKey: ['session', s.id] }),
           qc.invalidateQueries({ queryKey: ['sessions'] }),
           qc.invalidateQueries({ queryKey: ['streak'] }),
+          qc.invalidateQueries({ queryKey: ['session-courts', String(s.id)] }),
         ]);
         // API audit 2026-08-30: the free-booking response never
         // carries points_awarded (points land at check-in), so no
@@ -176,6 +182,9 @@ export default function SessionDetail() {
 
   const tColor = tribeColor(s.tribe_slug);
   const isFull = s.capacity != null && s.registrations_count >= s.capacity;
+  // Team-sports sessions run on courts — you can't book without saying
+  // which one you're playing on (founder 2026-08-30).
+  const needsCourt = s.session_category === 'team_sports' && (courtCount ?? 0) > 0 && !court;
   const priceLbl = s.session_type === 'paid' && s.price
     ? `${s.currency_code || 'AED'} ${s.price}`
     : 'Free';
@@ -386,21 +395,30 @@ export default function SessionDetail() {
           </View>
         ) : (
           <View>
+            {s.status === 'upcoming' && s.session_category === 'team_sports' && (
+              <CourtPicker
+                sessionId={String(s.id)}
+                value={court}
+                onChange={setCourt}
+                onCourtCount={setCourtCount}
+              />
+            )}
             {s.status === 'upcoming' && (
               <SessionTerms accepted={termsOk} onToggle={setTermsOk} />
             )}
             <Pressable
               onPress={onBookPress}
-              disabled={busy || s.status !== 'upcoming' || !termsOk}
-              className={`rounded-atp py-4 items-center ${busy || s.status !== 'upcoming' || !termsOk ? 'bg-atp-dark-3' : 'bg-atp-green active:opacity-80'}`}
+              disabled={busy || s.status !== 'upcoming' || !termsOk || needsCourt}
+              className={`rounded-atp py-4 items-center ${busy || s.status !== 'upcoming' || !termsOk || needsCourt ? 'bg-atp-dark-3' : 'bg-atp-green active:opacity-80'}`}
             >
               <Text
-                style={{ fontFamily: fontFamily.bodyBold, color: (busy || s.status !== 'upcoming' || !termsOk) ? colors.muted : colors.black }}
+                style={{ fontFamily: fontFamily.bodyBold, color: (busy || s.status !== 'upcoming' || !termsOk || needsCourt) ? colors.muted : colors.black }}
                 className="text-base"
               >
                 {busy ? 'Booking…'
                   : s.status !== 'upcoming' ? 'Session closed'
                   : !termsOk ? 'Accept the terms to book'
+                  : needsCourt ? 'Pick a court to book'
                   : isFull ? 'Join waitlist'
                   : s.session_type === 'paid' ? 'Continue' : 'Reserve free spot'}
               </Text>

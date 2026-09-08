@@ -1129,12 +1129,127 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
 // a real park at a known time, and anonymous scraping of that is not
 // something a fitness community should offer. Blocked pairs are hidden
 // from each other, and banned members never appear.
+// ── GET /api/sessions/:id/courts ──────────────────────────────
+// Team-sports court board (founder 2026-08-30): every court with the
+// levels it allows, how many seats are left, and WHO is on it with
+// their level. Drives the court picker at booking time and the
+// "who's playing" view on both app and website.
+router.get('/:id/courts', optionalAuth, async (req, res, next) => {
+  try {
+    const courtsSvc = require('../services/courts');
+    const { rows: sRows } = await query(
+      'SELECT id, session_category, sport_type, courts FROM sessions WHERE id=$1',
+      [req.params.id]
+    );
+    if (!sRows.length) return res.status(404).json({ error: 'Session not found' });
+
+    const session = sRows[0];
+    const courts  = courtsSvc.normalizeCourts(session.courts);
+    if (!courts.length) {
+      return res.json({ courts: [], sport_type: session.sport_type || null, my_court: null, my_level: null });
+    }
+
+    const levelCol = courtsSvc.levelColumnForSport(session.sport_type);
+    // Roster. The level column is interpolated from a fixed whitelist
+    // (levelColumnForSport), never from user input.
+    const levelSelect = levelCol ? `m.${levelCol} AS level` : 'NULL AS level';
+    let players = [];
+    try {
+      const { rows } = await query(
+        `SELECT b.court_name, b.member_id, b.created_at,
+                m.id, m.first_name, m.last_name, m.avatar_url,
+                ${levelSelect},
+                t.name AS tribe_name, t.slug AS tribe_slug
+           FROM bookings b
+           JOIN members m ON m.id = b.member_id
+           LEFT JOIN tribes t ON t.id = m.tribe_id
+          WHERE b.session_id = $1
+            AND b.status IN ('confirmed','attended')
+            AND COALESCE(m.is_banned, false) = false
+          ORDER BY b.created_at ASC
+          LIMIT 300`,
+        [req.params.id]
+      );
+      players = rows;
+    } catch (e) {
+      // Pre-migration DBs (no tribes / no level column) still answer.
+      if (e.code !== '42P01' && e.code !== '42703') throw e;
+      const { rows } = await query(
+        `SELECT b.court_name, b.member_id, b.created_at,
+                m.id, m.first_name, m.last_name, m.avatar_url,
+                NULL AS level, NULL AS tribe_name, NULL AS tribe_slug
+           FROM bookings b JOIN members m ON m.id = b.member_id
+          WHERE b.session_id = $1 AND b.status IN ('confirmed','attended')
+          ORDER BY b.created_at ASC LIMIT 300`,
+        [req.params.id]
+      );
+      players = rows;
+    }
+
+    // My own level + which court I'm already on (auth optional).
+    let myLevel = null;
+    let myCourt = null;
+    if (req.member) {
+      const mine = players.find((p) => p.member_id === req.member.id);
+      myCourt = mine ? (mine.court_name || null) : null;
+      if (levelCol) {
+        try {
+          const { rows: meRows } = await query(
+            `SELECT ${levelCol} AS level FROM members WHERE id=$1`, [req.member.id]
+          );
+          myLevel = meRows.length ? meRows[0].level : null;
+        } catch (_) { myLevel = null; }
+      }
+    }
+
+    const shaped = courts.map((c) => {
+      const onCourt = players.filter((p) => (p.court_name || '') === c.name);
+      const booked  = onCourt.length;
+      return {
+        court_number: c.court_number,
+        name:         c.name,
+        levels:       c.levels,
+        max_players:  c.max_players,
+        booked_count: booked,
+        spots_left:   Math.max(0, c.max_players - booked),
+        is_full:      booked >= c.max_players,
+        matches_my_level: courtsSvc.memberMatchesCourt(c, myLevel),
+        players: onCourt.map((p) => ({
+          id:         p.id,
+          first_name: p.first_name,
+          last_name:  p.last_name,
+          avatar_url: p.avatar_url,
+          level:      p.level || null,
+          tribe_name: p.tribe_name || null,
+          tribe_slug: p.tribe_slug || null,
+        })),
+      };
+    });
+
+    // Anyone booked without a court (legacy bookings, or booked before
+    // courts existed) — surfaced so nobody silently disappears.
+    const named = new Set(courts.map((c) => c.name));
+    const unassigned = players.filter((p) => !p.court_name || !named.has(p.court_name));
+
+    res.json({
+      courts: shaped,
+      sport_type: session.sport_type || null,
+      my_court: myCourt,
+      my_level: myLevel,
+      unassigned: unassigned.map((p) => ({
+        id: p.id, first_name: p.first_name, last_name: p.last_name,
+        avatar_url: p.avatar_url, level: p.level || null,
+      })),
+    });
+  } catch (err) { next(err); }
+});
+
 router.get('/:id/attendees', authenticate, async (req, res, next) => {
   try {
     const { rows } = await query(
       `SELECT m.id, m.first_name, m.last_name, m.avatar_url,
               t.name AS tribe_name, t.slug AS tribe_slug,
-              b.status, b.created_at AS registered_at
+              b.status, b.created_at AS registered_at, b.court_name
        FROM bookings b
        JOIN members m ON m.id = b.member_id
        LEFT JOIN tribes t ON t.id = m.tribe_id

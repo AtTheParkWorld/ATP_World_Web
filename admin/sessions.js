@@ -411,37 +411,79 @@ function buildCourtsUI() {
   var levels = SPORT_LEVELS[sport] || ['Beginner','Intermediate','Advanced'];
   var container = document.getElementById('courtsContainer');
   container.innerHTML = '';
+  // Existing courts (when editing) so a rebuild doesn't wipe the setup.
+  var existing = Array.isArray(window._ATP_EDIT_COURTS) ? window._ATP_EDIT_COURTS : [];
+  var html = '';
   for (var i = 1; i <= numCourts; i++) {
-    var levOpts = levels.map(function(l){ return '<option value="'+l+'">'+l+'</option>'; }).join('');
-    container.innerHTML += '<div class="court-card">' +
+    var prev = existing[i - 1] || null;
+    // Levels are MULTI-select now (founder 2026-08-30): one court may
+    // take several levels, e.g. a C-/C+ court. Legacy sessions stored a
+    // single `level` string — read it as a one-item list.
+    var prevLevels = [];
+    if (prev) {
+      if (Array.isArray(prev.levels)) prevLevels = prev.levels;
+      else if (prev.level) prevLevels = [prev.level];
+    }
+    var checks = levels.map(function(l){
+      var on = prevLevels.some(function(x){ return String(x).toLowerCase() === l.toLowerCase(); });
+      return '<label style="display:inline-flex;align-items:center;gap:6px;background:' +
+        (on ? 'rgba(168,255,0,.12)' : '#111') + ';border:1px solid ' +
+        (on ? 'rgba(168,255,0,.45)' : '#222') + ';border-radius:6px;padding:6px 10px;' +
+        'font-size:12px;color:' + (on ? '#A8FF00' : '#aaa') + ';cursor:pointer;margin:0 6px 6px 0">' +
+        '<input type="checkbox" class="court-level-cb-' + i + '" value="' + l + '"' +
+        (on ? ' checked' : '') + ' onchange="_courtLevelToggle(this)" style="accent-color:#A8FF00;margin:0">' +
+        l + '</label>';
+    }).join('');
+    html += '<div class="court-card">' +
       '<div class="court-card-header">Court '+ i +'</div>' +
       '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
         '<div class="admin-form-group" style="flex:1;min-width:150px">' +
           '<label class="admin-form-label">Court Name</label>' +
-          '<input class="admin-form-input" type="text" id="court-name-'+i+'" placeholder="e.g. Court '+i+'" value="Court '+i+'">' +
-        '</div>' +
-        '<div class="admin-form-group" style="flex:1;min-width:150px">' +
-          '<label class="admin-form-label">Level Allowed</label>' +
-          '<select class="admin-form-select" id="court-level-'+i+'">'+levOpts+'</select>' +
+          '<input class="admin-form-input" type="text" id="court-name-'+i+'" placeholder="e.g. Court '+i+'" value="' +
+            String((prev && prev.name) || ('Court ' + i)).replace(/"/g, '&quot;') + '">' +
         '</div>' +
         '<div class="admin-form-group" style="flex:1;min-width:120px">' +
           '<label class="admin-form-label">Players per Court</label>' +
-          '<input class="admin-form-input" type="number" id="court-players-'+i+'" value="4" min="2" max="20">' +
+          '<input class="admin-form-input" type="number" id="court-players-'+i+'" value="' +
+            ((prev && prev.max_players) || 4) + '" min="2" max="20">' +
         '</div>' +
+      '</div>' +
+      '<div class="admin-form-group" style="margin-top:6px">' +
+        '<label class="admin-form-label">Levels allowed <span style="color:#666;font-weight:400;font-size:10px">' +
+          '(tick every level that can play here \u00b7 none ticked = open to all)</span></label>' +
+        '<div>' + checks + '</div>' +
       '</div>' +
     '</div>';
   }
+  container.innerHTML = html;
 }
+
+// Repaint a level chip as it's ticked, so the selection is obvious.
+function _courtLevelToggle(cb) {
+  var lab = cb.parentNode;
+  if (!lab) return;
+  lab.style.background  = cb.checked ? 'rgba(168,255,0,.12)' : '#111';
+  lab.style.borderColor = cb.checked ? 'rgba(168,255,0,.45)' : '#222';
+  lab.style.color       = cb.checked ? '#A8FF00' : '#aaa';
+}
+window._courtLevelToggle = _courtLevelToggle;
 
 function getCourtsData() {
   var sport = document.getElementById('sSport').value;
   var numCourts = parseInt(document.getElementById('sNumCourts').value) || 1;
   var courts = [];
   for (var i = 1; i <= numCourts; i++) {
+    var picked = Array.prototype.map.call(
+      document.querySelectorAll('.court-level-cb-' + i + ':checked'),
+      function(cb){ return cb.value; }
+    );
     courts.push({
       court_number: i,
       name: (document.getElementById('court-name-'+i) || {}).value || ('Court '+i),
-      level: (document.getElementById('court-level-'+i) || {}).value || 'Beginner',
+      levels: picked,
+      // Keep the legacy single-value field in step so anything still
+      // reading `level` (older cached clients) sees the first level.
+      level: picked[0] || null,
       max_players: parseInt((document.getElementById('court-players-'+i) || {}).value) || 4,
     });
   }
@@ -790,6 +832,9 @@ async function createSession() {
 
 function resetSessionForm() {
   SESSION_EDIT_ID = null;
+  // Drop any courts carried over from an edit, so a NEW session starts
+  // with fresh default courts rather than the last one's setup.
+  window._ATP_EDIT_COURTS = [];
   document.getElementById('sEditId').value = '';
   document.getElementById('sName').value = '';
   document.getElementById('sDesc').value = '';
@@ -896,10 +941,18 @@ async function editSession(s) {
   }
   selectCategory(s.session_category || 'regular');
   if (s.sport_type) document.getElementById('sSport').value = s.sport_type;
-  if (s.courts) {
-    document.getElementById('sNumCourts').value = s.courts.length;
-    buildCourtsUI();
+  // Court prefill — hand the saved courts to buildCourtsUI so names,
+  // player counts and ticked levels all come back on edit (they were
+  // reset to defaults before; founder 2026-08-30).
+  var editCourts = s.courts;
+  if (typeof editCourts === 'string') {
+    try { editCourts = JSON.parse(editCourts); } catch (e) { editCourts = null; }
   }
+  window._ATP_EDIT_COURTS = Array.isArray(editCourts) ? editCourts : [];
+  if (window._ATP_EDIT_COURTS.length) {
+    document.getElementById('sNumCourts').value = window._ATP_EDIT_COURTS.length;
+  }
+  buildCourtsUI();
   // Live streaming prefill — the cached session row already carries
   // is_streamable when present; the assigned ambassadors come from a
   // dedicated GET (since they live in a join table).

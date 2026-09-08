@@ -132,7 +132,10 @@ export type CreateBookingResponse =
       qrToken?: undefined;
     };
 
-export async function createBooking(sessionId: string | number): Promise<CreateBookingResponse> {
+export async function createBooking(
+  sessionId: string | number,
+  courtName?: string | null,
+): Promise<CreateBookingResponse> {
   interface RawCreateBooking {
     booking?: BookingRecord;
     status?: 'pending_payment' | 'waitlisted';
@@ -142,7 +145,12 @@ export async function createBooking(sessionId: string | number): Promise<CreateB
     qrToken?: string;           // free-confirm only
     payment_options?: RawPaymentOptions;
   }
-  const res = await api.post<RawCreateBooking>('/bookings', { session_id: sessionId });
+  // court_name is only sent for team-sports sessions that define courts;
+  // the server ignores it otherwise (founder 2026-08-30).
+  const res = await api.post<RawCreateBooking>('/bookings', {
+    session_id: sessionId,
+    ...(courtName ? { court_name: courtName } : {}),
+  });
 
   if (res.status === 'waitlisted') {
     return {

@@ -53,6 +53,12 @@ router.post('/', authenticate, async (req, res, next) => {
   try {
     const { session_id } = req.body;
     if (!session_id) return res.status(400).json({ error: 'session_id required' });
+    // Team sports: the member picks which court they're playing on
+    // (founder 2026-08-30). Optional — sessions without courts, and
+    // older clients that don't send it, book exactly as before.
+    const requestedCourt = typeof req.body.court_name === 'string'
+      ? req.body.court_name.trim()
+      : null;
 
     const { rows: sRows } = await query(
       `SELECT s.id, s.name, s.scheduled_at, s.location, s.session_type,
@@ -174,7 +180,7 @@ router.post('/', authenticate, async (req, res, next) => {
       // side effect (the lock) — Postgres serialises any other tx that
       // also tries `SELECT … FOR UPDATE` on this row until we commit.
       const { rows: lockRows } = await client.query(
-        `SELECT id, capacity, status FROM sessions WHERE id=$1 FOR UPDATE`,
+        `SELECT id, capacity, status, courts, sport_type FROM sessions WHERE id=$1 FOR UPDATE`,
         [session_id]
       );
       if (!lockRows.length) {
@@ -195,6 +201,34 @@ router.post('/', authenticate, async (req, res, next) => {
           existingInTx[0].status !== 'pending_payment') {
         const e = new Error('You already have a booking for this session');
         e.status = 409; throw e;
+      }
+
+      // ── Court validation (team sports) ──────────────────────────
+      // Runs under the same row lock as the capacity check, so two
+      // members can't take the last seat on the same court.
+      const courtsSvc = require('../services/courts');
+      const sessionCourts = courtsSvc.normalizeCourts(lockRows[0].courts);
+      let bookedCourt = null;
+      if (sessionCourts.length && requestedCourt) {
+        const picked = sessionCourts.find(
+          (c) => c.name.toLowerCase() === requestedCourt.toLowerCase()
+        );
+        if (!picked) {
+          const e = new Error('That court is not part of this session.');
+          e.status = 400; e.code = 'COURT_NOT_FOUND'; throw e;
+        }
+        const { rows: courtCount } = await client.query(
+          `SELECT COUNT(*) AS cnt FROM bookings
+            WHERE session_id=$1 AND court_name=$2
+              AND status IN ('confirmed','pending_payment')
+              AND member_id <> $3`,
+          [session_id, picked.name, req.member.id]
+        );
+        if (parseInt(courtCount[0].cnt, 10) >= picked.max_players) {
+          const e = new Error(`${picked.name} is full. Pick another court.`);
+          e.status = 409; e.code = 'COURT_FULL'; throw e;
+        }
+        bookedCourt = picked.name;
       }
 
       const cap = lockRows[0].capacity;
@@ -232,16 +266,17 @@ router.post('/', authenticate, async (req, res, next) => {
         const placeholderToken = 'pend_' + crypto.randomBytes(12).toString('hex');
         const placeholderQr    = JSON.stringify({ pending: true, session: session.name });
         const { rows: ins } = await client.query(
-          `INSERT INTO bookings (member_id, session_id, qr_code, qr_token, status)
-            VALUES ($1,$2,$3,$4,'pending_payment')
+          `INSERT INTO bookings (member_id, session_id, qr_code, qr_token, status, court_name)
+            VALUES ($1,$2,$3,$4,'pending_payment',$5)
             ON CONFLICT (member_id, session_id)
               DO UPDATE SET status='pending_payment', cancelled_at=NULL,
                             qr_code=EXCLUDED.qr_code, qr_token=EXCLUDED.qr_token,
+                            court_name=EXCLUDED.court_name,
                             payment_method=NULL, payment_amount=NULL,
                             payment_currency=NULL, points_paid=NULL,
                             stripe_session_id=NULL, paid_at=NULL
             RETURNING *`,
-          [req.member.id, session_id, placeholderQr, placeholderToken]
+          [req.member.id, session_id, placeholderQr, placeholderToken, bookedCourt]
         );
         return { kind: 'pending_payment', row: ins[0] };
       }
@@ -250,12 +285,13 @@ router.post('/', authenticate, async (req, res, next) => {
       const qrToken = crypto.randomBytes(16).toString('hex');
       const qrData  = _buildQrPayload(member, session, qrToken);
       const { rows: ins } = await client.query(
-        `INSERT INTO bookings (member_id, session_id, qr_code, qr_token, status)
-          VALUES ($1,$2,$3,$4,'confirmed')
+        `INSERT INTO bookings (member_id, session_id, qr_code, qr_token, status, court_name)
+          VALUES ($1,$2,$3,$4,'confirmed',$5)
           ON CONFLICT (member_id, session_id)
-            DO UPDATE SET status='confirmed', qr_code=$3, qr_token=$4, cancelled_at=NULL
+            DO UPDATE SET status='confirmed', qr_code=$3, qr_token=$4,
+                          cancelled_at=NULL, court_name=EXCLUDED.court_name
           RETURNING *`,
-        [req.member.id, session_id, qrData, qrToken]
+        [req.member.id, session_id, qrData, qrToken, bookedCourt]
       );
       return { kind: 'confirmed', row: ins[0], qrData, qrToken };
     });

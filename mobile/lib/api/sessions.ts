@@ -257,3 +257,45 @@ export interface SessionAttendee {
 export function getSessionAttendees(id: string | number): Promise<{ attendees: SessionAttendee[]; total: number }> {
   return api.get(`/sessions/${id}/attendees`);
 }
+
+// ── Team-sports courts (founder 2026-08-30) ─────────────────────
+// GET /sessions/:id/courts — every court with the levels it allows,
+// seats left, and who is on it. Backs the court picker at booking time
+// and the "who's playing where" board on the session screen.
+export interface CourtPlayer {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+  level: string | null;
+  tribe_name: string | null;
+  tribe_slug: string | null;
+}
+
+export interface SessionCourt {
+  court_number: number;
+  name: string;
+  /** Levels allowed on this court. Empty = open to every level. */
+  levels: string[];
+  max_players: number;
+  booked_count: number;
+  spots_left: number;
+  is_full: boolean;
+  matches_my_level: boolean;
+  players: CourtPlayer[];
+}
+
+export interface SessionCourtsResponse {
+  courts: SessionCourt[];
+  sport_type: string | null;
+  /** The court I'm already booked on, if any. */
+  my_court: string | null;
+  /** My level for this sport (padel_level / volleyball_level). */
+  my_level: string | null;
+  /** Booked players with no court assigned (legacy bookings). */
+  unassigned: CourtPlayer[];
+}
+
+export function getSessionCourts(sessionId: string | number): Promise<SessionCourtsResponse> {
+  return api.get(`/sessions/${sessionId}/courts`);
+}

@@ -3,7 +3,7 @@
 <head>
   <link rel="stylesheet" href="/atp.min.css?v=e5a5b459d0">
   <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
-  <script src="/atp.bundle.min.js?v=a1386ed42c"></script>
+  <script src="/atp.bundle.min.js?v=e0e7f6e2a1"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -792,6 +792,9 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       <div class="modal-tc" style="margin:18px 0 10px">
         <!-- Collapsed by default — click to reveal the full text. Keeps
              the modal short for repeat bookers who already know the rules. -->
+        <!-- Team-sports court picker (founder 2026-08-30). Populated by
+             loadCourtsForBooking(); stays hidden for regular sessions. -->
+        <div id="modalCourts" style="display:none;margin-bottom:14px"></div>
         <button type="button" id="modalTcToggle" aria-expanded="false" aria-controls="modalTcText"
                 style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;padding:0;cursor:pointer;font:inherit;font-size:13px;color:var(--green);text-decoration:underline;text-underline-offset:3px;margin-bottom:10px">
           <span id="modalTcToggleIcon" style="display:inline-block;transition:transform .2s">▸</span>
@@ -1203,6 +1206,8 @@ function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId)
   var sessionType = (sFull && sFull.session_type) || 'free';
 
   activeSession = { id:sessionId, name:name, tribe:tribe, dayTime:dayTime, coach:coach, loc:loc, desc:desc, day:day, time:time, session_type: sessionType };
+  // Team sports run on courts — fetch the board so the member can pick.
+  if (typeof loadCourtsForBooking === 'function') loadCourtsForBooking(sessionId);
   // innerHTML (not textContent) so the private-company badge can sit
   // next to the tribe label. Both halves are escaped.
   document.getElementById('modalTribe').innerHTML =
@@ -1248,6 +1253,11 @@ function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId)
   // between two bookings, and we never want a stale tick to leak through.
   var tcCheck = document.getElementById('modalTcCheck');
   if (tcCheck) tcCheck.checked = false;
+  // Stash the real label — the court gate swaps it for a prompt and
+  // needs to put it back once a court is chosen.
+  if (submitBtn && !submitBtn.dataset.defaultLabel) {
+    submitBtn.dataset.defaultLabel = submitBtn.textContent;
+  }
   var tcText = document.getElementById('modalTcText');
   if (tcText) {
     tcText.textContent = 'Loading…';
@@ -1330,6 +1340,8 @@ document.addEventListener('change', function(ev){
     if (!btn) return;
     // Don't re-enable in cancel/waitlist modes — those have their own state.
     if (btn.dataset.mode === 'cancel' || btn.dataset.mode === 'waitlisted') return;
+    // Team sports also need a court picked (founder 2026-08-30).
+    if (typeof _syncBookButton === 'function') { _syncBookButton(); return; }
     btn.disabled = !ev.target.checked;
   }
 });
@@ -1360,6 +1372,133 @@ function closeModalAndScroll() {
 }
 
 function validateEmail(e) { return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e); }
+
+// ── Team-sports courts ────────────────────────────────────────
+// Founder 2026-08-30: members pick their court, see the levels it
+// allows, and see who is already playing on it with their level.
+var SELECTED_COURT = null;
+var COURT_COUNT    = 0;
+
+function _courtLevelChips(levels, dim) {
+  if (!levels || !levels.length) {
+    return '<span style="font-size:11px;color:var(--muted)">All levels welcome</span>';
+  }
+  return levels.map(function(l){
+    return '<span style="font-size:10px;letter-spacing:.08em;text-transform:uppercase;border:1px solid ' +
+      (dim ? 'rgba(255,255,255,.15)' : 'rgba(168,255,0,.4)') + ';color:' +
+      (dim ? 'var(--muted)' : 'var(--green)') + ';border-radius:999px;padding:2px 8px;margin-right:5px">' +
+      escapeHtml(l) + '</span>';
+  }).join('');
+}
+
+function selectCourt(name) {
+  SELECTED_COURT = (SELECTED_COURT === name) ? null : name;
+  _renderCourts(window._ATP_COURTS_DATA);
+  _syncBookButton();
+}
+window.selectCourt = selectCourt;
+
+function toggleCourtPlayers(idx) {
+  var el = document.getElementById('courtPlayers-' + idx);
+  if (el) el.style.display = (el.style.display === 'none') ? 'block' : 'none';
+}
+window.toggleCourtPlayers = toggleCourtPlayers;
+
+function _renderCourts(data) {
+  var host = document.getElementById('modalCourts');
+  if (!host) return;
+  var courts = (data && data.courts) || [];
+  COURT_COUNT = courts.length;
+  if (!courts.length) { host.style.display = 'none'; host.innerHTML = ''; return; }
+  host.style.display = 'block';
+
+  var myLevel = data.my_level;
+  host.innerHTML =
+    '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">' +
+      '<span style="font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--white);font-weight:800">Pick your court</span>' +
+      (myLevel ? '<span style="font-size:11px;color:var(--muted)">Your level: <span style="color:var(--green)">' + escapeHtml(myLevel) + '</span></span>' : '') +
+    '</div>' +
+    courts.map(function(c, i){
+      var mine     = data.my_court === c.name;
+      var selected = SELECTED_COURT === c.name;
+      var blocked  = c.is_full && !mine;
+      var border   = selected ? 'var(--green)' : (blocked ? 'rgba(255,255,255,.08)' : 'rgba(255,255,255,.12)');
+      var bg       = selected ? 'rgba(168,255,0,.10)' : 'rgba(255,255,255,.02)';
+      return '<div style="border:1px solid ' + border + ';background:' + bg + ';border-radius:10px;' +
+          'margin-bottom:8px;opacity:' + (blocked ? '.5' : '1') + '">' +
+        '<div ' + (blocked ? '' : 'role="button" tabindex="0" onclick="selectCourt(\'' + escapeHtml(c.name).replace(/'/g, "\\'") + '\')" ' +
+            'onkeydown="if(event.key===\'Enter\')selectCourt(\'' + escapeHtml(c.name).replace(/'/g, "\\'") + '\')" ') +
+          'style="padding:12px 14px;display:flex;gap:12px;align-items:flex-start;cursor:' + (blocked ? 'default' : 'pointer') + '">' +
+          '<div style="flex:1;min-width:0">' +
+            '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+              '<strong style="font-size:15px;color:var(--white)">' + escapeHtml(c.name) + '</strong>' +
+              (mine ? '<span style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--green);border:1px solid rgba(168,255,0,.4);border-radius:999px;padding:2px 7px">You\'re here</span>' : '') +
+              (blocked ? '<span style="font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:2px 7px">Full</span>' : '') +
+            '</div>' +
+            '<div style="margin-top:6px">' + _courtLevelChips(c.levels, !c.matches_my_level) + '</div>' +
+            ((!c.matches_my_level && c.levels && c.levels.length)
+              ? '<div style="font-size:11px;color:var(--muted);margin-top:6px">Different level to yours — you can still join</div>' : '') +
+          '</div>' +
+          '<div style="text-align:right;flex-shrink:0">' +
+            '<div style="font-size:17px;font-weight:900;color:' + (c.is_full ? 'var(--muted)' : 'var(--green)') + '">' +
+              c.booked_count + '/' + c.max_players + '</div>' +
+            '<div style="font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)">players</div>' +
+          '</div>' +
+        '</div>' +
+        (c.players && c.players.length
+          ? '<div style="border-top:1px solid rgba(255,255,255,.06);padding:8px 14px">' +
+              '<button type="button" onclick="toggleCourtPlayers(' + i + ')" style="background:none;border:none;padding:0;cursor:pointer;font:inherit;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--green);font-weight:700">' +
+                'See who\'s playing (' + c.players.length + ')</button>' +
+              '<div id="courtPlayers-' + i + '" style="display:none;margin-top:8px">' +
+                c.players.map(function(p){
+                  var nm = ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || 'ATP member';
+                  return '<div style="display:flex;align-items:center;gap:8px;padding:5px 0">' +
+                    '<div style="width:26px;height:26px;border-radius:50%;background:rgba(168,255,0,.15);color:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;flex-shrink:0">' +
+                      escapeHtml(nm.charAt(0).toUpperCase()) + '</div>' +
+                    '<span style="flex:1;min-width:0;font-size:13px;color:var(--white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + escapeHtml(nm) + '</span>' +
+                    (p.level ? '<span style="font-size:10px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);border:1px solid rgba(255,255,255,.12);border-radius:999px;padding:2px 7px;flex-shrink:0">' + escapeHtml(p.level) + '</span>' : '') +
+                  '</div>';
+                }).join('') +
+              '</div>' +
+            '</div>'
+          : '') +
+      '</div>';
+    }).join('');
+}
+
+function loadCourtsForBooking(sessionId) {
+  SELECTED_COURT = null;
+  COURT_COUNT = 0;
+  window._ATP_COURTS_DATA = null;
+  var host = document.getElementById('modalCourts');
+  if (host) { host.style.display = 'none'; host.innerHTML = ''; }
+  var token; try { token = localStorage.getItem('atp_token'); } catch(e){}
+  fetch('/api/sessions/' + sessionId + '/courts', {
+    headers: token ? { 'Authorization': 'Bearer ' + token } : {},
+  })
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){
+      if (!d) return;
+      window._ATP_COURTS_DATA = d;
+      _renderCourts(d);
+      _syncBookButton();
+    })
+    .catch(function(){ /* regular sessions have no courts — stay hidden */ });
+}
+window.loadCourtsForBooking = loadCourtsForBooking;
+
+// The book button needs BOTH the T&C tick and (when the session runs on
+// courts) a chosen court.
+function _syncBookButton() {
+  var btn = document.getElementById('modalSubmit');
+  var tc  = document.getElementById('modalTcCheck');
+  if (!btn || btn.dataset.mode === 'cancel') return;
+  var needCourt = COURT_COUNT > 0 && !SELECTED_COURT;
+  btn.disabled = !(tc && tc.checked) || needCourt;
+  if (needCourt && tc && tc.checked) btn.textContent = 'Pick a court to book';
+  else if (btn.dataset.defaultLabel) btn.textContent = btn.dataset.defaultLabel;
+}
+window._syncBookButton = _syncBookButton;
 
 async function submitBooking() {
   var btn   = document.getElementById('modalSubmit');
@@ -1445,7 +1584,7 @@ async function submitBooking() {
   }
 
   try {
-    var result = await window.ATP.bookings.book(activeSession.id);
+    var result = await window.ATP.bookings.book(activeSession.id, SELECTED_COURT);
     // API returns 202 + {status:'waitlisted'} if session is full
     if (result && result.status === 'waitlisted') {
       btn.disabled = false;

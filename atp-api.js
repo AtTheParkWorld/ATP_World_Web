@@ -205,7 +205,11 @@
 
   // ── BOOKINGS ─────────────────────────────────────────────────
   const bookings = {
-    book:          (sessionId) => post('/bookings', { session_id: sessionId }),
+    // court_name is only sent for team-sports sessions with courts;
+    // the server ignores it elsewhere (founder 2026-08-30).
+    book:          (sessionId, courtName) => post('/bookings',
+                     courtName ? { session_id: sessionId, court_name: courtName }
+                               : { session_id: sessionId }),
     cancel:        (id)        => del(`/bookings/${id}`),
     getQRData:     (token)     => get(`/bookings/${token}/qr-data`),
     submitFeedback:(id, rating, comment) => post(`/bookings/${id}/feedback`, { rating, comment }),
