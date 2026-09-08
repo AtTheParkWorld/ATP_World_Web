@@ -35,9 +35,24 @@ function loadSessionTemplatesAdmin() {
   host.innerHTML = '<div class="admin-section" style="padding:18px"><div style="color:#888">Loading session names…</div></div>';
   var token = getToken();
   fetch('/api/sessions/admin/templates', { headers: { 'Authorization': 'Bearer ' + token } })
-    .then(function(r){ return r.json(); })
+    .then(function(r){
+      // An expired session used to render as "No templates yet" — an
+      // empty list that invited the admin to retype names that were
+      // already there, then threw the save away (founder 2026-08-30).
+      // Say what actually happened instead.
+      if (r.status === 401 || r.status === 403) {
+        host.innerHTML = '<div class="admin-section" style="padding:18px;color:#f87171">' +
+          'Your admin session expired — sign in again to see and edit session names. ' +
+          'Nothing has been lost.</div>';
+        throw new Error('_session_expired_');
+      }
+      return r.json();
+    })
     .then(function(d){ renderSessionTemplatesAdmin((d && d.templates) || []); })
-    .catch(function(){ host.innerHTML = '<div class="admin-section" style="padding:18px;color:#f87171">Failed. Run migrate-session-templates first.</div>'; });
+    .catch(function(e){
+      if (e && e.message === '_session_expired_') return;
+      host.innerHTML = '<div class="admin-section" style="padding:18px;color:#f87171">Couldn\'t load session names. Refresh the page — if it persists, run migrate-session-templates.</div>';
+    });
 }
 
 function renderSessionTemplatesAdmin(list) {
@@ -156,6 +171,8 @@ function saveSessionTemplate() {
     try { localStorage.removeItem('atp_st_draft'); } catch(e){}
     document.getElementById('sessionTemplateFormWrap').innerHTML = '';
     loadSessionTemplatesAdmin();
+    // Keep the create-session dropdown in step without a page reload.
+    if (typeof loadSessionTemplates === 'function') loadSessionTemplates();
   }).catch(function(err){
     if (err && err.message === '_session_expired_') return;
     showToast('❌ ' + (err && err.message || 'Network error'), true);

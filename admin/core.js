@@ -13,6 +13,57 @@
 // ── Global API helpers ────────────────────────────────────────
 var ATP_API = '/api';
 function getToken() { return localStorage.getItem('atp_token') || ''; }
+
+// ── EXPIRED-SESSION GUARD ─────────────────────────────────────
+// Founder 2026-08-30: an expired admin token used to fail differently
+// in every corner of the panel — "Token expired" on auto-fill, a
+// *silently empty* list on Session Names, a "run the migration" error
+// elsewhere. A name typed into an empty-looking list was rejected by
+// the server and lost. Now every /api/ 401 lands in one honest banner.
+function _atpSessionExpiredBanner() {
+  if (document.getElementById('atpSessionExpired')) return;
+  var bar = document.createElement('div');
+  bar.id = 'atpSessionExpired';
+  bar.setAttribute('role', 'alert');
+  bar.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99999;background:#2a1010;' +
+    'border-bottom:1px solid rgba(248,113,113,.5);color:#fca5a5;padding:14px 20px;' +
+    'font-size:14px;font-family:inherit;display:flex;align-items:center;gap:14px;flex-wrap:wrap;' +
+    'box-shadow:0 6px 24px rgba(0,0,0,.5)';
+  bar.innerHTML =
+    '<strong style="color:#fff">Your admin session expired.</strong>' +
+    '<span style="flex:1;min-width:220px">Anything you save right now will not be stored. Sign in again to continue.</span>' +
+    '<button type="button" id="atpSessionExpiredBtn" style="background:#A8FF00;border:none;color:#0a0a0a;' +
+    'padding:9px 18px;border-radius:6px;font-size:12px;font-weight:800;letter-spacing:.05em;' +
+    'text-transform:uppercase;cursor:pointer">Sign in again</button>';
+  document.body.appendChild(bar);
+  document.getElementById('atpSessionExpiredBtn').addEventListener('click', function () {
+    try { localStorage.removeItem('atp_token'); } catch (e) {}
+    location.href = '/join?mode=login&expired=1&next=' + encodeURIComponent('/admin.html');
+  });
+}
+window._atpSessionExpiredBanner = _atpSessionExpiredBanner;
+
+// Wrap fetch once so every existing call site inherits the behaviour —
+// there are dozens and they must not each invent their own handling.
+(function () {
+  if (window._atpFetchWrapped) return;
+  window._atpFetchWrapped = true;
+  var _fetch = window.fetch.bind(window);
+  window.fetch = function (input, init) {
+    return _fetch(input, init).then(function (res) {
+      try {
+        var url = (typeof input === 'string') ? input : (input && input.url) || '';
+        // Login itself legitimately 401s on a wrong password.
+        var isAuthEndpoint = url.indexOf('/api/auth/login') !== -1
+                          || url.indexOf('/api/auth/magic-link') !== -1;
+        if (res.status === 401 && !isAuthEndpoint && url.indexOf('/api/') !== -1) {
+          _atpSessionExpiredBanner();
+        }
+      } catch (e) { /* never let the guard break a request */ }
+      return res;
+    });
+  };
+})();
 function apiGet(path) {
   return fetch(ATP_API + path, {
     headers: { 'Authorization': 'Bearer ' + getToken() }

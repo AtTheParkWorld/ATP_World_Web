@@ -36,6 +36,24 @@
       window.location.replace('/join?mode=login&next=' + encodeURIComponent('/admin.html'));
       return;
     }
+    // Expired tokens used to sail straight through this gate: the panel
+    // booted looking perfectly normal, then every save 401'd and some
+    // lists rendered EMPTY rather than "signed out" — the founder lost a
+    // session name he'd typed this way (2026-08-30). Decode the JWT's
+    // exp claim and treat an expired token as no token at all.
+    try {
+      var seg = t.split('.')[1];
+      if (seg) {
+        var pad = seg.replace(/-/g, '+').replace(/_/g, '/');
+        while (pad.length % 4) pad += '=';
+        var claims = JSON.parse(atob(pad));
+        if (claims && claims.exp && (claims.exp * 1000) < Date.now()) {
+          localStorage.removeItem('atp_token');
+          window.location.replace('/join?mode=login&expired=1&next=' + encodeURIComponent('/admin.html'));
+          return;
+        }
+      }
+    } catch (e) { /* unreadable token — let the login form handle it */ }
     var m = JSON.parse(localStorage.getItem('atp_member') || 'null');
     // Cached admin member → mark logged-in so the login screen never paints.
     // The legacy core.js still owns final auth state; we just skip its UI.
@@ -2155,7 +2173,7 @@
 <div class="admin-toast" id="adminToast"></div>
 <!-- Admin modules — load order matters: core defines globals + showAdminSection
      hook in init.js wires the per-section loaders, so init.js must come last. -->
-<script src="/admin/bundle.min.js?v=b8e759d15b"></script>
+<script src="/admin/bundle.min.js?v=203a26e2cf"></script>
 
 
 

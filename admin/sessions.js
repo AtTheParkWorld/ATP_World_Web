@@ -1179,7 +1179,11 @@ function loadSessionTemplates(preserveValue) {
         }
       }
     })
-    .catch(function(){ /* silent */ });
+    .catch(function(){
+      // Was silent — an empty name dropdown with no explanation. Give
+      // the admin something to act on (founder 2026-08-30).
+      sel.innerHTML = '<option value="">— Couldn\'t load session names —</option>';
+    });
 }
 window.loadSessionTemplates = loadSessionTemplates;
 
