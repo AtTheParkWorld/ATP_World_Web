@@ -510,6 +510,8 @@ router.post('/:id/checkout', authenticate, async (req, res, next) => {
       }],
       success_url: (req.body.success_url) || (origin + '/profile.html?booking=success'),
       cancel_url:  (req.body.cancel_url)  || (origin + '/profile.html?booking=cancel'),
+      // (mobile passes /booking-return.html — a lightweight page built
+      //  for the in-app browser instead of the full profile screen)
       client_reference_id: b.id, // booking id for webhook matching
       metadata: {
         type:       'session_booking',
@@ -530,6 +532,31 @@ router.post('/:id/checkout', authenticate, async (req, res, next) => {
     if (err.status === 503) return res.status(503).json({ error: err.message });
     next(err);
   }
+});
+
+// ── GET /api/bookings/:id/status ──────────────────────────────
+// Polled by the mobile app after the Stripe hosted-checkout browser
+// closes (founder 2026-08-30: card payment was dead in the app). The
+// Stripe WEBHOOK is what actually confirms the booking, so the app
+// asks the server rather than trusting the redirect it came back on.
+router.get('/:id/status', authenticate, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, status, qr_code, qr_token, paid_at, payment_method
+         FROM bookings WHERE id=$1 AND member_id=$2`,
+      [req.params.id, req.member.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Booking not found' });
+    const b = rows[0];
+    res.json({
+      id: b.id,
+      status: b.status,
+      is_paid: b.status === 'confirmed' || !!b.paid_at,
+      qrData: b.qr_code || null,
+      qrToken: b.qr_token || null,
+      payment_method: b.payment_method || null,
+    });
+  } catch (err) { next(err); }
 });
 
 // ── DELETE /api/bookings/:id — Cancel booking ─────────────────

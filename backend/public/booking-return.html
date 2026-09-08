@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Booking · At The Park</title>
+<!--
+  Landing page for the in-app browser after Stripe hosted checkout
+  (founder 2026-08-30: card payment was unavailable in the app).
+  Deliberately tiny and login-free — the member sees it for a second
+  inside the payment sheet, then returns to the app, which confirms the
+  booking against the server (the Stripe webhook is the source of truth).
+-->
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh;
+    display: flex; align-items: center; justify-content: center;
+    background: #0a0a0a; color: #fff; padding: 28px;
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", sans-serif;
+    text-align: center;
+  }
+  .card { max-width: 380px; }
+  .mark {
+    width: 76px; height: 76px; margin: 0 auto 22px;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 36px; line-height: 1;
+  }
+  .ok   { background: rgba(168,255,0,.14); border: 1px solid rgba(168,255,0,.45); color: #A8FF00; }
+  .stop { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.18); color: #999; }
+  h1 {
+    font-size: 25px; line-height: 1.15; margin: 0 0 12px;
+    text-transform: uppercase; letter-spacing: -0.01em; font-weight: 900;
+  }
+  p { font-size: 15px; line-height: 1.6; color: #b9c0b3; margin: 0; }
+  .hint {
+    margin-top: 26px; font-size: 12.5px; color: #6f7669;
+    border-top: 1px solid rgba(255,255,255,.08); padding-top: 18px;
+  }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="mark ok" id="mark">✓</div>
+    <h1 id="title">Payment received</h1>
+    <p id="msg">You're booked in. Head back to the ATP app for your check-in QR code.</p>
+    <div class="hint" id="hint">You can close this window.</div>
+  </div>
+
+<script>
+(function () {
+  var status = new URLSearchParams(location.search).get('status') || 'success';
+  if (status === 'cancel') {
+    document.getElementById('mark').className = 'mark stop';
+    document.getElementById('mark').textContent = '×';
+    document.getElementById('title').textContent = 'Payment cancelled';
+    document.getElementById('msg').textContent =
+      'Nothing was charged. Your spot is held for a short while — return to the app to try again.';
+  }
+})();
+</script>
+</body>
+</html>

@@ -5,9 +5,13 @@
  * Two payment paths:
  *   1) Pay with points     → POST /bookings/:id/pay-with-points
  *      (instant confirmation, no Stripe involved)
- *   2) Pay with card (AED) → POST /bookings/:id/checkout?client=mobile
- *      → backend returns a PaymentIntent client_secret + ephemeralKey
- *      → we present Stripe's PaymentSheet
+ *   2) Pay with card (AED) → POST /bookings/:id/checkout
+ *      → backend returns a HOSTED Stripe Checkout url
+ *      → we open it in the in-app browser, then confirm the booking
+ *        against the server once it closes (founder 2026-08-30: this
+ *        path used to fetch the url, throw it away and tell the member
+ *        card payment was unavailable). Stripe's WEBHOOK is what marks
+ *        the booking paid, so we poll rather than trust the redirect.
  *
  * On either success we call onSuccess() so the parent screen can
  * invalidate queries + show "you're in".
@@ -18,15 +22,26 @@
  */
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Modal, Pressable, Text, View } from 'react-native';
-import { useStripe } from '@stripe/stripe-react-native';
-import Constants from 'expo-constants';
-import { payWithPoints, startStripeCheckout, type PaymentOptions, type BookingRecord } from '@/lib/api/bookings';
+import * as WebBrowser from 'expo-web-browser';
+import { payWithPoints, startStripeCheckout, getBookingStatus, type PaymentOptions, type BookingRecord } from '@/lib/api/bookings';
+import { WEB_BASE } from '@/lib/api/client';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 
-// Card payments need the live publishable key in app.json extra.
-// Until it's set, the card option degrades gracefully instead of
-// crashing initPaymentSheet with an empty key.
-const STRIPE_READY = !!(Constants.expoConfig?.extra as Record<string, unknown> | undefined)?.stripePublishableKey;
+/** Wait for the Stripe webhook to mark the booking paid. The browser
+ *  closing tells us nothing — the member may have paid, abandoned, or
+ *  swiped away mid-3DS — so the server is the only honest answer. */
+async function waitForPayment(bookingId: string | number): Promise<boolean> {
+  for (let attempt = 0; attempt < 6; attempt++) {
+    try {
+      const st = await getBookingStatus(bookingId);
+      if (st.is_paid) return true;
+    } catch {
+      // transient — keep trying within the budget
+    }
+    await new Promise((r) => setTimeout(r, attempt === 0 ? 800 : 1500));
+  }
+  return false;
+}
 
 interface Props {
   booking: BookingRecord;
@@ -36,7 +51,6 @@ interface Props {
 }
 
 export function BookingSheet({ booking, opts, onClose, onSuccess }: Props) {
-  const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [busy,  setBusy]  = useState<'points' | 'card' | null>(null);
 
   async function onPayPoints() {
@@ -54,32 +68,42 @@ export function BookingSheet({ booking, opts, onClose, onSuccess }: Props) {
 
   async function onPayCard() {
     if (!opts.accepts_money) return;
-    if (!STRIPE_READY) {
-      Alert.alert(
-        'Card payments coming soon',
-        'Card checkout is being switched on. You can pay with points, or book a free session in the meantime.'
-      );
-      return;
-    }
     setBusy('card');
     try {
-      // API audit 2026-08-30: POST /bookings/:id/checkout really
-      // returns { url, session_id } — a HOSTED Stripe Checkout link
-      // for a browser redirect. The PaymentIntent client_secret +
-      // ephemeral key this sheet needs for the native PaymentSheet are
-      // NEVER sent (no such backend endpoint exists — BACKEND-GAP).
-      // Until the backend grows a PaymentIntent endpoint we keep the
-      // existing user-facing behaviour: card checkout is unavailable
-      // in the app. `res.url` is where a hosted-checkout fallback
-      // would open once product signs it off.
-      await startStripeCheckout(booking.id);
-      Alert.alert(
-        'Card payment unavailable',
-        'Stripe is not configured for mobile. Please contact ATP support.'
-      );
-      return;
+      // Hosted Stripe Checkout in the in-app browser. Both return URLs
+      // land on /booking-return.html — a tiny login-free page built for
+      // this sheet, rather than the full profile screen.
+      const res = await startStripeCheckout(booking.id, {
+        success_url: `${WEB_BASE}/booking-return.html?status=success`,
+        cancel_url:  `${WEB_BASE}/booking-return.html?status=cancel`,
+      });
+      if (!res?.url) throw new Error('Checkout link missing. Please try again.');
+
+      await WebBrowser.openBrowserAsync(res.url, {
+        presentationStyle: WebBrowser.WebBrowserPresentationStyle.PAGE_SHEET,
+        dismissButtonStyle: 'close',
+        toolbarColor: colors.black,
+        controlsColor: colors.green,
+      });
+
+      // The browser closing proves nothing — ask the server.
+      const paid = await waitForPayment(booking.id);
+      if (paid) {
+        onSuccess();
+      } else {
+        Alert.alert(
+          'Payment not confirmed',
+          "We haven't received confirmation from your bank yet. If you completed the payment it'll appear in My Bookings shortly — otherwise your spot is still held, so you can try again."
+        );
+      }
     } catch (err) {
-      Alert.alert('Card payment failed', (err as Error).message || 'Try again.');
+      const msg = (err as Error).message || '';
+      Alert.alert(
+        'Card payment failed',
+        /network|fetch/i.test(msg)
+          ? 'Connection lost while opening checkout. Check your signal and try again.'
+          : msg || 'Try again.'
+      );
     } finally {
       setBusy(null);
     }

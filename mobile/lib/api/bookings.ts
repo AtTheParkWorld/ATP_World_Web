@@ -206,8 +206,27 @@ export interface StripeCheckoutResponse {
   session_id: string;
 }
 
-export function startStripeCheckout(bookingId: string | number): Promise<StripeCheckoutResponse> {
-  return api.post(`/bookings/${bookingId}/checkout`, { client: 'mobile' });
+export function startStripeCheckout(
+  bookingId: string | number,
+  returnUrls?: { success_url?: string; cancel_url?: string },
+): Promise<StripeCheckoutResponse> {
+  return api.post(`/bookings/${bookingId}/checkout`, { client: 'mobile', ...(returnUrls || {}) });
+}
+
+/** Booking payment state, polled after the hosted-checkout browser
+ *  closes. The Stripe webhook is what confirms the booking, so the app
+ *  asks the server rather than trusting the page it came back on. */
+export interface BookingStatusResponse {
+  id: string;
+  status: string;
+  is_paid: boolean;
+  qrData: string | null;
+  qrToken: string | null;
+  payment_method: string | null;
+}
+
+export function getBookingStatus(bookingId: string | number): Promise<BookingStatusResponse> {
+  return api.get(`/bookings/${bookingId}/status`);
 }
 
 /**
