@@ -1554,6 +1554,11 @@
               </div>
               <div style="margin-bottom:10px"><label class="admin-form-label" for="achDesc">Description</label><input class="admin-form-input" type="text" id="achDesc" placeholder="What does the member need to do?"></div>
               <div style="margin-bottom:10px">
+                <label class="admin-form-label" for="achStory">The story behind this badge <span style="color:#666;font-weight:400;font-size:10px">(shown when a member taps a badge they've earned)</span></label>
+                <textarea class="admin-form-input" id="achStory" rows="4" style="resize:vertical;min-height:84px;line-height:1.6" placeholder="Why this badge exists and what it means to have earned it. Write it for the member who just unlocked it — a few sentences, in ATP's voice."></textarea>
+                <div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">✨ Members only see this once they've unlocked the badge. Locked badges keep it hidden, so it stays worth earning.</div>
+              </div>
+              <div style="margin-bottom:10px">
                 <label class="admin-form-label" for="achBadge">Badge image (optional)</label>
                 <div style="display:flex;gap:8px;align-items:center">
                   <input class="admin-form-input" type="url" id="achBadge" placeholder="Paste URL or upload below" style="flex:1">
@@ -2178,7 +2183,7 @@
 <div class="admin-toast" id="adminToast"></div>
 <!-- Admin modules — load order matters: core defines globals + showAdminSection
      hook in init.js wires the per-section loaders, so init.js must come last. -->
-<script src="/admin/bundle.min.js?v=f589d51a1b"></script>
+<script src="/admin/bundle.min.js?v=6108282621"></script>
 
 
 

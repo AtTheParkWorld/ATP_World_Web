@@ -14,13 +14,14 @@
  *    iOS-style rounded surface card with hairline-separated rows
  *  - Sign out (always visible so a broken session is recoverable)
  */
-import { useEffect, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getProfile, getStats, getStreak } from '@/lib/api/members';
-import { getMyAchievements } from '@/lib/api/achievements';
+import { getMyAchievements, type Achievement } from '@/lib/api/achievements';
+import { BadgeDetail } from '@/lib/components/BadgeDetail';
 import { useConfig } from '@/lib/api/config';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { Avatar } from '@/lib/components/Avatar';
@@ -63,6 +64,9 @@ export default function Profile() {
   // Rewards → Badges, so members thought they had none (founder
   // 2026-09-12).
   const achQ = useQuery({ queryKey: ['achievements'], queryFn: () => getMyAchievements() });
+  // Tapping a badge here opens its story rather than bouncing to the
+  // Rewards tab (founder 2026-09-17).
+  const [openBadge, setOpenBadge] = useState<Achievement | null>(null);
   // Copy numbers come from Admin → System Config (founder 2026-09-16).
   const cfg = useConfig();
 
@@ -244,13 +248,15 @@ export default function Profile() {
                   .map((a) => (
                     <Pressable
                       key={String(a.id)}
-                      onPress={() => router.push('/(tabs)/rewards')}
+                      onPress={() => setOpenBadge(a)}
                       style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.95 : 1 }] })}
                       className="items-center mr-3 bg-atp-dark border border-atp-green/30 rounded-atp-lg px-3 py-3"
-                      accessibilityLabel={a.name}
+                      accessibilityLabel={`${a.name} — tap to read the story`}
                     >
                       {a.badge_image_url ? (
-                        <Image source={{ uri: a.badge_image_url }} style={{ width: 40, height: 40, borderRadius: 20 }} resizeMode="cover" />
+                        // contain, never a circular crop — the artwork
+                        // has detail at the edges (founder 2026-09-17).
+                        <Image source={{ uri: a.badge_image_url }} style={{ width: 46, height: 46 }} resizeMode="contain" />
                       ) : (
                         <Text style={{ fontSize: 30 }}>{a.icon || '🏅'}</Text>
                       )}
@@ -366,6 +372,7 @@ export default function Profile() {
           </Text>
         </View>
       </ScrollView>
+      <BadgeDetail badge={openBadge} onClose={() => setOpenBadge(null)} />
     </SafeAreaView>
   );
 }

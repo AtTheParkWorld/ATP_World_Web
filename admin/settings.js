@@ -632,7 +632,7 @@ window._achMeta = _achMeta;
 function showAchievementForm() {
   document.getElementById('achievementFormWrap').style.display = 'block';
   document.getElementById('achievementFormTitle').textContent = 'New achievement';
-  ['achEditId','achName','achDesc','achIcon','achBadge','achMaxRecipients','achFrom','achUntil'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
+  ['achEditId','achName','achDesc','achStory','achIcon','achBadge','achMaxRecipients','achFrom','achUntil'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
   var rr = document.getElementById('achRarity'); if (rr) rr.value = 'standard';
   document.getElementById('achCriteriaType').value = 'manual';
   document.getElementById('achCriteriaValue').value = '0';
@@ -656,6 +656,7 @@ function editAchievement(e, btn) {
       document.getElementById('achEditId').value       = id;
       document.getElementById('achName').value         = a.name || '';
       document.getElementById('achDesc').value         = a.description || '';
+      document.getElementById('achStory').value        = a.story || '';
       document.getElementById('achIcon').value         = a.icon || '';
       document.getElementById('achBadge').value        = a.badge_image_url || '';
       document.getElementById('achCriteriaType').value = a.criteria_type || 'manual';
@@ -676,6 +677,7 @@ function saveAchievement() {
   var body = {
     name:            document.getElementById('achName').value.trim(),
     description:     document.getElementById('achDesc').value.trim() || null,
+    story:           document.getElementById('achStory').value.trim() || null,
     icon:            document.getElementById('achIcon').value.trim() || null,
     badge_image_url: document.getElementById('achBadge').value.trim() || null,
     criteria_type:   document.getElementById('achCriteriaType').value,

@@ -2727,15 +2727,73 @@ function renderAchievements(el, list) {
         '<div style="font-size:10px;color:var(--muted);margin-top:4px">' + (a.progress || 0) + ' / ' + a.criteria_value + '</div>';
     }
     var desc = (a.description || a.desc || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-    return "<div class='achievement " + (unlocked ? "unlocked" : "locked") + "'>" +
+    // Unlocked badges open their story on click (founder 2026-09-17).
+    // Locked ones stay inert — the story is part of the reward.
+    var clickAttrs = unlocked
+      ? " role='button' tabindex='0' style='cursor:pointer'" +
+        " onclick=\"openBadgeStory('" + String(a.id).replace(/'/g, "\\'") + "')\"" +
+        " onkeydown=\"if(event.key==='Enter')openBadgeStory('" + String(a.id).replace(/'/g, "\\'") + "')\""
+      : "";
+    var tapHint = (unlocked && a.story)
+      ? "<div style='font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-top:6px'>Tap for story</div>"
+      : "";
+    return "<div class='achievement " + (unlocked ? "unlocked" : "locked") + "'" + clickAttrs + ">" +
       iconHtml +
       "<div class='ach-name'>" + (a.name || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + "</div>" +
       "<div class='ach-desc'>" + desc + "</div>" +
       ptsBadge +
       progressBar +
+      tapHint +
     "</div>";
   }).join("");
 }
+
+// ── Badge story modal ─────────────────────────────────────────
+// Mirrors the app's BadgeDetail: full-size art (never cropped), the
+// lore an admin wrote, and when the member earned it.
+function openBadgeStory(id) {
+  var a = (ACHIEVEMENTS || []).find(function(x){ return String(x.id) === String(id); });
+  if (!a || !a.unlocked) return;
+  var accent = a.rarity === 'legendary' ? '#f5c042' : a.rarity === 'rare' ? '#9ad4ff' : 'var(--green)';
+  var earned = a.unlocked_at
+    ? new Date(a.unlocked_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+    : '';
+  var art = a.badge_image_url
+    ? "<img src='" + escapeHtml(a.badge_image_url) + "' alt='' style='width:100%;height:100%;object-fit:contain'>"
+    : "<div style='font-size:86px;line-height:1'>" + escapeHtml(a.icon || '\uD83C\uDFC5') + "</div>";
+  var rarity = a.rarity === 'legendary' ? '\uD83D\uDC51 Legendary' : a.rarity === 'rare' ? '\u2B50 Rare' : '';
+
+  var rows = '';
+  if (earned) rows += "<div style='display:flex;justify-content:space-between;padding:3px 0'><span style='color:var(--muted);font-size:12px'>Earned</span><span style='font-size:12px;font-weight:700'>" + escapeHtml(earned) + "</span></div>";
+  if (a.points_reward > 0) rows += "<div style='display:flex;justify-content:space-between;padding:3px 0'><span style='color:var(--muted);font-size:12px'>Reward</span><span style='font-size:12px;font-weight:700;color:var(--green)'>+" + (Number(a.points_reward)||0) + " pts</span></div>";
+  if (a.max_recipients != null) rows += "<div style='display:flex;justify-content:space-between;padding:3px 0'><span style='color:var(--muted);font-size:12px'>Edition</span><span style='font-size:12px;font-weight:700'>" + (Number(a.claimed_count)||0) + " of " + Number(a.max_recipients) + " claimed</span></div>";
+
+  var wrap = document.createElement('div');
+  wrap.id = 'badgeStoryModal';
+  wrap.style.cssText = 'position:fixed;inset:0;z-index:9995;display:flex;align-items:center;justify-content:center;padding:20px;background:rgba(0,0,0,.85);backdrop-filter:blur(4px)';
+  wrap.innerHTML =
+    "<div style='background:#0d0d0d;border:1px solid " + accent + ";border-radius:16px;max-width:430px;width:100%;max-height:88vh;overflow-y:auto;padding:28px;text-align:center'>" +
+      "<div style='width:190px;height:190px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.03);border:1px solid " + accent + "55;border-radius:14px;padding:12px'>" + art + "</div>" +
+      (rarity ? "<div style='font-size:10px;letter-spacing:3px;text-transform:uppercase;color:" + accent + ";margin-bottom:8px'>" + rarity + "</div>" : "") +
+      "<div style='font-family:var(--ff-display);font-size:26px;font-weight:900;text-transform:uppercase;letter-spacing:-.01em;color:#fff'>" + escapeHtml(a.name || '') + "</div>" +
+      (a.description ? "<div style='font-size:14px;color:var(--light);margin-top:8px;line-height:1.6'>" + escapeHtml(a.description) + "</div>" : "") +
+      (a.story
+        ? "<div style='margin-top:24px'>" +
+            "<div style='display:flex;align-items:center;gap:12px;margin-bottom:12px'>" +
+              "<div style='flex:1;height:1px;background:" + accent + "40'></div>" +
+              "<div style='font-size:10px;letter-spacing:2px;text-transform:uppercase;color:" + accent + "'>The story</div>" +
+              "<div style='flex:1;height:1px;background:" + accent + "40'></div>" +
+            "</div>" +
+            "<div style='font-size:14px;color:var(--light);line-height:1.7;text-align:left;white-space:pre-line'>" + escapeHtml(a.story) + "</div>" +
+          "</div>"
+        : "") +
+      (rows ? "<div style='margin-top:22px;border-top:1px solid rgba(255,255,255,.1);padding-top:14px;text-align:left'>" + rows + "</div>" : "") +
+      "<button type='button' onclick=\"var m=document.getElementById('badgeStoryModal');if(m)m.remove()\" style='margin-top:22px;width:100%;background:transparent;border:1px solid rgba(255,255,255,.15);color:var(--muted);padding:12px;border-radius:8px;font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;cursor:pointer'>Close</button>" +
+    "</div>";
+  wrap.addEventListener('click', function(e){ if (e.target === wrap) wrap.remove(); });
+  document.body.appendChild(wrap);
+}
+window.openBadgeStory = openBadgeStory;
 
 // Load achievements from /api/achievements/me — replaces the mock ACHIEVEMENTS array
 function loadAchievements() {

@@ -11,6 +11,9 @@ export interface Achievement {
   id: string | number;
   name: string;
   description: string | null;
+  /** The lore behind the badge — only worth showing once it's unlocked
+   *  (founder 2026-09-17). Null until an admin writes one. */
+  story: string | null;
   icon: string | null;
   badge_image_url: string | null;
   points_reward: number;

@@ -814,6 +814,11 @@ async function _ensureBootSchema() {
                WHERE key='streak_double_threshold' AND value IN ('7','8','"7"','"8"')`)
     .catch(() => {});
 
+  // Badge lore (founder 2026-09-17): every badge carries the story
+  // behind it, revealed when a member taps one they've unlocked.
+  await query(`ALTER TABLE achievements ADD COLUMN IF NOT EXISTS story TEXT`)
+    .catch((e) => console.warn('[boot] achievements.story:', e.message));
+
   // Collectible badges (founder 2026-09-12): scarcity caps + rarity
   // tiers + availability windows for special editions.
   await query(`ALTER TABLE achievements ADD COLUMN IF NOT EXISTS max_recipients INTEGER`)

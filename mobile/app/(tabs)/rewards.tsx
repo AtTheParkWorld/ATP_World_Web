@@ -13,7 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getBalance, getPointsHistory, listOffers, listMyRedemptions } from '@/lib/api/rewards';
-import { getMyAchievements, rarityLabel } from '@/lib/api/achievements';
+import { getMyAchievements, rarityLabel, type Achievement } from '@/lib/api/achievements';
+import { BadgeDetail } from '@/lib/components/BadgeDetail';
 import { useConfig } from '@/lib/api/config';
 import { SegmentedControl } from '@/lib/components/SegmentedControl';
 import { useAuthStore } from '@/lib/stores/auth.store';
@@ -318,6 +319,9 @@ function OffersView() {
 /* ─────────────────────────────────────────────────────────────── */
 function BadgesView() {
   const q = useQuery({ queryKey: ['achievements'], queryFn: () => getMyAchievements() });
+  // Tap an unlocked badge to read the story behind it (founder
+  // 2026-09-17). Locked badges don't open — the story is the reward.
+  const [openBadge, setOpenBadge] = useState<Achievement | null>(null);
 
   if (q.isLoading) {
     return (
@@ -360,13 +364,17 @@ function BadgesView() {
           </Text>
           <View className="flex-row flex-wrap gap-3">
             {unlocked.map((a) => (
-              <View
+              <Pressable
                 key={a.id}
-                className="w-[30%] bg-atp-dark rounded-atp p-3 items-center border"
+                onPress={() => setOpenBadge(a)}
+                className="w-[30%] bg-atp-dark rounded-atp p-3 items-center border active:opacity-70"
                 style={{ borderColor: a.rarity === 'legendary' ? '#f5c042' : a.rarity === 'rare' ? '#9ad4ff' : 'rgba(168,255,0,0.4)' }}
               >
                 {a.badge_image_url ? (
-                  <Image source={{ uri: a.badge_image_url }} style={{ width: 44, height: 44, borderRadius: 22 }} resizeMode="cover" />
+                  // contain, not cover — badge artwork is detailed and a
+                  // circular crop was cutting the edges off (founder
+                  // 2026-09-17: "not reflecting the new badges").
+                  <Image source={{ uri: a.badge_image_url }} style={{ width: 52, height: 52 }} resizeMode="contain" />
                 ) : (
                   <Text style={{ fontSize: 28 }}>{a.icon || '🏆'}</Text>
                 )}
@@ -386,11 +394,16 @@ function BadgesView() {
                     {a.claimed_count ?? 0}/{a.max_recipients}
                   </Text>
                 )}
-              </View>
+                <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[8px] uppercase tracking-wider mt-1">
+                  Tap for story
+                </Text>
+              </Pressable>
             ))}
           </View>
         </View>
       )}
+
+      <BadgeDetail badge={openBadge} onClose={() => setOpenBadge(null)} />
 
       {locked.length > 0 && (
         <View className="px-5 mt-7">
@@ -401,7 +414,11 @@ function BadgesView() {
             {locked.map((a) => (
               <View key={a.id} className="bg-atp-dark border border-white/5 rounded-atp p-3">
                 <View className="flex-row items-center gap-3">
-                  <Text style={{ fontSize: 24, opacity: 0.4 }}>{a.icon || '🏆'}</Text>
+                  {a.badge_image_url ? (
+                    <Image source={{ uri: a.badge_image_url }} style={{ width: 34, height: 34, opacity: 0.35 }} resizeMode="contain" />
+                  ) : (
+                    <Text style={{ fontSize: 24, opacity: 0.4 }}>{a.icon || '🏆'}</Text>
+                  )}
                   <View className="flex-1">
                     <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">
                       {a.name}

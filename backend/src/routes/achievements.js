@@ -13,7 +13,7 @@ const achievements = require('../services/achievements');
 router.get('/', async (req, res, next) => {
   try {
     const { rows } = await query(
-      `SELECT a.id, a.name, a.description, a.icon, a.badge_image_url,
+      `SELECT a.id, a.name, a.description, a.story, a.icon, a.badge_image_url,
               a.points_reward, a.criteria_type, a.criteria_value, a.sort_order,
               a.rarity, a.max_recipients, a.available_from, a.available_until,
               (SELECT COUNT(*)::int FROM member_achievements ma
@@ -34,7 +34,7 @@ router.get('/me', authenticate, async (req, res, next) => {
   try {
     // Pull the catalogue + the member's unlocked state in one round-trip
     const { rows } = await query(
-      `SELECT a.id, a.name, a.description, a.icon, a.badge_image_url,
+      `SELECT a.id, a.name, a.description, a.story, a.icon, a.badge_image_url,
               a.points_reward, a.criteria_type, a.criteria_value, a.sort_order,
               a.rarity, a.max_recipients, a.available_from, a.available_until,
               (SELECT COUNT(*)::int FROM member_achievements m2
@@ -99,7 +99,7 @@ router.get('/me', authenticate, async (req, res, next) => {
 router.get('/admin', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { rows } = await query(
-      `SELECT id, name, description, icon, badge_image_url, points_reward,
+      `SELECT id, name, description, story, icon, badge_image_url, points_reward,
               criteria_type, criteria_value, sort_order, is_active, created_at,
               rarity, max_recipients, available_from, available_until,
               (SELECT COUNT(*) FROM member_achievements WHERE achievement_id=achievements.id)::int AS unlocked_count,
@@ -113,7 +113,7 @@ router.get('/admin', authenticate, requireAdmin, async (req, res, next) => {
 router.post('/admin', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const {
-      name, description, icon, badge_image_url, points_reward = 0,
+      name, description, story, icon, badge_image_url, points_reward = 0,
       criteria_type = 'manual', criteria_value, sort_order = 100, is_active = true,
       max_recipients = null, rarity = 'standard',
       available_from = null, available_until = null,
@@ -132,11 +132,11 @@ router.post('/admin', authenticate, requireAdmin, async (req, res, next) => {
       return res.status(400).json({ error: 'criteria_type must be one of ' + validTypes.join(', ') });
     }
     const { rows } = await query(
-      `INSERT INTO achievements (name, description, icon, badge_image_url, points_reward,
+      `INSERT INTO achievements (name, description, story, icon, badge_image_url, points_reward,
                                  criteria_type, criteria_value, sort_order, is_active, created_by,
                                  max_recipients, rarity, available_from, available_until)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14) RETURNING *`,
-      [name.trim(), description || null, icon || null, badge_image_url || null,
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15) RETURNING *`,
+      [name.trim(), description || null, story || null, icon || null, badge_image_url || null,
        points_reward, criteria_type, criteria_value || null, sort_order, is_active, req.member.id,
        cap, rarity, available_from || null, available_until || null]
     );
@@ -147,7 +147,7 @@ router.post('/admin', authenticate, requireAdmin, async (req, res, next) => {
 
 router.patch('/admin/:id', authenticate, requireAdmin, async (req, res, next) => {
   try {
-    const fields = ['name', 'description', 'icon', 'badge_image_url',
+    const fields = ['name', 'description', 'story', 'icon', 'badge_image_url',
                     'max_recipients', 'rarity', 'available_from', 'available_until',
                     'points_reward', 'criteria_type', 'criteria_value',
                     'sort_order', 'is_active'];
