@@ -11,6 +11,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { listPosts, listCategories, type BlogPost } from '@/lib/api/blog';
 import { getBlogHero } from '@/lib/api/cms';
 import { colors, fontFamily } from '@/lib/theme/tokens';
+import Svg, { Defs, LinearGradient as SvgGradient, Stop, Rect } from 'react-native-svg';
 import { absUrl } from '@/lib/utils/imageUrl';
 
 export default function BlogIndex() {
@@ -26,6 +27,7 @@ export default function BlogIndex() {
     queryFn:  getBlogHero,
     staleTime: 1000 * 60 * 10,
   });
+  const posts = postsQ.data || [];
   const catsQ = useQuery({
     queryKey: ['blog-categories'],
     queryFn:  () => listCategories().then(r => r.categories),
@@ -44,7 +46,7 @@ export default function BlogIndex() {
       </View>
 
       <FlatList
-        data={postsQ.data || []}
+        data={posts}
         keyExtractor={(p) => String(p.id)}
         ListHeaderComponent={
           <>
@@ -81,7 +83,22 @@ export default function BlogIndex() {
             </View>
           </>
         }
-        renderItem={({ item, index }) => <PostCard post={item} hero={index === 0 && !category} />}
+        renderItem={({ item, index }) => {
+          // Solid fallback alternates across the imageless posts only, so
+          // lime and dark truly interleave — same rule as the website.
+          const solid: 'lime' | 'dark' =
+            (posts.slice(0, index).filter((p) => !p.cover_image_url && !p.hero_image_url).length % 2 === 0)
+              ? 'lime' : 'dark';
+          return (
+            <>
+              <PostTile post={item} hero={index === 0 && !category} solid={solid} />
+              {/* A statement band every 5 posts, matching the web rhythm. */}
+              {(index + 1) % 5 === 0 && index + 1 < posts.length && (
+                <StatementBand idx={Math.floor(index / 5)} />
+              )}
+            </>
+          );
+        }}
         refreshControl={
           <RefreshControl
             tintColor={colors.green}
@@ -120,50 +137,149 @@ function CatPill({ label, active, onPress }: { label: string; active: boolean; o
   );
 }
 
-function PostCard({ post, hero }: { post: BlogPost; hero?: boolean }) {
+/* ── Mosaic tiles ────────────────────────────────────────────────
+   Matches the website's Journal layout (founder 2026-09-18: "same look
+   and feel"). At phone width the web mosaic stacks into full-width
+   tiles of varying treatment, so that's what we build here:
+
+     · photo tiles — artwork full-bleed, scrim, text overlaid
+     · lime / dark tiles — for posts with no cover image
+     · a lime square marker on every tile
+     · full-width lime statement bands between batches
+
+   Cover artwork always wins; only imageless posts become solid blocks,
+   alternating lime/dark so two never sit together. Same rule as web. */
+
+const STATEMENTS = [
+  { line: 'Never train', accent: 'alone.', sub: 'Free sessions, every day, across the UAE.' },
+  { line: 'Beyond the',  accent: 'workout.', sub: 'Coaching, community, and what happens after.' },
+];
+
+function Marker({ dark }: { dark?: boolean }) {
+  return (
+    <View
+      style={{
+        position: 'absolute', top: 14, left: 14, width: 9, height: 9,
+        backgroundColor: dark ? colors.black : colors.green, zIndex: 3,
+      }}
+    />
+  );
+}
+
+function StatementBand({ idx }: { idx: number }) {
+  const st = STATEMENTS[idx % STATEMENTS.length] ?? STATEMENTS[0]!;
+  return (
+    <View className="mx-5 mt-3 rounded-atp-lg overflow-hidden" style={{ backgroundColor: colors.green }}>
+      <Marker dark />
+      <View className="px-6 py-8 items-center">
+        <Text
+          style={{ fontFamily: fontFamily.displayBlack, color: colors.black }}
+          className="text-3xl uppercase tracking-tight text-center"
+        >
+          {st.line} {st.accent}
+        </Text>
+        <Text
+          style={{ fontFamily: fontFamily.bodyBold, color: 'rgba(10,10,10,0.66)' }}
+          className="text-xs mt-2 text-center"
+        >
+          {st.sub}
+        </Text>
+      </View>
+    </View>
+  );
+}
+
+function PostTile({ post, hero, solid }: { post: BlogPost; hero?: boolean; solid: 'lime' | 'dark' }) {
   const img = absUrl(post.cover_image_url || post.hero_image_url);
+  const isPhoto = !!img;
+  const isLime = !isPhoto && solid === 'lime';
+
+  const titleColor = isLime ? colors.black : colors.white;
+  const catColor   = isLime ? 'rgba(10,10,10,0.62)' : colors.green;
+  const bodyColor  = isLime ? 'rgba(10,10,10,0.74)' : colors.light;
+  const metaColor  = isLime ? 'rgba(10,10,10,0.58)' : colors.muted;
+
+  const meta = [
+    post.author_name ? `By ${post.author_name}` : null,
+    post.reading_time_mins ? `${post.reading_time_mins} min read` : null,
+  ].filter(Boolean).join('  ·  ');
+
   return (
     <Pressable
       onPress={() => router.push(`/blog/${post.slug}`)}
-      className="mx-5 mt-3 bg-atp-dark rounded-atp-lg border border-white/5 overflow-hidden active:opacity-70"
+      className="mx-5 mt-3 rounded-atp-lg overflow-hidden active:opacity-80"
+      style={{
+        backgroundColor: isPhoto ? colors.dark2 : (isLime ? colors.green : colors.dark),
+        borderWidth: isPhoto || isLime ? 0 : 1,
+        borderColor: 'rgba(255,255,255,0.08)',
+        minHeight: hero ? 300 : 180,
+        justifyContent: 'flex-end',
+      }}
     >
-      {!!img && (
-        <Image
-          source={{ uri: img }}
-          className="w-full"
-          style={{ aspectRatio: hero ? 16 / 9 : 4 / 3, backgroundColor: colors.dark2 }}
-          resizeMode="cover"
-        />
+      {isPhoto && (
+        <>
+          <Image
+            source={{ uri: img! }}
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            resizeMode="cover"
+          />
+          {/* Scrim — same weighting as the web tiles, so a headline over
+              busy photography stays readable. Drawn with react-native-svg
+              (already in the build via Avatar) rather than pulling in
+              expo-linear-gradient, which isn't installed and couldn't
+              ship over an OTA update anyway. */}
+          <Svg
+            style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
+            width="100%"
+            height="100%"
+          >
+            <Defs>
+              <SvgGradient id="blogScrim" x1="0" y1="0" x2="0" y2="1">
+                <Stop offset="0"    stopColor="#0a0a0a" stopOpacity="0.12" />
+                <Stop offset="0.42" stopColor="#0a0a0a" stopOpacity="0.45" />
+                <Stop offset="1"    stopColor="#0a0a0a" stopOpacity="0.94" />
+              </SvgGradient>
+            </Defs>
+            <Rect x="0" y="0" width="100%" height="100%" fill="url(#blogScrim)" />
+          </Svg>
+        </>
       )}
-      <View className="p-4">
+
+      <Marker dark={isLime} />
+
+      {hero && (
+        <View
+          style={{ position: 'absolute', top: 0, right: 0, zIndex: 3, backgroundColor: colors.green }}
+          className="px-3 py-1.5 rounded-bl-atp"
+        >
+          <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.black }} className="text-[9px] uppercase tracking-widest">
+            Latest
+          </Text>
+        </View>
+      )}
+
+      <View className="px-5 pb-5 pt-10" style={{ zIndex: 2 }}>
         {!!post.category && (
-          <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs uppercase tracking-widest mb-1">
+          <Text style={{ fontFamily: fontFamily.bodyBold, color: catColor }} className="text-[10px] uppercase tracking-widest mb-1.5">
             {post.category}
           </Text>
         )}
         <Text
-          style={{ fontFamily: fontFamily.displayBlack, color: colors.white }}
-          className={`uppercase tracking-tight ${hero ? 'text-2xl' : 'text-lg'}`}
+          style={{ fontFamily: fontFamily.displayBlack, color: titleColor }}
+          className={`uppercase tracking-tight ${hero ? 'text-3xl' : 'text-xl'}`}
         >
           {post.title}
         </Text>
-        {!!post.excerpt && (
-          <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm mt-2 leading-relaxed" numberOfLines={hero ? 3 : 2}>
+        {!!post.excerpt && hero && (
+          <Text style={{ fontFamily: fontFamily.body, color: bodyColor }} className="text-sm mt-2 leading-relaxed" numberOfLines={3}>
             {post.excerpt}
           </Text>
         )}
-        <View className="flex-row items-center gap-2 mt-3">
-          {!!post.author_name && (
-            <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs">
-              By {post.author_name}
-            </Text>
-          )}
-          {!!post.reading_time_mins && (
-            <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs">
-              · {post.reading_time_mins} min read
-            </Text>
-          )}
-        </View>
+        {!!meta && (
+          <Text style={{ fontFamily: fontFamily.body, color: metaColor }} className="text-[11px] mt-2.5">
+            {meta}
+          </Text>
+        )}
       </View>
     </Pressable>
   );

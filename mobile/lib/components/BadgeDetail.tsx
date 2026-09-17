@@ -80,10 +80,14 @@ export function BadgeDetail({ badge, onClose }: { badge: Achievement | null; onC
                 {badge.name}
               </Text>
 
+              {/* Left-aligned and full width: descriptions are often
+                  pasted as several lines, and centring turned them into a
+                  ragged block (founder 2026-09-18). React Native keeps the
+                  line breaks as typed. */}
               {!!badge.description && (
                 <Text
                   style={{ fontFamily: fontFamily.body, color: colors.light }}
-                  className="text-sm text-center mt-2 leading-relaxed"
+                  className="text-sm mt-3 leading-relaxed w-full"
                 >
                   {badge.description}
                 </Text>

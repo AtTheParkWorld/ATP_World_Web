@@ -1552,7 +1552,14 @@
                 <div><label class="admin-form-label" for="achName">Name *</label><input class="admin-form-input" type="text" id="achName" placeholder="e.g. Marathon Master"></div>
                 <div><label class="admin-form-label" for="achIcon">Icon (emoji)</label><input class="admin-form-input" type="text" id="achIcon" placeholder="🏆" maxlength="4"></div>
               </div>
-              <div style="margin-bottom:10px"><label class="admin-form-label" for="achDesc">Description</label><input class="admin-form-input" type="text" id="achDesc" placeholder="What does the member need to do?"></div>
+              <div style="margin-bottom:10px">
+                <label class="admin-form-label" for="achDesc">Description</label>
+                <!-- textarea, not a single-line input: the founder pastes
+                     multi-line descriptions and a text input collapsed them
+                     onto one line (2026-09-18). Line breaks are preserved
+                     everywhere the description renders. -->
+                <textarea class="admin-form-input" id="achDesc" rows="3" style="resize:vertical;min-height:66px;line-height:1.6" placeholder="What does the member need to do? Line breaks are kept exactly as you type or paste them."></textarea>
+              </div>
               <div style="margin-bottom:10px">
                 <label class="admin-form-label" for="achStory">The story behind this badge <span style="color:#666;font-weight:400;font-size:10px">(shown when a member taps a badge they've earned)</span></label>
                 <textarea class="admin-form-input" id="achStory" rows="4" style="resize:vertical;min-height:84px;line-height:1.6" placeholder="Why this badge exists and what it means to have earned it. Write it for the member who just unlocked it — a few sentences, in ATP's voice."></textarea>
