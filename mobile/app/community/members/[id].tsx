@@ -23,8 +23,16 @@ import {
   unfriend,
   blockMember,
   reportMember,
+  getMemberBadges,
+  likeMemberBadge,
+  getMemberFriends,
   type Friendship,
+  type FriendBadge,
 } from '@/lib/api/friends';
+import { Avatar } from '@/lib/components/Avatar';
+import { BadgeDetail } from '@/lib/components/BadgeDetail';
+import { rarityLabel, type Achievement } from '@/lib/api/achievements';
+import { useState } from 'react';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { absUrl } from '@/lib/utils/imageUrl';
@@ -87,6 +95,27 @@ export default function MemberProfile() {
   const friendsQ = useQuery({
     queryKey: ['friends'],
     queryFn:  () => listFriends().then(r => r.friendships),
+  });
+
+  // Founder 2026-09-18: a friend's profile shows their badges (with
+  // kudos), how many friends they have, and who those friends are.
+  const badgesQ = useQuery({
+    queryKey: ['member-badges', memberId],
+    queryFn: () => getMemberBadges(memberId),
+    enabled: !!memberId,
+  });
+  const theirFriendsQ = useQuery({
+    queryKey: ['member-friends', memberId],
+    queryFn: () => getMemberFriends(memberId),
+    enabled: !!memberId,
+  });
+  const [openBadge, setOpenBadge] = useState<Achievement | null>(null);
+  const [showFriends, setShowFriends] = useState(false);
+
+  const likeMu = useMutation({
+    mutationFn: (achievementId: string) => likeMemberBadge(memberId, achievementId),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['member-badges', memberId] }),
+    onError: (e: any) => Alert.alert('Could not like that', e?.message || 'Try again.'),
   });
 
   const upcomingQ = useQuery({
@@ -288,6 +317,105 @@ export default function MemberProfile() {
               </View>
             )}
 
+            {/* ── Friends: count always, list when you're friends ── */}
+            {!!theirFriendsQ.data && (
+              <View className="w-full mt-7">
+                <Pressable
+                  onPress={() => theirFriendsQ.data.list_visible && setShowFriends((v) => !v)}
+                  className="flex-row items-center justify-between"
+                >
+                  <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest">
+                    Friends · {theirFriendsQ.data.total}
+                  </Text>
+                  {theirFriendsQ.data.list_visible && theirFriendsQ.data.total > 0 && (
+                    <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-[11px] uppercase tracking-widest">
+                      {showFriends ? 'Hide' : 'See all'}
+                    </Text>
+                  )}
+                </Pressable>
+
+                {showFriends && theirFriendsQ.data.list_visible && (
+                  <View className="mt-3 gap-2">
+                    {theirFriendsQ.data.friends.map((f) => (
+                      <Pressable
+                        key={f.id}
+                        onPress={() => router.push(`/community/members/${f.id}`)}
+                        className="flex-row items-center bg-atp-dark border border-white/5 rounded-atp px-3 py-2.5 active:opacity-70"
+                      >
+                        <Avatar uri={f.avatar_url} firstName={f.first_name ?? undefined} lastName={f.last_name ?? undefined} id={f.id} size="sm" />
+                        <Text style={{ fontFamily: fontFamily.body, color: colors.white }} className="text-sm ml-3 flex-1" numberOfLines={1}>
+                          {`${f.first_name || ''} ${f.last_name || ''}`.trim() || 'ATP member'}
+                        </Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* ── Badges: tap for the story, heart to give kudos ── */}
+            {!!badgesQ.data && badgesQ.data.badges.length > 0 && (
+              <View className="w-full mt-7">
+                <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest">
+                  Badges · {badgesQ.data.total}
+                </Text>
+                <View className="flex-row flex-wrap gap-2.5 mt-3">
+                  {badgesQ.data.badges.map((b: FriendBadge) => (
+                    <View
+                      key={b.id}
+                      className="bg-atp-dark rounded-atp p-2.5 items-center border"
+                      style={{
+                        width: '31%',
+                        borderColor: b.rarity === 'legendary' ? '#f5c042'
+                          : b.rarity === 'rare' ? '#9ad4ff' : 'rgba(168,255,0,0.35)',
+                      }}
+                    >
+                      <Pressable
+                        onPress={() => setOpenBadge({ ...(b as any), unlocked: true } as Achievement)}
+                        className="items-center active:opacity-70"
+                      >
+                        {b.badge_image_url ? (
+                          <Image source={{ uri: b.badge_image_url }} style={{ width: 48, height: 48 }} resizeMode="contain" />
+                        ) : (
+                          <Text style={{ fontSize: 30 }}>{b.icon || '🏅'}</Text>
+                        )}
+                        <Text
+                          style={{ fontFamily: fontFamily.bodyBold, color: colors.white }}
+                          className="text-[10px] text-center mt-1.5"
+                          numberOfLines={2}
+                        >
+                          {b.name}
+                        </Text>
+                        {!!rarityLabel(b.rarity) && (
+                          <Text
+                            style={{ fontFamily: fontFamily.bodyBold, color: b.rarity === 'legendary' ? '#f5c042' : '#9ad4ff' }}
+                            className="text-[8px] mt-0.5"
+                          >
+                            {rarityLabel(b.rarity)}
+                          </Text>
+                        )}
+                      </Pressable>
+
+                      <Pressable
+                        onPress={() => likeMu.mutate(b.id)}
+                        disabled={likeMu.isPending}
+                        hitSlop={8}
+                        className="flex-row items-center gap-1 mt-2 active:opacity-60"
+                      >
+                        <Text style={{ fontSize: 13 }}>{b.liked_by_me ? '💚' : '🤍'}</Text>
+                        <Text
+                          style={{ fontFamily: fontFamily.bodyBold, color: b.liked_by_me ? colors.green : colors.muted }}
+                          className="text-[10px]"
+                        >
+                          {b.likes_count}
+                        </Text>
+                      </Pressable>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
             {relationship?.status === 'accepted' && upcomingQ.data && upcomingQ.data.length > 0 && (
               <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mt-7 self-start">
                 Upcoming · train together
@@ -310,6 +438,7 @@ export default function MemberProfile() {
         )}
         contentContainerStyle={{ paddingBottom: 60 }}
       />
+      <BadgeDetail badge={openBadge} onClose={() => setOpenBadge(null)} />
     </SafeAreaView>
   );
 }

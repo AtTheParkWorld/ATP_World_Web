@@ -814,6 +814,20 @@ async function _ensureBootSchema() {
                WHERE key='streak_double_threshold' AND value IN ('7','8','"7"','"8"')`)
     .catch(() => {});
 
+  // Badge likes (founder 2026-09-18): members can give kudos to a
+  // friend's badge from their profile. One like per (badge owner,
+  // badge, liker) — the UNIQUE is what makes the toggle idempotent.
+  await query(`CREATE TABLE IF NOT EXISTS badge_likes (
+    id             UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    owner_id       UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+    achievement_id UUID NOT NULL REFERENCES achievements(id) ON DELETE CASCADE,
+    liker_id       UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+    created_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (owner_id, achievement_id, liker_id)
+  )`).catch((e) => console.warn('[boot] badge_likes:', e.message));
+  await query(`CREATE INDEX IF NOT EXISTS idx_badge_likes_owner
+               ON badge_likes (owner_id, achievement_id)`).catch(() => {});
+
   // Badge lore (founder 2026-09-17): every badge carries the story
   // behind it, revealed when a member taps one they've unlocked.
   await query(`ALTER TABLE achievements ADD COLUMN IF NOT EXISTS story TEXT`)

@@ -881,6 +881,136 @@ router.get('/:id/public', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── Friend-profile surfaces (founder 2026-09-18) ────────────────
+// Visiting a friend's profile shows their badges, their friend count
+// and list, and lets you give a badge kudos. Privacy stance:
+//   · badge SHOWCASE + friend COUNT are visible to any signed-in member
+//     (badges exist to be shown off; a count reveals nothing personal)
+//   · the friend LIST is friends-only, same bar as upcoming sessions
+async function _areFriends(a, b) {
+  if (a === b) return true;
+  try {
+    const { rows } = await query(
+      `SELECT 1 FROM friendships
+        WHERE status='accepted'
+          AND ((requester_id=$1 AND addressee_id=$2)
+            OR (requester_id=$2 AND addressee_id=$1))
+        LIMIT 1`,
+      [a, b]
+    );
+    return rows.length > 0;
+  } catch (_) { return false; }
+}
+
+// GET /api/members/:id/badges — their unlocked badges with kudos counts
+router.get('/:id/badges', authenticate, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT a.id, a.name, a.description, a.story, a.icon, a.badge_image_url,
+              a.points_reward, a.rarity, a.max_recipients,
+              ma.unlocked_at,
+              (SELECT COUNT(*)::int FROM badge_likes bl
+                WHERE bl.owner_id = $1 AND bl.achievement_id = a.id) AS likes_count,
+              EXISTS (SELECT 1 FROM badge_likes bl2
+                       WHERE bl2.owner_id = $1 AND bl2.achievement_id = a.id
+                         AND bl2.liker_id = $2) AS liked_by_me
+         FROM member_achievements ma
+         JOIN achievements a ON a.id = ma.achievement_id
+        WHERE ma.member_id = $1 AND a.is_active = true
+        ORDER BY ma.unlocked_at DESC`,
+      [req.params.id, req.member.id]
+    ).catch(async (e) => {
+      // badge_likes not created yet on this DB — still show the badges.
+      if (e.code !== '42P01') throw e;
+      return query(
+        `SELECT a.id, a.name, a.description, a.story, a.icon, a.badge_image_url,
+                a.points_reward, a.rarity, a.max_recipients, ma.unlocked_at,
+                0 AS likes_count, false AS liked_by_me
+           FROM member_achievements ma
+           JOIN achievements a ON a.id = ma.achievement_id
+          WHERE ma.member_id = $1 AND a.is_active = true
+          ORDER BY ma.unlocked_at DESC`,
+        [req.params.id]
+      );
+    });
+    res.json({ badges: rows, total: rows.length });
+  } catch (err) { next(err); }
+});
+
+// POST /api/members/:id/badges/:achievementId/like — toggle kudos
+router.post('/:id/badges/:achievementId/like', authenticate, async (req, res, next) => {
+  try {
+    const ownerId = req.params.id;
+    const achId   = req.params.achievementId;
+    if (ownerId === req.member.id) {
+      return res.status(400).json({ error: "You can't like your own badge.", code: 'SELF_LIKE' });
+    }
+    // Only a badge they actually hold can be liked.
+    const { rows: owns } = await query(
+      'SELECT 1 FROM member_achievements WHERE member_id=$1 AND achievement_id=$2 LIMIT 1',
+      [ownerId, achId]
+    );
+    if (!owns.length) return res.status(404).json({ error: 'Badge not found for this member' });
+
+    const { rows: existing } = await query(
+      'SELECT id FROM badge_likes WHERE owner_id=$1 AND achievement_id=$2 AND liker_id=$3',
+      [ownerId, achId, req.member.id]
+    );
+    if (existing.length) {
+      await query('DELETE FROM badge_likes WHERE id=$1', [existing[0].id]);
+    } else {
+      await query(
+        `INSERT INTO badge_likes (owner_id, achievement_id, liker_id)
+         VALUES ($1,$2,$3) ON CONFLICT DO NOTHING`,
+        [ownerId, achId, req.member.id]
+      );
+    }
+    const { rows: countRows } = await query(
+      'SELECT COUNT(*)::int AS n FROM badge_likes WHERE owner_id=$1 AND achievement_id=$2',
+      [ownerId, achId]
+    );
+    res.json({ liked: !existing.length, likes_count: countRows[0].n });
+  } catch (err) {
+    if (err.code === '42P01') {
+      return res.status(503).json({ error: 'Badge likes are not available yet.' });
+    }
+    next(err);
+  }
+});
+
+// GET /api/members/:id/friends-public — count always, list if friends
+router.get('/:id/friends-public', authenticate, async (req, res, next) => {
+  try {
+    const target = req.params.id;
+    const { rows: countRows } = await query(
+      `SELECT COUNT(*)::int AS n FROM friendships
+        WHERE status='accepted' AND (requester_id=$1 OR addressee_id=$1)`,
+      [target]
+    );
+    const total = countRows[0].n;
+
+    if (!(await _areFriends(req.member.id, target))) {
+      return res.json({ total, friends: [], list_visible: false });
+    }
+
+    const { rows } = await query(
+      `SELECT CASE WHEN f.requester_id=$1 THEN m2.id ELSE m1.id END AS id,
+              CASE WHEN f.requester_id=$1 THEN m2.first_name ELSE m1.first_name END AS first_name,
+              CASE WHEN f.requester_id=$1 THEN m2.last_name  ELSE m1.last_name  END AS last_name,
+              CASE WHEN f.requester_id=$1 THEN m2.avatar_url ELSE m1.avatar_url END AS avatar_url
+         FROM friendships f
+         JOIN members m1 ON m1.id = f.requester_id
+         JOIN members m2 ON m2.id = f.addressee_id
+        WHERE f.status='accepted' AND (f.requester_id=$1 OR f.addressee_id=$1)
+          AND COALESCE(m1.is_banned,false)=false AND COALESCE(m2.is_banned,false)=false
+        ORDER BY 2
+        LIMIT 60`,
+      [target]
+    );
+    res.json({ total, friends: rows, list_visible: true });
+  } catch (err) { next(err); }
+});
+
 // ── GET /api/members/search ─────────────────────────────────────
 // Member-to-member search for use cases like "gift a coach session to
 // another member". Returns minimal public info — never email, never

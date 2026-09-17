@@ -73,3 +73,49 @@ export function searchMembers(q: string, limit = 10): Promise<{ members: MemberS
 export function reportMember(targetId: string, reason: string): Promise<{ message: string }> {
   return api.post(`/members/${targetId}/report`, { reason });
 }
+
+// ── Friend profile surfaces (founder 2026-09-18) ────────────────
+// A friend's profile shows their badges (with kudos), their friend
+// count and — if you're friends — their friend list.
+
+export interface FriendBadge {
+  id: string;
+  name: string;
+  description: string | null;
+  story: string | null;
+  icon: string | null;
+  badge_image_url: string | null;
+  points_reward: number;
+  rarity?: string | null;
+  max_recipients?: number | null;
+  unlocked_at: string | null;
+  likes_count: number;
+  liked_by_me: boolean;
+}
+
+export function getMemberBadges(memberId: string): Promise<{ badges: FriendBadge[]; total: number }> {
+  return api.get(`/members/${memberId}/badges`);
+}
+
+/** Toggles kudos on one of their badges. Returns the new state. */
+export function likeMemberBadge(
+  memberId: string,
+  achievementId: string,
+): Promise<{ liked: boolean; likes_count: number }> {
+  return api.post(`/members/${memberId}/badges/${achievementId}/like`, {});
+}
+
+export interface PublicFriend {
+  id: string;
+  first_name: string | null;
+  last_name: string | null;
+  avatar_url: string | null;
+}
+
+/** `total` is always returned; `friends` only when you're friends with
+ *  them (list_visible says which). */
+export function getMemberFriends(
+  memberId: string,
+): Promise<{ total: number; friends: PublicFriend[]; list_visible: boolean }> {
+  return api.get(`/members/${memberId}/friends-public`);
+}
