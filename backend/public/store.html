@@ -382,46 +382,12 @@ window.ATP_NAV_EXTRAS = ['<button class="cart-icon-btn" data-atp-call="openCart"
 
 <main>
   <!-- ── STORE HERO ──────────────────────────────────────────── -->
-<!-- Store copy + banner come from Admin → Content → Store Page.
-     The page ignored them entirely until 2026-09-17. -->
-<script>
-(function _atpStoreCms() {
-  function apply() {
-    fetch('/api/cms/store', { cache: 'no-cache' })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) {
-        var hero = (d && d.content && d.content.hero) || {};
-        if (hero.subtitle) {
-          var sub = document.getElementById('st-hero-sub');
-          if (sub) sub.textContent = hero.subtitle;
-        }
-        // Banner replaces the looping hero video when an admin sets one.
-        if (hero.banner) {
-          var wrap = document.getElementById('videoBanner');
-          if (wrap) {
-            var img = document.createElement('img');
-            img.src = hero.banner;
-            img.alt = '';
-            img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
-            var vid = document.getElementById('heroVideo');
-            if (vid) vid.remove();
-            wrap.insertBefore(img, wrap.firstChild);
-          }
-        }
-      })
-      .catch(function () { /* static copy already in the DOM */ });
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply);
-  else apply();
-})();
-</script>
-
 <section class="store-hero">
   <div class="store-hero-inner">
     <div class="store-hero-text">
       <span class="store-hero-eyebrow">ATP Collection 2026</span>
       <h1 class="store-hero-h1">Wear it.<br><em>Share it.</em><br>Let's move<br>together.</h1>
-      <p class="store-hero-sub" id="st-hero-sub">Gear made for the community. Every purchase keeps the sessions free — forever.</p>
+      <p class="store-hero-sub">Gear made for the community. Every purchase keeps the sessions free — forever.</p>
       <div class="store-hero-badges">
         <span class="hero-badge">Free delivery AED 150+</span>
         <span class="hero-badge">Never Train Alone</span>

@@ -123,20 +123,12 @@ var CMS_SCHEMA = {
       }
     }
   },
-  store: {
-    label: '🛍 Store Page',
-    sections: {
-      hero: {
-        label: 'Store Hero',
-        desc: 'Header of the ATP merch store',
-        fields: [
-          { key: 'title',    label: 'Store Title',   type: 'text',     default: 'ATP Store' },
-          { key: 'subtitle', label: 'Subtitle',      type: 'textarea', default: 'Official ATP merchandise — limited drops, 100% reinvested in the community.' },
-          { key: 'banner',   label: 'Top Banner Image', type: 'image', size: '1920 \u00d7 600\u00a0px (16:5 wide strip) \u00b7 JPG or WebP \u00b7 under 400\u00a0KB' },
-        ]
-      }
-    }
-  },
+  // Store Page removed 2026-09-17: /store and /store.html both 302 to
+  // the Shopify storefront (SHOP_URL in server.js), so backend/public/
+  // store.html is never served and these three fields edited a page no
+  // member could reach. Store copy + banner live in Shopify's own theme
+  // editor now. Restore this block if the store ever comes back
+  // in-house — store.html still exists and its markup is intact.
   coaches: {
     label: '🎽 Our Coaches Page',
     sections: {
