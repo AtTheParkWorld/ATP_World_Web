@@ -118,6 +118,7 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .story-img-box{width:100%;aspect-ratio:3/4;background:var(--dark3);border-radius:var(--radius-lg);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
 .story-img-box::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)}
 .img-ph{font-size:11px;color:#333;letter-spacing:.08em;text-transform:uppercase;text-align:center;line-height:1.8}
+.story-img{width:100%;height:100%;object-fit:cover;display:block}
 .story-badge{position:absolute;bottom:0;right:-18px;transform:translateY(50%);width:100px;height:100px;background:var(--green);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;z-index:3;border:3px solid var(--dark2)}
 .story-badge-num{font-family:var(--ff-display);font-size:32px;font-weight:900;color:var(--black);line-height:1}
 .story-badge-label{font-size:10px;font-weight:700;color:rgba(0,0,0,.78);letter-spacing:.06em;text-transform:uppercase}
@@ -591,7 +592,13 @@ a.product-card:hover{transform:translateY(-4px)}
 
     <div class="story-img-col reveal" style="position:relative">
       <div class="story-img-box">
-        <p class="img-ph">Fredy + Tatiana<br>founders photo</p>
+        <!-- Hydrated from Admin → Content → Home → Story → Founders Photo.
+             Ships hidden; the CMS fetcher reveals it and hides the
+             placeholder caption once a URL lands (founder 2026-09-17:
+             the photo saved fine but the page had no <img> for it). -->
+        <img class="story-img" data-cms-section="story" data-cms-key="founder_photo"
+             alt="Fredy and Tatiana, founders of At The Park" style="display:none" loading="lazy">
+        <p class="img-ph" data-cms-key="founder_photo_caption">Fredy + Tatiana<br>founders photo</p>
       </div>
       <div class="story-timeline">
         <div class="tl-item"><div class="tl-year">2015</div><div class="tl-event">Founded Al Formal Park, Abu Dhabi</div></div>
