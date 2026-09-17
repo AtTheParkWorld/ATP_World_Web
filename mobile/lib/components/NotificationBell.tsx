@@ -49,7 +49,9 @@ export function NotificationBell({ size = 22 }: { size?: number }) {
       style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.92 : 1 }] })}
       accessibilityLabel={total > 0 ? `Inbox, ${total} unread` : 'Inbox'}
     >
-      <Icon name="notification" size={size} color={colors.white} />
+      {/* The bell itself goes green while anything is unread (founder
+          2026-09-18) — after the opening spotlight, this is the signal. */}
+      <Icon name="notification" size={size} color={total > 0 ? colors.green : colors.white} />
       {total > 0 && (
         <View
           className="absolute bg-atp-green rounded-full items-center justify-center"

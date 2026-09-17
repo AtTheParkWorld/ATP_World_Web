@@ -3,7 +3,7 @@
 <head>
   <link rel="stylesheet" href="/atp.min.css?v=e5a5b459d0">
   <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
-  <script src="/atp.bundle.min.js?v=d859912676"></script>
+  <script src="/atp.bundle.min.js?v=7ff710c30e"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -2027,6 +2027,21 @@ function updateBellBadge() {
   if (badge) {
     badge.textContent = total > 99 ? '99+' : String(total);
     badge.style.display = total > 0 ? 'inline-flex' : 'none';
+  }
+  // The bell itself goes green while anything is unread (founder
+  // 2026-09-18) — once the opening spotlight has had its turn, this is
+  // the only signal that something is waiting.
+  var btn = document.getElementById('bellBtn');
+  if (btn) {
+    if (total > 0) {
+      btn.style.color = 'var(--green)';
+      btn.style.borderColor = 'rgba(168,255,0,.55)';
+      btn.style.background = 'rgba(168,255,0,.10)';
+    } else {
+      btn.style.color = '';
+      btn.style.borderColor = '';
+      btn.style.background = '';
+    }
   }
 }
 

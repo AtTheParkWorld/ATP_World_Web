@@ -1016,9 +1016,15 @@
     });
   }
 
+  var RAN_KEY = 'atp_spotlight_ran';
+
   function run() {
     var token; try { token = localStorage.getItem('atp_token'); } catch (e) {}
     if (!token) return;
+    // Already had its turn this visit — from here on the bell alone
+    // signals anything new.
+    try { if (sessionStorage.getItem(RAN_KEY)) return; } catch (e) {}
+    try { sessionStorage.setItem(RAN_KEY, '1'); } catch (e) {}
     fetch('/api/notifications?limit=10', { headers: { 'Authorization': 'Bearer ' + token }, cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (d) {
