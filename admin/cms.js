@@ -9,7 +9,9 @@
 // ═══════════════════════════════════════════════════════════
 
 // Content schema — defines what's editable on each page.
-// Each field: { key, label, type: 'text'|'textarea'|'image'|'video'|'url', default, hint }
+// Each field: { key, label, type: 'text'|'textarea'|'image'|'video'|'url', default, hint, size }
+// `size` = recommended resolution/format, rendered under image + video
+// uploads so admins aren't guessing (founder 2026-09-17).
 var CMS_SCHEMA = {
   index: {
     label: '🏠 Homepage',
@@ -23,8 +25,8 @@ var CMS_SCHEMA = {
           { key: 'subtitle', label: 'Subtitle',          type: 'textarea', default: 'Join the UAE\'s largest free outdoor fitness community.' },
           { key: 'cta_text', label: 'Button Text',       type: 'text',     default: 'Join Free' },
           { key: 'cta_link', label: 'Button Link',       type: 'text',     default: '/sessions.html' },
-          { key: 'hero_video', label: 'Hero Video URL',  type: 'video',    hint: 'Upload a video or paste a URL. Leave empty for no video.' },
-          { key: 'hero_image', label: 'Hero Image (fallback)', type: 'image', hint: 'Shown when video is not available' },
+          { key: 'hero_video', label: 'Hero Video URL',  type: 'video',    size: '1920 \u00d7 1080\u00a0px (16:9) \u00b7 MP4 H.264 \u00b7 under 10\u00a0MB \u00b7 keep it under 30s', hint: 'Upload a video or paste a URL. Leave empty for no video.' },
+          { key: 'hero_image', label: 'Hero Image (fallback)', type: 'image', size: '1920 \u00d7 1080\u00a0px (16:9) \u00b7 JPG or WebP \u00b7 under 600\u00a0KB', hint: 'Shown when video is not available' },
         ]
       },
       stats: {
@@ -43,7 +45,7 @@ var CMS_SCHEMA = {
         fields: [
           { key: 'title',     label: 'Section Title',    type: 'text',     default: 'Our Story' },
           { key: 'body',      label: 'Story Body',       type: 'textarea', hint: 'Main narrative about ATP origins' },
-          { key: 'founder_photo', label: 'Founders Photo', type: 'image',  hint: 'Fredy + Tatiana photo' },
+          { key: 'founder_photo', label: 'Founders Photo', type: 'image',  size: '1200 \u00d7 1500\u00a0px (4:5 portrait) \u00b7 JPG \u00b7 under 400\u00a0KB', hint: 'Fredy + Tatiana photo' },
         ]
       },
       member_stories: {
@@ -130,7 +132,7 @@ var CMS_SCHEMA = {
         fields: [
           { key: 'title',    label: 'Store Title',   type: 'text',     default: 'ATP Store' },
           { key: 'subtitle', label: 'Subtitle',      type: 'textarea', default: 'Official ATP merchandise — limited drops, 100% reinvested in the community.' },
-          { key: 'banner',   label: 'Top Banner Image', type: 'image' },
+          { key: 'banner',   label: 'Top Banner Image', type: 'image', size: '1920 \u00d7 600\u00a0px (16:5 wide strip) \u00b7 JPG or WebP \u00b7 under 400\u00a0KB' },
         ]
       }
     }
@@ -145,7 +147,7 @@ var CMS_SCHEMA = {
           { key: 'eyebrow',  label: 'Top Eyebrow',  type: 'text',     default: 'The team' },
           { key: 'title',    label: 'Page Title',   type: 'text',     default: 'Our Coaches' },
           { key: 'subtitle', label: 'Subtitle',     type: 'textarea', default: 'Certified coaches, real volunteers. Every ATP session is led by one of these humans — find your match and book a spot.' },
-          { key: 'banner',   label: 'Banner Image (optional, full-width strip)', type: 'image' },
+          { key: 'banner',   label: 'Banner Image (optional, full-width strip)', type: 'image', size: '1920 \u00d7 600\u00a0px (16:5 wide strip) \u00b7 JPG or WebP \u00b7 under 400\u00a0KB' },
         ]
       },
       intro: {
@@ -241,8 +243,8 @@ var CMS_SCHEMA = {
         label: 'Left Panel — Showcase',
         desc: 'Visual + brand storytelling on the left side of /join',
         fields: [
-          { key: 'hero_image',       label: 'Hero Image',                       type: 'image',    hint: 'Recommended 1200×1600 or 1400×1800. Used as the panel background.' },
-          { key: 'hero_video',       label: 'Hero Video (optional, autoplays muted)', type: 'video', hint: 'If set, plays in place of the image. Loops silently.' },
+          { key: 'hero_image',       label: 'Hero Image',                       type: 'image',    size: '1200 \u00d7 1600\u00a0px (3:4 portrait) \u00b7 JPG or WebP \u00b7 under 500\u00a0KB', hint: 'Used as the panel background.' },
+          { key: 'hero_video',       label: 'Hero Video (optional, autoplays muted)', type: 'video', size: '1080 \u00d7 1440\u00a0px (3:4 portrait) \u00b7 MP4 H.264 \u00b7 under 10\u00a0MB', hint: 'If set, plays in place of the image. Loops silently.' },
           { key: 'overlay_opacity',  label: 'Overlay Darkness (0–80, default 55)', type: 'text', default: '55' },
           { key: 'eyebrow',          label: 'Top Eyebrow',                      type: 'text',     default: 'AT THE PARK · UAE & OMAN' },
           { key: 'headline',         label: 'Headline (use \\n for new lines)', type: 'textarea', default: 'Welcome back\nto the pack.' },
@@ -425,6 +427,14 @@ function renderCmsEditor() {
         }
       } else {
         html += '<input type="text" id="' + fieldId + '" data-section="' + sectionKey + '" data-key="' + field.key + '" data-type="' + field.type + '" value="' + String(current_val).replace(/"/g,'&quot;') + '">';
+      }
+      // Recommended resolution, shown right under the upload control
+      // (founder 2026-09-17: "add the best recommended resolution near
+      // where we upload the pictures"). Same 📐 treatment as the rest
+      // of the admin so it reads as one system.
+      if (field.size) {
+        html += '<div style="font-size:11px;color:#666;margin-top:5px;line-height:1.5">\uD83D\uDCD0 ' +
+          '<strong style="color:#aaa">' + field.size + '</strong></div>';
       }
       if (field.hint) html += '<div style="font-size:10px;color:#444;margin-top:4px">' + field.hint + '</div>';
       html += '</div>';

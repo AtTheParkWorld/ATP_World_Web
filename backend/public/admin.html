@@ -1061,6 +1061,7 @@
             <input type="file" id="cePhotoFile" accept="image/*" style="display:none" onchange="_ceUpload('cePhotoFile','cePhotoUrl','image',15,'cePhotoThumb')">
             <button class="admin-btn" style="font-size:12px;padding:8px 14px;align-self:flex-end" onclick="document.getElementById('cePhotoFile').click()">📁 Upload</button>
           </div>
+          <div style="font-size:11px;color:#666;margin-top:-6px;margin-bottom:12px;line-height:1.5">📐 Square <strong style="color:#aaa">800 × 800&nbsp;px</strong> (1:1) · JPG · &lt; 300&nbsp;KB. Face centred — it's cropped to a circle.</div>
           <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
             <img id="ceCoverThumb" alt="" style="display:none;width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #1a1a1a;background:#111;flex-shrink:0" onerror="this.style.display='none'">
             <div style="flex:1">
@@ -1070,6 +1071,7 @@
             <input type="file" id="ceCoverFile" accept="image/*" style="display:none" onchange="_ceUpload('ceCoverFile','ceCoverUrl','image',15,'ceCoverThumb')">
             <button class="admin-btn" style="font-size:12px;padding:8px 14px;align-self:flex-end" onclick="document.getElementById('ceCoverFile').click()">📁 Upload</button>
           </div>
+          <div style="font-size:11px;color:#666;margin-top:-6px;margin-bottom:12px;line-height:1.5">📐 Landscape <strong style="color:#aaa">1600 × 600&nbsp;px</strong> (8:3 banner) · JPG or WebP · &lt; 400&nbsp;KB. Keep faces away from the edges.</div>
           <div style="display:flex;align-items:center;gap:12px">
             <div style="flex:1">
               <label class="admin-form-label" for="ceVideoUrl">Intro video URL</label>
@@ -1078,6 +1080,7 @@
             <input type="file" id="ceVideoFile" accept="video/mp4,video/webm" style="display:none" onchange="_ceUpload('ceVideoFile','ceVideoUrl','video',100)">
             <button class="admin-btn" style="font-size:12px;padding:8px 14px;align-self:flex-end" onclick="document.getElementById('ceVideoFile').click()">📁 Upload</button>
           </div>
+          <div style="font-size:11px;color:#666;margin-top:8px;line-height:1.5">📐 Portrait <strong style="color:#aaa">1080 × 1920&nbsp;px</strong> (9:16) · MP4 H.264 · under 30s · &lt; 20&nbsp;MB.</div>
         </div>
 
         <!-- Gallery -->
@@ -1089,6 +1092,7 @@
             <button class="admin-btn" style="font-size:12px;padding:6px 14px" onclick="document.getElementById('ceGalleryFile').click()">＋ Add photo</button>
           </div>
         </div>
+        <div style="font-size:11px;color:#666;margin-top:-4px;margin-bottom:10px;line-height:1.5">📐 <strong style="color:#aaa">1200 × 1200&nbsp;px</strong> (square) or <strong style="color:#aaa">1200 × 900&nbsp;px</strong> (4:3) · JPG · &lt; 400&nbsp;KB each.</div>
         <div id="ceGalleryList" style="margin-bottom:18px"></div>
 
         <!-- Private sessions -->
@@ -1258,7 +1262,7 @@
                 <div class="blog-editor-cover-empty" id="bp-cover-empty">Click to upload (JPG/PNG/WebP, &lt;10MB)</div>
               </div>
               <input type="file" id="bp-cover-file" accept="image/*" style="display:none" onchange="handleBlogCover(event)">
-              <div style="font-size:11px;color:#444;margin-top:4px">Recommended 1600×900 (16:9). Used as the hero on the post page + thumbnail in lists.</div>
+              <div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">📐 Landscape <strong style="color:#aaa">1600 × 900&nbsp;px</strong> (16:9) · JPG or WebP · &lt; 500&nbsp;KB. Used as the hero on the post page and the thumbnail in lists.</div>
             </div>
             <div>
               <label for="bp-excerpt">Excerpt (preview text, ~1–2 sentences)</label>
@@ -1304,6 +1308,7 @@
                 </div>
                 <textarea id="bp-body" rows="20" oninput="renderBlogPreview()" placeholder="Write your post here. Plain text with paragraph breaks (blank lines) works fine. HTML allowed for advanced formatting. Drop images straight onto this box."></textarea>
                 <input type="file" id="bp-inline-file" accept="image/*" style="display:none" onchange="handleBlogInlineImage(event)">
+                <div style="font-size:11px;color:#666;margin-top:6px;line-height:1.5">📐 In-body images: <strong style="color:#aaa">1200&nbsp;px</strong> wide (any height) · JPG or WebP · &lt; 400&nbsp;KB each.</div>
                 <div style="font-size:11px;color:#444;margin-top:6px">Drop an image directly onto the box, or click 📷 Image. Markdown: <code style="background:#0a0a0a;padding:1px 4px;border-radius:3px;color:#aaa">## heading</code> · <code style="background:#0a0a0a;padding:1px 4px;border-radius:3px;color:#aaa">**bold**</code> · <code style="background:#0a0a0a;padding:1px 4px;border-radius:3px;color:#aaa">*italic*</code> · <code style="background:#0a0a0a;padding:1px 4px;border-radius:3px;color:#aaa">[text](url)</code> · <code style="background:#0a0a0a;padding:1px 4px;border-radius:3px;color:#aaa">![alt](url)</code>.</div>
               </div>
 
@@ -2173,7 +2178,7 @@
 <div class="admin-toast" id="adminToast"></div>
 <!-- Admin modules — load order matters: core defines globals + showAdminSection
      hook in init.js wires the per-section loaders, so init.js must come last. -->
-<script src="/admin/bundle.min.js?v=c6eba55996"></script>
+<script src="/admin/bundle.min.js?v=f589d51a1b"></script>
 
 
 

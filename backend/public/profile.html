@@ -691,7 +691,8 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
   <!-- HERO -->
   <div class="profile-hero">
     <div class="profile-avatar-wrap">
-      <div class="profile-avatar" id="profileAvatar" data-atp-call="triggerAvatarUpload">
+      <div class="profile-avatar" id="profileAvatar" data-atp-call="triggerAvatarUpload"
+           title="Upload a new photo — square 800 × 800 px, JPG, under 300 KB. Face centred; it's shown as a circle.">
         <span id="avatarInitials">FM</span>
         <div class="avatar-upload">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -1530,7 +1531,8 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
           <!-- Section: Visuals -->
           <div class="coach-editor-section">
             <div class="coach-editor-section-title">1 · Who you are — visuals <small>Cover image required · profile photo + intro video optional</small></div>
-            <label style="display:block;margin-bottom:6px">Cover image (full-width hero — recommended 1600×900, JPG/PNG/WebP, &lt;10MB)</label>
+            <label style="display:block;margin-bottom:6px">Cover image (full-width hero)</label>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5">📐 Landscape <strong style="color:rgba(255,255,255,.7)">1600 × 900&nbsp;px</strong> (16:9) · JPG or WebP · &lt; 500&nbsp;KB. Keep faces away from the edges — it crops on mobile.</div>
             <div class="coach-cover-upload" id="coachCoverUpload" data-atp-call="pickCoachUpload" data-args='["cover"]'>
               <div class="coach-cover-upload-empty" id="coachCoverEmpty"><strong>Upload cover image</strong>Click to choose a file</div>
               <div class="coach-upload-overlay">Change image</div>
@@ -1538,6 +1540,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             <div class="coach-editor-row" style="margin-top:18px">
               <div>
                 <label style="display:block;margin-bottom:6px">Profile photo</label>
+                <div style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.5">📐 Square <strong style="color:rgba(255,255,255,.7)">800 × 800&nbsp;px</strong> · JPG · &lt; 300&nbsp;KB. Face centred — shown as a circle.</div>
                 <div class="coach-photo-upload" id="coachPhotoUpload" data-atp-call="pickCoachUpload" data-args='["photo"]'>
                   <div class="coach-photo-upload-empty" id="coachPhotoEmpty">Click<br>to upload</div>
                   <div class="coach-upload-overlay">Change</div>
@@ -1547,6 +1550,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
                 <label for="coachIntroVideo">Intro video URL (optional)</label>
                 <input id="coachIntroVideo" type="text" placeholder="https://… or paste a 15–30s clip URL">
                 <div class="help">Plays muted on your profile hero. If set, plays alongside (or instead of) the cover image.</div>
+                <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5">📐 <strong style="color:rgba(255,255,255,.7)">1080 × 1920&nbsp;px</strong> (9:16 portrait) · MP4 H.264 · 15–30s · &lt; 20&nbsp;MB.</div>
               </div>
             </div>
           </div>
@@ -1619,7 +1623,8 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
           <div class="coach-editor-section">
             <div class="coach-editor-section-title">2 · Expertise — gallery <small><span id="coachGalleryCount">0</span>/12 photos &amp; videos</small></div>
             <div class="coach-gallery-grid" id="coachGalleryGrid"></div>
-            <div class="help" style="margin-top:8px">Drop in 6–12 shots of you coaching, your sessions, or members at work. JPG/PNG/WebP/MP4, max 10MB each.</div>
+            <div class="help" style="margin-top:8px">Drop in 6–12 shots of you coaching, your sessions, or members at work.</div>
+            <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5">📐 <strong style="color:rgba(255,255,255,.7)">1200 × 1200&nbsp;px</strong> (square) or <strong style="color:rgba(255,255,255,.7)">1200 × 900&nbsp;px</strong> (4:3) · JPG or MP4 · &lt; 400&nbsp;KB per photo.</div>
           </div>
 
           <!-- Section: Private 1:1 -->

@@ -195,6 +195,12 @@ export default function Compose() {
           )}
         </ScrollView>
 
+        {/* Recommended size, matching the website composer's tip
+            (founder 2026-09-17). */}
+        <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[11px] px-5 pb-1 leading-4">
+          📐 Best results at 1080 × 1350 px (4:5 portrait) or 1080 × 1080 px square — anything else is cropped to keep the feed consistent.
+        </Text>
+
         {/* Footer — attach button + char counter */}
         <View className="px-5 pb-4 border-t border-white/5 pt-3 flex-row items-center justify-between">
           <Pressable

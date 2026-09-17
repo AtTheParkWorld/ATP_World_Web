@@ -194,6 +194,11 @@ export default function EditProfile() {
                 {avatarMu.isPending ? 'Uploading…' : (profileQ.data?.avatar_url ? 'Change photo' : 'Add photo')}
               </Text>
             </Pressable>
+            {/* Recommended size, right where the upload happens
+                (founder 2026-09-17). */}
+            <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[11px] mt-2 text-center">
+              📐 Square 800 × 800 px · face centred · under 300 KB
+            </Text>
           </View>
 
           <Field label="First name"  value={form.first_name}    onChange={(v) => setForm((f) => ({ ...f, first_name: v }))} autoCapitalize="words" textContentType="givenName" />

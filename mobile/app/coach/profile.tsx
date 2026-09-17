@@ -157,8 +157,8 @@ export default function CoachProfileEditor() {
           <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }}>
             <Section label="Photos" />
             <View className="flex-row gap-3 mb-4">
-              <MediaSlot label="Profile photo" uri={photo} busy={uploading === 'photo'} onPress={() => upload('photo')} onClear={() => setPhoto(null)} />
-              <MediaSlot label="Cover image"  uri={cover} busy={uploading === 'cover'} onPress={() => upload('cover')} onClear={() => setCover(null)} />
+              <MediaSlot label="Profile photo" size="800 × 800 px square, face centred" uri={photo} busy={uploading === 'photo'} onPress={() => upload('photo')} onClear={() => setPhoto(null)} />
+              <MediaSlot label="Cover image"  size="1600 × 900 px (16:9) landscape" uri={cover} busy={uploading === 'cover'} onPress={() => upload('cover')} onClear={() => setCover(null)} />
             </View>
             <Pressable
               onPress={() => upload('video')}
@@ -173,6 +173,9 @@ export default function CoachProfileEditor() {
                   {video}
                 </Text>
               )}
+              <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[11px] mt-1.5">
+                📐 1080 × 1920 px (9:16 portrait) · 15–30s
+              </Text>
             </Pressable>
 
             <View className="mb-5">
@@ -186,6 +189,9 @@ export default function CoachProfileEditor() {
                   </Text>
                 </Pressable>
               </View>
+              <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[11px] mb-2">
+                📐 1200 × 1200 px square, or 1200 × 900 px (4:3)
+              </Text>
               {gallery.length > 0 && (
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   {gallery.map((g, i) => (
@@ -256,8 +262,11 @@ function Section({ label }: { label: string }) {
   );
 }
 
-function MediaSlot({ label, uri, busy, onPress, onClear }: {
-  label: string; uri: string | null; busy: boolean; onPress: () => void; onClear: () => void;
+function MediaSlot({ label, size, uri, busy, onPress, onClear }: {
+  label: string;
+  /** Recommended resolution, shown under the slot (founder 2026-09-17). */
+  size?: string;
+  uri: string | null; busy: boolean; onPress: () => void; onClear: () => void;
 }) {
   return (
     <View className="flex-1">
@@ -278,6 +287,11 @@ function MediaSlot({ label, uri, busy, onPress, onClear }: {
           <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs">＋ Add</Text>
         )}
       </Pressable>
+      {!!size && (
+        <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[10px] mt-1.5 leading-4">
+          📐 {size}
+        </Text>
+      )}
       {!!uri && !busy && (
         <Pressable onPress={onClear} className="mt-1">
           <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[10px] text-center">Remove</Text>
