@@ -804,13 +804,23 @@
   var SKIP = /\/(admin|checkin|stream-broadcast|auth-verify|appeal)/;
   if (SKIP.test(location.pathname)) return;
 
+  // Fired once the promo is done with the screen — closed, or never
+  // shown at all. The notification spotlight waits for it.
+  var promoSettled = false;
+  function settlePromo() {
+    if (promoSettled) return;
+    promoSettled = true;
+    document.dispatchEvent(new CustomEvent('atp:promo-settled'));
+  }
+  window.ATPPromoSettled = function () { return promoSettled; };
+
   function show() {
     fetch('/api/promos/active', { cache: 'no-store' })
       .then(function (r) { return r.ok ? r.json() : { banner: null }; })
       .then(function (d) {
         var b = d && d.banner;
-        if (!b || !b.media_url) return;
-        try { if (sessionStorage.getItem('atp_promo_seen') === String(b.id)) return; } catch (e) {}
+        if (!b || !b.media_url) { settlePromo(); return; }
+        try { if (sessionStorage.getItem('atp_promo_seen') === String(b.id)) { settlePromo(); return; } } catch (e) {}
 
         var wrap = document.createElement('div');
         wrap.id = 'atpPromoOverlay';
@@ -833,7 +843,11 @@
         seen();
         fetch('/api/promos/' + b.id + '/impression', { method: 'POST' }).catch(function () {});
 
-        var close = function () { wrap.style.opacity = '0'; setTimeout(function () { wrap.remove(); }, 250); };
+        var close = function () {
+          wrap.style.opacity = '0';
+          setTimeout(function () { wrap.remove(); }, 250);
+          settlePromo();
+        };
         document.getElementById('atpPromoClose').addEventListener('click', close);
         wrap.addEventListener('click', function (e) { if (e.target === wrap) close(); });
         var link = document.getElementById('atpPromoLink');
@@ -842,7 +856,7 @@
           close();
         });
       })
-      .catch(function () {});
+      .catch(function () { settlePromo(); });
   }
   // Small delay so the page paints first — the popup should feel like a
   // curtain rising on a loaded page, not a roadblock before it.
@@ -913,4 +927,123 @@
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
+})();
+
+/* ── NEW-NOTIFICATION SPOTLIGHT ─────────────────────────────────
+   Founder 2026-09-18: when a member opens the site with an unread
+   notification waiting, show it prominently right after the opening
+   promo closes.
+
+   Same rules as the app's version:
+     · only the single newest UNREAD notification
+     · each one spotlights ONCE (tracked by id in localStorage), so
+       navigating between pages doesn't replay it
+     · waits for 'atp:promo-settled' so it never fights the promo
+     · signed-out visitors and admin screens are skipped entirely   */
+(function atpNotificationSpotlight() {
+  var SKIP = /\/(admin|checkin|stream-broadcast|auth-verify|appeal|join)/;
+  if (SKIP.test(location.pathname)) return;
+  var SEEN_KEY = 'atp_spotlight_last_id';
+
+  function kindLabel(type) {
+    switch (type) {
+      case 'friend_request':    return 'Friend request';
+      case 'streak_milestone':  return 'Streak milestone';
+      case 'session_reminder':  return 'Session reminder';
+      case 'session_feedback':  return 'How was it?';
+      case 'session_cancelled': return 'Session cancelled';
+      case 'points':            return 'Points';
+      case 'achievement':       return 'New badge';
+      default:                  return 'New notification';
+    }
+  }
+
+  function targetFor(n) {
+    var d = n.data;
+    if (typeof d === 'string') { try { d = JSON.parse(d); } catch (e) { d = null; } }
+    if (d && d.post_id) return '/community.html#' + d.post_id;
+    if (d && d.session_id) return '/sessions.html';
+    if (n.type === 'friend_request') return '/profile.html#friends';
+    return '/profile.html#notifications';
+  }
+
+  function esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  function render(n) {
+    var wrap = document.createElement('div');
+    wrap.id = 'atpNotifSpotlight';
+    wrap.setAttribute('role', 'dialog');
+    wrap.setAttribute('aria-label', 'New notification');
+    wrap.style.cssText = 'position:fixed;inset:0;z-index:9992;display:flex;align-items:center;'
+      + 'justify-content:center;padding:22px;background:rgba(0,0,0,.88);opacity:0;transition:opacity .25s';
+    wrap.innerHTML =
+      '<div style="width:100%;max-width:460px;background:#0d0d0d;border:2px solid #A8FF00;border-radius:16px;overflow:hidden;box-shadow:0 26px 80px rgba(0,0,0,.65)">'
+      +   '<div style="background:#A8FF00;padding:13px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">'
+      +     '<span style="font-family:var(--ff-display,inherit);font-size:17px;font-weight:900;text-transform:uppercase;letter-spacing:-.01em;color:#0a0a0a">' + esc(kindLabel(n.type)) + '</span>'
+      +     '<span style="background:#0a0a0a;color:#A8FF00;font-size:9px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;padding:4px 10px;border-radius:999px;flex-shrink:0">New</span>'
+      +   '</div>'
+      +   '<div style="padding:22px 20px 16px">'
+      +     (n.title ? '<div style="font-family:var(--ff-display,inherit);font-size:25px;font-weight:900;text-transform:uppercase;letter-spacing:-.01em;color:#fff;line-height:1.05">' + esc(n.title) + '</div>' : '')
+      +     (n.body ? '<div style="font-size:14px;color:#aaa;margin-top:10px;line-height:1.65;white-space:pre-line">' + esc(n.body) + '</div>' : '')
+      +   '</div>'
+      +   '<div style="padding:0 20px 20px;display:flex;flex-direction:column;gap:9px">'
+      +     '<button id="atpSpotGo" type="button" style="background:#A8FF00;border:none;color:#0a0a0a;padding:14px;border-radius:8px;font-size:12px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;font-family:inherit">Take a look</button>'
+      +     '<button id="atpSpotLater" type="button" style="background:transparent;border:none;color:#888;padding:9px;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;font-family:inherit">Later</button>'
+      +   '</div>'
+      + '</div>';
+    document.body.appendChild(wrap);
+    requestAnimationFrame(function () { wrap.style.opacity = '1'; });
+
+    var close = function () {
+      wrap.style.opacity = '0';
+      setTimeout(function () { wrap.remove(); }, 250);
+    };
+    document.getElementById('atpSpotLater').addEventListener('click', close);
+    wrap.addEventListener('click', function (e) { if (e.target === wrap) close(); });
+    document.addEventListener('keydown', function onEsc(e) {
+      if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onEsc); }
+    });
+    document.getElementById('atpSpotGo').addEventListener('click', function () {
+      var token; try { token = localStorage.getItem('atp_token'); } catch (e) {}
+      // Mark read before we navigate so the bell is already correct.
+      fetch('/api/notifications/' + n.id + '/read', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (token || '') },
+      }).catch(function () {}).then(function () { location.href = targetFor(n); });
+    });
+  }
+
+  function run() {
+    var token; try { token = localStorage.getItem('atp_token'); } catch (e) {}
+    if (!token) return;
+    fetch('/api/notifications?limit=10', { headers: { 'Authorization': 'Bearer ' + token }, cache: 'no-store' })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        var list = (d && d.notifications) || [];
+        var newest = null;
+        for (var i = 0; i < list.length; i++) { if (!list[i].read_at) { newest = list[i]; break; } }
+        if (!newest) return;
+        var last; try { last = localStorage.getItem(SEEN_KEY); } catch (e) {}
+        if (last === String(newest.id)) return;
+        try { localStorage.setItem(SEEN_KEY, String(newest.id)); } catch (e) {}
+        render(newest);
+      })
+      .catch(function () { /* never break a page over a popup */ });
+  }
+
+  function start() {
+    if (window.ATPPromoSettled && window.ATPPromoSettled()) { run(); return; }
+    var fired = false;
+    var go = function () { if (fired) return; fired = true; run(); };
+    document.addEventListener('atp:promo-settled', go, { once: true });
+    // Fallback: if the promo script is absent or its fetch hangs, the
+    // spotlight still gets its turn.
+    setTimeout(go, 9000);
+  }
+
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
 })();

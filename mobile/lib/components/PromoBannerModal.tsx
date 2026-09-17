@@ -15,6 +15,7 @@ import { VideoView, useVideoPlayer } from 'expo-video';
 import { getActivePromo, trackPromoClick, trackPromoImpression, type PromoBanner } from '@/lib/api/promos';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { colors, fontFamily } from '@/lib/theme/tokens';
+import { markPromoSettled } from '@/lib/stores/appOpen';
 
 let shownThisLaunch = false;
 
@@ -40,26 +41,26 @@ export function PromoBannerModal() {
   const { width, height } = useWindowDimensions();
 
   useEffect(() => {
-    if (!accessToken || shownThisLaunch) return;
+    if (!accessToken || shownThisLaunch) { markPromoSettled(); return; }
     let cancelled = false;
     // Let the home screen paint first — the popup is a curtain over a
     // loaded app, not a gate in front of it.
     const t = setTimeout(() => {
       getActivePromo()
         .then(({ banner: b }) => {
-          if (cancelled || !b || shownThisLaunch) return;
+          if (cancelled || !b || shownThisLaunch) { markPromoSettled(); return; }
           shownThisLaunch = true;
           setBanner(b);
           trackPromoImpression(b.id);
         })
-        .catch(() => {});
+        .catch(() => markPromoSettled());
     }, 1500);
     return () => { cancelled = true; clearTimeout(t); };
   }, [accessToken]);
 
   if (!banner) return null;
 
-  const close = () => setBanner(null);
+  const close = () => { setBanner(null); markPromoSettled(); };
   const open = () => {
     if (!banner.link_url) return;
     trackPromoClick(banner.id);

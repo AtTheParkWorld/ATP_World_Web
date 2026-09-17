@@ -26,6 +26,7 @@ import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } fr
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { PromoBannerModal } from '@/lib/components/PromoBannerModal';
+import { NotificationSpotlight } from '@/lib/components/NotificationSpotlight';
 import {
   IconTabHome,
   IconTabSessions,
@@ -90,6 +91,9 @@ export default function TabsLayout() {
   return (
     <>
     <PromoBannerModal />
+    {/* Waits for the promo to close, then spotlights the newest unread
+        notification (founder 2026-09-18). */}
+    <NotificationSpotlight />
     <Tabs
       screenOptions={{
         headerShown: false,
