@@ -53,7 +53,11 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
 .bl-hero-eyebrow{font-size:11px;font-weight:700;letter-spacing:.18em;text-transform:uppercase;color:var(--green);margin-bottom:14px;display:inline-flex;align-items:center;gap:12px}
 .bl-hero-eyebrow::before{content:'';display:block;width:24px;height:2px;background:var(--green)}
 .bl-hero h1{font-family:var(--ff-display);font-size:clamp(48px,6.5vw,88px);font-weight:900;line-height:.92;text-transform:uppercase;letter-spacing:-.01em;margin-bottom:16px;max-width:880px}
-.bl-hero h1 .acc{color:var(--green)}
+.bl-hero h1 .acc{color:var(--green);font-style:italic;font-weight:400}
+/* The lime square marker, echoed in the hero so the motif reads as a
+   system rather than a tile decoration. */
+.bl-hero-inner::before{content:'';position:absolute;top:-34px;left:0;width:14px;height:14px;background:var(--green)}
+.bl-hero-inner{padding-top:8px}
 .bl-hero-sub{font-size:17px;line-height:1.65;color:rgba(255,255,255,.78);max-width:640px;font-weight:300}
 
 /* Filter chips */
@@ -66,41 +70,91 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
 /* FEATURED + GRID */
 .bl-list{padding:36px 40px 80px;max-width:var(--max);margin:0 auto;width:100%;flex:1}
 
-.bl-featured{display:grid;grid-template-columns:1.4fr 1fr;gap:0;margin-bottom:36px;background:var(--dark2);border:1px solid var(--line-soft);border-radius:var(--radius-lg);overflow:hidden;text-decoration:none;color:inherit;transition:border-color .2s,transform .25s,box-shadow .25s}
-.bl-featured:hover{border-color:rgba(168,255,0,.42);transform:translateY(-2px);box-shadow:0 24px 56px rgba(0,0,0,.4)}
-.bl-featured-cover{position:relative;aspect-ratio:16/10;overflow:hidden;background:linear-gradient(135deg,#0d1a0a,#1a3e0a)}
-.bl-featured-cover img{width:100%;height:100%;object-fit:cover;transition:transform .35s}
-.bl-featured:hover .bl-featured-cover img{transform:scale(1.04)}
-.bl-featured-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,rgba(0,0,0,0) 50%,rgba(0,0,0,.55) 100%)}
-.bl-featured-flag{position:absolute;top:18px;left:18px;z-index:2;background:var(--green);color:#0a0a0a;font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;padding:5px 12px;border-radius:14px}
-.bl-featured-body{padding:42px 40px;display:flex;flex-direction:column;justify-content:center;gap:14px}
-.bl-featured-meta{font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--green)}
-.bl-featured-meta .dot{display:inline-block;color:var(--muted);margin:0 8px;font-weight:400}
-.bl-featured-meta .author{color:var(--light)}
-.bl-featured h2{font-family:var(--ff-display);font-size:clamp(28px,3vw,42px);font-weight:900;line-height:1;text-transform:uppercase;letter-spacing:-.005em;color:#fff}
-.bl-featured-excerpt{font-size:15px;line-height:1.7;color:rgba(255,255,255,.78);font-weight:300}
-.bl-featured-cta{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;color:var(--green);text-transform:uppercase;letter-spacing:.04em;margin-top:6px}
+/* ── MODULAR TILE MOSAIC ──────────────────────────────────────
+   Inspired by Pablo Centeno's BIT identity system (founder 2026-09-17):
+   an asymmetric grid of tiles at different spans, alternating photo,
+   solid-lime and solid-dark blocks, with a small lime square as a
+   recurring marker. The pattern is generated from the post list rather
+   than hand-placed, so it holds with 3 posts or 30.                    */
+.bl-mosaic{display:grid;grid-template-columns:repeat(12,1fr);grid-auto-rows:190px;gap:14px;grid-auto-flow:row dense}
 
-/* GRID */
-.bl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
-.bl-card{background:var(--dark2);border:1px solid var(--line-soft);border-radius:var(--radius-lg);overflow:hidden;display:flex;flex-direction:column;text-decoration:none;color:inherit;transition:border-color .2s,transform .2s,box-shadow .2s}
-.bl-card:hover{border-color:rgba(168,255,0,.42);transform:translateY(-3px);box-shadow:0 18px 36px rgba(0,0,0,.32)}
-.bl-card-cover{position:relative;aspect-ratio:16/10;overflow:hidden;background:linear-gradient(135deg,#0d1a0a,#1a3e0a)}
-.bl-card-cover img{width:100%;height:100%;object-fit:cover;transition:transform .35s}
-.bl-card:hover .bl-card-cover img{transform:scale(1.05)}
-.bl-card-cat{position:absolute;top:12px;left:12px;z-index:2;background:rgba(10,10,10,.7);backdrop-filter:blur(8px);color:var(--green);font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:5px 10px;border-radius:12px;border:1px solid rgba(168,255,0,.32)}
-.bl-card-body{padding:22px 22px 24px;display:flex;flex-direction:column;gap:8px;flex:1}
-.bl-card-meta{font-size:11px;color:var(--muted);font-weight:500;letter-spacing:.04em}
-.bl-card-meta .author{color:var(--light)}
-.bl-card-title{font-family:var(--ff-display);font-size:22px;font-weight:900;text-transform:uppercase;line-height:1.05;letter-spacing:-.005em;color:#fff;margin:6px 0 4px}
-.bl-card-excerpt{font-size:13px;line-height:1.55;color:var(--light);font-weight:400;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;flex:1}
-.bl-card-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--line-soft);font-size:11px;color:var(--green);font-weight:700;letter-spacing:.04em;text-transform:uppercase}
+.bl-tile{position:relative;overflow:hidden;border-radius:var(--radius-lg);text-decoration:none;color:inherit;display:flex;flex-direction:column;justify-content:flex-end;isolation:isolate;transition:transform .35s cubic-bezier(.2,.7,.3,1)}
+.bl-tile:hover{transform:translateY(-3px)}
+.bl-tile:focus-visible{outline:2px solid var(--green);outline-offset:3px}
+
+/* The BIT marker — a small lime square that slides on hover */
+.bl-mark{position:absolute;top:18px;left:18px;width:10px;height:10px;background:var(--green);z-index:3;transition:transform .35s cubic-bezier(.2,.7,.3,1)}
+.bl-tile:hover .bl-mark{transform:translateX(6px)}
+.bl-tile--lime .bl-mark{background:var(--black)}
+
+/* Photo tiles */
+.bl-tile--photo{background:linear-gradient(135deg,#0d1a0a,#1a3e0a)}
+.bl-tile--photo img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;z-index:0;transition:transform .7s cubic-bezier(.2,.7,.3,1)}
+.bl-tile--photo:hover img{transform:scale(1.06)}
+.bl-tile--photo::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(180deg,rgba(10,10,10,.12) 0%,rgba(10,10,10,.42) 38%,rgba(10,10,10,.82) 72%,rgba(10,10,10,.96) 100%)}
+/* Tall tiles carry more copy, so they need the scrim to start higher. */
+.bl-tile--photo[style*="span 2"]::after{background:linear-gradient(180deg,rgba(10,10,10,.10) 0%,rgba(10,10,10,.30) 42%,rgba(10,10,10,.80) 74%,rgba(10,10,10,.96) 100%)}
+/* lime wipe on hover — the BIT colour-block move */
+.bl-tile--photo::before{content:'';position:absolute;inset:0;z-index:2;background:var(--green);mix-blend-mode:hard-light;opacity:0;transition:opacity .35s}
+.bl-tile--photo:hover::before{opacity:.16}
+
+/* Solid tiles */
+.bl-tile--lime{background:var(--green);color:var(--black)}
+.bl-tile--dark{background:var(--dark2);border:1px solid var(--line-soft)}
+.bl-tile--dark:hover{border-color:rgba(168,255,0,.42)}
+
+.bl-tile-inner{position:relative;z-index:3;padding:24px;display:flex;flex-direction:column;gap:9px}
+.bl-tile--right .bl-tile-inner{text-align:right;align-items:flex-end}
+.bl-tile--right .bl-mark{left:auto;right:18px}
+.bl-tile--right:hover .bl-mark{transform:translateX(-6px)}
+
+.bl-tile-cat{font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--green)}
+.bl-tile--lime .bl-tile-cat{color:rgba(10,10,10,.62)}
+.bl-tile-title{font-family:var(--ff-display);font-weight:900;text-transform:uppercase;line-height:.94;letter-spacing:-.01em;font-size:23px;color:#fff}
+.bl-tile--photo .bl-tile-title{text-shadow:0 2px 18px rgba(0,0,0,.55)}
+.bl-tile--photo .bl-tile-meta{color:rgba(255,255,255,.66)}
+.bl-tile--lime .bl-tile-title{color:var(--black)}
+.bl-tile-excerpt{font-size:13px;line-height:1.55;color:rgba(255,255,255,.72);font-weight:300;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.bl-tile--lime .bl-tile-excerpt{color:rgba(10,10,10,.74)}
+.bl-tile-meta{font-size:11px;letter-spacing:.05em;color:var(--muted)}
+.bl-tile--lime .bl-tile-meta{color:rgba(10,10,10,.58)}
+.bl-tile-meta .author{color:var(--light)}
+.bl-tile--lime .bl-tile-meta .author{color:rgba(10,10,10,.78)}
+
+/* Feature tile — the newest post, set big */
+.bl-tile--feature .bl-tile-inner{padding:34px}
+.bl-tile--feature .bl-tile-title{font-size:clamp(30px,3.6vw,52px)}
+.bl-tile--feature .bl-tile-excerpt{-webkit-line-clamp:3;font-size:14.5px;max-width:52ch}
+.bl-flag{position:absolute;top:0;right:0;z-index:3;background:var(--green);color:var(--black);font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;padding:8px 16px;border-bottom-left-radius:var(--radius-lg)}
+
+/* Statement tile — a brand beat between posts, not a link */
+.bl-tile--say{background:var(--green);color:var(--black);justify-content:center;cursor:default}
+.bl-tile--say .bl-tile-inner{padding:28px 34px}
+.bl-tile--say[style*="span 12"] .bl-tile-inner{align-items:center;text-align:center}
+.bl-say{font-family:var(--ff-display);font-weight:900;text-transform:uppercase;line-height:.9;letter-spacing:-.01em;font-size:clamp(26px,2.6vw,40px)}
+/* roman + italic pairing, BIT's signature type move */
+.bl-say em{font-style:italic;font-weight:400}
+.bl-say-sub{font-size:12px;font-weight:600;letter-spacing:.06em;color:rgba(10,10,10,.66);margin-top:10px}
+
+@media (max-width:1100px){
+  .bl-mosaic{grid-auto-rows:175px;gap:12px}
+  .bl-tile-title{font-size:20px}
+}
+@media (max-width:820px){
+  /* Collapse to a readable 2-column rhythm; tiles keep their character
+     but every one becomes 6 or 12 wide. */
+  .bl-mosaic{grid-template-columns:repeat(6,1fr);grid-auto-rows:168px}
+  .bl-tile{grid-column:span 6 !important}
+  .bl-tile--feature{grid-row:span 2 !important}
+  .bl-tile--right .bl-tile-inner{text-align:left;align-items:flex-start}
+  .bl-tile--right .bl-mark{left:18px;right:auto}
+}
 
 /* Empty + skeleton */
 .bl-empty{padding:60px 24px;text-align:center;background:var(--dark2);border:1px dashed var(--line);border-radius:var(--radius-lg);color:var(--light)}
 .bl-empty h3{font-family:var(--ff-display);font-size:24px;font-weight:800;text-transform:uppercase;color:#fff;margin-bottom:8px;letter-spacing:.005em}
 .bl-empty p{font-size:14px;color:var(--muted);max-width:440px;margin:0 auto;line-height:1.6}
-.bl-skel{background:var(--dark2);border:1px solid var(--line-soft);border-radius:var(--radius-lg);overflow:hidden;animation:bl-pulse 1.6s ease-in-out infinite}
+.bl-skel{background:linear-gradient(90deg,#141414 0%,#1f1f1f 50%,#141414 100%);background-size:200% 100%;border:1px solid var(--line-soft);border-radius:var(--radius-lg);overflow:hidden;animation:bl-shimmer 1.8s linear infinite;min-height:100%}
 .bl-skel-cover{aspect-ratio:16/10;background:linear-gradient(90deg,#161616 0%,#1f1f1f 50%,#161616 100%);background-size:200% 100%;animation:bl-shimmer 1.8s linear infinite}
 .bl-skel-body{padding:22px;display:flex;flex-direction:column;gap:10px}
 .bl-skel-line{height:14px;background:#1f1f1f;border-radius:4px}
@@ -195,10 +249,15 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
 
 <section class="bl-list">
   <div id="bl-content">
-    <div class="bl-grid">
-      <div class="bl-skel"><div class="bl-skel-cover"></div><div class="bl-skel-body"><div class="bl-skel-line tall"></div><div class="bl-skel-line"></div><div class="bl-skel-line short"></div></div></div>
-      <div class="bl-skel"><div class="bl-skel-cover"></div><div class="bl-skel-body"><div class="bl-skel-line tall"></div><div class="bl-skel-line"></div><div class="bl-skel-line short"></div></div></div>
-      <div class="bl-skel"><div class="bl-skel-cover"></div><div class="bl-skel-body"><div class="bl-skel-line tall"></div><div class="bl-skel-line"></div><div class="bl-skel-line short"></div></div></div>
+    <!-- Loading state previews the mosaic itself, so the page doesn't
+         reflow from a card grid into tiles once posts land. -->
+    <div class="bl-mosaic">
+      <div class="bl-skel" style="grid-column:span 8;grid-row:span 2"></div>
+      <div class="bl-skel" style="grid-column:span 4"></div>
+      <div class="bl-skel" style="grid-column:span 4"></div>
+      <div class="bl-skel" style="grid-column:span 4;grid-row:span 2"></div>
+      <div class="bl-skel" style="grid-column:span 4"></div>
+      <div class="bl-skel" style="grid-column:span 4"></div>
     </div>
   </div>
 </section>
@@ -239,35 +298,77 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
     return ((p.author.first_name || '') + ' ' + (p.author.last_name || '')).trim() || 'ATP';
   }
 
-  function renderFeatured(p) {
-    var coverHtml = p.cover_image_url
-      ? '<img src="' + escapeHtml(p.cover_image_url) + '" alt="" loading="eager">'
-      : '';
-    var meta = [escapeHtml(relTime(p.published_at || p.created_at))];
-    meta.push('<span class="author">' + escapeHtml(authorName(p)) + '</span>');
-    if (p.category) meta.push(escapeHtml(p.category));
-    return '<a class="bl-featured" href="/blog/' + encodeURIComponent(p.slug) + '">'
-      + '<div class="bl-featured-cover"><div class="bl-featured-flag">⭐ Latest</div>' + coverHtml + '</div>'
-      + '<div class="bl-featured-body">'
-      +   '<div class="bl-featured-meta">' + meta.join('<span class="dot">·</span>') + '</div>'
-      +   '<h2>' + escapeHtml(p.title) + '</h2>'
-      +   (p.excerpt ? '<p class="bl-featured-excerpt">' + escapeHtml(p.excerpt) + '</p>' : '')
-      +   '<div class="bl-featured-cta">Read the post →</div>'
+  /* ── Mosaic pattern ──────────────────────────────────────────
+     Tile shapes cycle through this list (12-col grid). `kind` is a
+     PREFERENCE: a post with a cover image always gets the photo
+     treatment, one without falls back to a solid lime/dark block —
+     which is why the grid still looks composed when half the posts
+     have no artwork.                                                 */
+  var TILE_PATTERN = [
+    /* rows 1-2 */ { c: 8, r: 2, kind: 'photo', feature: true },
+                   { c: 4, r: 1, kind: 'lime' },
+                   { c: 4, r: 1, kind: 'photo' },
+    /* row 3   */  { c: 4, r: 1, kind: 'photo' },
+                   { c: 4, r: 1, kind: 'dark', right: true },
+                   { c: 4, r: 1, kind: 'photo' },
+    /* rows 4-5 */ { c: 4, r: 2, kind: 'photo' },
+                   { c: 8, r: 1, kind: 'photo' },
+                   { c: 8, r: 1, kind: 'lime', right: true },
+    /* row 6   */  { c: 6, r: 1, kind: 'photo' },
+                   { c: 6, r: 1, kind: 'dark' },
+  ];
+  var CYCLE = TILE_PATTERN.length;   // 11 tiles = 6 complete rows
+
+  /* Brand beats dropped between posts — the BIT system breaks its grid
+     with pure type blocks, and an all-cards page reads flatter. */
+  var STATEMENTS = [
+    { line: 'Never train <em>alone.</em>', sub: 'Free sessions, every day, across the UAE.' },
+    { line: 'Beyond the <em>workout.</em>', sub: 'Coaching, community, and what happens after.' },
+  ];
+
+  function renderStatement(st, span) {
+    return '<div class="bl-tile bl-tile--say" style="grid-column:span ' + span + ';grid-row:span 1">'
+      + '<span class="bl-mark" aria-hidden="true"></span>'
+      + '<div class="bl-tile-inner">'
+      +   '<div class="bl-say">' + st.line + '</div>'
+      +   '<div class="bl-say-sub">' + escapeHtml(st.sub) + '</div>'
       + '</div>'
-      + '</a>';
+      + '</div>';
   }
 
-  function renderCard(p) {
-    var coverHtml = p.cover_image_url
-      ? '<img src="' + escapeHtml(p.cover_image_url) + '" alt="" loading="lazy">'
+  function renderTile(p, shape) {
+    var hasImg = !!p.cover_image_url;
+    // Artwork always wins: a post with a cover gets the photo treatment
+    // whatever shape it landed on, so we never hide a good image behind
+    // a solid block. Posts WITHOUT a cover become the lime/dark blocks,
+    // alternating so two of a kind never sit side by side — that's what
+    // keeps the mosaic varied. The full-width statement bands guarantee
+    // the lime rhythm even on an all-photo run.
+    var kind = hasImg ? 'photo' : (shape.alt || 'dark');
+
+    var cls = ['bl-tile', 'bl-tile--' + kind];
+    if (shape.feature) cls.push('bl-tile--feature');
+    if (shape.right)   cls.push('bl-tile--right');
+
+    var meta = escapeHtml(relTime(p.published_at || p.created_at))
+      + ' · <span class="author">' + escapeHtml(authorName(p)) + '</span>';
+
+    var img = (kind === 'photo' && hasImg)
+      ? '<img src="' + escapeHtml(p.cover_image_url) + '" alt="" '
+        + (shape.feature ? 'loading="eager"' : 'loading="lazy"') + '>'
       : '';
-    return '<a class="bl-card" href="/blog/' + encodeURIComponent(p.slug) + '">'
-      + '<div class="bl-card-cover">' + (p.category ? '<span class="bl-card-cat">' + escapeHtml(p.category) + '</span>' : '') + coverHtml + '</div>'
-      + '<div class="bl-card-body">'
-      +   '<div class="bl-card-meta">' + escapeHtml(relTime(p.published_at || p.created_at)) + ' · <span class="author">' + escapeHtml(authorName(p)) + '</span></div>'
-      +   '<div class="bl-card-title">' + escapeHtml(p.title) + '</div>'
-      +   (p.excerpt ? '<p class="bl-card-excerpt">' + escapeHtml(p.excerpt) + '</p>' : '')
-      +   '<div class="bl-card-foot">Read more →</div>'
+
+    return '<a class="' + cls.join(' ') + '" href="/blog/' + encodeURIComponent(p.slug) + '"'
+      + ' style="grid-column:span ' + shape.c + ';grid-row:span ' + shape.r + '">'
+      + img
+      + '<span class="bl-mark" aria-hidden="true"></span>'
+      + (shape.feature ? '<span class="bl-flag">Latest</span>' : '')
+      + '<div class="bl-tile-inner">'
+      +   (p.category ? '<div class="bl-tile-cat">' + escapeHtml(p.category) + '</div>' : '')
+      +   '<div class="bl-tile-title">' + escapeHtml(p.title) + '</div>'
+      +   ((p.excerpt && shape.r > 1)
+            ? '<p class="bl-tile-excerpt">' + escapeHtml(p.excerpt) + '</p>' : '')
+      +   '<div class="bl-tile-meta">' + meta + '</div>'
       + '</div>'
       + '</a>';
   }
@@ -281,13 +382,37 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
         + '</div>';
       return;
     }
-    var featured = posts[0];
-    var rest = posts.slice(1);
-    var html = renderFeatured(featured);
-    if (rest.length) {
-      html += '<div class="bl-grid">' + rest.map(renderCard).join('') + '</div>';
-    }
-    content.innerHTML = html;
+
+    var html = '';
+    var solidFlip = 0;   // alternates the lime/dark fallback
+    var stIdx = 0;
+
+    posts.forEach(function (p, i) {
+      var shape = TILE_PATTERN[i % TILE_PATTERN.length];
+      // Only the very first post is the feature — later cycles reuse the
+      // big shape without the "Latest" flag.
+      var s = {
+        c: shape.c, r: shape.r, kind: shape.kind,
+        right: shape.right, feature: shape.feature && i === 0,
+        // Only advance the flip when the tile ACTUALLY becomes a solid
+        // block, so lime and dark truly alternate among the imageless
+        // posts instead of drifting with the overall index.
+        alt: !p.cover_image_url
+          ? ((solidFlip++ % 2 === 0) ? 'lime' : 'dark')
+          : 'dark',
+      };
+      html += renderTile(p, s);
+
+      // A full-width statement band closes each complete cycle. Spanning
+      // all 12 columns means it can never leave a gap, whatever the
+      // post count.
+      if ((i + 1) % CYCLE === 0 && posts.length > i + 1) {
+        html += renderStatement(STATEMENTS[stIdx % STATEMENTS.length], 12);
+        stIdx++;
+      }
+    });
+
+    content.innerHTML = '<div class="bl-mosaic">' + html + '</div>';
   }
 
   function loadCategories() {
