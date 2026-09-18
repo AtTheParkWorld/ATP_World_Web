@@ -250,20 +250,30 @@ export default function Profile() {
                       key={String(a.id)}
                       onPress={() => setOpenBadge(a)}
                       style={({ pressed }) => ({ transform: [{ scale: pressed ? 0.95 : 1 }] })}
-                      className="items-center mr-3 bg-atp-dark border border-atp-green/30 rounded-atp-lg px-3 py-3"
+                      // No plate behind the badge (founder 2026-09-18) —
+                      // the artwork carries itself at a bigger size.
+                      className="items-center mr-4 px-1 py-1"
                       accessibilityLabel={`${a.name} — tap to read the story`}
                     >
                       {a.badge_image_url ? (
                         // contain, never a circular crop — the artwork
                         // has detail at the edges (founder 2026-09-17).
-                        <Image source={{ uri: a.badge_image_url }} style={{ width: 46, height: 46 }} resizeMode="contain" />
+                        <Image
+                          source={{ uri: a.badge_image_url }}
+                          style={{
+                            width: 74, height: 74,
+                            shadowColor: '#000', shadowOpacity: 0.5,
+                            shadowRadius: 9, shadowOffset: { width: 0, height: 4 },
+                          }}
+                          resizeMode="contain"
+                        />
                       ) : (
-                        <Text style={{ fontSize: 30 }}>{a.icon || '🏅'}</Text>
+                        <Text style={{ fontSize: 46 }}>{a.icon || '🏅'}</Text>
                       )}
                       <Text
                         numberOfLines={1}
-                        style={{ fontFamily: fontFamily.bodyBold, color: colors.light, maxWidth: 76 }}
-                        className="text-[10px] mt-1.5 text-center"
+                        style={{ fontFamily: fontFamily.bodyBold, color: colors.light, maxWidth: 84 }}
+                        className="text-[10px] mt-2 text-center"
                       >
                         {a.name}
                       </Text>

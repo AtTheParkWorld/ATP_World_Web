@@ -359,25 +359,31 @@ export default function MemberProfile() {
                 <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest">
                   Badges · {badgesQ.data.total}
                 </Text>
-                <View className="flex-row flex-wrap gap-2.5 mt-3">
+                <View className="flex-row flex-wrap gap-y-4 gap-x-2.5 mt-3">
                   {badgesQ.data.badges.map((b: FriendBadge) => (
                     <View
                       key={b.id}
-                      className="bg-atp-dark rounded-atp p-2.5 items-center border"
-                      style={{
-                        width: '31%',
-                        borderColor: b.rarity === 'legendary' ? '#f5c042'
-                          : b.rarity === 'rare' ? '#9ad4ff' : 'rgba(168,255,0,0.35)',
-                      }}
+                      // No card behind the badge (founder 2026-09-18) —
+                      // the artwork is the point on this screen too.
+                      className="items-center pt-1 pb-1.5"
+                      style={{ width: '31%' }}
                     >
                       <Pressable
                         onPress={() => setOpenBadge({ ...(b as any), unlocked: true } as Achievement)}
                         className="items-center active:opacity-70"
                       >
                         {b.badge_image_url ? (
-                          <Image source={{ uri: b.badge_image_url }} style={{ width: 48, height: 48 }} resizeMode="contain" />
+                          <Image
+                            source={{ uri: b.badge_image_url }}
+                            style={{
+                              width: 84, height: 84,
+                              shadowColor: '#000', shadowOpacity: 0.5,
+                              shadowRadius: 9, shadowOffset: { width: 0, height: 4 },
+                            }}
+                            resizeMode="contain"
+                          />
                         ) : (
-                          <Text style={{ fontSize: 30 }}>{b.icon || '🏅'}</Text>
+                          <Text style={{ fontSize: 50 }}>{b.icon || '🏅'}</Text>
                         )}
                         <Text
                           style={{ fontFamily: fontFamily.bodyBold, color: colors.white }}

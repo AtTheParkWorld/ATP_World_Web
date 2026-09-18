@@ -359,26 +359,42 @@ function BadgesView() {
 
       {unlocked.length > 0 && (
         <View className="px-5 mt-5">
-          <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-2">
-            Unlocked
-          </Text>
-          <View className="flex-row flex-wrap gap-3">
+          <View className="flex-row items-center justify-between mb-3">
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest">
+              Unlocked
+            </Text>
+            <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[10px] uppercase tracking-wider">
+              Tap a badge for its story
+            </Text>
+          </View>
+          <View className="flex-row flex-wrap gap-y-4 gap-x-3">
             {unlocked.map((a) => (
               <Pressable
                 key={a.id}
                 onPress={() => setOpenBadge(a)}
-                className="w-[30%] bg-atp-dark rounded-atp p-3 items-center border active:opacity-70"
-                style={{ borderColor: a.rarity === 'legendary' ? '#f5c042' : a.rarity === 'rare' ? '#9ad4ff' : 'rgba(168,255,0,0.4)' }}
+                // Founder 2026-09-18: no card, no border — the badge is
+                // the content, everything else supports it. Art is
+                // roughly twice its old size with a soft drop shadow so
+                // it reads against the page instead of needing a plate.
+                className="w-[30%] items-center pt-1 pb-2 active:opacity-70"
               >
                 {a.badge_image_url ? (
                   // contain, not cover — badge artwork is detailed and a
                   // circular crop was cutting the edges off (founder
                   // 2026-09-17: "not reflecting the new badges").
-                  <Image source={{ uri: a.badge_image_url }} style={{ width: 52, height: 52 }} resizeMode="contain" />
+                  <Image
+                    source={{ uri: a.badge_image_url }}
+                    style={{
+                      width: 92, height: 92,
+                      shadowColor: '#000', shadowOpacity: 0.55,
+                      shadowRadius: 10, shadowOffset: { width: 0, height: 5 },
+                    }}
+                    resizeMode="contain"
+                  />
                 ) : (
-                  <Text style={{ fontSize: 28 }}>{a.icon || '🏆'}</Text>
+                  <Text style={{ fontSize: 54 }}>{a.icon || '🏆'}</Text>
                 )}
-                <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-xs text-center mt-1" numberOfLines={2}>
+                <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-[11px] text-center mt-2" numberOfLines={2}>
                   {a.name}
                 </Text>
                 {!!rarityLabel(a.rarity) && (
@@ -394,9 +410,6 @@ function BadgesView() {
                     {a.claimed_count ?? 0}/{a.max_recipients}
                   </Text>
                 )}
-                <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[8px] uppercase tracking-wider mt-1">
-                  Tap for story
-                </Text>
               </Pressable>
             ))}
           </View>
@@ -415,9 +428,9 @@ function BadgesView() {
               <View key={a.id} className="bg-atp-dark border border-white/5 rounded-atp p-3">
                 <View className="flex-row items-center gap-3">
                   {a.badge_image_url ? (
-                    <Image source={{ uri: a.badge_image_url }} style={{ width: 34, height: 34, opacity: 0.35 }} resizeMode="contain" />
+                    <Image source={{ uri: a.badge_image_url }} style={{ width: 48, height: 48, opacity: 0.32 }} resizeMode="contain" />
                   ) : (
-                    <Text style={{ fontSize: 24, opacity: 0.4 }}>{a.icon || '🏆'}</Text>
+                    <Text style={{ fontSize: 32, opacity: 0.35 }}>{a.icon || '🏆'}</Text>
                   )}
                   <View className="flex-1">
                     <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">

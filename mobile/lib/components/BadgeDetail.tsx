@@ -26,7 +26,7 @@ export function BadgeDetail({ badge, onClose }: { badge: Achievement | null; onC
   if (!badge) return null;
 
   const accent = rarityColor(badge.rarity);
-  const artSize = Math.min(width - 120, 220);
+  const artSize = Math.min(width - 96, 260);
   const earned = badge.unlocked_at
     ? new Date(badge.unlocked_at).toLocaleDateString(undefined, {
         day: 'numeric', month: 'long', year: 'numeric',
@@ -42,25 +42,23 @@ export function BadgeDetail({ badge, onClose }: { badge: Achievement | null; onC
             style={{ borderColor: accent, maxHeight: '86%' }}
           >
             <ScrollView contentContainerStyle={{ padding: 24, alignItems: 'center' }}>
-              {/* Art — whole, uncropped, on its own plate */}
-              <View
-                className="rounded-atp-lg items-center justify-center mb-5"
-                style={{
-                  width: artSize,
-                  height: artSize,
-                  backgroundColor: 'rgba(255,255,255,0.03)',
-                  borderWidth: 1,
-                  borderColor: `${accent}55`,
-                }}
-              >
+              {/* Art — whole, uncropped, and unframed. No plate behind
+                  it (founder 2026-09-18): the badge is the subject, so
+                  nothing boxes it in. A drop shadow lifts it off the
+                  sheet instead of a border. */}
+              <View className="items-center justify-center mb-5" style={{ width: artSize, height: artSize }}>
                 {badge.badge_image_url ? (
                   <Image
                     source={{ uri: badge.badge_image_url }}
-                    style={{ width: artSize - 24, height: artSize - 24 }}
+                    style={{
+                      width: artSize, height: artSize,
+                      shadowColor: '#000', shadowOpacity: 0.6,
+                      shadowRadius: 18, shadowOffset: { width: 0, height: 8 },
+                    }}
                     resizeMode="contain"
                   />
                 ) : (
-                  <Text style={{ fontSize: artSize * 0.46 }}>{badge.icon || '🏅'}</Text>
+                  <Text style={{ fontSize: artSize * 0.58 }}>{badge.icon || '🏅'}</Text>
                 )}
               </View>
 
