@@ -824,20 +824,117 @@
 
         var wrap = document.createElement('div');
         wrap.id = 'atpPromoOverlay';
-        wrap.style.cssText = 'position:fixed;inset:0;z-index:9990;display:flex;align-items:center;justify-content:center;padding:18px;background:rgba(0,0,0,.66);backdrop-filter:blur(5px);opacity:0;transition:opacity .25s';
-        var media = b.type === 'video'
-          ? '<video src="' + b.media_url.replace(/"/g, '&quot;') + '" autoplay muted loop playsinline style="display:block;width:100%;height:min(80vh, 100%);max-height:80vh;object-fit:contain;background:#000"></video>'
-          : '<img src="' + b.media_url.replace(/"/g, '&quot;') + '" alt="' + (b.title || 'ATP partner') + '" style="display:block;width:100%;max-height:80vh;object-fit:contain;background:#000">';
-        wrap.innerHTML =
-          // Near-full-screen canvas (founder 2026-08-31) with a mild
-          // translucency so the page glows through — an overlay, not a wall.
-          '<div style="position:relative;width:min(94vw,1200px);max-height:92vh;opacity:.93;background:rgba(15,15,15,.9);border:1px solid rgba(168,255,0,.25);border-radius:var(--atp-radius-lg,16px);overflow:hidden;box-shadow:0 24px 80px rgba(0,0,0,.6)">' +
-            '<button id="atpPromoClose" aria-label="Close" style="position:absolute;top:10px;right:10px;z-index:2;width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.55);color:#fff;font-size:17px;line-height:1;cursor:pointer">×</button>' +
-            (b.link_url ? '<a id="atpPromoLink" href="' + b.link_url.replace(/"/g, '&quot;') + '" target="_blank" rel="noopener sponsored" style="display:block">' + media + '</a>' : media) +
+        wrap.style.cssText = 'position:fixed;inset:0;z-index:9990;display:flex;align-items:center;justify-content:center;padding:16px;background:rgba(6,6,6,.82);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);opacity:0;transition:opacity .28s ease';
 
-          '</div>';
+        // ── Sizing (founder 2026-09-18) ──────────────────────────────
+        // The card used to be a fixed min(94vw,1200px) landscape box with
+        // the media object-fit:contain inside it. A portrait sponsor
+        // video (1080×1920 — the current one) filled barely a third of
+        // that, marooned in black.
+        //
+        // What good lightboxes do instead — and what we do now — is size
+        // the CARD to the media's real aspect ratio, capped by both
+        // viewport axes. Portrait creative gets a tall Reels-shaped card;
+        // landscape gets a wide one. Either way the media is full-bleed
+        // with no letterboxing, and the card is exactly the media.
+        var MAX_W_PX = 1100;   // don't get silly on ultrawide monitors
+        var VW_RATIO = 0.94;
+        var VH_RATIO = 0.88;
+
+        function fitTo(mw, mh) {
+          if (!mw || !mh) return null;
+          var maxW = Math.min(window.innerWidth * VW_RATIO, MAX_W_PX);
+          var maxH = window.innerHeight * VH_RATIO;
+          var scale = Math.min(maxW / mw, maxH / mh);
+          return { w: Math.round(mw * scale), h: Math.round(mh * scale) };
+        }
+
+        var card = document.createElement('div');
+        // Full opacity: a sponsor is paying for this creative, so it is
+        // never dimmed (it used to sit at .93).
+        card.style.cssText = 'position:relative;border-radius:var(--atp-radius-lg,16px);overflow:hidden;'
+          + 'background:#000;box-shadow:0 30px 90px rgba(0,0,0,.72);'
+          + 'max-width:' + Math.round(VW_RATIO * 100) + 'vw;max-height:' + Math.round(VH_RATIO * 100) + 'vh;'
+          + 'transform:scale(.97);transition:transform .28s cubic-bezier(.2,.7,.3,1)';
+
+        var mediaEl;
+        if (b.type === 'video') {
+          mediaEl = document.createElement('video');
+          mediaEl.src = b.media_url;
+          mediaEl.autoplay = true; mediaEl.muted = true; mediaEl.loop = true;
+          mediaEl.playsInline = true;
+          mediaEl.setAttribute('playsinline', '');
+          mediaEl.addEventListener('loadedmetadata', function () {
+            applySize(mediaEl.videoWidth, mediaEl.videoHeight);
+          });
+        } else {
+          mediaEl = document.createElement('img');
+          mediaEl.src = b.media_url;
+          mediaEl.alt = b.title || 'ATP partner';
+          mediaEl.addEventListener('load', function () {
+            applySize(mediaEl.naturalWidth, mediaEl.naturalHeight);
+          });
+        }
+        mediaEl.style.cssText = 'display:block;width:100%;height:100%;object-fit:cover;background:#000';
+
+        var sized = null;
+        function applySize(mw, mh) {
+          sized = { mw: mw, mh: mh };
+          var f = fitTo(mw, mh);
+          if (!f) return;
+          card.style.width = f.w + 'px';
+          card.style.height = f.h + 'px';
+        }
+        // Until metadata lands, hold a neutral portrait-ish box so the
+        // card never flashes at the wrong shape on slow connections.
+        (function seed() {
+          var maxH = window.innerHeight * VH_RATIO;
+          card.style.width = Math.round(Math.min(window.innerWidth * VW_RATIO, maxH * 0.62)) + 'px';
+          card.style.height = Math.round(maxH) + 'px';
+        })();
+
+        var onResize = function () { if (sized) applySize(sized.mw, sized.mh); };
+        window.addEventListener('resize', onResize);
+
+        var closeBtn = document.createElement('button');
+        closeBtn.id = 'atpPromoClose';
+        closeBtn.type = 'button';
+        closeBtn.setAttribute('aria-label', 'Close');
+        closeBtn.innerHTML = '&times;';
+        closeBtn.style.cssText = 'position:absolute;top:12px;right:12px;z-index:3;width:36px;height:36px;'
+          + 'border-radius:50%;border:1px solid rgba(255,255,255,.28);background:rgba(0,0,0,.55);'
+          + 'backdrop-filter:blur(6px);color:#fff;font-size:20px;line-height:1;cursor:pointer;'
+          + 'display:flex;align-items:center;justify-content:center;padding:0';
+
+        if (b.link_url) {
+          var link = document.createElement('a');
+          link.id = 'atpPromoLink';
+          link.href = b.link_url;
+          link.target = '_blank';
+          link.rel = 'noopener sponsored';
+          link.style.cssText = 'display:block;width:100%;height:100%';
+          link.appendChild(mediaEl);
+          card.appendChild(link);
+          // Affordance sits OVER the media, so it never changes the card
+          // height or reintroduces a letterbox strip.
+          var cta = document.createElement('div');
+          cta.style.cssText = 'position:absolute;left:0;right:0;bottom:0;z-index:2;padding:26px 18px 16px;'
+            + 'background:linear-gradient(180deg,rgba(0,0,0,0),rgba(0,0,0,.72));'
+            + 'color:#A8FF00;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;'
+            + 'text-align:right;pointer-events:none';
+          cta.textContent = 'Learn more \u2192';
+          card.appendChild(cta);
+        } else {
+          card.appendChild(mediaEl);
+        }
+        card.appendChild(closeBtn);
+        wrap.appendChild(card);
+
         document.body.appendChild(wrap);
-        requestAnimationFrame(function () { wrap.style.opacity = '1'; });
+        requestAnimationFrame(function () {
+          wrap.style.opacity = '1';
+          card.style.transform = 'scale(1)';
+        });
 
         var seen = function () { try { sessionStorage.setItem('atp_promo_seen', String(b.id)); } catch (e) {} };
         seen();
@@ -845,7 +942,9 @@
 
         var close = function () {
           wrap.style.opacity = '0';
-          setTimeout(function () { wrap.remove(); }, 250);
+          card.style.transform = 'scale(.97)';
+          window.removeEventListener('resize', onResize);
+          setTimeout(function () { wrap.remove(); }, 280);
           settlePromo();
         };
         document.getElementById('atpPromoClose').addEventListener('click', close);
