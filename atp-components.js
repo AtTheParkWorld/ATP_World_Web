@@ -688,9 +688,29 @@
             '</ul></div>' +
             '<div class="atp-footer-col"><h4>Help</h4><ul>' +
               '<li><a href="/contacts.html">Contact us</a></li>' +
-              '<li><a href="/legal.html#privacy">Privacy</a></li>' +
-              '<li><a href="/legal.html#terms">Terms</a></li>' +
+              '<li><a href="/privacy.html">Privacy</a></li>' +
+              '<li><a href="/terms.html">Terms</a></li>' +
             '</ul></div>' +
+          '</div>' +
+          // Contact + newsletter (2026-09-19): carried over from the
+          // hardcoded footers this component replaced, so consolidating
+          // lost nothing. The form posts to /api/newsletter/subscribe.
+          '<div class="atp-footer-mid">' +
+            '<div class="atp-footer-contact">' +
+              '<h4>Contact</h4>' +
+              '<a href="mailto:general@atthepark.world">general@atthepark.world</a>' +
+              '<a href="tel:+971585792378">+971 58 579 2378</a>' +
+              '<span>Dubai · Al Ain · Abu Dhabi · Muscat</span>' +
+            '</div>' +
+            '<form class="atp-footer-news" id="atp-newsletter-form" novalidate>' +
+              '<h4>Stay in the loop</h4>' +
+              '<p>Weekly drops on new sessions, member stories and events. No spam — unsubscribe in one click.</p>' +
+              '<div class="atp-footer-news-row">' +
+                '<input type="email" id="atp-newsletter-email" required placeholder="your@email.com" aria-label="Email address">' +
+                '<button type="submit" id="atp-newsletter-btn">Subscribe</button>' +
+              '</div>' +
+              '<p class="atp-footer-news-msg" id="atp-newsletter-msg" role="status" aria-live="polite"></p>' +
+            '</form>' +
           '</div>' +
           '<div class="atp-footer-bottom">' +
             '<p class="atp-footer-copy">© ' + year + ' At The Park. Dubai, United Arab Emirates.</p>' +
@@ -700,6 +720,43 @@
           '</div>' +
         '</div>' +
       '</footer>';
+
+    var form  = host.querySelector('#atp-newsletter-form');
+    var email = host.querySelector('#atp-newsletter-email');
+    var btn   = host.querySelector('#atp-newsletter-btn');
+    var msg   = host.querySelector('#atp-newsletter-msg');
+    if (form && email && btn && msg) {
+      form.addEventListener('submit', function (ev) {
+        ev.preventDefault();
+        var addr = (email.value || '').trim();
+        if (!addr || addr.indexOf('@') === -1) {
+          msg.textContent = 'Please enter a valid email.';
+          msg.style.color = '#f87171';
+          return;
+        }
+        btn.disabled = true;
+        var orig = btn.textContent;
+        btn.textContent = 'Subscribing…';
+        msg.textContent = '';
+        fetch('/api/newsletter/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: addr, source: location.pathname }),
+        })
+          .then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { return { ok: r.ok, body: b }; }); })
+          .then(function (res) {
+            if (!res.ok) throw new Error((res.body && res.body.error) || 'Could not subscribe.');
+            msg.textContent = 'You are on the list. See you at the park.';
+            msg.style.color = 'var(--atp-green, #A8FF00)';
+            email.value = '';
+          })
+          .catch(function (e) {
+            msg.textContent = e.message || 'Could not subscribe — try again.';
+            msg.style.color = '#f87171';
+          })
+          .finally(function () { btn.disabled = false; btn.textContent = orig; });
+      });
+    }
   }
   // Auto-mount on boot if the host exists, same pattern as the nav.
   // Re-callable so pages can refresh after admin edits social URLs.

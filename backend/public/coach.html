@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="stylesheet" href="/atp.min.css?v=e5a5b459d0">
+  <link rel="stylesheet" href="/atp.min.css?v=f6f2d553ac">
   <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
-  <script src="/atp.bundle.min.js?v=f363c97a60"></script>
+  <script src="/atp.bundle.min.js?v=6d5e25d93c"></script>
   <!-- Stripe.js v3 — card payments for 1-on-1 bookings (Payment Element).
        Must load from js.stripe.com (PCI); origin allowed in server.js CSP. -->
   <script src="https://js.stripe.com/v3/"></script>
@@ -435,19 +435,7 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
 </div>
 
 <!-- Footer -->
-<footer class="footer-min" role="contentinfo">
-  <div class="footer-min-inner">
-    <div class="footer-min-bot">
-      <p class="footer-min-copy">© 2026 At The Park. All rights reserved. Dubai, United Arab Emirates.</p>
-      <nav class="footer-legal" aria-label="Legal">
-        <a href="/privacy.html">Privacy</a>
-        <a href="/terms.html">Terms</a>
-        <a href="/contacts.html">Contacts</a>
-      </nav>
-    </div>
-  </div>
-</footer>
-
+<div id="atp-footer-host"></div>
 <script>
 /* ════════════════════════════════════════════════════════════════
  * /coach/:slug — public coach profile
