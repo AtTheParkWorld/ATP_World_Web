@@ -321,6 +321,13 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .achievement.unlocked:hover{transform:translateY(-3px)}
 .achievement.locked{opacity:.32;filter:grayscale(1)}
 .achievement img{width:96px;height:96px;object-fit:contain;display:block;margin:0 auto 10px;
+  /* Circular clip (founder 2026-09-18): several badges were exported
+     from ChatGPT WITHOUT transparency, so an opaque black square showed
+     around the medallion. Every ATP badge is a circular medallion, so
+     clipping to a circle removes that square whatever the source file.
+     Harmless on correctly-transparent art. If a non-circular badge is
+     ever commissioned, this rule needs revisiting. */
+  border-radius:50%;
   filter:drop-shadow(0 6px 18px rgba(0,0,0,.55))}
 .ach-icon{font-size:56px;line-height:1;margin-bottom:10px}
 .ach-name{font-size:12px;font-weight:700;color:var(--white);margin-bottom:3px;line-height:1.25}
@@ -2784,7 +2791,7 @@ function openBadgeStory(id) {
     ? new Date(a.unlocked_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     : '';
   var art = a.badge_image_url
-    ? "<img src='" + escapeHtml(a.badge_image_url) + "' alt='' style='width:100%;height:100%;object-fit:contain'>"
+    ? "<img src='" + escapeHtml(a.badge_image_url) + "' alt='' style='width:100%;height:100%;object-fit:contain;border-radius:50%'>"
     : "<div style='font-size:86px;line-height:1'>" + escapeHtml(a.icon || '\uD83C\uDFC5') + "</div>";
   var rarity = a.rarity === 'legendary' ? '\uD83D\uDC51 Legendary' : a.rarity === 'rare' ? '\u2B50 Rare' : '';
 

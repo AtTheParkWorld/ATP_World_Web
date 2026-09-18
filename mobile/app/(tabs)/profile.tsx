@@ -261,7 +261,7 @@ export default function Profile() {
                         <Image
                           source={{ uri: a.badge_image_url }}
                           style={{
-                            width: 74, height: 74,
+                            width: 74, height: 74, borderRadius: 37,
                             shadowColor: '#000', shadowOpacity: 0.5,
                             shadowRadius: 9, shadowOffset: { width: 0, height: 4 },
                           }}

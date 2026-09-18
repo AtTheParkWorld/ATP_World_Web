@@ -376,7 +376,7 @@ export default function MemberProfile() {
                           <Image
                             source={{ uri: b.badge_image_url }}
                             style={{
-                              width: 84, height: 84,
+                              width: 84, height: 84, borderRadius: 42,
                               shadowColor: '#000', shadowOpacity: 0.5,
                               shadowRadius: 9, shadowOffset: { width: 0, height: 4 },
                             }}

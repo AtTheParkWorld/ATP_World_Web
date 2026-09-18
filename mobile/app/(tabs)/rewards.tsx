@@ -385,7 +385,7 @@ function BadgesView() {
                   <Image
                     source={{ uri: a.badge_image_url }}
                     style={{
-                      width: 92, height: 92,
+                      width: 92, height: 92, borderRadius: 46,
                       shadowColor: '#000', shadowOpacity: 0.55,
                       shadowRadius: 10, shadowOffset: { width: 0, height: 5 },
                     }}
@@ -428,7 +428,7 @@ function BadgesView() {
               <View key={a.id} className="bg-atp-dark border border-white/5 rounded-atp p-3">
                 <View className="flex-row items-center gap-3">
                   {a.badge_image_url ? (
-                    <Image source={{ uri: a.badge_image_url }} style={{ width: 48, height: 48, opacity: 0.32 }} resizeMode="contain" />
+                    <Image source={{ uri: a.badge_image_url }} style={{ width: 48, height: 48, borderRadius: 24, opacity: 0.32 }} resizeMode="contain" />
                   ) : (
                     <Text style={{ fontSize: 32, opacity: 0.35 }}>{a.icon || '🏆'}</Text>
                   )}

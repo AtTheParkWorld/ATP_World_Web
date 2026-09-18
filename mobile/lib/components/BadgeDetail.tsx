@@ -52,6 +52,10 @@ export function BadgeDetail({ badge, onClose }: { badge: Achievement | null; onC
                     source={{ uri: badge.badge_image_url }}
                     style={{
                       width: artSize, height: artSize,
+                      // Circular clip: some badges were exported without
+                      // transparency and carried a black square (founder
+                      // 2026-09-18). Every ATP badge is a round medallion.
+                      borderRadius: artSize / 2,
                       shadowColor: '#000', shadowOpacity: 0.6,
                       shadowRadius: 18, shadowOffset: { width: 0, height: 8 },
                     }}
