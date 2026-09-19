@@ -1090,38 +1090,34 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
 /* ── #4 · Centralized footer ────────────────────────────────────
    Used by ATPComponents.mountFooter(). A page that wants the canonical
    footer just drops `<div id="atp-footer-host"></div>` before </body>
-   and the bundle injects this markup on boot. */
+   and the bundle injects this markup on boot.
+
+   Single-level layout (founder 2026-09-19): the previous version stacked
+   four link columns and a separate contact/newsletter band, ~880px tall.
+   Everything now sits on one row — brand, inline links, newsletter —
+   over a thin legal strip. Roughly a fifth of the height. */
 .atp-footer {
   background: var(--atp-bg-1);
-  padding: var(--atp-space-12) var(--atp-space-8) var(--atp-space-6);
+  padding: var(--atp-space-6) var(--atp-space-8) var(--atp-space-4);
   border-top: 1px solid var(--atp-line);
   font-family: var(--ff-body, var(--atp-font-body, system-ui));
 }
-.atp-footer-inner {
-  max-width: 1320px;
-  margin: 0 auto;
+.atp-footer-inner { max-width: 1320px; margin: 0 auto; }
+
+.atp-footer-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--atp-space-6);
+  flex-wrap: wrap;
+  padding-bottom: var(--atp-space-4);
 }
-.atp-footer-top {
-  display: grid;
-  /* Brand + FOUR link columns = five slots. The grid declared only
-     four, so "Help" wrapped onto a row of its own (2026-09-19). */
-  grid-template-columns: 1.6fr 1fr 1fr 1fr 1fr;
-  gap: var(--atp-space-8);
-  margin-bottom: var(--atp-space-8);
-}
-@media (max-width: 1100px) {
-  .atp-footer-top { grid-template-columns: 1.4fr 1fr 1fr; }
-}
-.atp-footer-tagline {
-  font-size: var(--atp-text-sm);
-  color: var(--atp-fg-muted);
-  line-height: 1.6;
-  max-width: 320px;
-  margin: 0 0 var(--atp-space-4);
-}
-.atp-footer-socials { display: flex; gap: var(--atp-space-2); }
+
+.atp-footer-brand { display: flex; align-items: center; gap: var(--atp-space-4); flex-shrink: 0; }
+.atp-footer-brand img { height: 22px; width: auto; display: block; }
+.atp-footer-socials { display: flex; gap: 6px; }
 .atp-social-btn {
-  width: 34px; height: 34px;
+  width: 28px; height: 28px;
   border-radius: 50%;
   background: var(--atp-bg-3);
   display: flex; align-items: center; justify-content: center;
@@ -1129,115 +1125,90 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
   transition: background var(--atp-dur) var(--atp-ease),
               color var(--atp-dur) var(--atp-ease);
 }
+.atp-social-btn svg { width: 14px; height: 14px; }
 .atp-social-btn:hover { background: var(--atp-green); color: var(--atp-bg); }
-.atp-footer-col h4 {
-  font-family: var(--ff-display, var(--atp-font-display, sans-serif));
-  font-size: var(--atp-text-sm);
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--atp-fg);
-  margin: 0 0 var(--atp-space-3);
+
+/* One inline link list replaces the four columns */
+.atp-footer-links {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px var(--atp-space-4);
+  flex: 1 1 380px;
+  justify-content: center;
 }
-.atp-footer-col ul { list-style: none; padding: 0; margin: 0; }
-.atp-footer-col li { margin-bottom: var(--atp-space-2); }
-.atp-footer-col a {
+.atp-footer-links a {
   font-size: var(--atp-text-sm);
   color: var(--atp-fg-muted);
+  white-space: nowrap;
   transition: color var(--atp-dur) var(--atp-ease);
 }
-.atp-footer-col a:hover { color: var(--atp-green); }
-/* Contact + newsletter band (2026-09-19) — sits between the link
-   columns and the legal bar. Stacks on narrow screens. */
-.atp-footer-mid {
-  display: grid;
-  grid-template-columns: 1fr 1.3fr;
-  gap: var(--atp-space-8);
-  padding: var(--atp-space-6) 0;
-  border-top: 1px solid var(--atp-line);
-  margin-bottom: var(--atp-space-2);
-}
-.atp-footer-contact h4,
-.atp-footer-news h4 {
-  font-family: var(--ff-display, var(--atp-font-display, sans-serif));
-  font-size: var(--atp-text-sm);
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: var(--atp-fg);
-  margin: 0 0 var(--atp-space-3);
-}
-.atp-footer-contact a,
-.atp-footer-contact span {
-  display: block;
-  font-size: var(--atp-text-sm);
-  color: var(--atp-fg-muted);
-  margin-bottom: 6px;
-  transition: color var(--atp-dur) var(--atp-ease);
-}
-.atp-footer-contact a:hover { color: var(--atp-green); }
-.atp-footer-news p {
-  font-size: var(--atp-text-sm);
-  color: var(--atp-fg-muted);
-  line-height: 1.55;
-  margin: 0 0 var(--atp-space-3);
-  max-width: 46ch;
-}
-.atp-footer-news-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.atp-footer-links a:hover { color: var(--atp-green); }
+
+.atp-footer-news { flex: 0 1 330px; min-width: 260px; }
+.atp-footer-news-row { display: flex; gap: 6px; }
 .atp-footer-news-row input {
-  flex: 1; min-width: 200px;
+  flex: 1; min-width: 0;
   background: var(--atp-bg);
   border: 1px solid var(--atp-line);
-  border-radius: 8px;
-  padding: 12px 14px;
+  border-radius: 7px;
+  padding: 9px 12px;
   color: var(--atp-fg);
-  font-size: var(--atp-text-sm);
+  font-size: 13px;
   font-family: inherit;
 }
-.atp-footer-news-row input:focus {
-  outline: none;
-  border-color: var(--atp-green);
-}
+.atp-footer-news-row input:focus { outline: none; border-color: var(--atp-green); }
 .atp-footer-news-row button {
   background: var(--atp-green);
   color: var(--atp-bg);
   border: none;
-  border-radius: 8px;
-  padding: 12px 22px;
-  font-size: 12px;
+  border-radius: 7px;
+  padding: 9px 16px;
+  font-size: 11px;
   font-weight: 800;
   letter-spacing: .06em;
   text-transform: uppercase;
   cursor: pointer;
   font-family: inherit;
+  white-space: nowrap;
   transition: opacity var(--atp-dur) var(--atp-ease);
 }
 .atp-footer-news-row button:hover { opacity: .85; }
 .atp-footer-news-row button:disabled { opacity: .5; cursor: default; }
-.atp-footer-news-msg {
-  font-size: 12px;
-  margin: 10px 0 0;
-  min-height: 1em;
-}
+.atp-footer-news-msg { font-size: 11px; margin: 6px 0 0; min-height: 0; }
+.atp-footer-news-msg:empty { display: none; }
 
-@media (max-width: 900px) {
-  .atp-footer-top { grid-template-columns: 1fr 1fr; gap: var(--atp-space-6); }
-  .atp-footer-mid { grid-template-columns: 1fr; gap: var(--atp-space-6); }
+@media (max-width: 1080px) {
+  .atp-footer-links { justify-content: flex-start; flex-basis: 100%; order: 3; }
+  .atp-footer-news { flex: 1 1 280px; }
 }
 @media (max-width: 560px) {
   .atp-footer { padding-left: var(--atp-space-5); padding-right: var(--atp-space-5); }
-  .atp-footer-top { grid-template-columns: 1fr; }
-  .atp-footer-bottom { flex-direction: column; align-items: flex-start; }
+  .atp-footer-row { gap: var(--atp-space-4); }
+  .atp-footer-brand { width: 100%; justify-content: space-between; }
+  .atp-footer-news { flex-basis: 100%; }
 }
 
 .atp-footer-bottom {
-  padding-top: var(--atp-space-5);
+  padding-top: var(--atp-space-3);
   border-top: 1px solid var(--atp-line);
   display: flex; justify-content: space-between; align-items: center;
   flex-wrap: wrap; gap: var(--atp-space-3);
 }
 .atp-footer-copy { font-size: var(--atp-text-xs); color: var(--atp-fg-muted); margin: 0; }
-.atp-footer-legal { display: flex; gap: var(--atp-space-4); align-items: center; }
+.atp-footer-legal {
+  display: flex;
+  gap: 8px var(--atp-space-4);
+  align-items: center;
+  /* Must wrap: email + Privacy + Terms + auth buttons measured 389px
+     against a 375px viewport and pushed the page sideways (2026-09-19). */
+  flex-wrap: wrap;
+}
+@media (max-width: 560px) {
+  /* The address is one tap away under Contact; dropping it here keeps
+     the legal strip to a single tidy line on a phone. */
+  .atp-footer-legal a[href^="mailto:"] { display: none; }
+}
 .atp-footer-legal a {
   font-size: var(--atp-text-xs);
   color: var(--atp-fg-muted);
