@@ -402,6 +402,18 @@ app.get('/.well-known/assetlinks.json', (req, res) => {
 const SHOP_URL = process.env.SHOP_URL || 'https://atp-store-7903.myshopify.com';
 app.get(['/store', '/store.html'], (req, res) => res.redirect(302, SHOP_URL));
 
+// Brand-sponsorship packages were dropped from the public site
+// (founder 2026-09-19) — corporate wellness is the only published offer
+// now. Same placement rule as /store above: this MUST sit before
+// express.static or public/partners.html is served straight past it.
+// 302, not 301, so no browser caches the hop — bringing sponsorship
+// back is a one-line revert. The page files, the admin section and
+// /api/partners/* are all left in place.
+app.get(['/partners', '/partners.html'], (req, res) => res.redirect(302, '/corporate'));
+// business.html existed only to split two audiences; with one path it
+// is a wasted click.
+app.get(['/business', '/business.html'], (req, res) => res.redirect(302, '/corporate'));
+
 // HTML pages must never be cached (so deploys propagate immediately).
 // JS/CSS/assets get a sensible short cache. Bundles use content-hash
 // invalidation via ?cb=… cache-busters in the page templates.
@@ -667,7 +679,7 @@ app.get('/legal',    (req, res) => res.sendFile(path.join(__dirname, '../public/
 // Partnerships. Linked from the global nav ("Partners & Corporate").
 app.get('/business', (req, res) => res.sendFile(path.join(__dirname, '../public/business.html')));
 // Partners — B2B landing page (sponsorship tiers + lead-gen form).
-app.get('/partners', (req, res) => res.sendFile(path.join(__dirname, '../public/partners.html')));
+
 // Offers — member-facing commercial page (discounts, events, points redemption).
 app.get('/offers',   (req, res) => res.sendFile(path.join(__dirname, '../public/offers.html')));
 // Member feedback survey — Move 2 of the founder strategy.

@@ -26,7 +26,7 @@
     { key: 'plans',     label: 'Membership',   href: '/plans.html' },
     { key: 'offers',    label: 'Offers',       href: '/offers.html' },
     { key: 'coaches',   label: 'Our coaches',  href: '/coaches.html' },
-    { key: 'business',  label: 'Partners & Corporate', href: '/business.html' },
+    { key: 'business',  label: 'For Companies', href: '/corporate' },
   ];
 
   var LOGO_SRC = '/atp-logo-transparent.webp';
@@ -683,7 +683,7 @@
               '<a href="/community.html">Community</a>' +
               '<a href="/blog.html">Blog</a>' +
               '<a href="/store">Store</a>' +
-              '<a href="/business.html">Partners &amp; Corporate</a>' +
+              '<a href="/corporate">For Companies</a>' +
               '<a href="/contacts.html">Contact</a>' +
             '</nav>' +
 
