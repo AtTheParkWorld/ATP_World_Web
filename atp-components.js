@@ -683,8 +683,7 @@
               '<a href="/community.html">Community</a>' +
               '<a href="/blog.html">Blog</a>' +
               '<a href="/store">Store</a>' +
-              '<a href="/business.html">Business</a>' +
-              '<a href="/partners.html">Partners</a>' +
+              '<a href="/business.html">Partners &amp; Corporate</a>' +
               '<a href="/contacts.html">Contact</a>' +
             '</nav>' +
 

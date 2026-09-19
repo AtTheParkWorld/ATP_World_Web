@@ -125,6 +125,10 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
 .cta-block{margin-top:auto;padding:36px 40px;background:linear-gradient(120deg,rgba(168,255,0,.10),rgba(168,255,0,.02));border:1px solid rgba(168,255,0,.32);border-radius:18px;display:flex;justify-content:space-between;align-items:center;gap:24px}
 .cta-block h3{font-family:var(--ff-display);font-size:32px;font-weight:900;text-transform:uppercase;color:#fff;margin-bottom:6px;line-height:1.05}
 .cta-block p{font-size:15px;color:var(--light);max-width:520px;line-height:1.55}
+.corp-in{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.14);border-radius:9px;padding:13px 14px;color:#fff;font-size:14px;font-family:inherit;width:100%}
+.corp-in:focus{outline:none;border-color:var(--green)}
+.corp-in::placeholder{color:#777}
+@media(max-width:560px){#corp-form div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important}}
 .cta-btn{background:var(--green);color:#0a0a0a;padding:16px 32px;border-radius:10px;font-size:14px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;display:inline-block;text-decoration:none}
 
 /* Audience facts */
@@ -517,9 +521,26 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
       <div class="eyebrow" style="justify-content:center">Ready to talk</div>
       <h1>15 minutes. <span class="acc">Real numbers.</span></h1>
       <p style="font-size:18px;color:var(--light);margin:24px 0 40px;line-height:1.55">No high-pressure pitch. No hidden tier, no per-head surprise on the invoice. Just a real conversation about whether ATP is the right wellness layer for your team — and if it isn't, tell your staff to join for free anyway. Worst case: you walk away with a better benchmarking number for whatever vendor you do pick.</p>
-      <div style="display:flex;flex-direction:column;gap:18px;align-items:center">
-        <a href="mailto:partners@atthepark.world?subject=ATP%20for%20our%20team" class="cta-btn" style="font-size:16px;padding:18px 38px">📧 partners@atthepark.world</a>
-        <a href="https://wa.me/971585792378?text=Hi%20%E2%80%94%20interested%20in%20ATP%20for%20our%20company" class="cta-btn" style="font-size:16px;padding:18px 38px;background:rgba(168,255,0,.14);color:var(--green);border:1px solid var(--green)">💬 WhatsApp the founder</a>
+      <!-- Real lead capture (founder 2026-09-19). A mailto: does nothing
+           on a corporate laptop with no mail client and captures no
+           lead; this posts into the same corporate_leads pipeline the
+           admin already works from. Email + WhatsApp stay as
+           alternatives for people who prefer them. -->
+      <form id="corp-form" style="max-width:520px;margin:0 auto;text-align:left" novalidate>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <input class="corp-in" id="cf-company" placeholder="Company *" autocomplete="organization">
+          <input class="corp-in" id="cf-name" placeholder="Your name *" autocomplete="name">
+          <input class="corp-in" id="cf-email" type="email" placeholder="Work email *" autocomplete="email">
+          <input class="corp-in" id="cf-phone" placeholder="Phone (optional)" autocomplete="tel">
+          <input class="corp-in" id="cf-staff" type="number" min="1" placeholder="Roughly how many staff?" style="grid-column:1/-1">
+          <textarea class="corp-in" id="cf-msg" rows="3" placeholder="Anything you'd like us to know (optional)" style="grid-column:1/-1;resize:vertical"></textarea>
+        </div>
+        <button type="submit" class="cta-btn" id="cf-btn" style="width:100%;margin-top:14px;font-size:15px;padding:16px;border:none;cursor:pointer">Request a 15-minute call</button>
+        <p id="cf-msg-out" role="status" aria-live="polite" style="font-size:13px;margin-top:12px;min-height:1em;text-align:center"></p>
+      </form>
+      <div style="display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin-top:22px">
+        <a href="mailto:partners@atthepark.world?subject=ATP%20for%20our%20team" style="font-size:13px;color:var(--muted);text-decoration:underline">Or email us</a>
+        <a href="https://wa.me/971585792378?text=Hi%20%E2%80%94%20interested%20in%20ATP%20for%20our%20company" style="font-size:13px;color:var(--green);text-decoration:underline">WhatsApp the founder</a>
       </div>
       <p style="font-size:13px;color:var(--muted);margin-top:40px;line-height:1.6">At The Park (ATP) · Founded 2015 · Dubai, UAE<br>Trade license + commercial registration on request.</p>
     </div>
@@ -663,6 +684,54 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
   }
 
   render(FALLBACK);
+
+  (function corpLeadForm() {
+    var f = document.getElementById('corp-form');
+    if (!f) return;
+    f.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      var out = document.getElementById('cf-msg-out');
+      var btn = document.getElementById('cf-btn');
+      var val = function (id) { return (document.getElementById(id).value || '').trim(); };
+      var body = {
+        company_name: val('cf-company'),
+        contact_name: val('cf-name'),
+        contact_email: val('cf-email'),
+        contact_phone: val('cf-phone'),
+        estimated_employees: val('cf-staff'),
+        message: val('cf-msg'),
+        source: 'corporate_page',
+      };
+      if (!body.company_name || !body.contact_name || !body.contact_email) {
+        out.textContent = 'Company, your name and work email are needed.';
+        out.style.color = '#f87171';
+        return;
+      }
+      btn.disabled = true;
+      var orig = btn.textContent;
+      btn.textContent = 'Sending…';
+      out.textContent = '';
+      fetch('/api/corporate/inquire', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { return { ok: r.ok, b: b }; }); })
+        .then(function (res) {
+          if (!res.ok) throw new Error(res.b.error || 'Could not send — try again.');
+          f.innerHTML = '<div style="text-align:center;padding:26px 0">'
+            + '<div style="font-size:34px;margin-bottom:10px">✅</div>'
+            + '<p style="font-size:16px;color:#fff;margin-bottom:6px">Thanks — we\'ll be in touch within one working day.</p>'
+            + '<p style="font-size:13px;color:var(--muted)">In a hurry? WhatsApp the founder on +971 58 579 2378.</p></div>';
+        })
+        .catch(function (e) {
+          out.textContent = e.message || 'Could not send — try again.';
+          out.style.color = '#f87171';
+          btn.disabled = false;
+          btn.textContent = orig;
+        });
+    });
+  })();
 
   fetch('/api/corporate/packages', { cache: 'no-cache' })
     .then(function(r){ return r.ok ? r.json() : null; })

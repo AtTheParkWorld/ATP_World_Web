@@ -374,6 +374,84 @@ router.get('/packages', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/corporate/inquire (public) ───────────────────────
+// Founder 2026-09-19: a company that wanted to talk to ATP had only a
+// mailto: link — which does nothing on a corporate laptop with no mail
+// client configured, and captured no lead. The BRAND-partner path has
+// had a proper form all along, so the higher-value path had the weaker
+// capture. This lands straight in the corporate_leads pipeline the
+// admin already works from.
+router.post('/inquire', async (req, res, next) => {
+  try {
+    const {
+      company_name, contact_name, contact_email, contact_phone,
+      estimated_employees, package_slug, message, source,
+    } = req.body || {};
+
+    const company = String(company_name || '').trim().slice(0, 200);
+    const name    = String(contact_name || '').trim().slice(0, 160);
+    const email   = String(contact_email || '').trim().toLowerCase().slice(0, 255);
+
+    if (!company) return res.status(400).json({ error: 'Company name required' });
+    if (!name)    return res.status(400).json({ error: 'Your name is required' });
+    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ error: 'A valid work email is required' });
+    }
+
+    const staff = parseInt(estimated_employees, 10);
+    // Which package they were looking at goes into notes — it's the
+    // most useful thing for whoever picks the lead up.
+    const notes = [
+      package_slug ? `Interested in: ${String(package_slug).slice(0, 60)}` : null,
+      message ? String(message).trim().slice(0, 2000) : null,
+    ].filter(Boolean).join('\n\n') || null;
+
+    const { rows } = await query(
+      `INSERT INTO corporate_leads
+         (company_name, contact_name, contact_email, contact_phone,
+          estimated_employees, stage, source, notes)
+       VALUES ($1,$2,$3,$4,$5,'new',$6,$7)
+       RETURNING id, company_name`,
+      [
+        company, name, email,
+        (contact_phone || '').toString().trim().slice(0, 60) || null,
+        Number.isFinite(staff) && staff > 0 ? staff : null,
+        String(source || 'corporate_page').slice(0, 100),
+        notes,
+      ]
+    );
+
+    // Notify the team — best-effort, never blocks the member's success.
+    try {
+      const emailService = require('../services/email');
+      if (emailService && typeof emailService.sendRaw === 'function') {
+        await emailService.sendRaw({
+          to: process.env.PARTNERS_EMAIL || 'partners@atthepark.world',
+          subject: `New corporate enquiry — ${company}`,
+          replyTo: email,
+          html: `<p><strong>${name}</strong> &lt;${email}&gt;`
+              + `${contact_phone ? ' · ' + contact_phone : ''}</p>`
+              + `<p>Company: <strong>${company}</strong>`
+              + `${staff ? ' (~' + staff + ' staff)' : ''}</p>`
+              + `<pre style="white-space:pre-wrap;font:inherit">${(notes || '(no message)')
+                  .replace(/&/g, '&amp;').replace(/</g, '&lt;')}</pre>`,
+        });
+      }
+    } catch (e) { console.warn('[corporate] lead notify failed:', e.message); }
+
+    res.status(201).json({
+      ok: true,
+      id: rows[0].id,
+      message: "Thanks — we'll be in touch within one working day.",
+    });
+  } catch (err) {
+    if (err.code === '42P01') {
+      return res.status(503).json({ error: 'Enquiries are not available yet.' });
+    }
+    next(err);
+  }
+});
+
 // ── Admin: list ALL packages (incl. inactive) ─────────────────
 router.get('/admin/packages', authenticate, requireAdmin, async (req, res, next) => {
   try {
