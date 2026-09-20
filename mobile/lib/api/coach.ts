@@ -74,6 +74,61 @@ export function listMyOfferings(): Promise<{ offerings: CoachOffering[] }> {
   return api.get('/coach-sessions/me/offerings');
 }
 
+// ── Offering management (founder 2026-09-21) ────────────────────
+// The app used to list offerings read-only and send coaches to the
+// website to change anything. Full CRUD now, matching the web hub.
+// Server rules: duration_min must be 30/45/60/90, price_aed 50-500.
+
+export const OFFERING_DURATIONS = [30, 45, 60, 90] as const;
+export const OFFERING_PRICE_MIN = 50;
+export const OFFERING_PRICE_MAX = 500;
+
+export interface OfferingInput {
+  title: string;
+  description?: string | null;
+  duration_min: number;
+  price_aed: number;
+  is_active?: boolean;
+  sort_order?: number;
+}
+
+export function createOffering(input: OfferingInput): Promise<{ offering: CoachOffering }> {
+  return api.post('/coach-sessions/me/offerings', input);
+}
+
+export function updateOffering(
+  id: string,
+  patch: Partial<OfferingInput>,
+): Promise<{ offering: CoachOffering }> {
+  return api.patch(`/coach-sessions/me/offerings/${id}`, patch);
+}
+
+export function deleteOffering(id: string): Promise<{ success?: boolean }> {
+  return api.delete(`/coach-sessions/me/offerings/${id}`);
+}
+
+// ── Weekly availability ─────────────────────────────────────────
+// Same windows the web hub's grid edits. The bulk PUT replaces the
+// whole week atomically, which is how the grid saves.
+export interface AvailabilityWindow {
+  id?: string;
+  day_of_week: number;      // 0 = Sunday
+  start_time: string;       // "HH:MM" (server may return "HH:MM:SS")
+  end_time: string;
+  timezone?: string;
+  is_active?: boolean;
+}
+
+export function getMyAvailability(): Promise<{ availability: AvailabilityWindow[] }> {
+  return api.get('/coach-sessions/me/availability');
+}
+
+export function saveMyAvailability(
+  windows: Array<{ day_of_week: number; start_time: string; end_time: string }>,
+): Promise<{ success?: boolean; availability?: AvailabilityWindow[] }> {
+  return api.put('/coach-sessions/me/availability/bulk', { windows });
+}
+
 /**
  * Wallet shape as the API ACTUALLY returns it (founder crash
  * 2026-09-19): GET /coach-sessions/wallet/me responds with

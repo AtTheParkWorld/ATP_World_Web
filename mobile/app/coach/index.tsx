@@ -447,7 +447,11 @@ export default function CoachIndex() {
           <LinkRow
             label="My offerings"
             emoji="📋"
-            subtitle={offeringsQ.data ? `${offeringsQ.data.length} active` : undefined}
+            subtitle={
+              offeringsQ.data
+                ? `${offeringsQ.data.filter((o) => o.is_active !== false).length} bookable · prices, hours`
+                : 'Prices, durations, availability'
+            }
             onPress={() => router.push('/coach/offerings')}
           />
           <LinkRow
