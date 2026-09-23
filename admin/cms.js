@@ -43,8 +43,10 @@ var CMS_SCHEMA = {
         label: 'Our Story',
         desc: 'The founder story section',
         fields: [
-          { key: 'title',     label: 'Section Title',    type: 'text',     default: 'Our Story' },
-          { key: 'body',      label: 'Story Body',       type: 'textarea', hint: 'Main narrative about ATP origins' },
+          { key: 'title',     label: 'Section Title',    type: 'text',     default: 'Why we started At The Park' },
+          { key: 'body',      label: 'Story Body',       type: 'textarea', hint: 'Shown on the homepage AND on the app\u2019s Our Story screen. Blank lines start a new paragraph.' },
+          { key: 'quote',     label: 'Founders\u2019 quote', type: 'textarea', hint: 'The pull-quote under the story.' },
+          { key: 'quote_attrib', label: 'Quote attribution', type: 'text', default: 'Fredy & Tatiana, founders' },
           { key: 'founder_photo', label: 'Founders Photo', type: 'image',  size: '1200 \u00d7 1500\u00a0px (4:5 portrait) \u00b7 JPG \u00b7 under 400\u00a0KB', hint: 'Fredy + Tatiana photo' },
         ]
       },

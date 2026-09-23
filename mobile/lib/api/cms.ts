@@ -57,3 +57,60 @@ export async function getBlogHero(): Promise<BlogHero> {
     return FALLBACK_BLOG_HERO;
   }
 }
+
+// ── Our Story (founder 2026-09-23: "no place to tell our story" in
+// the app). Same CMS section the website's homepage story block reads
+// (admin → CMS → Home → Story), with the site's current copy as the
+// built-in fallback so the screen is never blank — identical pattern
+// to the blog hero.
+export interface StoryContent {
+  title: string;
+  body: string;
+  founder_photo: string | null;
+  quote: string;
+  quote_attrib: string;
+  milestones: Array<{ year: string; event: string }>;
+}
+
+const FALLBACK_STORY: StoryContent = {
+  title: 'Why we started At The Park',
+  body:
+    'It started with a simple sentence. "Let\'s meet at the park after work."\n\n' +
+    'No website. No logo. No plan. Just Fredy and Tatiana — two people who believed ' +
+    "that movement shouldn't cost a thing, and that the hardest part of fitness isn't " +
+    "the workout. It's doing it alone.\n\n" +
+    'What began at Al Formal Park in Abu Dhabi in 2015 with five colleagues is now the ' +
+    "UAE's largest free outdoor fitness community — 7,000+ registered members across " +
+    'Dubai, Al Ain and Muscat.',
+  founder_photo: null,
+  quote: "We didn't build a community. We just kept showing up. And so did everyone else.",
+  quote_attrib: 'Fredy & Tatiana, founders',
+  milestones: [
+    { year: '2015', event: 'Founded at Al Formal Park, Abu Dhabi' },
+    { year: '2017', event: 'Expanded to Dubai' },
+    { year: '2023', event: 'Expanded to Muscat & Al Ain' },
+    { year: '2026', event: '7,000+ members' },
+  ],
+};
+
+export async function getStoryContent(): Promise<StoryContent> {
+  try {
+    const d: any = await api.get('/cms/index');
+    const s = d?.content?.story || {};
+    const str = (v: any, fb: string) =>
+      typeof v === 'string' && v.trim() ? v : fb;
+    return {
+      title: str(s.title, FALLBACK_STORY.title),
+      body: str(s.body, FALLBACK_STORY.body),
+      founder_photo:
+        typeof s.founder_photo === 'string' && s.founder_photo.trim()
+          ? s.founder_photo
+          : null,
+      quote: str(s.quote, FALLBACK_STORY.quote),
+      quote_attrib: str(s.quote_attrib, FALLBACK_STORY.quote_attrib),
+      milestones: FALLBACK_STORY.milestones,
+    };
+  } catch {
+    return FALLBACK_STORY;
+  }
+}

@@ -341,6 +341,8 @@ export default function Profile() {
           <SettingsRow label="My Crew"   icon="users" onPress={() => router.push('/crew')} />
           <SettingsRow label="Messages"  icon="chat"  onPress={() => router.push('/messages')} />
           <SettingsRow label="Blog"      icon="story" onPress={() => router.push('/blog')} />
+          {/* Founder 2026-09-23: the app had nowhere to tell the ATP story. */}
+          <SettingsRow label="Our story" icon="heart" onPress={() => router.push('/story')} />
           <SettingsRow label="ATP Store" icon="bag"   onPress={() => router.push('/store')} last />
         </SettingsGroup>
 
