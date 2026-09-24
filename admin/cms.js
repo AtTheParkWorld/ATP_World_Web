@@ -50,21 +50,11 @@ var CMS_SCHEMA = {
           { key: 'founder_photo', label: 'Founders Photo', type: 'image',  size: '1200 \u00d7 1600\u00a0px (3:4 portrait) \u00b7 JPG \u00b7 under 400\u00a0KB \u2014 the frame is fixed 3:4, so this size fits with no cropping at all', hint: 'Fredy + Tatiana photo' },
         ]
       },
-      member_stories: {
-        label: 'Member Stories',
-        desc: 'Transformation stories (3 cards)',
-        fields: [
-          { key: 'card1_stat',   label: 'Card 1 · Stat',   type: 'text',     default: '−9 kg' },
-          { key: 'card1_name',   label: 'Card 1 · Name',   type: 'text',     default: 'Jay Ashar · Running tribe' },
-          { key: 'card1_quote',  label: 'Card 1 · Quote',  type: 'textarea', default: 'From 84 kg to 75 kg in one year. Three triathlons. Two full marathons. ATP gave me my life back.' },
-          { key: 'card2_stat',   label: 'Card 2 · Stat',   type: 'text',     default: 'Spartan' },
-          { key: 'card2_name',   label: 'Card 2 · Name',   type: 'text',     default: 'Gwen Gaje · Better tribe' },
-          { key: 'card2_quote',  label: 'Card 2 · Quote',  type: 'textarea', default: 'I joined for free yoga. Today I\'m a Spartan racer.' },
-          { key: 'card3_stat',   label: 'Card 3 · Stat',   type: 'text',     default: '6×/wk' },
-          { key: 'card3_name',   label: 'Card 3 · Name',   type: 'text',     default: 'Valentina · Stronger tribe' },
-          { key: 'card3_quote',  label: 'Card 3 · Quote',  type: 'textarea', default: 'ATP is sport and socialising in one. Friends for life.' },
-        ]
-      },
+      // Member Stories removed 2026-09-24: the homepage section these
+      // three cards fed was replaced by the blog teaser (see index.html
+      // "BLOG TEASER — replaces the old member-stories section"). The
+      // fields were still in the admin and had been filled in, but
+      // nothing rendered them anywhere — editing them did nothing.
       partner_pitch: {
         label: 'Partner Pitch',
         desc: 'The sponsor/brand partner section',
