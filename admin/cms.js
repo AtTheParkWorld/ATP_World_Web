@@ -25,8 +25,8 @@ var CMS_SCHEMA = {
           { key: 'subtitle', label: 'Subtitle',          type: 'textarea', default: 'Join the UAE\'s largest free outdoor fitness community.' },
           { key: 'cta_text', label: 'Button Text',       type: 'text',     default: 'Join Free' },
           { key: 'cta_link', label: 'Button Link',       type: 'text',     default: '/sessions.html' },
-          { key: 'hero_video', label: 'Hero Video URL',  type: 'video',    size: '1920 \u00d7 1080\u00a0px (16:9) \u00b7 MP4 H.264 \u00b7 under 10\u00a0MB \u00b7 keep it under 30s', hint: 'Upload a video or paste a URL. Leave empty for no video.' },
-          { key: 'hero_image', label: 'Hero Image (fallback)', type: 'image', size: '1920 \u00d7 1080\u00a0px (16:9) \u00b7 JPG or WebP \u00b7 under 600\u00a0KB', hint: 'Shown when video is not available' },
+          { key: 'hero_video', label: 'Hero Video URL',  type: 'video',    size: '1920 \u00d7 1080\u00a0px (16:9) \u00b7 MP4 H.264 \u00b7 under 10\u00a0MB \u00b7 under 30s \u2014 fills the screen, so keep the action centred: up to 30% of the sides is cropped on tall monitors', hint: 'Upload a video or paste a URL. Leave empty for no video.' },
+          { key: 'hero_image', label: 'Hero Image (fallback)', type: 'image', size: '1920 \u00d7 1080\u00a0px (16:9) \u00b7 JPG or WebP \u00b7 under 600\u00a0KB \u2014 keep the subject centred, the sides crop on tall monitors', hint: 'Shown when video is not available' },
         ]
       },
       stats: {
@@ -47,7 +47,7 @@ var CMS_SCHEMA = {
           { key: 'body',      label: 'Story Body',       type: 'textarea', hint: 'Shown on the homepage AND on the app\u2019s Our Story screen. Blank lines start a new paragraph.' },
           { key: 'quote',     label: 'Founders\u2019 quote', type: 'textarea', hint: 'The pull-quote under the story.' },
           { key: 'quote_attrib', label: 'Quote attribution', type: 'text', default: 'Fredy & Tatiana, founders' },
-          { key: 'founder_photo', label: 'Founders Photo', type: 'image',  size: '1200 \u00d7 1500\u00a0px (4:5 portrait) \u00b7 JPG \u00b7 under 400\u00a0KB', hint: 'Fredy + Tatiana photo' },
+          { key: 'founder_photo', label: 'Founders Photo', type: 'image',  size: '1200 \u00d7 1600\u00a0px (3:4 portrait) \u00b7 JPG \u00b7 under 400\u00a0KB \u2014 the frame is fixed 3:4, so this size fits with no cropping at all', hint: 'Fredy + Tatiana photo' },
         ]
       },
       member_stories: {
@@ -141,7 +141,7 @@ var CMS_SCHEMA = {
           { key: 'eyebrow',  label: 'Top Eyebrow',  type: 'text',     default: 'The team' },
           { key: 'title',    label: 'Page Title',   type: 'text',     default: 'Our Coaches' },
           { key: 'subtitle', label: 'Subtitle',     type: 'textarea', default: 'Certified coaches, real volunteers. Every ATP session is led by one of these humans — find your match and book a spot.' },
-          { key: 'banner',   label: 'Banner Image (optional, full-width strip)', type: 'image', size: '1920 \u00d7 600\u00a0px (16:5 wide strip) \u00b7 JPG or WebP \u00b7 under 400\u00a0KB' },
+          { key: 'banner',   label: 'Banner Image (optional, full-width strip)', type: 'image', size: '1920 \u00d7 800\u00a0px wide \u00b7 JPG or WebP \u00b7 under 400\u00a0KB \u2014 it sits at 35% opacity behind a dark gradient, so pick something simple: fine detail and any text will not read' },
         ]
       },
       intro: {
@@ -237,8 +237,8 @@ var CMS_SCHEMA = {
         label: 'Left Panel — Showcase',
         desc: 'Visual + brand storytelling on the left side of /join',
         fields: [
-          { key: 'hero_image',       label: 'Hero Image',                       type: 'image',    size: '1200 \u00d7 1600\u00a0px (3:4 portrait) \u00b7 JPG or WebP \u00b7 under 500\u00a0KB', hint: 'Used as the panel background.' },
-          { key: 'hero_video',       label: 'Hero Video (optional, autoplays muted)', type: 'video', size: '1080 \u00d7 1440\u00a0px (3:4 portrait) \u00b7 MP4 H.264 \u00b7 under 10\u00a0MB', hint: 'If set, plays in place of the image. Loops silently.' },
+          { key: 'hero_image',       label: 'Hero Image',                       type: 'image',    size: '1600 \u00d7 1700\u00a0px (near-square) \u00b7 JPG or WebP \u00b7 under 500\u00a0KB \u2014 the panel is roughly square on most screens and crops hard, so keep faces and any text inside the middle 65%', hint: 'Fills half the sign-up screen. A poster with text near the edges WILL be cut \u2014 use a photo, not a flyer.' },
+          { key: 'hero_video',       label: 'Hero Video (optional, autoplays muted)', type: 'video', size: '1200 \u00d7 1300\u00a0px (near-square) \u00b7 MP4 H.264 \u00b7 under 10\u00a0MB \u2014 same near-square panel as the image above; keep the action in the middle 65%', hint: 'If set, plays in place of the image. Loops silently.' },
           { key: 'overlay_opacity',  label: 'Overlay Darkness (0–80, default 55)', type: 'text', default: '55' },
           { key: 'eyebrow',          label: 'Top Eyebrow',                      type: 'text',     default: 'AT THE PARK · UAE & OMAN' },
           { key: 'headline',         label: 'Headline (use \\n for new lines)', type: 'textarea', default: 'Welcome back\nto the pack.' },
@@ -915,7 +915,7 @@ function _libraryUploadHeader() {
   return '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:12px;padding:16px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
     '<div style="flex:1;min-width:200px">' +
       '<div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#A8FF00;margin-bottom:4px">📤 Upload to library</div>' +
-      '<div style="font-size:11px;color:#888;line-height:1.5">Drop images or videos here \u2014 they\u2019ll appear below and can be reused on any page. Max <strong>10&nbsp;MB</strong>. Recommended: hero 1920×1080, card 800×600, square 600×600, video MP4 &lt;10&nbsp;MB.</div>' +
+      '<div style="font-size:11px;color:#888;line-height:1.5">Drop images or videos here \u2014 they\u2019ll appear below and can be reused on any page. Max <strong>10&nbsp;MB</strong>. Recommended: hero 1920×1080, sign-up panel 1600×1700, founders 1200×1600, card 800×600, square 600×600, video MP4 &lt;10&nbsp;MB.</div>' +
     '</div>' +
     '<div style="display:flex;gap:8px">' +
       '<button class="admin-btn admin-btn-primary" style="font-size:12px;padding:9px 16px" onclick="openCmsUpload(null,\'image\')">📁 Image</button>' +
