@@ -812,7 +812,7 @@
               <div id="badgePreview" style="width:100px;height:100px;flex-shrink:0;background:#0a0a0a;border-radius:50%;overflow:hidden"></div>
               <div style="flex:1;min-width:220px">
                 <div style="font-size:12px;color:#888;margin-bottom:6px">Upload your own badge image (PNG/JPEG), or use auto-generated ATP badge.</div>
-              <div style="font-size:11px;color:#666;margin-bottom:10px;line-height:1.5">📐 Recommended: <strong style="color:#aaa">512 × 512 px</strong>, PNG with transparent background, up to <strong style="color:#aaa">4&nbsp;MB</strong>. Square only — circular crop is applied automatically.</div>
+              <div style="font-size:11px;color:#666;margin-bottom:10px;line-height:1.5">📐 Recommended: <strong style="color:#aaa">512 × 512 px</strong>, PNG with a <strong style="color:#aaa">transparent</strong> background, aim for <strong style="color:#aaa">under 500&nbsp;KB</strong> (4&nbsp;MB is the hard limit). Square only — a circular crop is applied automatically.</div>
                 <div style="display:flex;gap:8px;flex-wrap:wrap">
                   <label class="admin-btn" style="font-size:12px;padding:6px 14px;cursor:pointer">
                     📁 Upload Image
@@ -1179,8 +1179,41 @@
             <button class="admin-btn" onclick="document.getElementById('mediaUploadModal').style.display='none'" style="padding:4px 10px">✕</button>
           </div>
           <label style="display:block;margin-bottom:12px">
-            <div style="font-size:12px;color:#888;margin-bottom:6px">Select image or video (max 10MB)</div>
-            <div style="font-size:11px;color:#666;margin-bottom:8px;line-height:1.6">📐 Recommended sizes:<br>• <strong style="color:#aaa">Hero / banner image:</strong> 1920 × 1080&nbsp;px (16:9), JPG or WebP, &lt; 600&nbsp;KB<br>• <strong style="color:#aaa">Card image:</strong> 800 × 600&nbsp;px (4:3), JPG or WebP, &lt; 200&nbsp;KB<br>• <strong style="color:#aaa">Square thumb:</strong> 600 × 600&nbsp;px, PNG or JPG, &lt; 200&nbsp;KB<br>• <strong style="color:#aaa">Video:</strong> MP4 H.264, 1920 × 1080 max, &lt; 10&nbsp;MB, 30s max</div>
+            <div style="font-size:12px;color:#888;margin-bottom:10px">Select image or video (max 10MB)</div>
+
+            <!-- Sizes measured from the rendered pages (2026-09-24), not
+                 estimated — an earlier set of guesses sent the wrong
+                 aspect for the sign-up panel and the founders photo. -->
+            <div style="background:#0a0a0a;border:1px solid #1a1a1a;border-radius:8px;padding:12px 14px;margin-bottom:10px">
+              <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#A8FF00;margin-bottom:8px">📐 Ideal size by slot</div>
+              <table style="width:100%;border-collapse:collapse;font-size:11px;line-height:1.5">
+                <tbody style="color:#888">
+                  <tr><td style="padding:3px 0;color:#aaa">Homepage hero</td><td style="text-align:right;white-space:nowrap">1920 × 1080 · &lt;600 KB</td></tr>
+                  <tr><td style="padding:3px 0;color:#aaa">Sign-up panel</td><td style="text-align:right;white-space:nowrap">1600 × 1700 · &lt;500 KB</td></tr>
+                  <tr><td style="padding:3px 0;color:#aaa">Founders photo</td><td style="text-align:right;white-space:nowrap">1200 × 1600 · &lt;400 KB</td></tr>
+                  <tr><td style="padding:3px 0;color:#aaa">Coaches banner</td><td style="text-align:right;white-space:nowrap">1920 × 800 · &lt;400 KB</td></tr>
+                  <tr><td style="padding:3px 0;color:#aaa">Blog cover</td><td style="text-align:right;white-space:nowrap">1600 × 900 · &lt;500 KB</td></tr>
+                  <tr><td style="padding:3px 0;color:#aaa">In-body / card image</td><td style="text-align:right;white-space:nowrap">1200 wide · &lt;400 KB</td></tr>
+                  <tr><td style="padding:3px 0;color:#aaa">Coach cover</td><td style="text-align:right;white-space:nowrap">1600 × 900 · &lt;500 KB</td></tr>
+                  <tr><td style="padding:3px 0;color:#aaa">Profile / coach photo</td><td style="text-align:right;white-space:nowrap">800 × 800 · &lt;300 KB</td></tr>
+                  <tr><td style="padding:3px 0;color:#aaa">Badge artwork</td><td style="text-align:right;white-space:nowrap">512 × 512 PNG · &lt;500 KB</td></tr>
+                  <tr><td style="padding:3px 0;color:#aaa">Sponsor logo</td><td style="text-align:right;white-space:nowrap">240 × 80 PNG/SVG</td></tr>
+                  <tr><td style="padding:3px 0;color:#aaa">Opening promo</td><td style="text-align:right;white-space:nowrap">any shape — it fits itself</td></tr>
+                  <tr><td style="padding:3px 0;color:#aaa">Video (any slot)</td><td style="text-align:right;white-space:nowrap">MP4 H.264 · 1080p · &lt;10 MB · &lt;30s</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div style="background:rgba(168,255,0,.05);border:1px solid rgba(168,255,0,.18);border-radius:8px;padding:12px 14px;margin-bottom:10px">
+              <div style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#A8FF00;margin-bottom:8px">⚡ Make it load fast</div>
+              <div style="font-size:11px;color:#888;line-height:1.7">
+                • <strong style="color:#aaa">Use WebP</strong> — same picture, roughly 30% smaller than JPG.<br>
+                • <strong style="color:#aaa">Export JPG at quality 80</strong>, not 100. Half the size, no visible difference.<br>
+                • <strong style="color:#aaa">Resize before uploading.</strong> A phone photo is ~4000&nbsp;px and 5&nbsp;MB; nothing here displays above 1920&nbsp;px.<br>
+                • <strong style="color:#aaa">PNG only for transparency</strong> (badges, logos). A PNG photo is 5–10× bigger than the same JPG.<br>
+                • Every member downloads these. The nine badges were once 27&nbsp;MB in total for artwork shown at 96&nbsp;px — at the sizes above they are 5&nbsp;MB.
+              </div>
+            </div>
             <input type="file" id="cmsFileInput" accept="image/*,video/*" onchange="handleCmsUpload(event)" style="width:100%;padding:10px;background:#0a0a0a;border:1px solid #1a1a1a;border-radius:8px;color:#fff">
           </label>
           <div id="cmsUploadPreview" style="margin-top:14px"></div>
@@ -1572,7 +1605,7 @@
                   <input type="file" id="achBadgeFile" accept="image/png,image/jpeg,image/svg+xml,image/webp" style="display:none" onchange="atpUpload('achBadgeFile','achBadge','image',4)">
                   <button type="button" class="admin-btn" style="font-size:11px;padding:9px 14px;white-space:nowrap" onclick="document.getElementById('achBadgeFile').click()">📁 Upload</button>
                 </div>
-                <div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">📐 Square, ideally <strong style="color:#aaa">512 × 512&nbsp;px</strong> (1:1) · PNG / JPG / SVG, transparent background looks best · up to <strong style="color:#aaa">4&nbsp;MB</strong>. Displayed at 48&nbsp;px (bigger in the detail view).</div>
+                <div style="font-size:11px;color:#666;margin-top:4px;line-height:1.5">📐 Square, ideally <strong style="color:#aaa">512 × 512&nbsp;px</strong> (1:1) · PNG with a <strong style="color:#aaa">transparent</strong> background · aim for <strong style="color:#aaa">under 500&nbsp;KB</strong> (4&nbsp;MB is the hard limit, not a target). Shown at 96&nbsp;px in the grid and up to 260&nbsp;px when a member opens it.</div>
               </div>
               <div style="display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px;margin-bottom:14px">
                 <div><label class="admin-form-label" for="achCriteriaType">Trigger</label><select class="admin-form-select" id="achCriteriaType"><option value="manual">Manual award only</option><option value="sessions">Sessions attended</option><option value="streak">Current streak (days)</option><option value="referrals">Active referrals</option></select></div>
@@ -2190,7 +2223,7 @@
 <div class="admin-toast" id="adminToast"></div>
 <!-- Admin modules — load order matters: core defines globals + showAdminSection
      hook in init.js wires the per-section loaders, so init.js must come last. -->
-<script src="/admin/bundle.min.js?v=01158d3ac6"></script>
+<script src="/admin/bundle.min.js?v=27a89e4248"></script>
 
 
 

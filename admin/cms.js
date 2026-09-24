@@ -915,7 +915,7 @@ function _libraryUploadHeader() {
   return '<div style="background:#0d1a0a;border:1px solid #1f3a0d;border-radius:12px;padding:16px;margin-bottom:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap">' +
     '<div style="flex:1;min-width:200px">' +
       '<div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#A8FF00;margin-bottom:4px">📤 Upload to library</div>' +
-      '<div style="font-size:11px;color:#888;line-height:1.5">Drop images or videos here \u2014 they\u2019ll appear below and can be reused on any page. Max <strong>10&nbsp;MB</strong>. Recommended: hero 1920×1080, sign-up panel 1600×1700, founders 1200×1600, card 800×600, square 600×600, video MP4 &lt;10&nbsp;MB.</div>' +
+      '<div style="font-size:11px;color:#888;line-height:1.5">Drop images or videos here \u2014 they\u2019ll appear below and can be reused on any page. Max <strong>10&nbsp;MB</strong>. Max <strong>10&nbsp;MB</strong>. Click <strong>📁 Image</strong> below for the full size-by-slot guide. Quick version: WebP or JPG at quality 80, no wider than 1920&nbsp;px, PNG only when you need transparency.</div>' +
     '</div>' +
     '<div style="display:flex;gap:8px">' +
       '<button class="admin-btn admin-btn-primary" style="font-size:12px;padding:9px 16px" onclick="openCmsUpload(null,\'image\')">📁 Image</button>' +
