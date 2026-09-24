@@ -3,7 +3,7 @@
 <head>
   <link rel="stylesheet" href="/atp.min.css?v=f8e13743c3">
   <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
-  <script src="/atp.bundle.min.js?v=a4f8e7097e"></script>
+  <script src="/atp.bundle.min.js?v=4d669b975c"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -202,6 +202,15 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .session-badge{position:absolute;top:13px;right:13px;font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 8px;border-radius:20px;background:rgba(168,255,0,.12);color:var(--green)}
 .sessions-cta-row{text-align:center;padding-top:18px;border-top:1px solid rgba(255,255,255,.06)}
 
+/* Partner logos (2026-09-25): tiles used to render the partner NAME as
+   text and ignore logo_url, which the directory API has always returned.
+   Shown as supplied — no greyscale filter: a partner's logo should
+   look like their logo. Tiles are dark, so the admin guidance asks for
+   a white/light logo on a transparent background. */
+.partner-logo{max-width:84%;max-height:78px;width:auto;height:auto;object-fit:contain;
+  opacity:.92;transition:opacity .25s ease,transform .25s ease}
+.partner-tile:hover .partner-logo{opacity:1;transform:scale(1.04)}
+
 /* STORIES SECTION — now the homepage blog teaser (the member
    -stories cards it was built for were removed 2026-09-24) */
 .stories-section{padding:100px 40px}
@@ -293,7 +302,7 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .pitch-why{font-size:13px;line-height:1.7;color:var(--muted);border-top:1px solid rgba(255,255,255,.06);padding-top:14px;margin-top:4px}
 .pitch-why strong{color:var(--light);font-weight:500}
 .partners-grid{display:flex;gap:1px;flex-wrap:wrap;background:rgba(255,255,255,.06);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:24px}
-.partner-tile{flex:1;min-width:160px;background:var(--dark3);padding:32px 24px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .25s,box-shadow .25s}
+.partner-tile{flex:1;min-width:160px;background:var(--dark3);padding:24px;min-height:126px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .25s,box-shadow .25s}
 .partner-tile:hover{background:var(--green);box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
 .partner-name{font-family:var(--ff-display);font-size:20px;font-weight:800;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;transition:color .25s}
 .partner-tile:hover .partner-name{color:var(--white)}
@@ -866,14 +875,16 @@ a.product-card:hover{transform:translateY(-4px)}
       <div class="partner-tile"><div class="partner-name">Al Wasl Water</div></div>
       <div class="partner-tile"><div class="partner-name">DIC</div></div>
       <div class="partner-tile"><div class="partner-name">Satyug Yoga</div></div>
-      <div class="partner-tile partner-tile-open"><a href="business.html" style="text-decoration:none"><div class="partner-name-open">Your brand here</div></a></div>
+      <div class="partner-tile partner-tile-open" role="button" tabindex="0" data-atp-call="openPartnerContact"
+           onkeydown="if(event.key==='Enter')openPartnerContact()" style="cursor:pointer"><div class="partner-name-open">Your brand here</div></div>
     </div>
     <div class="partner-cta-strip reveal">
       <div class="partner-cta-text">
         <h3>Ready to move with us?</h3>
-        <p>Brand partnerships <em>and</em> corporate wellness — real numbers, a community that trusts us. See both options and pick your path.</p>
+        <p>Tell us what you have in mind and we'll come back to you — usually within one working day.</p>
       </div>
-      <a href="business.html" class="btn-primary" style="white-space:nowrap;font-size:14px;padding:12px 28px">Partners &amp; Corporate →</a>
+      <button type="button" class="btn-primary" data-atp-call="openPartnerContact"
+              style="white-space:nowrap;font-size:14px;padding:12px 28px;border:none;cursor:pointer">Contact us →</button>
     </div>
   </div>
 </section>
@@ -1041,17 +1052,22 @@ document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
       var tiles = list.map(function (p) {
         var name = esc(p.name || '');
         var url  = safeUrl(p.website_url);
-        var inner = '<div class="partner-name">' + name + '</div>';
+        var logo = safeUrl(p.logo_url);
+        // Show the logo when the admin has uploaded one; the name is the
+        // fallback AND the alt text, so the tile always says who it is.
+        var inner = logo
+          ? '<img class="partner-logo" src="' + esc(logo) + '" alt="' + name + '" loading="lazy" decoding="async">'
+          : '<div class="partner-name">' + name + '</div>';
         return url
           ? '<a class="partner-tile" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer"'
-            + ' style="text-decoration:none" aria-label="' + name + ' — opens in a new tab">' + inner + '</a>'
-          : '<div class="partner-tile">' + inner + '</div>';
+            + ' style="text-decoration:none" title="' + name + '" aria-label="' + name + ' — opens in a new tab">' + inner + '</a>'
+          : '<div class="partner-tile" title="' + name + '">' + inner + '</div>';
       }).join('');
 
       grid.innerHTML = tiles +
-        '<a class="partner-tile partner-tile-open" href="business.html" style="text-decoration:none">' +
-          '<div class="partner-name-open">Your brand here</div>' +
-        '</a>';
+        '<div class="partner-tile partner-tile-open" role="button" tabindex="0"'
+        + ' onclick="openPartnerContact()" onkeydown="if(event.key===\'Enter\')openPartnerContact()"'
+        + ' style="cursor:pointer"><div class="partner-name-open">Your brand here</div></div>';
     })
     .catch(function () { /* fallback tiles stay */ });
 })();
@@ -1748,5 +1764,106 @@ window.handleGoogleSignIn = async function(response) {
 })();
 </script>
 
+
+<!-- ── PARTNER CONTACT (founder 2026-09-25) ─────────────────────────
+     Replaces the links that used to push people at the pitch deck.
+     Posts to /api/partners/inquire, which emails general@atthepark.world,
+     stores the lead in Admin → Partners → Inquiries, and auto-replies to
+     the sender — all of which already existed. -->
+<div id="partnerContactModal" role="dialog" aria-modal="true" aria-labelledby="pcm-title"
+     style="display:none;position:fixed;inset:0;z-index:9993;align-items:center;justify-content:center;
+            padding:20px;background:rgba(6,6,6,.86);backdrop-filter:blur(6px)">
+  <div style="width:100%;max-width:470px;background:#0d0d0d;border:1px solid rgba(168,255,0,.28);
+              border-radius:16px;padding:26px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:6px">
+      <h3 id="pcm-title" style="font-family:var(--ff-display);font-size:26px;font-weight:900;
+                 text-transform:uppercase;letter-spacing:-.01em;color:#fff;margin:0">Contact us</h3>
+      <button type="button" onclick="closePartnerContact()" aria-label="Close"
+              style="background:none;border:none;color:#888;font-size:24px;line-height:1;cursor:pointer;padding:0">&times;</button>
+    </div>
+    <p style="font-size:13.5px;color:var(--muted);line-height:1.6;margin:0 0 18px">
+      Partnerships, sponsorship or wellness for your team — tell us what you're thinking and we'll reply, usually within one working day.
+    </p>
+    <form id="pcm-form" novalidate>
+      <input class="pcm-in" id="pcm-name"    placeholder="Your name *" autocomplete="name">
+      <input class="pcm-in" id="pcm-email"   type="email" placeholder="Email *" autocomplete="email">
+      <input class="pcm-in" id="pcm-company" placeholder="Company (optional)" autocomplete="organization">
+      <input class="pcm-in" id="pcm-phone"   placeholder="Phone (optional)" autocomplete="tel">
+      <textarea class="pcm-in" id="pcm-msg" rows="4" placeholder="How would you like to work with us?" style="resize:vertical"></textarea>
+      <button type="submit" id="pcm-btn" class="btn-primary"
+              style="width:100%;margin-top:4px;padding:14px;font-size:14px;border:none;cursor:pointer">Send enquiry</button>
+      <p id="pcm-out" role="status" aria-live="polite" style="font-size:13px;margin:12px 0 0;min-height:1em;text-align:center"></p>
+    </form>
+  </div>
+</div>
+<style>
+  .pcm-in{width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);border-radius:9px;
+          padding:12px 14px;color:#fff;font-size:14px;font-family:inherit;margin-bottom:10px}
+  .pcm-in:focus{outline:none;border-color:var(--green)}
+  .pcm-in::placeholder{color:#666}
+</style>
+<script>
+function openPartnerContact() {
+  var m = document.getElementById('partnerContactModal');
+  if (m) { m.style.display = 'flex'; var n = document.getElementById('pcm-name'); if (n) n.focus(); }
+}
+function closePartnerContact() {
+  var m = document.getElementById('partnerContactModal');
+  if (m) m.style.display = 'none';
+}
+window.openPartnerContact = openPartnerContact;
+window.closePartnerContact = closePartnerContact;
+(function () {
+  var m = document.getElementById('partnerContactModal');
+  if (m) m.addEventListener('click', function (e) { if (e.target === m) closePartnerContact(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closePartnerContact();
+  });
+  var f = document.getElementById('pcm-form');
+  if (!f) return;
+  f.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var out = document.getElementById('pcm-out');
+    var btn = document.getElementById('pcm-btn');
+    var v = function (id) { return (document.getElementById(id).value || '').trim(); };
+    var body = {
+      contact_name:  v('pcm-name'),
+      contact_email: v('pcm-email'),
+      contact_phone: v('pcm-phone'),
+      company:       v('pcm-company'),
+      message:       v('pcm-msg'),
+      source:        'homepage_contact',
+    };
+    if (!body.contact_name || body.contact_email.indexOf('@') === -1) {
+      out.textContent = 'Please add your name and a valid email.';
+      out.style.color = '#f87171';
+      return;
+    }
+    btn.disabled = true;
+    var orig = btn.textContent;
+    btn.textContent = 'Sending…';
+    out.textContent = '';
+    fetch('/api/partners/inquire', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { return { ok: r.ok, b: b }; }); })
+      .then(function (res) {
+        if (!res.ok) throw new Error(res.b.error || 'Could not send — please try again.');
+        f.innerHTML = '<div style="text-align:center;padding:22px 0">'
+          + '<div style="font-size:34px;margin-bottom:10px">\u2705</div>'
+          + '<p style="font-size:16px;color:#fff;margin:0 0 6px">Thanks — your message is on its way.</p>'
+          + '<p style="font-size:13px;color:var(--muted);margin:0">We\u2019ll reply within one working day.</p></div>';
+      })
+      .catch(function (e) {
+        out.textContent = e.message || 'Could not send — please try again.';
+        out.style.color = '#f87171';
+        btn.disabled = false;
+        btn.textContent = orig;
+      });
+  });
+})();
+</script>
 </body>
 </html>
