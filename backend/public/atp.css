@@ -1157,7 +1157,7 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
 }
 .atp-footer-legal a:hover { color: var(--atp-fg); }
 @media (max-width: 900px) {
-  .atp-footer { padding: var(--atp-space-8) var(--atp-space-5) var(--atp-space-5); }
+  .atp-footer { padding: var(--atp-space-8) var(--atp-space-4) var(--atp-space-5); }
   .atp-footer-top { grid-template-columns: 1fr 1fr; gap: var(--atp-space-6); }
 }
 @media (max-width: 560px) {
