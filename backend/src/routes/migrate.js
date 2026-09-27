@@ -191,6 +191,29 @@ router.post('/members', async (req, res, next) => {
     const csv = await fetchURL(url);
     const rows = parseCSV(csv);
 
+    // Header check (2026-09-27). The sheet this import reads is edited by
+    // hand, and a paste that adds columns to the DATA without updating the
+    // HEADER shifts every field after the insertion point — nationality
+    // lands in gender, the date of birth lands in status, the shirt size
+    // lands in favourite sports. Nothing about that is detectable row by
+    // row, so it would import 8,000 quietly wrong records. Refuse instead.
+    const REQUIRED = [
+      'First Name', 'Last Name', 'User ID', 'Email', 'Nationality', 'Gender',
+      'Padel Level', 'Date of Birth', 'Top Size', 'Favourite Sports and Interests',
+    ];
+    const found = rows.length ? Object.keys(rows[0]) : [];
+    const missing = REQUIRED.filter(h => !found.includes(h));
+    if (missing.length) {
+      return res.status(400).json({
+        error: 'sheet_header_mismatch',
+        message: 'The sheet is missing required column headers. Check that row 1 '
+               + 'names every column in the data — a column added to the data but '
+               + 'not to the header shifts all the fields after it.',
+        missing,
+        headersFound: found,
+      });
+    }
+
     const mapped = [], skipped = [];
     for (const r of rows) {
       const m = mapRow(r);
