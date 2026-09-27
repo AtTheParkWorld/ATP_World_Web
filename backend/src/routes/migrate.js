@@ -66,80 +66,178 @@ function parseCSV(text) {
   return rows;
 }
 
+
+/* ── Legacy → new-system mapping ────────────────────────────────
+ *
+ * The legacy site and this one describe padel levels differently.
+ * Legacy writes the sign BEFORE the letter ("LEVEL +D"); we write it
+ * after ("Level D+"). A raw copy therefore produces a level string that
+ * can never match a court's allowed levels, which silently breaks
+ * level-restricted padel booking — so every value is mapped explicitly.
+ *
+ * Legacy also carries three grades this system has no slot for
+ * (LEVEL -D, LEVEL D, LEVEL C, ~330 members). Founder's call on
+ * 2026-09-27: leave those blank rather than guess a level for someone.
+ * They pick their own level in the app before booking.
+ */
+const PADEL_LEVEL_MAP = {
+  'BEGINNER': 'Beginner',
+  'LEVEL +D': 'Level D+',
+  'LEVEL -C': 'Level C-',
+  'LEVEL +C': 'Level C+',
+  // Deliberately unmapped → null: 'LEVEL -D', 'LEVEL D', 'LEVEL C'
+};
+
+const GENDER_MAP = { 'female': 'female', 'male': 'male', 'other': 'other' };
+
+const VALID_TOP_SIZES = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
+
+/** Legacy DOB is DD-MM-YYYY (verified: 4,358 rows have a day > 12, none
+ *  have a month > 12). Returns YYYY-MM-DD or null. */
 function parseDOB(str) {
   if (!str) return null;
-  const p = str.split('-');
-  if (p.length === 3 && p[2].length === 4) return `${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;
-  return null;
+  const m = String(str).trim().match(/^(\d{1,2})-(\d{1,2})-(\d{4})$/);
+  if (!m) return null;
+  const [, d, mo, y] = m;
+  const day = +d, mon = +mo, year = +y;
+  if (mon < 1 || mon > 12 || day < 1 || day > 31) return null;
+  if (year < 1900 || year > new Date().getFullYear()) return null;
+  return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
+}
+
+/** Trim, collapse runs of whitespace, and drop the trailing full stop
+ *  that the legacy signup form left on some names ("TATIANA."). */
+function cleanName(v) {
+  return String(v == null ? '' : v)
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\.+$/, '')
+    .trim();
+}
+
+function mapRow(r) {
+  const email = String(r['Email'] || '').toLowerCase().trim();
+  const rawId = String(r['User ID'] || '').trim();
+  if (!email || !email.includes('@') || !rawId) return null;
+
+  const first = cleanName(r['First Name']);
+  const last  = cleanName(r['Last Name']);
+  if (!first && !last) return null;
+
+  const g = String(r['Gender'] || '').toLowerCase().trim();
+  const size = String(r['Top Size'] || '').toUpperCase().trim();
+  const lvl = String(r['Padel Level'] || '').toUpperCase().trim();
+
+  return {
+    email,
+    member_number: `ATP-${rawId.replace(/^#0+/, '').padStart(5, '0')}`,
+    first_name: first || last,
+    last_name:  last  || '',
+    gender:      GENDER_MAP[g] || null,
+    nationality: String(r['Nationality'] || '').trim() || null,
+    date_of_birth: parseDOB(r['Date of Birth']),
+    top_size:    VALID_TOP_SIZES.includes(size) ? size : null,
+    padel_level: PADEL_LEVEL_MAP[lvl] || null,
+    sports: String(r['Favourite Sports and Interests'] || '')
+      .split(',').map(s => s.trim()).filter(Boolean),
+    // points deliberately NOT carried over — founder's call 2026-09-27:
+    // everyone starts from 0 on the new system.
+    _unmappedLevel: lvl && !PADEL_LEVEL_MAP[lvl] ? lvl : null,
+  };
 }
 
 // POST /api/migrate/members  (admin setup only)
+// Body: { setupKey, sheetId?, dryRun? }
+//   dryRun: true  → parse, map and report what WOULD change. Writes nothing.
 router.post('/members', async (req, res, next) => {
   try {
-    const { setupKey, sheetId } = req.body;
+    const { setupKey, sheetId, dryRun } = req.body;
     if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+    if (!sheetId) return res.status(400).json({ error: 'sheetId required' });
 
-    const id = sheetId || '1yalnFyBcT3f596VDEFlL1cCoxBVEOXpm7JLPUykQNDo';
-    const url = `https://docs.google.com/spreadsheets/d/${id}/export?format=csv`;
-
-    console.log('Migration: fetching CSV...');
+    const url = `https://docs.google.com/spreadsheets/d/${sheetId}/export?format=csv`;
     const csv = await fetchURL(url);
     const rows = parseCSV(csv);
-    console.log(`Migration: parsed ${rows.length} rows`);
 
-    let inserted = 0, skipped = 0, errors = 0;
-
+    const mapped = [], skipped = [];
     for (const r of rows) {
-      const email = (r['Email'] || '').toLowerCase().trim();
-      if (!email || !email.includes('@') || !r['User ID']) { skipped++; continue; }
+      const m = mapRow(r);
+      if (m) mapped.push(m); else skipped.push(r['Email'] || '(no email)');
+    }
 
-      const rawId = r['User ID'].replace(/^#0+/, '');
-      const memberNum = `ATP-${rawId.padStart(5, '0')}`;
-      const dob = parseDOB(r['Date of Birth']);
-      const gender = r['Gender'] ? r['Gender'].toLowerCase() : null;
-      const sports = (r['Favourite Sports and Interests'] || '')
-        .split(',').map(s => s.trim()).filter(Boolean);
+    // Report fill rates + level mapping so a dry run is genuinely informative.
+    const stats = {
+      rowsInSheet: rows.length,
+      usable: mapped.length,
+      skipped: skipped.length,
+      withGender: mapped.filter(m => m.gender).length,
+      withNationality: mapped.filter(m => m.nationality).length,
+      withDOB: mapped.filter(m => m.date_of_birth).length,
+      withTopSize: mapped.filter(m => m.top_size).length,
+      withPadelLevel: mapped.filter(m => m.padel_level).length,
+      withSports: mapped.filter(m => m.sports.length).length,
+      levelLeftBlank: mapped.filter(m => m._unmappedLevel).length,
+    };
 
+    // Which of these already exist? Tells us insert-vs-update up front.
+    const emails = mapped.map(m => m.email);
+    const { rows: existing } = await query(
+      `SELECT email FROM members WHERE email = ANY($1::text[])`, [emails]
+    );
+    const have = new Set(existing.map(e => e.email));
+    stats.wouldInsert = mapped.filter(m => !have.has(m.email)).length;
+    stats.wouldUpdate = mapped.filter(m =>  have.has(m.email)).length;
+
+    if (dryRun) {
+      return res.json({ dryRun: true, stats, note: 'Nothing was written.' });
+    }
+
+    let inserted = 0, updated = 0, errors = 0;
+    const errorSamples = [];
+
+    for (const m of mapped) {
+      const isNew = !have.has(m.email);
       try {
         await query(
           `INSERT INTO members (
-            member_number, first_name, last_name, email,
-            gender, nationality, date_of_birth,
-            points_balance, padel_level, sports_preferences,
-            email_verified, joined_at
-          ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,NOW())
-          ON CONFLICT (email) DO UPDATE SET
-            member_number = EXCLUDED.member_number,
-            first_name    = EXCLUDED.first_name,
-            last_name     = EXCLUDED.last_name,
-            nationality   = EXCLUDED.nationality,
-            gender        = EXCLUDED.gender,
-            date_of_birth = EXCLUDED.date_of_birth,
-            points_balance = EXCLUDED.points_balance,
-            padel_level   = EXCLUDED.padel_level,
-            sports_preferences = EXCLUDED.sports_preferences`,
+             member_number, first_name, last_name, email,
+             gender, nationality, date_of_birth, top_size,
+             padel_level, sports_preferences,
+             email_verified, migrated_from_csv, joined_at
+           ) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,true,true,NOW())
+           ON CONFLICT (email) DO UPDATE SET
+             -- member_number is NOT updated: an existing member may already
+             -- hold a number issued by this system, and overwriting it can
+             -- collide with another member's unique number.
+             first_name  = EXCLUDED.first_name,
+             last_name   = EXCLUDED.last_name,
+             -- COALESCE everywhere else: the legacy sheet fills blanks, it
+             -- never erases something the member has set here.
+             gender        = COALESCE(EXCLUDED.gender,        members.gender),
+             nationality   = COALESCE(EXCLUDED.nationality,   members.nationality),
+             date_of_birth = COALESCE(EXCLUDED.date_of_birth, members.date_of_birth),
+             top_size      = COALESCE(EXCLUDED.top_size,      members.top_size),
+             padel_level   = COALESCE(EXCLUDED.padel_level,   members.padel_level),
+             sports_preferences = CASE
+               WHEN jsonb_array_length(EXCLUDED.sports_preferences) > 0
+                 THEN EXCLUDED.sports_preferences
+               ELSE members.sports_preferences END,
+             migrated_from_csv = true,
+             updated_at = NOW()`,
           [
-            memberNum,
-            r['First Name'] || '',
-            r['Last Name'] || '',
-            email,
-            gender,
-            r['Nationality'] || null,
-            dob,
-            parseInt(r['Points']) || 0,
-            r['Padel Level'] || null,
-            JSON.stringify(sports)
+            m.member_number, m.first_name, m.last_name, m.email,
+            m.gender, m.nationality, m.date_of_birth, m.top_size,
+            m.padel_level, JSON.stringify(m.sports),
           ]
         );
-        inserted++;
+        if (isNew) inserted++; else updated++;
       } catch (err) {
         errors++;
-        if (errors <= 3) console.log(`  Row error (${email}): ${err.message}`);
+        if (errorSamples.length < 5) errorSamples.push(`${m.email}: ${err.message}`);
       }
     }
 
-    console.log(`Migration done: ${inserted} inserted, ${skipped} skipped, ${errors} errors`);
-    res.json({ success: true, total: rows.length, inserted, skipped, errors });
+    res.json({ success: true, stats, inserted, updated, errors, errorSamples });
   } catch (err) { next(err); }
 });
 
