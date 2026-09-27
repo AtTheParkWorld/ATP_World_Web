@@ -105,14 +105,46 @@ function parseDOB(str) {
   return `${y}-${mo.padStart(2, '0')}-${d.padStart(2, '0')}`;
 }
 
-/** Trim, collapse runs of whitespace, and drop the trailing full stop
- *  that the legacy signup form left on some names ("TATIANA."). */
+/** Re-case a name the member typed in full caps ("TATIANA" -> "Tatiana").
+ *
+ *  Only ever touches a value that is ENTIRELY uppercase, so a name the
+ *  member capitalised deliberately (McDonald, O'Brien) is never altered.
+ *
+ *  Short all-caps values in this export are overwhelmingly initials
+ *  ("AJ", "J R", "JD") or company suffixes ("FZE", "BHD", "RKB"), and
+ *  title-casing those makes them worse, so:
+ *    - 2 letters or fewer      -> left alone
+ *    - 3 letters with no vowel -> left alone (acronym, e.g. BHD/RKB/SBK)
+ *    - dotted initials (R.I.M.T) -> left alone
+ *  That keeps ALI/JOY/KIM/LIU/MAY/NIN/VIA/XUE correct while leaving the
+ *  initials intact.
+ */
+/** Business suffixes that turn up in the legacy name fields and would
+ *  otherwise pass the vowel test above (FZE = UAE Free Zone Establishment). */
+const NAME_ACRONYMS = new Set(['FZE', 'FZC', 'FZCO', 'LLC', 'DMCC', 'BHD', 'PJSC']);
+
+function fixAllCaps(s) {
+  if (!s || s !== s.toUpperCase()) return s;          // mixed case: member's own choice
+  if (NAME_ACRONYMS.has(s.replace(/[^A-Za-z]/g, ''))) return s;
+  if (/^(?:[A-Z]\.)+[A-Z]?\.?$/.test(s)) return s;    // R.I.M.T
+  const letters = s.replace(/[^A-Za-z]/g, '');
+  if (letters.length <= 2) return s;
+  if (letters.length === 3 && !/[AEIOUY]/.test(letters)) return s;
+  // Title-case each word; hyphens and apostrophes start a new word too,
+  // so FOULKES-WILLIAMS -> Foulkes-Williams.
+  return s.toLowerCase().replace(/(^|[\s\-'])([a-z])/g, (_, sep, c) => sep + c.toUpperCase());
+}
+
+/** Trim, collapse runs of whitespace, drop the trailing full stop the
+ *  legacy signup form left on some names ("TATIANA."), and re-case
+ *  shouted names. */
 function cleanName(v) {
-  return String(v == null ? '' : v)
+  const s = String(v == null ? '' : v)
     .replace(/\s+/g, ' ')
     .trim()
     .replace(/\.+$/, '')
     .trim();
+  return fixAllCaps(s);
 }
 
 function mapRow(r) {
