@@ -3611,7 +3611,7 @@ function renderWallet() {
   if (!el) return;
   if (!WALLET_TXNS || !WALLET_TXNS.length) {
     el.innerHTML = _atpEmpty('💰', 'No transactions yet',
-      'Earn points by attending sessions, completing challenges, or referring friends.',
+      'Earn points by referring friends, completing challenges, or going Premium to earn at every session.',
       '<a href="sessions.html" class="atp-btn atp-btn--primary atp-empty__cta">Find a session</a>');
     return;
   }
@@ -8168,9 +8168,10 @@ function _paintStreakHowItWorks() {
     ? g + 'How it works.</strong> You earn points at every session you\u2019re scanned into. Hit a ' +
       g + D + '-day streak</strong> and every session pays ' + g + 'double points</strong> while your ' +
       'subscription is active. Miss a day and the streak resets.'
-    : g + 'How it works.</strong> Hold a ' + g + D + '-day streak</strong> to activate session points \u2014 ' +
-      'miss a day and points pause until you\u2019re back to ' + D + '. ' + g + 'Premium members</strong> earn from ' +
-      'day one and go ' + g + '2\u00d7</strong> at ' + D + ' days. You only count if an ATP Ambassador scans you in.';
+    : g + 'How it works.</strong> Your streak counts every session an ATP Ambassador scans you into \u2014 ' +
+      'miss a day and it resets. ' + g + 'Session points are a Premium benefit</strong>: Premium members earn ' +
+      'at every check-in and go ' + g + '2\u00d7</strong> at ' + D + ' days. On the free plan you still train, ' +
+      'still build your streak, and still earn by referring friends and finishing challenges.';
 }
 window._paintStreakHowItWorks = _paintStreakHowItWorks;
 

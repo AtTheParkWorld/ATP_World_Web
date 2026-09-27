@@ -271,7 +271,7 @@ var CMS_SCHEMA = {
           { key: 'switch_link',   label: 'Switch Link Text',  type: 'text',     default: 'Sign in here' },
           { key: 'perk1',         label: 'Perk 1',            type: 'text',     default: 'Free forever — no credit card needed' },
           { key: 'perk2',         label: 'Perk 2',            type: 'text',     default: 'Book any session in seconds' },
-          { key: 'perk3',         label: 'Perk 3',            type: 'text',     default: 'Earn points for every session you attend' },
+          { key: 'perk3',         label: 'Perk 3',            type: 'text',     default: 'Earn points by referring friends and finishing challenges' },
         ]
       }
     }

@@ -21,7 +21,6 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import QRCode from 'react-native-qrcode-svg';
 import { getSession, getSessionFeedback, getSessionAttendees, type Session } from '@/lib/api/sessions';
 import { useConfig } from '@/lib/api/config';
-import { getStreak } from '@/lib/api/members';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { createBooking, cancelBooking, listMyBookings, submitSessionFeedback, type PaymentOptions, type BookingRecord } from '@/lib/api/bookings';
 import { ApiError } from '@/lib/api/client';
@@ -38,10 +37,9 @@ export default function SessionDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const sessionId = String(id || '');
   const qc = useQueryClient();
-  // Points-rule labelling (founder 2026-09-02): free members earn
-  // attendance points only while on a 5+ day streak — the reward pill
-  // must not promise points they won't receive. Premium always earns;
-  // a free member on a qualifying streak earns the base amount.
+  // Points-rule labelling (founder 2026-09-27): attendance points are
+  // subscriber-only. The reward pill must not promise points a free
+  // member won't receive, so it labels them as a Premium benefit.
   const member = useAuthStore((s) => s.member) as any;
   // Booking terms must be accepted before the CTA arms (founder
   // 2026-09-14) — the live text is an accident waiver + liability
@@ -60,9 +58,8 @@ export default function SessionDetail() {
     queryFn: () => getSessionAttendees(sessionId).then((r) => r.attendees),
     enabled: showWho,
   });
-  const streakQ = useQuery({ queryKey: ['streak'], queryFn: () => getStreak().then((r) => r.streak) });
   const isPremium = ['premium', 'premium_plus'].includes(member?.subscription_type);
-  const earnsAtCheckin = isPremium || (streakQ.data?.current_streak ?? 0) >= cfg.streak_double_threshold;
+  const earnsAtCheckin = isPremium;
 
   const sessionQ = useQuery({
     queryKey: ['session', sessionId],
@@ -237,7 +234,7 @@ export default function SessionDetail() {
           <InfoPill label={priceLbl} accent={s.session_type === 'paid' ? colors.warning : colors.green} />
           {s.points_reward ? (
             <InfoPill
-              label={earnsAtCheckin ? `+${s.points_reward} pts` : `+${s.points_reward} pts · Premium ⭐ or ${cfg.streak_double_threshold}-day streak`}
+              label={earnsAtCheckin ? `+${s.points_reward} pts` : `+${s.points_reward} pts · Premium ⭐`}
               accent={colors.green}
             />
           ) : null}

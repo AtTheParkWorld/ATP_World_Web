@@ -12,7 +12,7 @@ import { useConfig, type PublicConfig } from '@/lib/api/config';
 const buildFaqs = (cfg: PublicConfig) => [
   {
     q: 'How do I earn points?',
-    a: `Attend sessions. Free members earn attendance points while holding a ${cfg.streak_double_threshold}+ day streak (break it and points pause until you are back to ${cfg.streak_double_threshold}). Premium and Premium Plus members always earn — and a ${cfg.streak_double_threshold}+ day streak doubles their points (2×). You can also refer friends (+${cfg.referral_signup_points} pts each), and complete your profile (one-time +${cfg.profile_complete_points} pts).`,
+    a: `Session attendance points are a Premium benefit. Premium and Premium Plus members earn points every time they check in — and a ${cfg.streak_double_threshold}+ day streak doubles them (2×). Free members are welcome at every session and still build their streak, they just don't earn points for attending. Every member, free or Premium, earns by referring friends (+${cfg.referral_signup_points} pts each), completing their profile (one-time +${cfg.profile_complete_points} pts) and finishing challenges.`,
   },
   {
     q: 'Why didn\'t my booking confirm?',

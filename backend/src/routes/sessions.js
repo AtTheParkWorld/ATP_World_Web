@@ -893,13 +893,14 @@ async function awardSessionPoints(sessionId) {
      FROM bookings b
      JOIN members m ON m.id = b.member_id
      WHERE b.session_id=$1 AND b.status='attended' AND b.points_awarded=0
-       -- Participation rule (founder 2026-09-02): Premium tiers always
-       -- earn attendance points; FREE members earn the base amount only
-       -- while their check-in streak is 5+ days — break the streak and
-       -- the next sessions earn nothing until it's rebuilt to 5.
-       AND (m.subscription_type IN ('premium', 'premium_plus')
-            OR COALESCE(b.streak_at_checkin, 0) >= $2)`,
-    [sessionId, await require('../services/streak').getDoubleThreshold()]
+       -- Participation rule (founder 2026-09-27): session attendance
+       -- points are subscriber-only. The previous free-tier carve-out
+       -- (earn the base amount while on a 5+ day streak) is removed —
+       -- free members still attend and still build their streak, they
+       -- just don't earn points for it. Mirrored by 'session_checkin'
+       -- in PARTICIPATION_REASONS so the cron path agrees.
+       AND m.subscription_type IN ('premium', 'premium_plus')`,
+    [sessionId]
   );
 
   const doubleThr = await require('../services/streak').getDoubleThreshold();

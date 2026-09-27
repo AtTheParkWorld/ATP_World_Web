@@ -66,10 +66,16 @@ async function debitFifo(client, memberId, amount) {
 // skipped for free members at every award site.
 const PREMIUM_TIERS = new Set(['premium', 'premium_plus']);
 // Founder adjustments 2026-09-02: profile_complete and challenge
-// (completion reward) are earnable by ALL tiers; session_checkin has
-// its own free-tier rule in sessions.js (earn base points only while
-// on a 5+ day streak).
+// (completion reward) are earnable by ALL tiers.
+//
+// 2026-09-27: session_checkin becomes subscriber-only. It previously had
+// a free-tier carve-out (earn base points while on a 5+ day streak) that
+// lived only in the sessions.js query, so the hourly autoCompleteSessions
+// path below — which awards through awardPoints — never applied it and
+// paid every free member regardless of streak. Listing the reason here
+// puts both award sites behind one gate.
 const PARTICIPATION_REASONS = new Set([
+  'session_checkin',
   'streak_milestone', 'achievement_unlocked', 'challenge_prize', 'anniversary',
 ]);
 
