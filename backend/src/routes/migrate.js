@@ -296,4 +296,95 @@ router.post('/members', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POST /api/migrate/legal  (admin setup only) ───────────────
+// Seeds the Terms, Privacy and Refund copy into the CMS.
+//
+// The CMS write endpoints require an admin login, which a script does
+// not have, so this reuses the setup-key gate the member import uses.
+// The source of truth is backend/src/content/legal/*.txt — version
+// controlled, so the published wording is auditable and reviewable in a
+// diff rather than existing only inside a database row.
+//
+// Non-destructive by default: a key that already holds text is left
+// alone, so running this can never overwrite wording edited in admin.
+// Pass overwrite:true to deliberately replace.
+const fs   = require('fs');
+const path = require('path');
+
+function _legalFile(name) {
+  return fs.readFileSync(
+    path.join(__dirname, '..', 'content', 'legal', name), 'utf8'
+  ).trim();
+}
+
+router.post('/legal', async (req, res, next) => {
+  try {
+    const { setupKey, dryRun, overwrite } = req.body;
+    if (setupKey !== process.env.ADMIN_SETUP_KEY) return res.status(401).json({ error: 'Unauthorized' });
+
+    const today = new Date().toISOString().slice(0, 10);
+    const EMAIL = 'general@atthepark.world';
+
+    const entries = [
+      ['privacy', 'hero',    'title',         'Privacy Policy'],
+      ['privacy', 'hero',    'subtitle',      'What we collect, why we collect it, and what you can do about it.'],
+      ['privacy', 'body',    'content',       _legalFile('privacy.txt')],
+      ['privacy', 'meta',    'last_updated',  today],
+      ['privacy', 'meta',    'contact_email', EMAIL],
+
+      ['terms',   'hero',    'title',         'Terms & Conditions'],
+      ['terms',   'hero',    'subtitle',      "The rules that apply when you use At The Park's website, app, sessions, and store."],
+      ['terms',   'body',    'content',       _legalFile('terms.txt')],
+      ['terms',   'refunds', 'title',         'Refund Policy'],
+      ['terms',   'refunds', 'content',       _legalFile('refunds.txt')],
+      ['terms',   'meta',    'last_updated',  today],
+      ['terms',   'meta',    'contact_email', EMAIL],
+    ];
+
+    // What is already there? Only non-empty values count as "taken".
+    const { rows: existing } = await query(
+      `SELECT page, section, key, value_text FROM cms_content
+        WHERE page = ANY($1::text[])`, [['privacy', 'terms']]
+    );
+    const taken = new Set(
+      existing.filter(r => (r.value_text || '').trim())
+              .map(r => `${r.page}/${r.section}/${r.key}`)
+    );
+
+    const plan = entries.map(([page, section, key, value]) => ({
+      target: `${page}/${section}/${key}`,
+      chars: value.length,
+      action: taken.has(`${page}/${section}/${key}`)
+        ? (overwrite ? 'overwrite' : 'skip (already has content)')
+        : 'write',
+      page, section, key, value,
+    }));
+
+    if (dryRun) {
+      return res.json({
+        dryRun: true,
+        note: 'Nothing was written.',
+        plan: plan.map(({ target, chars, action }) => ({ target, chars, action })),
+      });
+    }
+
+    let written = 0, skipped = 0;
+    for (const p of plan) {
+      if (p.action.startsWith('skip')) { skipped++; continue; }
+      await query(
+        `INSERT INTO cms_content (page, section, key, value_text)
+         VALUES ($1,$2,$3,$4)
+         ON CONFLICT (page, section, key)
+           DO UPDATE SET value_text = $4, updated_at = NOW()`,
+        [p.page, p.section, p.key, p.value]
+      );
+      written++;
+    }
+    res.json({
+      success: true, written, skipped,
+      results: plan.map(({ target, chars, action }) => ({ target, chars, action })),
+    });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

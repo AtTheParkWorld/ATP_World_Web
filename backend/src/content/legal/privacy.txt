@@ -1,0 +1,125 @@
+## Who we are
+
+At The Park ("ATP", "we", "us") runs a free outdoor fitness community in the United Arab Emirates and Oman. We operate the website at atthepark.world, the At The Park mobile app, and the sessions, coaching and community services offered through them.
+
+This policy explains what personal information we collect, why we collect it, who we share it with, and what you can do about it. It applies to everyone who creates an ATP account, books a session, or uses our website or app.
+
+If you have a question about anything here, email general@atthepark.world.
+
+## Information you give us
+
+When you create an account:
+
+Your first and last name, email address, and a password (unless you sign in with Apple or Google, in which case we never see a password). You may also be asked to verify your email.
+
+When you complete your profile:
+
+Date of birth, gender, nationality, city, profile photo, T-shirt size, your sport preferences, and your skill level for sports such as padel. None of this is required to train with us, but some of it helps us place you in the right session.
+
+When you book or attend:
+
+The sessions you book, the courts or groups you choose, whether you attended, and your check-in history.
+
+When you take part in the community:
+
+Messages you send to coaches or other members, posts and comments you make, friend connections, and any photos you upload.
+
+When you contact us:
+
+The content of emails, enquiry forms, feedback and support requests, including anything you choose to tell us in them.
+
+When you pay:
+
+We do not store your card number. Card payments are processed by Stripe, who handle the card details directly. We keep a record of what you bought, when, how much it cost, and whether it succeeded.
+
+## Information we collect automatically
+
+When you use the website or app we record technical information such as your device type, operating system, app version, approximate location derived from your IP address, and the pages or screens you use. We use this to keep the service working, to fix faults, and to understand which features people actually use.
+
+If you allow notifications, we store a push notification token for your device so we can send you session reminders and community updates. You can turn notifications off at any time in your device settings.
+
+## Health and fitness data
+
+This is the most sensitive information we handle, so we want to be clear about it.
+
+If you choose to connect a fitness tracker, we receive data from that provider. We support Fitbit, Garmin, Polar, Strava and Withings. Connecting one is entirely optional and the app works fully without it.
+
+What we receive from a connected tracker:
+
+Workout records, including the type of activity, start time, duration, distance, calories, average and maximum heart rate, elevation, and where the provider supplies it, the GPS route of your activity. We also receive daily figures such as step count, distance, calories, resting heart rate, sleep duration and VO2 max.
+
+You control who sees it. In the app you can separately choose whether your fitness data may be used for:
+
+Community leaderboards. On by default. Turning this off removes you from leaderboards that use tracker data.
+
+Your employer, if your company has an ATP corporate programme. Off by default. We never share your data with an employer unless you switch this on, and even then your employer sees participation and aggregate figures, not your individual heart rate or sleep.
+
+Our partners. Off by default.
+
+Research and anonymised analysis. Off by default.
+
+You can change any of these at any time, or disconnect the tracker entirely, which stops any further data coming in.
+
+## How we use your information
+
+To run the service: creating your account, taking bookings, checking you in, running sessions, operating streaks, points, badges and challenges, and letting you message coaches and friends.
+
+To communicate with you: session confirmations and reminders, changes to a session, replies to your enquiries, and, if you opt in, our newsletter. You can unsubscribe from marketing at any time; we will still send you messages about bookings you have made.
+
+To take payment: processing memberships, paid sessions and store orders, and handling refunds.
+
+To keep people safe: making sure the right people are in the right sessions, matching skill levels where a sport requires it, and responding to incidents.
+
+To improve ATP: understanding which sessions and features are used, and fixing problems.
+
+To meet our legal obligations: keeping financial records and responding to lawful requests.
+
+## Who we share it with
+
+We do not sell your personal information.
+
+We share it with service providers who help us run ATP, and only so far as they need it to do that job:
+
+Stripe, for payments. Cloudflare, for storing images and files you upload. SendGrid, for sending email. Sentry, for recording technical errors so we can fix them. Expo and the Apple and Google push services, for delivering notifications. Shopify, which runs our online store, if you buy from it. Our hosting provider, for running the service itself.
+
+Other members see the parts of your profile you make visible: your name, profile photo, badges, friend count, and the sessions you have booked where that is part of the feature you are using.
+
+Coaches see who has booked their sessions, and the skill level you have set where the sport requires it.
+
+Your employer, only if you are on a corporate programme and only if you have switched on employer sharing, and then only at the level described above.
+
+We may disclose information if the law requires it, or to protect the safety of our members, our staff or the public.
+
+## Where your information is held
+
+ATP operates in the UAE and Oman. Some of the providers listed above store or process data outside the region. Where that happens, we rely on their standard contractual protections to keep your information safe.
+
+## Keeping your information
+
+We keep your account information for as long as your account exists. If you delete your account, we remove your personal information within thirty days, except where we must keep certain records, for example financial records required by law, or information needed to resolve a dispute.
+
+You can ask us to delete your account at any time from within the app, or by emailing general@atthepark.world.
+
+## Your choices
+
+You can ask us to:
+
+Show you the personal information we hold about you. Correct anything that is wrong. Delete your account and your personal information. Stop sending you marketing. Disconnect a fitness tracker and stop collecting that data. Change who your fitness data is shared with.
+
+To do any of these, use the settings in the app or email general@atthepark.world. We will respond within thirty days.
+
+## Children
+
+ATP is not intended for children under 16. If you are under 18, you may only create an account and attend sessions with the knowledge and consent of a parent or guardian. If we learn that we hold information about a child under 16 without that consent, we will delete it.
+
+## Security
+
+We protect your account with encrypted passwords, encrypted connections, and access controls that limit who on our side can see member data. No system is perfectly secure, but if a breach ever affects your personal information we will tell you and the relevant authorities as required.
+
+## Changes to this policy
+
+If we change this policy we will update the date below and, where the change is significant, tell you in the app or by email.
+
+## Contact us
+
+Questions, requests or complaints about your personal information: general@atthepark.world
