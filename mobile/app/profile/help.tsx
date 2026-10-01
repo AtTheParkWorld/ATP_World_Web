@@ -24,7 +24,7 @@ const buildFaqs = (cfg: PublicConfig) => [
   },
   {
     q: 'How do I cancel a session?',
-    a: 'Open the session in the app and tap Cancel. Cancelling within 2 hours of start may forfeit points reward.',
+    a: 'Open the session in the app and tap Cancel. Free sessions cost you nothing — just cancel so someone else can take the space. For a paid session, you are refunded in full if you cancel more than 12 hours before the start; inside 12 hours the payment is not refundable. One-to-one coaching has its own terms: full refund 24 hours or more before, and a part refund between 2 and 24 hours.',
   },
   {
     q: 'I need to change my email or tribe.',

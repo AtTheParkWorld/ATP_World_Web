@@ -133,9 +133,25 @@ export default function SessionDetail() {
 
   async function onCancelPress() {
     if (!myBooking) return;
+    // Cancellation rule lives in bookings.js: a paid booking is refunded
+    // only when the cancel lands MORE than 12 hours before the start;
+    // inside that window the member forfeits the payment, card or points.
+    // This dialog used to say "within 2 hours ... may lose your reward
+    // points", which understated both the window and the stake — someone
+    // cancelling a paid session three hours out lost the whole payment
+    // having been told they might lose a few points.
+    const hoursToStart = s?.scheduled_at
+      ? (new Date(s.scheduled_at).getTime() - Date.now()) / 3600000
+      : Infinity;
+    const isPaid = s?.session_type === 'paid' || !!s?.price || !!s?.price_points;
+    const message = !isPaid
+      ? 'Your space goes back to the community. You can book again if there is still room.'
+      : hoursToStart < 12
+        ? 'This session starts in under 12 hours, so cancelling now is not refundable — you will not get your payment back.'
+        : 'You are more than 12 hours before the start, so you will be refunded in full.';
     Alert.alert(
       'Cancel booking?',
-      'Cancelling within 2 hours of start may lose your reward points.',
+      message,
       [
         { text: 'Keep booking', style: 'cancel' },
         {
