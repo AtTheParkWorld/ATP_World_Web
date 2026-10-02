@@ -11,8 +11,8 @@
  * The WebView keeps its state when you switch segments (it's hidden,
  * not unmounted) so a cart in progress survives a peek at your codes.
  */
-import { useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Image, Linking, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, BackHandler, Image, Linking, Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -33,6 +33,21 @@ export default function StoreHub() {
   const [loading, setLoading]   = useState(true);
   const [failed, setFailed]     = useState(false);
   const [canGoBack, setCanGoBack] = useState(false);
+
+  // Founder report 13 (2026-10-03): "the back button also causes the app
+  // to crash". Nothing registered Android's hardware back button, so it
+  // popped the whole screen while the WebView was mid-navigation instead
+  // of stepping back inside the shop. Now it walks the WebView's own
+  // history first and only leaves the tab once there is nowhere to go.
+  useEffect(() => {
+    if (Platform.OS !== 'android') return;
+    const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      if (segment === 'shop' && canGoBack) { webRef.current?.goBack(); return true; }
+      if (segment === 'rewards') { setSegment('shop'); return true; }
+      return false;
+    });
+    return () => sub.remove();
+  }, [segment, canGoBack]);
 
   const wishlistQ = useQuery({ queryKey: ['wishlist'], queryFn: () => getWishlist().then(r => r.items) });
   const redempQ   = useQuery({ queryKey: ['store-redemptions'], queryFn: () => getRedemptionHistory().then(r => r.redemptions) });
@@ -124,6 +139,11 @@ export default function StoreHub() {
               sharedCookiesEnabled
               domStorageEnabled
               startInLoadingState={false}
+              // Report 13 also said the shop "takes a long time to load".
+              // It is the whole Shopify storefront, so it will never be
+              // instant, but caching stops every visit being a cold load.
+              cacheEnabled
+              androidLayerType="hardware"
             />
             {loading && (
               <View style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.black }}>
