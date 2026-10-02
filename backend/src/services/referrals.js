@@ -129,16 +129,37 @@ async function recordSignupReferral({ referrerId, referralCode, newMemberId }) {
 async function rewardReferrerForCheckin(memberId, sessionId) {
   try {
     const { rows } = await query(
-      `SELECT r.referrer_id, m.subscription_type
+      `SELECT r.referrer_id,
+              ref.subscription_type AS referrer_tier,
+              m.subscription_type   AS invitee_tier
        FROM referrals r
-       JOIN members m ON m.id = r.referred_id
+       JOIN members m   ON m.id   = r.referred_id
+       JOIN members ref ON ref.id = r.referrer_id
        WHERE r.referred_id = $1
        LIMIT 1`,
       [memberId]
     );
     if (!rows.length) return;
-    const referrerId  = rows[0].referrer_id;
-    const isPremium   = (rows[0].subscription_type || '').toLowerCase() === 'premium';
+    const referrerId = rows[0].referrer_id;
+
+    // Founder rule 2026-10-03: "only subscribers receive points when
+    // themselves or their crew attend the sessions." Attendance points
+    // became subscriber-only on 2026-09-27; this is the crew half of the
+    // same rule, and it gates on the RECIPIENT — the referrer earning
+    // the points — not on the invitee who turned up.
+    //
+    // Note this service writes to points_ledger through its own local
+    // awardPoints(), so it never passed through PARTICIPATION_REASONS in
+    // points.js. The gate has to live here.
+    const PREMIUM = new Set(['premium', 'premium_plus']);
+    const referrerTier = (rows[0].referrer_tier || 'free').toLowerCase();
+    if (!PREMIUM.has(referrerTier)) return;
+
+    // The AMOUNT still varies with the invitee's tier — a premium invitee
+    // is worth more. This used to compare === 'premium', which silently
+    // treated a premium_plus invitee as free and paid the lower rate.
+    const inviteeTier = (rows[0].invitee_tier || 'free').toLowerCase();
+    const isPremium   = PREMIUM.has(inviteeTier);
     const points      = await getConfig(
       isPremium ? 'tribe_checkin_points_premium' : 'tribe_checkin_points_free',
       isPremium ? 2 : 1

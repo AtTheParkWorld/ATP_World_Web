@@ -176,7 +176,7 @@ export default function Crew() {
                   Your code: {code || '—'}
                 </Text>
                 <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm mt-1">
-                  Share it — earn points every time your crew checks in.
+                  Share it — earn points when friends join. Premium members also earn every time their crew checks in.
                 </Text>
               </View>
               <Icon name="share" size={18} color={colors.green} />
@@ -196,7 +196,7 @@ export default function Crew() {
                 No crew yet
               </Text>
               <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm mt-2 text-center">
-                Friends who join ATP with your code show up here — and you earn points whenever they train.
+                Friends who join ATP with your code show up here. You earn points when they join, and Premium members keep earning every time they train.
               </Text>
             </View>
           )
