@@ -16,7 +16,7 @@ const buildFaqs = (cfg: PublicConfig) => [
   },
   {
     q: 'Why didn\'t my booking confirm?',
-    a: 'If the session was full you\'re on the waitlist — we\'ll text you the moment a spot opens. Paid bookings stay "pending payment" for 30 minutes; finish payment within that window or the seat is released.',
+    a: 'If the session was full you\'re on the waitlist — we\'ll text you the moment a spot opens. For a paid session, your place is only held once payment goes through, so finish checkout to lock it in. If the session fills while you are paying, we refund you in full straight away.',
   },
   {
     q: 'What\'s my tribe?',

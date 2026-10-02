@@ -220,7 +220,10 @@ router.post('/', authenticate, async (req, res, next) => {
         const { rows: courtCount } = await client.query(
           `SELECT COUNT(*) AS cnt FROM bookings
             WHERE session_id=$1 AND court_name=$2
-              AND status IN ('confirmed','pending_payment')
+              -- Founder rule 2026-10-03: an unpaid booking holds no seat.
+              -- Counting pending_payment here let someone who had not paid
+              -- block a member who would have paid immediately.
+              AND status IN ('confirmed','attended')
               AND member_id <> $3`,
           [session_id, picked.name, req.member.id]
         );
@@ -234,8 +237,10 @@ router.post('/', authenticate, async (req, res, next) => {
       const cap = lockRows[0].capacity;
       if (cap) {
         const { rows: countRows } = await client.query(
+          // Unpaid bookings deliberately excluded — the seat belongs to
+          // whoever pays first, not whoever opened checkout first.
           `SELECT COUNT(*) AS cnt FROM bookings
-            WHERE session_id=$1 AND status IN ('confirmed','pending_payment')`,
+            WHERE session_id=$1 AND status IN ('confirmed','attended')`,
           [session_id]
         );
         const cnt = parseInt(countRows[0].cnt, 10);
@@ -372,6 +377,29 @@ router.post('/:id/pay-with-points', authenticate, async (req, res, next) => {
         e.status = 402;
         e.code   = 'INSUFFICIENT_POINTS';
         throw e;
+      }
+
+      // Founder rule 2026-10-03: an unpaid booking holds no seat, so the
+      // session can fill between opening this screen and paying. Check
+      // inside the transaction, with the session row locked, so two
+      // members cannot both spend points on the last place.
+      const { rows: capRows } = await client.query(
+        'SELECT capacity FROM sessions WHERE id=$1 FOR UPDATE',
+        [b.session_id]
+      );
+      const cap = capRows[0] && capRows[0].capacity;
+      if (cap) {
+        const { rows: takenRows } = await client.query(
+          `SELECT COUNT(*) AS cnt FROM bookings
+            WHERE session_id=$1 AND status IN ('confirmed','attended')`,
+          [b.session_id]
+        );
+        if ((parseInt(takenRows[0].cnt, 10) || 0) >= cap) {
+          const e = new Error('This session filled up while you were paying. No points were taken.');
+          e.status = 409;
+          e.code   = 'SESSION_FULL';
+          throw e;
+        }
       }
 
       const newBalance = member.points_balance - cost;

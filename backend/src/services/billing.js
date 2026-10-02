@@ -305,6 +305,50 @@ async function _confirmSessionBooking(checkoutSession) {
   const b = rows[0];
   if (b.status === 'confirmed') return; // already processed (Stripe redelivery)
 
+  // Founder rule 2026-10-03: an unpaid booking holds no seat, so the
+  // session can legitimately fill while this member is in checkout.
+  // Confirm only if a seat is still there; otherwise refund rather than
+  // overselling the session. Without this check, removing the hold would
+  // let several people pay for the same last place.
+  try {
+    const { rows: capRows } = await query(
+      `SELECT s.capacity,
+              (SELECT COUNT(*) FROM bookings
+                WHERE session_id = s.id AND status IN ('confirmed','attended')) AS taken
+         FROM sessions s WHERE s.id = $1`,
+      [b.session_id]
+    );
+    const cap = capRows[0] && capRows[0].capacity;
+    const taken = parseInt((capRows[0] || {}).taken, 10) || 0;
+    if (cap && taken >= cap) {
+      console.warn('[billing] session filled during checkout, refunding booking', b.id);
+      await query(
+        `UPDATE bookings SET status='payment_failed', paid_at=NULL WHERE id=$1`, [b.id]
+      ).catch(() => {});
+      try {
+        if (checkoutSession.payment_intent) {
+          await stripe().refunds.create({ payment_intent: checkoutSession.payment_intent });
+          await query(
+            `UPDATE bookings SET refunded_at=NOW(), refund_method='stripe' WHERE id=$1`, [b.id]
+          ).catch(() => {});
+        }
+      } catch (e) { console.error('[billing] auto-refund failed for', b.id, e.message); }
+      try {
+        await emailService.sendRaw({
+          to: b.email,
+          subject: `Sorry — ${b.session_name} filled up`,
+          html: `<p>Hi ${b.first_name},</p><p>${b.session_name} filled up while you were paying, `
+              + `so we could not hold your place. Your payment has been refunded in full and `
+              + `should be back with you within five to ten working days.</p>`
+              + `<p>Sorry about that — places on paid sessions go to whoever completes payment first.</p>`,
+        });
+      } catch (e) { /* refund already issued; email is best effort */ }
+      return;
+    }
+  } catch (e) {
+    console.error('[billing] capacity re-check failed, confirming anyway:', e.message);
+  }
+
   const qrToken = crypto.randomBytes(16).toString('hex');
   const qrData = JSON.stringify({
     id:      b.member_number,
