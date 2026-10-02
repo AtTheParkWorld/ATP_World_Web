@@ -49,6 +49,16 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
 .dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.18);transition:all .2s}
 .dot.active{background:var(--green);transform:scale(1.4)}
 .deck-meta{font-size:11px;color:var(--muted);letter-spacing:.14em;text-transform:uppercase;pointer-events:auto}
+/* Route back into the site (founder 2026-10-02: the deck was a dead end).
+   The standard site footer cannot be used here — body is overflow:hidden
+   and every slide is position:absolute, so anything appended after the
+   deck is unreachable. This lives inside the deck's own chrome instead,
+   so it is visible on every slide. */
+.deck-home{display:inline-flex;align-items:center;gap:8px;pointer-events:auto;
+  font-size:11px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;
+  color:var(--muted);text-decoration:none;transition:color .2s}
+.deck-home:hover{color:var(--green)}
+.deck-home::before{content:'';display:block;width:16px;height:2px;background:currentColor}
 
 /* Slide 1 — Title */
 .slide-title{justify-content:center;background:radial-gradient(60% 80% at 20% 30%,rgba(168,255,0,.18) 0%,transparent 60%),radial-gradient(50% 70% at 80% 90%,rgba(245,192,66,.06) 0%,transparent 60%),var(--black)}
@@ -542,7 +552,15 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
         <a href="mailto:partners@atthepark.world?subject=ATP%20for%20our%20team" style="font-size:13px;color:var(--muted);text-decoration:underline">Or email us</a>
         <a href="https://wa.me/971585792378?text=Hi%20%E2%80%94%20interested%20in%20ATP%20for%20our%20company" style="font-size:13px;color:var(--green);text-decoration:underline">WhatsApp the founder</a>
       </div>
-      <p style="font-size:13px;color:var(--muted);margin-top:40px;line-height:1.6">At The Park (ATP) · Founded 2015 · Dubai, UAE<br>Trade license + commercial registration on request.</p>
+      <div style="display:flex;gap:16px;justify-content:center;flex-wrap:wrap;margin-top:34px;font-size:12px">
+        <a href="/" style="color:var(--green);text-decoration:none">At The Park home</a>
+        <a href="/sessions.html" style="color:var(--muted);text-decoration:none">Sessions</a>
+        <a href="/coaches.html" style="color:var(--muted);text-decoration:none">Coaches</a>
+        <a href="/community.html" style="color:var(--muted);text-decoration:none">Community</a>
+        <a href="/terms.html" style="color:var(--muted);text-decoration:none">Terms</a>
+        <a href="/privacy.html" style="color:var(--muted);text-decoration:none">Privacy</a>
+      </div>
+      <p style="font-size:13px;color:var(--muted);margin-top:26px;line-height:1.6">At The Park (ATP) · Founded 2015 · Dubai, UAE<br>Trade license + commercial registration on request.</p>
     </div>
   </section>
 
@@ -553,6 +571,7 @@ button{cursor:pointer;font-family:inherit;background:none;border:none;color:inhe
       <button class="deck-btn" id="nextBtn" aria-label="Next">›</button>
     </div>
     <div class="deck-progress" id="progress"></div>
+    <a class="deck-home" href="/" aria-label="Back to the At The Park website">At The Park</a>
     <div class="deck-meta">← → arrows · F11 for full-screen · Ctrl+P to PDF</div>
   </div>
 </div>
