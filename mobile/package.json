@@ -19,7 +19,6 @@
     "submit:android": "eas submit -p android --latest"
   },
   "dependencies": {
-    "@amplitude/analytics-react-native": "^1.4.10",
     "@expo-google-fonts/barlow-condensed": "^0.2.3",
     "@expo-google-fonts/dm-sans": "^0.2.3",
     "@sentry/react-native": "~7.11.0",
