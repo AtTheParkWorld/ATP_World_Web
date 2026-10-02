@@ -870,10 +870,12 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
         // Thank-you state + refresh the list and score
         var block = document.getElementById('cp-rate');
         if (block) {
-          block.innerHTML = '<div class="cp-rate-thanks"><strong>✓ Thank you!</strong>'
-            + 'Your ' + RATE_SELECTED + '-star rating is in'
-            + (comment ? ', comment included' : '') + '.'
-            + (token ? ' Come back any time — rating again updates your previous one.' : '')
+          // Founder wording 2026-10-03. The old line promised that rating
+          // again "updates your previous one", which was both the old
+          // overwrite behaviour and the thing he asked us to stop doing.
+          block.innerHTML = '<div class="cp-rate-thanks"><strong>✓ Thank you for your feedback.</strong>'
+            + ' Your rating' + (comment ? ' and comment have' : ' has') + ' been submitted.'
+            + (token ? ' You can add more feedback after your next session with this coach.' : '')
             + '</div>';
         }
         refreshReviews();

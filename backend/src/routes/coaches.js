@@ -455,23 +455,49 @@ router.post('/:id/feedback', optionalAuth, async (req, res, next) => {
     }
 
     if (req.member && req.member.id) {
-      // Member path — one live rating per coach; rating again updates it.
-      const { rows: mine } = await query(
-        `SELECT id FROM coach_feedback
-         WHERE coach_id=$1 AND member_id=$2 AND hidden_at IS NULL
-         ORDER BY created_at DESC LIMIT 1`,
-        [req.params.id, req.member.id]
-      );
-      if (mine.length) {
-        await query(
-          `UPDATE coach_feedback SET rating=$1, comment=$2, created_at=NOW() WHERE id=$3`,
-          [rating, cleanComment, mine[0].id]
-        );
-      } else {
+      // Founder rule 2026-10-03: "do not delete previous feedback. Allow
+      // the same member to leave multiple feedback to the same coach."
+      //
+      // This used to find the member's latest row and UPDATE it, so every
+      // new rating destroyed the previous one — a member who trained with
+      // a coach ten times left exactly one review, and the earlier words
+      // were gone for good.
+      //
+      // Feedback is append-only now. Two different shapes:
+      //
+      //   Tied to a session — one review per session, and re-rating that
+      //   same session updates that row rather than adding a duplicate.
+      //   The UNIQUE(coach_id, member_id, session_id) constraint does the
+      //   work; attending ten sessions leaves ten reviews.
+      //
+      //   Not tied to a session ("direct feedback") — a new row each
+      //   time, throttled to one per coach per day so the profile cannot
+      //   be flooded.
+      if (session_id) {
         await query(
           `INSERT INTO coach_feedback (coach_id,member_id,rating,comment,session_id,is_approved)
-           VALUES ($1,$2,$3,$4,$5,true)`,
-          [req.params.id, req.member.id, rating, cleanComment, session_id || null]
+           VALUES ($1,$2,$3,$4,$5,true)
+           ON CONFLICT (coach_id, member_id, session_id)
+             DO UPDATE SET rating=EXCLUDED.rating, comment=EXCLUDED.comment, created_at=NOW()`,
+          [req.params.id, req.member.id, rating, cleanComment, session_id]
+        );
+      } else {
+        const { rows: recentMine } = await query(
+          `SELECT 1 FROM coach_feedback
+            WHERE coach_id=$1 AND member_id=$2 AND session_id IS NULL
+              AND created_at > NOW() - INTERVAL '24 hours' LIMIT 1`,
+          [req.params.id, req.member.id]
+        );
+        if (recentMine.length) {
+          return res.status(429).json({
+            error: 'You already left feedback for this coach today. Your earlier feedback is safe — you can add more tomorrow.',
+            code: 'FEEDBACK_THROTTLED',
+          });
+        }
+        await query(
+          `INSERT INTO coach_feedback (coach_id,member_id,rating,comment,session_id,is_approved)
+           VALUES ($1,$2,$3,$4,NULL,true)`,
+          [req.params.id, req.member.id, rating, cleanComment]
         );
       }
     } else {

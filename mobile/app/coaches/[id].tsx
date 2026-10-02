@@ -314,7 +314,7 @@ function RateCoachCard({ coachId, onSubmitted }: { coachId: string; onSubmitted:
       />
       {done ? (
         <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs text-center mt-4">
-          Thanks — your rating is in.
+          Thank you for your feedback. Your rating has been submitted — you can add more after your next session with this coach.
         </Text>
       ) : (
         <Pressable
