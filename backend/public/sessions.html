@@ -1212,7 +1212,23 @@ function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId)
     '<div class="modal-meta-row">' +
       '<span>📅 ' + escapeHtml(whenLabel) + '</span>' +
       '<span class="modal-meta-sep">·</span>' +
-      '<span>📍 ' + escapeHtml(loc) + '</span>' +
+      // Founder report 10 (2026-10-03): "the pin location is not
+      // clickable". sessions.location_maps_url has always been stored and
+      // returned by the API — the card just never used it. When the admin
+      // has set one, the pin becomes a link that opens the map; otherwise
+      // it falls back to a Google Maps search for the location name, so a
+      // member can always find the place.
+      (function(){
+        var mapUrl = (sFull && sFull.location_maps_url) ? String(sFull.location_maps_url) : '';
+        if (!/^https?:\/\//i.test(mapUrl)) {
+          mapUrl = loc ? 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(loc) : '';
+        }
+        return mapUrl
+          ? '<a href="' + escapeHtml(mapUrl) + '" target="_blank" rel="noopener noreferrer"'
+            + ' style="color:inherit;text-decoration:underline;text-underline-offset:2px"'
+            + ' title="Open in Maps">📍 ' + escapeHtml(loc) + '</a>'
+          : '<span>📍 ' + escapeHtml(loc) + '</span>';
+      })() +
       '<span class="modal-meta-sep">·</span>' +
       '<span>🎽 ' + escapeHtml(coach) + '</span>' +
     '</div>' +
@@ -1748,7 +1764,11 @@ function showConfirmation(name, email, apiQrData, apiQrToken) {
   document.getElementById('calBtn').href = gcalUrl;
 
   // ── WHATSAPP INVITE ──
-  var waMsg = '👋 Hey! I just booked a free ' + s.name + ' session at At The Park — ' + s.dayTime + ' at ' + s.loc + '.\n\nJoin me! It\'s completely free 🙌\nBook here: https://atthepark.world/sessions.html';
+  // Deep-link straight to the session being shared, so the friend lands
+  // on it rather than on the calendar and has to hunt for it.
+  var _shareUrl = 'https://atthepark.world/sessions.html'
+    + (s.id ? '?session=' + encodeURIComponent(s.id) : '');
+  var waMsg = '👋 Hey! I just booked a free ' + s.name + ' session at At The Park — ' + s.dayTime + ' at ' + s.loc + '.\n\nJoin me! It\'s completely free 🙌\nBook here: ' + _shareUrl;
   document.getElementById('waBtn').href = 'https://wa.me/?text=' + encodeURIComponent(waMsg);
 
   document.getElementById('modalForm').style.display = 'none';
@@ -2544,6 +2564,7 @@ function renderSessionsGrid(sessions) {
       '<span class="' + freeClass + '">' + escapeHtml(priceTag) + '</span>' +
       _sponsorStripHtml(s, 'card');
 
+    article._sessionId = String(s.id);
     article.addEventListener('click', function() {
       openModal(s.name, tribe, dayTime, coach, loc, desc, dayName, time, s.id);
     });
@@ -2553,6 +2574,30 @@ function renderSessionsGrid(sessions) {
   // Insert cards before the state divs
   if (loading) grid.insertBefore(frag, loading);
   else grid.appendChild(frag);
+
+  // Founder report 11 (2026-10-03): an invite link dropped the friend on
+  // the calendar instead of the session they were invited to. The share
+  // link now carries ?session=<id> and this opens it as soon as the cards
+  // are built. Fires once — otherwise every filter change would reopen it.
+  if (!window._atpDeepLinkDone) {
+    try {
+      var _want = new URLSearchParams(window.location.search).get('session');
+      if (_want) {
+        var _hit = (sessions || []).find(function(x){ return String(x.id) === String(_want); });
+        if (_hit) {
+          window._atpDeepLinkDone = true;
+          setTimeout(function(){
+            var _card = Array.prototype.find.call(
+              document.querySelectorAll('.session-card'),
+              function(c){ return c._sessionId === _want; }
+            );
+            if (_card) _card.click();
+            else if (typeof openSessionFromData === 'function') openSessionFromData(_hit);
+          }, 120);
+        }
+      }
+    } catch (e) { /* a bad ?session= must never break the page */ }
+  }
 
   // Populate the Activity + City filter dropdowns now that cards exist.
   // Activity comes from /api/activities (full catalogue), City is derived
