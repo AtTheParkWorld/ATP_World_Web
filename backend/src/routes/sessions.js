@@ -823,6 +823,26 @@ router.post('/:id/checkin', authenticate, requireScanner, async (req, res, next)
     if (booking.status === 'cancelled') {
       return res.status(400).json({ error: 'Booking was cancelled', code: 'BOOKING_CANCELLED' });
     }
+    // Founder report 2026-10-03: an unpaid booking could be checked in.
+    // A paid booking is created as pending_payment and only the Stripe
+    // webhook (or a points payment) flips it to confirmed — but this gate
+    // only ever rejected 'attended' and 'cancelled', so an ambassador
+    // looking a member up by name could admit someone who never paid, and
+    // the row then became 'attended' and earned points.
+    if (booking.status === 'pending_payment') {
+      return res.status(402).json({
+        error: `${booking.first_name} has not paid for this session yet`,
+        code: 'PAYMENT_PENDING',
+        member: { first_name: booking.first_name, last_name: booking.last_name },
+      });
+    }
+    // Anything that is not an active booking is not admissible either.
+    if (!['confirmed', 'in_progress'].includes(booking.status)) {
+      return res.status(400).json({
+        error: `Booking is not confirmed (status: ${booking.status})`,
+        code: 'BOOKING_NOT_CONFIRMED',
+      });
+    }
 
     // Update streak first so we can snapshot it on the booking
     let streakNow = 0;

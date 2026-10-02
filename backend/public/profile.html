@@ -310,6 +310,8 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .session-meta{font-size:11px;color:var(--muted);margin-top:2px}
 .session-status{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px}
 .session-status.upcoming{background:rgba(168,255,0,.1);color:var(--green);border:1px solid rgba(168,255,0,.2)}
+/* Unpaid booking — amber, so it cannot be mistaken for a confirmed one. */
+.session-status.unpaid{background:rgba(245,192,66,.12);color:#f5c042;border:1px solid rgba(245,192,66,.3)}
 .session-status.done{background:rgba(255,255,255,.05);color:var(--muted)}
 
 /* ── ACHIEVEMENTS ── */
@@ -2626,7 +2628,10 @@ function renderSessions(el, sessions) {
         "<div class='session-meta'>" + s.day + " \u00b7 " + s.time + " \u00b7 " + (s.loc || s.location || '') + "</div>" +
       "</div>" +
       "<div style='display:flex;align-items:center;gap:8px'>" +
-        "<span class='session-status " + s.status + "'>" + (s.status === 'upcoming' ? 'Upcoming' : (s.status === 'done' ? 'Done' : 'Cancelled')) + "</span>" +
+        "<span class='session-status " + s.status + "'>" + (
+            s.status === 'upcoming' ? 'Upcoming'
+          : s.status === 'unpaid'   ? 'Payment required'
+          : s.status === 'done'     ? 'Done' : 'Cancelled') + "</span>" +
         "<span style='color:var(--muted);font-size:18px'>›</span>" +
       "</div>" +
     "</div>";
@@ -5510,7 +5515,12 @@ function loadBookings() {
         scheduled_at:      b.scheduled_at,
         description:       b.description || '',
         duration_mins:     b.duration_mins,
-        status:            b.status === 'attended' ? 'done' : (b.status === 'cancelled' ? 'cancelled' : 'upcoming'),
+        // Founder report 2026-10-03: an unpaid booking appeared in
+        // Booked Sessions labelled "Upcoming", which reads as confirmed.
+        // pending_payment now keeps its own state so the row can say so.
+        status:            b.status === 'attended' ? 'done'
+                           : (b.status === 'cancelled' ? 'cancelled'
+                           : (b.status === 'pending_payment' ? 'unpaid' : 'upcoming')),
         qr_token:          b.qr_token,
         session_id:        b.session_id,
       };
@@ -5524,7 +5534,7 @@ function loadBookings() {
     var graceMs = 2 * 60 * 60 * 1000;
     var cutoff  = Date.now() - graceMs;
     var upcoming = mapped.filter(function(s){
-      if (s.status !== 'upcoming') return false;
+      if (s.status !== 'upcoming' && s.status !== 'unpaid') return false;
       if (!s.scheduled_at) return false;
       return new Date(s.scheduled_at).getTime() >= cutoff;
     });
