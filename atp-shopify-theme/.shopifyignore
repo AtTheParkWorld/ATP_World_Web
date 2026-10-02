@@ -1,0 +1,6 @@
+# Not part of the Shopify theme — a local static mock used to eyeball
+# layout without a store. Shopify only accepts assets, config, layout,
+# locales, sections, snippets and templates, so pushing this would fail.
+_preview/
+.DS_Store
+**/.DS_Store
