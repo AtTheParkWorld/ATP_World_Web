@@ -297,7 +297,7 @@ app.get('/.well-known/apple-developer-merchantid-domain-association', (req, res)
 // public/sitemap.xml on DB errors so crawlers never see a 500.
 //
 // Canonical hostname: from FRONTEND_URL env (set to
-// https://www.atthepark.world in production), else falls back to
+// https://atthepark.world in production), else falls back to
 // the request's own host.
 const { query: _smQuery } = require('./db');
 app.get('/sitemap.xml', async (req, res, next) => {
@@ -310,9 +310,12 @@ app.get('/sitemap.xml', async (req, res, next) => {
       { loc: '/coaches.html',    changefreq: 'weekly',  priority: '0.8' },
       { loc: '/blog.html',       changefreq: 'weekly',  priority: '0.7' },
       { loc: '/community.html',  changefreq: 'daily',   priority: '0.7' },
-      { loc: '/partners.html',   changefreq: 'monthly', priority: '0.6' },
-      { loc: '/business.html',   changefreq: 'monthly', priority: '0.6' },
-      { loc: '/corporate.html',  changefreq: 'monthly', priority: '0.6' },
+      // partners.html and business.html were retired on 2026-09-25 and now
+      // 302 to /corporate. A sitemap should list the destination, not the
+      // redirect, so only the live page is advertised.
+      { loc: '/corporate',       changefreq: 'monthly', priority: '0.6' },
+      { loc: '/offers.html',     changefreq: 'weekly',  priority: '0.6' },
+      { loc: '/join.html',       changefreq: 'monthly', priority: '0.7' },
       { loc: '/plans.html',      changefreq: 'monthly', priority: '0.7' },
       { loc: '/contacts.html',   changefreq: 'monthly', priority: '0.4' },
       { loc: '/legal.html',      changefreq: 'yearly',  priority: '0.3' },
@@ -511,10 +514,10 @@ function _renderWithMeta(res, templatePath, meta) {
   let html;
   try { html = fs.readFileSync(templatePath, 'utf8'); }
   catch (e) { return res.status(404).send('Page not found'); }
-  const canonical = (process.env.FRONTEND_URL || 'https://www.atthepark.world').replace(/\/+$/, '') + meta.path;
+  const canonical = (process.env.FRONTEND_URL || 'https://atthepark.world').replace(/\/+$/, '') + meta.path;
   const title = _escMeta(meta.title || 'At The Park');
   const desc  = _escMeta(meta.description || '');
-  const img   = _escMeta(meta.image || ((process.env.FRONTEND_URL || 'https://www.atthepark.world') + '/og-default.png'));
+  const img   = _escMeta(meta.image || ((process.env.FRONTEND_URL || 'https://atthepark.world') + '/og-default.png'));
   const ogType = meta.ogType || 'website';
   const block = [
     '<link rel="canonical" href="' + canonical + '">',
@@ -588,10 +591,10 @@ app.get('/coach/:slug', async (req, res) => {
         '@type': 'Person',
         name: fullName,
         jobTitle: 'Fitness Coach',
-        worksFor: { '@type': 'Organization', name: 'At The Park', url: 'https://www.atthepark.world' },
+        worksFor: { '@type': 'Organization', name: 'At The Park', url: 'https://atthepark.world' },
         image: c.cover_image_url || c.avatar_url || undefined,
         description: bio,
-        url: 'https://www.atthepark.world/coach/' + req.params.slug,
+        url: 'https://atthepark.world/coach/' + req.params.slug,
       },
     });
   } catch (e) {
@@ -648,10 +651,10 @@ app.get('/blog/:slug', async (req, res) => {
         publisher: {
           '@type': 'Organization',
           name: 'At The Park',
-          logo: { '@type': 'ImageObject', url: 'https://www.atthepark.world/atp-logo-transparent.webp' },
+          logo: { '@type': 'ImageObject', url: 'https://atthepark.world/atp-logo-transparent.webp' },
         },
         datePublished: p.published_at,
-        mainEntityOfPage: 'https://www.atthepark.world/blog/' + p.slug,
+        mainEntityOfPage: 'https://atthepark.world/blog/' + p.slug,
       },
     });
   } catch (e) {
