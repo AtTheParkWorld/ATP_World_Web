@@ -1,8 +1,36 @@
 <footer class="site-footer" role="contentinfo">
   <div class="site-footer__top" style="--footer-cols: {{ section.blocks.size | default: 2 }}">
     <div class="site-footer__brand">
+      {%- comment -%}
+        Founder report 2026-10-03: "the footer shows a text instead of an
+        official ATP logo." The markup was right — it pointed at
+        atp-logo.png — but the copy of that asset uploaded to the store is
+        zero bytes, so the browser fell back to the alt text.
+
+        Two defences now. The logo is an image_picker, so it can be
+        uploaded in the theme editor instead of replacing a theme file,
+        and if neither the setting nor the bundled asset resolves, a
+        styled wordmark renders rather than naked alt text.
+      {%- endcomment -%}
       <a href="{{ routes.root_url }}" class="site-header__logo" aria-label="{{ shop.name }}">
-        <img src="{{ 'atp-logo.png' | asset_url }}" alt="{{ shop.name }}" width="126" height="42" loading="lazy">
+        {%- if section.settings.logo != blank -%}
+          <img
+            src="{{ section.settings.logo | image_url: width: 400 }}"
+            alt="{{ shop.name | escape }}"
+            width="{{ section.settings.logo_width }}"
+            height="auto"
+            loading="lazy"
+            style="width: {{ section.settings.logo_width }}px; height: auto;"
+          >
+        {%- else -%}
+          <img
+            src="{{ 'atp-logo.png' | asset_url }}"
+            alt="{{ shop.name | escape }}"
+            width="126" height="42" loading="lazy"
+            onerror="this.style.display='none'; var w=this.nextElementSibling; if(w) w.hidden=false;"
+          >
+          <span class="footer-wordmark" hidden>AT THE <em>PARK</em></span>
+        {%- endif -%}
       </a>
       <p>{{ section.settings.tagline }}</p>
       <div class="footer-socials">
@@ -49,6 +77,8 @@
   "name": "Footer",
   "max_blocks": 4,
   "settings": [
+    { "type": "image_picker", "id": "logo", "label": "Footer logo", "info": "Transparent PNG or SVG. Leave empty to use the logo bundled with the theme." },
+    { "type": "range", "id": "logo_width", "label": "Logo width", "min": 80, "max": 260, "step": 10, "unit": "px", "default": 126 },
     {
       "type": "textarea",
       "id": "tagline",

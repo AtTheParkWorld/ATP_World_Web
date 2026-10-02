@@ -1,0 +1,259 @@
+{%- comment -%}
+  Flexible content — the "add a block anywhere" section.
+
+  Founder request 2026-10-03: make the theme editable block by block,
+  so images, text and buttons can be added and rearranged on any page
+  from the Shopify theme editor rather than by editing Liquid.
+
+  It carries a preset, so it shows up under "Add section" on every
+  template: home, product, collection, cart, 404 and any page. Blocks
+  are reorderable by drag, and every piece of copy, every image and
+  every colour is a setting.
+{%- endcomment -%}
+
+<section
+  class="flex-content flex-content--{{ section.settings.width }}"
+  style="
+    --fc-bg: {{ section.settings.bg_color }};
+    --fc-fg: {{ section.settings.text_color }};
+    --fc-pad-top: {{ section.settings.padding_top }}px;
+    --fc-pad-bottom: {{ section.settings.padding_bottom }}px;
+    --fc-gap: {{ section.settings.gap }}px;
+  "
+>
+  <div class="flex-content__inner">
+    {%- if section.settings.heading != blank -%}
+      <h2 class="flex-content__title">{{ section.settings.heading }}</h2>
+    {%- endif -%}
+
+    {%- for block in section.blocks -%}
+      <div class="fc-block fc-block--{{ block.type }} fc-align--{{ block.settings.align | default: 'left' }}" {{ block.shopify_attributes }}>
+
+        {%- case block.type -%}
+
+        {%- when 'heading' -%}
+          <h3 class="fc-heading fc-heading--{{ block.settings.size }}">{{ block.settings.text }}</h3>
+
+        {%- when 'text' -%}
+          <div class="fc-text fc-text--{{ block.settings.size }}">{{ block.settings.text }}</div>
+
+        {%- when 'image' -%}
+          {%- if block.settings.image != blank -%}
+            {%- if block.settings.link != blank -%}<a href="{{ block.settings.link }}" class="fc-image-link">{%- endif -%}
+            <img
+              src="{{ block.settings.image | image_url: width: 1600 }}"
+              alt="{{ block.settings.alt | default: block.settings.image.alt | escape }}"
+              width="{{ block.settings.image.width }}"
+              height="{{ block.settings.image.height }}"
+              loading="lazy"
+              class="fc-image"
+              style="max-width: {{ block.settings.max_width }}%; border-radius: {{ block.settings.radius }}px;"
+            >
+            {%- if block.settings.link != blank -%}</a>{%- endif -%}
+            {%- if block.settings.caption != blank -%}
+              <p class="fc-caption">{{ block.settings.caption }}</p>
+            {%- endif -%}
+          {%- else -%}
+            {{ 'image' | placeholder_svg_tag: 'fc-image fc-image--placeholder' }}
+          {%- endif -%}
+
+        {%- when 'image_text' -%}
+          <div class="fc-split fc-split--{{ block.settings.image_side }}">
+            <div class="fc-split__media">
+              {%- if block.settings.image != blank -%}
+                <img
+                  src="{{ block.settings.image | image_url: width: 1200 }}"
+                  alt="{{ block.settings.alt | default: block.settings.image.alt | escape }}"
+                  width="{{ block.settings.image.width }}"
+                  height="{{ block.settings.image.height }}"
+                  loading="lazy"
+                  style="border-radius: {{ block.settings.radius }}px;"
+                >
+              {%- else -%}
+                {{ 'lifestyle-1' | placeholder_svg_tag: 'fc-image--placeholder' }}
+              {%- endif -%}
+            </div>
+            <div class="fc-split__body">
+              {%- if block.settings.heading != blank -%}<h3 class="fc-heading fc-heading--medium">{{ block.settings.heading }}</h3>{%- endif -%}
+              {%- if block.settings.text != blank -%}<div class="fc-text">{{ block.settings.text }}</div>{%- endif -%}
+              {%- if block.settings.button_label != blank and block.settings.button_link != blank -%}
+                <a href="{{ block.settings.button_link }}" class="btn btn--{{ block.settings.button_style }}">{{ block.settings.button_label }}</a>
+              {%- endif -%}
+            </div>
+          </div>
+
+        {%- when 'button' -%}
+          {%- if block.settings.label != blank and block.settings.link != blank -%}
+            <a href="{{ block.settings.link }}" class="btn btn--{{ block.settings.style }}">{{ block.settings.label }}</a>
+          {%- endif -%}
+
+        {%- when 'video' -%}
+          {%- if block.settings.video_url != blank -%}
+            <div class="fc-video">{{ block.settings.video_url | video_tag: image_size: '1200x', autoplay: block.settings.autoplay, loop: block.settings.loop, muted: true, controls: block.settings.controls }}</div>
+          {%- endif -%}
+
+        {%- when 'spacer' -%}
+          <div class="fc-spacer" style="height: {{ block.settings.height }}px"></div>
+
+        {%- when 'divider' -%}
+          <hr class="fc-divider">
+
+        {%- endcase -%}
+      </div>
+    {%- endfor -%}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Flexible content",
+  "tag": "section",
+  "class": "section-flexible-content",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Section heading (optional)" },
+    {
+      "type": "select", "id": "width", "label": "Content width", "default": "normal",
+      "options": [
+        { "value": "narrow", "label": "Narrow — good for reading" },
+        { "value": "normal", "label": "Normal" },
+        { "value": "wide",   "label": "Wide" },
+        { "value": "full",   "label": "Full bleed" }
+      ]
+    },
+    { "type": "color", "id": "bg_color",   "label": "Background", "default": "#0a0a0a" },
+    { "type": "color", "id": "text_color", "label": "Text",       "default": "#ffffff" },
+    { "type": "range", "id": "padding_top",    "label": "Padding top",    "min": 0, "max": 160, "step": 8, "unit": "px", "default": 64 },
+    { "type": "range", "id": "padding_bottom", "label": "Padding bottom", "min": 0, "max": 160, "step": 8, "unit": "px", "default": 64 },
+    { "type": "range", "id": "gap", "label": "Space between blocks", "min": 0, "max": 80, "step": 4, "unit": "px", "default": 24 }
+  ],
+  "blocks": [
+    {
+      "type": "heading", "name": "Heading",
+      "settings": [
+        { "type": "text", "id": "text", "label": "Heading", "default": "A new heading" },
+        { "type": "select", "id": "size", "label": "Size", "default": "medium",
+          "options": [
+            { "value": "small",  "label": "Small" },
+            { "value": "medium", "label": "Medium" },
+            { "value": "large",  "label": "Large" }
+          ]
+        },
+        { "type": "select", "id": "align", "label": "Alignment", "default": "left",
+          "options": [
+            { "value": "left",   "label": "Left" },
+            { "value": "center", "label": "Centre" },
+            { "value": "right",  "label": "Right" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "text", "name": "Text",
+      "settings": [
+        { "type": "richtext", "id": "text", "label": "Text", "default": "<p>Write anything here. Bold, italics, links and lists all work.</p>" },
+        { "type": "select", "id": "size", "label": "Size", "default": "normal",
+          "options": [
+            { "value": "small",  "label": "Small" },
+            { "value": "normal", "label": "Normal" },
+            { "value": "large",  "label": "Large" }
+          ]
+        },
+        { "type": "select", "id": "align", "label": "Alignment", "default": "left",
+          "options": [
+            { "value": "left",   "label": "Left" },
+            { "value": "center", "label": "Centre" },
+            { "value": "right",  "label": "Right" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "image", "name": "Image",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Image" },
+        { "type": "text", "id": "alt", "label": "Alt text (describes the image for screen readers)" },
+        { "type": "text", "id": "caption", "label": "Caption (optional)" },
+        { "type": "url",  "id": "link", "label": "Link (optional)" },
+        { "type": "range", "id": "max_width", "label": "Width", "min": 20, "max": 100, "step": 5, "unit": "%", "default": 100 },
+        { "type": "range", "id": "radius", "label": "Corner radius", "min": 0, "max": 40, "step": 2, "unit": "px", "default": 14 },
+        { "type": "select", "id": "align", "label": "Alignment", "default": "center",
+          "options": [
+            { "value": "left",   "label": "Left" },
+            { "value": "center", "label": "Centre" },
+            { "value": "right",  "label": "Right" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "image_text", "name": "Image + text",
+      "settings": [
+        { "type": "image_picker", "id": "image", "label": "Image" },
+        { "type": "text", "id": "alt", "label": "Alt text" },
+        { "type": "select", "id": "image_side", "label": "Image on", "default": "left",
+          "options": [
+            { "value": "left",  "label": "Left" },
+            { "value": "right", "label": "Right" }
+          ]
+        },
+        { "type": "text", "id": "heading", "label": "Heading", "default": "Tell the story" },
+        { "type": "richtext", "id": "text", "label": "Text", "default": "<p>Pair a picture with a few words.</p>" },
+        { "type": "text", "id": "button_label", "label": "Button label" },
+        { "type": "url",  "id": "button_link",  "label": "Button link" },
+        { "type": "select", "id": "button_style", "label": "Button style", "default": "primary",
+          "options": [
+            { "value": "primary",   "label": "Primary" },
+            { "value": "secondary", "label": "Secondary" }
+          ]
+        },
+        { "type": "range", "id": "radius", "label": "Corner radius", "min": 0, "max": 40, "step": 2, "unit": "px", "default": 14 }
+      ]
+    },
+    {
+      "type": "button", "name": "Button",
+      "settings": [
+        { "type": "text", "id": "label", "label": "Label", "default": "Shop now" },
+        { "type": "url",  "id": "link",  "label": "Link" },
+        { "type": "select", "id": "style", "label": "Style", "default": "primary",
+          "options": [
+            { "value": "primary",   "label": "Primary" },
+            { "value": "secondary", "label": "Secondary" }
+          ]
+        },
+        { "type": "select", "id": "align", "label": "Alignment", "default": "left",
+          "options": [
+            { "value": "left",   "label": "Left" },
+            { "value": "center", "label": "Centre" },
+            { "value": "right",  "label": "Right" }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "video", "name": "Video",
+      "settings": [
+        { "type": "video", "id": "video_url", "label": "Video" },
+        { "type": "checkbox", "id": "autoplay", "label": "Autoplay", "default": true },
+        { "type": "checkbox", "id": "loop", "label": "Loop", "default": true },
+        { "type": "checkbox", "id": "controls", "label": "Show controls", "default": false }
+      ]
+    },
+    {
+      "type": "spacer", "name": "Spacer",
+      "settings": [
+        { "type": "range", "id": "height", "label": "Height", "min": 8, "max": 160, "step": 8, "unit": "px", "default": 40 }
+      ]
+    },
+    { "type": "divider", "name": "Divider", "settings": [] }
+  ],
+  "presets": [
+    {
+      "name": "Flexible content",
+      "blocks": [
+        { "type": "heading", "settings": { "text": "A new heading" } },
+        { "type": "text" }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,12 +1,24 @@
-{% render 'breadcrumbs' %}
-<section class="page-width" style="padding-bottom:72px;max-width:820px">
-  <h1 class="h2" style="margin:6px 0 26px">{{ page.title }}</h1>
+{%- if section.settings.show_breadcrumbs -%}{% render 'breadcrumbs' %}{%- endif -%}
+<section
+  class="page-width"
+  style="padding-top:{{ section.settings.padding_top }}px;padding-bottom:{{ section.settings.padding_bottom }}px;max-width:{{ section.settings.max_width }}px"
+>
+  {%- if section.settings.show_title -%}
+    <h1 class="h2" style="margin:6px 0 26px">{{ page.title }}</h1>
+  {%- endif -%}
   <div class="rte">{{ page.content }}</div>
 </section>
 
 {% schema %}
 {
   "name": "Page",
-  "settings": []
+  "settings": [
+    { "type": "paragraph", "content": "The page's own text is edited in Shopify under Online Store → Pages. These settings control how it is laid out. To add images, buttons or extra blocks to this page, use Add section → Flexible content." },
+    { "type": "checkbox", "id": "show_title", "label": "Show page title", "default": true },
+    { "type": "checkbox", "id": "show_breadcrumbs", "label": "Show breadcrumbs", "default": true },
+    { "type": "range", "id": "max_width", "label": "Content width", "min": 600, "max": 1400, "step": 20, "unit": "px", "default": 820 },
+    { "type": "range", "id": "padding_top", "label": "Padding top", "min": 0, "max": 120, "step": 8, "unit": "px", "default": 0 },
+    { "type": "range", "id": "padding_bottom", "label": "Padding bottom", "min": 0, "max": 160, "step": 8, "unit": "px", "default": 72 }
+  ]
 }
 {% endschema %}

@@ -649,3 +649,82 @@ h3, .h3 { font-size: clamp(20px, 3vw, 28px); }
 .split-tile:hover .split-tile__media .parallax-img {
   transform: translate3d(0, var(--py, 0px), 0) scale(1.18);
 }
+
+/* ════════════════════════════════════════════════════════════════
+   FLEXIBLE CONTENT — the "add a block anywhere" section.
+   Founder request 2026-10-03: edit images, text and buttons per block
+   from the theme editor rather than by touching Liquid. Every value
+   below is driven by a section or block setting.
+   ════════════════════════════════════════════════════════════════ */
+.flex-content {
+  background: var(--fc-bg, var(--black));
+  color: var(--fc-fg, var(--white));
+  padding: var(--fc-pad-top, 64px) 24px var(--fc-pad-bottom, 64px);
+}
+.flex-content__inner {
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fc-gap, 24px);
+}
+.flex-content--narrow .flex-content__inner { max-width: 720px; }
+.flex-content--normal .flex-content__inner { max-width: 1100px; }
+.flex-content--wide   .flex-content__inner { max-width: 1400px; }
+.flex-content--full   .flex-content__inner { max-width: none; }
+
+.flex-content__title {
+  font-family: var(--ff-display);
+  font-size: clamp(28px, 4vw, 44px);
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -.01em;
+  margin: 0;
+}
+
+.fc-align--left   { text-align: left; }
+.fc-align--center { text-align: center; }
+.fc-align--right  { text-align: right; }
+
+.fc-heading { font-family: var(--ff-display); font-weight: 900; text-transform: uppercase; margin: 0; line-height: 1.05; }
+.fc-heading--small  { font-size: clamp(18px, 2.4vw, 22px); }
+.fc-heading--medium { font-size: clamp(24px, 3.4vw, 34px); }
+.fc-heading--large  { font-size: clamp(32px, 5vw, 52px); }
+
+.fc-text { font-family: var(--ff-body); line-height: 1.65; color: inherit; }
+.fc-text--small  { font-size: 14px; }
+.fc-text--normal { font-size: 16px; }
+.fc-text--large  { font-size: 19px; }
+.fc-text p:first-child { margin-top: 0; }
+.fc-text p:last-child  { margin-bottom: 0; }
+.fc-text a { color: var(--green); }
+
+.fc-image { display: block; height: auto; }
+.fc-align--center .fc-image { margin-inline: auto; }
+.fc-align--right  .fc-image { margin-inline-start: auto; }
+.fc-image--placeholder { width: 100%; max-width: 100%; background: var(--dark2); border-radius: 14px; }
+.fc-caption { font-size: 13px; color: var(--muted); margin: 8px 0 0; }
+.fc-image-link { display: block; }
+
+.fc-split { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; align-items: center; }
+.fc-split--right .fc-split__media { order: 2; }
+.fc-split__media img { width: 100%; height: auto; display: block; }
+.fc-split__body { display: flex; flex-direction: column; gap: 14px; align-items: flex-start; }
+
+.fc-divider { border: 0; border-top: 1px solid rgba(255,255,255,.12); margin: 0; width: 100%; }
+.fc-spacer { width: 100%; }
+.fc-video video, .fc-video iframe { width: 100%; height: auto; display: block; border-radius: 14px; }
+
+@media (max-width: 749px) {
+  .flex-content { padding-inline: 18px; }
+  .fc-split { grid-template-columns: 1fr; gap: 20px; }
+  .fc-split--right .fc-split__media { order: 0; }
+}
+
+/* Footer wordmark — only shown if the logo image fails to load, so a
+   broken or empty asset degrades to brand type rather than alt text. */
+.footer-wordmark {
+  font-family: var(--ff-display);
+  font-size: 24px; font-weight: 900; letter-spacing: .02em;
+  text-transform: uppercase; color: var(--white); line-height: 1;
+}
+.footer-wordmark em { font-style: normal; color: var(--green); }
