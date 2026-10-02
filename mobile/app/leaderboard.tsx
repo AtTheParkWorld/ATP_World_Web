@@ -32,6 +32,12 @@ export default function Leaderboard() {
       tribe_id: tribeId ?? undefined,
     }).then(r => r.leaderboard),
   });
+  // Founder report 2A (2026-10-03): "this section looks a bit cluttered,
+  // I believe you should create an expand button for the tribe or city."
+  // Both rails were always on screen, so two rows of chips pushed the
+  // actual leaderboard down the page. They now collapse behind a summary
+  // row that says what is selected.
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const citiesQ = useQuery({ queryKey: ['cities'], queryFn: () => listCities().then(r => r.cities), staleTime: 1000 * 60 * 30 });
   const tribesQ = useQuery({ queryKey: ['tribes'], queryFn: () => listTribes().then(r => r.tribes), staleTime: 1000 * 60 * 30 });
 
@@ -66,6 +72,26 @@ export default function Leaderboard() {
         </View>
       </View>
 
+      {/* Summary row — tap to reveal the city + tribe rails. */}
+      <Pressable
+        onPress={() => setFiltersOpen((v) => !v)}
+        className="mx-4 mt-3 px-4 py-2.5 rounded-atp bg-atp-dark border border-white/10 flex-row items-center justify-between active:opacity-80"
+      >
+        <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm">
+          {(() => {
+            const city  = cityId  ? (citiesQ.data || []).find((c) => c.id === cityId)?.name  : null;
+            const tribe = tribeId ? (tribesQ.data || []).find((t) => t.id === tribeId)?.name : null;
+            if (!city && !tribe) return 'All cities · All tribes';
+            return [city || 'All cities', tribe || 'All tribes'].join(' · ');
+          })()}
+        </Text>
+        <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs">
+          {filtersOpen ? 'Done ▴' : 'Filter ▾'}
+        </Text>
+      </Pressable>
+
+      {filtersOpen && (
+      <>
       {/* City + tribe pill rails */}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3" contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
         <FilterChip label="All cities" active={!cityId} onPress={() => setCityId(null)} />
@@ -85,6 +111,8 @@ export default function Leaderboard() {
           />
         ))}
       </ScrollView>
+      </>
+      )}
 
       {/* List */}
       <FlatList

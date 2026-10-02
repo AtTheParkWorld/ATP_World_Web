@@ -34,6 +34,7 @@ function loadMediaLibrary(): MediaLibraryModule | null {
 import type { Post } from '@/lib/api/community';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
+import { PostImage } from '@/lib/components/PostImage';
 import { Avatar } from '@/lib/components/Avatar';
 import { IconChat, IconDownload, IconHeart, IconShare } from '@/lib/components/icons';
 
@@ -62,8 +63,11 @@ function FeedVideo({ uri }: { uri: string }) {
     <Pressable onPress={() => { const next = !muted; setMuted(next); player.muted = next; }}>
       <VideoView
         player={player}
+        // Founder report 6A: 'cover' at a fixed 4:3 cropped portrait
+        // footage through people's faces. 'contain' letterboxes on the
+        // black background instead, which loses nothing.
         style={{ width: '100%', aspectRatio: 4 / 3, marginTop: 12, borderRadius: 14, backgroundColor: '#000' }}
-        contentFit="cover"
+        contentFit="contain"
         nativeControls={false}
       />
       <View
@@ -221,12 +225,7 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
         isVideoMedia(post.media[0]) ? (
           <FeedVideo uri={absUrl(post.media[0].src)!} />
         ) : (
-          <Image
-            source={{ uri: absUrl(post.media[0].src)! }}
-            className="w-full mt-3 rounded-atp"
-            style={{ aspectRatio: 4 / 3 }}
-            resizeMode="cover"
-          />
+          <PostImage uri={absUrl(post.media[0].src)!} />
         )
       )}
 

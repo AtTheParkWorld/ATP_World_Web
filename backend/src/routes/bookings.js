@@ -1159,4 +1159,42 @@ async function notifyWaitlist(sessionId) {
   }
 }
 
+// ── GET /api/bookings/qr/:token.png ───────────────────────────
+// QR image for the booking confirmation email (founder request 5A,
+// 2026-10-03: "is it possible to show the QR code on email too?").
+//
+// Email clients run no JavaScript, so the web's client-side generator
+// is no use here, and Gmail strips data: URIs — it has to be a real
+// image URL the client can fetch.
+//
+// Unauthenticated BY DESIGN, and safe: the URL is keyed on the booking's
+// own qr_token. Anyone holding that token already holds everything the
+// QR encodes, so rendering it adds no exposure. It deliberately does NOT
+// accept a booking id, which would be enumerable.
+router.get('/qr/:token.png', async (req, res, next) => {
+  try {
+    const token = String(req.params.token || '').replace(/\.png$/i, '').trim();
+    if (!/^[a-f0-9]{16,64}$/i.test(token)) return res.status(400).send('Bad token');
+
+    const { rows } = await query(
+      `SELECT qr_code, status FROM bookings WHERE qr_token = $1 LIMIT 1`,
+      [token]
+    );
+    if (!rows.length) return res.status(404).send('Not found');
+    if (rows[0].status === 'cancelled') return res.status(410).send('Booking cancelled');
+
+    const payload = rows[0].qr_code || token;
+    const QRCode = require('qrcode');
+    const png = await QRCode.toBuffer(payload, {
+      type: 'png', width: 320, margin: 2,
+      color: { dark: '#0a0a0a', light: '#ffffff' },
+      errorCorrectionLevel: 'M',
+    });
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+    res.setHeader('Content-Length', png.length);
+    res.send(png);
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

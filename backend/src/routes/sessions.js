@@ -793,10 +793,21 @@ router.post('/:id/checkin', authenticate, requireScanner, async (req, res, next)
     // Find booking
     let bookingQuery, bookingParams;
     if (qr_token) {
+      // The confirmation email prints a short code (the token's first
+      // eight characters as XXXX-XXXX) for when a scanner will not read
+      // the QR, so an ambassador can type it instead (founder request 5A,
+      // 2026-10-03). Accept either: the full token, or a prefix.
+      //
+      // The prefix match is scoped to THIS session, and the query returns
+      // at most two rows so an ambiguous prefix is detected rather than
+      // silently checking in the wrong person.
+      const typed = String(normalizedToken || '').replace(/-/g, '').trim().toLowerCase();
       bookingQuery = `SELECT b.*, m.first_name, m.last_name, m.member_number
                       FROM bookings b JOIN members m ON m.id=b.member_id
-                      WHERE b.qr_token=$1 AND b.session_id=$2`;
-      bookingParams = [normalizedToken, req.params.id];
+                      WHERE b.session_id=$2
+                        AND (b.qr_token = $1 OR ($3 AND b.qr_token LIKE $1 || '%'))
+                      LIMIT 2`;
+      bookingParams = [typed, req.params.id, typed.length >= 6 && typed.length < 32];
     } else {
       bookingQuery = `SELECT b.*, m.first_name, m.last_name, m.member_number
                       FROM bookings b JOIN members m ON m.id=b.member_id
@@ -813,6 +824,12 @@ router.post('/:id/checkin', authenticate, requireScanner, async (req, res, next)
     }
 
     const booking = bRows[0];
+    if (bRows.length > 1) {
+      return res.status(409).json({
+        error: 'That short code matches more than one booking — scan the QR instead.',
+        code: 'AMBIGUOUS_CODE',
+      });
+    }
     if (booking.status === 'attended') {
       return res.status(409).json({
         error: `${booking.first_name} is already checked in`,

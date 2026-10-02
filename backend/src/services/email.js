@@ -407,10 +407,20 @@ async function sendBookingConfirmation(member, session, qrData, qrToken) {
     </div>
 
     <div class="qr-box">
-      <p style="margin-bottom:12px;color:#999;font-size:13px">YOUR CHECK-IN CODE</p>
-      <div class="qr-token">${qrToken.toUpperCase()}</div>
+      <p style="margin-bottom:12px;color:#999;font-size:13px">YOUR CHECK-IN QR</p>
+      <!-- Founder request 5A (2026-10-03): show the QR in the email, and
+           shorten the code. The full 32-character token is still what the
+           scanner reads; it is just no longer what the member is asked to
+           read out. The short code below is the first eight characters in
+           two groups, which is what an ambassador types if scanning fails. -->
+      <img src="${FRONTEND_URL}/api/bookings/qr/${qrToken}.png"
+           alt="Your check-in QR code"
+           width="200" height="200"
+           style="display:block;margin:0 auto 14px;border-radius:10px;background:#fff;padding:8px">
+      <p style="margin:0 0 6px;color:#999;font-size:12px">OR GIVE THIS CODE</p>
+      <div class="qr-token" style="letter-spacing:3px">${qrToken.slice(0, 4).toUpperCase()}-${qrToken.slice(4, 8).toUpperCase()}</div>
       <p style="margin-top:12px;color:#555;font-size:12px">
-        Show this code or the QR code in your ATP profile to the ambassador at the session.
+        Show this QR to the ambassador at the session. If their scanner will not read it, the code above works too.
       </p>
     </div>
 

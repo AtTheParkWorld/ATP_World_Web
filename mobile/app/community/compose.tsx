@@ -142,8 +142,11 @@ export default function Compose() {
               <Image
                 source={{ uri: media[0]?.url }}
                 className="w-full rounded-atp"
-                style={{ aspectRatio: 4 / 3, backgroundColor: colors.dark2 }}
-                resizeMode="cover"
+                // Founder report 6A: the preview cropped to 4:3 while the
+                // feed now shows the photo's own shape, so what you saw
+                // here was not what you were about to post.
+                style={{ aspectRatio: 4 / 5, backgroundColor: colors.dark2 }}
+                resizeMode="contain"
               />
               <Pressable
                 onPress={() => setMedia([])}

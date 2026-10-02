@@ -17,6 +17,17 @@ import { getProfile, patchProfile, patchAvatar } from '@/lib/api/members';
 import { listCities, listTribes, listActivities } from '@/lib/api/sessions';
 import { changePassword } from '@/lib/api/auth';
 import { WORLD_COUNTRIES } from '@/lib/data/countries';
+import { PickerField, DateField } from '@/lib/components/PickerField';
+
+/* Founder report 3A (2026-10-03): these were all free-text boxes, so the
+   stored values were whatever each member happened to type. Padel levels
+   mirror SPORT_LEVELS.padel in backend/src/services/courts.js — a level
+   that does not match that list can never match a court's allowed levels,
+   which is exactly the mismatch the legacy import hit. */
+const GENDERS      = ['Female', 'Male', 'Other', 'Prefer not to say'];
+const PADEL_LEVELS = ['Beginner', 'Level D+', 'Level C-', 'Level C+', 'Level B'];
+const VOLLEY_LEVELS = ['Beginner', 'Intermediate', 'Advanced'];
+const KIT_SIZES    = ['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'];
 import { pickAndUploadMedia } from '@/lib/api/upload';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { Avatar } from '@/lib/components/Avatar';
@@ -204,9 +215,9 @@ export default function EditProfile() {
           <Field label="First name"  value={form.first_name}    onChange={(v) => setForm((f) => ({ ...f, first_name: v }))} autoCapitalize="words" textContentType="givenName" />
           <Field label="Last name"   value={form.last_name}     onChange={(v) => setForm((f) => ({ ...f, last_name: v }))}  autoCapitalize="words" textContentType="familyName" />
           <Field label="Phone"       value={form.phone}         onChange={(v) => setForm((f) => ({ ...f, phone: v }))}      keyboardType="phone-pad" textContentType="telephoneNumber" />
-          <Field label="Date of birth (YYYY-MM-DD)" value={form.date_of_birth} onChange={(v) => setForm((f) => ({ ...f, date_of_birth: v }))} keyboardType="numbers-and-punctuation" />
-          <Field label="Gender"      value={form.gender}        onChange={(v) => setForm((f) => ({ ...f, gender: v }))} />
-          <Field label="Nationality" value={form.nationality}   onChange={(v) => setForm((f) => ({ ...f, nationality: v }))} autoCapitalize="words" />
+          <DateField label="Date of birth" value={form.date_of_birth} onChange={(v) => setForm((f) => ({ ...f, date_of_birth: v }))} />
+          <PickerField label="Gender" value={form.gender} options={GENDERS} onSelect={(v) => setForm((f) => ({ ...f, gender: v }))} />
+          <PickerField label="Nationality" value={form.nationality} options={WORLD_COUNTRIES} searchable onSelect={(v) => setForm((f) => ({ ...f, nationality: v }))} placeholder="Select your nationality" />
 
           {/* ── Where I live ─────────────────────────────────── */}
           <SectionHeader label="Where I live" />
@@ -253,13 +264,13 @@ export default function EditProfile() {
             onToggle={(k) => setSports((s) => (s.includes(k) ? s.filter((x) => x !== k) : [...s, k]))}
             empty="No activities configured yet."
           />
-          <Field label="Padel level"      value={form.padel_level}      onChange={(v) => setForm((f) => ({ ...f, padel_level: v }))} />
-          <Field label="Volleyball level" value={form.volleyball_level} onChange={(v) => setForm((f) => ({ ...f, volleyball_level: v }))} />
+          <PickerField label="Padel level" value={form.padel_level} options={PADEL_LEVELS} onSelect={(v) => setForm((f) => ({ ...f, padel_level: v }))} placeholder="Select your level" />
+          <PickerField label="Volleyball level" value={form.volleyball_level} options={VOLLEY_LEVELS} onSelect={(v) => setForm((f) => ({ ...f, volleyball_level: v }))} placeholder="Select your level" />
 
           {/* ── Kit ──────────────────────────────────────────── */}
           <SectionHeader label="Kit size" />
-          <Field label="Top size"    value={form.top_size}      onChange={(v) => setForm((f) => ({ ...f, top_size: v }))} />
-          <Field label="Bottom size" value={form.bottom_size}   onChange={(v) => setForm((f) => ({ ...f, bottom_size: v }))} />
+          <PickerField label="Top size" value={form.top_size} options={KIT_SIZES} onSelect={(v) => setForm((f) => ({ ...f, top_size: v }))} placeholder="Select a size" />
+          <PickerField label="Bottom size" value={form.bottom_size} options={KIT_SIZES} onSelect={(v) => setForm((f) => ({ ...f, bottom_size: v }))} placeholder="Select a size" />
 
           {/* ── Account ──────────────────────────────────────── */}
           <SectionHeader label="Account" />
