@@ -80,7 +80,7 @@ We do not sell your personal information.
 
 We share it with service providers who help us run ATP, and only so far as they need it to do that job:
 
-Stripe, for payments. Cloudflare, for storing images and files you upload. SendGrid, for sending email. Sentry, for recording technical errors so we can fix them. Expo and the Apple and Google push services, for delivering notifications. Shopify, which runs our online store, if you buy from it. Our hosting provider, for running the service itself.
+Stripe, for payments. Cloudflare, for storing images and files you upload. SendGrid, for sending email about your bookings and account. ConvertKit, for sending our newsletter if you have subscribed to it. Sentry, for recording technical errors so we can fix them. Expo and the Apple and Google push services, for delivering notifications. Shopify, which runs our online store, if you buy from it. Our hosting provider, for running the service itself.
 
 Other members see the parts of your profile you make visible: your name, profile photo, badges, friend count, and the sessions you have booked where that is part of the feature you are using.
 
