@@ -27,6 +27,25 @@ router.use((req, res, next) => {
 });
 
 // ── HELPERS ───────────────────────────────────────────────────
+/* Web session length (founder 2026-10-03: "if I don't sign out ... I
+   should be able to open straight to my profile").
+
+   Mobile already persists for 90 days through a rotating refresh token
+   held in the Keychain / Keystore. The web had a 7-day JWT and no
+   refresh at all, so a laptop logged you out after a week.
+
+   Web now gets 30 days — long enough to feel permanent, deliberately
+   shorter than mobile because a browser is likelier to be shared, and a
+   JWT cannot be revoked once issued.
+
+   Admins are the exception and keep a short window. An admin token
+   opens the whole member database, so it should not sit in a laptop's
+   localStorage for a month. */
+function webTokenTtl(member) {
+  if (member && member.is_admin) return process.env.JWT_ADMIN_EXPIRES_IN || '12h';
+  return process.env.JWT_EXPIRES_IN || '30d';
+}
+
 function generateJWT(memberId, opts) {
   // Mobile PR D1 (v1.69.0): callers can request a short-lived access
   // token by passing { expiresIn: '1h' }. Pairs with /auth/refresh.
@@ -546,7 +565,7 @@ router.post('/login', async (req, res, next) => {
         token: generateJWT(member.id, { expiresIn: '1h' }),
       });
     }
-    res.json({ token: generateJWT(member.id), member: _publicMember(member) });
+    res.json({ token: generateJWT(member.id, { expiresIn: webTokenTtl(member) }), member: _publicMember(member) });
   } catch (err) { next(err); }
 });
 
@@ -701,7 +720,15 @@ router.get('/verify', async (req, res, next) => {
       [record.member_id]
     );
 
-    const jwtToken = generateJWT(record.member_id, { via: 'magic_link' });
+    // Web magic-link sessions get the same 30-day window as a password
+    // login (admins still short). The member row is needed to tell them
+    // apart, and is cheap here because this path runs once per link.
+    let _mlMember = null;
+    try {
+      const { rows: _ml } = await query('SELECT id, is_admin FROM members WHERE id=$1', [record.member_id]);
+      _mlMember = _ml[0] || null;
+    } catch (_) { /* fall back to the member default below */ }
+    const jwtToken = generateJWT(record.member_id, { via: 'magic_link', expiresIn: webTokenTtl(_mlMember) });
 
     // Mobile callers (X-Mobile-Platform) need the same shape as /login:
     // short access token + refresh token + the member row, otherwise the
@@ -823,7 +850,7 @@ router.post('/google', async (req, res, next) => {
       });
     }
 
-    res.json({ token: generateJWT(member.id), member: _publicMember(member), isNew: !rows.length });
+    res.json({ token: generateJWT(member.id, { expiresIn: webTokenTtl(member) }), member: _publicMember(member), isNew: !rows.length });
   } catch (err) { next(err); }
 });
 
