@@ -606,23 +606,31 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
   transition:opacity .16s ease, transform .16s ease;
   display:flex;flex-direction:column;gap:6px;
 }
-.cal-day.has-session:hover .cal-popover{
+.cal-day.has-session:hover .cal-popover,
+.cal-day.has-session.is-open .cal-popover{
   opacity:1;pointer-events:auto;
   transform:translateX(-50%) translateY(0) scale(1);
 }
+/* Founder report 2026-10-03: tapping a day showed the date but not the
+   sessions, on both Android and iOS. The popover was hover-only, and a
+   touch screen has no hover — so it could never be opened by tapping.
+   .is-open is set by the tap handler below and mirrors every hover rule. */
 /* Bottom rows flip the popover above so it doesn't get clipped */
 .cal-day.flip-up .cal-popover{
   top:auto;bottom:calc(100% + 6px);
   transform:translateX(-50%) translateY(4px) scale(.97);
 }
-.cal-day.flip-up.has-session:hover .cal-popover{
+.cal-day.flip-up.has-session:hover .cal-popover,
+.cal-day.flip-up.has-session.is-open .cal-popover{
   transform:translateX(-50%) translateY(0) scale(1);
 }
 /* Edge columns slide horizontally so the popover stays in viewport */
 .cal-day.flip-left .cal-popover{left:auto;right:0;transform:translateX(0) translateY(-4px) scale(.97)}
-.cal-day.flip-left.has-session:hover .cal-popover{transform:translateX(0) translateY(0) scale(1)}
+.cal-day.flip-left.has-session:hover .cal-popover,
+.cal-day.flip-left.has-session.is-open .cal-popover{transform:translateX(0) translateY(0) scale(1)}
 .cal-day.flip-right .cal-popover{left:0;transform:translateX(0) translateY(-4px) scale(.97)}
-.cal-day.flip-right.has-session:hover .cal-popover{transform:translateX(0) translateY(0) scale(1)}
+.cal-day.flip-right.has-session:hover .cal-popover,
+.cal-day.flip-right.has-session.is-open .cal-popover{transform:translateX(0) translateY(0) scale(1)}
 
 .cal-popover-header{
   font-family:var(--ff-display);font-size:11px;font-weight:800;
@@ -641,7 +649,13 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 
 
 @media(max-width:900px){.cal-grid{font-size:11px}.cal-day{min-height:64px}}
-@media(max-width:600px){.cal-session-dot{display:none}.cal-day.has-session::after{content:"•";color:var(--green);position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:14px}}
+/* Under 600px the day cells are too small to list sessions inline, so
+   each day shows a single dot instead. The popover is the ONLY place
+   a phone user can read the sessions, so it must be exempt — without
+   the :not() below, tapping a day opened a popover containing rows
+   that were display:none, which is exactly what the founder saw:
+   the date header and nothing under it (report 2, 2026-10-03). */
+@media(max-width:600px){.cal-day > .cal-session-dot{display:none}.cal-day.has-session::after{content:"•";color:var(--green);position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:14px}}
 
 
 /* ── QR CODE ─────────────────────────────────────────────── */
@@ -2131,9 +2145,27 @@ function renderCalendar() {
   var grid = document.getElementById('calGrid');
   if (!grid || grid._clickBound) return;
   grid._clickBound = true;
+  function closeAllDays(except) {
+    grid.querySelectorAll('.cal-day.is-open').forEach(function(d){
+      if (d !== except) d.classList.remove('is-open');
+    });
+  }
+  // Tap a day -> show that day's sessions. Hover still works on desktop;
+  // this is what makes the calendar usable on a phone.
   grid.addEventListener('click', function(e) {
     var dot = e.target.closest('.cal-session-dot');
-    if(!dot) return;
+    if (!dot) {
+      var day = e.target.closest('.cal-day.has-session');
+      if (day) {
+        var wasOpen = day.classList.contains('is-open');
+        closeAllDays();
+        if (!wasOpen) day.classList.add('is-open');
+        e.stopPropagation();
+      } else {
+        closeAllDays();
+      }
+      return;
+    }
     e.stopPropagation();
     openModal(
       dot.dataset.name,
@@ -2146,6 +2178,13 @@ function renderCalendar() {
       dot.dataset.time,
       dot.dataset.id || null
     );
+    closeAllDays();
+  });
+  document.addEventListener('click', function(e){
+    if (!e.target.closest('#calGrid')) closeAllDays();
+  });
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') closeAllDays();
   });
 })();
 
