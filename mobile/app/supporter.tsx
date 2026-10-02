@@ -9,12 +9,19 @@
  * Members with an active sub see a "Manage" button instead of the
  * tier picker — that opens the Stripe customer portal.
  *
- * iOS (App Store 3.1.1): no purchase flow, no prices, no external
- * links. Tiers render read-only (perks only) and a neutral line points
- * at "the ATP website" without linking. Existing supporters still see
- * their status. Android keeps the full Stripe flow.
+ * Both platforms sell (founder decision 2026-10-03). iOS previously
+ * rendered read-only — no prices, nothing tappable — on the strictest
+ * reading of App Store 3.1.1, which meant iPhone members could not
+ * subscribe at all and saw three tiers with no prices and no
+ * explanation.
+ *
+ * ATP Premium is access to coached, in-person sessions held in public
+ * parks. Guideline 3.1.3(e) exempts goods and services consumed outside
+ * the app from In-App Purchase, which is the same basis gyms and class
+ * marketplaces sell on. The justification goes in App Review Notes; if
+ * Apple pushes back the fallback is real IAP for iOS.
  */
-import { Alert, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -23,9 +30,6 @@ import { listPlans, getMySubscription, createCheckout, openPortal, type Subscrip
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 
-// Apple guideline 3.1.1 — digital-content subscriptions can't be sold
-// via external checkout on iOS, and steering language gets flagged.
-const IS_IOS = Platform.OS === 'ios';
 
 export default function Supporter() {
   const qc = useQueryClient();
@@ -109,7 +113,7 @@ export default function Supporter() {
               Next renewal: {subscription.current_period_end ? new Date(subscription.current_period_end).toLocaleDateString() : '—'}
               {subscription.cancel_at_period_end ? ' · cancelling at period end' : ''}
             </Text>
-            {!IS_IOS && (
+            {(
               <Pressable
                 onPress={manage}
                 className="mt-3 bg-atp-dark border border-white/10 rounded-atp py-2.5 items-center active:opacity-80"
@@ -128,21 +132,14 @@ export default function Supporter() {
               key={p.id}
               plan={p}
               active={activeTier === p.id}
-              readOnly={IS_IOS}
               onPress={() => startCheckout(p)}
             />
           ))}
         </View>
 
-        {IS_IOS ? (
-          <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-7 text-center leading-relaxed">
-            Supporter management is available on the ATP website.
-          </Text>
-        ) : (
-          <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-7 text-center leading-relaxed">
-            Payments are handled securely by Stripe. Cancel any time — you keep access until the end of your billing period.
-          </Text>
-        )}
+        <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-7 text-center leading-relaxed">
+          Supporting ATP keeps our outdoor sessions free and open to everyone. Payments are handled securely by Stripe. Cancel any time — you keep access until the end of your billing period.
+        </Text>
       </ScrollView>
     </SafeAreaView>
   );
