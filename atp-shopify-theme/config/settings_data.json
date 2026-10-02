@@ -1,7 +1,43 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "current": {
     "accent_color": "#A8FF00",
     "background_color": "#0a0a0a",
-    "sections": {}
+    "sections": {
+      "announcement-bar": {
+        "type": "announcement-bar",
+        "settings": {
+          "show": false,
+          "text": "Free shipping across the UAE over AED 250 · Members earn ATP points on every order",
+          "link": ""
+        }
+      },
+      "header": {
+        "type": "header",
+        "settings": {
+          "logo": "shopify://shop_images/atthepark_assets-02_689f165e-0cb7-440d-8f35-e1d7f386855f.png",
+          "menu": "main-menu"
+        }
+      },
+      "footer": {
+        "type": "footer",
+        "settings": {
+          "tagline": "Train in the colours. Performance gear from the UAE's largest free fitness community. Dubai · Al Ain · Muscat. Est. 2015.",
+          "instagram": "",
+          "tiktok": "",
+          "whatsapp": "",
+          "copyright": "All rights reserved. Dubai, United Arab Emirates."
+        }
+      }
+    },
+    "content_for_index": []
   }
 }

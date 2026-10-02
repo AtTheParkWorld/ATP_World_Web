@@ -1,15 +1,26 @@
+/*
+ * ------------------------------------------------------------
+ * IMPORTANT: The contents of this file are auto-generated.
+ *
+ * This file may be updated by the Shopify admin theme editor
+ * or related systems. Please exercise caution as any changes
+ * made to this file may be overwritten.
+ * ------------------------------------------------------------
+ */
 {
   "sections": {
     "hero": {
       "type": "hero-video",
       "settings": {
+        "video": "shopify://files/videos/Shopify version ok (1).mp4",
+        "video_url": "",
         "eyebrow": "ATP Store · Est. 2015",
         "heading": "Never train",
         "heading_accent": "alone.",
         "subheading": "Performance gear built for the heat. Worn by 7,000+ members across Dubai, Al Ain and Muscat.",
         "cta_text": "Shop the collection",
-        "cta2_text": "New drops",
         "cta_link": "/collections/all",
+        "cta2_text": "New Drops",
         "cta2_link": "/collections/featured"
       }
     },
@@ -57,32 +68,37 @@
         "men": {
           "type": "tile",
           "settings": {
+            "image": "shopify://shop_images/ChatGPTImageJul22_2026_12_30_47AM_1.png",
             "label": "Shop Men",
             "cta": "Shop now",
-            "collection": "men"
+            "collection": "men",
+            "link": ""
           }
         },
         "women": {
           "type": "tile",
           "settings": {
+            "image": "shopify://shop_images/ChatGPTImageJul22_2026_12_41_34AM_1.png",
             "label": "Shop Women",
             "cta": "Shop now",
-            "collection": "women"
+            "collection": "women",
+            "link": ""
           }
         }
       },
       "block_order": [
         "men",
         "women"
-      ]
+      ],
+      "settings": {}
     },
     "featured": {
       "type": "featured-collection",
       "settings": {
         "eyebrow": "Best sellers",
         "heading": "The collection",
-        "limit": 8,
-        "collection": "featured"
+        "collection": "featured",
+        "limit": 8
       }
     },
     "tribes": {
@@ -94,6 +110,7 @@
             "name": "Stronger",
             "desc": "Heavyweight fits. Bold typography. Built to lift.",
             "color": "#f97316",
+            "collection": "",
             "link": "/collections/performance"
           }
         },
@@ -102,7 +119,8 @@
           "settings": {
             "name": "Faster",
             "desc": "Ultralight, reflective, neon-on-black. Made to move.",
-            "color": "#A8FF00",
+            "color": "#a8ff00",
+            "collection": "",
             "link": "/collections/activewear"
           }
         },
@@ -112,6 +130,7 @@
             "name": "Better",
             "desc": "Soft hand-feel, monochrome, off-park energy.",
             "color": "#4ade80",
+            "collection": "",
             "link": "/collections/atp-essentials"
           }
         }
@@ -120,13 +139,30 @@
         "t1",
         "t2",
         "t3"
-      ]
+      ],
+      "settings": {
+        "eyebrow": "Your tribe. Your colours.",
+        "heading": "Shop by tribe"
+      }
     },
     "countdown": {
       "type": "drop-countdown",
       "settings": {
+        "show": true,
+        "eyebrow": "Be the first one to get it",
+        "heading": "Marina Sunrise capsule",
+        "text": "200 units. Gone in 48 hours last time. Set an alarm.",
         "datetime": "2026-08-01T07:00",
-        "link": "/collections/featured"
+        "link": "/collections/featured",
+        "live_cta": "Shop the drop"
+      }
+    },
+    "newsletter": {
+      "type": "newsletter",
+      "settings": {
+        "eyebrow": "The inside lane",
+        "heading": "New drops. First dibs.",
+        "text": "Session drops sell out in 48 hours. Get the email before the Instagram post."
       }
     },
     "usp": {
@@ -161,10 +197,7 @@
         "usp-1",
         "usp-2",
         "usp-3"
-      ]
-    },
-    "newsletter": {
-      "type": "newsletter",
+      ],
       "settings": {}
     }
   },

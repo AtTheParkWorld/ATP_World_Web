@@ -1,0 +1,193 @@
+{% doc %}
+  @prompt
+    Create an inventory-aware product quantity selector to replace the existing quantity selector on product pages. Match the current theme styling. Cap the quantity at the selected variant's available inventory, taking into account units of that same variant already in the customer's cart. Update the limit when the customer changes size or color. Prevent both the plus button and manually typed quantities from exceeding the limit. When no stock remains, disable adding more units and show a clear sold-out message. Integrate with the existing product form and avoid displaying a duplicate quantity selector. Do not change the store's inventory quantities or inventory settings.
+{% enddoc %}
+{% assign ai_gen_id = block.id | replace: '_', '' | downcase %}
+
+{% style %}
+  .ai-stock-quantity-{{ ai_gen_id }} {
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    color: inherit;
+    font: inherit;
+  }
+  .ai-stock-quantity-{{ ai_gen_id }}__controls {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid currentColor;
+    min-height: 46px;
+  }
+  .ai-stock-quantity-{{ ai_gen_id }}__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-size: 20px;
+    cursor: pointer;
+  }
+  .ai-stock-quantity-{{ ai_gen_id }}__button:disabled,
+  .ai-stock-quantity-{{ ai_gen_id }}__input:disabled {
+    cursor: not-allowed;
+    opacity: .45;
+  }
+  .ai-stock-quantity-{{ ai_gen_id }}__input {
+    width: 54px;
+    min-height: 44px;
+    padding: 0 4px;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    text-align: center;
+    appearance: textfield;
+    -moz-appearance: textfield;
+  }
+  .ai-stock-quantity-{{ ai_gen_id }}__input::-webkit-inner-spin-button,
+  .ai-stock-quantity-{{ ai_gen_id }}__input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  .ai-stock-quantity-{{ ai_gen_id }}__message {
+    margin: 8px 0 0;
+    font-size: .875em;
+    font-weight: 600;
+  }
+  .ai-stock-quantity-{{ ai_gen_id }}__message:empty { display: none; }
+  .ai-stock-quantity-{{ ai_gen_id }} [hidden] { display: none !important; }
+  @media (max-width: 749px) {
+    .ai-stock-quantity-{{ ai_gen_id }} { width: 100%; }
+  }
+{% endstyle %}
+
+<ai-stock-quantity-{{ ai_gen_id }}
+  class="ai-stock-quantity-{{ ai_gen_id }}"
+  style="width: {{ block.settings.desktop_width_percent }}%;"
+  data-product-id="{{ product.id }}"
+  data-variants='[{% for variant in product.variants %}{% unless forloop.first %},{% endunless %}{"id":{{ variant.id }},"available":{{ variant.available | json }},"tracked":{% if variant.inventory_management %}true{% else %}false{% endif %},"quantity":{{ variant.inventory_quantity | default: 0 }},"policy":"{{ variant.inventory_policy }}"}{% endfor %}]'
+  data-sold-out="{{ block.settings.sold_out_message | escape }}"
+  data-limit-message="{{ block.settings.limit_message | escape }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="ai-stock-quantity-{{ ai_gen_id }}__controls" role="group" aria-label="{{ block.settings.quantity_label | escape }}">
+    <button class="ai-stock-quantity-{{ ai_gen_id }}__button" type="button" data-decrease aria-label="Decrease quantity">−</button>
+    <input class="ai-stock-quantity-{{ ai_gen_id }}__input" type="number" inputmode="numeric" min="1" step="1" value="1" name="quantity" aria-label="{{ block.settings.quantity_label | escape }}">
+    <button class="ai-stock-quantity-{{ ai_gen_id }}__button" type="button" data-increase aria-label="Increase quantity">+</button>
+  </div>
+  <p class="ai-stock-quantity-{{ ai_gen_id }}__message" role="status" aria-live="polite"></p>
+</ai-stock-quantity-{{ ai_gen_id }}>
+
+<script>
+  (() => {
+    const tag = 'ai-stock-quantity-{{ ai_gen_id }}';
+    if (customElements.get(tag)) return;
+    class StockQuantity extends HTMLElement {
+      connectedCallback() {
+        if (this.initialized) return;
+        this.initialized = true;
+        this.input = this.querySelector('input');
+        this.decrease = this.querySelector('[data-decrease]');
+        this.increase = this.querySelector('[data-increase]');
+        this.message = this.querySelector('[role="status"]');
+        try { this.variants = JSON.parse(this.dataset.variants); } catch (error) { this.variants = []; }
+        this.form = this.closest('form[action*="/cart/add"]');
+        if (!this.form) {
+          const forms = Array.from(document.querySelectorAll('form[action*="/cart/add"]'));
+          this.form = forms.find((form) => form.querySelector('[name="id"]') && form.querySelector('[name="id"]').value && this.variants.some((variant) => String(variant.id) === form.querySelector('[name="id"]').value)) || forms[0];
+        }
+        if (!this.form) { this.hidden = true; return; }
+        this.attachToForm();
+        this.variantInput = this.form.querySelector('[name="id"]');
+        this.cartQuantities = {};
+        this.form.addEventListener('change', (event) => {
+          if (event.target.matches('[name="id"], select, input[type="radio"]')) this.refreshLimit();
+        });
+        this.form.addEventListener('variant:change', () => this.refreshLimit());
+        this.form.addEventListener('product:variant-change', () => this.refreshLimit());
+        this.input.addEventListener('input', () => this.clamp());
+        this.input.addEventListener('change', () => this.clamp());
+        this.decrease.addEventListener('click', () => this.setQuantity(Number(this.input.value) - 1));
+        this.increase.addEventListener('click', () => this.setQuantity(Number(this.input.value) + 1));
+        this.loadCart();
+        this.refreshLimit();
+      }
+      attachToForm() {
+        const nativeInput = this.form.querySelector('[name="quantity"]');
+        if (nativeInput && !this.contains(nativeInput)) {
+          nativeInput.hidden = true;
+          nativeInput.setAttribute('aria-hidden', 'true');
+          nativeInput.tabIndex = -1;
+          nativeInput.disabled = true;
+        }
+        this.form.appendChild(this);
+        this.input.setAttribute('form', this.form.id || '');
+        this.input.disabled = false;
+      }
+      async loadCart() {
+        try {
+          const response = await fetch(`${window.Shopify?.routes?.root || '/'}cart.js`, { credentials: 'same-origin', headers: { Accept: 'application/json' } });
+          if (!response.ok) return;
+          const cart = await response.json();
+          this.cartQuantities = {};
+          (cart.items || []).forEach((item) => { this.cartQuantities[String(item.variant_id)] = item.quantity; });
+          this.refreshLimit();
+        } catch (error) {}
+      }
+      selectedVariant() {
+        const id = this.form.querySelector('[name="id"]')?.value;
+        return this.variants.find((variant) => String(variant.id) === String(id)) || this.variants[0];
+      }
+      refreshLimit() {
+        const variant = this.selectedVariant();
+        if (!variant) return;
+        const alreadyInCart = Number(this.cartQuantities[String(variant.id)] || 0);
+        let limit = Infinity;
+        if (variant.tracked && variant.policy !== 'continue') limit = Math.max(0, Number(variant.quantity) - alreadyInCart);
+        this.limit = limit;
+        const soldOut = limit < 1;
+        this.input.max = Number.isFinite(limit) ? String(limit) : '';
+        this.input.disabled = soldOut;
+        this.increase.disabled = soldOut || Number(this.input.value) >= limit;
+        this.decrease.disabled = soldOut || Number(this.input.value) <= 1;
+        this.message.textContent = soldOut ? this.dataset.soldOut : (Number.isFinite(limit) ? this.dataset.limitMessage.replace('{count}', String(limit)) : '');
+        this.setQuantity(soldOut ? 0 : Math.min(Math.max(1, Number(this.input.value) || 1), limit), false);
+        const submit = this.form.querySelector('[type="submit"]');
+        if (submit) {
+          submit.disabled = soldOut;
+          submit.setAttribute('aria-disabled', soldOut ? 'true' : 'false');
+        }
+      }
+      clamp() {
+        if (this.limit < 1) { this.input.value = 0; return; }
+        this.setQuantity(Number(this.input.value));
+      }
+      setQuantity(value, updateControls = true) {
+        if (this.limit < 1) this.input.value = '0';
+        else this.input.value = String(Math.min(this.limit, Math.max(1, Math.floor(Number(value) || 1))));
+        if (updateControls) {
+          this.decrease.disabled = this.limit < 1 || Number(this.input.value) <= 1;
+          this.increase.disabled = this.limit < 1 || Number(this.input.value) >= this.limit;
+        }
+      }
+    }
+    customElements.define(tag, StockQuantity);
+  })();
+</script>
+
+{% schema %}
+{
+  "name": "Stock-aware quantity",
+  "settings": [
+    { "type": "range", "id": "desktop_width_percent", "label": "Desktop width", "min": 50, "max": 100, "step": 5, "unit": "%", "default": 100 },
+    { "type": "text", "id": "quantity_label", "label": "Quantity label", "default": "Quantity" },
+    { "type": "text", "id": "sold_out_message", "label": "Sold-out message", "default": "Sold out for this variant" },
+    { "type": "text", "id": "limit_message", "label": "Stock message", "default": "Available to add: {count}" }
+  ],
+  "presets": [{ "name": "Stock-aware quantity" }],
+  "tag": null,
+  "class": "stock-aware-quantity-block"
+}
+{% endschema %}
