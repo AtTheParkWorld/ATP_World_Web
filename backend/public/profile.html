@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="stylesheet" href="/atp.min.css?v=86b3e6c7fa">
+  <link rel="stylesheet" href="/atp.min.css?v=b6898a0fa2">
   <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
-  <script src="/atp.bundle.min.js?v=4d669b975c"></script>
+  <script src="/atp.bundle.min.js?v=9aa477bb55"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -202,7 +202,19 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .profile-menu .menu-item.active::before{content:"●";font-size:8px;color:var(--green);margin-right:-4px}
 .profile-menu-divider{height:1px;background:rgba(255,255,255,.06);margin:6px 4px}
 .profile-menu .menu-section-label{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;font-weight:700;padding:8px 14px 4px}
-@media(max-width:600px){.profile-menu{right:auto;left:0;min-width:200px}}
+.bell-dropdown{min-width:300px;max-width:340px}
+/* Founder report 1 (2026-10-03): opening the bell on a phone cut the
+   notification text off down the right-hand side. The panel carried its
+   300-340px width as an INLINE style, which outranks this breakpoint, so
+   a 340px panel anchored near the right edge of a 390px screen simply ran
+   off it. Widths now live here, and on a phone the panel pins to the
+   right edge and takes whatever width is left. */
+@media(max-width:600px){
+  .profile-menu{right:auto;left:0;min-width:200px}
+  .bell-dropdown{left:auto;right:0;min-width:0;width:calc(100vw - 24px);max-width:360px}
+  .bell-dropdown .notif-text,
+  .bell-dropdown .msg-text{white-space:normal;overflow-wrap:anywhere}
+}
 
 /* ── CHAT PANEL (founder 2026-08-28 "enable reply from the website") ──
    Desktop: fixed 380px right drawer. Mobile (≤600px): full-width
@@ -753,7 +765,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M8 1a5 5 0 015 5v3l1.5 2.5H1.5L3 9V6a5 5 0 015-5z"/><path d="M6.5 13.5a1.5 1.5 0 003 0"/></svg>
             <span id="bellBadge" style="display:none;background:var(--green);color:#0a0a0a;min-width:18px;height:18px;padding:0 5px;border-radius:10px;font-size:10px;font-weight:800;align-items:center;justify-content:center">0</span>
           </button>
-          <div id="bellDropdown" class="profile-menu" role="menu" aria-labelledby="bellBtn" style="min-width:300px;max-width:340px;padding:10px">
+          <div id="bellDropdown" class="profile-menu bell-dropdown" role="menu" aria-labelledby="bellBtn" style="padding:10px">
             <div style="font-family:var(--ff-display);font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--green);padding:4px 8px 10px">💬 Messages</div>
             <div id="bellMsgList"><div style="padding:12px 8px;color:var(--muted);font-size:12px;text-align:center">Loading…</div></div>
             <div class="profile-menu-divider" style="margin:10px 4px"></div>

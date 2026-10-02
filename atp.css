@@ -1146,6 +1146,10 @@ button.session-qr-btn, button.friend-btn, button.profile-cta {
 .atp-footer-links a:hover { color: var(--atp-green); }
 
 .atp-footer-news { flex: 0 1 330px; min-width: 260px; }
+.atp-footer-news-label {
+  font-size: 12px; line-height: 1.5; color: var(--atp-muted);
+  margin: 0 0 8px;
+}
 .atp-footer-news-row { display: flex; gap: 6px; }
 .atp-footer-news-row input {
   flex: 1; min-width: 0;

@@ -1,5 +1,6 @@
 const router   = require('express').Router();
 const bcrypt   = require('bcryptjs');
+const { sendWelcomeMessage } = require('../services/welcomeMessage');
 const jwt      = require('jsonwebtoken');
 const crypto   = require('crypto');
 const { v4: uuidv4 } = require('uuid');
@@ -184,6 +185,11 @@ router.post('/register', async (req, res, next) => {
 
     const member = rows[0];
     const token  = generateJWT(member.id);
+
+    // Founder request 15 (2026-10-03): a warm welcome DM from the founders
+    // so a new member's inbox is not empty. Fire-and-forget — signup must
+    // never fail because the welcome could not be delivered.
+    sendWelcomeMessage(member.id, member.first_name).catch(function(){});
 
     // Theme 4 / #19 — record referral relationship + award referrer's signup
     // bonus, AND copy the referrer's tribe to the new member. Awaited so
@@ -477,6 +483,8 @@ router.post('/apple', async (req, res, next) => {
         ['TEMP', firstName, lastName, safeEmail]
       );
       member = ins[0];
+      // New Apple account — same founder welcome as the email path (15).
+      sendWelcomeMessage(member.id, member.first_name).catch(function(){});
       const mn = generateMemberNumber(member.id);
       await query('UPDATE members SET member_number=$1 WHERE id=$2', [mn, member.id]);
       member.member_number = mn;
@@ -821,6 +829,8 @@ router.post('/google', async (req, res, next) => {
           return newRows[0];
         });
         member = result;
+        // New Google account — same founder welcome as the other paths (15).
+        sendWelcomeMessage(member.id, member.first_name).catch(function(){});
         // Issue welcome discount before the email (best-effort)
         let welcome = null;
         try { welcome = await welcomeDiscount.issueWelcomeDiscount(member); }
