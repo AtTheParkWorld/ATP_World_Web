@@ -1226,6 +1226,32 @@ if (require.main === module) {
     };
     setTimeout(() => { sessionsTick(); setInterval(sessionsTick, 60 * 60 * 1000); }, 90 * 1000);
 
+    // ── Hourly: reap abandoned livestreams ──────────────────────────
+    // A stream only leaves 'live' when the broadcaster explicitly ends
+    // it. Close the tab, lose signal, or restart the server and the row
+    // stays 'live' forever — it keeps showing on the public Live Now
+    // page with no video behind it. "Test 1" sat there from 2026-05-14
+    // to 2026-10-03 exactly this way. There is no last_chunk_at column
+    // and the chunk buffer is RAM-only (so a restart erases the only
+    // liveness signal), which leaves started_at as the one durable
+    // clue. 6h is far beyond any real session, so this only ever
+    // catches the dead ones.
+    const staleStreamTick = async () => {
+      try {
+        const { rows } = await query(
+          `UPDATE streams
+              SET status='ended', ended_at=COALESCE(ended_at, NOW())
+            WHERE status='live' AND started_at < NOW() - INTERVAL '6 hours'
+            RETURNING id, title`
+        );
+        if (rows.length) {
+          console.log(`[streams] reaped ${rows.length} abandoned stream(s): ` +
+            rows.map((r) => `${r.title} (${r.id})`).join(', '));
+        }
+      } catch (e) { console.warn('[streams] stale reaper failed:', e.message); }
+    };
+    setTimeout(() => { staleStreamTick(); setInterval(staleStreamTick, 60 * 60 * 1000); }, 2 * 60 * 1000);
+
     // ── Daily cleanup: stub corporate members that never accepted ───
     // When a CA adds an employee with a new email, we create a stub
     // members row with password_hash='PENDING_INVITATION'. If they

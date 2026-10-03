@@ -259,15 +259,28 @@ router.get('/eligible-sessions', authenticate, async (req, res, next) => {
 // ── POST /api/streams/:id/end ─ host stops a stream ───────────
 router.post('/:id/end', authenticate, async (req, res, next) => {
   try {
+    // The UPDATE used to be scoped to host_member_id only, so an ADMIN
+    // ending someone else's stream matched zero rows, skipped the 404
+    // (because they're admin) and got {success:true} back while the
+    // stream stayed live forever. That is how "Test 1" sat on the public
+    // Live Now page from 2026-05-14 to 2026-10-03 — ending it reported
+    // success every time. Let admins actually end it.
+    const isAdmin = !!req.member.is_admin;
     const { rows } = await query(
       `UPDATE streams
           SET status='ended', ended_at=NOW()
-        WHERE id=$1 AND host_member_id=$2 AND status='live'
+        WHERE id=$1 AND status='live' AND ($3 = true OR host_member_id=$2)
         RETURNING id, started_at, ended_at`,
-      [req.params.id, req.member.id]
+      [req.params.id, req.member.id, isAdmin]
     );
-    if (!rows.length && !req.member.is_admin) {
-      return res.status(404).json({ error: 'Stream not found or not yours' });
+    if (!rows.length) {
+      const { rows: ex } = await query(`SELECT status FROM streams WHERE id=$1`, [req.params.id]);
+      if (!ex.length) return res.status(404).json({ error: 'Stream not found' });
+      // Still live but the UPDATE missed → not theirs and not admin.
+      if (ex[0].status === 'live') {
+        return res.status(404).json({ error: 'Stream not found or not yours' });
+      }
+      // Already ended — stay idempotent and re-run the roll-ups below.
     }
     // Finalise any still-open viewer sessions so the analytics aren't
     // skewed by viewers who closed the tab without a clean leave.
