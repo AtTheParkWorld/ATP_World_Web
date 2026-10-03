@@ -422,7 +422,14 @@ main{padding:calc(var(--nav-h) + 32px) 24px 80px;max-width:var(--max);margin:0 a
     document.getElementById('viewerPill').classList.add('on');
     document.getElementById('startBtn').disabled = true;
     document.getElementById('stopBtn').disabled = false;
-    showMsg('You\'re live — share /stream.html with your members.', 'ok');
+    // Say which format we're actually sending. H.264 plays everywhere;
+    // WebM can't play on iPhone or in the app, and the coach should know
+    // that BEFORE members start asking why it won't load.
+    var isH264 = /mp4|avc1/i.test(mime);
+    showMsg(isH264
+      ? 'You\'re live in H.264 — plays on iPhone, Android, the app and the web.'
+      : 'You\'re live, but this browser can only record WebM — iPhone and the ATP app can\'t play it. Broadcast from Chrome for full device support.',
+      isH264 ? 'ok' : 'err');
 
     // Tick elapsed + stats every 5s
     STATE.elapsedTimer = setInterval(updateElapsed, 1000);
