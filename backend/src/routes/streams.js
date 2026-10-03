@@ -631,7 +631,12 @@ router.patch('/:id/view/:viewId', optionalAuth, express.json({ limit: '1kb' }), 
 });
 
 // ── GET /api/streams/:id/analytics ─ host / admin dashboard ───
-router.get('/:id/analytics', authenticate, async (req, res, next) => {
+// :id is constrained to a UUID. Unconstrained, this route (defined above
+// /admin/analytics) matched GET /admin/analytics with id='admin', ran
+// `WHERE id='admin'` against a UUID column, and 500'd — so the admin
+// Streaming dashboard's tiles, "Live now" included, showed "—" since
+// they were built (found 2026-10-03).
+router.get('/:id([0-9a-fA-F-]{36})/analytics', authenticate, async (req, res, next) => {
   try {
     const { rows: sRows } = await query(
       `SELECT * FROM streams WHERE id=$1 LIMIT 1`,
@@ -719,6 +724,59 @@ router.post('/ads/:id/click', async (req, res, next) => {
 });
 
 // Admin CRUD — list / create / update / soft-delete.
+// ── GET /api/streams/admin/live ─ every live stream, for killing ──
+// Founder 2026-10-03: a broadcast kept running after its tab was lost
+// and nobody could find where it was coming from. A stream only ends when
+// the broadcaster presses Stop, so a closed tab or dropped connection
+// leaves it listed as live with no video behind it.
+//
+// last_chunk_age_s is the useful column: it separates a real broadcast
+// (seconds) from an orphan (minutes, or null when this server holds no
+// buffer for it at all — e.g. after a restart).
+router.get('/admin/live', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    let rows;
+    try {
+      ({ rows } = await query(
+        `SELECT s.id, s.title, s.started_at, s.mime_type, s.session_id,
+                s.host_member_id, m.first_name, m.last_name,
+                sess.name AS session_name, sess.scheduled_at AS session_at
+           FROM streams s
+           JOIN members m        ON m.id = s.host_member_id
+           LEFT JOIN sessions sess ON sess.id = s.session_id
+          WHERE s.status = 'live'
+          ORDER BY s.started_at DESC`
+      ));
+    } catch (e) {
+      if (e.code !== '42703') throw e;
+      ({ rows } = await query(
+        `SELECT s.id, s.title, s.started_at, s.mime_type, s.host_member_id,
+                m.first_name, m.last_name
+           FROM streams s JOIN members m ON m.id = s.host_member_id
+          WHERE s.status = 'live' ORDER BY s.started_at DESC`
+      ));
+    }
+    const now = Date.now();
+    const out = rows.map((r) => {
+      const buf = STREAMS.get(r.id);
+      const last = buf && buf.chunks.length ? buf.chunks[buf.chunks.length - 1].ts : null;
+      const mime = (buf && buf.mime) || r.mime_type || '';
+      return {
+        id: r.id,
+        title: r.title,
+        started_at: r.started_at,
+        host_name: `${r.first_name || ''} ${r.last_name || ''}`.trim(),
+        session_name: r.session_name || null,
+        session_at: r.session_at || null,
+        concurrent_viewers: buf ? _concurrent(buf) : 0,
+        last_chunk_age_s: last ? Math.round((now - last) / 1000) : null,
+        codec: /mp4|avc1|h264/i.test(mime) ? 'H.264' : (mime ? 'WebM' : null),
+      };
+    });
+    res.json({ streams: out });
+  } catch (err) { next(err); }
+});
+
 router.get('/admin/ads', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { rows } = await query(

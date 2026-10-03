@@ -1696,6 +1696,22 @@
               Banner ads rotate (weighted) below the live video on <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#A8FF00">/stream-watch.html</code>. Set <code style="background:#1a1a1a;padding:2px 6px;border-radius:3px;color:#A8FF00">weight</code> higher to show a creative more often. Impressions + clicks are tracked per ad.
             </div>
 
+            <!-- Live now — kill switch (founder 2026-10-03: an orphaned
+                 broadcast kept running and nobody could find its tab) -->
+            <div style="background:#1a0a0a;border:1px solid #3a1515;border-radius:10px;padding:16px;margin-bottom:20px">
+              <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+                <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#ef4444">🔴 Live right now</div>
+                <div style="margin-left:auto;display:flex;gap:8px">
+                  <button class="admin-btn" style="font-size:11px;padding:6px 12px" data-atp-call="loadAdminLiveStreams">↻ Refresh</button>
+                  <button class="admin-btn admin-btn-danger" style="font-size:11px;padding:6px 12px" data-atp-call="adminEndStaleStreams">End all with no video</button>
+                </div>
+              </div>
+              <div id="adminLiveStreamsList" style="font-size:13px;color:#888">Loading…</div>
+              <div style="font-size:11px;color:#666;margin-top:10px;line-height:1.5">
+                A stream only ends when the broadcaster presses Stop. Closing the tab or losing signal leaves it listed as live with nothing behind it — <strong style="color:#aaa">"No video"</strong> marks those.
+              </div>
+            </div>
+
             <!-- Live dashboard tiles -->
             <div id="streamDashTiles" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px">
               <div style="background:#0d0d0d;border:1px solid #1a1a1a;border-radius:10px;padding:14px">
@@ -2143,7 +2159,7 @@
 <div class="admin-toast" id="adminToast"></div>
 <!-- Admin modules — load order matters: core defines globals + showAdminSection
      hook in init.js wires the per-section loaders, so init.js must come last. -->
-<script src="/admin/bundle.min.js?v=79c52ecd3e"></script>
+<script src="/admin/bundle.min.js?v=0faf78c343"></script>
 
 
 

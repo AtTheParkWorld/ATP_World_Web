@@ -1349,6 +1349,7 @@ var _streamDashTimer = null;
 
 function loadStreamingAdmin() {
   loadStreamDashboard();
+  loadAdminLiveStreams();
   loadStreamAdsList();
   // Live polling — only while the tab is visible, so we don't burn
   // requests when the admin clicks elsewhere.
@@ -1360,7 +1361,112 @@ function loadStreamingAdmin() {
       return;
     }
     loadStreamDashboard();
+    loadAdminLiveStreams();
   }, 10_000);
+}
+
+// ── Live streams kill switch ────────────────────────────────
+// Lists every stream marked live, with how long since its last video
+// chunk, and lets an admin end any of them. Needed because a stream
+// only ends when its broadcaster presses Stop — lose the tab and it
+// stays listed forever (founder 2026-10-03).
+var _STALE_AFTER_S = 120;
+// Local: every esc() in the admin bundle is scoped inside another
+// function, so there is no global escape helper to call from here.
+function _liveEsc(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+function _liveAge(s) {
+  if (s.last_chunk_age_s == null) return { text: 'No video', stale: true };
+  if (s.last_chunk_age_s > _STALE_AFTER_S) {
+    var m = Math.round(s.last_chunk_age_s / 60);
+    return { text: 'No video for ' + m + ' min', stale: true };
+  }
+  return { text: 'Sending video', stale: false };
+}
+
+function loadAdminLiveStreams() {
+  var el = document.getElementById('adminLiveStreamsList');
+  if (!el) return;
+  fetch(ATP_API + '/streams/admin/live', { headers: { 'Authorization': 'Bearer ' + getToken() } })
+    .then(function(r){
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(d){
+      var list = (d && d.streams) || [];
+      window._ADMIN_LIVE = list;
+      if (!list.length) {
+        el.innerHTML = '<div style="padding:8px 0;color:#666">Nothing is live.</div>';
+        return;
+      }
+      el.innerHTML = list.map(function(s){
+        var age = _liveAge(s);
+        var started = s.started_at ? new Date(s.started_at) : null;
+        var mins = started ? Math.round((Date.now() - started.getTime()) / 60000) : null;
+        var codecTag = s.codec
+          ? '<span style="font-size:10px;padding:2px 6px;border-radius:4px;margin-left:6px;' +
+              (s.codec === 'H.264' ? 'background:#0d1a0a;color:#A8FF00' : 'background:#2a1a0a;color:#f59e0b') + '">' +
+              _liveEsc(s.codec) + (s.codec === 'H.264' ? '' : ' · no iPhone') + '</span>'
+          : '';
+        return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid #2a1515;flex-wrap:wrap">' +
+                 '<div style="flex:1;min-width:200px">' +
+                   '<div style="color:#fff;font-weight:700">' + _liveEsc(s.title || 'Untitled') + codecTag + '</div>' +
+                   '<div style="font-size:11px;color:#888;margin-top:3px">' +
+                     _liveEsc(s.host_name || '?') +
+                     (mins != null ? ' · live ' + mins + ' min' : '') +
+                     ' · ' + (s.concurrent_viewers || 0) + ' watching' +
+                   '</div>' +
+                   '<div style="font-size:11px;margin-top:3px;color:' + (age.stale ? '#f59e0b' : '#A8FF00') + '">' +
+                     (age.stale ? '⚠ ' : '● ') + _liveEsc(age.text) +
+                   '</div>' +
+                 '</div>' +
+                 '<button class="admin-btn admin-btn-danger" style="font-size:11px;padding:6px 14px" ' +
+                   'data-atp-call="adminEndStream" data-args=\'["' + s.id + '"]\'>End stream</button>' +
+               '</div>';
+      }).join('');
+    })
+    .catch(function(e){
+      el.innerHTML = '<div style="color:#ef4444">Couldn\u2019t load live streams (' + _liveEsc(e.message) + ').</div>';
+    });
+}
+
+function adminEndStream(id) {
+  var s = (window._ADMIN_LIVE || []).find(function(x){ return x.id === id; }) || {};
+  var watching = s.concurrent_viewers || 0;
+  var msg = 'End "' + (s.title || 'this stream') + '"?' +
+            (watching ? '\n\n' + watching + ' member(s) are watching — they\u2019ll see "Stream ended".' : '');
+  if (!confirm(msg)) return;
+  return fetch(ATP_API + '/streams/' + encodeURIComponent(id) + '/end', {
+    method: 'POST', headers: { 'Authorization': 'Bearer ' + getToken() },
+  })
+    .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+    .then(function(res){
+      if (!res.ok) throw new Error((res.j && res.j.error) || 'Failed');
+      showToast('✅ Stream ended');
+      loadAdminLiveStreams();
+      loadStreamDashboard();
+    })
+    .catch(function(e){ showToast('❌ ' + e.message, true); });
+}
+
+function adminEndStaleStreams() {
+  var stale = (window._ADMIN_LIVE || []).filter(function(s){ return _liveAge(s).stale; });
+  if (!stale.length) { showToast('No streams without video'); return; }
+  if (!confirm('End ' + stale.length + ' stream(s) that are not sending video?')) return;
+  Promise.all(stale.map(function(s){
+    return fetch(ATP_API + '/streams/' + encodeURIComponent(s.id) + '/end', {
+      method: 'POST', headers: { 'Authorization': 'Bearer ' + getToken() },
+    }).then(function(r){ return r.ok; }).catch(function(){ return false; });
+  })).then(function(results){
+    var ok = results.filter(Boolean).length;
+    showToast((ok === stale.length ? '✅ ' : '⚠ ') + 'Ended ' + ok + ' of ' + stale.length);
+    loadAdminLiveStreams();
+    loadStreamDashboard();
+  });
 }
 
 function loadStreamDashboard() {
