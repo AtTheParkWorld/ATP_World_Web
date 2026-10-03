@@ -373,50 +373,94 @@ main{padding:calc(var(--nav-h) + 32px) 24px 80px;max-width:var(--max);margin:0 a
     STATE.seq       = 0;
     STATE.startedAt = Date.now();
 
-    // Start MediaRecorder, emit 2-second chunks
-    var rec = new MediaRecorder(STATE.mediaStream, {
-      mimeType: mime,
-      videoBitsPerSecond: 1_500_000, // 1.5 Mbps — fine for 720p / data-friendly
-      audioBitsPerSecond: 96_000,
-    });
-    STATE.mediaRecorder = rec;
-    // MediaRecorder puts the WebM init segment (EBML header + Tracks) in
-    // its FIRST blob only. The server pins that blob and replays it to
-    // every new viewer — without it, anyone joining after the rolling
-    // window has turned over sees "Connecting to live feed..." forever
-    // (founder report 2026-10-03).
-    STATE.sentInit = false;
-    rec.ondataavailable = async function(ev) {
-      if (!ev.data || !ev.data.size) return;
+    // Start MediaRecorder, emit 2-second chunks.
+    //
+    // Blobs are uploaded strictly one at a time, in order. They used to
+    // be POSTed as they arrived, which on a slow uplink let two uploads
+    // race: blob #2 could be sent before blob #1 was acknowledged, also
+    // flagged X-Stream-Init, and overwrite the real init segment on the
+    // server — leaving every later viewer with an undecodable stream.
+    // Order matters for HLS too: segments must arrive in sequence.
+    //
+    // Each MediaRecorder gets a generation number. Only the FIRST blob of
+    // a generation carries the init segment, so that one — and only that
+    // one — is flagged. Blobs from a replaced generation (the flush a
+    // stopped recorder emits, or anything still queued) belong to the old
+    // timeline and are dropped.
+    STATE.recGen = 0;
+    STATE.uploadQ = [];
+    STATE.uploading = false;
+    STATE.lastCycleAt = 0;
+    STATE.slowWarned = false;
+
+    function makeRecorder() {
+      var gen = ++STATE.recGen;
+      var first = true;
+      var r = new MediaRecorder(STATE.mediaStream, {
+        mimeType: mime,
+        videoBitsPerSecond: 1_500_000, // 1.5 Mbps — fine for 720p / data-friendly
+        audioBitsPerSecond: 96_000,
+      });
+      r.ondataavailable = function(ev) {
+        if (!ev.data || !ev.data.size) return;
+        if (gen !== STATE.recGen) return;
+        STATE.uploadQ.push({ gen: gen, init: first, blob: ev.data });
+        first = false;
+        pumpUploads();
+      };
+      STATE.mediaRecorder = r;
+      r.start(2000);
+    }
+
+    // The server lost its buffer (a deploy/restart mid-broadcast), or the
+    // init upload failed. Start a fresh recorder so it emits a new init
+    // segment, instead of streaming clusters nobody can ever decode.
+    function cycleRecorder() {
+      if (Date.now() - STATE.lastCycleAt < 5000) return;
+      STATE.lastCycleAt = Date.now();
+      var old = STATE.mediaRecorder;
+      STATE.recGen++;              // the old recorder's final flush is dropped
+      try { old && old.stop(); } catch (e) {}
+      try { makeRecorder(); } catch (e) { showMsg('Lost the camera recorder: ' + e.message, 'err'); }
+    }
+
+    async function pumpUploads() {
+      if (STATE.uploading) return;
+      STATE.uploading = true;
       try {
-        var buf = await ev.data.arrayBuffer();
-        var hdrs = {
-          'Content-Type': 'application/octet-stream',
-          'X-Stream-Mime': STATE.chunkMime || mime,
-          'Authorization': 'Bearer ' + token,
-        };
-        if (!STATE.sentInit) { hdrs['X-Stream-Init'] = '1'; }
-        var r = await fetch('/api/streams/' + encodeURIComponent(STATE.streamId) + '/chunk', {
-          method: 'POST', headers: hdrs, body: buf,
-        });
-        if (!STATE.sentInit && r.ok) STATE.sentInit = true;
-        // The server lost its buffer (a deploy/restart mid-broadcast).
-        // Cycle MediaRecorder so it emits a fresh init segment, instead
-        // of streaming clusters nobody can ever decode.
-        var j = await r.json().catch(function(){ return null; });
-        if (j && j.need_init && !STATE.reinitAt) {
-          STATE.reinitAt = Date.now();
-          STATE.sentInit = false;
+        while (STATE.uploadQ.length && STATE.streamId) {
+          var item = STATE.uploadQ.shift();
+          if (item.gen !== STATE.recGen) continue;
+          if (STATE.uploadQ.length > 10 && !STATE.slowWarned) {
+            STATE.slowWarned = true;
+            showMsg('Your upload is too slow — viewers are falling behind. Move closer to the Wi-Fi or switch to a stronger connection.', 'err');
+          }
+          var hdrs = {
+            'Content-Type': 'application/octet-stream',
+            'X-Stream-Mime': STATE.chunkMime || mime,
+            'Authorization': 'Bearer ' + token,
+          };
+          if (item.init) hdrs['X-Stream-Init'] = '1';
+          var r = null;
           try {
-            rec.stop();
-            setTimeout(function(){
-              try { rec.start(2000); STATE.reinitAt = 0; } catch(e) { STATE.reinitAt = 0; }
-            }, 250);
-          } catch(e) { STATE.reinitAt = 0; }
+            var body = await item.blob.arrayBuffer();
+            r = await fetch('/api/streams/' + encodeURIComponent(STATE.streamId) + '/chunk', {
+              method: 'POST', headers: hdrs, body: body,
+            });
+          } catch (e) { /* network blip — the next chunk retries */ }
+          var j = r ? await r.json().catch(function(){ return null; }) : null;
+          // need_init on a chunk from the CURRENT recorder means the server
+          // has no usable init for it. A lost init upload is caught the same
+          // way: its generation never lands, so the next chunk asks again.
+          if (j && j.need_init && item.gen === STATE.recGen) cycleRecorder();
+          else if (item.init && (!r || !r.ok) && item.gen === STATE.recGen) cycleRecorder();
         }
-      } catch(e) { /* silent — next chunk will retry. */ }
-    };
-    rec.start(2000);
+      } finally {
+        STATE.uploading = false;
+      }
+    }
+
+    makeRecorder();
 
     document.getElementById('livePill').classList.add('on');
     document.getElementById('viewerPill').classList.add('on');
@@ -466,6 +510,10 @@ main{padding:calc(var(--nav-h) + 32px) 24px 80px;max-width:var(--max);margin:0 a
     if (!STATE.streamId) return;
     var token = '';
     try { token = localStorage.getItem('atp_token') || ''; } catch(_){}
+    // Bump the generation first so the stopped recorder's final flush and
+    // anything still queued aren't uploaded to a stream we're ending.
+    STATE.recGen = (STATE.recGen || 0) + 1;
+    STATE.uploadQ = [];
     try { STATE.mediaRecorder && STATE.mediaRecorder.stop(); } catch(_){}
     try {
       await fetch('/api/streams/' + encodeURIComponent(STATE.streamId) + '/end', {

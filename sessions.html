@@ -2460,6 +2460,12 @@ function _wireSessionFeedback(sessionId) {
 // it already returns can_view per stream, so the gate shown here is the
 // same one the player enforces and nobody is sent to a locked page
 // without warning.
+function _atpIsPremiumCached() {
+  try {
+    var m = JSON.parse(localStorage.getItem('atp_member') || 'null');
+    return !!(m && /^(premium|premium_plus)$/i.test(String(m.subscription_type || '')));
+  } catch (e) { return false; }
+}
 async function _atpWireLiveWatch() {
   try {
     // Self-installing refresh: a coach going live while the page is
@@ -2491,6 +2497,14 @@ async function _atpWireLiveWatch() {
         a.textContent = '\u25B6 Sign in to watch live';
         a.style.cssText = 'display:inline-block;margin-top:8px;padding:7px 14px;border-radius:999px;' +
           'background:#1a1a1a;border:1px solid #333;color:#ccc;font-size:12px;font-weight:700;text-decoration:none';
+      } else if (_atpIsPremiumCached()) {
+        // Already Premium — the missing piece is the booking, not the plan.
+        // Pointing a paying member at the plans page read as an upsell.
+        a.href = '#';
+        a.addEventListener('click', function (e) { e.preventDefault(); });
+        a.textContent = '\uD83C\uDF9F Book this session to watch it live';
+        a.style.cssText = 'display:inline-block;margin-top:8px;padding:7px 14px;border-radius:999px;' +
+          'background:#1a1a1a;border:1px solid #333;color:#ccc;font-size:12px;font-weight:700;text-decoration:none;cursor:default';
       } else {
         a.href = '/plans.html';
         a.textContent = '\uD83D\uDD12 Premium members can watch live';

@@ -38,6 +38,7 @@ const { query } = require('../db');
 const { authenticate, requireAdmin, optionalAuth } = require('../middleware/auth');
 const livestreamNotify = require('../services/livestreamNotify');
 const crypto = require('crypto');
+const fmp4 = require('../services/fmp4');
 
 // ── In-memory ring buffer per stream ──────────────────────────
 // Keyed by stream uuid. Each entry holds an ordered list of chunk
@@ -55,7 +56,14 @@ function _buf(streamId) {
     // pinned outside `chunks` so the rolling window can never evict
     // it — without it a late-joining viewer gets nothing but mid-
     // stream clusters and MediaSource buffers forever.
-    b = { chunks: [], nextSeq: 0, viewers: new Map(), mime: null, init: null };
+    //
+    // initSeq / initGen: which chunk carried the current init, and how
+    // many times the broadcaster has started a fresh recorder. Chunks
+    // older than initSeq belong to a previous recorder's timeline and
+    // can't be decoded against the current init. initInfo is the parsed
+    // fMP4 track table, used for real HLS segment durations.
+    b = { chunks: [], nextSeq: 0, viewers: new Map(), mime: null, init: null,
+          initSeq: -1, initGen: -1, initInfo: null };
     STREAMS.set(streamId, b);
   }
   return b;
@@ -346,11 +354,26 @@ router.post('/:id/chunk',
       // session. Only that blob carries the init segment, so we never
       // guess: after a server restart mid-broadcast, seq 0 of the NEW
       // buffer is just a mid-stream cluster and must not be latched.
-      if (String(req.headers['x-stream-init'] || '') === '1') {
-        buf.init = req.body;
-      }
       const seq = buf.nextSeq++;
-      buf.chunks.push({ seq, ts: Date.now(), body: req.body });
+      const entry = { seq, ts: Date.now(), body: req.body };
+      const isMp4 = /mp4|avc1|h264/i.test(buf.mime || '');
+      if (String(req.headers['x-stream-init'] || '') === '1') {
+        // For fMP4 keep ONLY ftyp+moov as the init: HLS's #EXT-X-MAP must
+        // not contain media. `initLen` records how much of this chunk is
+        // init, so its HLS segment serves just the media after it. WebM
+        // keeps the whole first blob, as the MSE player always had it.
+        const sp = isMp4 ? fmp4.splitInit(req.body) : null;
+        buf.init     = sp ? sp.init : req.body;
+        buf.initInfo = sp ? fmp4.parseInit(sp.init) : null;
+        buf.initSeq  = seq;
+        buf.initGen += 1;
+        entry.isInit  = true;
+        entry.initLen = sp ? sp.mediaOffset : 0;
+      }
+      if (isMp4 && buf.initInfo) {
+        entry.dur = fmp4.mediaDuration(req.body, entry.initLen || 0, buf.initInfo);
+      }
+      buf.chunks.push(entry);
       while (buf.chunks.length > MAX_CHUNKS_PER_STREAM) buf.chunks.shift();
       // Bump peak_viewers if the current concurrent count is the new high.
       const concurrent = _concurrent(buf);
@@ -407,12 +430,17 @@ router.get('/:id/chunks', optionalAuth, async (req, res, next) => {
 
     let after = parseInt(req.query.after, 10);
     if (isNaN(after)) after = -1;
-    const out = buf.chunks.filter(c => c.seq > after);
+    let out = buf.chunks.filter(c => c.seq > after);
+    // A first-time viewer starts at the current init. Anything before it
+    // is from a previous recorder (e.g. the clusters that arrived after a
+    // server restart, before the broadcaster re-initialised) and can't be
+    // decoded against it.
+    if (after < 0 && buf.initSeq >= 0) out = out.filter(c => c.seq >= buf.initSeq);
     if (!out.length) return res.status(204).end();
-    // A first-time viewer (no ?after) must receive the init segment
-    // before any cluster, or their MediaSource can't decode a thing.
-    // Skip it when the window still contains seq 0 — that IS the init.
-    const needsInit = after < 0 && buf.init && out[0].seq !== 0;
+    // ...and must receive the init segment before any media, or their
+    // MediaSource can't decode a thing. Skip it when the window still
+    // holds the chunk that carried it.
+    const needsInit = after < 0 && buf.init && !out[0].isInit;
 
     // Stream payload: each chunk is concatenated; the response header
     // X-Last-Seq tells the viewer where to resume. The header also
@@ -940,10 +968,8 @@ router.post('/:sessionId/auto-checkin', authenticate, async (req, res, next) => 
 // chunks. No transcoding: the bytes are already H.264.
 //
 // Safari's native player fetches segments itself and will not send an
-// Authorization header, so the Premium+booking gate is enforced with a
-// short-lived HMAC ticket in the URL. The ticket is bound to one stream
-// AND one member and expires in 2 minutes, so a leaked playlist URL is
-// worth almost nothing.
+// Authorization header, so the Premium+booking gate is enforced with an
+// HMAC ticket in the URL, bound to one stream AND one member.
 // Safari keeps re-fetching the playlist and segments with the URL it was
 // given, for as long as the broadcast runs — there is no hook to hand it
 // a fresh ticket mid-playback without restarting the video. So the ticket
@@ -1013,22 +1039,38 @@ router.get('/:id/hls.m3u8', async (req, res, next) => {
     const t = String(req.query.t || '');
     if (!_hlsVerify(sid, t)) return res.status(403).send('# expired');
     const buf = STREAMS.get(sid);
-    if (!buf || !buf.chunks.length) return res.status(404).send('# no data');
+    if (!buf || !buf.init) return res.status(404).send('# no data');
 
     const q = '?t=' + encodeURIComponent(t);
-    const segs = buf.chunks.slice();
+    // Only chunks decodable against the current init, minus the init
+    // chunk itself when it holds no media (Chrome sends ftyp+moov as a
+    // blob of its own — listing it as a 2s segment fed players an empty
+    // segment). That chunk is always first, so sequence numbers stay
+    // contiguous.
+    const segs = buf.chunks.filter(c =>
+      c.seq >= buf.initSeq && !(c.isInit && c.dur === 0));
+    if (!segs.length) return res.status(404).send('# no data');
+    // Real durations from the fragments. MediaRecorder's 2s timeslice is
+    // approximate, and a segment longer than TARGETDURATION is a spec
+    // violation players may refuse — so size the target to fit.
+    const durs = segs.map(c => (typeof c.dur === 'number' && c.dur > 0) ? c.dur : 2.0);
+    const target = Math.max(3, Math.ceil(Math.max(...durs)));
     const lines = [
       '#EXTM3U',
       '#EXT-X-VERSION:7',
-      '#EXT-X-TARGETDURATION:3',
+      `#EXT-X-TARGETDURATION:${target}`,
       `#EXT-X-MEDIA-SEQUENCE:${segs[0].seq}`,
+      // Bumps when the broadcaster restarts its recorder: the timeline
+      // starts over, and the init may differ, so the player must reset.
+      `#EXT-X-DISCONTINUITY-SEQUENCE:${Math.max(0, buf.initGen)}`,
       // The init segment (ftyp+moov) that every fMP4 segment depends on.
-      `#EXT-X-MAP:URI="init.mp4${q}"`,
+      // The generation is in the URI so a player never reuses a stale one.
+      `#EXT-X-MAP:URI="init.mp4${q}&g=${Math.max(0, buf.initGen)}"`,
     ];
-    for (const c of segs) {
-      lines.push('#EXTINF:2.0,');
+    segs.forEach((c, i) => {
+      lines.push(`#EXTINF:${durs[i].toFixed(3)},`);
       lines.push(`seg/${c.seq}.m4s${q}`);
-    }
+    });
     res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
     res.setHeader('Cache-Control', 'no-store');
     res.send(lines.join('\n') + '\n');
@@ -1058,7 +1100,8 @@ router.get('/:id/seg/:seq.m4s', async (req, res, next) => {
     if (!c) return res.status(404).end();
     res.setHeader('Content-Type', 'video/iso.segment');
     res.setHeader('Cache-Control', 'no-store');
-    res.send(c.body);
+    // The init chunk's segment is only the media after its ftyp+moov.
+    res.send(c.isInit && c.initLen ? c.body.subarray(c.initLen) : c.body);
   } catch (err) { next(err); }
 });
 
