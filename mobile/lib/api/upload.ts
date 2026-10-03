@@ -12,6 +12,7 @@
  * The caller gets back the resulting public_url which they can include
  * in the post's `media` array.
  */
+import { Platform } from 'react-native';
 import { launchImageLibraryAsync, MediaTypeOptions, requestMediaLibraryPermissionsAsync } from 'expo-image-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 import { api } from './client';
@@ -47,9 +48,17 @@ export async function pickAndUploadMedia(opts: { kind?: 'post' | 'avatar' } = {}
   width:  number | null;
   height: number | null;
 } | null> {
-  const perm = await requestMediaLibraryPermissionsAsync();
-  if (!perm.granted) {
-    throw new Error('Photo library access is required to attach media.');
+  // Android opens the system photo picker, which needs NO permission —
+  // and READ_MEDIA_IMAGES is now blocked in app.json, because Google Play
+  // refuses it for apps that only pick the occasional photo. Asking for it
+  // anyway would return "denied" for an undeclared permission and this
+  // throw would break every avatar and post upload on Android.
+  // iOS keeps the request it has always made.
+  if (Platform.OS !== 'android') {
+    const perm = await requestMediaLibraryPermissionsAsync();
+    if (!perm.granted) {
+      throw new Error('Photo library access is required to attach media.');
+    }
   }
 
   const picked = await launchImageLibraryAsync({
