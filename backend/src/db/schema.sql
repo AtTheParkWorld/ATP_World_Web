@@ -153,6 +153,19 @@ CREATE INDEX idx_sessions_scheduled  ON sessions(scheduled_at);
 CREATE INDEX idx_sessions_status     ON sessions(status);
 CREATE INDEX idx_sessions_coach      ON sessions(coach_id);
 
+-- Nominated broadcasters for a session (coach is on sessions.coach_id).
+-- Was only ever created by the manual /auth/migrate-stream-sessions
+-- endpoint, so prod never had it and GET /streams/eligible-sessions
+-- silently returned an empty list (2026-10-03).
+CREATE TABLE IF NOT EXISTS session_ambassadors (
+  session_id    UUID        NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+  ambassador_id UUID        NOT NULL REFERENCES members(id)  ON DELETE CASCADE,
+  assigned_at   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  assigned_by   UUID        REFERENCES members(id) ON DELETE SET NULL,
+  PRIMARY KEY (session_id, ambassador_id)
+);
+CREATE INDEX IF NOT EXISTS idx_session_ambassadors_amb ON session_ambassadors (ambassador_id);
+
 -- ── BOOKINGS ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS bookings (
   id            UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),

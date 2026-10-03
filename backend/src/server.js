@@ -876,6 +876,28 @@ async function _ensureBootSchema() {
   await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS stream_url VARCHAR(500)`)
     .catch(() => {});
 
+  // session_ambassadors + streams.session_id were created ONLY by the
+  // manual /auth/migrate-stream-sessions endpoint — never at boot and
+  // never in schema.sql. On prod the table was absent, so the LEFT JOIN
+  // in GET /streams/eligible-sessions threw 42P01, the defensive catch
+  // swallowed it and returned an EMPTY list. Founder report 2026-10-03:
+  // a session with is_streamable=true showed as "No streamable sessions
+  // assigned to you" on /stream-broadcast.html, so the assigned coach
+  // could not go live at all. Self-heal the rest of the streaming schema.
+  await query(`CREATE TABLE IF NOT EXISTS session_ambassadors (
+    session_id      UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+    ambassador_id   UUID NOT NULL REFERENCES members(id)  ON DELETE CASCADE,
+    assigned_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    assigned_by     UUID REFERENCES members(id) ON DELETE SET NULL,
+    PRIMARY KEY (session_id, ambassador_id)
+  )`).catch((e) => console.warn('[boot] session_ambassadors:', e.message));
+  await query(`CREATE INDEX IF NOT EXISTS idx_session_ambassadors_amb ON session_ambassadors (ambassador_id)`)
+    .catch(() => {});
+  await query(`ALTER TABLE streams ADD COLUMN IF NOT EXISTS session_id UUID REFERENCES sessions(id) ON DELETE SET NULL`)
+    .catch((e) => console.warn('[boot] streams.session_id:', e.message));
+  await query(`CREATE INDEX IF NOT EXISTS idx_streams_session ON streams (session_id) WHERE session_id IS NOT NULL`)
+    .catch(() => {});
+
   // Promo banners (founder 2026-08-30) — sellable sponsor pop-up.
   await query(`CREATE TABLE IF NOT EXISTS promo_banners (
     id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),

@@ -49,6 +49,19 @@ export default function SessionDetail() {
   const [court, setCourt] = useState<string | null>(null);
   // 0 = this session runs without courts, so don't demand one.
   const [courtCount, setCourtCount] = useState<number | null>(null);
+  // Founder report 2026-10-03: members hit "Session closed" trying to
+  // book the 16:00 hybrid session, and it was closed only in the app.
+  //
+  // The API computes status at read time — a session inside its own
+  // scheduled window comes back as 'live' while the STORED status is
+  // still 'upcoming' (see _decorateLiveStatus in routes/sessions.js).
+  // The backend's booking gate reads the stored value and would have
+  // accepted these bookings; only this screen refused them.
+  //
+  // A live session is bookable. That matters most for exactly this case,
+  // a hybrid session someone wants to join on the stream after it has
+  // started.
+  const bookableStatus = (st?: string | null) => st === 'upcoming' || st === 'live';
   const cfg = useConfig();
   // "Who's going" — tapping the capacity bar opens the attendee list
   // (founder 2026-09-15).
@@ -408,7 +421,7 @@ export default function SessionDetail() {
           </View>
         ) : (
           <View>
-            {s.status === 'upcoming' && s.session_category === 'team_sports' && (
+            {bookableStatus(s.status) && s.session_category === 'team_sports' && (
               <CourtPicker
                 sessionId={String(s.id)}
                 value={court}
@@ -416,20 +429,21 @@ export default function SessionDetail() {
                 onCourtCount={setCourtCount}
               />
             )}
-            {s.status === 'upcoming' && (
+            {bookableStatus(s.status) && (
               <SessionTerms accepted={termsOk} onToggle={setTermsOk} />
             )}
             <Pressable
               onPress={onBookPress}
-              disabled={busy || s.status !== 'upcoming' || !termsOk || needsCourt}
-              className={`rounded-atp py-4 items-center ${busy || s.status !== 'upcoming' || !termsOk || needsCourt ? 'bg-atp-dark-3' : 'bg-atp-green active:opacity-80'}`}
+              disabled={busy || !bookableStatus(s.status) || !termsOk || needsCourt}
+              className={`rounded-atp py-4 items-center ${busy || !bookableStatus(s.status) || !termsOk || needsCourt ? 'bg-atp-dark-3' : 'bg-atp-green active:opacity-80'}`}
             >
               <Text
-                style={{ fontFamily: fontFamily.bodyBold, color: (busy || s.status !== 'upcoming' || !termsOk || needsCourt) ? colors.muted : colors.black }}
+                style={{ fontFamily: fontFamily.bodyBold, color: (busy || !bookableStatus(s.status) || !termsOk || needsCourt) ? colors.muted : colors.black }}
                 className="text-base"
               >
                 {busy ? 'Booking…'
-                  : s.status !== 'upcoming' ? 'Session closed'
+                  : !bookableStatus(s.status) ? 'Session closed'
+                  : s.status === 'live' ? 'Join now — session is live'
                   : !termsOk ? 'Accept the terms to book'
                   : needsCourt ? 'Pick a court to book'
                   : isFull ? 'Join waitlist'

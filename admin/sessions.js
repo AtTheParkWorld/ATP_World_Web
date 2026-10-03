@@ -46,23 +46,15 @@ async function loadCities() {
   }
 }
 
-function toggleLive() {
-  var cb = document.getElementById('sLiveEnabled');
-  var toggle = document.getElementById('sLiveToggle');
-  var knob = document.getElementById('sLiveKnob');
-  cb.checked = !cb.checked;
-  if (cb.checked) {
-    toggle.style.background = '#A8FF00';
-    toggle.style.borderColor = '#A8FF00';
-    knob.style.left = '22px';
-    knob.style.background = '#fff';
-  } else {
-    toggle.style.background = '#1a1a1a';
-    toggle.style.borderColor = '#333';
-    knob.style.left = '2px';
-    knob.style.background = '#444';
-  }
-}
+// The "Enable Livestream for this session" toggle this drove was REMOVED
+// (2026-10-03). It wrote sessions.is_live_enabled, a column nothing in the
+// backend, website or app ever reads — while the control that actually
+// enables streaming is "Allow this session to be streamed live" in the 🎥
+// box (sIsStreamable, which gates /streams/eligible-sessions). Two
+// controls, both reading as "livestream", only one of them real: the
+// founder could not tell which one to use. Kept as a no-op because the
+// data-atp-call dispatcher resolves handlers by name.
+function toggleLive() { /* removed — see sIsStreamable */ }
 
 // ═══════════════════════════════════════════════════════════
 // SESSIONS MODULE
@@ -632,7 +624,8 @@ async function createSession() {
   var currency_code  = (document.getElementById('sCurrency') || {}).value || 'AED';
   var desc      = document.getElementById('sDesc').value.trim();
   var maps      = document.getElementById('sMaps').value.trim();
-  var live      = document.getElementById('sLiveEnabled').checked;
+  // is_live_enabled is vestigial; mirror the real streaming flag so the
+  // two columns can never disagree. Read below, after is_streamable.
   var coach_id    = document.getElementById('sCoach').value || null;
   var tribe_id    = document.getElementById('sTribe').value || null;
   var activity_id = (document.getElementById('sActivity') || {}).value || null;
@@ -718,7 +711,7 @@ async function createSession() {
     intro_video_url,
     location_maps_url: maps, session_type: stype, capacity,
     scheduled_at, duration_mins: duration, points_reward: points,
-    is_live_enabled: live, session_category: cat,
+    is_live_enabled: is_streamable, session_category: cat,
     sport_type: sport, courts,
     // Paid-session pricing (Theme 11)
     price:          price_currency || 0,

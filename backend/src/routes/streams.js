@@ -219,10 +219,32 @@ router.get('/eligible-sessions', authenticate, async (req, res, next) => {
       );
       rows = r.rows;
     } catch (e) {
-      // Pre-migration: is_streamable column or session_ambassadors table
-      // missing — admin hasn't run migrate-stream-sessions yet.
+      // session_ambassadors or is_streamable missing. This USED to return
+      // an empty list, which surfaced to the broadcaster as "No streamable
+      // sessions assigned to you" — indistinguishable from a real empty
+      // result, and it silently locked assigned coaches out of going live
+      // (founder report 2026-10-03). Boot now self-heals the schema, but
+      // degrade properly rather than lying: retry without the ambassador
+      // join so coaches and admins still get their sessions.
       if (e.code !== '42P01' && e.code !== '42703') throw e;
-      rows = [];
+      console.warn('[streams/eligible-sessions] degraded, no ambassador join:', e.message);
+      try {
+        const r2 = await query(
+          `SELECT s.id, s.name, s.scheduled_at, s.ends_at, s.location,
+                  s.session_type, s.coach_id,
+                  CASE WHEN s.coach_id = $1 THEN 'coach' ELSE 'admin' END AS my_role
+             FROM sessions s
+            WHERE s.scheduled_at >= NOW() - INTERVAL '4 hours'
+              AND ($2 = true OR s.coach_id = $1)
+            ORDER BY s.scheduled_at ASC
+            LIMIT 30`,
+          [req.member.id, !!req.member.is_admin]
+        );
+        rows = r2.rows;
+      } catch (e2) {
+        if (e2.code !== '42P01' && e2.code !== '42703') throw e2;
+        rows = [];
+      }
     }
     res.json({ sessions: rows });
   } catch (err) { next(err); }
