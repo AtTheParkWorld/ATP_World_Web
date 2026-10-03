@@ -36,6 +36,10 @@ const requireMaintenanceSecret = (req, res, next) => {
   if (!_safeEqual(String(provided || ''), expected)) {
     return res.status(404).json({ error: 'Not found' });
   }
+  // Handlers behind this gate also accept a legacy body setupKey. The
+  // daily scheduler only sends this header, so without this flag every
+  // one of them 401'd on the second check and never ran.
+  req.maintenanceAuthorized = true;
   next();
 };
 
