@@ -37,6 +37,7 @@ const router = require('express').Router();
 const { query } = require('../db');
 const { authenticate, requireAdmin, optionalAuth } = require('../middleware/auth');
 const livestreamNotify = require('../services/livestreamNotify');
+const crypto = require('crypto');
 
 // ── In-memory ring buffer per stream ──────────────────────────
 // Keyed by stream uuid. Each entry holds an ordered list of chunk
@@ -832,6 +833,138 @@ router.post('/:sessionId/auto-checkin', authenticate, async (req, res, next) => 
       [req.member.id]
     ).catch(() => {});
     res.json({ success: true, status: 'checked_in', method: 'auto_stream' });
+  } catch (err) { next(err); }
+});
+
+
+// ── HLS (iPhone) ──────────────────────────────────────────────
+// Safari has never supported WebM in Media Source Extensions, and on
+// iOS there is no MediaSource at all below 17.1 — so the MSE player can
+// never work on an iPhone (founder, 2026-10-03). Safari DOES play HLS
+// natively on every iOS version, so when the broadcaster records H.264
+// in fMP4 we can hand Safari an HLS playlist pointing at the very same
+// chunks. No transcoding: the bytes are already H.264.
+//
+// Safari's native player fetches segments itself and will not send an
+// Authorization header, so the Premium+booking gate is enforced with a
+// short-lived HMAC ticket in the URL. The ticket is bound to one stream
+// AND one member and expires in 2 minutes, so a leaked playlist URL is
+// worth almost nothing.
+// Safari keeps re-fetching the playlist and segments with the URL it was
+// given, for as long as the broadcast runs — there is no hook to hand it
+// a fresh ticket mid-playback without restarting the video. So the ticket
+// has to outlive the stream, not expire during it. 4h is past any real
+// session. It stays bound to ONE stream and ONE member, and the stream
+// itself is dead within hours (the reaper ends anything over 6h), so a
+// leaked URL is worth very little and nothing beyond that one broadcast.
+const HLS_TICKET_TTL_MS = 4 * 60 * 60 * 1000;
+
+function _hlsSign(streamId, memberId, exp) {
+  return crypto
+    .createHmac('sha256', process.env.JWT_SECRET || 'dev')
+    .update(`${streamId}.${memberId}.${exp}`)
+    .digest('base64url');
+}
+
+function _hlsIssue(streamId, memberId) {
+  const exp = Date.now() + HLS_TICKET_TTL_MS;
+  return `${exp}.${memberId}.${_hlsSign(streamId, memberId, exp)}`;
+}
+
+function _hlsVerify(streamId, ticket) {
+  if (!ticket || typeof ticket !== 'string') return null;
+  const parts = ticket.split('.');
+  if (parts.length !== 3) return null;
+  const [expRaw, memberId, sig] = parts;
+  const exp = parseInt(expRaw, 10);
+  if (!exp || Date.now() > exp) return null;
+  const expected = _hlsSign(streamId, memberId, exp);
+  // Constant-time compare so the signature can't be probed byte by byte.
+  const a = Buffer.from(sig);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return null;
+  return memberId;
+}
+
+// Issue a ticket. This is the ONLY place the gate runs for the HLS path;
+// everything downstream just verifies the signature.
+router.post('/:id/hls-ticket', authenticate, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT id, status, tier_required, host_member_id, session_id, mime_type
+         FROM streams WHERE id=$1 LIMIT 1`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Stream not found' });
+    if (rows[0].status !== 'live') return res.status(410).json({ error: 'Stream ended' });
+    const ok = await _canViewStreamAsync(req.member, rows[0]);
+    if (!ok) return res.status(403).json({ error: 'You need a booking on this session + a Premium plan to watch.' });
+    const buf = STREAMS.get(req.params.id);
+    const mime = (buf && buf.mime) || rows[0].mime_type || '';
+    res.json({
+      ticket: _hlsIssue(req.params.id, req.member.id),
+      // Only an H.264/fMP4 broadcast can be served as HLS without
+      // re-encoding. A WebM broadcast tells the client plainly so it can
+      // say "ask the coach to broadcast from Chrome" instead of failing.
+      hls_available: /mp4|avc1|h264/i.test(mime),
+      mime,
+      ttl_ms: HLS_TICKET_TTL_MS,
+    });
+  } catch (err) { next(err); }
+});
+
+router.get('/:id/hls.m3u8', async (req, res, next) => {
+  try {
+    const sid = req.params.id;
+    const t = String(req.query.t || '');
+    if (!_hlsVerify(sid, t)) return res.status(403).send('# expired');
+    const buf = STREAMS.get(sid);
+    if (!buf || !buf.chunks.length) return res.status(404).send('# no data');
+
+    const q = '?t=' + encodeURIComponent(t);
+    const segs = buf.chunks.slice();
+    const lines = [
+      '#EXTM3U',
+      '#EXT-X-VERSION:7',
+      '#EXT-X-TARGETDURATION:3',
+      `#EXT-X-MEDIA-SEQUENCE:${segs[0].seq}`,
+      // The init segment (ftyp+moov) that every fMP4 segment depends on.
+      `#EXT-X-MAP:URI="init.mp4${q}"`,
+    ];
+    for (const c of segs) {
+      lines.push('#EXTINF:2.0,');
+      lines.push(`seg/${c.seq}.m4s${q}`);
+    }
+    res.setHeader('Content-Type', 'application/vnd.apple.mpegurl');
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(lines.join('\n') + '\n');
+  } catch (err) { next(err); }
+});
+
+router.get('/:id/init.mp4', async (req, res, next) => {
+  try {
+    const sid = req.params.id;
+    if (!_hlsVerify(sid, String(req.query.t || ''))) return res.status(403).end();
+    const buf = STREAMS.get(sid);
+    if (!buf || !buf.init) return res.status(404).end();
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(buf.init);
+  } catch (err) { next(err); }
+});
+
+router.get('/:id/seg/:seq.m4s', async (req, res, next) => {
+  try {
+    const sid = req.params.id;
+    if (!_hlsVerify(sid, String(req.query.t || ''))) return res.status(403).end();
+    const buf = STREAMS.get(sid);
+    if (!buf) return res.status(404).end();
+    const seq = parseInt(req.params.seq, 10);
+    const c = buf.chunks.find((x) => x.seq === seq);
+    if (!c) return res.status(404).end();
+    res.setHeader('Content-Type', 'video/iso.segment');
+    res.setHeader('Cache-Control', 'no-store');
+    res.send(c.body);
   } catch (err) { next(err); }
 });
 

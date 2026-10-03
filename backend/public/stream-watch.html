@@ -459,6 +459,42 @@ footer p{font-size:12px;color:var(--muted);margin:0}
   };
 
   // ── Boot ────────────────────────────────────────────────────
+  // iPhone path. Safari plays HLS natively with no MediaSource at all,
+  // which is the only way an iPhone can watch (founder, 2026-10-03).
+  // Returns true when it has taken over playback.
+  async function tryNativeHls() {
+    try {
+      var v = document.getElementById('player');
+      // Only worth trying when this browser can actually play HLS itself.
+      var canHls = v.canPlayType('application/vnd.apple.mpegurl') ||
+                   v.canPlayType('application/x-mpegURL');
+      if (!canHls) return false;
+      var r = await fetch('/api/streams/' + encodeURIComponent(sid) + '/hls-ticket', {
+        method: 'POST', headers: authHeaders(),
+      });
+      if (r.status === 403) { showLocked('premium'); return true; }
+      if (!r.ok) return false;
+      var d = await r.json();
+      if (!d.ticket) return false;
+      if (!d.hls_available) {
+        // Live, but the coach is broadcasting WebM — nothing an iPhone
+        // can decode. Say exactly that instead of spinning.
+        if (!MSImpl) {
+          setOverlay('This broadcast can\u2019t be played on iPhone. Ask the coach to broadcast from Chrome, or watch on a laptop or Android phone.');
+          STATE.fatal = true;
+          return true;
+        }
+        return false;
+      }
+      v.src = '/api/streams/' + encodeURIComponent(sid) + '/hls.m3u8?t=' + encodeURIComponent(d.ticket);
+      v.play().catch(function(){ /* autoplay blocked — the controls are there */ });
+      setOverlay(null);
+      document.getElementById('latencyHint').textContent = '~6-10s behind live';
+      STATE.usingHls = true;
+      return true;
+    } catch (e) { return false; }
+  }
+
   (async function boot() {
     var meta = await loadMeta();
     if (!meta) {
@@ -485,7 +521,19 @@ footer p{font-size:12px;color:var(--muted);margin:0}
     setOverlay('Connecting to live feed…');
     await loadAd();
     await openView();
-    pullChunks();
+
+    // Playback path. An iPhone has no usable MediaSource, so it gets
+    // native HLS off the same H.264 chunks; everything else keeps the
+    // lower-latency MSE pump it already used.
+    if (!MSImpl) {
+      var took = await tryNativeHls();
+      if (!took) {
+        setOverlay('Live video isn\u2019t supported in this browser. Try Chrome, or Safari on iOS 17.1 or newer.');
+        STATE.fatal = true;
+      }
+    } else {
+      pullChunks();
+    }
     refreshStats();
     setInterval(refreshStats, 10_000);
     setInterval(heartbeat,    10_000);

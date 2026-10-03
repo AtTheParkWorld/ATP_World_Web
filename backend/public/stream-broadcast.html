@@ -249,7 +249,17 @@ main{padding:calc(var(--nav-h) + 32px) 24px 80px;max-width:var(--max);margin:0 a
   // Pick a MediaRecorder mime the browser actually supports. Order
   // matters — VP9 is sharper, VP8 is most compatible, then plain webm.
   function pickMime() {
+    // H.264/fMP4 FIRST. Safari cannot play WebM through MSE and iOS has
+    // no MediaSource at all below 17.1, so a WebM broadcast is simply
+    // unwatchable on an iPhone. H.264 costs nothing here and is playable
+    // three ways: Chrome/Android MSE, Safari HLS, and the native app
+    // later. WebM stays as the fallback for browsers that can't record
+    // MP4, and those broadcasts remain Android/desktop-only.
     var candidates = [
+      'video/mp4;codecs=avc1.42E01E,mp4a.40.2',
+      'video/mp4;codecs=avc1,mp4a.40.2',
+      'video/mp4;codecs=avc1',
+      'video/mp4',
       'video/webm;codecs=vp9,opus',
       'video/webm;codecs=vp8,opus',
       'video/webm;codecs=vp9',
