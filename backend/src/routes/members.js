@@ -662,7 +662,7 @@ router.post('/me/appeal', authenticateAllowBanned, async (req, res, next) => {
       // appeals table not yet on this DB → tell ops to run the migration.
       if (e.code === '42P01') {
         return res.status(503).json({
-          error: 'Appeals are not yet enabled. Please email general@atthepark.com.',
+          error: 'Appeals are not yet enabled. Please email general@atthepark.world.',
           code:  'APPEALS_NOT_MIGRATED',
         });
       }
@@ -1092,11 +1092,32 @@ async function _anonymizeMember(client, memberId) {
     `DELETE FROM notifications WHERE member_id = $1`,
     `DELETE FROM survey_responses WHERE member_id = $1`,
     `DELETE FROM appeals WHERE member_id = $1`,
+    // Health and fitness data synced from a tracker: workouts (incl. GPS
+    // routes and heart rate), daily metrics (resting HR, sleep, VO2 max),
+    // consent records and sync history. Disconnecting the tracker above
+    // left all of this behind, tied to the member id — personal and
+    // health data the privacy policy promises to remove (2026-10-03).
+    `DELETE FROM wearable_workouts WHERE member_id = $1`,
+    `DELETE FROM wearable_daily_metrics WHERE member_id = $1`,
+    `DELETE FROM wearable_sync_log WHERE member_id = $1`,
+    `DELETE FROM wearable_consent WHERE member_id = $1`,
   ];
   for (const sql of wipes) {
     await client.query('SAVEPOINT erase').catch(() => {});
     try { await client.query(sql, [memberId]); await client.query('RELEASE SAVEPOINT erase').catch(() => {}); }
     catch (e) { await client.query('ROLLBACK TO SAVEPOINT erase').catch(() => {}); }
+  }
+  // Profile fields the UPDATE above never cleared. One savepoint each:
+  // a column missing on an older DB (or a NOT NULL constraint) must not
+  // abort the erasure of everything else.
+  const extraPersonal = ['gender', 'top_size', 'bottom_size', 'padel_level',
+                         'volleyball_level', 'residence_city', 'residence_country'];
+  for (const col of extraPersonal) {
+    await client.query('SAVEPOINT erase_col').catch(() => {});
+    try {
+      await client.query(`UPDATE members SET ${col} = NULL WHERE id = $1`, [memberId]);
+      await client.query('RELEASE SAVEPOINT erase_col').catch(() => {});
+    } catch (e) { await client.query('ROLLBACK TO SAVEPOINT erase_col').catch(() => {}); }
   }
 }
 
@@ -1132,7 +1153,7 @@ router.post('/me/forget', authenticate, async (req, res, next) => {
       return res.json({
         success: true,
         legacy_instant_delete: true,
-        message: 'Your account has been anonymised. Contact general@atthepark.com within 30 days if you change your mind.',
+        message: 'Your account has been anonymised. Contact general@atthepark.world within 30 days if you change your mind.',
       });
     }
 
@@ -1236,12 +1257,12 @@ router.post('/me/export', authenticate, async (req, res, next) => {
     const memberId = req.member.id;
 
     // R2 may not be configured on dev. Soft-fail with 503 so the
-    // mobile app can tell the user to email general@atthepark.com
+    // mobile app can tell the user to email general@atthepark.world
     // instead.
     const r2 = require('../services/r2Storage');
     if (!r2.isConfigured()) {
       return res.status(503).json({
-        error: 'Data export is not enabled yet on this server. Please email general@atthepark.com.',
+        error: 'Data export is not enabled yet on this server. Please email general@atthepark.world.',
         code:  'EXPORT_NOT_CONFIGURED',
       });
     }
