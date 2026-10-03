@@ -170,10 +170,7 @@ footer p{font-size:12px;color:var(--muted);margin:0}
   </div>
 </main>
 
-<footer>
-  <p>© 2026 At The Park. All rights reserved.</p>
-</footer>
-
+<div id="atp-footer-host"></div>
 <script>
 (function(){
   'use strict';
@@ -253,31 +250,59 @@ footer p{font-size:12px;color:var(--muted);margin:0}
   // with up to the rolling 120s window so we don't sit on a black
   // screen waiting for the next chunk; subsequent requests tail
   // anything new via ?after=<lastSeq>.
-  var STATE = { ms: null, sb: null, lastSeq: -1, mime: null, ended: false, queue: [], appending: false, viewId: null };
+  var STATE = { ms: null, sb: null, lastSeq: -1, mime: null, ended: false, queue: [], appending: false, viewId: null, appendedOk: false, sbClosed: false, fatal: false, tries: 0 };
+
+  // iOS Safari has no window.MediaSource at all (iOS 17.1+ ships
+  // ManagedMediaSource instead), so "is live video possible here" has to
+  // be answered before we start polling — otherwise every failure looks
+  // identical to "still loading" (founder report 2026-10-03: members
+  // sat on "Connecting to live feed..." with no idea why).
+  var MSImpl = (typeof window !== 'undefined')
+    ? (window.ManagedMediaSource || window.MediaSource || null)
+    : null;
 
   function initMediaSource(mime) {
     return new Promise(function(resolve, reject) {
+      if (!MSImpl) {
+        reject(new Error('NO_MSE'));
+        return;
+      }
       var v = document.getElementById('player');
-      var ms = new MediaSource();
+      var ms = new MSImpl();
+      // ManagedMediaSource needs this to attach without AirPlay taking over.
+      try { v.disableRemotePlayback = true; } catch (e) {}
       v.src = URL.createObjectURL(ms);
       ms.addEventListener('sourceopen', function() {
         try {
-          if (!MediaSource.isTypeSupported(mime)) {
-            // Some browsers report Vp9 unsupported even though the
-            // recorder produced it — fall back to generic webm.
-            var fallback = 'video/webm;codecs=vp8,opus';
-            if (MediaSource.isTypeSupported(fallback)) mime = fallback;
+          var supported = mime;
+          if (!MSImpl.isTypeSupported(mime)) {
+            // Only fall back when the fallback can actually decode what
+            // the recorder is sending. Silently swapping vp9 data onto a
+            // vp8 SourceBuffer produced a player that never errored and
+            // never played.
+            var alts = ['video/webm;codecs=vp8,opus', 'video/webm;codecs=vp9,opus', 'video/webm'];
+            supported = null;
+            for (var i = 0; i < alts.length; i++) {
+              if (MSImpl.isTypeSupported(alts[i])) { supported = alts[i]; break; }
+            }
+            if (!supported) { reject(new Error('NO_CODEC:' + mime)); return; }
           }
-          var sb = ms.addSourceBuffer(mime);
+          var sb = ms.addSourceBuffer(supported);
           sb.mode = 'sequence';
           sb.addEventListener('updateend', function(){
             STATE.appending = false;
+            STATE.appendedOk = true;
             flushQueue();
           });
-          STATE.ms = ms; STATE.sb = sb; STATE.mime = mime;
+          sb.addEventListener('error', function(){
+            STATE.appending = false;
+            setOverlay('This stream can\'t be decoded in this browser. Try Chrome.');
+          });
+          STATE.ms = ms; STATE.sb = sb; STATE.mime = supported;
           resolve();
         } catch(e) { reject(e); }
       });
+      ms.addEventListener('sourceclose', function(){ STATE.sbClosed = true; });
     });
   }
 
@@ -286,7 +311,15 @@ footer p{font-size:12px;color:var(--muted);margin:0}
     var next = STATE.queue.shift();
     STATE.appending = true;
     try { STATE.sb.appendBuffer(next); }
-    catch(e) { STATE.appending = false; }
+    catch(e) {
+      STATE.appending = false;
+      // QuotaExceededError is recoverable (drop the chunk, keep going).
+      // Anything else means the bytes don't match the SourceBuffer —
+      // silently dropping those stalled the player with no explanation.
+      if (e && e.name !== 'QuotaExceededError') {
+        setOverlay('Couldn\u2019t play this stream in this browser. Try Chrome.');
+      }
+    }
   }
 
   function pushBytes(arrayBuf) {
@@ -302,18 +335,44 @@ footer p{font-size:12px;color:var(--muted);margin:0}
       var r = await fetch(url, { headers: authHeaders() });
       if (r.status === 410) { onStreamEnded(); return; }
       if (r.status === 403) { showLocked('premium'); return; }
-      if (r.status === 204) { /* no new chunks yet */ }
+      if (r.status === 204) {
+        // Live, but the broadcaster hasn't sent anything yet. Say so
+        // rather than implying the player is still working on it.
+        STATE.tries++;
+        if (STATE.tries === 8) setOverlay('Waiting for the broadcaster\u2019s video\u2026');
+      }
       else if (r.ok) {
         var headerMime = r.headers.get('X-Stream-Mime') || 'video/webm;codecs=vp8,opus';
         if (!STATE.ms) { await initMediaSource(headerMime); }
-        var lastSeqHdr = parseInt(r.headers.get('X-Last-Seq'), 10);
-        if (!isNaN(lastSeqHdr)) STATE.lastSeq = lastSeqHdr;
         var buf = await r.arrayBuffer();
         if (buf.byteLength) pushBytes(buf);
+        // Advance lastSeq ONLY once the bytes are queued. It used to be
+        // set before the append, so a failed first attempt left the
+        // viewer polling ?after=N — and the server then stopped
+        // prepending the init segment, making playback impossible for
+        // the rest of the broadcast.
+        var lastSeqHdr = parseInt(r.headers.get('X-Last-Seq'), 10);
+        if (!isNaN(lastSeqHdr)) STATE.lastSeq = lastSeqHdr;
         setOverlay(null);
         document.getElementById('latencyHint').textContent = '~4-8s behind live';
       }
-    } catch(e) { /* network blip — retry */ }
+    } catch(e) {
+      // A genuine network blip is worth retrying. An unplayable browser
+      // or codec is NOT — it used to be swallowed here and retried every
+      // 2s forever, which is why every failure looked like "loading".
+      var msg = (e && e.message) || '';
+      if (msg === 'NO_MSE') {
+        STATE.fatal = true;
+        setOverlay('Live video isn\u2019t supported in this browser. Open the link in Chrome, or use Safari on iOS 17.1 or newer.');
+        return;
+      }
+      if (msg.indexOf('NO_CODEC') === 0) {
+        STATE.fatal = true;
+        setOverlay('This browser can\u2019t play the broadcaster\u2019s video format. Try Chrome.');
+        return;
+      }
+    }
+    if (STATE.fatal) return;
     // Re-poll every 2s while the stream is live.
     setTimeout(pullChunks, 2000);
   }
