@@ -460,6 +460,53 @@ router.get('/live', optionalAuth, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── GET /api/streams/for-session/:sessionId ─ "is this one live?" ─
+// Members could see a session marked LIVE but had nowhere to click
+// (founder report 2026-10-03). The session pages ask this endpoint
+// whether a broadcast is running and whether THIS member may watch, so
+// they can show a real button instead of a dead badge.
+//
+// optionalAuth: a logged-out visitor still gets to know a stream is
+// running (is_locked=true), which is the honest prompt to sign in.
+router.get('/for-session/:sessionId', optionalAuth, async (req, res, next) => {
+  try {
+    let row;
+    try {
+      const { rows } = await query(
+        `SELECT id, title, tier_required, host_member_id, session_id, started_at
+           FROM streams
+          WHERE session_id = $1 AND status = 'live'
+          ORDER BY started_at DESC
+          LIMIT 1`,
+        [req.params.sessionId]
+      );
+      row = rows[0];
+    } catch (e) {
+      // Pre-migration DB with no streams.session_id — nothing to link.
+      if (e.code !== '42703' && e.code !== '42P01') throw e;
+      row = null;
+    }
+    if (!row) return res.json({ stream: null });
+
+    const canView = await _canViewStreamAsync(req.member, row).catch(() => false);
+    const isHost  = !!(req.member && req.member.id === row.host_member_id);
+    res.json({
+      stream: {
+        id: row.id,
+        title: row.title,
+        started_at: row.started_at,
+        tier_required: row.tier_required,
+        can_view:  canView || isHost,
+        is_locked: !canView && !isHost,
+        // Why they can't watch, so the UI can say something useful
+        // rather than just greying a button out.
+        reason: (canView || isHost) ? null
+          : (!req.member ? 'signed_out' : 'needs_premium_and_booking'),
+      },
+    });
+  } catch (err) { next(err); }
+});
+
 // ── POST /api/streams/:id/view ─ viewer opens a session ───────
 router.post('/:id/view', optionalAuth, async (req, res, next) => {
   try {

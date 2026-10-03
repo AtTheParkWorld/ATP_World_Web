@@ -2453,6 +2453,55 @@ function _wireSessionFeedback(sessionId) {
   });
 }
 
+// ── "Watch live" on a session that's currently streaming ─────
+// Founder report 2026-10-03: members saw the LIVE badge, understood the
+// session was running, and had nowhere to click. The badge was the end
+// of the road. One /streams/live call covers every card on the page —
+// it already returns can_view per stream, so the gate shown here is the
+// same one the player enforces and nobody is sent to a locked page
+// without warning.
+async function _atpWireLiveWatch() {
+  try {
+    // Self-installing refresh: a coach going live while the page is
+    // already open should surface without the member reloading.
+    if (!window._atpLiveWatchTimer) {
+      window._atpLiveWatchTimer = setInterval(function () {
+        try { _atpWireLiveWatch(); } catch (e) {}
+      }, 60000);
+    }
+    var tok = '';
+    try { tok = localStorage.getItem('atp_token') || ''; } catch (e) {}
+    var r = await fetch('/api/streams/live', tok ? { headers: { 'Authorization': 'Bearer ' + tok } } : {});
+    if (!r.ok) return;
+    var d = await r.json();
+    (d && d.streams || []).forEach(function (st) {
+      if (!st || !st.session_id) return;
+      var card = document.querySelector('[data-session-id="' + st.session_id + '"]');
+      if (!card || card.querySelector('.sc-watch-live')) return;
+      var host = card.querySelector('.sc-mid') || card;
+      var a = document.createElement('a');
+      a.className = 'sc-watch-live';
+      if (st.can_view) {
+        a.href = '/stream-watch.html?id=' + encodeURIComponent(st.id);
+        a.textContent = '\u25B6 Watch live now';
+        a.style.cssText = 'display:inline-block;margin-top:8px;padding:7px 14px;border-radius:999px;' +
+          'background:#ff2d2d;color:#fff;font-size:12px;font-weight:800;text-decoration:none;letter-spacing:.3px';
+      } else if (!tok) {
+        a.href = '/join?mode=login&next=' + encodeURIComponent('/sessions.html');
+        a.textContent = '\u25B6 Sign in to watch live';
+        a.style.cssText = 'display:inline-block;margin-top:8px;padding:7px 14px;border-radius:999px;' +
+          'background:#1a1a1a;border:1px solid #333;color:#ccc;font-size:12px;font-weight:700;text-decoration:none';
+      } else {
+        a.href = '/plans.html';
+        a.textContent = '\uD83D\uDD12 Premium members can watch live';
+        a.style.cssText = 'display:inline-block;margin-top:8px;padding:7px 14px;border-radius:999px;' +
+          'background:#1a1a1a;border:1px solid #333;color:#ccc;font-size:12px;font-weight:700;text-decoration:none';
+      }
+      host.appendChild(a);
+    });
+  } catch (e) { /* never break the grid over a stream lookup */ }
+}
+
 function renderSessionsGrid(sessions) {
   var grid = document.getElementById('sessionsGrid');
   if (!grid) return;
@@ -2762,6 +2811,7 @@ async function loadSessions() {
     var list = (data && data.sessions) || [];
     window._atpSessions = list;
     renderSessionsGrid(list);
+    try { _atpWireLiveWatch(); } catch(e) {}
     renderCalendarFromSessions(list);
   } catch (err) {
     console.warn('Sessions API error:', err && err.message);
