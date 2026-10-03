@@ -4213,7 +4213,7 @@ router.post('/migrate-email-send-log', async (req, res, next) => {
 router.post('/maintenance-finalize-deletions', async (req, res, next) => {
   try {
     const { setupKey, dry_run = false } = req.body || {};
-    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+    if (!req.maintenanceAuthorized && setupKey !== process.env.ADMIN_SETUP_KEY) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
     let due;
@@ -4347,7 +4347,7 @@ router.post('/migrate-auto-surveys', async (req, res, next) => {
 router.post('/maintenance-trigger-post-session-nps', async (req, res, next) => {
   try {
     const { setupKey } = req.body || {};
-    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+    if (!req.maintenanceAuthorized && setupKey !== process.env.ADMIN_SETUP_KEY) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
     const autoSurveys = require('../services/autoSurveys');
@@ -4362,7 +4362,7 @@ router.post('/maintenance-trigger-post-session-nps', async (req, res, next) => {
 router.post('/maintenance-trigger-30day-pulse', async (req, res, next) => {
   try {
     const { setupKey } = req.body || {};
-    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+    if (!req.maintenanceAuthorized && setupKey !== process.env.ADMIN_SETUP_KEY) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
     const autoSurveys = require('../services/autoSurveys');
@@ -4439,7 +4439,7 @@ router.post('/migrate-wearable-dedup-column', async (req, res, next) => {
 router.post('/maintenance-dedup-workouts', async (req, res, next) => {
   try {
     const { setupKey } = req.body || {};
-    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+    if (!req.maintenanceAuthorized && setupKey !== process.env.ADMIN_SETUP_KEY) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
     const wearableDedup = require('../services/wearableDedup');
@@ -4461,7 +4461,7 @@ router.post('/maintenance-dedup-workouts', async (req, res, next) => {
 router.post('/maintenance-prune-old-workouts', async (req, res, next) => {
   try {
     const { setupKey, dry_run = false } = req.body || {};
-    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+    if (!req.maintenanceAuthorized && setupKey !== process.env.ADMIN_SETUP_KEY) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
     const cutoffSql = `NOW() - INTERVAL '24 months'`;
@@ -4506,7 +4506,7 @@ router.post('/maintenance-prune-old-workouts', async (req, res, next) => {
 router.post('/maintenance-prune-old-notifications', async (req, res, next) => {
   try {
     const { setupKey, dry_run = false } = req.body || {};
-    if (setupKey !== process.env.ADMIN_SETUP_KEY) {
+    if (!req.maintenanceAuthorized && setupKey !== process.env.ADMIN_SETUP_KEY) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
     const cutoffSql = `NOW() - INTERVAL '90 days'`;
