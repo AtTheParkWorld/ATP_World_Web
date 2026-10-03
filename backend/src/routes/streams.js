@@ -573,7 +573,13 @@ router.post('/:id/view', optionalAuth, async (req, res, next) => {
     const origin = (process.env.FRONTEND_URL
       || `${req.protocol}://${req.get('host')}`).replace(/\/+$/, '');
     const mime = buf.mime || stream.mime_type || '';
-    const hlsReady = /mp4|avc1|h264/i.test(mime) && !!buf.init;
+    const isH264 = /mp4|avc1|h264/i.test(mime);
+    // Both conditions matter, and they need DIFFERENT advice: a WebM
+    // broadcast will never play on mobile (change browser), whereas an
+    // H.264 one still waiting on its init segment just needs a moment.
+    // Collapsing them sent the coach to Chrome when they were already
+    // there.
+    const hlsReady = isH264 && !!buf.init;
     const ticket = req.member ? _hlsIssue(req.params.id, req.member.id) : null;
 
     res.json({
@@ -586,7 +592,10 @@ router.post('/:id/view', optionalAuth, async (req, res, next) => {
         is_live: true,
         // So the app can explain itself instead of spinning: a WebM
         // broadcast has no H.264 bytes to package as HLS.
-        reason: hlsReady ? null : (mime ? 'broadcast_not_h264' : 'waiting_for_broadcaster'),
+        reason: hlsReady ? null
+          : !mime      ? 'waiting_for_broadcaster'
+          : !isH264    ? 'broadcast_not_h264'
+          : 'waiting_for_broadcaster',
       },
     });
   } catch (err) { next(err); }
