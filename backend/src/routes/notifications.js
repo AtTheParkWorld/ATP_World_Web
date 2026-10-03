@@ -88,6 +88,30 @@ router.post('/push-token', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// POST /api/notifications/test-push — send ONE push to yourself.
+// The only way to tell, from outside Render, whether phone push works
+// end to end: the response names the exact reason when it doesn't
+// (ONESIGNAL_NOT_CONFIGURED, NO_SUBSCRIBED_DEVICE, API_ERROR, ...).
+// Self-only and throttled, so it can't be used to message anyone else.
+const _lastTestPush = new Map();
+router.post('/test-push', authenticate, async (req, res, next) => {
+  try {
+    const last = _lastTestPush.get(req.member.id) || 0;
+    if (Date.now() - last < 30_000) {
+      return res.status(429).json({ error: 'One test every 30 seconds.' });
+    }
+    _lastTestPush.set(req.member.id, Date.now());
+    const push = require('../services/push');
+    const result = await push.sendPush(req.member.id, {
+      title: '🔔 Test from ATP',
+      body:  'Push notifications are working on this phone.',
+      push_type: 'test',
+      data: { kind: 'test' },
+    });
+    res.json({ configured: push.isConfigured(), member_id: req.member.id, result });
+  } catch (err) { next(err); }
+});
+
 // POST /api/notifications/broadcast — Admin sends to all or filtered
 router.post('/broadcast', authenticate, requireAdmin, async (req, res, next) => {
   try {

@@ -16,7 +16,7 @@
  */
 import 'react-native-gesture-handler';
 import { useEffect } from 'react';
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, DMSans_400Regular, DMSans_700Bold } from '@expo-google-fonts/dm-sans';
 import { BarlowCondensed_800ExtraBold, BarlowCondensed_900Black } from '@expo-google-fonts/barlow-condensed';
@@ -47,12 +47,45 @@ Sentry.init({
 // OneSignal push init — the plugin + app id were configured from day
 // one but nothing ever called initialize(), so push was a silent no-op.
 // Guarded: no-ops in dev/simulator or when the id is missing.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+let oneSignal: any = null;
+
+// Where a tapped notification should land. The server puts the target in
+// the push's data (stream_id / post_id / session_id); anything else opens
+// the inbox. Pushes used to carry a web URL that OneSignal opened in the
+// BROWSER, where the member usually isn't signed in.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function routeForPush(data: any): string | null {
+  if (!data || typeof data !== 'object') return '/inbox';
+  const id = (v: unknown) => encodeURIComponent(String(v));
+  if (data.stream_id) return `/live/${id(data.stream_id)}`;
+  if (data.post_id) return `/community/post/${id(data.post_id)}`;
+  if (data.session_id) return `/sessions/${id(data.session_id)}`;
+  if (data.kind === 'test') return null;
+  return '/inbox';
+}
+
+// A tap on a cold start arrives before the navigator exists; park it
+// until the root layout has mounted.
+let navReady = false;
+let pendingRoute: string | null = null;
+function openRoute(route: string) {
+  if (navReady) router.push(route as never);
+  else pendingRoute = route;
+}
+
 try {
   if (extra.oneSignalAppId) {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { OneSignal, LogLevel } = require('react-native-onesignal');
     OneSignal.Debug.setLogLevel(__DEV__ ? LogLevel.Verbose : LogLevel.None);
     OneSignal.initialize(extra.oneSignalAppId);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    OneSignal.Notifications.addEventListener('click', (event: any) => {
+      const route = routeForPush(event?.notification?.additionalData);
+      if (route) openRoute(route);
+    });
+    oneSignal = OneSignal;
   }
 } catch (e) {
   // Native module absent (Expo Go) — push simply stays off.
@@ -124,6 +157,7 @@ const queryClient = new QueryClient({
 function RootLayoutInner() {
   const hydrate = useAuthStore((s) => s.hydrate);
   const isHydrating = useAuthStore((s) => s.isHydrating);
+  const memberId = useAuthStore((s) => s.member?.id);
 
   const [fontsLoaded] = useFonts({
     DMSans_400Regular,
@@ -151,6 +185,32 @@ function RootLayoutInner() {
   useEffect(() => {
     if (!isHydrating && fontsLoaded) {
       SplashScreen.hideAsync().catch(() => {});
+    }
+  }, [isHydrating, fontsLoaded]);
+
+  // Tie this phone to the signed-in member. The server sends every push
+  // to the member id (OneSignal external_id); without this login no push
+  // could ever find a device. Signing out unlinks the phone so the next
+  // person on it doesn't receive the previous member's notifications.
+  useEffect(() => {
+    if (isHydrating || !oneSignal) return;
+    try {
+      if (memberId) oneSignal.login(String(memberId));
+      else oneSignal.logout();
+    } catch {
+      // Never let push wiring break the app.
+    }
+  }, [memberId, isHydrating]);
+
+  // The navigator is up once the Stack renders; deliver any tap that
+  // arrived during a cold start.
+  useEffect(() => {
+    if (isHydrating || !fontsLoaded) return;
+    navReady = true;
+    if (pendingRoute) {
+      const route = pendingRoute;
+      pendingRoute = null;
+      setTimeout(() => router.push(route as never), 300);
     }
   }, [isHydrating, fontsLoaded]);
 

@@ -87,23 +87,28 @@ async function sendPush(memberId, payload) {
     throw e;
   }
 
-  if (!players.length) {
-    await _logSend(memberId, pushType, null, false, 'NO_DEVICES');
-    return { skipped: true, reason: 'NO_DEVICES' };
-  }
+  // Target by member. The app calls OneSignal.login(member.id) once the
+  // member is signed in, which makes the member id the OneSignal
+  // external_id on every device they use. Nothing ever stored
+  // onesignal_player_id, so the player-id path alone meant no push ever
+  // reached a phone (found 2026-10-03). Stored player ids still win when
+  // present.
+  const target = players.length
+    ? { include_player_ids: players }
+    : { include_aliases: { external_id: [String(memberId)] }, target_channel: 'push' };
 
-  // OneSignal REST request. include_player_ids targets specific
-  // devices (no broadcast). headings + contents are localised maps —
+  // OneSignal REST request. headings + contents are localised maps —
   // we send English only for v1; mobile spec deferred i18n.
   const body = {
     app_id: process.env.ONESIGNAL_APP_ID,
-    include_player_ids: players,
+    ...target,
     headings: { en: String(payload.title).slice(0, 80) },
     contents: { en: String(payload.body || '').slice(0, 220) },
     data: payload.data || {},
-    // url is opened when the user taps the notification; useful for
-    // universal-link → in-app routing.
-    ...(payload.url ? { url: payload.url } : {}),
+    // web_url, not url: on a phone, `url` makes OneSignal open the
+    // BROWSER on tap — where the member usually isn't signed in. The app
+    // routes taps itself from `data` (app/_layout.tsx).
+    ...(payload.url ? { web_url: payload.url } : {}),
     // Quiet by default — the mobile app's OneSignal SDK can decide
     // whether to ring/vibrate based on the type.
     priority: 5,
@@ -114,7 +119,9 @@ async function sendPush(memberId, payload) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': 'Basic ' + process.env.ONESIGNAL_REST_API_KEY,
+        // Legacy REST keys use "Basic"; current os_v2_ keys use "Key".
+        'Authorization': (/^os_v2_/.test(process.env.ONESIGNAL_REST_API_KEY) ? 'Key ' : 'Basic ')
+          + process.env.ONESIGNAL_REST_API_KEY,
       },
       body: JSON.stringify(body),
     });
@@ -137,6 +144,12 @@ async function sendPush(memberId, payload) {
       return { skipped: true, reason: 'API_ERROR' };
     }
     const oneSignalId = json && json.id;
+    // A 200 with no id means nobody matched — e.g. the member has never
+    // opened the updated app, or turned notifications off.
+    if (!oneSignalId) {
+      await _logSend(memberId, pushType, null, false, 'NO_SUBSCRIBED_DEVICE');
+      return { skipped: true, reason: 'NO_SUBSCRIBED_DEVICE', detail: json && json.errors };
+    }
     await _logSend(memberId, pushType, oneSignalId, true, null);
     return { delivered: true, onesignal_id: oneSignalId };
   } catch (e) {

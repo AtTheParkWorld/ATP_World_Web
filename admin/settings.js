@@ -1469,6 +1469,35 @@ function adminEndStaleStreams() {
   });
 }
 
+// Sends ONE push to the signed-in admin's own phone and says exactly why
+// when it doesn't arrive. Phone push had silently never worked; this is
+// the end-to-end check (2026-10-03).
+function adminSendTestPush() {
+  var el = document.getElementById('adminTestPushResult');
+  if (el) { el.style.color = '#888'; el.textContent = 'Sending…'; }
+  fetch(ATP_API + '/notifications/test-push', {
+    method: 'POST', headers: { 'Authorization': 'Bearer ' + getToken() },
+  })
+    .then(function(r){ return r.json().then(function(b){ return { ok: r.ok, status: r.status, body: b }; }); })
+    .then(function(x){
+      if (!el) return;
+      var b = x.body || {};
+      var res = b.result || {};
+      var why = {
+        ONESIGNAL_NOT_CONFIGURED: 'OneSignal keys are missing on the server (Render → ONESIGNAL_APP_ID / ONESIGNAL_REST_API_KEY).',
+        NO_SUBSCRIBED_DEVICE: 'No phone is linked to this account yet. Open the updated ATP app on your phone, signed in as this same account, allow notifications, then try again.',
+        NO_DEVICES: 'No phone is linked to this account yet.',
+        API_ERROR: 'OneSignal rejected the request — check the REST API key on Render.',
+        NETWORK_ERROR: 'The server could not reach OneSignal.',
+      };
+      if (!x.ok) { el.style.color = '#ef4444'; el.textContent = (b.error || ('HTTP ' + x.status)); return; }
+      if (res.delivered) { el.style.color = '#A8FF00'; el.textContent = '✅ Sent — it should appear on your phone within seconds.'; return; }
+      el.style.color = '#f59e0b';
+      el.textContent = '⚠ Not sent: ' + (why[res.reason] || res.reason || 'unknown reason');
+    })
+    .catch(function(e){ if (el) { el.style.color = '#ef4444'; el.textContent = 'Failed: ' + e.message; } });
+}
+
 function loadStreamDashboard() {
   fetch(ATP_API + '/streams/admin/analytics', { headers: { 'Authorization': 'Bearer ' + getToken() } })
     .then(function(r){ return r.ok ? r.json() : null; })

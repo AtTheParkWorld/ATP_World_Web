@@ -1780,6 +1780,16 @@
               </div>
             </div>
 
+            <!-- Phone push check (2026-10-03: phone push had never been
+                 delivered; this proves it end to end) -->
+            <div style="background:#0d0d0d;border:1px solid #1a1a1a;border-radius:10px;padding:16px;margin-bottom:20px">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#A8FF00">🔔 Phone notifications</div>
+                <button class="admin-btn admin-btn-primary" style="margin-left:auto;font-size:11px;padding:6px 12px" data-atp-call="adminSendTestPush">Send me a test push</button>
+              </div>
+              <div id="adminTestPushResult" style="font-size:12px;color:#888;margin-top:10px;line-height:1.5">Sends one notification to the phone signed in to the ATP app as <strong style="color:#aaa">this</strong> account.</div>
+            </div>
+
             <!-- Live dashboard tiles -->
             <div id="streamDashTiles" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px">
               <div style="background:#0d0d0d;border:1px solid #1a1a1a;border-radius:10px;padding:14px">
@@ -2227,7 +2237,7 @@
 <div class="admin-toast" id="adminToast"></div>
 <!-- Admin modules — load order matters: core defines globals + showAdminSection
      hook in init.js wires the per-section loaders, so init.js must come last. -->
-<script src="/admin/bundle.min.js?v=0faf78c343"></script>
+<script src="/admin/bundle.min.js?v=a3f0115056"></script>
 
 
 
