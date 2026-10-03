@@ -173,13 +173,19 @@ const optionalAuth = async (req, res, next) => {
     let rows;
     try {
       ({ rows } = await query(
-        'SELECT id, first_name, last_name, email, is_admin, is_ambassador, is_coach FROM members WHERE id = $1',
+        // subscription_type is REQUIRED here: _tierAllows (routes/streams.js)
+        // reads member.subscription_type, and when optionalAuth left it out it
+        // evaluated to '' for everyone — so every Premium member was locked out
+        // of every stream, and only admins and the host could ever watch
+        // (founder report 2026-10-03, a Premium member with a confirmed booking
+        // still hitting the members-only wall).
+        'SELECT id, first_name, last_name, email, is_admin, is_ambassador, is_coach, subscription_type FROM members WHERE id = $1',
         [decoded.sub]
       ));
     } catch (e) {
       if (e.code === '42703') {
         ({ rows } = await query(
-          'SELECT id, first_name, last_name, email, is_admin, is_ambassador FROM members WHERE id = $1',
+          'SELECT id, first_name, last_name, email, is_admin, is_ambassador, subscription_type FROM members WHERE id = $1',
           [decoded.sub]
         ));
         if (rows.length) rows[0].is_coach = false;
