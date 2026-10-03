@@ -36,6 +36,7 @@
 const router = require('express').Router();
 const { query } = require('../db');
 const { authenticate, requireAdmin, optionalAuth } = require('../middleware/auth');
+const livestreamNotify = require('../services/livestreamNotify');
 
 // ── In-memory ring buffer per stream ──────────────────────────
 // Keyed by stream uuid. Each entry holds an ordered list of chunk
@@ -184,6 +185,11 @@ router.post('/', authenticate, async (req, res, next) => {
       rows = r.rows;
     }
     _buf(rows[0].id).mime = mime_type || null;
+
+    // Tell every booked member who can actually watch that it started.
+    // Fire-and-forget: a push failure must never stop a coach going live.
+    livestreamNotify.onStreamStarted(rows[0].id, session_id, req.member.id);
+
     res.status(201).json({ stream: rows[0] });
   } catch (err) { next(err); }
 });

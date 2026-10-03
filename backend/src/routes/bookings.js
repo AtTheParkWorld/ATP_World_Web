@@ -4,6 +4,7 @@ const { query, transaction } = require('../db');
 const { authenticate } = require('../middleware/auth');
 const emailService = require('../services/email');
 const billing = require('../services/billing');
+const livestreamNotify = require('../services/livestreamNotify');
 
 // ── Helpers ─────────────────────────────────────────────────────
 // Builds the QR payload + token for a confirmed booking. Used in three
@@ -325,6 +326,9 @@ router.post('/', authenticate, async (req, res, next) => {
     await emailService.sendBookingConfirmation(member, session, txResult.qrData, txResult.qrToken)
       .catch(function(){ /* email failure shouldn't reverse a confirmed booking */ });
 
+    // Premium members get told they can watch this one live.
+    livestreamNotify.onBookingConfirmed(member.id, session_id, req.member.subscription_type);
+
     res.status(201).json({ booking: txResult.row, qrData: txResult.qrData, qrToken: txResult.qrToken });
   } catch (err) {
     if (err && err.status) return res.status(err.status).json({ error: err.message });
@@ -453,6 +457,8 @@ router.post('/:id/pay-with-points', authenticate, async (req, res, next) => {
         sponsor_name: b.sponsor_name, sponsor_logo_url: b.sponsor_logo_url, sponsor_url: b.sponsor_url },
       result.qrData, result.qrToken
     ).catch(function(){ /* email failure shouldn't reverse booking */ });
+
+    livestreamNotify.onBookingConfirmed(result.member.id, b.session_id, req.member.subscription_type);
 
     res.json({
       booking: result.booking,

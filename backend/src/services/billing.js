@@ -411,6 +411,14 @@ async function _confirmSessionBooking(checkoutSession) {
     );
   } catch (e) { console.warn('[billing] booking confirmation email failed', e.message); }
 
+  // Paid bookings reach 'confirmed' here, not in routes/bookings.js, so
+  // the livestream notice has to fire from the webhook too — otherwise
+  // only free bookings ever got it. Tier is looked up inside.
+  try {
+    const livestreamNotify = require('./livestreamNotify');
+    await livestreamNotify.onBookingConfirmed(b.member_id, b.session_id);
+  } catch (e) { console.warn('[billing] livestream notice failed', e.message); }
+
   // Paid-session receipt — separate email so members have a static
   // proof-of-payment record for expense reports / insurance / corporate
   // wellness reimbursements.
