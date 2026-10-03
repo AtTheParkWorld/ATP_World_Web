@@ -32,9 +32,10 @@ const SLUG_PRE_CANCEL    = 'pre-cancel-exit';
 //
 // Triggers ~1h after a session's scheduled end. The "1h" is built
 // into the cron's WHERE clause — we look for sessions that ended
-// between 60 and 120 minutes ago (1h grace so the hourly cron
-// doesn't miss anything, and 2h cap so we don't re-survey old
-// sessions on cron catch-up after an outage).
+// between 60 and 150 minutes ago (1h grace, and a 90-minute span so
+// consecutive hourly runs overlap instead of leaving gaps when the
+// timer drifts; the cap keeps cron catch-up after an outage from
+// surveying old sessions). Duplicates are skipped per member+session.
 //
 // Returns { sessions, invites_inserted, skipped }.
 // ──────────────────────────────────────────────────────────────
@@ -46,7 +47,7 @@ async function triggerPostSessionNPS() {
         FROM sessions
        WHERE status IN ('completed','upcoming')
          AND COALESCE(ends_at, scheduled_at + INTERVAL '90 minutes')
-             BETWEEN NOW() - INTERVAL '120 minutes' AND NOW() - INTERVAL '60 minutes'
+             BETWEEN NOW() - INTERVAL '150 minutes' AND NOW() - INTERVAL '60 minutes'
     `));
   } catch (e) {
     if (e.code === '42P01') return { sessions: 0, invites_inserted: 0, skipped: 0 };

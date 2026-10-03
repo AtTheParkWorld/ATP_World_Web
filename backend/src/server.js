@@ -1287,7 +1287,6 @@ if (require.main === module) {
     const MAINT_JOBS = [
       '/api/auth/maintenance-finalize-deletions',
       '/api/points/expire',
-      '/api/auth/maintenance-trigger-post-session-nps',
       '/api/auth/maintenance-trigger-30day-pulse',
       '/api/auth/maintenance-prune-old-workouts',
       '/api/auth/maintenance-prune-old-notifications',
@@ -1373,6 +1372,26 @@ if (require.main === module) {
     };
     // First run 45min after boot, then every 24h.
     setTimeout(() => { maintenanceTick(); setInterval(maintenanceTick, 24 * 60 * 60 * 1000); }, 45 * 60 * 1000);
+
+    // ── Hourly: post-session NPS invites ────────────────────────────
+    // The trigger only looks at sessions that ended 60-150 minutes ago,
+    // so on the daily tick it caught roughly one session in 24 and every
+    // other session never got its survey. Hourly runs tile that window
+    // (with overlap for timer drift); the trigger is idempotent per
+    // member + session, so the overlap never double-sends.
+    const npsTick = async () => {
+      if (!process.env.MAINTENANCE_SECRET) return;
+      try {
+        const r = await fetch(`http://127.0.0.1:${PORT}/api/auth/maintenance-trigger-post-session-nps`, {
+          method: 'POST',
+          headers: { 'x-maintenance-secret': process.env.MAINTENANCE_SECRET },
+        });
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) console.error('[maintenance] post-session NPS →', r.status, body.error || '');
+        else if (body && (body.invites_inserted || 0) > 0) console.log('[maintenance] post-session NPS ✓', JSON.stringify(body).slice(0, 120));
+      } catch (e) { console.error('[maintenance] post-session NPS failed:', e.message); }
+    };
+    setTimeout(() => { npsTick(); setInterval(npsTick, 60 * 60 * 1000); }, 10 * 60 * 1000);
   });
 }
 
