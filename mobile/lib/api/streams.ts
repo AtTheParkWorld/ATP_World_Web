@@ -31,6 +31,8 @@ export interface StreamPlayback {
   hls_url: string | null;
   poster_url: string | null;
   is_live: boolean;
+  /** Why hls_url is null: 'broadcast_not_h264' | 'waiting_for_broadcaster'. */
+  reason?: string | null;
 }
 
 export function listLiveStreams(): Promise<{ streams: LiveStream[] }> {

@@ -59,6 +59,7 @@ export default function LivePlayer() {
   }
 
   const hlsUrl = viewQ.data?.playback?.hls_url;
+  const playbackReason = viewQ.data?.playback?.reason;
 
   return (
     <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>
@@ -100,9 +101,20 @@ export default function LivePlayer() {
           ) : hlsUrl ? (
             <HlsPlayer url={hlsUrl} />
           ) : (
-            <View className="flex-1 items-center justify-center">
-              <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm">
-                Loading…
+            <View className="flex-1 items-center justify-center px-8">
+              <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm text-center">
+                {/* "Loading…" used to sit here forever: the backend never
+                    returned playback.hls_url, so this screen could never
+                    play anything on any device. Now that it does, say
+                    which of the real states we're in instead of implying
+                    progress (founder report 2026-10-03). */}
+                {viewQ.isLoading
+                  ? 'Loading…'
+                  : playbackReason === 'broadcast_not_h264'
+                    ? 'This broadcast can’t be played on mobile. Ask the coach to go live from Chrome.'
+                    : playbackReason === 'waiting_for_broadcaster'
+                      ? 'Waiting for the coach’s video…'
+                      : 'Connecting to live feed…'}
               </Text>
             </View>
           )}

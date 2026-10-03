@@ -536,14 +536,14 @@ router.post('/:id/view', optionalAuth, async (req, res, next) => {
     let sRows;
     try {
       const r = await query(
-        `SELECT id, status, tier_required, host_member_id, session_id FROM streams WHERE id=$1 LIMIT 1`,
+        `SELECT id, status, tier_required, host_member_id, session_id, mime_type FROM streams WHERE id=$1 LIMIT 1`,
         [req.params.id]
       );
       sRows = r.rows;
     } catch (e) {
       if (e.code !== '42703') throw e;
       const r = await query(
-        `SELECT id, status, tier_required, host_member_id FROM streams WHERE id=$1 LIMIT 1`,
+        `SELECT id, status, tier_required, host_member_id, mime_type FROM streams WHERE id=$1 LIMIT 1`,
         [req.params.id]
       );
       sRows = r.rows;
@@ -561,7 +561,34 @@ router.post('/:id/view', optionalAuth, async (req, res, next) => {
     );
     const buf = _buf(req.params.id);
     buf.viewers.set(rows[0].id, Date.now());
-    res.json({ view_id: rows[0].id });
+
+    // The mobile app reads playback.hls_url from this response
+    // (app/live/[id].tsx) and shows "Loading..." forever while it's
+    // missing — which it always was, so the app's player has never
+    // worked on any device. The gate has already passed above, so issue
+    // a ticket and hand over a real URL. expo-video plays HLS natively
+    // on both iOS and Android.
+    //
+    // Absolute, because the app's API base and the web origin differ.
+    const origin = (process.env.FRONTEND_URL
+      || `${req.protocol}://${req.get('host')}`).replace(/\/+$/, '');
+    const mime = buf.mime || stream.mime_type || '';
+    const hlsReady = /mp4|avc1|h264/i.test(mime) && !!buf.init;
+    const ticket = req.member ? _hlsIssue(req.params.id, req.member.id) : null;
+
+    res.json({
+      view_id: rows[0].id,
+      playback: {
+        hls_url: (hlsReady && ticket)
+          ? `${origin}/api/streams/${req.params.id}/hls.m3u8?t=${encodeURIComponent(ticket)}`
+          : null,
+        poster_url: null,
+        is_live: true,
+        // So the app can explain itself instead of spinning: a WebM
+        // broadcast has no H.264 bytes to package as HLS.
+        reason: hlsReady ? null : (mime ? 'broadcast_not_h264' : 'waiting_for_broadcaster'),
+      },
+    });
   } catch (err) { next(err); }
 });
 
