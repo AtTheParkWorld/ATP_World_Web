@@ -33,6 +33,12 @@ export default function LivePlayer() {
     queryKey: ['stream-view', streamId],
     queryFn:  () => trackView(streamId),
     enabled:  !!streamId && !!stream && !stream.is_locked,
+    // Opened in the first seconds of a broadcast, the server has no video
+    // yet and says 'waiting_for_broadcaster'. Ask again until it does —
+    // this used to sit on the waiting message until the member left and
+    // came back. Every other state is final, so stop polling.
+    refetchInterval: (q) =>
+      q.state.data?.playback?.reason === 'waiting_for_broadcaster' ? 5000 : false,
   });
 
   // Auto-refresh when the host ends the stream and we're still on this screen.

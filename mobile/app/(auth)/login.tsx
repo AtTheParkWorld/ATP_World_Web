@@ -73,7 +73,7 @@ export default function Login() {
               keyboardType="email-address"
               autoComplete="email"
               textContentType="emailAddress"
-              placeholder="you@atthepark.com"
+              placeholder="you@example.com"
               placeholderTextColor={colors.muted}
               style={{ fontFamily: fontFamily.body, color: colors.white }}
               className="bg-atp-dark-3 border border-white/10 rounded-atp px-4 py-3 text-base"
