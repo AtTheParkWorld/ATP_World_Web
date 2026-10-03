@@ -49,7 +49,12 @@ const HEARTBEAT_STALE_MS    = 15_000;   // viewer considered "gone" after this
 function _buf(streamId) {
   let b = STREAMS.get(streamId);
   if (!b) {
-    b = { chunks: [], nextSeq: 0, viewers: new Map(), mime: null };
+    // `init` holds the WebM initialisation segment (EBML header +
+    // Tracks) that MediaRecorder emits only in its FIRST blob. It is
+    // pinned outside `chunks` so the rolling window can never evict
+    // it — without it a late-joining viewer gets nothing but mid-
+    // stream clusters and MediaSource buffers forever.
+    b = { chunks: [], nextSeq: 0, viewers: new Map(), mime: null, init: null };
     STREAMS.set(streamId, b);
   }
   return b;
@@ -336,6 +341,13 @@ router.post('/:id/chunk',
           await query('UPDATE streams SET mime_type=$1 WHERE id=$2', [buf.mime, req.params.id]).catch(()=>{});
         }
       }
+      // The broadcaster flags the first blob of each MediaRecorder
+      // session. Only that blob carries the init segment, so we never
+      // guess: after a server restart mid-broadcast, seq 0 of the NEW
+      // buffer is just a mid-stream cluster and must not be latched.
+      if (String(req.headers['x-stream-init'] || '') === '1') {
+        buf.init = req.body;
+      }
       const seq = buf.nextSeq++;
       buf.chunks.push({ seq, ts: Date.now(), body: req.body });
       while (buf.chunks.length > MAX_CHUNKS_PER_STREAM) buf.chunks.shift();
@@ -348,7 +360,11 @@ router.post('/:id/chunk',
           [concurrent, req.params.id]
         ).catch(()=>{});
       }
-      res.json({ ok: true, seq, viewers: concurrent });
+      // need_init tells the broadcaster to restart MediaRecorder so a
+      // fresh init segment is produced — otherwise a server restart
+      // mid-broadcast leaves the stream permanently unplayable for
+      // anyone who wasn't already watching.
+      res.json({ ok: true, seq, viewers: concurrent, need_init: !buf.init });
     } catch (err) { next(err); }
   }
 );
@@ -392,6 +408,10 @@ router.get('/:id/chunks', optionalAuth, async (req, res, next) => {
     if (isNaN(after)) after = -1;
     const out = buf.chunks.filter(c => c.seq > after);
     if (!out.length) return res.status(204).end();
+    // A first-time viewer (no ?after) must receive the init segment
+    // before any cluster, or their MediaSource can't decode a thing.
+    // Skip it when the window still contains seq 0 — that IS the init.
+    const needsInit = after < 0 && buf.init && out[0].seq !== 0;
 
     // Stream payload: each chunk is concatenated; the response header
     // X-Last-Seq tells the viewer where to resume. The header also
@@ -400,7 +420,9 @@ router.get('/:id/chunks', optionalAuth, async (req, res, next) => {
     res.setHeader('X-Last-Seq', String(out[out.length - 1].seq));
     res.setHeader('X-Stream-Mime', buf.mime || stream.mime_type || 'video/webm');
     res.setHeader('Cache-Control', 'no-store');
-    const merged = Buffer.concat(out.map(c => c.body));
+    const bodies = out.map(c => c.body);
+    if (needsInit) bodies.unshift(buf.init);
+    const merged = Buffer.concat(bodies);
     res.send(merged);
   } catch (err) { next(err); }
 });

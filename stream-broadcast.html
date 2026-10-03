@@ -273,6 +273,16 @@ main{padding:calc(var(--nav-h) + 32px) 24px 80px;max-width:var(--max);margin:0 a
     try {
       var r = await fetch('/api/streams/eligible-sessions', { headers: { 'Authorization':'Bearer ' + token } });
       var d = await r.json();
+      // A 401/403 used to fall through to the "none assigned to you"
+      // branch, which sent the broadcaster chasing the wrong problem
+      // (founder report 2026-10-03). Name the real failure.
+      if (!r.ok) {
+        sel.innerHTML = '<option value="">\u2014 ' + (r.status === 401 ? 'Not signed in' : 'Not allowed to broadcast') + ' \u2014</option>';
+        help.textContent = r.status === 401
+          ? 'Your session expired. Sign in again on the website, then reload this page.'
+          : 'This account isn\'t a coach, ambassador or admin, so it can\'t broadcast.';
+        return;
+      }
       var sessions = (d && d.sessions) || [];
       if (!sessions.length) {
         sel.innerHTML = '<option value="">— No streamable sessions assigned to you —</option>';
@@ -360,19 +370,40 @@ main{padding:calc(var(--nav-h) + 32px) 24px 80px;max-width:var(--max);margin:0 a
       audioBitsPerSecond: 96_000,
     });
     STATE.mediaRecorder = rec;
+    // MediaRecorder puts the WebM init segment (EBML header + Tracks) in
+    // its FIRST blob only. The server pins that blob and replays it to
+    // every new viewer — without it, anyone joining after the rolling
+    // window has turned over sees "Connecting to live feed..." forever
+    // (founder report 2026-10-03).
+    STATE.sentInit = false;
     rec.ondataavailable = async function(ev) {
       if (!ev.data || !ev.data.size) return;
       try {
         var buf = await ev.data.arrayBuffer();
-        await fetch('/api/streams/' + encodeURIComponent(STATE.streamId) + '/chunk', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/octet-stream',
-            'X-Stream-Mime': STATE.chunkMime || mime,
-            'Authorization': 'Bearer ' + token,
-          },
-          body: buf,
+        var hdrs = {
+          'Content-Type': 'application/octet-stream',
+          'X-Stream-Mime': STATE.chunkMime || mime,
+          'Authorization': 'Bearer ' + token,
+        };
+        if (!STATE.sentInit) { hdrs['X-Stream-Init'] = '1'; }
+        var r = await fetch('/api/streams/' + encodeURIComponent(STATE.streamId) + '/chunk', {
+          method: 'POST', headers: hdrs, body: buf,
         });
+        if (!STATE.sentInit && r.ok) STATE.sentInit = true;
+        // The server lost its buffer (a deploy/restart mid-broadcast).
+        // Cycle MediaRecorder so it emits a fresh init segment, instead
+        // of streaming clusters nobody can ever decode.
+        var j = await r.json().catch(function(){ return null; });
+        if (j && j.need_init && !STATE.reinitAt) {
+          STATE.reinitAt = Date.now();
+          STATE.sentInit = false;
+          try {
+            rec.stop();
+            setTimeout(function(){
+              try { rec.start(2000); STATE.reinitAt = 0; } catch(e) { STATE.reinitAt = 0; }
+            }, 250);
+          } catch(e) { STATE.reinitAt = 0; }
+        }
       } catch(e) { /* silent — next chunk will retry. */ }
     };
     rec.start(2000);
