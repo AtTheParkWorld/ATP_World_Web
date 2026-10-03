@@ -188,7 +188,11 @@ async function loadCoachExtras(coachRow, res, next) {
       `SELECT s.id, s.name, s.location, s.scheduled_at, s.capacity,
               (SELECT COUNT(*) FROM bookings b WHERE b.session_id=s.id AND b.status='confirmed') AS registered
        FROM sessions s
-       WHERE s.coach_id=$1 AND s.status='upcoming' AND s.scheduled_at > NOW()
+       -- Keep a session listed until it actually ENDS. scheduled_at > NOW()
+       -- dropped it the instant it started, i.e. exactly when the coach
+       -- needs it to check people in or go live (founder, 2026-10-03).
+       WHERE s.coach_id=$1 AND s.status='upcoming'
+         AND COALESCE(s.ends_at, s.scheduled_at + (COALESCE(s.duration_mins, 90) || ' minutes')::interval) > NOW()
        ORDER BY s.scheduled_at ASC LIMIT 6`,
       [coachRow.id]
     ).catch(() => ({ rows: [] }));

@@ -213,7 +213,10 @@ router.get('/:id/upcoming-bookings', authenticate, async (req, res, next) => {
        LEFT JOIN cities c ON c.id = s.city_id
        WHERE b.member_id = $1
          AND b.status = 'confirmed'
-         AND s.scheduled_at > NOW()
+         -- Until it ENDS, not until it starts: this list carries the
+         -- check-in QR, and it used to vanish the moment the session
+         -- began — while the coach was scanning (founder, 2026-10-03).
+         AND COALESCE(s.ends_at, s.scheduled_at + (COALESCE(s.duration_mins, 90) || ' minutes')::interval) > NOW()
        ORDER BY s.scheduled_at ASC
        LIMIT 20`,
       [req.params.id]
