@@ -52,9 +52,22 @@ const ACTIVE_STATUSES = new Set(['active', 'trialing', 'past_due']);
 
 // ── Customer helpers ─────────────────────────────────────────────
 // Get-or-create a Stripe Customer for a member. Stores the id locally
-// so subsequent calls are a no-op DB lookup.
+// so later calls reuse it.
+//
+// A stored id is checked before reuse: the server ran on a Stripe TEST
+// key from May to Aug 2026 and saved test-mode customers for anyone who
+// tried to pay then. Live mode answers "No such customer" for those, so
+// every checkout for those members failed (founder hit it 2026-10-05).
+// A missing or deleted customer is replaced with a fresh one.
 async function ensureCustomer(member) {
-  if (member.stripe_customer_id) return member.stripe_customer_id;
+  if (member.stripe_customer_id) {
+    try {
+      const existing = await stripe().customers.retrieve(member.stripe_customer_id);
+      if (!existing.deleted) return member.stripe_customer_id;
+    } catch (e) {
+      if (e.code !== 'resource_missing') throw e;
+    }
+  }
 
   const customer = await stripe().customers.create({
     email: member.email,
