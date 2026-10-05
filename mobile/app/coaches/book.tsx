@@ -5,6 +5,11 @@
  * the coach's weekly availability windows; sensible 07:00–21:00 fallback
  * when the coach hasn't set any) → optional note → Stripe PaymentSheet.
  *
+ * Coach with no priced offerings → RequestOneOnOne instead: a native
+ * request form posting to POST /coaches/:id/message, the endpoint the
+ * website's "Drop a message" form uses (founder 2026-10-05: booking must
+ * never leave the app). The coach replies by email / their coach inbox.
+ *
  * IMPORTANT: the backend creates a MANUAL-CAPTURE PaymentIntent. A
  * successful PaymentSheet means the card hold is placed — the member is
  * only charged when the coach confirms (they have 72 hours). All success
@@ -16,19 +21,20 @@
  */
 import { useMemo, useState } from 'react';
 import {
-  ActivityIndicator, Alert, Pressable, ScrollView, Text, TextInput, View,
+  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useStripe } from '@stripe/stripe-react-native';
 import Constants from 'expo-constants';
-import { getCoach } from '@/lib/api/coaches';
+import { getCoach, messageCoach, type Coach } from '@/lib/api/coaches';
 import {
   bookCoachSessionWithCard, getPublicOfferings,
   type CoachAvailabilityWindow, type PublicCoachOffering,
 } from '@/lib/api/coachSessions';
 import { LoadError } from '@/lib/components/LoadError';
+import { useAuthStore } from '@/lib/stores/auth.store';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 
 const STRIPE_READY = !!(Constants.expoConfig?.extra as Record<string, unknown> | undefined)?.stripePublishableKey;
@@ -75,18 +81,24 @@ export default function BookCoachSession() {
   const qc = useQueryClient();
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
+  // Same key AND shape as the profile screen (full detail response).
+  // Caching only `r.coach` here used to overwrite the profile's entry,
+  // so the name read "undefined" and the profile blanked on the way back.
   const coachQ = useQuery({
     queryKey: ['coach', coachId],
-    queryFn:  () => getCoach(coachId).then((r) => r.coach),
+    queryFn:  () => getCoach(coachId),
     enabled:  !!coachId,
   });
+  const coach = coachQ.data?.coach;
   const offersQ = useQuery({
     queryKey: ['coach-public-offerings', coachId],
     queryFn:  () => getPublicOfferings(coachId),
     enabled:  !!coachId,
   });
 
-  const offerings    = offersQ.data?.offerings || [];
+  // Priced only — same filter as the coach profile. An AED 0 offering
+  // can't take a card hold, so it must never reach the PaymentSheet.
+  const offerings    = (offersQ.data?.offerings || []).filter((o) => Number(o.price_aed) > 0);
   const availability = offersQ.data?.availability || [];
 
   const [offeringId, setOfferingId] = useState<string | null>(String(params.offering || '') || null);
@@ -119,10 +131,10 @@ export default function BookCoachSession() {
     [offering?.id, dayIdx, offersQ.dataUpdatedAt]
   );
 
-  const coachName = coachQ.data
-    ? (coachQ.data.display_name || `${coachQ.data.first_name} ${coachQ.data.last_name}`)
+  const coachName = coach
+    ? (coach.display_name || `${coach.first_name} ${coach.last_name}`)
     : 'The coach';
-  const coachFirst = coachQ.data?.first_name || 'The coach';
+  const coachFirst = coach?.first_name || 'The coach';
 
   async function onPlaceHold() {
     if (!offering || !slotIso || busy) return;
@@ -223,6 +235,11 @@ export default function BookCoachSession() {
     );
   }
 
+  // ── No bookable offerings → request form ──────────────────────
+  if (offersQ.isSuccess && offerings.length === 0) {
+    return <RequestOneOnOne coachId={coachId} coach={coach} />;
+  }
+
   // ── Booking form ───────────────────────────────────────────────
   return (
     <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>
@@ -231,7 +248,7 @@ export default function BookCoachSession() {
           <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-lg">←</Text>
         </Pressable>
         <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-lg uppercase ml-2">
-          Book 1:1{coachQ.data ? ` · ${coachFirst}` : ''}
+          Book 1:1{coach ? ` · ${coachFirst}` : ''}
         </Text>
       </View>
 
@@ -378,6 +395,213 @@ export default function BookCoachSession() {
           </Pressable>
         </View>
       )}
+    </SafeAreaView>
+  );
+}
+
+// ── Request a 1:1 (coach has no bookable offerings) ──────────────
+
+/** Rough windows only — the coach proposes the exact time in their reply. */
+const WHEN_OPTIONS = ['Weekday mornings', 'Weekday evenings', 'Weekends', "I'm flexible"];
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Replaces the old website hop. Same API as the website's message form:
+ * the coach gets it in their coach inbox + by email and replies by
+ * email; the member gets an emailed copy. Nothing is charged or held.
+ */
+function RequestOneOnOne({ coachId, coach }: { coachId: string; coach?: Coach }) {
+  const me = useAuthStore((s) => s.member);
+  const coachFirst = coach?.first_name || 'The coach';
+  const info = coach?.profile?.private_session_info;
+
+  const [when, setWhen]     = useState<string[]>([]);
+  const [goals, setGoals]   = useState('');
+  const [phone, setPhone]   = useState('');
+  // Apple "hide my email" members can still lack one on the cached row.
+  const [email, setEmail]   = useState(me?.email || '');
+  const [busy, setBusy]     = useState(false);
+  const [sentTo, setSentTo] = useState<string | null>(null);
+
+  const askEmail = !me?.email;
+  const canSend  = goals.trim().length >= 10 && EMAIL_RE.test(email.trim()) && !busy;
+
+  function toggleWhen(opt: string) {
+    setWhen((cur) => (cur.includes(opt) ? cur.filter((w) => w !== opt) : [...cur, opt]));
+  }
+
+  async function onSend() {
+    if (!canSend) return;
+    setBusy(true);
+    try {
+      const lines = ['1:1 session request (sent from the ATP app)'];
+      if (when.length) lines.push(`When suits me: ${when.join(', ')}`);
+      lines.push('', goals.trim());
+      await messageCoach(coachId, {
+        name:       `${me?.first_name || ''} ${me?.last_name || ''}`.trim() || 'ATP member',
+        email:      email.trim(),
+        phone:      phone.trim() || null,
+        subject:    '1:1 session request',
+        message:    lines.join('\n'),
+        source_url: `atp://coaches/${coachId}`,
+      });
+      setSentTo(email.trim());
+    } catch (err) {
+      // 429 (5 requests/hour per coach) arrives with a readable message.
+      Alert.alert('Could not send your request', (err as Error).message || 'Try again.');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  // ── Sent ──
+  if (sentTo) {
+    return (
+      <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>
+        <View className="flex-1 items-center justify-center px-8">
+          <View className="w-20 h-20 rounded-full bg-atp-green/15 border border-atp-green/50 items-center justify-center mb-6">
+            <Text style={{ fontSize: 34 }}>✓</Text>
+          </View>
+          <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-3xl uppercase text-center">
+            Request sent
+          </Text>
+          <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-base text-center mt-4 leading-relaxed">
+            {coachFirst} usually replies within 24 hours, by email to {sentTo}. We've emailed you a copy of your request. Nothing is charged until you agree the session together.
+          </Text>
+          <Pressable
+            onPress={() => router.back()}
+            className="rounded-atp py-4 items-center bg-atp-green active:opacity-80 self-stretch mt-8"
+          >
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.black }} className="text-base uppercase tracking-widest">
+              Done
+            </Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  // ── Form ──
+  return (
+    <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>
+      <View className="px-5 pt-2 pb-3 flex-row items-center border-b border-white/5">
+        <Pressable onPress={() => router.back()} className="py-2 -ml-2 px-2">
+          <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-lg">←</Text>
+        </Pressable>
+        <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-lg uppercase ml-2">
+          Request 1:1{coach ? ` · ${coachFirst}` : ''}
+        </Text>
+      </View>
+
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+        <ScrollView contentContainerStyle={{ paddingBottom: 140 }} automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled">
+          <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm px-5 mt-5 leading-relaxed">
+            {coachFirst} arranges 1:1 sessions personally. Tell them what you're after and when suits you — they'll reply with times and price.
+          </Text>
+          {!!info && (
+            <View className="mx-5 mt-4 bg-atp-dark border border-white/10 rounded-atp p-4">
+              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-[11px] uppercase tracking-widest mb-1">
+                Private sessions
+              </Text>
+              <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm leading-relaxed">
+                {info}
+              </Text>
+            </View>
+          )}
+
+          {/* 1 — when */}
+          <View className="px-5 mt-6">
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-2">
+              1 · When suits you?
+            </Text>
+            <View className="flex-row flex-wrap gap-2">
+              {WHEN_OPTIONS.map((opt) => {
+                const active = when.includes(opt);
+                return (
+                  <Pressable
+                    key={opt}
+                    onPress={() => toggleWhen(opt)}
+                    className={`rounded-atp px-3.5 py-2 border ${active ? 'bg-atp-green border-atp-green' : 'bg-atp-dark border-white/10'} active:opacity-80`}
+                  >
+                    <Text style={{ fontFamily: fontFamily.bodyBold, color: active ? colors.black : colors.white }} className="text-xs">
+                      {opt}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+
+          {/* 2 — goals */}
+          <View className="px-5 mt-6">
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-2">
+              2 · What do you want to work on?
+            </Text>
+            <TextInput
+              value={goals}
+              onChangeText={setGoals}
+              placeholder="Goals, injuries, experience level…"
+              placeholderTextColor={colors.muted}
+              multiline
+              maxLength={1500}
+              style={{ fontFamily: fontFamily.body, color: colors.white, minHeight: 96, textAlignVertical: 'top' }}
+              className="bg-atp-dark border border-white/10 rounded-atp px-4 py-3 text-sm"
+            />
+          </View>
+
+          {/* 3 — contact */}
+          <View className="px-5 mt-6">
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-2">
+              3 · Phone / WhatsApp (optional)
+            </Text>
+            <TextInput
+              value={phone}
+              onChangeText={setPhone}
+              placeholder="+971 50 …"
+              placeholderTextColor={colors.muted}
+              keyboardType="phone-pad"
+              maxLength={40}
+              style={{ fontFamily: fontFamily.body, color: colors.white }}
+              className="bg-atp-dark border border-white/10 rounded-atp px-4 py-3 text-sm"
+            />
+            {askEmail && (
+              <TextInput
+                value={email}
+                onChangeText={setEmail}
+                placeholder="Your email (for the coach's reply)"
+                placeholderTextColor={colors.muted}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                maxLength={255}
+                style={{ fontFamily: fontFamily.body, color: colors.white }}
+                className="bg-atp-dark border border-white/10 rounded-atp px-4 py-3 text-sm mt-2"
+              />
+            )}
+          </View>
+
+          <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs px-5 mt-5 leading-relaxed">
+            Nothing is charged now. {coachFirst} replies by email{askEmail ? '' : ` to ${email}`}, and you agree the time and price together.
+          </Text>
+        </ScrollView>
+      </KeyboardAvoidingView>
+
+      {/* Sticky CTA */}
+      <View className="absolute bottom-0 left-0 right-0 px-5 pb-7 pt-3 bg-atp-black border-t border-white/5">
+        <Pressable
+          onPress={onSend}
+          disabled={!canSend}
+          className={`rounded-atp py-4 items-center ${canSend ? 'bg-atp-green active:opacity-80' : 'bg-atp-dark-3'}`}
+        >
+          {busy ? (
+            <ActivityIndicator color={colors.black} />
+          ) : (
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: canSend ? colors.black : colors.muted }} className="text-base uppercase tracking-widest">
+              {goals.trim().length >= 10 ? 'Send request' : 'Tell the coach your goals'}
+            </Text>
+          )}
+        </Pressable>
+      </View>
     </SafeAreaView>
   );
 }

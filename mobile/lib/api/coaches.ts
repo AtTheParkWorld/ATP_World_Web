@@ -105,6 +105,25 @@ export function rateCoach(id: string, input: { rating: number; comment?: string 
   return api.post(`/coaches/${id}/feedback`, input);
 }
 
+/**
+ * Start a conversation with a coach — POST /coaches/:id/message, the
+ * same endpoint the website's "Drop a message" form uses. It's how a
+ * member asks for a 1:1 when the coach has no bookable offerings: the
+ * coach gets it in their app inbox (/coach/threads) + by email, and the
+ * member gets an email copy with a link to the thread. name, email and
+ * message (10–4000 chars) are required; 5 new threads/hour per coach+email.
+ */
+export function messageCoach(id: string, input: {
+  name:        string;
+  email:       string;
+  message:     string;
+  phone?:      string | null;
+  subject?:    string | null;
+  source_url?: string | null;
+}): Promise<{ success?: boolean; thread_id?: string; thread_url?: string }> {
+  return api.post(`/coaches/${id}/message`, input);
+}
+
 /** Admin or the coach themself. Soft-delete: the comment disappears but
  *  the star score still counts toward the average. */
 export function deleteCoachFeedback(coachId: string, feedbackId: string): Promise<{ success?: boolean; note?: string }> {
