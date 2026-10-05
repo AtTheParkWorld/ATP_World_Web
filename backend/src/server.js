@@ -417,6 +417,15 @@ app.get(['/partners', '/partners.html'], (req, res) => res.redirect(302, '/corpo
 // is a wasted click.
 app.get(['/business', '/business.html'], (req, res) => res.redirect(302, '/corporate'));
 
+// Addresses from the old website, retired at the 2026-10-02 domain
+// switch. The old Play app (com.atthepark.app) still links to them —
+// Google flagged it because its account-deletion link (/contact-us)
+// started returning 404 — and so do old emails and search results.
+// 301: the old addresses are gone for good.
+app.get(['/contact-us', '/contact'], (req, res) => res.redirect(301, '/contacts.html'));
+app.get('/privacy-policy', (req, res) => res.redirect(301, '/privacy.html'));
+app.get(['/delete-account', '/account-deletion'], (req, res) => res.redirect(301, '/delete-account.html'));
+
 // HTML pages must never be cached (so deploys propagate immediately).
 // JS/CSS/assets get a sensible short cache. Bundles use content-hash
 // invalidation via ?cb=… cache-busters in the page templates.
