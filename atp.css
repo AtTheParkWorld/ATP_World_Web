@@ -1346,11 +1346,15 @@ body { max-width: 100vw; }
 /* — G · Modal mobile fit —
    Legacy modals often used max-width:400px + 20px margin, which gets
    too small on phones. Below 560px, take the full viewport with a small
-   safe-area-respecting margin. */
+   safe-area-respecting margin.
+   .auth-card is deliberately NOT in this list (founder report 11,
+   2026-10-05): it is the in-page form card on /join, not a modal. The
+   forced 100vw-24px width + 12px margins, inside the page's 16px side
+   padding, made the login/sign-up form 32px wider than the phone and
+   cut the inputs and LOG IN button off on the right. */
 @media (max-width: 560px) {
   .modal-content,
   .modal-card,
-  .auth-card,
   .qr-modal-content,
   .o-modal-card {
     max-width: calc(100vw - 24px) !important;
