@@ -46,6 +46,8 @@ export interface Comment {
   last_name: string;
   avatar_url: string | null;
   is_deleted?: boolean;
+  /** Set on replies — the top-level comment this reply belongs to. */
+  parent_id?: string | number | null;
 }
 
 export interface FeedParams {
@@ -111,14 +113,24 @@ export async function getComments(postId: string | number): Promise<{ comments: 
   return { comments: res.comments.map((c) => ({ ...c, post_id: postId })) };
 }
 
-export async function createComment(postId: string | number, content: string): Promise<{ comment: Comment }> {
+export async function createComment(
+  postId: string | number,
+  content: string,
+  parentId?: string | number | null,
+): Promise<{ comment: Comment }> {
   // 201 payload is { comment: <comments RETURNING *> } — id, post_id,
   // member_id, parent_id, content, likes_count, is_deleted, created_at.
   // No author join: fill first_name / last_name / avatar_url from the
   // signed-in member (the commenter IS the signed-in member) so the
   // declared Comment shape holds for optimistic renders.
+  //
+  // parentId makes it a reply. Pass the comment actually being answered
+  // (top-level or a reply) — the server files it under the top-level
+  // comment and notifies the person answered.
   type Wire = Omit<Comment, 'first_name' | 'last_name' | 'avatar_url'>;
-  const res = await api.post<{ comment: Wire }>(`/community/posts/${postId}/comments`, { content });
+  const body: Record<string, unknown> = { content };
+  if (parentId != null) body.parent_id = parentId;
+  const res = await api.post<{ comment: Wire }>(`/community/posts/${postId}/comments`, body);
   const me = useAuthStore.getState().member;
   return {
     comment: {

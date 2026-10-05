@@ -481,17 +481,26 @@ router.post('/posts/:id/like', authenticate, async (req, res, next) => {
 });
 
 // ── GET /api/community/posts/:id/comments ────────────────────
+// Flat, oldest first. Replies carry parent_id (the top-level comment
+// they belong to); the web and the app group them into threads.
 router.get('/posts/:id/comments', optionalAuth, async (req, res, next) => {
   try {
-    const { rows } = await query(
-      `SELECT c.id, c.content, c.likes_count, c.parent_id, c.created_at,
+    const sql = (parentCol) =>
+      `SELECT c.id, c.content, c.likes_count, ${parentCol} AS parent_id, c.created_at,
               m.id AS member_id, m.first_name, m.last_name, m.avatar_url
        FROM comments c
        JOIN members m ON m.id = c.member_id
        WHERE c.post_id=$1 AND c.is_deleted=false
-       ORDER BY c.created_at ASC`,
-      [req.params.id]
-    );
+       ORDER BY c.created_at ASC`;
+    let rows;
+    try {
+      ({ rows } = await query(sql('c.parent_id'), [req.params.id]));
+    } catch (e) {
+      // 42703 = comments.parent_id missing on a database older than the
+      // boot migration — serve the comments unthreaded, never fail.
+      if (e.code !== '42703') throw e;
+      ({ rows } = await query(sql('NULL::uuid'), [req.params.id]));
+    }
     res.json({ comments: rows });
   } catch (err) { next(err); }
 });
@@ -499,10 +508,47 @@ router.get('/posts/:id/comments', optionalAuth, async (req, res, next) => {
 // ── POST /api/community/posts/:id/comments ───────────────────
 // Rulebook ref: R-PO-007 (OQ-28) banned-word screen applies to
 // comments too.
+//
+// Replies (founder 2026-10-05): body.parent_id = the comment being
+// answered. One level of threading — a reply to a reply is filed under
+// the same top-level comment, but the notification goes to the person
+// actually answered. parent_id was accepted before but never checked;
+// it must now be a live comment on THIS post.
 router.post('/posts/:id/comments', authenticate, async (req, res, next) => {
   try {
     const { content, parent_id } = req.body;
     if (!content) return res.status(400).json({ error: 'Content required' });
+
+    let parentId = null;          // top-level comment the reply hangs off
+    let repliedToMemberId = null; // author of the comment answered
+    if (parent_id != null && parent_id !== '') {
+      if (!UUID_RE.test(String(parent_id))) {
+        return res.status(400).json({ error: 'Invalid comment to reply to.', code: 'COMMENT_PARENT_INVALID' });
+      }
+      let parent;
+      try {
+        ({ rows: [parent] } = await query(
+          'SELECT id, post_id, parent_id, member_id, is_deleted FROM comments WHERE id=$1',
+          [parent_id]
+        ));
+      } catch (e) {
+        if (e.code !== '42703') throw e;
+        // No parent_id column yet (pre-migration DB): still validate.
+        ({ rows: [parent] } = await query(
+          'SELECT id, post_id, NULL::uuid AS parent_id, member_id, is_deleted FROM comments WHERE id=$1',
+          [parent_id]
+        ));
+      }
+      if (!parent || parent.is_deleted ||
+          String(parent.post_id).toLowerCase() !== String(req.params.id).toLowerCase()) {
+        return res.status(404).json({
+          error: 'The comment you are replying to is no longer there.',
+          code:  'COMMENT_PARENT_NOT_FOUND',
+        });
+      }
+      parentId = parent.parent_id || parent.id;
+      repliedToMemberId = parent.member_id;
+    }
 
     const hit = await moderation.checkContent(content);
     if (hit) {
@@ -513,16 +559,29 @@ router.post('/posts/:id/comments', authenticate, async (req, res, next) => {
       });
     }
 
-    const { rows } = await query(
-      `INSERT INTO comments (post_id, member_id, content, parent_id)
-       VALUES ($1,$2,$3,$4) RETURNING *`,
-      [req.params.id, req.member.id, content, parent_id || null]
-    );
+    let rows;
+    try {
+      ({ rows } = await query(
+        `INSERT INTO comments (post_id, member_id, content, parent_id)
+         VALUES ($1,$2,$3,$4) RETURNING *`,
+        [req.params.id, req.member.id, content, parentId]
+      ));
+    } catch (e) {
+      // 42703: no parent_id column yet — keep the words, lose the thread.
+      if (e.code !== '42703') throw e;
+      ({ rows } = await query(
+        `INSERT INTO comments (post_id, member_id, content)
+         VALUES ($1,$2,$3) RETURNING *`,
+        [req.params.id, req.member.id, content]
+      ));
+    }
     await query('UPDATE posts SET comments_count=comments_count+1 WHERE id=$1', [req.params.id]);
 
     // Theme 14 — notify the post author when someone comments on their
     // post. Never notify yourself for commenting on your own post.
     // Snippet of the comment is included in the notification body.
+    // When the post author is the person being replied to, they get the
+    // "replied to your comment" notification below instead of both.
     query(
       `INSERT INTO notifications (member_id, type, title, body, data)
        SELECT p.member_id, 'post_commented',
@@ -530,10 +589,28 @@ router.post('/posts/:id/comments', authenticate, async (req, res, next) => {
               LEFT($3, 120),
               $4
        FROM posts p, members m
-       WHERE p.id = $1 AND m.id = $2 AND p.member_id <> $2`,
+       WHERE p.id = $1 AND m.id = $2 AND p.member_id <> $2
+         AND p.member_id IS DISTINCT FROM $5::uuid`,
       [req.params.id, req.member.id, content,
-       JSON.stringify({ post_id: req.params.id, comment_id: rows[0].id, commenter_id: req.member.id })]
+       JSON.stringify({ post_id: req.params.id, comment_id: rows[0].id, commenter_id: req.member.id }),
+       repliedToMemberId]
     ).catch(function(e){ console.warn('[community] post_commented notif failed', e.message); });
+
+    // Replies — tell the person answered (never yourself). Same in-app
+    // notification as above; post_id in data deep-links to the thread.
+    if (repliedToMemberId && repliedToMemberId !== req.member.id) {
+      query(
+        `INSERT INTO notifications (member_id, type, title, body, data)
+         SELECT $1, 'comment_replied',
+                COALESCE(NULLIF(TRIM(m.first_name || ' ' || m.last_name), ''), 'Someone') || ' replied to your comment',
+                LEFT($3, 120),
+                $4
+         FROM members m
+         WHERE m.id = $2`,
+        [repliedToMemberId, req.member.id, content,
+         JSON.stringify({ post_id: req.params.id, comment_id: rows[0].id, parent_id: parentId, commenter_id: req.member.id })]
+      ).catch(function(e){ console.warn('[community] comment_replied notif failed', e.message); });
+    }
 
     res.status(201).json({ comment: rows[0] });
   } catch (err) { next(err); }

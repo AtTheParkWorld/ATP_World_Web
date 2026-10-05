@@ -1020,6 +1020,16 @@ async function _ensureBootSchema() {
     await query(`ALTER TABLE posts ADD COLUMN IF NOT EXISTS tagged_member_ids JSONB NOT NULL DEFAULT '[]'::jsonb`);
   } catch (e) { console.warn('[boot] posts tagged_member_ids column:', e.message); }
 
+  // Comment replies (founder 2026-10-05) — one level of threading via
+  // comments.parent_id. schema.sql has had the column from day one, so
+  // on production this is a no-op; it only guards an older database.
+  // Additive and idempotent. routes/community.js also falls back on
+  // 42703 so comments keep working even if this ever fails.
+  try {
+    await query(`ALTER TABLE comments ADD COLUMN IF NOT EXISTS parent_id UUID REFERENCES comments(id) ON DELETE CASCADE`);
+    await query(`CREATE INDEX IF NOT EXISTS idx_comments_parent ON comments(parent_id)`);
+  } catch (e) { console.warn('[boot] comments parent_id column:', e.message); }
+
   // Session name templates (Phase 1.35.1)
   try {
     await query(`CREATE TABLE IF NOT EXISTS session_templates (

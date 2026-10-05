@@ -12,9 +12,15 @@
  *
  * If a deep-link lands here without a feed cache hit, we still show
  * the comments thread; the screen header just shows a stub.
+ *
+ * Replies (founder 2026-10-05): one level of threading. Tap Reply on a
+ * comment → the composer shows "Replying to Name" and the new comment
+ * carries parent_id. Replies render indented under their top-level
+ * comment; replying to a reply joins the same thread (the server hangs
+ * it off the top-level comment) and pre-fills "@Name ".
  */
-import { useEffect, useState } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { Alert, FlatList, KeyboardAvoidingView, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -27,9 +33,39 @@ import {
   type Post,
   type Comment,
 } from '@/lib/api/community';
+import { ActionSheet } from '@/lib/components/ActionSheet';
 import { PostCard } from '@/lib/components/PostCard';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { useAuthStore } from '@/lib/stores/auth.store';
+
+interface ThreadRow { comment: Comment; isReply: boolean }
+
+/**
+ * Oldest-first flat list → top-level comments, each followed by its
+ * replies. A reply is grouped under the top of its parent chain; one
+ * whose parent was deleted (hidden by the API) shows as top-level.
+ */
+function threadComments(list: Comment[]): ThreadRow[] {
+  const byId = new Map(list.map((c) => [String(c.id), c]));
+  const rootOf = (c: Comment): string => {
+    let cur = c;
+    for (let i = 0; i < 10 && cur.parent_id != null && byId.has(String(cur.parent_id)); i++) {
+      cur = byId.get(String(cur.parent_id))!;
+    }
+    return String(cur.id);
+  };
+  const replies = new Map<string, Comment[]>();
+  const top: Comment[] = [];
+  for (const c of list) {
+    const root = rootOf(c);
+    if (root === String(c.id)) top.push(c);
+    else replies.set(root, [...(replies.get(root) ?? []), c]);
+  }
+  return top.flatMap((c) => [
+    { comment: c, isReply: false },
+    ...(replies.get(String(c.id)) ?? []).map((r) => ({ comment: r, isReply: true })),
+  ]);
+}
 
 export default function PostDetail() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -52,11 +88,26 @@ export default function PostDetail() {
     enabled:  !!postId,
   });
 
+  const rows = useMemo(() => threadComments(commentsQ.data || []), [commentsQ.data]);
+
   const [draft, setDraft] = useState('');
+  const [replyTo, setReplyTo] = useState<{ id: string | number; name: string } | null>(null);
+  const inputRef = useRef<TextInput>(null);
+
+  function onReply(c: Comment, isReply: boolean) {
+    const first = (c.first_name || '').trim();
+    setReplyTo({ id: c.id, name: `${first} ${c.last_name || ''}`.trim() || 'this comment' });
+    // Inside a thread every reply sits at the same indent, so say who
+    // you're answering.
+    if (isReply && first) setDraft((d) => (d.trim() ? d : `@${first} `));
+    inputRef.current?.focus();
+  }
+
   const submitCommentMu = useMutation({
-    mutationFn: () => createComment(postId, draft.trim()),
+    mutationFn: () => createComment(postId, draft.trim(), replyTo?.id),
     onSuccess: () => {
       setDraft('');
+      setReplyTo(null);
       qc.invalidateQueries({ queryKey: ['comments', postId] });
       // Bump the post's comment count optimistically in feed cache.
       qc.setQueryData<Post[] | undefined>(['feed'], (xs) =>
@@ -92,17 +143,12 @@ export default function PostDetail() {
     },
   });
 
-  function onReportPress() {
-    Alert.alert(
-      'Report this post?',
-      'A moderator will review it within 24 hours.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Spam',         onPress: () => reportMu.mutate('spam') },
-        { text: 'Harassment',   onPress: () => reportMu.mutate('harassment') },
-        { text: 'Inappropriate', onPress: () => reportMu.mutate('inappropriate') },
-      ]
-    );
+  // "⋯" report menu — was a 4-button Alert: Android shows at most three
+  // buttons (dropping "Inappropriate") and BACK couldn't dismiss it.
+  const [reportOpen, setReportOpen] = useState(false);
+  function report(reason: 'spam' | 'harassment' | 'inappropriate') {
+    setReportOpen(false);
+    reportMu.mutate(reason);
   }
 
   return (
@@ -114,12 +160,16 @@ export default function PostDetail() {
         <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-lg uppercase">
           Post
         </Text>
-        <Pressable onPress={onReportPress} className="py-2 px-2">
+        <Pressable onPress={() => setReportOpen(true)} hitSlop={8} accessibilityLabel="Post options" className="py-2 px-2">
           <Text style={{ fontFamily: fontFamily.body, color: colors.muted }}>⋯</Text>
         </Pressable>
       </View>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+      {/* behavior="padding" on both platforms — Android is edge-to-edge,
+          where the OS no longer shrinks the window for the keyboard, so
+          `undefined` left the composer under it (same fix as the DM
+          thread, founder 2026-10-05). */}
+      <KeyboardAvoidingView behavior="padding" className="flex-1">
         <FlatList
           ListHeaderComponent={
             <View className="px-5 pt-3 pb-2">
@@ -137,13 +187,16 @@ export default function PostDetail() {
               </Text>
             </View>
           }
-          data={commentsQ.data || []}
-          keyExtractor={(c) => String(c.id)}
+          data={rows}
+          keyExtractor={(r) => String(r.comment.id)}
+          keyboardShouldPersistTaps="handled"
           renderItem={({ item }) => (
             <CommentRow
-              comment={item}
-              canDelete={me?.id === item.member_id || me?.id === post?.member_id}
-              onDelete={() => deleteCommentMu.mutate(item.id)}
+              comment={item.comment}
+              isReply={item.isReply}
+              canDelete={me?.id === item.comment.member_id || me?.id === post?.member_id}
+              onDelete={() => deleteCommentMu.mutate(item.comment.id)}
+              onReply={() => onReply(item.comment, item.isReply)}
             />
           )}
           ListEmptyComponent={
@@ -157,11 +210,22 @@ export default function PostDetail() {
         />
 
         {/* Composer */}
-        <View className="px-3 pb-3 pt-2 border-t border-white/5 flex-row items-end gap-2">
+        {!!replyTo && (
+          <View className="px-4 pt-2 flex-row items-center border-t border-white/5">
+            <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs flex-1" numberOfLines={1}>
+              Replying to <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }}>{replyTo.name}</Text>
+            </Text>
+            <Pressable onPress={() => setReplyTo(null)} hitSlop={10} accessibilityLabel="Cancel reply" className="px-2 py-1">
+              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-sm">✕</Text>
+            </Pressable>
+          </View>
+        )}
+        <View className={`px-3 pb-3 pt-2 flex-row items-end gap-2 ${replyTo ? '' : 'border-t border-white/5'}`}>
           <TextInput
+            ref={inputRef}
             value={draft}
             onChangeText={setDraft}
-            placeholder="Add a comment…"
+            placeholder={replyTo ? 'Write a reply…' : 'Add a comment…'}
             placeholderTextColor={colors.muted}
             multiline
             className="flex-1 bg-atp-dark border border-white/10 rounded-atp px-3 py-2"
@@ -178,13 +242,37 @@ export default function PostDetail() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      <ActionSheet
+        visible={reportOpen}
+        title="Report this post?"
+        message="A moderator will review it within 24 hours."
+        actions={[
+          { label: 'Spam',          onPress: () => report('spam') },
+          { label: 'Harassment',    onPress: () => report('harassment') },
+          { label: 'Inappropriate', onPress: () => report('inappropriate') },
+        ]}
+        onClose={() => setReportOpen(false)}
+      />
     </SafeAreaView>
   );
 }
 
-function CommentRow({ comment, canDelete, onDelete }: { comment: Comment; canDelete: boolean; onDelete: () => void }) {
+function CommentRow({ comment, isReply, canDelete, onDelete, onReply }: {
+  comment: Comment;
+  isReply: boolean;
+  canDelete: boolean;
+  onDelete: () => void;
+  onReply: () => void;
+}) {
   return (
-    <View className="px-5 py-3 border-b border-white/5">
+    <View
+      className="pr-5 py-3 border-b border-white/5"
+      // Replies indent under their comment with a thread line.
+      style={isReply
+        ? { marginLeft: 36, paddingLeft: 12, borderLeftWidth: 2, borderLeftColor: 'rgba(255,255,255,0.08)' }
+        : { paddingLeft: 20 }}
+    >
       <View className="flex-row items-center gap-2">
         <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">
           {comment.first_name} {comment.last_name}
@@ -196,13 +284,20 @@ function CommentRow({ comment, canDelete, onDelete }: { comment: Comment; canDel
       <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm mt-1 leading-relaxed">
         {comment.content}
       </Text>
-      {canDelete && (
-        <Pressable onPress={onDelete} className="self-start mt-1.5">
-          <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.danger }} className="text-xs uppercase tracking-widest">
-            Delete
+      <View className="flex-row items-center gap-5 mt-1.5">
+        <Pressable onPress={onReply} hitSlop={8} className="active:opacity-60">
+          <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest">
+            Reply
           </Text>
         </Pressable>
-      )}
+        {canDelete && (
+          <Pressable onPress={onDelete} hitSlop={8} className="active:opacity-60">
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.danger }} className="text-xs uppercase tracking-widest">
+              Delete
+            </Text>
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }

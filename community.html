@@ -162,6 +162,14 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .comment-action{font-size:11px;font-weight:600;color:var(--muted);background:none;border:none;cursor:pointer;transition:color .2s;padding:0}
 .comment-action:hover{color:var(--green)}
 .comment-reply{background:var(--dark3);border-radius:0 12px 12px 12px;padding:7px 12px;margin-top:6px;font-size:12px;color:var(--light);font-style:italic}
+/* Replies (founder 2026-10-05): one level of threading, indented under
+   the comment they answer, with the reply box at the end of the thread. */
+.comment-body{min-width:0}
+.comment-replies{margin-top:10px;padding-left:10px;border-left:2px solid rgba(255,255,255,.06)}
+.comment.is-reply{margin-bottom:10px}
+.comment.is-reply .comment-av{width:24px;height:24px;font-size:10px}
+.reply-to{font-size:11px;color:var(--muted);margin-top:4px}
+.reply-to strong{color:var(--green);font-weight:700}
 .comment-input-wrap{display:flex;gap:8px;margin-top:8px}
 .comment-input{flex:1;background:var(--dark3);border:1px solid rgba(255,255,255,.08);border-radius:20px;padding:8px 14px;color:var(--white);font-size:12px;font-family:var(--ff-body);transition:border-color .2s}
 .comment-input:focus{outline:none;border-color:rgba(168,255,0,.4)}
@@ -948,32 +956,55 @@ function buildPostCard(post) {
   // signed out).
   var _currentMemberId = (window.ATP && window.ATP.getUser && window.ATP.getUser() && window.ATP.getUser().memberId) || null;
   var _ONE_HOUR_MS = 60 * 60 * 1000;
-  var commentsHtml = post.comments.map(function(c,ci) {
-    var replies = c.replies && c.replies.length ?
-      c.replies.map(function(r){
-        return '<div class="comment-reply"><strong>'+escapeHtml(r.author)+':</strong> '+escapeHtml(r.text)+'</div>';
-      }).join("") : "";
+  // Replies (founder 2026-10-05): "Reply" used to prompt() and push the
+  // text onto the page only — never saved, gone on reload — and was keyed
+  // on _pid (0 for every real post), so it usually did nothing at all.
+  // Now each top-level comment renders its saved replies indented below
+  // it, and Reply opens a real reply box at the end of that thread.
+  // Comment actions are keyed on the real ids (_rid / c.realId).
+  var replyTo = post.replyTo || null;
+  function _commentHtml(c, isReply, ci) {
     var isMine = _currentMemberId && c.member_id && c.member_id === _currentMemberId;
     var inWindow = c.created_at && (Date.now() - new Date(c.created_at).getTime()) < _ONE_HOUR_MS;
     var deleteBtn = (isMine && inWindow && c.realId)
-      ? '<button class="comment-action" style="color:#ef4444" onclick="deleteComment(\''+escapeHtml(post.realId||'')+'\',\''+escapeHtml(c.realId)+'\','+_pid+','+ci+')">Delete</button>'
+      ? '<button class="comment-action" style="color:#ef4444" onclick="deleteComment(\''+_rid+'\',\''+escapeHtml(c.realId)+'\')">Delete</button>'
       : '';
-    return '<div class="comment">'+
+    var replyBtn = c.realId
+      ? '<button class="comment-action" onclick="replyComment(\''+_rid+'\',\''+escapeHtml(c.realId)+'\')">Reply</button>'
+      : '';
+    var thread = '';
+    if (!isReply) {
+      var repliesHtml = (c.replies || []).map(function(r){ return _commentHtml(r, true); }).join('');
+      var box = (replyTo && c.realId && replyTo.rootId === c.realId) ?
+        '<div class="reply-to">Replying to <strong>'+escapeHtml(replyTo.name)+'</strong> · '+
+          '<button class="comment-action" onclick="cancelReply(\''+_rid+'\')">Cancel</button></div>'+
+        '<div class="comment-input-wrap">'+
+          '<input class="comment-input" id="rinput-'+_rid+'" type="text" placeholder="Write a reply…" value="'+escapeHtml(replyTo.prefill||'')+'" onkeydown="if(event.key==\'Enter\')sendReply(\''+_rid+'\');else if(event.key==\'Escape\')cancelReply(\''+_rid+'\')" aria-label="Write a reply…">'+
+          '<button class="comment-send" onclick="sendReply(\''+_rid+'\')" aria-label="Send reply">'+
+            '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 8l12-6-5 12-2-5-5-1z"/></svg>'+
+          '</button>'+
+        '</div>' : '';
+      if (repliesHtml || box) thread = '<div class="comment-replies">'+repliesHtml+box+'</div>';
+    }
+    return '<div class="comment'+(isReply ? ' is-reply' : '')+'">'+
       '<div class="comment-av">'+escapeHtml(c.av)+'</div>'+
       '<div class="comment-body">'+
         '<div class="comment-bubble">'+
           '<div class="comment-author">'+escapeHtml(c.author)+'</div>'+
           '<div class="comment-text">'+escapeHtml(c.text)+'</div>'+
         '</div>'+
-        replies+
         '<div class="comment-actions">'+
-          '<button class="comment-action" onclick="likeComment('+_pid+','+ci+',this)">Like</button>'+
-          '<button class="comment-action" onclick="replyComment('+_pid+','+ci+',this)">Reply</button>'+
+          (isReply ? '' : '<button class="comment-action" onclick="likeComment('+_pid+','+ci+',this)">Like</button>')+
+          replyBtn+
           deleteBtn+
         '</div>'+
+        thread+
       '</div>'+
     '</div>';
-  }).join("");
+  }
+  var commentsHtml = post.comments.map(function(c,ci) { return _commentHtml(c, false, ci); }).join("");
+  // Count replies too, so the number matches the app and comments_count.
+  var _commentTotal = post.comments.reduce(function(n, c){ return n + 1 + ((c.replies && c.replies.length) || 0); }, 0);
 
   var showComments = post.comments.length > 0;
   return '<div class="post-card" id="post-'+_pid+'">'+
@@ -1008,7 +1039,7 @@ function buildPostCard(post) {
       '</button>'+
       '<button class="post-action-btn" onclick="toggleComments('+_pid+')">'+
         '<svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M14 5c0-1.7-1.3-3-3-3H5C3.3 2 2 3.3 2 5v3c0 1.7 1.3 3 3 3h1v2.5L8.5 11H11c1.7 0 3-1.3 3-3V5z"/></svg>'+
-        post.comments.length+
+        _commentTotal+
       '</button>'+
       '<div class="share-dropdown">'+
         '<button class="post-action-btn" onclick="toggleShare(\''+_rid+'\')">'+
@@ -1076,19 +1107,20 @@ function toggleComments(id) {
     if (post && post.realId && !post.commentsLoaded) {
       post.commentsLoaded = true;
       apiGet('/community/posts/' + post.realId + '/comments').then(function(data){
-        post.comments = (data.comments || []).map(function(c){
+        post.comments = threadComments((data.comments || []).map(function(c){
           return {
             av: initials(c.first_name, c.last_name),
             author: (c.first_name || '') + (c.last_name ? ' ' + c.last_name : ''),
             text: c.content || '',
             replies: [],
             realId: c.id,
+            parentId: c.parent_id || null,
             // R-CM-003 (OQ-29): carry author id + created_at so the
             // renderer can decide whether to show the 1h Delete button.
             member_id: c.member_id || null,
             created_at: c.created_at || null,
           };
-        });
+        }));
         renderPosts();
         var re = document.getElementById("comments-"+id);
         if (re) re.style.display = 'block';
@@ -1144,16 +1176,23 @@ function addComment(id) {
 // R-CM-003 (OQ-29): delete an own comment within the 1h window.
 // Optimistic remove + rollback on failure so the UI is snappy. The
 // server enforces the same 1h rule + ownership check.
-async function deleteComment(postRealId, commentRealId, postLocalId, commentIdx) {
+//
+// Keyed on the real ids (founder 2026-10-05): it used to look the post
+// up by _pid, which is 0 for every real post, so Delete did nothing.
+// Works for replies too. Deleting a comment leaves its replies on the
+// server; they show as ordinary comments on the next load.
+async function deleteComment(postRealId, commentRealId) {
   if (!postRealId || !commentRealId) return;
   if (!confirm('Delete this comment? Comments can only be deleted within 1 hour of posting.')) return;
-  var post = POSTS.find(function(p){return p.id===postLocalId;});
-  if (!post) return;
+  var post = findPostByRealId(postRealId);
+  var found = post && findComment(post, commentRealId);
+  if (!found) return;
+  var commentIdx = found.index;
   // Snapshot so we can roll back if the server refuses.
-  var removed = post.comments.splice(commentIdx, 1)[0];
+  var removed = found.list.splice(commentIdx, 1)[0];
   post.commentsCount = Math.max(0, (post.commentsCount || 0) - 1);
   renderPosts();
-  setTimeout(function(){ var el=document.getElementById("comments-"+postLocalId); if(el && removed) el.style.display="block"; },10);
+  setTimeout(function(){ var el=document.getElementById("comments-"+postRealId); if(el) el.style.display="block"; },10);
 
   try {
     var token = localStorage.getItem('atp_token') || '';
@@ -1165,7 +1204,7 @@ async function deleteComment(postRealId, commentRealId, postLocalId, commentIdx)
     if (!r.ok && !j.idempotent) throw new Error(j.error || 'Delete failed');
   } catch (e) {
     // Rollback the optimistic remove.
-    post.comments.splice(commentIdx, 0, removed);
+    found.list.splice(commentIdx, 0, removed);
     post.commentsCount = (post.commentsCount || 0) + 1;
     renderPosts();
     alert('Could not delete comment: ' + (e.message || e));
@@ -1174,14 +1213,117 @@ async function deleteComment(postRealId, commentRealId, postLocalId, commentIdx)
 
 function likeComment(postId, ci, btn) { btn.textContent = btn.textContent==="Like" ? "Liked ✓" : "Like"; }
 
-function replyComment(postId, ci, btn) {
-  var post = POSTS.find(function(p){return p.id===postId;});
-  var reply = prompt("Reply to "+post.comments[ci].author+":");
-  if(!reply) return;
-  post.comments[ci].replies = post.comments[ci].replies || [];
-  post.comments[ci].replies.push({av:"FM",author:"You",text:reply});
+// ── Comment replies (founder 2026-10-05) ──────────────────────
+// One level of threading. The API returns comments flat (oldest first)
+// with parent_id on replies; threadComments() files each reply under the
+// top of its parent chain. A reply whose parent was deleted (the API
+// hides deleted comments) simply shows as a normal comment.
+function threadComments(list) {
+  var byId = {};
+  list.forEach(function(c){ c.replies = []; if (c.realId) byId[c.realId] = c; });
+  var top = [];
+  list.forEach(function(c){
+    var root = c, guard = 0;
+    while (root.parentId && byId[root.parentId] && guard++ < 10) root = byId[root.parentId];
+    if (root === c) top.push(c); else root.replies.push(c);
+  });
+  return top;
+}
+
+function findPostByRealId(id) {
+  return POSTS.find(function(p){ return String(p.realId || p.id) === String(id); });
+}
+
+// → { comment, root, list, index } for a top-level comment or a reply.
+function findComment(post, commentId) {
+  for (var i = 0; i < post.comments.length; i++) {
+    var c = post.comments[i];
+    if (c.realId === commentId) return { comment: c, root: c, list: post.comments, index: i };
+    var rs = c.replies || [];
+    for (var j = 0; j < rs.length; j++) {
+      if (rs[j].realId === commentId) return { comment: rs[j], root: c, list: rs, index: j };
+    }
+  }
+  return null;
+}
+
+function _openComments(postId) {
+  var el = document.getElementById("comments-"+postId);
+  if (el) el.style.display = "block";
+}
+
+function replyComment(postId, commentId) {
+  if (typeof isApiLoggedIn === 'function' && !isApiLoggedIn()) {
+    if (typeof openAuth === 'function') openAuth('login');
+    return;
+  }
+  var post = findPostByRealId(postId);
+  var found = post && findComment(post, commentId);
+  if (!found) return;
+  var first = String(found.comment.author || '').trim().split(' ')[0];
+  post.replyTo = {
+    rootId:   found.root.realId,      // thread the reply is shown in
+    targetId: found.comment.realId,   // comment answered (gets notified)
+    name:     found.comment.author || 'this comment',
+    // Inside a thread every reply sits at the same indent, so say who
+    // you're answering.
+    prefill:  (found.comment !== found.root && first) ? '@' + first + ' ' : '',
+  };
   renderPosts();
-  setTimeout(function(){document.getElementById("comments-"+postId).style.display="block";},10);
+  _openComments(postId);
+  var input = document.getElementById("rinput-"+postId);
+  if (input) {
+    input.focus();
+    var n = input.value.length;
+    try { input.setSelectionRange(n, n); } catch(e) {}
+  }
+}
+
+function cancelReply(postId) {
+  var post = findPostByRealId(postId);
+  if (!post) return;
+  post.replyTo = null;
+  renderPosts();
+  _openComments(postId);
+}
+
+function sendReply(postId) {
+  var post = findPostByRealId(postId);
+  if (!post || !post.realId || !post.replyTo) return;
+  var input = document.getElementById("rinput-"+postId);
+  var txt = input ? input.value.trim() : '';
+  if (!txt) return;
+  var rt = post.replyTo;
+  if (input) input.disabled = true;
+  apiPost('/community/posts/' + post.realId + '/comments', { content: txt, parent_id: rt.targetId })
+    .then(function(data){
+      var me = null;
+      try { me = JSON.parse(localStorage.getItem('atp:user') || 'null'); } catch(e){}
+      var myId = (window.ATP && window.ATP.getUser && window.ATP.getUser() && window.ATP.getUser().memberId) || null;
+      var c = (data && data.comment) || {};
+      var item = {
+        av: me ? initials(me.first_name, me.last_name) : 'Y',
+        author: me ? ((me.first_name || 'You') + (me.last_name ? ' ' + me.last_name : '')) : 'You',
+        text: txt,
+        replies: [],
+        realId: c.id,
+        parentId: c.parent_id || rt.rootId,
+        member_id: c.member_id || myId,
+        created_at: c.created_at || new Date().toISOString(),
+      };
+      var root = findComment(post, rt.rootId);
+      if (root) root.root.replies.push(item); else post.comments.push(item);
+      post.commentsCount = (post.commentsCount || 0) + 1;
+      post.replyTo = null;
+      renderPosts();
+      _openComments(postId);
+    })
+    .catch(function(err){
+      if (input) input.disabled = false;
+      alert(err && err.message === 'HTTP 404'
+        ? 'That comment is no longer there, so the reply could not be posted.'
+        : 'Could not post your reply: ' + (err && err.message ? err.message : 'Please try again.'));
+    });
 }
 
 function sendFriendReq(id) {
@@ -1826,7 +1968,8 @@ buildPostCard = function(post) {
   if (post.commentsCount != null && post.comments.length === 0 && post.commentsCount > 0) {
     // Replace ONLY the comment button's trailing "0" with the real count.
     // The base template ends the comment <button> with "</svg>" then the count then "</button>".
-    var needle = 'toggleComments(' + post.id + ')';
+    // The button calls toggleComments('<real id>') — quoted string.
+    var needle = "toggleComments('" + post.id + "')";
     var idx = html.indexOf(needle);
     if (idx !== -1) {
       var svgEnd = html.indexOf('</svg>', idx);
