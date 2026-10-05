@@ -8,12 +8,12 @@
  *   - Long-press     → report sheet
  *   - Media posts    → Share (native sheet with the media URL) and
  *                      Save (download to cache → camera roll via
- *                      expo-media-library, write-only permission)
+ *                      expo-media-library/legacy, write-only permission)
  *
  * Comment count + relative time render statelessly.
  */
 import { useState } from 'react';
-import { ActivityIndicator, Alert, Image, Platform, Pressable, Share, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Linking, Platform, Pressable, Share, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import * as FileSystem from 'expo-file-system/legacy';
@@ -22,14 +22,28 @@ import * as FileSystem from 'expo-file-system/legacy';
 // component on any binary built before it was added (e.g. testers still
 // on an older OTA-updated build). Loading it on demand lets the rest of
 // the card work everywhere and degrades Save gracefully.
-type MediaLibraryModule = typeof import('expo-media-library');
+//
+// It MUST be the '/legacy' entry. Since SDK 57 the package root is the
+// new class-based API, and its saveToLibraryAsync is a stub that always
+// throws "Method saveToLibraryAsync imported from expo-media-library is
+// deprecated" — every Save failed with that text (founder 2026-10-05).
+// The legacy entry talks to the same native binary, so this is OTA-safe.
+type MediaLibraryModule = typeof import('expo-media-library/legacy');
 function loadMediaLibrary(): MediaLibraryModule | null {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
-    return require('expo-media-library') as MediaLibraryModule;
+    return require('expo-media-library/legacy') as MediaLibraryModule;
   } catch {
     return null;
   }
+}
+
+// The camera roll files the asset by its extension, so keep the real one
+// (.png / .webp / .mov …) rather than forcing .jpg / .mp4.
+function mediaExtension(url: string, isVideo: boolean): string {
+  const m = /\.(jpe?g|png|webp|heic|gif|mp4|mov|m4v)(\?|#|$)/i.exec(url);
+  if (m?.[1]) return `.${m[1].toLowerCase()}`;
+  return isVideo ? '.mp4' : '.jpg';
 }
 import type { Post } from '@/lib/api/community';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
@@ -125,6 +139,8 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
   async function onSavePress() {
     if (!mediaUrl || !media0 || saving) return;
     setSaving(true);
+    const isVideo = isVideoMedia(media0);
+    const what = isVideo ? 'video' : 'photo';
     try {
       const MediaLibrary = loadMediaLibrary();
       if (!MediaLibrary) {
@@ -132,21 +148,36 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
         return;
       }
       // writeOnly — we only ever ADD to the camera roll, never read it.
+      // iOS asks for "add photos only"; Android 13+ needs no runtime
+      // permission to add media, and 12 and below ask for storage.
       const perm = await MediaLibrary.requestPermissionsAsync(true);
       if (!perm.granted) {
         Alert.alert(
           'Allow photo access',
-          'To save this to your camera roll, allow photo access for ATP in Settings.',
+          `To save this ${what}, allow ATP to add to your photos in Settings.`,
+          [
+            { text: 'Not now', style: 'cancel' },
+            { text: 'Open Settings', onPress: () => { Linking.openSettings().catch(() => {}); } },
+          ],
+          { cancelable: true },
         );
         return;
       }
-      const isVideo = isVideoMedia(media0);
-      const target = `${FileSystem.cacheDirectory}atp-post-${String(post.id)}${isVideo ? '.mp4' : '.jpg'}`;
+      const target = `${FileSystem.cacheDirectory}atp-post-${String(post.id)}${mediaExtension(mediaUrl, isVideo)}`;
       const dl = await FileSystem.downloadAsync(mediaUrl, target);
+      // downloadAsync resolves on 404/500 too — don't hand an error page
+      // to the camera roll as if it were the photo.
+      if (dl.status < 200 || dl.status >= 300) {
+        Alert.alert('Could not save', `We couldn't download this ${what}. Check your connection and try again.`);
+        return;
+      }
       await MediaLibrary.saveToLibraryAsync(dl.uri);
       Alert.alert('Saved 💚', isVideo ? 'Video saved to your camera roll.' : 'Photo saved to your camera roll.');
     } catch (err) {
-      Alert.alert('Could not save', (err as Error).message || 'Try again.');
+      // Raw native messages ("deprecated…", "E_NO_PERMISSIONS"…) mean
+      // nothing to a member — keep them in the log, show plain words.
+      console.warn('[PostCard] save to camera roll failed:', err);
+      Alert.alert('Could not save', `Something went wrong saving this ${what}. Please try again.`);
     } finally {
       setSaving(false);
     }
