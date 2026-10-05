@@ -15,18 +15,16 @@
 const { query } = require('../db');
 
 // ── EDIT THE WELCOME HERE ─────────────────────────────────────
-// {first_name} becomes the member's first name ("there" when we don't
-// have a real one). Blank lines split paragraphs in the email.
+// Fredy's own words (2026-10-05). A {first_name} placeholder is still
+// supported if it is ever added back ("there" when we have no real
+// name). Blank lines split paragraphs in the email.
 const FOUNDER_WELCOME_MESSAGE =
-  "Hey {first_name}, welcome to At The Park!\n\n" +
-  "I started ATP around three words: Never Train Alone. Today we're a " +
-  "community training together outdoors in Dubai, Al Ain, Abu Dhabi and " +
-  "Muscat — and now you're part of it.\n\n" +
-  "Find your tribe — Better, Faster or Stronger — then book your first " +
-  "free session and just show up. No experience needed. Come as you are, " +
-  "leave with friends.\n\n" +
-  "See you at the park!\n" +
-  "— Coach Fredy, founder of At The Park";
+  "Welcome to ATP World!\n\n" +
+  "A community where we move together, grow together, and inspire each " +
+  "other to be better every day.\n\n" +
+  "This is your community. This is your journey.\n\n" +
+  "Never Train Alone.\n\n" +
+  "Coach Fredy";
 
 /** Email heading for the same note. */
 const FOUNDER_WELCOME_TITLE = 'A message from Coach Fredy';

@@ -60,23 +60,24 @@ const settle = () => new Promise((r) => setTimeout(r, 50));
 afterEach(() => { vi.restoreAllMocks(); });
 
 describe('welcome text', () => {
-  it('greets the member by first name and is signed by Coach Fredy', () => {
+  it('is Fredy\'s note, signed Coach Fredy, with no placeholder left', () => {
     const t = welcome.welcomeText('Sara');
-    expect(t.startsWith('Hey Sara,')).toBe(true);
-    expect(t).toMatch(/— Coach Fredy, founder of At The Park$/);
+    expect(t.startsWith('Welcome to ATP World!')).toBe(true);
+    expect(t).toMatch(/Never Train Alone\.\n\nCoach Fredy$/);
     expect(t).not.toMatch(/\{first_name\}/);
   });
 
-  it('falls back to "there" for missing or placeholder names', () => {
-    for (const n of [undefined, '', '  ', 'Member', 'Friend']) {
-      expect(welcome.welcomeText(n).startsWith('Hey there,')).toBe(true);
+  it('still fills a {first_name} placeholder if one is added back', () => {
+    const orig = welcome.FOUNDER_WELCOME_MESSAGE;
+    expect(orig.replace(/\{first_name\}/g, 'x')).toBe(orig); // none today
+    for (const n of [undefined, '', 'Member', 'Friend']) {
+      expect(welcome.welcomeText(n)).toBe(orig);
     }
   });
 
-  it('stays short (60–90 words)', () => {
+  it('stays short (40 words or fewer)', () => {
     const words = welcome.FOUNDER_WELCOME_MESSAGE.split(/\s+/).filter((w) => /\w/.test(w)).length;
-    expect(words).toBeGreaterThanOrEqual(60);
-    expect(words).toBeLessThanOrEqual(90);
+    expect(words).toBeLessThanOrEqual(40);
   });
 });
 
@@ -88,7 +89,7 @@ describe('sendWelcomeMessage', () => {
     expect(await welcome.sendWelcomeMessage(memberId, 'Sara')).toEqual({ skipped: 'already_sent' });
     expect(store.messages).toHaveLength(1);
     expect(store.messages[0].sender_id).toBe(FOUNDER);
-    expect(store.messages[0].content.startsWith('Hey Sara,')).toBe(true);
+    expect(store.messages[0].content.startsWith('Welcome to ATP World!')).toBe(true);
   });
 
   it('falls back to the longest-standing admin when Fredy\'s account is missing', async () => {
@@ -118,7 +119,7 @@ describe('POST /api/auth/register — founder welcome', () => {
     const conv = store.conversations[0];
     expect([conv.a, conv.b]).toContain(res.body.member.id);
     expect([conv.a, conv.b]).toContain(FOUNDER);
-    expect(store.messages[0].content.startsWith('Hey Sara,')).toBe(true);
+    expect(store.messages[0].content.startsWith('Welcome to ATP World!')).toBe(true);
   });
 
   it('still signs the member up when the welcome insert throws', async () => {
