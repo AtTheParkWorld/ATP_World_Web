@@ -3,10 +3,12 @@ import { WEB_BASE } from '@/lib/api/client';
  * Coach detail. Hero photo, headline, bio, specialties, rating.
  * Reads from the nested coach response (profile/social/stats sub-objects).
  *
- * 1:1 booking: coaches with active priced offerings get the native
- * "Book & pay by card" flow (/coaches/book — Stripe card HOLD, coach
- * confirms within 72h). Coaches without offerings fall back to the
- * web booking link.
+ * 1:1 booking stays in the app (founder 2026-10-05 — the old fallback
+ * opened the website). Everything goes to /coaches/book, which picks:
+ *   · priced offerings → "Book & pay by card" (Stripe card HOLD, coach
+ *     confirms within 72h)
+ *   · no offerings, but the coach takes private sessions → a native
+ *     request form posting to the same API as the website's message form
  */
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
@@ -226,16 +228,12 @@ export default function CoachDetail() {
       </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Sticky CTA — native card-hold booking when the coach has
-          priced offerings; web fallback otherwise. */}
-      {((offerings.length > 0) || (!!c?.slug && profile?.accepts_private_sessions)) && (
+      {/* Sticky CTA — always the native screen: card-hold booking when
+          the coach has priced offerings, a request form otherwise. */}
+      {((offerings.length > 0) || !!profile?.accepts_private_sessions) && (
         <View className="absolute bottom-0 left-0 right-0 px-5 pb-7 pt-3 bg-atp-black border-t border-white/5">
           <Pressable
-            onPress={() =>
-              offerings.length > 0
-                ? router.push(`/coaches/book?coach=${coachId}`)
-                : Linking.openURL(`${WEB_BASE}/coach/${c!.slug}?book=1`)
-            }
+            onPress={() => router.push(`/coaches/book?coach=${coachId}`)}
             className="rounded-atp py-4 items-center bg-atp-green active:opacity-80"
           >
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.black }} className="text-base uppercase tracking-widest">

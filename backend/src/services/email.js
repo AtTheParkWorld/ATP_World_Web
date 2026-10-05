@@ -134,9 +134,17 @@ async function sendWelcome(member, opts) {
       </div>
     `;
   }
+  // Coach Fredy's welcome note — the same text the new member gets as a
+  // message in the app (founder 2026-10-05), so the wording is edited in
+  // ONE place: services/welcomeMessage.js.
+  const { welcomeText, FOUNDER_WELCOME_TITLE } = require('./welcomeMessage');
+  const founderNote = welcomeText(member.first_name)
+    .split(/\n{2,}/)
+    .map((para) => `<p>${escapeHtml(para).replace(/\n/g, '<br>')}</p>`)
+    .join('');
   const html = baseTemplate(`
-    <h1>Welcome, ${escapeHtml(member.first_name)}! 🎉</h1>
-    <p>You are now an official ATP member. Every session is free. The community is waiting.</p>
+    <h1>${escapeHtml(FOUNDER_WELCOME_TITLE)}</h1>
+    ${founderNote}
     ${discountBlock}
     <p>Here's what you can do right now:</p>
     <div class="stat">

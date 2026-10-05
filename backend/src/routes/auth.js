@@ -186,11 +186,6 @@ router.post('/register', async (req, res, next) => {
     const member = rows[0];
     const token  = generateJWT(member.id);
 
-    // Founder request 15 (2026-10-03): a warm welcome DM from the founders
-    // so a new member's inbox is not empty. Fire-and-forget — signup must
-    // never fail because the welcome could not be delivered.
-    sendWelcomeMessage(member.id, member.first_name).catch(function(){});
-
     // Theme 4 / #19 — record referral relationship + award referrer's signup
     // bonus, AND copy the referrer's tribe to the new member. Awaited so
     // the /api/auth/me response right after registration sees tribe_id set.
@@ -224,6 +219,11 @@ router.post('/register', async (req, res, next) => {
       member.welcome_discount_code = welcome.code;
       member.welcome_discount_expires_at = welcome.expires_at;
     }
+
+    // Coach Fredy's welcome DM (founder requests 15 + 2026-10-05).
+    // Fire-and-forget: signup must never fail because the welcome could
+    // not be delivered.
+    sendWelcomeMessage(member.id, member.first_name).catch(function(){});
 
     // Send welcome email (now with the discount code baked in)
     await emailService.sendWelcome(member, { welcome });
@@ -483,7 +483,7 @@ router.post('/apple', async (req, res, next) => {
         ['TEMP', firstName, lastName, safeEmail]
       );
       member = ins[0];
-      // New Apple account — same founder welcome as the email path (15).
+      // New Apple account — same founder welcome as the email path.
       sendWelcomeMessage(member.id, member.first_name).catch(function(){});
       const mn = generateMemberNumber(member.id);
       await query('UPDATE members SET member_number=$1 WHERE id=$2', [mn, member.id]);
@@ -829,8 +829,6 @@ router.post('/google', async (req, res, next) => {
           return newRows[0];
         });
         member = result;
-        // New Google account — same founder welcome as the other paths (15).
-        sendWelcomeMessage(member.id, member.first_name).catch(function(){});
         // Issue welcome discount before the email (best-effort)
         let welcome = null;
         try { welcome = await welcomeDiscount.issueWelcomeDiscount(member); }
@@ -839,6 +837,8 @@ router.post('/google', async (req, res, next) => {
           member.welcome_discount_code = welcome.code;
           member.welcome_discount_expires_at = welcome.expires_at;
         }
+        // New Google account — same founder welcome as the email path.
+        sendWelcomeMessage(member.id, member.first_name).catch(function(){});
         await emailService.sendWelcome(member, { welcome });
       }
     }
