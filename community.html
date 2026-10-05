@@ -1018,12 +1018,12 @@ function buildPostCard(post) {
         '</button>'+
         '<div class="share-menu" id="share-'+_rid+'">'+
           '<button class="share-item" onclick="shareWhatsApp(\''+_rid+'\')"><div class="share-item-icon" style="background:#25d366">💬</div>Share on WhatsApp</button>'+
-          // Download + native Share only make sense on media posts —
-          // text-only cards keep just WhatsApp + Copy link.
+          // Native Share sends the post page link, so every post gets it;
+          // Download only makes sense on media posts.
+          // Lucide "share-2" + "download" — exact geometry so these
+          // line up with the rest of the icon set (app + web).
+          '<button class="share-item" onclick="sharePostNative(\''+_rid+'\')"><div class="share-item-icon" style="background:rgba(168,255,0,.14)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98"/><path d="m15.41 6.51-6.83 3.98"/></svg></div>Share…</button>'+
           (post.media && post.media.length ?
-            // Lucide "share-2" + "download" — exact geometry so these
-            // line up with the rest of the icon set (app + web).
-            '<button class="share-item" onclick="sharePostNative(\''+_rid+'\')"><div class="share-item-icon" style="background:rgba(168,255,0,.14)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.59 13.51 6.83 3.98"/><path d="m15.41 6.51-6.83 3.98"/></svg></div>Share…</button>'+
             '<button class="share-item" onclick="downloadMedia(\''+_rid+'\')"><div class="share-item-icon" style="background:rgba(255,255,255,.08)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" x2="12" y1="15" y2="3"/></svg></div>Download</button>'
             : '')+
           '<button class="share-item" onclick="copyPostLink(\''+_rid+'\')"><div class="share-item-icon" style="background:rgba(255,255,255,.08)">🔗</div>Copy link</button>'+
@@ -1250,8 +1250,21 @@ function atpToast(msg) {
   _toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2600);
 }
 
+// Public share page for a post (/p/<id>): link preview + open-in-app.
+// Always the brand domain so previews read atthepark.world even when
+// the page is open on the Render host; localhost keeps its own origin.
 function _postPageLink(id) {
-  return window.location.origin + '/community.html#post-' + id;
+  var h = window.location.hostname;
+  var origin = (h === 'localhost' || h === '127.0.0.1') ? window.location.origin : 'https://atthepark.world';
+  return origin + '/p/' + encodeURIComponent(id);
+}
+
+// "“<caption excerpt>” — see it on At The Park: <url>" — same copy as the app.
+function _shareText(id) {
+  var post = _findPost(id);
+  var t = Array.from(String((post && post.text) || '').replace(/\s+/g, ' ').trim());
+  var ex = t.length > 100 ? t.slice(0, 100).join('').replace(/\s+\S*$/, '') + '…' : t.join('');
+  return ex ? '“' + ex + '” — see it on At The Park: ' : 'Check this out on At The Park: ';
 }
 
 function _copyToClipboard(txt) {
@@ -1266,23 +1279,19 @@ function _copyToClipboard(txt) {
 }
 
 function shareWhatsApp(id) {
-  var post = _findPost(id);
-  var text = encodeURIComponent("Check this out on ATP Community: "+((post && post.text)||"")+"\n"+_postPageLink(id));
+  var text = encodeURIComponent(_shareText(id) + _postPageLink(id));
   window.open("https://wa.me/?text="+text,"_blank");
 }
 
 // Native share — navigator.share where the browser supports it
-// (mobile Safari/Chrome), copy-link + toast everywhere else.
+// (mobile Safari/Chrome), copy-link + toast everywhere else. Shares the
+// post page, never the raw media file.
 function sharePostNative(id) {
-  var post = _findPost(id);
-  var mediaUrl = (post && post.media && post.media.length && post.media[0].src)
-    ? new URL(post.media[0].src, window.location.origin).href
-    : null;
-  var url = mediaUrl || _postPageLink(id);
+  var url = _postPageLink(id);
   if (navigator.share) {
     navigator.share({
-      title: 'ATP Community',
-      text:  (post && post.text) || 'Check this out on ATP Community',
+      title: 'At The Park',
+      text:  _shareText(id).replace(/:\s*$/, ''),
       url:   url,
     }).catch(function(err){
       // User dismissing the sheet is not an error worth surfacing.
