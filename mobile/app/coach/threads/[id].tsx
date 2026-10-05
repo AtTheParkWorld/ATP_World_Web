@@ -4,7 +4,7 @@
  * reply in-app or pick up the phone.
  */
 import { useState } from 'react';
-import { Alert, FlatList, KeyboardAvoidingView, Linking, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, KeyboardAvoidingView, Linking, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -58,7 +58,10 @@ export default function CoachThreadScreen() {
         </View>
       </View>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+      {/* padding on both platforms — Android is edge-to-edge, so the OS
+          no longer shrinks the window for the keyboard and `undefined`
+          left the reply box under it (same fix as the DM thread). */}
+      <KeyboardAvoidingView behavior="padding" className="flex-1">
         {/* Contact pill row */}
         {!!thread && (
           <View className="flex-row gap-2 px-3 py-3 border-b border-white/5">

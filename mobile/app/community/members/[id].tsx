@@ -29,6 +29,7 @@ import {
   type Friendship,
   type FriendBadge,
 } from '@/lib/api/friends';
+import { ActionSheet, type SheetAction } from '@/lib/components/ActionSheet';
 import { Avatar } from '@/lib/components/Avatar';
 import { BadgeDetail } from '@/lib/components/BadgeDetail';
 import { rarityLabel, type Achievement } from '@/lib/api/achievements';
@@ -146,11 +147,44 @@ export default function MemberProfile() {
       qc.invalidateQueries({ queryKey: ['friends'] });
       router.back();
     },
+    onError: (err) => Alert.alert('Could not block', (err as Error).message || 'Try again.'),
   });
   const reportMu = useMutation({
     mutationFn: (reason: string) => reportMember(memberId, reason),
     onSuccess: () => Alert.alert('Reported', 'Thanks. A moderator will review within 24 hours.'),
+    onError: (err) => Alert.alert('Report failed', (err as Error).message || 'Try again.'),
   });
+
+  // "⋯" menu (founder 2026-10-05): was a chain of Android Alerts that
+  // BACK could not dismiss. One ActionSheet now walks the steps.
+  // Step is kept separately from visibility so the sheet doesn't flick
+  // back to "Member actions" while it slides away after a choice.
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menu, setMenu] = useState<'actions' | 'reason' | 'block'>('actions');
+  const openMenu = () => { setMenu('actions'); setMenuOpen(true); };
+  const closeMenu = () => setMenuOpen(false);
+  const menuSheet: { title: string; message?: string; actions: SheetAction[] } =
+    menu === 'reason' ? {
+      title: 'Report this member',
+      message: 'Why are you reporting them? A moderator will review within 24 hours.',
+      actions: [
+        { label: 'Harassment',    onPress: () => { closeMenu(); reportMu.mutate('harassment'); } },
+        { label: 'Impersonation', onPress: () => { closeMenu(); reportMu.mutate('impersonation'); } },
+        { label: 'Spam',          onPress: () => { closeMenu(); reportMu.mutate('spam'); } },
+      ],
+    } : menu === 'block' ? {
+      title: 'Block this member?',
+      message: 'They won\'t be able to see your posts or message you. You can unblock later from Settings.',
+      actions: [
+        { label: 'Block', destructive: true, onPress: () => { closeMenu(); blockMu.mutate(); } },
+      ],
+    } : {
+      title: 'Member actions',
+      actions: [
+        { label: 'Report this member', onPress: () => setMenu('reason') },
+        { label: 'Block', destructive: true, onPress: () => setMenu('block') },
+      ],
+    };
 
   const m = memberQ.data;
   const tColor = tribeColor(m?.tribe_slug);
@@ -166,29 +200,9 @@ export default function MemberProfile() {
         </Text>
         {!isMe && (
           <Pressable
-            onPress={() => {
-              Alert.alert('Member actions', undefined, [
-                { text: 'Report this member', onPress: () => {
-                    Alert.alert('Reason?', undefined, [
-                      { text: 'Cancel', style: 'cancel' },
-                      { text: 'Harassment',    onPress: () => reportMu.mutate('harassment') },
-                      { text: 'Impersonation', onPress: () => reportMu.mutate('impersonation') },
-                      { text: 'Spam',          onPress: () => reportMu.mutate('spam') },
-                    ]);
-                  } },
-                { text: 'Block', style: 'destructive', onPress: () => {
-                    Alert.alert(
-                      'Block this member?',
-                      'They won\'t be able to see your posts or message you. You can unblock later from Settings.',
-                      [
-                        { text: 'Cancel', style: 'cancel' },
-                        { text: 'Block', style: 'destructive', onPress: () => blockMu.mutate() },
-                      ]
-                    );
-                  } },
-                { text: 'Cancel', style: 'cancel' },
-              ]);
-            }}
+            onPress={openMenu}
+            hitSlop={8}
+            accessibilityLabel="Member actions"
             className="py-2 px-2"
           >
             <Text style={{ fontFamily: fontFamily.body, color: colors.muted }}>⋯</Text>
@@ -301,7 +315,8 @@ export default function MemberProfile() {
                             [
                               { text: 'Keep', style: 'cancel' },
                               { text: 'Unfriend', style: 'destructive', onPress: () => unfriendMu.mutate() },
-                            ]
+                            ],
+                            { cancelable: true },  // Android: BACK / tap outside dismisses
                           )}
                           className="bg-atp-dark-3 rounded-atp py-3 items-center active:opacity-80"
                         >
@@ -445,6 +460,13 @@ export default function MemberProfile() {
         contentContainerStyle={{ paddingBottom: 60 }}
       />
       <BadgeDetail badge={openBadge} onClose={() => setOpenBadge(null)} />
+      <ActionSheet
+        visible={menuOpen}
+        title={menuSheet.title}
+        message={menuSheet.message}
+        actions={menuSheet.actions}
+        onClose={closeMenu}
+      />
     </SafeAreaView>
   );
 }

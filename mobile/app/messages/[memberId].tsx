@@ -8,11 +8,12 @@
  * trigger an immediate refetch on push payload.
  */
 import { useRef, useState } from 'react';
-import { Alert, FlatList, Image, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, Image, KeyboardAvoidingView, Pressable, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getThread, sendMessage, reportMessage } from '@/lib/api/messages';
+import { ActionSheet } from '@/lib/components/ActionSheet';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
@@ -42,18 +43,20 @@ export default function DMThread() {
     onError: (err) => Alert.alert('Could not send', (err as Error).message || 'Try again.'),
   });
 
+  // Report sheet — was a 4-button Alert; Android shows at most three
+  // buttons (the last reason vanished) and BACK couldn't dismiss it.
+  const [reporting, setReporting] = useState<string | number | null>(null);
   function onLongPress(messageId: string | number, senderId: string) {
     if (senderId === me?.id) return;  // can't report your own message
-    Alert.alert(
-      'Report this message?',
-      'A moderator will review it within 24 hours.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        { text: 'Spam',         onPress: () => reportMessage(messageId, 'spam').then(() => Alert.alert('Reported', 'Thanks.')) },
-        { text: 'Harassment',   onPress: () => reportMessage(messageId, 'harassment').then(() => Alert.alert('Reported', 'Thanks.')) },
-        { text: 'Inappropriate', onPress: () => reportMessage(messageId, 'inappropriate').then(() => Alert.alert('Reported', 'Thanks.')) },
-      ]
-    );
+    setReporting(messageId);
+  }
+  function report(reason: 'spam' | 'harassment' | 'inappropriate') {
+    const messageId = reporting;
+    setReporting(null);
+    if (messageId == null) return;
+    reportMessage(messageId, reason)
+      .then(() => Alert.alert('Reported', 'Thanks.'))
+      .catch((err) => Alert.alert('Report failed', (err as Error).message || 'Try again.'));
   }
 
   const messages = q.data || [];
@@ -73,7 +76,15 @@ export default function DMThread() {
         </Pressable>
       </View>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+      {/* behavior="padding" on BOTH platforms (founder 2026-10-05: on
+          Android the keyboard covered the input). The app is edge-to-edge
+          on Android (SDK 54+), and in that mode the OS no longer shrinks
+          the window for the keyboard (adjustResize is a no-op), so
+          `undefined` left the composer under it. padding lifts it by the
+          measured overlap — it settles to 0 if a device does resize. No
+          offset: there is no navigator header, and this view's own y
+          already includes the safe-area top and the custom header. */}
+      <KeyboardAvoidingView behavior="padding" className="flex-1">
         <FlatList
           ref={listRef}
           data={reversed}
@@ -139,6 +150,18 @@ export default function DMThread() {
           </Pressable>
         </View>
       </KeyboardAvoidingView>
+
+      <ActionSheet
+        visible={reporting !== null}
+        title="Report this message?"
+        message="A moderator will review it within 24 hours."
+        actions={[
+          { label: 'Spam',          onPress: () => report('spam') },
+          { label: 'Harassment',    onPress: () => report('harassment') },
+          { label: 'Inappropriate', onPress: () => report('inappropriate') },
+        ]}
+        onClose={() => setReporting(null)}
+      />
     </SafeAreaView>
   );
 }
