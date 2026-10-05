@@ -29,6 +29,8 @@ function timeAgo(iso: string | null): string {
 
 /** Where a notification should take you, when its payload knows. */
 function notifTarget(n: AppNotification): string | null {
+  // Coach Fredy's welcome ends with "book your first free session".
+  if (n.type === 'founder_welcome') return '/(tabs)/sessions';
   let d = n.data;
   if (typeof d === 'string') { try { d = JSON.parse(d); } catch { d = null; } }
   if (!d) return null;
@@ -177,8 +179,13 @@ export default function Inbox() {
                       {item.title}
                     </Text>
                   )}
+                  {/* The founder's welcome is a letter — show all of it. */}
                   {!!item.body && (
-                    <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-xs mt-0.5" numberOfLines={3}>
+                    <Text
+                      style={{ fontFamily: fontFamily.body, color: colors.light }}
+                      className="text-xs mt-0.5"
+                      numberOfLines={item.type === 'founder_welcome' ? undefined : 3}
+                    >
                       {item.body}
                     </Text>
                   )}
