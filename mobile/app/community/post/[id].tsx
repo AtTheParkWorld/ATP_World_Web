@@ -6,12 +6,10 @@
  *   - Bottom: comments list (oldest first) + sticky composer
  *
  * Comments load lazily; the post itself is hydrated from the feed
- * cache if we have it, otherwise refetched from /community/posts/:id
- * (which doesn't exist as a single-post endpoint — we rely on the
- * feed cache for the post object).
- *
- * If a deep-link lands here without a feed cache hit, we still show
- * the comments thread; the screen header just shows a stub.
+ * cache if we have it, otherwise fetched from /community/posts/:id —
+ * the path for shared /p/<id> links and push taps, which land here
+ * with no feed loaded. If that fetch fails too (deleted, blocked, or a
+ * backend without the endpoint) the comments still show under a stub.
  */
 import { useEffect, useState } from 'react';
 import { Alert, FlatList, KeyboardAvoidingView, Platform, Pressable, Text, TextInput, View } from 'react-native';
@@ -19,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  getPost,
   getComments,
   createComment,
   deleteComment,
@@ -45,6 +44,17 @@ export default function PostDetail() {
       || (qc.getQueryData<Post[]>(['me-posts']) || []).find((p) => p.id === postId);
     if (fromCache) setPost(fromCache);
   }, [qc, postId]);
+
+  // Cache miss (deep link / push): load the post itself.
+  const postQ = useQuery({
+    queryKey: ['post', postId],
+    queryFn:  () => getPost(postId).then(r => r.post),
+    enabled:  !!postId && !post,
+    retry:    false,
+  });
+  useEffect(() => {
+    if (postQ.data && !post) setPost(postQ.data);
+  }, [postQ.data, post]);
 
   const commentsQ = useQuery({
     queryKey: ['comments', postId],
@@ -128,7 +138,7 @@ export default function PostDetail() {
               ) : (
                 <View className="bg-atp-dark border border-white/5 rounded-atp p-4">
                   <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-sm">
-                    Post not loaded. Pull to refresh after returning to Feed.
+                    {postQ.isLoading ? 'Loading…' : "This post isn't available."}
                   </Text>
                 </View>
               )}

@@ -62,6 +62,11 @@ export function getFeed(params: FeedParams = {}): Promise<{ posts: Post[] }> {
   return api.get(`/community/feed${qs ? `?${qs}` : ''}`);
 }
 
+/** One post, same shape as a feed row — 404 when deleted or blocked. */
+export function getPost(postId: string | number): Promise<{ post: Post }> {
+  return api.get(`/community/posts/${encodeURIComponent(String(postId))}`);
+}
+
 export function getMyPosts(limit = 20): Promise<{ posts: Post[] }> {
   return api.get(`/community/me/posts?limit=${limit}`);
 }

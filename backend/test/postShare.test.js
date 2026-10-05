@@ -151,3 +151,12 @@ describe('GET /p/:id — escaping', () => {
     expect(res.text).toContain('style="--tc:#A8FF00"');
   });
 });
+
+describe('GET /api/community/posts/:id', () => {
+  // Backs the app's post screen when a /p/:id link opens it cold.
+  it('malformed id is a 404 without a DB call', async () => {
+    const res = await request(app).get('/api/community/posts/not-a-uuid');
+    expect(res.status).toBe(404);
+    expect(res.body.error).toBeTruthy();
+  });
+});
