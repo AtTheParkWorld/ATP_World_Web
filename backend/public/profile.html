@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="stylesheet" href="/atp.min.css?v=b6898a0fa2">
+  <link rel="stylesheet" href="/atp.min.css?v=6e112e3c3a">
   <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
-  <script src="/atp.bundle.min.js?v=9aa477bb55"></script>
+  <script src="/atp.bundle.min.js?v=477c6d2ecc"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -2456,8 +2456,14 @@ function loadMyPosts() {
             // SECURITY: attribute-escape so a malicious url with `"` can't
             // break out of src="..." and inject onerror=... or onload=...
             var safeUrl = escapeHtml(url);
-            mediaHtml = (kind === 'video')
-              ? '<video src="' + safeUrl + '" muted style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#000"></video>'
+            // App posts store the MIME type ("video/mp4"), not "video", and
+            // legacy rows carry no type — same rule as isVideoMedia() in
+            // community.html. No controls: the whole card links to the post.
+            // #t=0.1 makes iOS Safari paint the first frame as a thumbnail.
+            var isVideo = /^video(\/|$)/i.test(String(kind)) ||
+                          /\.(mp4|m4v|mov|webm|3gp|3g2|ogv|mkv|avi)(?:[?#]|$)/i.test(url);
+            mediaHtml = isVideo
+              ? '<video src="' + safeUrl + (url.indexOf('#') === -1 ? '#t=0.1' : '') + '" muted playsinline preload="metadata" style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#000"></video>'
               : '<img src="' + safeUrl + '" alt="" style="width:100%;aspect-ratio:4/5;object-fit:cover;border-radius:8px;background:#0a0a0a" loading="lazy">';
           }
         }

@@ -1,9 +1,9 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <link rel="stylesheet" href="/atp.min.css?v=b6898a0fa2">
+  <link rel="stylesheet" href="/atp.min.css?v=6e112e3c3a">
   <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
-  <script src="/atp.bundle.min.js?v=9aa477bb55"></script>
+  <script src="/atp.bundle.min.js?v=477c6d2ecc"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -80,6 +80,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .media-thumb img,.media-thumb video{width:100%;height:100%;object-fit:cover;display:block}
 .media-thumb-rm{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.7);border:none;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .composer-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid rgba(255,255,255,.06)}
+.composer-msg{margin:0 18px 14px;padding:10px 12px;border-radius:var(--radius);background:rgba(255,91,91,.08);border:1px solid rgba(255,91,91,.3);color:#ffb3b3;font-size:13px;line-height:1.45}
 .composer-media-btns{display:flex;gap:8px}
 .composer-media-btn{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);background:none;border:1px solid rgba(255,255,255,.1);padding:7px 12px;border-radius:var(--radius);cursor:pointer;transition:all .2s}
 .composer-media-btn:hover{border-color:var(--green);color:var(--green)}
@@ -397,6 +398,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             </div>
             <button class="post-btn" id="postBtn" disabled data-atp-call="submitPost">Post</button>
           </div>
+          <div class="composer-msg" id="composerMsg" role="alert" hidden></div>
           <input type="file" id="imgInput" accept="image/*" multiple style="display:none" onchange="handleMedia(this,'image')">
           <input type="file" id="vidInput" accept="video/*" style="display:none" onchange="handleMedia(this,'video')">
         </div>
@@ -693,12 +695,23 @@ function updatePostBtn() {
 //      row pointing at the R2 public URL
 //
 // Falls back to the legacy base64 path on 503 R2_NOT_CONFIGURED so
-// staging / dev environments without R2 keep working. Network errors
-// during the R2 PUT also fall back so a flaky CDN doesn't lock the
-// member out of posting.
+// staging / dev environments without R2 keep working. A failed R2 PUT
+// does NOT fall back: the legacy route is admin-only, so a member would
+// only swap one error for a 403.
+//
+// Founder report 8 (2026-10-05): every photo/video post failed with
+// "Failed to fetch". Step 2 is a cross-origin PUT, so the R2 bucket's
+// CORS policy must list this site's origin; it still only listed the
+// old onrender.com host after the domain switch, the browser's
+// preflight got a 403 and fetch() rejected. The cure is the bucket's
+// CORS policy in the R2 dashboard, not this file. What changed here:
+// the failure no longer goes through a blocking alert() — the button
+// resets, the text and files stay in the composer, and a short message
+// under it says to retry.
 async function submitPost() {
   var txt = document.getElementById("postText").value.trim();
   var files = mediaFiles.filter(function(f){return f!==null;});
+  _composerMsg('');
   if(!files.length) { createPost(txt, []); return; }
 
   var btn = document.getElementById("postBtn");
@@ -799,16 +812,30 @@ async function submitPost() {
         }
         uploaded.push(entry);
       } catch (e) {
-        throw new Error('File "' + f.file.name + '": ' + (e.message || e));
+        var err = new Error((e && e.message) || String(e));
+        err.fileName = f.file.name;
+        throw err;
       }
     }
   } catch(e) {
+    console.warn('[upload] failed:', e.fileName, e.message);
     if (btn) { btn.disabled = false; btn.textContent = origLabel; }
-    alert('Could not upload media: ' + e.message);
+    _composerMsg('Sorry, we couldn’t upload ' +
+      (e.fileName ? '“' + e.fileName + '”' : 'your media') +
+      '. Nothing was posted and your post is still here — please try again in a moment.');
     return;
   }
   if (btn) { btn.textContent = origLabel; }
   createPost(txt, uploaded);
+}
+
+// Inline status under the composer — empty string hides it. textContent
+// (not innerHTML) because the message carries the member's file name.
+function _composerMsg(msg) {
+  var el = document.getElementById('composerMsg');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.hidden = !msg;
 }
 
 function createPost(txt, media) {
@@ -910,6 +937,20 @@ function toggleTagFriend(id) {
   renderTagFriends();
 }
 
+// Founder report 10 (2026-10-05): a video posted from the app played in
+// the app but showed here as a broken image ("post image"). The app
+// stores the MIME type in media[].type ("video/mp4", "video/quicktime"),
+// and this page only treated the literal "video" as a video, so every
+// app video fell through to <img>. Mirrors the app's isVideoMedia(): any
+// video/* type, or a video file extension when the type is missing or
+// generic (legacy rows store bare URL strings, mapped to type "image").
+var VIDEO_EXT_RE = /\.(mp4|m4v|mov|webm|3gp|3g2|ogv|mkv|avi)(?:[?#]|$)/i;
+function isVideoMedia(m) {
+  if (!m) return false;
+  if (/^video(\/|$)/i.test(String(m.type || ''))) return true;
+  return VIDEO_EXT_RE.test(String(m.src || m.url || ''));
+}
+
 function renderPosts() {
   var container = document.getElementById("postsContainer");
   container.innerHTML = POSTS.map(function(post) {
@@ -934,8 +975,12 @@ function buildPostCard(post) {
   if(post.media && post.media.length > 0) {
     var items = post.media.map(function(m, i) {
       var cnt = post.media.length > 1 ? '<div class="post-media-counter">'+(i+1)+'/'+post.media.length+'</div>' : '';
-      if(m.type==="video") {
-        return '<div class="post-media-item">'+cnt+'<video src="'+escapeHtml(m.src)+'" autoplay muted loop playsinline controls></video></div>';
+      if(isVideoMedia(m)) {
+        // #t=0.1 makes iOS Safari paint the first frame — with
+        // preload="metadata" it otherwise shows an empty black box.
+        var vsrc = String(m.src || '');
+        if (vsrc.indexOf('#') === -1) vsrc += '#t=0.1';
+        return '<div class="post-media-item">'+cnt+'<video src="'+escapeHtml(vsrc)+'" controls playsinline preload="metadata"></video></div>';
       }
       return '<div class="post-media-item">'+cnt+'<img src="'+escapeHtml(m.src)+'" alt="post image" loading="lazy"></div>';
     }).join("");
@@ -1455,7 +1500,7 @@ async function downloadMedia(id) {
     var m = post.media[i];
     if (!m || !m.src) continue;
     var abs = new URL(m.src, window.location.origin).href;
-    var ext = m.type === "video" ? ".mp4" : ".jpg";
+    var ext = isVideoMedia(m) ? ".mp4" : ".jpg";
     var name = "atp-post-" + String(id).slice(0, 8) + "-" + (i + 1) + ext;
     try {
       var resp = await fetch(abs);

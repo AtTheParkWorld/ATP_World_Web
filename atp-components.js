@@ -687,9 +687,10 @@
 
             '<form class="atp-footer-news" id="atp-newsletter-form" novalidate>' +
               // Founder report 3 (2026-10-03): the box asked for an email
-              // without saying what it was for, which is both unhelpful and
-              // a poor consent signal for a marketing list.
-              '<p class="atp-footer-news-label">Session updates, new locations and member stories. One email a week, no spam, unsubscribe any time.</p>' +
+              // without saying what it was for. Founder report 12
+              // (2026-10-05): the longer blurb that replaced it read as
+              // fine print — now one plain question.
+              '<p class="atp-footer-news-label">Want to know more about the community?</p>' +
               '<div class="atp-footer-news-row">' +
                 '<input type="email" id="atp-newsletter-email" required placeholder="your@email.com" aria-label="Email address">' +
                 '<button type="submit" id="atp-newsletter-btn">Subscribe</button>' +
