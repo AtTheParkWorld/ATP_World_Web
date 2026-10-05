@@ -9,7 +9,8 @@
         "components": [
           { "/": "/auth/verify", "comment": "Magic-link sign-in — critical, app/auth/verify.tsx" },
           { "/": "/sessions/*", "comment": "Session detail — app/sessions/[id].tsx" },
-          { "/": "/blog/*", "comment": "Blog post — app/blog/[slug].tsx" }
+          { "/": "/blog/*", "comment": "Blog post — app/blog/[slug].tsx" },
+          { "/": "/p/*", "comment": "Shared community post — app/+native-intent.tsx maps /p/<id> to app/community/post/[id].tsx" }
         ]
       }
     ]
