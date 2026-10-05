@@ -929,6 +929,20 @@ function toggleTagFriend(id) {
   renderTagFriends();
 }
 
+// Founder report 10 (2026-10-05): a video posted from the app played in
+// the app but showed here as a broken image ("post image"). The app
+// stores the MIME type in media[].type ("video/mp4", "video/quicktime"),
+// and this page only treated the literal "video" as a video, so every
+// app video fell through to <img>. Mirrors the app's isVideoMedia(): any
+// video/* type, or a video file extension when the type is missing or
+// generic (legacy rows store bare URL strings, mapped to type "image").
+var VIDEO_EXT_RE = /\.(mp4|m4v|mov|webm|3gp|3g2|ogv|mkv|avi)(?:[?#]|$)/i;
+function isVideoMedia(m) {
+  if (!m) return false;
+  if (/^video(\/|$)/i.test(String(m.type || ''))) return true;
+  return VIDEO_EXT_RE.test(String(m.src || m.url || ''));
+}
+
 function renderPosts() {
   var container = document.getElementById("postsContainer");
   container.innerHTML = POSTS.map(function(post) {
@@ -953,8 +967,12 @@ function buildPostCard(post) {
   if(post.media && post.media.length > 0) {
     var items = post.media.map(function(m, i) {
       var cnt = post.media.length > 1 ? '<div class="post-media-counter">'+(i+1)+'/'+post.media.length+'</div>' : '';
-      if(m.type==="video") {
-        return '<div class="post-media-item">'+cnt+'<video src="'+escapeHtml(m.src)+'" autoplay muted loop playsinline controls></video></div>';
+      if(isVideoMedia(m)) {
+        // #t=0.1 makes iOS Safari paint the first frame — with
+        // preload="metadata" it otherwise shows an empty black box.
+        var vsrc = String(m.src || '');
+        if (vsrc.indexOf('#') === -1) vsrc += '#t=0.1';
+        return '<div class="post-media-item">'+cnt+'<video src="'+escapeHtml(vsrc)+'" controls playsinline preload="metadata"></video></div>';
       }
       return '<div class="post-media-item">'+cnt+'<img src="'+escapeHtml(m.src)+'" alt="post image" loading="lazy"></div>';
     }).join("");
@@ -1331,7 +1349,7 @@ async function downloadMedia(id) {
     var m = post.media[i];
     if (!m || !m.src) continue;
     var abs = new URL(m.src, window.location.origin).href;
-    var ext = m.type === "video" ? ".mp4" : ".jpg";
+    var ext = isVideoMedia(m) ? ".mp4" : ".jpg";
     var name = "atp-post-" + String(id).slice(0, 8) + "-" + (i + 1) + ext;
     try {
       var resp = await fetch(abs);
