@@ -134,8 +134,8 @@ async function sendWelcome(member, opts) {
       </div>
     `;
   }
-  // Coach Fredy's welcome note — the same text the new member gets in
-  // their app inbox (founder 2026-10-05), so the wording is edited in
+  // Coach Fredy's welcome note — the same text the new member gets as a
+  // message in the app (founder 2026-10-05), so the wording is edited in
   // ONE place: services/welcomeMessage.js.
   const { welcomeText, FOUNDER_WELCOME_TITLE } = require('./welcomeMessage');
   const founderNote = welcomeText(member.first_name)

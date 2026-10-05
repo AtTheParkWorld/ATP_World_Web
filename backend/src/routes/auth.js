@@ -220,10 +220,9 @@ router.post('/register', async (req, res, next) => {
       member.welcome_discount_expires_at = welcome.expires_at;
     }
 
-    // Coach Fredy's welcome note in the inbox (founder 2026-10-05).
-    // Queued after the discount notification so it is the newest one,
-    // which is the one the app spotlights on first open. Fire-and-forget:
-    // signup must never fail because the welcome could not be delivered.
+    // Coach Fredy's welcome DM (founder requests 15 + 2026-10-05).
+    // Fire-and-forget: signup must never fail because the welcome could
+    // not be delivered.
     sendWelcomeMessage(member.id, member.first_name).catch(function(){});
 
     // Send welcome email (now with the discount code baked in)
@@ -838,8 +837,7 @@ router.post('/google', async (req, res, next) => {
           member.welcome_discount_code = welcome.code;
           member.welcome_discount_expires_at = welcome.expires_at;
         }
-        // New Google account — same founder welcome as the email path,
-        // queued after the discount notification for the same reason.
+        // New Google account — same founder welcome as the email path.
         sendWelcomeMessage(member.id, member.first_name).catch(function(){});
         await emailService.sendWelcome(member, { welcome });
       }

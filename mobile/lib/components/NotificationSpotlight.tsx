@@ -34,8 +34,6 @@ function notifTarget(n: AppNotification): string | null {
   if (d?.session_id) return `/sessions/${d.session_id}`;
   if (d?.post_id) return `/community/post/${d.post_id}`;
   if (n.type === 'friend_request') return '/(tabs)/community?tab=friends';
-  // Coach Fredy's welcome ends with "book your first free session".
-  if (n.type === 'founder_welcome') return '/(tabs)/sessions';
   return '/inbox';
 }
 
@@ -49,7 +47,6 @@ function kindLabel(type: string): string {
     case 'session_cancelled': return 'Session cancelled';
     case 'points':            return 'Points';
     case 'achievement':       return 'New badge';
-    case 'founder_welcome':   return 'Welcome to ATP';
     default:                  return 'New notification';
   }
 }

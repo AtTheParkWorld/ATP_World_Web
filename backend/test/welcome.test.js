@@ -1,9 +1,9 @@
 /**
- * Founder welcome — Coach Fredy's note in a new member's inbox.
+ * Founder welcome — Coach Fredy's DM to every new member.
  *
  * No real Postgres needed: db.query() calls pool.query() on every call,
- * so spying on the pool swaps in a tiny in-memory notifications table
- * that honours the service's "insert only if absent" guard.
+ * so spying on the pool swaps in tiny in-memory members / conversations /
+ * messages tables that honour the service's "send once" guard.
  */
 // describe / it / expect / vi are injected as globals by Vitest.
 const request = require('supertest');
@@ -11,34 +11,50 @@ const db = require('../src/db');
 const app = require('../src/server');
 const welcome = require('../src/services/welcomeMessage');
 
-/** Fake pool. `opts.failWelcome` makes the welcome insert throw;
- *  `opts.existingEmail` makes the register duplicate check hit. */
+const FOUNDER = welcome.FOUNDER_MEMBER_ID;
+
+/** Fake pool. `opts.failWelcome` makes the message insert throw;
+ *  `opts.existingEmail` makes the register duplicate check hit;
+ *  `opts.noFounder` removes Fredy's account so the admin fallback runs. */
 function stubDb(opts = {}) {
-  const notifications = [];
+  const members = new Set(opts.noFounder ? [] : [FOUNDER]);
+  const conversations = [];
+  const messages = [];
   const fakeQuery = async (text, params = []) => {
     const sql = String(text);
-    if (/INSERT INTO notifications/i.test(sql) && params[1] === welcome.FOUNDER_WELCOME_TYPE) {
-      if (opts.failWelcome) throw new Error('notifications insert failed');
-      const exists = notifications.some((n) => n.member_id === params[0] && n.type === params[1]);
-      if (exists) return { rows: [], rowCount: 0 };
-      notifications.push({ member_id: params[0], type: params[1], title: params[2], body: params[3] });
-      return { rows: [{ id: 'n' + notifications.length }], rowCount: 1 };
+    if (/FROM system_config WHERE key='welcome_sender_id'/i.test(sql)) return { rows: [] };
+    if (/SELECT id FROM members WHERE id=\$1/i.test(sql)) {
+      return { rows: members.has(params[0]) ? [{ id: params[0] }] : [] };
+    }
+    if (/WHERE is_admin = true/i.test(sql)) return { rows: [{ id: 'aaaaaaaa-0000-4000-8000-000000000000' }] };
+    if (/INSERT INTO conversations/i.test(sql)) {
+      let c = conversations.find((x) => x.a === params[0] && x.b === params[1]);
+      if (!c) { c = { id: 'c' + (conversations.length + 1), a: params[0], b: params[1] }; conversations.push(c); }
+      return { rows: [{ id: c.id }] };
+    }
+    if (/SELECT 1 FROM messages WHERE conversation_id/i.test(sql)) {
+      return { rows: messages.filter((m) => m.conversation_id === params[0] && m.sender_id === params[1]) };
+    }
+    if (/INSERT INTO messages/i.test(sql)) {
+      if (opts.failWelcome) throw new Error('messages insert failed');
+      messages.push({ conversation_id: params[0], sender_id: params[1], content: params[2] });
+      return { rows: [], rowCount: 1 };
     }
     if (/SELECT id FROM members WHERE LOWER\(email\)/i.test(sql)) {
       return { rows: opts.existingEmail ? [{ id: 'existing-member' }] : [], rowCount: 0 };
     }
     if (/INSERT INTO members/i.test(sql)) {
       const [id, member_number, first_name, last_name, email] = params;
+      members.add(id);
       return { rows: [{ id, member_number, first_name, last_name, email }], rowCount: 1 };
     }
     return { rows: [], rowCount: 0 };
   };
   vi.spyOn(db.pool, 'query').mockImplementation(fakeQuery);
   vi.spyOn(db.pool, 'connect').mockImplementation(async () => ({ query: fakeQuery, release() {} }));
-  return { notifications };
+  return { messages, conversations };
 }
 
-const welcomes = (store) => store.notifications.filter((n) => n.type === welcome.FOUNDER_WELCOME_TYPE);
 const settle = () => new Promise((r) => setTimeout(r, 50));
 
 afterEach(() => { vi.restoreAllMocks(); });
@@ -65,13 +81,20 @@ describe('welcome text', () => {
 });
 
 describe('sendWelcomeMessage', () => {
-  it('inserts once per member — a repeat call is a no-op', async () => {
+  it('sends one DM from Fredy — a repeat call is a no-op', async () => {
     const store = stubDb();
     const memberId = '11111111-1111-4111-8111-111111111111';
     expect(await welcome.sendWelcomeMessage(memberId, 'Sara')).toEqual({ sent: true });
     expect(await welcome.sendWelcomeMessage(memberId, 'Sara')).toEqual({ skipped: 'already_sent' });
-    expect(welcomes(store)).toHaveLength(1);
-    expect(welcomes(store)[0].title).toBe('A message from Coach Fredy');
+    expect(store.messages).toHaveLength(1);
+    expect(store.messages[0].sender_id).toBe(FOUNDER);
+    expect(store.messages[0].content.startsWith('Hey Sara,')).toBe(true);
+  });
+
+  it('falls back to the longest-standing admin when Fredy\'s account is missing', async () => {
+    const store = stubDb({ noFounder: true });
+    await welcome.sendWelcomeMessage('33333333-3333-4333-8333-333333333333', 'Sara');
+    expect(store.messages[0].sender_id).toBe('aaaaaaaa-0000-4000-8000-000000000000');
   });
 
   it('never throws when the insert fails', async () => {
@@ -83,17 +106,19 @@ describe('sendWelcomeMessage', () => {
 });
 
 describe('POST /api/auth/register — founder welcome', () => {
-  it('puts exactly one welcome in the new member\'s inbox', async () => {
+  it('sends exactly one welcome DM to the new member', async () => {
     const store = stubDb();
     const res = await request(app)
       .post('/api/auth/register')
       .send({ first_name: 'Sara', last_name: 'K', email: 'sara.welcome@example.com', password: 'pw-123456' });
     expect(res.status).toBe(201);
-    await vi.waitFor(() => expect(welcomes(store)).toHaveLength(1));
+    await vi.waitFor(() => expect(store.messages).toHaveLength(1));
     await settle();
-    expect(welcomes(store)).toHaveLength(1);
-    expect(welcomes(store)[0].member_id).toBe(res.body.member.id);
-    expect(welcomes(store)[0].body.startsWith('Hey Sara,')).toBe(true);
+    expect(store.messages).toHaveLength(1);
+    const conv = store.conversations[0];
+    expect([conv.a, conv.b]).toContain(res.body.member.id);
+    expect([conv.a, conv.b]).toContain(FOUNDER);
+    expect(store.messages[0].content.startsWith('Hey Sara,')).toBe(true);
   });
 
   it('still signs the member up when the welcome insert throws', async () => {
@@ -113,6 +138,6 @@ describe('POST /api/auth/register — founder welcome', () => {
       .send({ first_name: 'Sara', last_name: 'K', email: 'taken@example.com' });
     expect(res.status).toBe(409);
     await settle();
-    expect(welcomes(store)).toHaveLength(0);
+    expect(store.messages).toHaveLength(0);
   });
 });
