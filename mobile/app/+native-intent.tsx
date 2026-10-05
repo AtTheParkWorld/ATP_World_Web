@@ -24,6 +24,13 @@ export function redirectSystemPath({ path }: { path: string; initial: boolean })
     if (p === '/profile.html' || p === '/profile') {
       return '/(tabs)/profile';
     }
+    // Shared post page:       /p/<id>               ->  /community/post/<id>
+    // (the link every post Share sends; also the iOS Smart App Banner's
+    // app-argument).
+    const shared = p.match(/^\/p\/([0-9a-f-]{36})\/?$/i);
+    if (shared) {
+      return `/community/post/${shared[1]}`;
+    }
     // Legacy community link:  /community.html        ->  community tab
     if (p === '/community.html' || p === '/community') {
       return '/(tabs)/community';

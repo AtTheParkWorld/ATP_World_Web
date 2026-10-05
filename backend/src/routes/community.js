@@ -421,6 +421,70 @@ router.post('/posts', authenticate, async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── GET /api/community/posts/:id ──────────────────────────────
+// Single post, same row shape and visibility as /feed (not deleted,
+// hidden across a block in either direction). The app's post screen
+// used to rely on the feed cache alone, so a post opened from a shared
+// /p/:id link or a push showed "Post not loaded".
+router.get('/posts/:id', optionalAuth, async (req, res, next) => {
+  try {
+    if (!UUID_RE.test(String(req.params.id))) return res.status(404).json({ error: 'Post not found' });
+    const viewerId = req.member ? req.member.id : null;
+    const blockClause = `AND ($2::uuid IS NULL OR NOT EXISTS (
+        SELECT 1 FROM friendships fb
+         WHERE fb.status = 'blocked'
+           AND ((fb.requester_id = $2::uuid AND fb.addressee_id = p.member_id)
+             OR (fb.addressee_id = $2::uuid AND fb.requester_id = p.member_id))
+      ))`;
+    let rows;
+    try {
+      ({ rows } = await query(
+        `SELECT p.id, p.content, p.media, p.likes_count, p.comments_count, p.created_at,
+                m.id AS member_id, m.first_name, m.last_name, m.avatar_url,
+                m.member_number, m.is_ambassador, m.tribe_id,
+                CASE WHEN $2::uuid IS NULL THEN false
+                     ELSE EXISTS(SELECT 1 FROM post_likes pl WHERE pl.post_id=p.id AND pl.member_id=$2::uuid)
+                END AS liked_by_me,
+                t.name  AS tribe_name,
+                t.slug  AS tribe_slug,
+                t.color AS tribe_color,
+                COALESCE((
+                  SELECT json_agg(json_build_object('id', tm.id, 'first_name', tm.first_name, 'last_name', tm.last_name))
+                    FROM jsonb_array_elements_text(COALESCE(p.tagged_member_ids, '[]'::jsonb)) tid
+                    JOIN members tm ON tm.id = tid.value::uuid
+                ), '[]'::json) AS tagged_members
+         FROM posts p
+         JOIN members m ON m.id = p.member_id
+         LEFT JOIN tribes t ON t.id = m.tribe_id
+         WHERE p.id = $1 AND p.is_deleted = false ${blockClause}
+         LIMIT 1`,
+        [req.params.id, viewerId]
+      ));
+    } catch (e) {
+      // Pre-migration fallback — same as /feed: no tribe join, no tags.
+      if (e.code !== '42P01' && e.code !== '42703') throw e;
+      ({ rows } = await query(
+        `SELECT p.id, p.content, p.media, p.likes_count, p.comments_count, p.created_at,
+                m.id AS member_id, m.first_name, m.last_name, m.avatar_url,
+                m.member_number, m.is_ambassador,
+                CASE WHEN $2::uuid IS NULL THEN false
+                     ELSE EXISTS(SELECT 1 FROM post_likes pl WHERE pl.post_id=p.id AND pl.member_id=$2::uuid)
+                END AS liked_by_me,
+                NULL AS tribe_name, NULL AS tribe_slug, NULL AS tribe_color,
+                '[]'::json AS tagged_members
+         FROM posts p
+         JOIN members m ON m.id = p.member_id
+         WHERE p.id = $1 AND p.is_deleted = false ${blockClause}
+         LIMIT 1`,
+        [req.params.id, viewerId]
+      ));
+    }
+    if (!rows.length) return res.status(404).json({ error: 'Post not found' });
+    await _stripInlineFromPosts(rows);
+    res.json({ post: rows[0] });
+  } catch (err) { next(err); }
+});
+
 // ── DELETE /api/community/posts/:id ──────────────────────────
 router.delete('/posts/:id', authenticate, async (req, res, next) => {
   try {

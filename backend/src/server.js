@@ -426,6 +426,12 @@ app.get(['/contact-us', '/contact'], (req, res) => res.redirect(301, '/contacts.
 app.get('/privacy-policy', (req, res) => res.redirect(301, '/privacy.html'));
 app.get(['/delete-account', '/account-deletion'], (req, res) => res.redirect(301, '/delete-account.html'));
 
+// ── Post share links — /p/:id ────────────────────────────────
+// What the app + website share (WhatsApp etc.) instead of the raw media
+// URL: a server-rendered page with OG tags + app CTAs. Privacy rules live
+// in routes/postShare.js.
+app.use(require('./routes/postShare'));
+
 // HTML pages must never be cached (so deploys propagate immediately).
 // JS/CSS/assets get a sensible short cache. Bundles use content-hash
 // invalidation via ?cb=… cache-busters in the page templates.

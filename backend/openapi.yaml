@@ -248,6 +248,14 @@ paths:
         content: { application/json: { schema: { type: object, properties: { content: { type: string }, media: { type: array } } } } }
       responses: { '201': { description: Created } }
 
+  /community/posts/{id}:
+    get:
+      tags: [Community]
+      summary: Get one post (same shape and visibility as the feed)
+      security: []
+      parameters: [{ in: path, name: id, required: true, schema: { type: string, format: uuid } }]
+      responses: { '200': { description: Post }, '404': { description: Not found or not visible } }
+
   /community/posts/{id}/like:
     post:
       tags: [Community]

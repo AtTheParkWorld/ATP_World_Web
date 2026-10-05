@@ -6,8 +6,10 @@
  *   - Tap card body  → /community/post/[id]
  *   - Tap avatar     → /community/members/[id]
  *   - Long-press     → report sheet
- *   - Media posts    → Share (native sheet with the media URL) and
- *                      Save (download to cache → camera roll via
+ *   - Share          → native sheet with the post's public page link
+ *                      (/p/<id> — link preview + open-in-app), never
+ *                      the raw media URL
+ *   - Media posts    → Save (download to cache → camera roll via
  *                      expo-media-library/legacy, write-only permission)
  *
  * Comment count + relative time render statelessly.
@@ -48,6 +50,7 @@ function mediaExtension(url: string, isVideo: boolean): string {
 import type { Post } from '@/lib/api/community';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
+import { postShareMessage } from '@/lib/utils/shareLinks';
 import { PostImage } from '@/lib/components/PostImage';
 import { Avatar } from '@/lib/components/Avatar';
 import { IconChat, IconDownload, IconHeart, IconShare } from '@/lib/components/icons';
@@ -127,10 +130,10 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
     .join(', ');
 
   async function onSharePress() {
-    if (!mediaUrl) return;
     try {
-      // iOS shares a real URL object; Android's sheet only reads message.
-      await Share.share(Platform.OS === 'ios' ? { url: mediaUrl } : { message: mediaUrl });
+      // The link lives inside `message` on both platforms: passing `url`
+      // too makes iOS hand WhatsApp the link twice.
+      await Share.share({ message: postShareMessage(post) });
     } catch {
       // Member dismissed the sheet — nothing to surface.
     }
@@ -282,15 +285,16 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
           </Text>
         </View>
 
-        {/* Media-only actions — kept muted so they read as secondary. */}
-        {!!mediaUrl && (
-          <View className="flex-row items-center gap-4 ml-auto">
-            <Pressable onPress={onSharePress} hitSlop={8} className="flex-row items-center gap-1.5 active:opacity-60">
-              <IconShare size={18} strokeWidth={2} color={colors.muted} />
-              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs">
-                Share
-              </Text>
-            </Pressable>
+        {/* Share (every post — it shares a link) + Save (media only),
+            kept muted so they read as secondary. */}
+        <View className="flex-row items-center gap-4 ml-auto">
+          <Pressable onPress={onSharePress} hitSlop={8} className="flex-row items-center gap-1.5 active:opacity-60">
+            <IconShare size={18} strokeWidth={2} color={colors.muted} />
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs">
+              Share
+            </Text>
+          </Pressable>
+          {!!mediaUrl && (
             <Pressable onPress={onSavePress} disabled={saving} hitSlop={8} className="flex-row items-center gap-1.5 active:opacity-60">
               {saving
                 ? <ActivityIndicator size="small" color={colors.muted} />
@@ -299,8 +303,8 @@ export function PostCard({ post, onPress, onAvatarPress, onLikePress, onLongPres
                 {saving ? 'Saving…' : 'Save'}
               </Text>
             </Pressable>
-          </View>
-        )}
+          )}
+        </View>
       </View>
     </Pressable>
   );
