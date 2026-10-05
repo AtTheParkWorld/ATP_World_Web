@@ -80,6 +80,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 .media-thumb img,.media-thumb video{width:100%;height:100%;object-fit:cover;display:block}
 .media-thumb-rm{position:absolute;top:3px;right:3px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.7);border:none;color:#fff;font-size:11px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .composer-footer{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;border-top:1px solid rgba(255,255,255,.06)}
+.composer-msg{margin:0 18px 14px;padding:10px 12px;border-radius:var(--radius);background:rgba(255,91,91,.08);border:1px solid rgba(255,91,91,.3);color:#ffb3b3;font-size:13px;line-height:1.45}
 .composer-media-btns{display:flex;gap:8px}
 .composer-media-btn{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--muted);background:none;border:1px solid rgba(255,255,255,.1);padding:7px 12px;border-radius:var(--radius);cursor:pointer;transition:all .2s}
 .composer-media-btn:hover{border-color:var(--green);color:var(--green)}
@@ -389,6 +390,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             </div>
             <button class="post-btn" id="postBtn" disabled data-atp-call="submitPost">Post</button>
           </div>
+          <div class="composer-msg" id="composerMsg" role="alert" hidden></div>
           <input type="file" id="imgInput" accept="image/*" multiple style="display:none" onchange="handleMedia(this,'image')">
           <input type="file" id="vidInput" accept="video/*" style="display:none" onchange="handleMedia(this,'video')">
         </div>
@@ -685,12 +687,23 @@ function updatePostBtn() {
 //      row pointing at the R2 public URL
 //
 // Falls back to the legacy base64 path on 503 R2_NOT_CONFIGURED so
-// staging / dev environments without R2 keep working. Network errors
-// during the R2 PUT also fall back so a flaky CDN doesn't lock the
-// member out of posting.
+// staging / dev environments without R2 keep working. A failed R2 PUT
+// does NOT fall back: the legacy route is admin-only, so a member would
+// only swap one error for a 403.
+//
+// Founder report 8 (2026-10-05): every photo/video post failed with
+// "Failed to fetch". Step 2 is a cross-origin PUT, so the R2 bucket's
+// CORS policy must list this site's origin; it still only listed the
+// old onrender.com host after the domain switch, the browser's
+// preflight got a 403 and fetch() rejected. The cure is the bucket's
+// CORS policy in the R2 dashboard, not this file. What changed here:
+// the failure no longer goes through a blocking alert() — the button
+// resets, the text and files stay in the composer, and a short message
+// under it says to retry.
 async function submitPost() {
   var txt = document.getElementById("postText").value.trim();
   var files = mediaFiles.filter(function(f){return f!==null;});
+  _composerMsg('');
   if(!files.length) { createPost(txt, []); return; }
 
   var btn = document.getElementById("postBtn");
@@ -791,16 +804,30 @@ async function submitPost() {
         }
         uploaded.push(entry);
       } catch (e) {
-        throw new Error('File "' + f.file.name + '": ' + (e.message || e));
+        var err = new Error((e && e.message) || String(e));
+        err.fileName = f.file.name;
+        throw err;
       }
     }
   } catch(e) {
+    console.warn('[upload] failed:', e.fileName, e.message);
     if (btn) { btn.disabled = false; btn.textContent = origLabel; }
-    alert('Could not upload media: ' + e.message);
+    _composerMsg('Sorry, we couldn’t upload ' +
+      (e.fileName ? '“' + e.fileName + '”' : 'your media') +
+      '. Nothing was posted and your post is still here — please try again in a moment.');
     return;
   }
   if (btn) { btn.textContent = origLabel; }
   createPost(txt, uploaded);
+}
+
+// Inline status under the composer — empty string hides it. textContent
+// (not innerHTML) because the message carries the member's file name.
+function _composerMsg(msg) {
+  var el = document.getElementById('composerMsg');
+  if (!el) return;
+  el.textContent = msg || '';
+  el.hidden = !msg;
 }
 
 function createPost(txt, media) {
