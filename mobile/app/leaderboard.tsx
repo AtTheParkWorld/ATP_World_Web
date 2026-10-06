@@ -77,7 +77,7 @@ export default function Leaderboard() {
         onPress={() => setFiltersOpen((v) => !v)}
         className="mx-4 mt-3 px-4 py-2.5 rounded-atp bg-atp-dark border border-white/10 flex-row items-center justify-between active:opacity-80"
       >
-        <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm">
+        <Text numberOfLines={1} style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm flex-1 mr-3">
           {(() => {
             const city  = cityId  ? (citiesQ.data || []).find((c) => c.id === cityId)?.name  : null;
             const tribe = tribeId ? (tribesQ.data || []).find((t) => t.id === tribeId)?.name : null;
@@ -90,16 +90,25 @@ export default function Leaderboard() {
         </Text>
       </Pressable>
 
+      {/* City + tribe pill rails. Founder report 2026-10-06: the chip
+          text was clipped to its top half. A ScrollView defaults to
+          flexGrow/flexShrink 1, and the FlatList below had no flex of
+          its own, so its flex basis was the full height of every
+          rendered row. That overflowed the screen and Yoga shrank all
+          three scroll views to fit, squashing these ~30px rails to a
+          sliver. The rails now sit in a plain View (which never
+          shrinks) and the list is flex-1, so it takes only the space
+          that's left and the chips keep their natural height at any
+          font scale. */}
       {filtersOpen && (
-      <>
-      {/* City + tribe pill rails */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-3" contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+      <View>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} className="mt-3" contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
         <FilterChip label="All cities" active={!cityId} onPress={() => setCityId(null)} />
         {(citiesQ.data || []).map((c) => (
           <FilterChip key={c.id} label={c.name} active={cityId === c.id} onPress={() => setCityId(c.id)} />
         ))}
       </ScrollView>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mt-2 mb-3" contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ flexGrow: 0 }} className="mt-2 mb-3" contentContainerStyle={{ paddingHorizontal: 16, gap: 8 }}>
         <FilterChip label="All tribes" active={!tribeId} onPress={() => setTribeId(null)} />
         {(tribesQ.data || []).map((t) => (
           <FilterChip
@@ -111,11 +120,12 @@ export default function Leaderboard() {
           />
         ))}
       </ScrollView>
-      </>
+      </View>
       )}
 
       {/* List */}
       <FlatList
+        className="flex-1"
         data={lbQ.data || []}
         keyExtractor={(r) => r.id}
         renderItem={({ item, index }) => (
