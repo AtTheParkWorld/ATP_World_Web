@@ -4,7 +4,7 @@
  * we don't overwhelm the very first form.
  */
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { router, Link } from 'expo-router';
 import { register } from '@/lib/api/auth';
 import { colors, fontFamily } from '@/lib/theme/tokens';
@@ -54,9 +54,12 @@ export default function Register() {
     }
   }
 
+  // padding on both platforms — Android is edge-to-edge, so the OS no
+  // longer shrinks the window for the keyboard and `undefined` left the
+  // lower fields under it (same fix as the DM thread).
   return (
     <KeyboardAvoidingView
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior="padding"
       className="flex-1 bg-atp-black"
     >
       <ScrollView

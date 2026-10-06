@@ -21,7 +21,7 @@
  */
 import { useMemo, useState } from 'react';
 import {
-  ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View,
+  ActivityIndicator, Alert, KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -493,7 +493,10 @@ function RequestOneOnOne({ coachId, coach }: { coachId: string; coach?: Coach })
         </Text>
       </View>
 
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+      {/* padding on both platforms — Android is edge-to-edge, so the OS
+          no longer shrinks the window for the keyboard and `undefined`
+          left the request form under it (same fix as the DM thread). */}
+      <KeyboardAvoidingView behavior="padding" className="flex-1">
         <ScrollView contentContainerStyle={{ paddingBottom: 140 }} automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled">
           <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm px-5 mt-5 leading-relaxed">
             {coachFirst} arranges 1:1 sessions personally. Tell them what you're after and when suits you — they'll reply with times and price.
