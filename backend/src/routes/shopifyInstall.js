@@ -31,7 +31,11 @@ const express = require('express');
 const crypto = require('crypto');
 const router = express.Router();
 
-const SCOPES = 'write_discounts,read_discounts';
+// read_orders powers GET /api/store/orders (member order history). The
+// Dev Dashboard app version must list the same scopes, and the app needs
+// Protected customer data access with the Email field, or Shopify hides
+// order emails and the history stays empty.
+const SCOPES = 'write_discounts,read_discounts,read_orders';
 
 // Resolve the publicly reachable origin we should hand to Shopify as the
 // OAuth redirect_uri. Must EXACTLY match one of the "Allowed redirection
