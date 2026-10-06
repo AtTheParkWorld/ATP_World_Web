@@ -5,7 +5,9 @@
  *   member        the logged-in member (or null if signed out)
  *   accessToken   short-lived JWT (1h) for API calls
  *   refreshToken  long-lived (90d) token, ONLY for /auth/refresh — never
- *                 attached to other requests
+ *                 attached to other requests. Every refresh issues a new
+ *                 90-day one, so a member who opens the app at least once
+ *                 a quarter stays signed in until they sign out.
  *   tier          'free' | 'premium' | 'premium_plus' (mirrors backend
  *                 members.subscription_type)
  *
@@ -20,6 +22,7 @@
  * start.
  */
 import { create } from 'zustand';
+import { Platform } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { API_BASE } from '@/lib/api/client';
 import { MMKV } from 'react-native-mmkv';
@@ -64,6 +67,14 @@ const memberCache = new MMKV({ id: 'atp-auth-member' });
 const KEY_ACCESS  = 'atp.accessToken';
 const KEY_REFRESH = 'atp.refreshToken';
 
+// One refresh at a time. On app open every screen's request can 401
+// together (the 1h access token lapsed while the app was closed); each
+// one used to call /auth/refresh with the same token, the server took
+// the second call for a stolen-token replay, revoked everything and the
+// member landed back on the login screen (founder 2026-10-06). Now they
+// all wait on the same call.
+let refreshInFlight: Promise<boolean> | null = null;
+
 export const useAuthStore = create<AuthState>((set, get) => ({
   member: null,
   accessToken: null,
@@ -100,41 +111,58 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   /**
-   * POST /auth/refresh. Called by the API client interceptor on a 401
-   * with code=TOKEN_EXPIRED. Returns true on success, false on
-   * permanent failure (token revoked / expired / member banned).
+   * POST /auth/refresh. Called by the API client on a 401 with
+   * code=TOKEN_EXPIRED, or just before a request when the access token is
+   * about to lapse. Returns true on success, false otherwise. Concurrent
+   * callers share one in-flight call.
    *
    * Rotates the refresh token — the backend issues a new one and
    * revokes the old. We persist both atomically.
+   *
+   * Only a definite "no" from the server signs the member out (the token
+   * is unknown, revoked or expired). A slow / sleeping server (5xx), a
+   * rate limit (429) or no signal keeps the tokens so the next call can
+   * retry — those used to log members out too.
    */
-  refresh: async () => {
-    const rt = get().refreshToken;
-    if (!rt) return false;
-    try {
-      const res = await fetch(API_BASE + '/auth/refresh', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: rt }),
-      });
-      if (!res.ok) {
-        // 401/403 → refresh chain broken; force re-login.
-        await get().signOut();
+  refresh: () => {
+    if (refreshInFlight) return refreshInFlight;
+    const run = async (): Promise<boolean> => {
+      const rt = get().refreshToken;
+      if (!rt) return false;
+      try {
+        const res = await fetch(API_BASE + '/auth/refresh', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-Mobile-Platform': Platform.OS },
+          body: JSON.stringify({ refresh_token: rt }),
+        });
+        if (!res.ok) {
+          if (res.status === 400 || res.status === 401) {
+            // Refresh chain broken — force re-login.
+            await get().signOut();
+          }
+          return false;
+        }
+        const data = await res.json();
+        if (!data || !data.access_token || !data.refresh_token) return false;
+        set({ accessToken: data.access_token, refreshToken: data.refresh_token });
+        try {
+          // Refresh token first — it is the one that keeps the member
+          // signed in. If the app dies between the two writes the server
+          // still recognises the older token (see /auth/refresh).
+          await SecureStore.setItemAsync(KEY_REFRESH, data.refresh_token);
+          await SecureStore.setItemAsync(KEY_ACCESS, data.access_token);
+        } catch {
+          // Keychain hiccup — this session already has the new tokens.
+        }
+        return true;
+      } catch {
+        // Network failure ≠ token failure — keep the existing tokens and
+        // let the next call retry naturally.
         return false;
       }
-      const data = await res.json();
-      if (!data || !data.access_token || !data.refresh_token) {
-        await get().signOut();
-        return false;
-      }
-      await SecureStore.setItemAsync(KEY_ACCESS, data.access_token);
-      await SecureStore.setItemAsync(KEY_REFRESH, data.refresh_token);
-      set({ accessToken: data.access_token, refreshToken: data.refresh_token });
-      return true;
-    } catch {
-      // Network failure ≠ token failure — keep the existing tokens and
-      // let the next call retry naturally.
-      return false;
-    }
+    };
+    refreshInFlight = run().finally(() => { refreshInFlight = null; });
+    return refreshInFlight;
   },
 
   signOut: async () => {

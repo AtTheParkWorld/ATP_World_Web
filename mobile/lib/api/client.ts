@@ -51,8 +51,30 @@ interface RequestOptions extends Omit<RequestInit, 'body'> {
   retried?: boolean;
 }
 
+/** `exp` (seconds since epoch) of a JWT, or null when it can't be read. */
+function jwtExp(token: string): number | null {
+  try {
+    const part = token.split('.')[1];
+    if (!part || typeof atob !== 'function') return null;
+    const b64 = part.replace(/-/g, '+').replace(/_/g, '/');
+    const claims = JSON.parse(atob(b64 + '==='.slice((b64.length + 3) % 4)));
+    return typeof claims.exp === 'number' ? claims.exp : null;
+  } catch {
+    return null;
+  }
+}
+
 async function request<T = any>(method: string, path: string, opts: RequestOptions = {}): Promise<T> {
   const { body, retried, headers: extraHeaders, ...rest } = opts;
+  // Access tokens last 1h, so after the app has been closed for a while
+  // the stored one has lapsed. Renew it BEFORE sending rather than letting
+  // every screen's first request bounce off a 401. The 401 path below
+  // stays as the fallback (clock skew, unreadable token).
+  const auth = useAuthStore.getState();
+  if (!retried && auth.accessToken && auth.refreshToken && auth.refreshToken !== auth.accessToken) {
+    const exp = jwtExp(auth.accessToken);
+    if (exp !== null && exp - 30 < Date.now() / 1000) await auth.refresh();
+  }
   const token = useAuthStore.getState().accessToken;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -73,8 +95,10 @@ async function request<T = any>(method: string, path: string, opts: RequestOptio
   // try to refresh once. If refresh succeeds, retry the original request
   // with the new token. If refresh fails, the auth store clears tokens +
   // navigates to the welcome screen via the auth gate in _layout.tsx.
+  // Concurrent 401s share one refresh call (see auth.store refresh()).
+  let body401: any = null;
   if (res.status === 401 && !retried) {
-    const body401 = await res.json().catch(() => ({}));
+    body401 = await res.json().catch(() => ({}));
     if (body401.code === 'TOKEN_EXPIRED' || body401.code === 'NO_TOKEN') {
       const refreshed = await useAuthStore.getState().refresh();
       if (refreshed) {
@@ -86,7 +110,9 @@ async function request<T = any>(method: string, path: string, opts: RequestOptio
 
   if (res.status === 204) return undefined as unknown as T;
 
-  const json = await res.json().catch(() => ({}));
+  // The 401 body was already read above — a second res.json() would fail
+  // and turn the server's message into a generic "Request failed".
+  const json = body401 ?? await res.json().catch(() => ({}));
   if (!res.ok) {
     throw new ApiError(json.error || json.message || 'Request failed', res.status, json);
   }
