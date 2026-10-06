@@ -242,49 +242,319 @@ router.get('/analytics', async (req, res, next) => {
 });
 
 // ── GET /api/admin/members ────────────────────────────────────
+// Founder 2026-10-06: "I can't see all 8046 members". The endpoint was
+// fine (offset paging worked) but the Members tab only ever asked for
+// `limit=100` — the 100 newest — with no way to page, and searched
+// neither phone nor a full "first last" name. Banned + anonymised
+// accounts were also always filtered out, so the tab's total never
+// matched the dashboard's.
+//
+// Query params (all optional):
+//   search            name / "first last" / email / phone (digits too) /
+//                     member number / referral code
+//   status            all | active | banned | pending_deletion | deleted.
+//                     OMITTED = legacy `is_banned=false` — the ambassador
+//                     + coach pickers and the settings member lookup rely
+//                     on banned members never showing up there.
+//   city_id, tribe_id uuid, or 'none' for members with no city / tribe
+//   subscription_type free | premium | premium_plus
+//   is_ambassador, is_coach, is_admin   'true' to filter by role
+//   sort / dir        joined | last_active | name | points | sessions |
+//                     member_number, asc | desc (default joined desc)
+//   limit / offset    limit clamped 1..500; `page` (1-based) also works
+//   format=csv        every matching row (no limit) as a CSV download
+//
+// Never selects password_hash — `has_password` / `account_status` are
+// derived from it in SQL so the hash never leaves the database.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const MEMBER_SORTS = {
+  joined:        'm.joined_at',
+  last_active:   'm.last_active_at',
+  name:          'LOWER(m.first_name), LOWER(m.last_name)',
+  points:        'm.points_balance',
+  sessions:      'sessions_count',
+  member_number: 'm.member_number',
+};
+
+// WHERE clause + params for the list, count and CSV. `full` = the
+// post-migration schema (pending_deletion_at, tribe_id, referral_code);
+// the 42703 fallback rebuilds it without those columns.
+function _memberFilters(q, full) {
+  const where = [];
+  const params = [];
+  const p = (v) => { params.push(v); return '$' + params.length; };
+
+  const status = String(q.status || '').toLowerCase();
+  const DELETED = `m.password_hash = 'ACCOUNT_DELETED'`;
+  const NOT_DELETED = `m.password_hash IS DISTINCT FROM 'ACCOUNT_DELETED'`;
+  if (!status) where.push('m.is_banned=false');
+  else if (status === 'active') where.push(full ? 'm.is_banned=false AND m.pending_deletion_at IS NULL' : 'm.is_banned=false');
+  else if (status === 'banned') where.push(`m.is_banned=true AND ${NOT_DELETED}`);
+  else if (status === 'pending_deletion') where.push(full ? `m.pending_deletion_at IS NOT NULL AND ${NOT_DELETED}` : 'false');
+  else if (status === 'deleted') where.push(DELETED);
+  // 'all' (or anything unrecognised) → no status filter
+
+  const search = String(q.search || '').trim().slice(0, 100);
+  if (search) {
+    // Escape LIKE wildcards so "john_doe" matches literally.
+    const like = p('%' + search.replace(/[\\%_]/g, '\\$&') + '%');
+    const ors = [
+      `m.first_name ILIKE ${like}`, `m.last_name ILIKE ${like}`,
+      `(m.first_name || ' ' || m.last_name) ILIKE ${like}`,
+      `m.email ILIKE ${like}`, `m.phone ILIKE ${like}`, `m.member_number ILIKE ${like}`,
+    ];
+    if (full) ors.push(`m.referral_code ILIKE ${like}`);
+    // "050 123 4567" should find "+971501234567": compare digits only
+    // when the search looks like a phone number.
+    const digits = search.replace(/\D/g, '').replace(/^0+/, '');
+    if (digits.length >= 4 && !/[a-z@]/i.test(search)) {
+      ors.push(`regexp_replace(COALESCE(m.phone, ''), '\\D', '', 'g') LIKE ${p('%' + digits + '%')}`);
+    }
+    where.push('(' + ors.join(' OR ') + ')');
+  }
+
+  if (q.city_id === 'none') where.push('m.city_id IS NULL');
+  else if (UUID_RE.test(q.city_id || '')) where.push(`m.city_id=${p(q.city_id)}`);
+  if (full) {
+    if (q.tribe_id === 'none') where.push('m.tribe_id IS NULL');
+    else if (UUID_RE.test(q.tribe_id || '')) where.push(`m.tribe_id=${p(q.tribe_id)}`);
+  }
+  if (q.subscription_type) where.push(`m.subscription_type=${p(String(q.subscription_type))}`);
+  if (q.is_ambassador === 'true') where.push('m.is_ambassador=true');
+  if (q.is_coach === 'true') where.push('m.is_coach=true');
+  if (q.is_admin === 'true') where.push('m.is_admin=true');
+
+  return { sql: where.length ? where.join(' AND ') : 'true', params };
+}
+
+const _csvCell = (v) => {
+  if (v == null) return '';
+  let s = (v instanceof Date) ? v.toISOString() : Array.isArray(v) ? v.join(' ') : String(v);
+  // Neutralise spreadsheet formulas (=, +, -, @) in member-typed text.
+  if (/^[=+\-@]/.test(s) && !/^-?\d/.test(s)) s = "'" + s;
+  return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+};
+const MEMBER_CSV_COLS = [
+  'member_number', 'first_name', 'last_name', 'email', 'phone', 'account_status',
+  'subscription_type', 'subscription_status', 'tribe_name', 'city_name', 'country_name',
+  'residence_city', 'residence_country', 'gender', 'date_of_birth', 'nationality',
+  'is_admin', 'is_ambassador', 'is_coach', 'email_verified', 'auth_providers',
+  'points_balance', 'sessions_count', 'bookings_count', 'wallet_balance_aed',
+  'referral_code', 'profile_complete_pct', 'joined_at', 'last_active_at',
+  'last_session_at', 'pending_deletion_at',
+];
+
 router.get('/members', async (req, res, next) => {
   try {
-    const { search, city_id, subscription_type, is_ambassador, is_coach,
-            limit = 50, offset = 0 } = req.query;
+    const csv = String(req.query.format || '').toLowerCase() === 'csv';
+    const limit = Math.min(500, Math.max(1, parseInt(req.query.limit, 10) || 50));
+    let offset = Math.max(0, parseInt(req.query.offset, 10) || 0);
+    const page = parseInt(req.query.page, 10);
+    if (req.query.offset == null && page > 1) offset = (page - 1) * limit;
 
-    let where = ['m.is_banned=false'];
-    const params = [];
-    let idx = 1;
+    const sortKey = MEMBER_SORTS[req.query.sort] ? req.query.sort : 'joined';
+    const dir = String(req.query.dir || '').toLowerCase() === 'asc' ? 'ASC' : 'DESC';
+    const orderBy = MEMBER_SORTS[sortKey].split(', ')
+      .map((c) => `${c} ${dir} NULLS LAST`).join(', ') + ', m.id';
 
-    if (search) {
-      where.push(`(m.first_name ILIKE $${idx} OR m.last_name ILIKE $${idx} OR m.email ILIKE $${idx} OR m.member_number ILIKE $${idx})`);
-      params.push(`%${search}%`); idx++;
+    // Booking counts are correlated subqueries rather than GROUP BY
+    // joins: with ORDER BY … LIMIT Postgres evaluates them only for the
+    // rows on the page (idx_bookings_member), not for all ~8k members.
+    const fullSelect = (f) => `
+      SELECT m.id, m.member_number, m.first_name, m.last_name, m.email, m.phone,
+             m.avatar_url, m.subscription_type, m.subscription_status, m.subscription_renews_at,
+             m.points_balance, m.is_ambassador, m.is_coach, m.is_admin, m.is_banned,
+             m.email_verified, m.profile_complete_pct, m.joined_at, m.last_active_at,
+             m.last_session_at, m.pending_deletion_at, m.referral_code,
+             m.gender, m.date_of_birth, m.nationality, m.residence_city, m.residence_country,
+             c.name AS city_name, t.name AS tribe_name, t.color AS tribe_color, co.name AS country_name,
+             CASE WHEN m.password_hash = 'ACCOUNT_DELETED' THEN 'deleted'
+                  WHEN m.is_banned THEN 'banned'
+                  WHEN m.pending_deletion_at IS NOT NULL THEN 'pending_deletion'
+                  ELSE 'active' END AS account_status,
+             (SELECT COUNT(*) FROM bookings b WHERE b.member_id=m.id AND b.status='attended')::int AS sessions_count,
+             (SELECT COUNT(*) FROM bookings b WHERE b.member_id=m.id)::int AS bookings_count,
+             sa.auth_providers,
+             -- Wallet balance for the coach-sessions feature. LEFT JOIN
+             -- with COALESCE so members who never had a wallet row show 0.
+             COALESCE(w.balance_aed, 0)::int AS wallet_balance_aed,
+             COALESCE(w.pending_aed, 0)::int AS wallet_pending_aed
+        FROM members m
+        LEFT JOIN cities c     ON c.id = m.city_id
+        LEFT JOIN tribes t     ON t.id = m.tribe_id
+        LEFT JOIN countries co ON co.id = m.country_id
+        LEFT JOIN member_wallet w ON w.member_id = m.id
+        -- social_accounts has no member_id index: aggregate it once and
+        -- hash-join rather than scan it per row (matters for the CSV).
+        LEFT JOIN (SELECT member_id, array_agg(DISTINCT provider) AS auth_providers
+                     FROM social_accounts GROUP BY member_id) sa ON sa.member_id = m.id
+       WHERE ${f.sql}
+       ORDER BY ${orderBy}`;
+    // Pre-migration fallback — base-schema columns only.
+    const coreSelect = (f) => `
+      SELECT m.id, m.member_number, m.first_name, m.last_name, m.email, m.phone,
+             m.avatar_url, m.subscription_type, m.points_balance, m.is_ambassador,
+             m.is_coach, m.is_admin, m.is_banned,
+             m.email_verified, m.profile_complete_pct, m.joined_at, m.last_active_at,
+             m.gender, m.date_of_birth, m.nationality,
+             c.name AS city_name,
+             CASE WHEN m.password_hash = 'ACCOUNT_DELETED' THEN 'deleted'
+                  WHEN m.is_banned THEN 'banned' ELSE 'active' END AS account_status,
+             (SELECT COUNT(*) FROM bookings b WHERE b.member_id=m.id AND b.status='attended')::int AS sessions_count,
+             (SELECT COUNT(*) FROM bookings b WHERE b.member_id=m.id)::int AS bookings_count,
+             0 AS wallet_balance_aed, 0 AS wallet_pending_aed
+        FROM members m
+        LEFT JOIN cities c ON c.id = m.city_id
+       WHERE ${f.sql}
+       ORDER BY ${orderBy}`;
+
+    let f = _memberFilters(req.query, true);
+    const run = (sql, fl) => csv
+      ? query(sql, fl.params)
+      : query(sql + ` LIMIT $${fl.params.length + 1} OFFSET $${fl.params.length + 2}`, [...fl.params, limit, offset]);
+    let rows;
+    try {
+      ({ rows } = await run(fullSelect(f), f));
+    } catch (e) {
+      if (e.code !== '42703' && e.code !== '42P01') throw e;
+      f = _memberFilters(req.query, false);
+      ({ rows } = await run(coreSelect(f), f));
     }
-    if (city_id) { where.push(`m.city_id=$${idx++}`); params.push(city_id); }
-    if (subscription_type) { where.push(`m.subscription_type=$${idx++}`); params.push(subscription_type); }
-    if (is_ambassador === 'true') { where.push('m.is_ambassador=true'); }
-    if (is_coach === 'true') { where.push('m.is_coach=true'); }
 
-    const { rows } = await query(
-      `SELECT m.id, m.member_number, m.first_name, m.last_name, m.email,
-              m.phone, m.subscription_type, m.points_balance, m.is_ambassador,
-              m.is_coach, m.is_admin, m.profile_complete_pct, m.joined_at, m.last_active_at,
-              c.name AS city_name,
-              (SELECT COUNT(*) FROM bookings b WHERE b.member_id=m.id AND b.status='attended') AS sessions_count,
-              -- Wallet balance for the coach-sessions feature. LEFT JOIN
-              -- with COALESCE so members who never had a wallet row show 0.
-              COALESCE(w.balance_aed, 0)::int AS wallet_balance_aed,
-              COALESCE(w.pending_aed, 0)::int AS wallet_pending_aed
-       FROM members m
-       LEFT JOIN cities c ON c.id=m.city_id
-       LEFT JOIN member_wallet w ON w.member_id=m.id
-       WHERE ${where.join(' AND ')}
-       ORDER BY m.joined_at DESC
-       LIMIT $${idx} OFFSET $${idx+1}`,
-      [...params, limit, offset]
-    );
+    if (csv) {
+      const lines = [MEMBER_CSV_COLS.join(',')];
+      for (const r of rows) lines.push(MEMBER_CSV_COLS.map((c) => _csvCell(r[c])).join(','));
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="atp-members-${new Date().toISOString().slice(0, 10)}.csv"`);
+      return res.send(lines.join('\n'));
+    }
 
     const { rows: countRows } = await query(
-      `SELECT COUNT(*) AS total FROM members m WHERE ${where.join(' AND ')}`,
-      params
+      `SELECT COUNT(*) AS total FROM members m WHERE ${f.sql}`,
+      f.params
     );
 
-    res.json({ members: rows, total: parseInt(countRows[0].total) });
+    // Every row in the table split by account status, so the tab can
+    // show where the dashboard's "all members" number goes.
+    const { rows: statusRows } = await query(
+      `SELECT COUNT(*)::int AS "all",
+              COUNT(*) FILTER (WHERE is_banned=false AND pending_deletion_at IS NULL)::int AS active,
+              COUNT(*) FILTER (WHERE is_banned=true AND password_hash IS DISTINCT FROM 'ACCOUNT_DELETED')::int AS banned,
+              COUNT(*) FILTER (WHERE pending_deletion_at IS NOT NULL AND password_hash IS DISTINCT FROM 'ACCOUNT_DELETED')::int AS pending_deletion,
+              COUNT(*) FILTER (WHERE password_hash = 'ACCOUNT_DELETED')::int AS deleted
+         FROM members`
+    ).catch((e) => {
+      if (e.code === '42703') return { rows: [] };
+      throw e;
+    });
+
+    res.json({
+      members: rows,
+      total: parseInt(countRows[0].total),
+      limit,
+      offset,
+      sort: sortKey,
+      dir: dir.toLowerCase(),
+      status_counts: statusRows[0] || null,
+    });
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/admin/members/:id ────────────────────────────────
+// Everything we hold on one member, for the Members tab detail drawer.
+// to_jsonb(m) means a column added later shows up without touching
+// this route; secrets are stripped by name on top of password_hash.
+const SECRET_KEY_RE = /(password|token|secret|hash)/i;
+router.get('/members/:id', async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    if (!UUID_RE.test(id)) return res.status(404).json({ error: 'Member not found' });
+
+    const { rows } = await query(
+      `SELECT to_jsonb(m) - 'password_hash' AS member,
+              (m.password_hash IS NOT NULL AND m.password_hash <> 'ACCOUNT_DELETED') AS has_password,
+              (m.password_hash = 'ACCOUNT_DELETED') AS is_deleted
+         FROM members m WHERE m.id = $1`,
+      [id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Member not found' });
+
+    const member = {};
+    for (const [k, v] of Object.entries(rows[0].member || {})) {
+      if (!SECRET_KEY_RE.test(k)) member[k] = v;
+    }
+    member.has_password = rows[0].has_password;
+    member.account_status = rows[0].is_deleted ? 'deleted'
+      : member.is_banned ? 'banned'
+      : member.pending_deletion_at ? 'pending_deletion' : 'active';
+
+    // Related lookups run in parallel; each one degrades to empty on a
+    // pre-migration DB (missing table 42P01 / column 42703).
+    const safe = (sql, params) => query(sql, params).then((r) => r.rows).catch((e) => {
+      if (e.code === '42P01' || e.code === '42703') return [];
+      throw e;
+    });
+    const activators = [member.ambassador_activated_by, member.coach_activated_by].filter((x) => UUID_RE.test(x || ''));
+    const [city, tribe, country, stats, recentBookings, recentPoints, referredBy,
+           referrals, subscription, providers, push, wallet, people] = await Promise.all([
+      member.city_id ? safe(`SELECT name, country FROM cities WHERE id=$1`, [member.city_id]) : [],
+      member.tribe_id ? safe(`SELECT name, color FROM tribes WHERE id=$1`, [member.tribe_id]) : [],
+      member.country_id ? safe(`SELECT name, code FROM countries WHERE id=$1`, [member.country_id]) : [],
+      safe(`SELECT COUNT(*)::int AS bookings,
+                   COUNT(*) FILTER (WHERE b.status='attended')::int AS attended,
+                   COUNT(*) FILTER (WHERE b.status='no_show')::int AS no_show,
+                   COUNT(*) FILTER (WHERE b.status='cancelled')::int AS cancelled,
+                   COUNT(*) FILTER (WHERE b.status='confirmed' AND s.scheduled_at > NOW())::int AS upcoming,
+                   MIN(b.checked_in_at) AS first_checkin_at,
+                   MAX(b.checked_in_at) AS last_checkin_at
+              FROM bookings b JOIN sessions s ON s.id = b.session_id
+             WHERE b.member_id=$1`, [id]),
+      safe(`SELECT b.status, b.checked_in_at, s.name AS session_name, s.scheduled_at
+              FROM bookings b JOIN sessions s ON s.id = b.session_id
+             WHERE b.member_id=$1 ORDER BY s.scheduled_at DESC LIMIT 10`, [id]),
+      safe(`SELECT amount, balance, reason, description, created_at
+              FROM points_ledger WHERE member_id=$1 ORDER BY created_at DESC LIMIT 10`, [id]),
+      safe(`SELECT r.created_at, m2.id, m2.first_name, m2.last_name, m2.member_number
+              FROM referrals r JOIN members m2 ON m2.id = r.referrer_id
+             WHERE r.referred_id=$1 LIMIT 1`, [id]),
+      safe(`SELECT COUNT(*)::int AS n FROM referrals WHERE referrer_id=$1`, [id]),
+      safe(`SELECT s.status, s.current_period_start, s.current_period_end, s.cancel_at_period_end,
+                   s.cancelled_at, s.stripe_subscription_id, s.created_at, p.name AS plan_name
+              FROM subscriptions s LEFT JOIN subscription_plans p ON p.id = s.plan_id
+             WHERE s.member_id=$1 ORDER BY s.created_at DESC LIMIT 1`, [id]),
+      safe(`SELECT provider, email, created_at FROM social_accounts WHERE member_id=$1 ORDER BY created_at`, [id]),
+      // Device counts only — never the push tokens themselves.
+      safe(`SELECT platform, COUNT(*)::int AS devices, MAX(updated_at) AS last_seen_at
+              FROM push_tokens WHERE member_id=$1 AND revoked_at IS NULL GROUP BY platform`, [id]),
+      safe(`SELECT balance_aed, pending_aed FROM member_wallet WHERE member_id=$1`, [id]),
+      activators.length
+        ? safe(`SELECT id, first_name, last_name FROM members WHERE id = ANY($1::uuid[])`, [activators])
+        : [],
+    ]);
+
+    const nameOf = (uid) => {
+      const p = people.find((x) => x.id === uid);
+      return p ? `${p.first_name || ''} ${p.last_name || ''}`.trim() : null;
+    };
+    member.city_name = city[0]?.name || null;
+    member.tribe_name = tribe[0]?.name || null;
+    member.tribe_color = tribe[0]?.color || null;
+    member.country_name = country[0]?.name || null;
+    member.ambassador_activated_by_name = nameOf(member.ambassador_activated_by);
+    member.coach_activated_by_name = nameOf(member.coach_activated_by);
+
+    res.json({
+      member,
+      stats: stats[0] || null,
+      recent_bookings: recentBookings,
+      recent_points: recentPoints,
+      referred_by: referredBy[0] || null,
+      referrals_count: referrals[0]?.n || 0,
+      subscription: subscription[0] || null,
+      auth_providers: providers,
+      push_devices: push,
+      wallet: wallet[0] || { balance_aed: 0, pending_aed: 0 },
+    });
   } catch (err) { next(err); }
 });
 
