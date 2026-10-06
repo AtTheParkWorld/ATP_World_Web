@@ -26,7 +26,7 @@
  * client-side over the already-loaded week of sessions, so day-tapping
  * feels instant.
  */
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
@@ -37,6 +37,20 @@ import { colors, fontFamily } from '@/lib/theme/tokens';
 import { LoadError } from '@/lib/components/LoadError';
 
 const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+const MONTH_NAMES = ['January', 'February', 'March', 'April', 'May', 'June',
+                     'July', 'August', 'September', 'October', 'November', 'December'];
+
+/** "October 2026", or "Oct – Nov 2026" / "Dec 2026 – Jan 2027" when the
+ *  visible days straddle a month (rendered uppercase). */
+function monthSpanLabel(a: Date, b: Date): string {
+  if (a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear()) {
+    return `${MONTH_NAMES[a.getMonth()]} ${a.getFullYear()}`;
+  }
+  const short = (d: Date) => MONTH_NAMES[d.getMonth()]!.slice(0, 3);
+  return a.getFullYear() === b.getFullYear()
+    ? `${short(a)} – ${short(b)} ${b.getFullYear()}`
+    : `${short(a)} ${a.getFullYear()} – ${short(b)} ${b.getFullYear()}`;
+}
 
 /**
  * Tiny filter chip — deliberately smaller than FilterPills so the
@@ -84,6 +98,25 @@ export default function Sessions() {
   const [focusedDay, setFocusedDay] = useState<string>(ymd(new Date()));
 
   const days = useMemo(() => buildWeek(2), []);
+
+  // Month label (founder 2026-10-06: "TODAY 6, WED 7…" never said which
+  // month, which gets confusing once the strip runs into the next one).
+  // The header names the month(s) of the days currently on screen and
+  // follows the strip as it scrolls; each pill's x/width is recorded on
+  // layout so this holds at any font scale. A pill counts as on screen
+  // once its centre is inside the viewport.
+  const pillLayouts = useRef<Record<string, { x: number; w: number }>>({});
+  const stripView   = useRef({ x: 0, w: 0 });
+  const [monthLabel, setMonthLabel] = useState(() => monthSpanLabel(days[0]!, days[0]!));
+  const updateMonthLabel = useCallback(() => {
+    const { x, w } = stripView.current;
+    if (!w) return;
+    const onScreen = days.filter((d) => {
+      const l = pillLayouts.current[ymd(d)];
+      return !!l && l.x + l.w / 2 >= x && l.x + l.w / 2 <= x + w;
+    });
+    if (onScreen.length) setMonthLabel(monthSpanLabel(onScreen[0]!, onScreen[onScreen.length - 1]!));
+  }, [days]);
 
   const tribesQ = useQuery({ queryKey: ['tribes'], queryFn: () => listTribes().then(r => r.tribes), staleTime: 1000 * 60 * 30 });
 
@@ -157,11 +190,19 @@ export default function Sessions() {
 
   return (
     <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>
-      {/* Header — title only; the list header below already announces
-          the focused day + count, so no subtitle here. */}
-      <View className="px-5 pt-2 pb-1">
+      {/* Header — title, plus the month(s) the week strip is showing on
+          the right. The list header below already announces the
+          focused day + count, so no subtitle here. */}
+      <View className="px-5 pt-2 pb-1 flex-row items-center justify-between">
         <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-2xl uppercase tracking-tight">
           Sessions
+        </Text>
+        <Text
+          numberOfLines={1}
+          style={{ fontFamily: fontFamily.bodyBold, color: colors.muted, flexShrink: 1 }}
+          className="text-xs uppercase tracking-widest ml-3"
+        >
+          {monthLabel}
         </Text>
       </View>
 
@@ -173,40 +214,60 @@ export default function Sessions() {
         showsHorizontalScrollIndicator={false}
         style={{ flexGrow: 0 }}
         contentContainerStyle={{ paddingHorizontal: 16, paddingTop: 6, paddingBottom: 6, gap: 5 }}
+        scrollEventThrottle={32}
+        onLayout={(e) => { stripView.current.w = e.nativeEvent.layout.width; updateMonthLabel(); }}
+        onScroll={(e) => { stripView.current.x = e.nativeEvent.contentOffset.x; updateMonthLabel(); }}
       >
-        {days.map((d) => {
+        {days.map((d, i) => {
           const k     = ymd(d);
           const count = byDay[k]?.length || 0;
           const isFocused = k === focusedDay;
           const isToday   = k === ymd(new Date());
           return (
-            <Pressable
-              key={k}
-              onPress={() => setFocusedDay(k)}
-              className={`w-10 py-1 rounded-lg items-center active:opacity-70 ${isFocused ? 'bg-atp-green' : 'bg-white/5'}`}
-            >
-              <Text
-                style={{ fontFamily: fontFamily.bodyBold, color: isFocused ? colors.black : colors.muted, letterSpacing: 1 }}
-                className="text-[9px] uppercase"
-              >
-                {isToday ? 'Today' : DAY_NAMES[d.getDay()]}
-              </Text>
-              <Text
-                style={{ fontFamily: fontFamily.bodyBold, color: isFocused ? colors.black : count > 0 ? colors.white : colors.muted }}
-                className="text-sm"
-              >
-                {d.getDate()}
-              </Text>
-              {/* Availability dot — replaces the old count badge; always
-                  rendered (transparent when empty) so pill heights match. */}
-              <View
-                className="rounded-full"
-                style={{
-                  width: 3, height: 3, marginTop: 1, marginBottom: 2,
-                  backgroundColor: count > 0 ? (isFocused ? colors.black : colors.green) : 'transparent',
+            <Fragment key={k}>
+              {/* Month marker in front of every 1st (after the first
+                  pill), so the jump from 31 to 1 reads as a new month. */}
+              {i > 0 && d.getDate() === 1 && (
+                <View className="justify-center px-0.5">
+                  <Text
+                    style={{ fontFamily: fontFamily.bodyBold, color: colors.green, letterSpacing: 1 }}
+                    className="text-[9px] uppercase"
+                  >
+                    {MONTH_NAMES[d.getMonth()]!.slice(0, 3)}
+                  </Text>
+                </View>
+              )}
+              <Pressable
+                onPress={() => setFocusedDay(k)}
+                onLayout={(e) => {
+                  pillLayouts.current[k] = { x: e.nativeEvent.layout.x, w: e.nativeEvent.layout.width };
+                  updateMonthLabel();
                 }}
-              />
-            </Pressable>
+                className={`w-10 py-1 rounded-lg items-center active:opacity-70 ${isFocused ? 'bg-atp-green' : 'bg-white/5'}`}
+              >
+                <Text
+                  style={{ fontFamily: fontFamily.bodyBold, color: isFocused ? colors.black : colors.muted, letterSpacing: 1 }}
+                  className="text-[9px] uppercase"
+                >
+                  {isToday ? 'Today' : DAY_NAMES[d.getDay()]}
+                </Text>
+                <Text
+                  style={{ fontFamily: fontFamily.bodyBold, color: isFocused ? colors.black : count > 0 ? colors.white : colors.muted }}
+                  className="text-sm"
+                >
+                  {d.getDate()}
+                </Text>
+                {/* Availability dot — replaces the old count badge; always
+                    rendered (transparent when empty) so pill heights match. */}
+                <View
+                  className="rounded-full"
+                  style={{
+                    width: 3, height: 3, marginTop: 1, marginBottom: 2,
+                    backgroundColor: count > 0 ? (isFocused ? colors.black : colors.green) : 'transparent',
+                  }}
+                />
+              </Pressable>
+            </Fragment>
           );
         })}
       </ScrollView>
