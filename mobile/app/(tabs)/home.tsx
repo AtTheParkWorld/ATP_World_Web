@@ -2,7 +2,8 @@
  * Home tab — landing screen after sign-in.
  *
  * Composition (top → bottom):
- *   1. Compact greeting (small avatar + name + streak)
+ *   1. Compact greeting (small avatar + name + streak) + the live
+ *      "We are X ATP members" line (same number as the website hero)
  *   2. Primary CTAs — BOOK A SESSION / STORE (founder 2026-08-01:
  *      these must be the two most prominent elements on the screen;
  *      the points/sessions/friends stat strip moved to Profile only)
@@ -23,6 +24,7 @@ import { router } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { getProfile, getStreak } from '@/lib/api/members';
 import { listSessions, type Session } from '@/lib/api/sessions';
+import { formatCount, useMemberCount } from '@/lib/api/stats';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { SessionCard } from '@/lib/components/SessionCard';
 import { StreakBadge } from '@/lib/components/StreakBadge';
@@ -44,6 +46,7 @@ export default function Home() {
     queryFn:  () => listSessions({ status: 'upcoming', limit: 8 }).then(r => r.sessions),
   });
   const me = profileQ.data || member;
+  const memberCount = useMemberCount();
 
   const refreshing = streakQ.isFetching || sessionsQ.isFetching;
   const onRefresh  = useCallback(async () => {
@@ -51,6 +54,7 @@ export default function Home() {
       qc.invalidateQueries({ queryKey: ['streak'] }),
       qc.invalidateQueries({ queryKey: ['my-bookings'] }),
       qc.invalidateQueries({ queryKey: ['sessions'] }),
+      qc.invalidateQueries({ queryKey: ['public-stats'] }),
     ]);
   }, [qc]);
 
@@ -98,6 +102,24 @@ export default function Home() {
           )}
           <NotificationBell />
         </View>
+
+        {/* Live community size (founder 2026-10-06: "We are (xxx) ATP
+            members", as on the website). Hidden until the number lands,
+            and if the call fails — never a stale or zero count. */}
+        {memberCount !== null && (
+          <View
+            className="px-5 mt-3 flex-row items-center gap-2"
+            accessible
+            accessibilityLabel={`We are ${formatCount(memberCount)} ATP members`}
+          >
+            <View style={{ width: 7, height: 7, borderRadius: 4, backgroundColor: colors.green }} />
+            <Text style={{ fontFamily: fontFamily.display, color: colors.light, letterSpacing: 0.6 }} className="text-sm uppercase">
+              We are{' '}
+              <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.green }}>{formatCount(memberCount)}</Text>
+              {' '}ATP members
+            </Text>
+          </View>
+        )}
 
         {/* Primary CTAs — the two things a member most wants to do
             (founder 2026-08-01: big, unmissable, brand lime) */}
