@@ -14,7 +14,7 @@
   <link rel=icon type=image/png sizes=32x32 href=/favicon-32.png><link rel=icon type=image/png sizes=16x16 href=/favicon-16.png><link rel=icon href=/favicon.ico><link rel=apple-touch-icon sizes=180x180 href=/apple-touch-icon.png>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@700;800;900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="/admin/admin.min.css?v=5fc75c9544">
+<link rel="stylesheet" href="/admin/admin.min.css?v=6b491323fc">
 </head>
 <body>
 
@@ -239,25 +239,66 @@
 </div>
 
     <!-- MEMBERS -->
+    <!-- Server-side paged list (admin/members.js). It used to fetch the
+         100 newest members once with no paging — the founder could not
+         reach most of the ~8,000 members (2026-10-06). -->
     <div id="section-members" style="display:none">
       <div class="admin-page-title">Members</div>
-      <div class="admin-page-sub">Manage all ATP registered members.</div>
+      <div class="admin-page-sub">Every registered ATP member. Search, filter and page through all of them; click a member for their full record.</div>
       <div class="admin-section">
-        <div class="admin-section-head">
-          <span class="admin-section-title">All Members <span style="color:#444;font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;margin-left:8px">7,024 total</span></span>
+        <div class="admin-section-head" style="flex-wrap:wrap;gap:10px">
+          <span class="admin-section-title">All Members <span id="membersTotalLbl" style="color:#888;font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;margin-left:8px">Loading…</span></span>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <button class="admin-btn" onclick="exportMembersList()" style="font-size:11px;padding:7px 12px">⬇ Export members (CSV)</button>
             <button class="admin-btn" onclick="exportPointsLedger()" style="font-size:11px;padding:7px 12px;background:rgba(168,255,0,.10);color:#A8FF00;border:1px solid rgba(168,255,0,.3)">📊 Export points ledger (CSV)</button>
-            <input type="search" id="memberSearch" placeholder="Search name, email, or ID…" style="background:#111;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:7px 14px;color:#fff;font-size:12px;font-family:var(--ff-body);width:240px" oninput="filterMembers(this.value)" aria-label="Search name, email, or ID…">
+            <input type="search" id="memberSearch" placeholder="Search name, email, phone or member #…" style="background:#111;border:1px solid rgba(255,255,255,.08);border-radius:8px;padding:7px 14px;color:#fff;font-size:12px;font-family:var(--ff-body);width:260px;max-width:100%" oninput="filterMembers(this.value)" aria-label="Search name, email, phone or member number">
           </div>
         </div>
-        <div class="admin-section-body" style="padding:0">
-          <table class="admin-table" id="membersTable">
+        <div class="m-filters">
+          <select id="mfStatus" onchange="membersFilterChanged()" aria-label="Account status">
+            <option value="all">All members</option>
+            <option value="active">Active</option>
+            <option value="banned">Banned</option>
+            <option value="pending_deletion">Pending deletion</option>
+            <option value="deleted">Deleted (anonymised)</option>
+          </select>
+          <select id="mfPlan" onchange="membersFilterChanged()" aria-label="Plan">
+            <option value="">All plans</option>
+            <option value="free">Free</option>
+            <option value="premium">Premium</option>
+            <option value="premium_plus">Premium+</option>
+          </select>
+          <select id="mfRole" onchange="membersFilterChanged()" aria-label="Role">
+            <option value="">All roles</option>
+            <option value="admin">Admins</option>
+            <option value="coach">Coaches</option>
+            <option value="ambassador">Ambassadors</option>
+          </select>
+          <select id="mfTribe" onchange="membersFilterChanged()" aria-label="Tribe">
+            <option value="">All tribes</option>
+            <option value="none">No tribe</option>
+          </select>
+          <select id="mfCity" onchange="membersFilterChanged()" aria-label="City">
+            <option value="">All cities</option>
+            <option value="none">No city</option>
+          </select>
+          <button class="admin-btn" onclick="resetMemberFilters()" style="font-size:11px;padding:6px 12px">Reset</button>
+        </div>
+        <div class="admin-section-body m-table-wrap" style="padding:0">
+          <table class="admin-table m-table" id="membersTable">
             <thead><tr>
-              <th>Member</th><th>Joined</th><th>Sessions</th><th>Points</th><th>Wallet</th><th>Tier</th><th>Status</th><th>Actions</th>
+              <th class="m-sticky" data-sort="name" onclick="sortMembers('name')">Member<span class="m-arrow"></span></th>
+              <th>Email / phone</th><th>Tribe</th><th>City</th><th>Plan</th><th>Status / roles</th>
+              <th data-sort="joined" onclick="sortMembers('joined')">Joined<span class="m-arrow"></span></th>
+              <th data-sort="last_active" onclick="sortMembers('last_active')">Last active<span class="m-arrow"></span></th>
+              <th data-sort="sessions" onclick="sortMembers('sessions')">Sessions<span class="m-arrow"></span></th>
+              <th data-sort="points" onclick="sortMembers('points')">Points<span class="m-arrow"></span></th>
+              <th>Wallet</th><th>Actions</th>
             </tr></thead>
             <tbody id="membersTbody"></tbody>
           </table>
         </div>
+        <div class="m-pager" id="membersPager"></div>
       </div>
     </div>
 
@@ -2159,7 +2200,7 @@
 <div class="admin-toast" id="adminToast"></div>
 <!-- Admin modules — load order matters: core defines globals + showAdminSection
      hook in init.js wires the per-section loaders, so init.js must come last. -->
-<script src="/admin/bundle.min.js?v=a3f0115056"></script>
+<script src="/admin/bundle.min.js?v=07c9de00f5"></script>
 
 
 
