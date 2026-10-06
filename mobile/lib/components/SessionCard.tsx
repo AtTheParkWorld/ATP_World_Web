@@ -160,41 +160,50 @@ function _SessionCard({ session, compact, onPress }: Props) {
         </View>
       </View>
 
-      <View className="flex-row items-center gap-3 mt-3">
-        {!!session.city_name && (
-          <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-xs">
-            📍 {session.city_name}
+      {/* Meta row. Founder report 2026-10-06: on a 392dp Android phone,
+          city + activity + joined + rating ran wider than the card and
+          pushed the price off the right edge. The info items now wrap
+          onto a second line, and the price sits in its own column that
+          never shrinks, pinned bottom-right, so it is always visible. */}
+      <View className="flex-row items-end mt-3">
+        <View className="flex-1 flex-row flex-wrap items-center gap-x-3 gap-y-1">
+          {!!session.city_name && (
+            <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-xs">
+              📍 {session.city_name}
+            </Text>
+          )}
+          {/* Long activity names ellipsize rather than overflow when
+              they need a whole line to themselves. */}
+          {!!session.activity_name && (
+            <Text numberOfLines={1} style={{ fontFamily: fontFamily.body, color: colors.light, flexShrink: 1 }} className="text-xs">
+              {session.activity_icon || '•'} {session.activity_name}
+            </Text>
+          )}
+          <Text style={{ fontFamily: fontFamily.body, color: isFull ? colors.danger : colors.light }} className="text-xs">
+            {isFull
+              ? `Full · waitlist (${session.waitlist_count})`
+              : `${session.registrations_count}${session.capacity ? '/' + session.capacity : ''} joined`}
           </Text>
-        )}
-        {!!session.activity_name && (
-          <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-xs">
-            {session.activity_icon || '•'} {session.activity_name}
-          </Text>
-        )}
-        <Text style={{ fontFamily: fontFamily.body, color: isFull ? colors.danger : colors.light }} className="text-xs">
-          {isFull
-            ? `Full · waitlist (${session.waitlist_count})`
-            : `${session.registrations_count}${session.capacity ? '/' + session.capacity : ''} joined`}
-        </Text>
-        {/* Rolling series score — full cards only (compact rails are
-            already at capacity for width). Gold to match the web's
-            rating treatment. */}
-        {!compact && session.series_rating_count > 0 && !!session.series_rating_avg && (
-          <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.warning }} className="text-xs">
-            ★ {Number(session.series_rating_avg).toFixed(1)} ({session.series_rating_count})
-          </Text>
-        )}
-        <View className="ml-auto">
-          <Text
-            style={{
-              fontFamily: fontFamily.bodyBold,
-              color: session.session_type === 'paid' ? colors.warning : colors.green,
-            }}
-            className="text-xs uppercase tracking-widest"
-          >
-            {priceLbl}
-          </Text>
+          {/* Rolling series score — full cards only (compact rails are
+              already at capacity for width). Gold to match the web's
+              rating treatment. */}
+          {!compact && session.series_rating_count > 0 && !!session.series_rating_avg && (
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.warning }} className="text-xs">
+              ★ {Number(session.series_rating_avg).toFixed(1)} ({session.series_rating_count})
+            </Text>
+          )}
         </View>
+        <Text
+          numberOfLines={1}
+          style={{
+            fontFamily: fontFamily.bodyBold,
+            color: session.session_type === 'paid' ? colors.warning : colors.green,
+            flexShrink: 0,
+          }}
+          className="text-xs uppercase tracking-widest ml-3"
+        >
+          {priceLbl}
+        </Text>
       </View>
     </Pressable>
   );
