@@ -325,6 +325,27 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
 /* Unpaid booking — amber, so it cannot be mistaken for a confirmed one. */
 .session-status.unpaid{background:rgba(245,192,66,.12);color:#f5c042;border:1px solid rgba(245,192,66,.3)}
 .session-status.done{background:rgba(255,255,255,.05);color:var(--muted)}
+/* My orders (founder items 7 + 8, 2026-10-06) — ATP Store order history. */
+.order-card{background:var(--dark3,#222);border:1px solid rgba(255,255,255,.06);border-radius:var(--radius-lg);padding:14px;margin-bottom:12px}
+.order-head{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
+.order-num{font-family:var(--ff-display);font-size:20px;font-weight:900;color:var(--white);letter-spacing:.02em}
+.order-date{font-size:12px;color:var(--muted);margin-top:2px}
+.order-chip{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;padding:4px 10px;border-radius:20px;white-space:nowrap;border:1px solid rgba(255,255,255,.12);color:var(--muted);background:rgba(255,255,255,.04)}
+.order-chip.delivered{color:#A8FF00;border-color:rgba(168,255,0,.35);background:rgba(168,255,0,.1)}
+.order-chip.shipped{color:#60a5fa;border-color:rgba(96,165,250,.35);background:rgba(96,165,250,.1)}
+.order-chip.processing,.order-chip.pending_payment{color:#f5c042;border-color:rgba(245,192,66,.35);background:rgba(245,192,66,.1)}
+.order-item{display:flex;align-items:center;gap:12px;margin-top:12px}
+.order-item-img{width:44px;height:44px;border-radius:8px;object-fit:cover;background:#1a1a1a;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:18px}
+.order-item-title{font-size:13px;font-weight:700;color:var(--white);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.order-item-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.order-tracking{font-size:12px;color:var(--light);margin-top:12px}
+.order-foot{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:14px;padding-top:12px;border-top:1px solid rgba(255,255,255,.06)}
+.order-total{font-family:var(--ff-display);font-size:18px;font-weight:900;color:var(--white)}
+.order-actions{display:flex;gap:8px}
+.order-btn{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;padding:8px 14px;border-radius:6px;text-decoration:none;border:1px solid rgba(255,255,255,.18);color:var(--white);background:transparent;cursor:pointer}
+.order-btn.primary{background:#A8FF00;border-color:#A8FF00;color:#0a0a0a}
+.order-thanks{font-size:12px;color:var(--muted);line-height:1.6;margin-bottom:14px}
+.order-thanks strong{color:#A8FF00;letter-spacing:.06em;text-transform:uppercase}
 
 /* ── ACHIEVEMENTS ── */
 /* Founder 2026-09-18: the badge IS the content here — no card, no
@@ -843,6 +864,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             <div class="profile-menu-divider"></div>
             <div class="menu-section-label">Account</div>
             <button class="menu-item" data-tab="wallet"       data-atp-call="showTab" data-args='["wallet"]'      role="menuitem">💰 Wallet</button>
+            <button class="menu-item" data-tab="orders"       data-atp-call="showTab" data-args='["orders"]'      role="menuitem">🛍️ My Orders</button>
             <button class="menu-item" data-tab="devices"      data-atp-call="showTab" data-args='["devices"]'     role="menuitem">⌚ Devices</button>
             <!-- Role-specific items — toggled by renderRoleBanner / coach init -->
             <button class="menu-item" id="ambassadorMenuItem" data-tab="ambassador" data-atp-call="showTab" data-args='["ambassador"]' role="menuitem" style="display:none">⭐ Ambassador</button>
@@ -1325,6 +1347,19 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
             <span class="widget-action" onclick="window.location='community.html'">Open community →</span>
           </div>
           <div class="widget-body" id="myPostsList"><div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">Loading\u2026</div></div>
+        </div>
+      </div>
+
+      <!-- MY ORDERS (founder items 7 + 8, 2026-10-06) — the member's ATP
+           Store (Shopify) orders with status + tracking. GET /api/store/orders
+           matches on the member's verified email; rendered by loadMyOrders(). -->
+      <div class="profile-panel" id="panel-orders">
+        <div class="widget">
+          <div class="widget-head">
+            <span class="widget-title">🛍️ My Orders</span>
+            <a class="widget-action" href="/store" style="text-decoration:none">Visit the store →</a>
+          </div>
+          <div class="widget-body" id="myOrdersList"><div style="padding:24px;text-align:center;color:var(--muted);font-size:13px">Loading…</div></div>
         </div>
       </div>
 
@@ -1890,6 +1925,8 @@ function showTab(name, btn) {
   }
   // Theme 14 — lazy-load own posts when the My Posts tab opens
   if (name === 'myposts') { try { loadMyPosts(); } catch(e) {} }
+  // My orders — fresh Shopify order history each time the tab opens.
+  if (name === 'orders') { try { loadMyOrders(); } catch(e) {} }
   // Ambassador dashboard — real data (founder 2026-08-28): today's
   // sessions + check-in history load fresh every time the tab opens.
   if (name === 'ambassador') { try { loadAmbassadorDashboard(); } catch(e) {} }
@@ -2428,6 +2465,111 @@ document.addEventListener('keydown', function(ev){
 // Each card shows: media (first item only — keeps the column tight),
 // content snippet, likes count, comments count, relative time. Click
 // → opens the post in /community.html#<post_id>.
+// ── MY ORDERS (founder items 7 + 8, 2026-10-06) ─────────────────
+// ATP Store order history. The API only ever returns orders placed with
+// the member's own VERIFIED email; `reason` explains an empty list.
+var _ORDER_DATE_FMT = { day: 'numeric', month: 'short', year: 'numeric' };
+function _orderSafeUrl(u) { return /^https:\/\//.test(String(u || '')) ? escapeHtml(u) : ''; }
+function _orderMoney(amount, currency) {
+  if (amount == null) return '';
+  var n = Number(amount);
+  return (currency || 'AED') + ' ' + (n % 1 === 0 ? n : n.toFixed(2));
+}
+function loadMyOrders() {
+  var el = document.getElementById('myOrdersList');
+  if (!el) return;
+  var token = ''; try { token = localStorage.getItem('atp_token') || ''; } catch(e) {}
+  if (!token) {
+    el.innerHTML = _atpEmpty('🛍️', 'Log in to see your orders', 'Your ATP Store orders and tracking live here.', '');
+    return;
+  }
+  fetch('/api/store/orders', { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(function(r){ if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
+    .then(function(data){
+      var orders = (data && data.orders) || [];
+      var reason = data && data.reason;
+      if (!orders.length) {
+        if (reason === 'email_unverified' || reason === 'no_email') {
+          el.innerHTML = _atpEmpty('✉️', 'Verify your email',
+            reason === 'no_email'
+              ? 'Add an email to your profile — orders are matched to the email you use at checkout.'
+              : 'For your privacy we only show orders once your email is confirmed. One click and you’re in.',
+            reason === 'no_email'
+              ? '<button class="atp-btn atp-btn--primary atp-empty__cta" data-atp-call="showTab" data-args=\'["edit"]\'>Edit profile</button>'
+              : '<button class="atp-btn atp-btn--primary atp-empty__cta" id="ordersVerifyBtn" onclick="atpOrdersSendVerify(this)">Send verification link</button>');
+          return;
+        }
+        if (reason === 'not_configured' || reason === 'shopify_unavailable') {
+          var acct = _orderSafeUrl(data.account_orders_url);
+          el.innerHTML = _atpEmpty('🛍️', 'Almost there',
+            'Order tracking is still being connected. Meanwhile your receipts and tracking live in your ATP Store account.',
+            acct ? '<a href="' + acct + '" target="_blank" rel="noopener" class="atp-btn atp-btn--primary atp-empty__cta">Open store account</a>' : '');
+          return;
+        }
+        el.innerHTML = _atpEmpty('🛍️', 'No orders yet',
+          'Gear up for your next session — everything you buy in the ATP Store shows up here with live tracking.',
+          '<a href="/store" class="atp-btn atp-btn--primary atp-empty__cta">Visit the store</a>');
+        return;
+      }
+      el.innerHTML = '<div class="order-thanks">Thank you for wearing the crew colours — every piece keeps ATP sessions free. <strong>Never Train Alone.</strong></div>' +
+        orders.map(function(o){
+          var d = new Date(o.created_at);
+          var date = isNaN(d.getTime()) ? '' : d.toLocaleDateString(undefined, _ORDER_DATE_FMT);
+          var items = (o.items || []).map(function(it){
+            var img = _orderSafeUrl(it.image_url);
+            var meta = [it.variant, 'Qty ' + it.quantity].filter(Boolean).map(escapeHtml).join(' · ');
+            return '<div class="order-item">' +
+              (img ? '<img class="order-item-img" loading="lazy" decoding="async" src="' + img + '" alt="">' : '<div class="order-item-img">🛍️</div>') +
+              '<div style="min-width:0"><div class="order-item-title">' + escapeHtml(it.title) + '</div>' +
+              '<div class="order-item-meta">' + meta + '</div></div></div>';
+          }).join('');
+          var t = (o.tracking || []).filter(function(x){ return x.number || x.company; })[0];
+          var trackLine = t ? '<div class="order-tracking">' + [t.company, t.number].filter(Boolean).map(escapeHtml).join(' · ') + '</div>' : '';
+          var statusUrl = _orderSafeUrl(o.order_status_url);
+          var trackUrl = (o.status === 'cancelled' || o.status === 'refunded') ? '' : _orderSafeUrl(o.track_url);
+          return '<div class="order-card">' +
+            '<div class="order-head"><div><div class="order-num">' + escapeHtml(o.number) + '</div>' +
+            '<div class="order-date">' + escapeHtml(date) + '</div></div>' +
+            '<span class="order-chip ' + escapeHtml(o.status) + '">' + escapeHtml(o.status_label) + '</span></div>' +
+            items + trackLine +
+            '<div class="order-foot"><span class="order-total">' + escapeHtml(_orderMoney(o.total, o.currency)) + '</span>' +
+            '<div class="order-actions">' +
+              (statusUrl ? '<a class="order-btn" href="' + statusUrl + '" target="_blank" rel="noopener">Details</a>' : '') +
+              (trackUrl ? '<a class="order-btn primary" href="' + trackUrl + '" target="_blank" rel="noopener">Track</a>' : '') +
+            '</div></div></div>';
+        }).join('');
+    })
+    .catch(function(){
+      el.innerHTML = _atpEmpty('⚠️', 'Couldn’t load your orders', 'Check your connection and try again.',
+        '<button class="atp-btn atp-btn--primary atp-empty__cta" onclick="loadMyOrders()">Retry</button>');
+    });
+}
+window.loadMyOrders = loadMyOrders;
+
+// Magic link doubles as email verification (auth/verify flips
+// members.email_verified), after which the order list unlocks.
+function atpOrdersSendVerify(btn) {
+  var token = ''; try { token = localStorage.getItem('atp_token') || ''; } catch(e) {}
+  if (btn) { btn.disabled = true; btn.textContent = 'Sending…'; }
+  fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + token } })
+    .then(function(r){ return r.json(); })
+    .then(function(d){
+      var email = d && d.member && d.member.email;
+      if (!email) throw new Error('no email');
+      return fetch('/api/auth/magic-link', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email })
+      }).then(function(r){ if (!r.ok) throw new Error('send failed'); return email; });
+    })
+    .then(function(email){
+      if (btn) btn.outerHTML = '<div style="font-size:13px;color:var(--green);margin-top:8px">Check ' + escapeHtml(email) + ' — open the link and your orders appear here.</div>';
+    })
+    .catch(function(){
+      if (btn) { btn.disabled = false; btn.textContent = 'Try again'; }
+    });
+}
+window.atpOrdersSendVerify = atpOrdersSendVerify;
+
 function loadMyPosts() {
   var el = document.getElementById('myPostsList');
   if (!el) return;
@@ -8429,7 +8571,8 @@ checkAmbassadorRole();
   // Whitelist the known tab keys so a hostile hash can't trigger
   // unexpected behaviour.
   var known = ['overview','sessions','community','challenges','offers','wallet',
-               'achievements','devices','friends','myposts','notifications','feedback','settings'];
+               'achievements','devices','friends','myposts','notifications','feedback','settings',
+               'orders'];
   if (known.indexOf(raw) === -1) return;
   try { showTab(raw); } catch(e) {}
 })();
