@@ -184,7 +184,10 @@ router.post('/register', async (req, res, next) => {
     );
 
     const member = rows[0];
-    const token  = generateJWT(member.id);
+    // Same web session length as /login — this used the 7-day legacy
+    // default, so a member who signed up on the site was logged out
+    // after a week while one who logged in stayed for 30 days.
+    const token  = generateJWT(member.id, { expiresIn: webTokenTtl(member) });
 
     // Theme 4 / #19 — record referral relationship + award referrer's signup
     // bonus, AND copy the referrer's tribe to the new member. Awaited so
@@ -242,29 +245,129 @@ router.post('/register', async (req, res, next) => {
 // ── POST /api/auth/refresh — mobile token rotation ───────────
 // Mobile PR D1. Verifies the refresh token, issues a NEW
 // access_token + ROTATES the refresh_token (revokes the old, mints a
-// new one). Caller MUST replace both on the device. The old refresh
-// token is unusable after this call — re-use returns 401 + revokes
-// every refresh token for the member (suspected replay attack).
+// new one). Caller MUST replace both on the device. Re-using a token
+// that was already rotated is normally a replay → 401 + every refresh
+// token for the member is revoked — except for the two innocent cases
+// handled by _reissueAfterRotation below.
 //
 // Pre-migration safety: returns 503 if refresh_tokens table doesn't
 // exist yet so the mobile client can fall back to the legacy long-
 // lived JWT until ops runs the migration.
+
+// How long a just-rotated refresh token is still honoured. Founder
+// 2026-10-06: "when I close the app but don't sign off, I should come
+// straight back in". The access token lives 1h, so on reopening the app
+// every screen's request got a 401 at once and each one called /refresh
+// with the SAME token. The first rotated it; the others arrived holding
+// a now-revoked token, were taken for a stolen-token replay, and revoked
+// every token the member had — signing them out. Sibling calls inside
+// this window come from the same phone, not an attacker.
+const REFRESH_REUSE_GRACE_SECONDS = 60;
+
+// Mint + store a refresh token inside an open transaction. created_at is
+// NOW() on purpose: Postgres pins NOW() for the whole transaction, so the
+// new row's created_at equals the revoked_at stamped on the token it
+// replaces. That equality is how _reissueAfterRotation finds a rotated
+// token's successor without a schema change.
+async function _insertRefreshToken(client, memberId, req) {
+  const plain = crypto.randomBytes(48).toString('base64url');
+  const hash  = crypto.createHash('sha256').update(plain).digest('hex');
+  const expiresAt = new Date(Date.now() + 90 * 86400 * 1000);
+  const platform = String(req.headers['x-mobile-platform'] || 'web').slice(0, 20);
+  const deviceName = String(req.headers['x-device-name']    || '').slice(0, 120) || null;
+  const appVersion = String(req.headers['x-mobile-app-version'] || '').slice(0, 20) || null;
+  await client.query(
+    `INSERT INTO refresh_tokens
+       (member_id, token_hash, platform, device_name, app_version, expires_at, created_at)
+     VALUES ($1, $2, $3, $4, $5, $6, NOW())`,
+    [memberId, hash, platform, deviceName, appVersion, expiresAt]
+  );
+  return plain;
+}
+
+// A token /refresh already rotated is presented again. Two innocent ways
+// that happens, both on the member's own phone:
+//   1. Sibling calls — several requests hit 401 together and each asked
+//      for a refresh with the same token (inside the grace window).
+//   2. Lost response — the app was closed or lost signal after the server
+//      rotated but before the phone saved the new token, so it still holds
+//      the old one. Provable: the successor was never used.
+// Either way a fresh pair is issued. Returns null for a real replay (the
+// successor was already used, or the token was revoked some other way).
+async function _reissueAfterRotation(row, req) {
+  if (row.in_grace) {
+    return transaction((client) => _insertRefreshToken(client, row.member_id, req));
+  }
+  return transaction(async (client) => {
+    // `o.revoked_at = $2` pins the link to the rotation this request saw:
+    // if a sibling re-stamped the token in the meantime, the successor is
+    // the sibling's fresh token and must not be taken from it.
+    const { rows: successor } = await client.query(
+      `UPDATE refresh_tokens s SET revoked_at = NOW()
+         FROM refresh_tokens o
+        WHERE o.id = $1
+          AND o.revoked_at = $2::timestamptz
+          AND s.member_id = o.member_id
+          AND s.created_at = o.revoked_at
+          AND s.revoked_at IS NULL
+        RETURNING s.id`,
+      [row.id, row.revoked_at_exact]
+    );
+    if (!successor.length) {
+      // A sibling request from the same burst may have recovered this
+      // token a moment ago (it re-stamps the old token below) — then this
+      // is case 1, not a replay.
+      const { rows: again } = await client.query(
+        `SELECT 1 FROM refresh_tokens
+          WHERE id = $1 AND revoked_at > NOW() - $2::int * INTERVAL '1 second'`,
+        [row.id, REFRESH_REUSE_GRACE_SECONDS]
+      );
+      return again.length ? _insertRefreshToken(client, row.member_id, req) : null;
+    }
+    // The unused successor is revoked WITHOUT the rotation stamp, so if it
+    // ever turns up later it counts as a replay (theft is still caught).
+    // The old token is re-pointed at the replacement minted below, so a
+    // second lost response recovers the same way.
+    await client.query(
+      `UPDATE refresh_tokens SET revoked_at = NOW(), last_used_at = NOW()
+        WHERE id = $1`,
+      [row.id]
+    );
+    return _insertRefreshToken(client, row.member_id, req);
+  });
+}
+
+function _refreshPayload(memberId, refreshToken) {
+  return {
+    access_token:  generateJWT(memberId, { expiresIn: '1h' }),
+    refresh_token: refreshToken,
+    expires_in:    3600,
+  };
+}
+
 router.post('/refresh', async (req, res, next) => {
   try {
     const { refresh_token } = req.body || {};
-    if (!refresh_token) return res.status(400).json({ error: 'refresh_token required' });
+    if (!refresh_token || typeof refresh_token !== 'string') {
+      return res.status(400).json({ error: 'refresh_token required' });
+    }
     const hash = crypto.createHash('sha256').update(refresh_token).digest('hex');
 
     let rows;
     try {
+      // rotated: revoked by /refresh itself (both stamps written by one
+      // statement), as opposed to sign-out, revoke-all or replay defence.
       ({ rows } = await query(
         `SELECT rt.id, rt.member_id, rt.expires_at, rt.revoked_at,
+                rt.revoked_at::text AS revoked_at_exact,  -- full µs, unlike a JS Date
+                (rt.revoked_at IS NOT NULL AND rt.last_used_at = rt.revoked_at) AS rotated,
+                (rt.revoked_at > NOW() - $2::int * INTERVAL '1 second') AS in_grace,
                 m.is_banned
            FROM refresh_tokens rt
            JOIN members m ON m.id = rt.member_id
           WHERE rt.token_hash = $1
           LIMIT 1`,
-        [hash]
+        [hash, REFRESH_REUSE_GRACE_SECONDS]
       ));
     } catch (e) {
       if (e.code === '42P01') {
@@ -281,7 +384,10 @@ router.post('/refresh', async (req, res, next) => {
       return res.status(401).json({ error: 'Invalid refresh token', code: 'INVALID_REFRESH' });
     }
     const row = rows[0];
+    const expired = new Date(row.expires_at) < new Date();
     if (row.revoked_at) {
+      const reissued = (row.rotated && !expired) ? await _reissueAfterRotation(row, req) : null;
+      if (reissued) return res.json(_refreshPayload(row.member_id, reissued));
       // Replay of a revoked token = compromised. Belt-and-braces:
       // revoke all refresh tokens for this member.
       await query(
@@ -291,7 +397,7 @@ router.post('/refresh', async (req, res, next) => {
       );
       return res.status(401).json({ error: 'Token revoked', code: 'TOKEN_REVOKED' });
     }
-    if (new Date(row.expires_at) < new Date()) {
+    if (expired) {
       return res.status(401).json({ error: 'Refresh token expired', code: 'REFRESH_EXPIRED' });
     }
 
@@ -301,32 +407,19 @@ router.post('/refresh', async (req, res, next) => {
 
     // Rotate in a transaction so a crash mid-flow can't leave the
     // member with neither a valid old token nor a usable new one.
-    const newPlain = crypto.randomBytes(48).toString('base64url');
-    const newHash  = crypto.createHash('sha256').update(newPlain).digest('hex');
-    const expiresAt = new Date(Date.now() + 90 * 86400 * 1000);
-    const platform = String(req.headers['x-mobile-platform'] || 'web').slice(0, 20);
-    const deviceName = String(req.headers['x-device-name']    || '').slice(0, 120) || null;
-    const appVersion = String(req.headers['x-mobile-app-version'] || '').slice(0, 20) || null;
-
-    await transaction(async (client) => {
+    // `AND revoked_at IS NULL` makes the claim atomic: a sibling request
+    // that read the row a moment earlier just adds its own token instead
+    // of re-stamping this rotation (which would unlink the successor).
+    const plain = await transaction(async (client) => {
       await client.query(
         `UPDATE refresh_tokens SET revoked_at = NOW(), last_used_at = NOW()
-          WHERE id = $1`,
+          WHERE id = $1 AND revoked_at IS NULL`,
         [row.id]
       );
-      await client.query(
-        `INSERT INTO refresh_tokens
-           (member_id, token_hash, platform, device_name, app_version, expires_at)
-         VALUES ($1, $2, $3, $4, $5, $6)`,
-        [row.member_id, newHash, platform, deviceName, appVersion, expiresAt]
-      );
+      return _insertRefreshToken(client, row.member_id, req);
     });
 
-    res.json({
-      access_token:  generateJWT(row.member_id, { expiresIn: '1h' }),
-      refresh_token: newPlain,
-      expires_in:    3600,
-    });
+    res.json(_refreshPayload(row.member_id, plain));
   } catch (err) { next(err); }
 });
 
@@ -933,10 +1026,30 @@ router.get('/me', authenticate, async (req, res, next) => {
 });
 
 // ── POST /api/auth/logout ─────────────────────────────────────
-router.post('/logout', authenticate, (req, res) => {
-  // JWT is stateless — client should discard the token
-  // In future: add token to a denylist in Redis
-  res.json({ message: 'Logged out successfully' });
+// The access JWT is stateless — the client discards it and it lapses.
+// What matters is the app's refresh token, sent in the body and revoked
+// here so a copy lifted from the phone can't mint new sessions. This
+// route used to sit behind `authenticate`, which the app's sign-out call
+// (body only, no Authorization header) never passed, so refresh tokens
+// stayed live for their full 90 days after the member signed out.
+// Holding the refresh token is the authority to revoke it.
+router.post('/logout', async (req, res, next) => {
+  try {
+    const rt = req.body && req.body.refresh_token;
+    if (typeof rt === 'string' && rt) {
+      const hash = crypto.createHash('sha256').update(rt).digest('hex');
+      try {
+        await query(
+          `UPDATE refresh_tokens SET revoked_at = NOW()
+            WHERE token_hash = $1 AND revoked_at IS NULL`,
+          [hash]
+        );
+      } catch (e) {
+        if (e.code !== '42P01') throw e;
+      }
+    }
+    res.json({ message: 'Logged out successfully' });
+  } catch (err) { next(err); }
 });
 
 // ── POST /api/auth/change-password ───────────────────────────

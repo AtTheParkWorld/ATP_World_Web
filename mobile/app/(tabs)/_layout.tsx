@@ -23,7 +23,7 @@ import { Tabs, router } from 'expo-router';
 import { View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, { useSharedValue, useAnimatedStyle, withSpring, withTiming } from 'react-native-reanimated';
-import { colors, fontFamily } from '@/lib/theme/tokens';
+import { colors, fontFamily, tabBarHeight, tabBarPadBottom } from '@/lib/theme/tokens';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { PromoBannerModal } from '@/lib/components/PromoBannerModal';
 import { NotificationSpotlight } from '@/lib/components/NotificationSpotlight';
@@ -106,8 +106,8 @@ export default function TabsLayout() {
           // hiding the tab labels behind it (founder 2026-08-30, Samsung
           // screenshots). max() keeps the old 18px feel on inset-less
           // devices.
-          height: 64 + Math.max(insets.bottom, 18),
-          paddingBottom: Math.max(insets.bottom, 18),
+          height: tabBarHeight(insets.bottom),
+          paddingBottom: tabBarPadBottom(insets.bottom),
           paddingTop: 10,
         },
         tabBarActiveTintColor:   colors.green,

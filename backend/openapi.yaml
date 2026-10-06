@@ -165,7 +165,11 @@ paths:
   /auth/logout:
     post:
       tags: [Auth]
-      summary: Logout (client must discard the JWT)
+      summary: Logout — revokes the app's refresh token if one is sent (client must discard the JWT)
+      security: []
+      requestBody:
+        required: false
+        content: { application/json: { schema: { type: object, properties: { refresh_token: { type: string } } } } }
       responses: { '200': { description: OK } }
 
   /sessions:

@@ -3,7 +3,7 @@
 <head>
   <link rel="stylesheet" href="/atp.min.css?v=6e112e3c3a">
   <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
-  <script src="/atp.bundle.min.js?v=477c6d2ecc"></script>
+  <script src="/atp.bundle.min.js?v=a217626e8d"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -90,7 +90,8 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .hero-img-placeholder .img-note{font-size:11px;color:#444;letter-spacing:.08em;text-transform:uppercase;text-align:center;line-height:1.8;max-width:200px}
 /* Vertical column-divider stripe removed per founder request — the
    full-section video reads better without a hard line through the middle. */
-/* HERO MEMBER COUNTER — "We are XXXX ATP Members". Hydrates live
+/* HERO MEMBER COUNTER — "We are XXXX ATP members" (same line as the
+   app's Home screen). Hydrates live
    from /api/stats/public via the generic [data-stat] hydrator. Sized
    to carry the social-proof weight that the removed 4-stat strip
    used to provide. */
@@ -531,10 +532,10 @@ a.product-card:hover{transform:translateY(-4px)}
          /api/stats/public (data-stat="members_count") so every new
          registration via the website OR the app bumps this number
          within ~60 s (the stats endpoint's in-process TTL). -->
-    <div class="member-counter" aria-live="polite" aria-label="Total ATP members">
+    <div class="member-counter" aria-live="polite">
       <span class="mc-prefix">We are</span>
       <strong class="mc-num" data-stat="members_count">7,000</strong>
-      <span class="mc-suffix">ATP Members</span>
+      <span class="mc-suffix">ATP members</span>
       <span class="mc-pulse" aria-hidden="true">
         <span class="mc-pulse-dot"></span>
         <span class="mc-pulse-ring"></span>
@@ -1524,7 +1525,9 @@ window.handleGoogleSignIn = async function(response) {
   // never leaves the page showing nothing.
   function format(n) {
     if (typeof n !== 'number' || isNaN(n)) return '';
-    if (n >= 1000) return n.toLocaleString();
+    // en-US: "8,214" on every browser, like the app. The visitor's own
+    // locale gave "8.214" (German), "8 214" (French), "٨٬٢١٤" (Oman).
+    if (n >= 1000) return n.toLocaleString('en-US');
     return String(n);
   }
   fetch('/api/stats/public', { cache: 'no-cache' })

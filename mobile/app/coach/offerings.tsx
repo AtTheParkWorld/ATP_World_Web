@@ -11,7 +11,7 @@
  */
 import { useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator, Alert, KeyboardAvoidingView, Modal, Platform,
+  ActivityIndicator, Alert, KeyboardAvoidingView, Modal,
   Pressable, ScrollView, Text, TextInput, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -116,7 +116,10 @@ function OfferingEditor({
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+      {/* padding on both platforms — Android is edge-to-edge, so the OS
+          no longer shrinks the window for the keyboard and `undefined`
+          left the sheet's fields under it (same fix as the DM thread). */}
+      <KeyboardAvoidingView behavior="padding" className="flex-1">
         <Pressable onPress={onClose} className="flex-1 bg-black/75 justify-end">
           <Pressable onPress={(e) => e.stopPropagation()}>
             <View className="bg-atp-black rounded-t-3xl border-t border-white/10 pt-3" style={{ maxHeight: '92%' }}>
@@ -280,7 +283,10 @@ function AvailabilityEditor({ onClose }: { onClose: () => void }) {
 
   return (
     <Modal visible transparent animationType="slide" onRequestClose={onClose}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
+      {/* padding on both platforms — Android is edge-to-edge, so the OS
+          no longer shrinks the window for the keyboard and `undefined`
+          left the sheet's fields under it (same fix as the DM thread). */}
+      <KeyboardAvoidingView behavior="padding" className="flex-1">
         <Pressable onPress={onClose} className="flex-1 bg-black/75 justify-end">
           <Pressable onPress={(e) => e.stopPropagation()}>
             <View className="bg-atp-black rounded-t-3xl border-t border-white/10 pt-3" style={{ maxHeight: '92%' }}>

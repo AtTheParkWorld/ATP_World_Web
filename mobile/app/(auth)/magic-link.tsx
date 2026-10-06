@@ -7,7 +7,7 @@
  * confirmation.
  */
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { router, Link } from 'expo-router';
 import { requestMagicLink } from '@/lib/api/auth';
 import { colors, fontFamily } from '@/lib/theme/tokens';
@@ -58,8 +58,11 @@ export default function MagicLink() {
     );
   }
 
+  // padding on both platforms — Android is edge-to-edge, so the OS no
+  // longer shrinks the window for the keyboard and `undefined` left the
+  // lower fields under it (same fix as the DM thread).
   return (
-    <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1 bg-atp-black">
+    <KeyboardAvoidingView behavior="padding" className="flex-1 bg-atp-black">
       <ScrollView
         contentContainerStyle={{ flexGrow: 1, padding: 24, paddingTop: 80, paddingBottom: 40 }}
         keyboardShouldPersistTaps="handled"

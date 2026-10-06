@@ -8,6 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { useConfig, type PublicConfig } from '@/lib/api/config';
+import { atpWhatsAppUrl } from '@/lib/utils/whatsapp';
 
 const buildFaqs = (cfg: PublicConfig) => [
   {
@@ -75,7 +76,7 @@ export default function Help() {
             </Text>
           </Pressable>
           <Pressable
-            onPress={() => Linking.openURL('https://wa.me/971585792378')}
+            onPress={() => Linking.openURL(atpWhatsAppUrl())}
             className="bg-atp-dark border border-white/10 rounded-atp px-4 py-4 items-center active:opacity-80"
           >
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm uppercase tracking-widest">

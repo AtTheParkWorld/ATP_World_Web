@@ -10,8 +10,8 @@ import { WEB_BASE } from '@/lib/api/client';
  *   · no offerings, but the coach takes private sessions → a native
  *     request form posting to the same API as the website's message form
  */
-import { useState } from 'react';
-import { ActivityIndicator, Alert, Image, KeyboardAvoidingView, Linking, Platform, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Image, Keyboard, KeyboardAvoidingView, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
@@ -47,10 +47,28 @@ export default function CoachDetail() {
   const social  = c?.social;
   const stats   = c?.stats;
 
+  // Founder 2026-10-06: writing coach feedback, the keyboard hid the
+  // comment box. KAV (padding, both platforms) now shrinks the scroll
+  // view above the keyboard; this then scrolls the RATE THIS COACH block
+  // to the top of what is left, so the box AND Submit stay in view.
+  const scrollRef = useRef<ScrollView>(null);
+  const rateY = useRef(0);
+  function revealRateCard() {
+    const go = () => setTimeout(() => {
+      scrollRef.current?.scrollTo({ y: Math.max(0, rateY.current - 12), animated: true });
+    }, 120);
+    if (Keyboard.isVisible()) { go(); return; }
+    const sub = Keyboard.addListener('keyboardDidShow', () => { sub.remove(); go(); });
+    setTimeout(() => sub.remove(), 2000); // hardware keyboard: never shows
+  }
+
   return (
     <SafeAreaView className="flex-1 bg-atp-black" edges={['top', 'bottom']}>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} className="flex-1">
-      <ScrollView contentContainerStyle={{ paddingBottom: 100 }} automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled">
+      {/* behavior="padding" on both platforms — Android runs edge-to-edge,
+          where the OS no longer shrinks the window for the keyboard, so
+          `undefined` left the comment box under it. */}
+      <KeyboardAvoidingView behavior="padding" className="flex-1">
+      <ScrollView ref={scrollRef} contentContainerStyle={{ paddingBottom: 100 }} automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled">
         <View className="px-5 pt-2 pb-3 flex-row items-center justify-between">
           <Pressable onPress={() => router.back()} className="py-2 -ml-2 px-2">
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-lg">←</Text>
@@ -202,14 +220,14 @@ export default function CoachDetail() {
 
         {/* Rate this coach — POST upserts, so re-rating just updates yours */}
         {!!c && (
-          <View className="px-5 mt-8">
+          <View className="px-5 mt-8" onLayout={(e) => { rateY.current = e.nativeEvent.layout.y; }}>
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-2">
               Rate this coach
             </Text>
             {/* A coach can't rate themselves (founder 2026-09-17) — the
                 backend refuses it too; this just avoids offering it. */}
             {!isMe && (
-              <RateCoachCard coachId={coachId} onSubmitted={() => q.refetch()} />
+              <RateCoachCard coachId={coachId} onSubmitted={() => q.refetch()} onCommentFocus={revealRateCard} />
             )}
           </View>
         )}
@@ -264,7 +282,11 @@ function Stars({ rating, size = 13 }: { rating: number; size?: number }) {
 
 /** Tap-to-rate card: 5 stars + optional comment. Success shows an inline
  *  confirmation and the parent refetches so the list + average update. */
-function RateCoachCard({ coachId, onSubmitted }: { coachId: string; onSubmitted: () => void }) {
+function RateCoachCard({ coachId, onSubmitted, onCommentFocus }: {
+  coachId: string;
+  onSubmitted: () => void;
+  onCommentFocus?: () => void;
+}) {
   const [rating, setRating]       = useState(0);
   const [comment, setComment]     = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -303,6 +325,7 @@ function RateCoachCard({ coachId, onSubmitted }: { coachId: string; onSubmitted:
       <TextInput
         value={comment}
         onChangeText={(t) => { setComment(t); setDone(false); }}
+        onFocus={onCommentFocus}
         placeholder="Add a comment (optional)"
         placeholderTextColor={colors.muted}
         multiline
