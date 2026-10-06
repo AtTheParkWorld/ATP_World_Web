@@ -10,21 +10,43 @@
  *
  * The WebView keeps its state when you switch segments (it's hidden,
  * not unmounted) so a cart in progress survives a peek at your codes.
+ *
+ * Checkout (founder items 4 + 6, 2026-10-06):
+ *   - the member's email (+ E.164 phone) is put on the Shopify cart, so
+ *     checkout opens already filled in — see lib/utils/shopCheckout;
+ *   - payment stays inside this WebView (iframes and payment hops used
+ *     to be bounced to Safari, which is where the "sign in on the Shopify
+ *     website" and the stale Express-checkout page came from);
+ *   - once Shopify confirms the order we show our own thank-you sheet
+ *     and reset the shop to a fresh, empty-cart home page.
  */
-import { useEffect, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, BackHandler, Image, Linking, Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, AppState, BackHandler, Image, Linking, Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { WebView } from 'react-native-webview';
+import { WebView, type WebViewNavigation } from 'react-native-webview';
+import { router, useFocusEffect } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { getWishlist, getRedemptionHistory, removeFromWishlist } from '@/lib/api/store';
+import { getWishlist, getRedemptionHistory, removeFromWishlist, getMyOrders, type ShopOrder } from '@/lib/api/store';
+import { OrderThankYou } from '@/lib/components/OrderThankYou';
+import { useAuthStore } from '@/lib/stores/auth.store';
+import { buyerIdentityScript, isCheckoutUrl, isOrderCompleteUrl, isShopifyHost } from '@/lib/utils/shopCheckout';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 
 // The custom shop.atthepark.world domain has no DNS record (yet) —
 // the store lives on the Shopify-issued domain. Swap back when the
 // custom domain is wired up in Shopify → Settings → Domains.
 const SHOP_URL = 'https://atp-store-7903.myshopify.com';
+const SHOP_HOST = new URL(SHOP_URL).hostname;
 
 type Segment = 'shop' | 'rewards';
+
+/** The order this checkout produced: newest one placed since it began
+ *  (2 min of slack for clock drift between phone and Shopify). */
+function newOrderSince(orders: ShopOrder[], since: number): ShopOrder | null {
+  const o = orders[0];
+  if (!o || o.status === 'cancelled') return null;
+  return new Date(o.created_at).getTime() >= since - 2 * 60 * 1000 ? o : null;
+}
 
 export default function StoreHub() {
   const qc = useQueryClient();
@@ -33,6 +55,96 @@ export default function StoreHub() {
   const [loading, setLoading]   = useState(true);
   const [failed, setFailed]     = useState(false);
   const [canGoBack, setCanGoBack] = useState(false);
+  const member = useAuthStore((s) => s.member);
+
+  // Checkout tracking. checkoutStartedAt = first checkout page seen this
+  // round; inCheckout = the WebView is somewhere in checkout or a payment
+  // hop it started (bank 3-D Secure, PayPal…). webKey remounts the
+  // WebView after an order so its history no longer leads back into the
+  // spent checkout.
+  const checkoutStartedAt = useRef<number | null>(null);
+  const inCheckout = useRef(false);
+  const completionHandled = useRef(false);
+  const lastOrderCheck = useRef(0);
+  const [webKey, setWebKey] = useState(0);
+  const [thanks, setThanks] = useState<{ visible: boolean; loading: boolean; order: ShopOrder | null }>(
+    { visible: false, loading: false, order: null }
+  );
+
+  const prefillScript = useMemo(
+    () => (member?.email ? buyerIdentityScript({ shopHost: SHOP_HOST, email: member.email, phone: member.phone }) : undefined),
+    [member?.email, member?.phone]
+  );
+
+  /** Show the thank-you sheet once per order. With `found` (order seen
+   *  on return to the app) it is shown straight away; otherwise we ask
+   *  the backend for the new order — it can trail payment by a few
+   *  seconds, hence the retries (the API serves ?fresh=1 at most every 5s). */
+  const onOrderComplete = useCallback(async (found?: ShopOrder) => {
+    if (completionHandled.current) return;
+    completionHandled.current = true;
+    const since = checkoutStartedAt.current ?? Date.now() - 30 * 60 * 1000;
+    checkoutStartedAt.current = null;
+    inCheckout.current = false;
+    qc.invalidateQueries({ queryKey: ['my-orders'] });
+    if (found) { setThanks({ visible: true, loading: false, order: found }); return; }
+    setThanks({ visible: true, loading: true, order: null });
+    for (const wait of [0, 6000, 12000]) {
+      if (wait) await new Promise((r) => setTimeout(r, wait));
+      try {
+        const o = newOrderSince((await getMyOrders({ fresh: true })).orders, since);
+        if (o) { setThanks((t) => ({ ...t, loading: false, order: o })); return; }
+      } catch { /* keep trying — the sheet already confirms the purchase */ }
+    }
+    setThanks((t) => ({ ...t, loading: false }));
+  }, [qc]);
+
+  /** Paid somewhere we could not watch (bank-app approval, a wallet
+   *  hand-off, an older build that bounced to Safari)? When the member
+   *  comes back, look for an order placed since checkout began. */
+  const checkForPlacedOrder = useCallback(() => {
+    const since = checkoutStartedAt.current;
+    if (!since || completionHandled.current) return;
+    if (Date.now() - lastOrderCheck.current < 10000) return;
+    lastOrderCheck.current = Date.now();
+    getMyOrders({ fresh: true })
+      .then((r) => { const o = newOrderSince(r.orders, since); if (o) onOrderComplete(o); })
+      .catch(() => {});
+  }, [onOrderComplete]);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (st) => { if (st === 'active') checkForPlacedOrder(); });
+    return () => sub.remove();
+  }, [checkForPlacedOrder]);
+  useFocusEffect(useCallback(() => { checkForPlacedOrder(); }, [checkForPlacedOrder]));
+
+  const onNavChange = (nav: WebViewNavigation) => {
+    setCanGoBack(nav.canGoBack);
+    const url = nav.url || '';
+    // A bare order-status page outside a checkout round is just the
+    // member looking at an old order in their Shopify account.
+    if (isOrderCompleteUrl(url) && (checkoutStartedAt.current || /thank[-_]you/i.test(url))) {
+      onOrderComplete();
+      return;
+    }
+    if (isCheckoutUrl(url)) {
+      inCheckout.current = true;
+      if (!checkoutStartedAt.current) checkoutStartedAt.current = Date.now();
+    } else if (url.includes(SHOP_HOST)) {
+      // Back on a shop page: this checkout round is over without an order.
+      inCheckout.current = false;
+      checkoutStartedAt.current = null;
+    }
+  };
+
+  const closeThanks = (next?: () => void) => {
+    setThanks({ visible: false, loading: false, order: null });
+    completionHandled.current = false;
+    setCanGoBack(false);
+    setLoading(true);
+    setWebKey((k) => k + 1);   // fresh shop home, empty cart, no way "back" into checkout
+    next?.();
+  };
 
   // Founder report 13 (2026-10-03): "the back button also causes the app
   // to crash". Nothing registered Android's hardware back button, so it
@@ -116,24 +228,34 @@ export default function StoreHub() {
         ) : (
           <>
             <WebView
+              key={webKey}
               ref={webRef}
               source={{ uri: SHOP_URL }}
               style={{ flex: 1, backgroundColor: colors.black }}
               onLoadStart={() => setLoading(true)}
               onLoadEnd={() => setLoading(false)}
               onError={() => { setLoading(false); setFailed(true); }}
-              onNavigationStateChange={(nav) => setCanGoBack(nav.canGoBack)}
+              onNavigationStateChange={onNavChange}
+              injectedJavaScriptBeforeContentLoaded={prefillScript}
               // Keep the Store tab on Shopify (checkout included). Links
               // to any other host — e.g. the theme nav's "ATP World ↗" —
               // open in the system browser instead of trapping the
               // member logged-out inside this WebView.
+              //
+              // Founder items 4 + 6: iOS also asks here for every IFRAME
+              // (isTopFrame=false). Checkout's card fields, Shop Pay and
+              // 3-D Secure are iframes on other hosts, and bouncing them
+              // to Safari sent members to a Shopify sign-in page and left
+              // the in-app checkout stuck on "Express checkout". Iframes
+              // now always load in place, and so does any hop a payment
+              // makes while checkout is open, so the buyer comes back to
+              // the thank-you page here.
               onShouldStartLoadWithRequest={(req) => {
-                try {
-                  const host = new URL(req.url).hostname;
-                  const ok = host.endsWith('myshopify.com') || host.endsWith('shopify.com') || host.endsWith('atthepark.world');
-                  if (!ok && /^https?:/.test(req.url)) { Linking.openURL(req.url); return false; }
-                } catch (e) { /* non-http scheme — let WebView decide */ }
-                return true;
+                if (req.isTopFrame === false) return true;
+                if (!/^https?:/.test(req.url)) return true;   // non-http scheme — let WebView decide
+                if (isShopifyHost(req.url) || inCheckout.current) return true;
+                Linking.openURL(req.url);
+                return false;
               }}
               allowsBackForwardNavigationGestures
               sharedCookiesEnabled
@@ -156,6 +278,15 @@ export default function StoreHub() {
           </>
         )}
       </View>
+
+      <OrderThankYou
+        visible={thanks.visible}
+        loading={thanks.loading}
+        order={thanks.order}
+        firstName={member?.first_name}
+        onTrack={() => closeThanks(() => router.push('/orders'))}
+        onClose={() => closeThanks()}
+      />
 
       {/* MY REWARDS — native codes + wishlist */}
       {segment === 'rewards' && (

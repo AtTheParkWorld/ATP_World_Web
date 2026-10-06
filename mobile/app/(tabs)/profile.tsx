@@ -333,6 +333,8 @@ export default function Profile() {
             Same destinations as the old flat "Quick links" list. */}
         <SettingsGroup title="Activity">
           <SettingsRow label="My bookings"  icon="calendar" onPress={() => router.push('/bookings')} />
+          {/* Founder items 7 + 8 (2026-10-06): track ATP Store orders. */}
+          <SettingsRow label="My orders"    icon="bag"      onPress={() => router.push('/orders')} />
           <SettingsRow label="Leaderboard"  icon="trophy"   onPress={() => router.push('/leaderboard')} />
           <SettingsRow label="Challenges"   icon="target"   onPress={() => router.push('/challenges')} last />
         </SettingsGroup>

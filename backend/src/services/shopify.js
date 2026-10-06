@@ -3,14 +3,16 @@
  *
  * Server-only — uses SHOPIFY_ADMIN_TOKEN, which must NEVER be exposed
  * to the browser. The Storefront API used by store.html is a separate
- * public token; this file is exclusively for write operations that
- * require elevated scopes (price-rule + discount creation).
+ * public token; this file is for operations that need elevated scopes
+ * (price-rule + discount creation, member order history).
  *
  * Required env:
  *   SHOPIFY_DOMAIN        e.g. atp-store-7903.myshopify.com
  *   SHOPIFY_ADMIN_TOKEN   "shpat_..." from Shopify Admin → Apps →
  *                         Develop apps → ATP backend → API credentials
- *                         Required scopes:  write_discounts, read_discounts
+ *                         Required scopes:  write_discounts, read_discounts,
+ *                         read_orders (order history; + protected
+ *                         customer data → Email field)
  *
  * If either env var is missing, isConfigured() returns false and the
  * caller can fall back to issuing a code without Shopify (the legacy
@@ -49,6 +51,9 @@ async function _adminGraphQL(query, variables) {
   if (json.errors && json.errors.length) {
     const e = new Error('Shopify GraphQL: ' + json.errors.map((x) => x.message).join('; '));
     e.code = 'SHOPIFY_GRAPHQL';
+    // e.g. ['ACCESS_DENIED'] when the token lacks a scope — lets callers
+    // tell "not set up yet" apart from a real outage.
+    e.shopifyCodes = json.errors.map((x) => (x.extensions && x.extensions.code) || null);
     throw e;
   }
   return json.data;
@@ -239,8 +244,57 @@ async function createPercentageDiscountCode({ code, percentage, expiresAt, title
   };
 }
 
+/**
+ * Orders placed with this email, newest first. Read-only.
+ *
+ * Needs read_orders on the token (plus read_all_orders for anything
+ * older than 60 days) and protected-customer-data access to the Email
+ * field. Without the field access Shopify errors or blanks `email`, and
+ * memberOrders drops every row — it fails closed, never open.
+ *
+ * The `email:` search is only a pre-filter (Shopify search is not an
+ * exact-match contract), so callers MUST re-check `email` on every node.
+ */
+async function listOrdersByEmail(email, { first = 25 } = {}) {
+  const clean = String(email || '').trim().toLowerCase();
+  if (!clean) return [];
+  const query = `
+    query atpMemberOrders($q: String!, $first: Int!) {
+      orders(first: $first, query: $q, sortKey: CREATED_AT, reverse: true) {
+        nodes {
+          id name email createdAt processedAt cancelledAt
+          displayFinancialStatus displayFulfillmentStatus statusPageUrl
+          totalPriceSet         { presentmentMoney { amount currencyCode } }
+          subtotalPriceSet      { presentmentMoney { amount currencyCode } }
+          totalShippingPriceSet { presentmentMoney { amount currencyCode } }
+          lineItems(first: 50) {
+            nodes {
+              title variantTitle quantity
+              image { url altText }
+              discountedTotalSet { presentmentMoney { amount currencyCode } }
+            }
+          }
+          fulfillments(first: 10) {
+            status displayStatus createdAt inTransitAt deliveredAt estimatedDeliveryAt
+            trackingInfo { number company url }
+          }
+        }
+      }
+    }
+  `;
+  const data = await _adminGraphQL(query, {
+    // Quotes/backslashes can't appear in a real address; stripping them
+    // keeps the search string well-formed. The exact re-check downstream
+    // is what actually guards against a wrong match.
+    q: 'email:"' + clean.replace(/["\\]/g, '') + '"',
+    first: Math.min(Math.max(Number(first) || 25, 1), 50),
+  });
+  return (data && data.orders && data.orders.nodes) || [];
+}
+
 module.exports = {
   isConfigured,
+  listOrdersByEmail,
   createDiscountCode,
   createPercentageDiscountCode,
   deactivateDiscountCode,

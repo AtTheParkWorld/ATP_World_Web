@@ -17,6 +17,9 @@
  *   POST   /points/redeem           — atomically deduct points + issue
  *                                     a discount code; returns the code
  *
+ *   GET    /orders[?fresh=1]        — the member's own Shopify orders
+ *                                     (matched on verified email)
+ *
  * Shopify itself remains the source of truth for products, inventory,
  * checkout. We only persist what's member-scoped (wishlists / carts)
  * or community-generated (reviews) on our side.
@@ -24,6 +27,7 @@
 const router = require('express').Router();
 const { query, transaction } = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
+const memberOrders = require('../services/memberOrders');
 
 // ── helpers ──────────────────────────────────────────────────────
 function _missingTable(e) { return e && (e.code === '42P01' || e.code === '42703'); }
@@ -431,6 +435,23 @@ router.get('/admin/points/failed', authenticate, requireAdmin, async (req, res, 
         LIMIT 100`
     ).catch((e) => { if (_missingTable(e)) return { rows: [] }; throw e; });
     res.json({ failed: rows });
+  } catch (err) { next(err); }
+});
+
+// ════════════════════════════════════════════════════════════════
+// ORDER HISTORY (founder items 7 + 8, 2026-10-06)
+// ════════════════════════════════════════════════════════════════
+
+// GET /api/store/orders[?fresh=1]
+// The signed-in member's Shopify orders, newest first. Matching and the
+// "never someone else's orders" rule live in services/memberOrders.
+// Always 200 — `reason` tells the UI why the list is empty when it is
+// (no_email / email_unverified / not_configured / shopify_unavailable).
+router.get('/orders', authenticate, async (req, res, next) => {
+  try {
+    const out = await memberOrders.getMemberOrders(req.member.id, { fresh: req.query.fresh === '1' });
+    res.set('Cache-Control', 'private, no-store');
+    res.json(out);
   } catch (err) { next(err); }
 });
 

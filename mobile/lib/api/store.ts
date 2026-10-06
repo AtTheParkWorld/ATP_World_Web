@@ -85,3 +85,66 @@ export async function getRedemptionHistory(): Promise<{ redemptions: PointsRedem
     })),
   };
 }
+
+// ── Order history (founder items 7 + 8) ─────────────────────────
+// GET /store/orders — the member's own Shopify orders, matched
+// server-side on their VERIFIED email. Always 200; when the list is
+// empty `reason` says why so the screen can show the right next step.
+
+export type OrderStatus =
+  | 'processing' | 'pending_payment' | 'shipped' | 'delivered' | 'cancelled' | 'refunded';
+
+export interface OrderItem {
+  title: string;
+  variant: string | null;
+  quantity: number;
+  image_url: string | null;
+  total: number | null;
+}
+
+export interface OrderTracking {
+  number: string | null;
+  company: string | null;
+  url: string | null;
+}
+
+export interface ShopOrder {
+  id: string;
+  number: string;            // "#1004"
+  created_at: string;
+  cancelled_at: string | null;
+  status: OrderStatus | string;
+  status_label: string;
+  currency: string | null;
+  subtotal: number | null;
+  shipping: number | null;
+  total: number | null;
+  items: OrderItem[];
+  tracking: OrderTracking[];
+  /** Carrier tracking page, else Shopify's order-status page. */
+  track_url: string | null;
+  order_status_url: string | null;
+}
+
+export type OrdersReason = null | 'no_email' | 'email_unverified' | 'not_configured' | 'shopify_unavailable';
+
+export interface MyOrdersResponse {
+  orders: ShopOrder[];
+  reason: OrdersReason;
+  account_orders_url: string;
+}
+
+export async function getMyOrders(opts: { fresh?: boolean } = {}): Promise<MyOrdersResponse> {
+  const r = await api.get<Partial<MyOrdersResponse>>(`/store/orders${opts.fresh ? '?fresh=1' : ''}`);
+  return {
+    orders: r.orders || [],
+    reason: (r.reason ?? null) as OrdersReason,
+    account_orders_url: r.account_orders_url || 'https://atp-store-7903.myshopify.com/account',
+  };
+}
+
+export function formatMoney(amount: number | null | undefined, currency: string | null | undefined): string {
+  if (amount == null) return '';
+  const n = Number(amount);
+  return `${currency || 'AED'} ${Number.isInteger(n) ? n : n.toFixed(2)}`;
+}
