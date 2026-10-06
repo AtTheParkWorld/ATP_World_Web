@@ -44,6 +44,11 @@ export interface Member {
    *  screens fall back to member_number when absent. */
   referral_code?: string;
   joined_at?: string;
+  /** Raw members.phone from /auth/me — used to prefill Shopify checkout
+   *  only when it is already in +E.164 form. */
+  phone?: string | null;
+  /** Order history only matches on a verified email (see /store/orders). */
+  email_verified?: boolean;
 }
 
 interface AuthState {
