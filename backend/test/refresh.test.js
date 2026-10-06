@@ -37,18 +37,30 @@ function stubDb() {
     return row;
   };
   const byId = (id) => tokens.find((t) => t.id === id);
+  // Set flags.staleRevokedAt to make the next lookup answer from a
+  // snapshot taken before a concurrent request committed (READ
+  // COMMITTED: the row still shows its old revoked_at).
+  const flags = { staleRevokedAt: null };
 
   const handle = (sql, params, now) => {
     if (/^\s*(BEGIN|COMMIT|ROLLBACK)/i.test(sql)) return { rows: [] };
     if (/FROM refresh_tokens rt\s+JOIN members m/i.test(sql)) {
       const t = tokens.find((x) => x.token_hash === params[0]);
       if (!t) return { rows: [] };
+      const revokedAt = flags.staleRevokedAt || t.revoked_at;
+      flags.staleRevokedAt = null;
       return { rows: [{
-        id: t.id, member_id: t.member_id, expires_at: t.expires_at, revoked_at: t.revoked_at,
+        id: t.id, member_id: t.member_id, expires_at: t.expires_at, revoked_at: revokedAt,
+        revoked_at_exact: revokedAt ? revokedAt.toISOString() : null,
         rotated: !!t.revoked_at && !!t.last_used_at && +t.last_used_at === +t.revoked_at,
-        in_grace: !!t.revoked_at && +t.revoked_at > +now - params[1] * 1000,
+        in_grace: !!revokedAt && +revokedAt > +now - params[1] * 1000,
         is_banned: false,
       }] };
+    }
+    // Re-check inside the recovery transaction (fresh statement snapshot).
+    if (/SELECT 1 FROM refresh_tokens\s+WHERE id = \$1 AND revoked_at > NOW\(\)/i.test(sql)) {
+      const t = byId(params[0]);
+      return { rows: t && t.revoked_at && +t.revoked_at > +now - params[1] * 1000 ? [{ '?column?': 1 }] : [] };
     }
     if (/INSERT INTO refresh_tokens/i.test(sql)) {
       tokens.push({
@@ -60,8 +72,9 @@ function stubDb() {
     // Successor lookup (lost-response recovery).
     if (/UPDATE refresh_tokens s SET revoked_at = NOW\(\)\s+FROM refresh_tokens o/i.test(sql)) {
       const o = byId(params[0]);
-      const s = o && tokens.find((x) => x.member_id === o.member_id && !x.revoked_at
-        && o.revoked_at && +x.created_at === +o.revoked_at);
+      const pinned = o && o.revoked_at && +o.revoked_at === +new Date(params[1]);
+      const s = pinned && tokens.find((x) => x.member_id === o.member_id && !x.revoked_at
+        && +x.created_at === +o.revoked_at);
       if (!s) return { rows: [] };
       s.revoked_at = now;
       return { rows: [{ id: s.id }] };
@@ -101,7 +114,7 @@ function stubDb() {
   });
 
   const live = () => tokens.filter((t) => !t.revoked_at);
-  return { tokens, add, live };
+  return { tokens, add, live, flags };
 }
 
 const refresh = (token) => request(app).post('/api/auth/refresh')
@@ -213,6 +226,27 @@ describe('POST /api/auth/refresh — reopening the app', () => {
     t0.revoked_at = then; t0.last_used_at = then; t2.created_at = then;
     const c = await refresh('token-0');
     expect(c.status).toBe(200);
+  });
+});
+
+describe('POST /api/auth/refresh — racing recoveries', () => {
+  it('the request that loses the successor to a sibling recovery still gets in', async () => {
+    const store = stubDb();
+    const t0 = store.add('token-0');
+    const a = await refresh('token-0');
+    const t1 = store.tokens.find((t) => t.token_hash === sha(a.body.refresh_token));
+    const then = minutesAgo(30);
+    t0.revoked_at = then; t0.last_used_at = then; t1.created_at = then;
+    // A sibling from the same burst has just recovered: it retired t1,
+    // re-stamped t0 and minted its own token, linked to t0...
+    const now = new Date();
+    t1.revoked_at = now; t0.revoked_at = now; t0.last_used_at = now;
+    const sibling = store.add('sibling-new', { created_at: now });
+    // ...but this request read t0 before that committed.
+    store.flags.staleRevokedAt = then;
+    const res = await refresh('token-0');
+    expect(res.status).toBe(200);
+    expect(sibling.revoked_at).toBeNull(); // no wipe
   });
 });
 

@@ -299,17 +299,31 @@ async function _reissueAfterRotation(row, req) {
     return transaction((client) => _insertRefreshToken(client, row.member_id, req));
   }
   return transaction(async (client) => {
+    // `o.revoked_at = $2` pins the link to the rotation this request saw:
+    // if a sibling re-stamped the token in the meantime, the successor is
+    // the sibling's fresh token and must not be taken from it.
     const { rows: successor } = await client.query(
       `UPDATE refresh_tokens s SET revoked_at = NOW()
          FROM refresh_tokens o
         WHERE o.id = $1
+          AND o.revoked_at = $2::timestamptz
           AND s.member_id = o.member_id
           AND s.created_at = o.revoked_at
           AND s.revoked_at IS NULL
         RETURNING s.id`,
-      [row.id]
+      [row.id, row.revoked_at_exact]
     );
-    if (!successor.length) return null;
+    if (!successor.length) {
+      // A sibling request from the same burst may have recovered this
+      // token a moment ago (it re-stamps the old token below) — then this
+      // is case 1, not a replay.
+      const { rows: again } = await client.query(
+        `SELECT 1 FROM refresh_tokens
+          WHERE id = $1 AND revoked_at > NOW() - $2::int * INTERVAL '1 second'`,
+        [row.id, REFRESH_REUSE_GRACE_SECONDS]
+      );
+      return again.length ? _insertRefreshToken(client, row.member_id, req) : null;
+    }
     // The unused successor is revoked WITHOUT the rotation stamp, so if it
     // ever turns up later it counts as a replay (theft is still caught).
     // The old token is re-pointed at the replacement minted below, so a
@@ -345,6 +359,7 @@ router.post('/refresh', async (req, res, next) => {
       // statement), as opposed to sign-out, revoke-all or replay defence.
       ({ rows } = await query(
         `SELECT rt.id, rt.member_id, rt.expires_at, rt.revoked_at,
+                rt.revoked_at::text AS revoked_at_exact,  -- full µs, unlike a JS Date
                 (rt.revoked_at IS NOT NULL AND rt.last_used_at = rt.revoked_at) AS rotated,
                 (rt.revoked_at > NOW() - $2::int * INTERVAL '1 second') AS in_grace,
                 m.is_banned
