@@ -76,6 +76,13 @@ export const fontFamily = {
   bodyBold:     'DMSans_700Bold',
 } as const;
 
+/** Bottom tab bar. It sits ABOVE the system navigation bar (Android
+ *  3-button navs overlay ~48px edge-to-edge — founder 2026-08-30); max()
+ *  keeps an 18px floor on inset-less devices. Shared with the WhatsApp
+ *  bubble so it always clears the bar. */
+export const tabBarPadBottom = (bottomInset: number) => Math.max(bottomInset, 18);
+export const tabBarHeight = (bottomInset: number) => 64 + tabBarPadBottom(bottomInset);
+
 /** Tribe slug → palette colour. Mirrors web's normalizeTribe. */
 export function tribeColor(slug?: string | null): string {
   const k = String(slug || '').toLowerCase() as TribeSlug;

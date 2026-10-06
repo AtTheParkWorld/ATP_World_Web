@@ -9,6 +9,7 @@
  *  - Init OneSignal push (idempotent — safe to call on every reload)
  *  - Init Amplitude analytics
  *  - Splash screen control — hide once auth has hydrated + fonts loaded
+ *  - Floating WhatsApp bubble (lib/components/WhatsAppBubble) over every route
  *
  * Auth gate: when accessToken is missing, child routes redirect to
  * (auth)/welcome via the index.tsx route guard. We DON'T redirect from
@@ -30,6 +31,7 @@ import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { RouteErrorBoundary } from '@/lib/components/RouteErrorBoundary';
+import { WhatsAppBubble } from '@/lib/components/WhatsAppBubble';
 import '../global.css';
 
 const extra = (Constants.expoConfig?.extra || {}) as Record<string, string>;
@@ -228,6 +230,9 @@ function RootLayoutInner() {
           animation: 'slide_from_right',
         }}
       />
+      {/* WhatsApp the ATP admin from any screen — drawn over the navigator;
+          it decides per route where it is safe to show (founder 2026-10-06). */}
+      <WhatsAppBubble />
     </>
   );
 }
