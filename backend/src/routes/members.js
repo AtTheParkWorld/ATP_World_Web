@@ -2,6 +2,7 @@ const router = require('express').Router();
 const { query } = require('../db');
 const { authenticate, requireAdmin, authenticateAllowBanned } = require('../middleware/auth');
 const streak = require('../services/streak');
+const pointsReset = require('../services/pointsReset');
 
 // ── GET /api/members/me/streak ────────────────────────────────
 // Theme 3 / feedback #10 — current + longest streak, weekly average,
@@ -700,6 +701,14 @@ router.get('/leaderboard', async (req, res, next) => {
     // Build WHERE + params dynamically so optional filters don't break
     // positional placeholders.
     const params = [];
+
+    // Points reset (founder 2026-10-07): only points earned after the
+    // reset count, so "All time" starts fresh too.
+    const resetAt = await pointsReset.getResetCutoff();
+    if (resetAt) {
+      params.push(resetAt);
+      dateFilter += ` AND pl.created_at > $${params.length}`;
+    }
     const whereExtra = [];
     if (city_id)  { params.push(city_id);  whereExtra.push(`m.city_id=$${params.length}`); }
     if (tribe_id) { params.push(tribe_id); whereExtra.push(`m.tribe_id=$${params.length}`); }

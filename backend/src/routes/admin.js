@@ -1047,4 +1047,39 @@ router.patch('/system-config/:key', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── POINTS RESET (founder 2026-10-07) ─────────────────────────
+// "Bring everyone to 0": the balances came from the previous app.
+// Preview is read-only; the reset needs an explicit confirm phrase and
+// keeps a backup so POST /points/reset-all/undo can put it back.
+const pointsReset = require('../services/pointsReset');
+const RESET_CONFIRM = 'RESET ALL POINTS TO ZERO';
+
+router.get('/points/reset-all/preview', async (req, res, next) => {
+  try { res.json(await pointsReset.previewReset()); } catch (err) { next(err); }
+});
+
+router.post('/points/reset-all', async (req, res, next) => {
+  try {
+    if ((req.body || {}).confirm !== RESET_CONFIRM) {
+      return res.status(400).json({ error: `Send { "confirm": "${RESET_CONFIRM}" } to reset every balance.` });
+    }
+    const before = await pointsReset.previewReset();
+    const result = await pointsReset.resetAllPoints({ adminId: req.member.id });
+    audit.log(req, 'points.reset_all', 'points', result.run_id, {
+      members_reset: result.members_reset, points_removed: result.points_removed,
+    });
+    res.json({ ...result, before });
+  } catch (err) { next(err); }
+});
+
+router.post('/points/reset-all/undo', async (req, res, next) => {
+  try {
+    const runId = String((req.body || {}).run_id || '');
+    if (!/^[0-9a-f-]{36}$/i.test(runId)) return res.status(400).json({ error: 'run_id required' });
+    const result = await pointsReset.undoReset(runId, { adminId: req.member.id });
+    audit.log(req, 'points.reset_all_undo', 'points', runId, result);
+    res.json(result);
+  } catch (err) { next(err); }
+});
+
 module.exports = router;
