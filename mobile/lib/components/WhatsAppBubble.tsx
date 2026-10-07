@@ -12,9 +12,16 @@
  *     compose inputs, sticky "Book" / checkout CTAs, the in-app shop,
  *     live video, camera, forms — and whenever the keyboard is up;
  *   - hidden until signed in (auth + onboarding screens).
+ *
+ * Look (founder 2026-10-07: "completely off, not integrated"): it mirrors
+ * the Community "+" composer — same 56px lime disc, shadow and 24px inset —
+ * so the two read as a pair. Styles are plain objects on a wrapping View:
+ * the earlier style FUNCTION on Pressable was not applied on device (the
+ * app's NativeWind-wrapped Pressable), which left the bare glyph with no
+ * disc and no position, under the tab bar at the very bottom.
  */
 import { useEffect, useState } from 'react';
-import { Keyboard, Linking, Platform, Pressable } from 'react-native';
+import { Keyboard, Linking, Platform, Pressable, StyleSheet, View } from 'react-native';
 import { useSegments } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Path } from 'react-native-svg';
@@ -22,8 +29,12 @@ import { useAuthStore } from '@/lib/stores/auth.store';
 import { colors, tabBarHeight, tabBarPadBottom } from '@/lib/theme/tokens';
 import { atpWhatsAppUrl } from '@/lib/utils/whatsapp';
 
-const SIZE = 48;
-const GAP = 14;
+// WhatsApp logo (24×24).
+const WHATSAPP_GLYPH =
+  'M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.371-.025-.52-.075-.149-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z';
+
+const SIZE = 56;  // = the Community "+" composer (w-14 h-14)
+const INSET = 24; // = its bottom-6 / right-6
 
 // Route prefixes (expo-router segments joined with "/") where the bubble
 // would sit on top of something the member needs.
@@ -53,45 +64,54 @@ export function WhatsAppBubble() {
   const insets = useSafeAreaInsets();
   const signedIn = useAuthStore((s) => !!s.accessToken);
   const keyboardUp = useKeyboardVisible();
+  const [pressed, setPressed] = useState(false);
 
   const path = segments.join('/');
   if (!signedIn || keyboardUp || segments.length === 0) return null;
   if (HIDDEN_ON.some((p) => path === p || path.startsWith(p + '/'))) return null;
 
   const onTabs = segments[0] === '(tabs)';
-  const bottom = (onTabs ? tabBarHeight(insets.bottom) : tabBarPadBottom(insets.bottom)) + GAP;
+  const bottom = (onTabs ? tabBarHeight(insets.bottom) : tabBarPadBottom(insets.bottom)) + INSET;
 
   return (
-    <Pressable
-      onPress={() => { Linking.openURL(atpWhatsAppUrl()).catch(() => {}); }}
-      accessibilityRole="button"
-      accessibilityLabel="Message ATP on WhatsApp"
-      hitSlop={6}
-      style={({ pressed }) => ({
-        position: 'absolute',
-        left: 16,
-        bottom,
-        width: SIZE,
-        height: SIZE,
-        borderRadius: SIZE / 2,
-        backgroundColor: colors.green,
-        alignItems: 'center',
-        justifyContent: 'center',
-        opacity: pressed ? 0.85 : 1,
-        transform: [{ scale: pressed ? 0.94 : 1 }],
-        elevation: 6,
-        shadowColor: '#000',
-        shadowOpacity: 0.35,
-        shadowRadius: 8,
-        shadowOffset: { width: 0, height: 2 },
-      })}
-    >
-      <Svg width={24} height={24} viewBox="0 0 24 24">
-        <Path
-          fill={colors.black}
-          d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.371-.025-.52-.075-.149-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"
-        />
-      </Svg>
-    </Pressable>
+    <View pointerEvents="box-none" style={[styles.anchor, { bottom }]}>
+      <Pressable
+        onPress={() => { Linking.openURL(atpWhatsAppUrl()).catch(() => {}); }}
+        onPressIn={() => setPressed(true)}
+        onPressOut={() => setPressed(false)}
+        accessibilityRole="button"
+        accessibilityLabel="Message ATP on WhatsApp"
+        hitSlop={6}
+        style={[styles.disc, pressed && styles.discPressed]}
+      >
+        <Svg width={26} height={26} viewBox="0 0 24 24">
+          <Path fill={colors.black} d={WHATSAPP_GLYPH} />
+        </Svg>
+      </Pressable>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  anchor: {
+    position: 'absolute',
+    left: INSET,
+    zIndex: 50,
+    elevation: 6,
+  },
+  disc: {
+    width: SIZE,
+    height: SIZE,
+    borderRadius: SIZE / 2,
+    backgroundColor: colors.green,
+    alignItems: 'center',
+    justifyContent: 'center',
+    // Same shadow as the Community "+" composer.
+    elevation: 6,
+    shadowColor: '#000',
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  discPressed: { opacity: 0.8, transform: [{ scale: 0.94 }] },
+});
