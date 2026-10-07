@@ -24,6 +24,7 @@ import {
   ActivityIndicator, Alert, KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useStickyFooterPad } from '@/lib/components/StickyFooter';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useStripe } from '@stripe/stripe-react-native';
@@ -76,6 +77,7 @@ function slotsForDay(day: Date, windows: CoachAvailabilityWindow[], durationMin:
 }
 
 export default function BookCoachSession() {
+  const footerPad = useStickyFooterPad();
   const params  = useLocalSearchParams<{ coach?: string; offering?: string }>();
   const coachId = String(params.coach || '');
   const qc = useQueryClient();
@@ -252,7 +254,7 @@ export default function BookCoachSession() {
         </Text>
       </View>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 140 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ paddingBottom: 140 + footerPad - 28 }} keyboardShouldPersistTaps="handled">
         {offersQ.isLoading ? (
           <View className="px-5 pt-8"><ActivityIndicator color={colors.green} /></View>
         ) : offersQ.isError ? (
@@ -376,7 +378,7 @@ export default function BookCoachSession() {
 
       {/* Sticky CTA */}
       {!!offering && offerings.length > 0 && (
-        <View className="absolute bottom-0 left-0 right-0 px-5 pb-7 pt-3 bg-atp-black border-t border-white/5">
+        <View className="absolute bottom-0 left-0 right-0 px-5 pt-3 bg-atp-black border-t border-white/5" style={{ paddingBottom: footerPad }}>
           <Pressable
             onPress={onPlaceHold}
             disabled={!slotIso || busy}
@@ -411,6 +413,7 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * email; the member gets an emailed copy. Nothing is charged or held.
  */
 function RequestOneOnOne({ coachId, coach }: { coachId: string; coach?: Coach }) {
+  const footerPad = useStickyFooterPad();
   const me = useAuthStore((s) => s.member);
   const coachFirst = coach?.first_name || 'The coach';
   const info = coach?.profile?.private_session_info;
@@ -497,7 +500,7 @@ function RequestOneOnOne({ coachId, coach }: { coachId: string; coach?: Coach })
           no longer shrinks the window for the keyboard and `undefined`
           left the request form under it (same fix as the DM thread). */}
       <KeyboardAvoidingView behavior="padding" className="flex-1">
-        <ScrollView contentContainerStyle={{ paddingBottom: 140 }} automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={{ paddingBottom: 140 + footerPad - 28 }} automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled">
           <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm px-5 mt-5 leading-relaxed">
             {coachFirst} arranges 1:1 sessions personally. Tell them what you're after and when suits you — they'll reply with times and price.
           </Text>
@@ -590,7 +593,7 @@ function RequestOneOnOne({ coachId, coach }: { coachId: string; coach?: Coach })
       </KeyboardAvoidingView>
 
       {/* Sticky CTA */}
-      <View className="absolute bottom-0 left-0 right-0 px-5 pb-7 pt-3 bg-atp-black border-t border-white/5">
+      <View className="absolute bottom-0 left-0 right-0 px-5 pt-3 bg-atp-black border-t border-white/5" style={{ paddingBottom: footerPad }}>
         <Pressable
           onPress={onSend}
           disabled={!canSend}

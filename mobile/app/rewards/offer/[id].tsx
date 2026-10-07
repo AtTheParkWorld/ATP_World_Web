@@ -9,6 +9,7 @@
 import { useState } from 'react';
 import { Alert, Image, Linking, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useStickyFooterPad } from '@/lib/components/StickyFooter';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getOffer, getBalance, redeemOffer, type IssuedRedemption } from '@/lib/api/rewards';
@@ -16,6 +17,7 @@ import { colors, fontFamily } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
 
 export default function OfferDetail() {
+  const footerPad = useStickyFooterPad();
   const { id } = useLocalSearchParams<{ id: string }>();
   const offerId = String(id || '');
   const qc = useQueryClient();
@@ -48,7 +50,7 @@ export default function OfferDetail() {
 
   return (
     <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 140 + footerPad - 28 }}>
         <View className="px-5 pt-2 pb-3">
           <Pressable onPress={() => router.back()} className="py-2 -ml-2">
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-lg">←</Text>
@@ -145,7 +147,7 @@ export default function OfferDetail() {
       </ScrollView>
 
       {!issued && (
-        <View className="absolute bottom-0 left-0 right-0 px-5 pb-7 pt-3 bg-atp-black border-t border-white/5">
+        <View className="absolute bottom-0 left-0 right-0 px-5 pt-3 bg-atp-black border-t border-white/5" style={{ paddingBottom: footerPad }}>
           <Pressable
             onPress={() => {
               if (!canAfford) {

@@ -16,6 +16,7 @@
 import { useMemo, useState } from 'react';
 import { ActivityIndicator, Alert, Linking, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useStickyFooterPad } from '@/lib/components/StickyFooter';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import QRCode from 'react-native-qrcode-svg';
@@ -34,6 +35,7 @@ import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { dayHeader, timeShort } from '@/lib/utils/date';
 
 export default function SessionDetail() {
+  const footerPad = useStickyFooterPad();
   const { id } = useLocalSearchParams<{ id: string }>();
   const sessionId = String(id || '');
   const qc = useQueryClient();
@@ -217,7 +219,7 @@ export default function SessionDetail() {
 
   return (
     <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>
-      <ScrollView contentContainerStyle={{ paddingBottom: 140 }}>
+      <ScrollView contentContainerStyle={{ paddingBottom: 140 + footerPad - 28 }}>
         <View className="px-5 pt-2 flex-row items-center justify-between">
           <Pressable onPress={() => router.back()} className="p-2 -ml-2">
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-lg">←</Text>
@@ -396,7 +398,7 @@ export default function SessionDetail() {
       </ScrollView>
 
       {/* Sticky bottom CTA */}
-      <View className="absolute bottom-0 left-0 right-0 px-5 pb-7 pt-3 bg-atp-black border-t border-white/5">
+      <View className="absolute bottom-0 left-0 right-0 px-5 pt-3 bg-atp-black border-t border-white/5" style={{ paddingBottom: footerPad }}>
         {myBooking ? (
           <View>
             <View className="bg-atp-green/15 border border-atp-green/40 rounded-atp px-4 py-3 mb-2">

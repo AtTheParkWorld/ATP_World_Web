@@ -13,6 +13,7 @@ import { WEB_BASE } from '@/lib/api/client';
 import { useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Image, Keyboard, KeyboardAvoidingView, Linking, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useStickyFooterPad } from '@/lib/components/StickyFooter';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { getCoach, rateCoach, type CoachFeedback } from '@/lib/api/coaches';
@@ -22,6 +23,7 @@ import { colors, fontFamily } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
 
 export default function CoachDetail() {
+  const footerPad = useStickyFooterPad();
   const { id } = useLocalSearchParams<{ id: string }>();
   const coachId = String(id || '');
   const me = useAuthStore((s) => s.member) as any;
@@ -68,7 +70,7 @@ export default function CoachDetail() {
           where the OS no longer shrinks the window for the keyboard, so
           `undefined` left the comment box under it. */}
       <KeyboardAvoidingView behavior="padding" className="flex-1">
-      <ScrollView ref={scrollRef} contentContainerStyle={{ paddingBottom: 100 }} automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scrollRef} contentContainerStyle={{ paddingBottom: 100 + footerPad - 28 }} automaticallyAdjustKeyboardInsets keyboardShouldPersistTaps="handled">
         <View className="px-5 pt-2 pb-3 flex-row items-center justify-between">
           <Pressable onPress={() => router.back()} className="py-2 -ml-2 px-2">
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-lg">←</Text>
@@ -249,7 +251,7 @@ export default function CoachDetail() {
       {/* Sticky CTA — always the native screen: card-hold booking when
           the coach has priced offerings, a request form otherwise. */}
       {((offerings.length > 0) || !!profile?.accepts_private_sessions) && (
-        <View className="absolute bottom-0 left-0 right-0 px-5 pb-7 pt-3 bg-atp-black border-t border-white/5">
+        <View className="absolute bottom-0 left-0 right-0 px-5 pt-3 bg-atp-black border-t border-white/5" style={{ paddingBottom: footerPad }}>
           <Pressable
             onPress={() => router.push(`/coaches/book?coach=${coachId}`)}
             className="rounded-atp py-4 items-center bg-atp-green active:opacity-80"
