@@ -71,7 +71,7 @@ export default function Welcome() {
           style={{ fontFamily: fontFamily.body }}
           className="text-atp-light text-sm mt-4 leading-relaxed"
         >
-          Free outdoor fitness sessions, every day, across Dubai, Al Ain, Abu Dhabi, and Muscat. Join 7,000+ members.
+          Free outdoor fitness sessions, every day, across Dubai, Al Ain, Abu Dhabi, and Muscat. Join thousands of members.
         </Text>
 
         {/* 1 — email + password, the primary way in */}

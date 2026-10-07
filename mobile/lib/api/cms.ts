@@ -80,7 +80,7 @@ const FALLBACK_STORY: StoryContent = {
     "that movement shouldn't cost a thing, and that the hardest part of fitness isn't " +
     "the workout. It's doing it alone.\n\n" +
     'What began at Al Formal Park in Abu Dhabi in 2015 with five colleagues is now the ' +
-    "UAE's largest free outdoor fitness community — 7,000+ registered members across " +
+    "UAE's largest free outdoor fitness community — thousands of registered members across " +
     'Dubai, Al Ain and Muscat.',
   founder_photo: null,
   quote: "We didn't build a community. We just kept showing up. And so did everyone else.",
