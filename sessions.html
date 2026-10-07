@@ -100,8 +100,12 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 .filter-tab.active,.filter-tab:hover{color:var(--white)}
 .filter-tab.active::after{transform:scaleX(1)}
 .filter-sep{width:1px;height:20px;background:rgba(255,255,255,.08);flex-shrink:0;margin:0 8px}
-.sessions-main{padding:48px 40px 100px;max-width:var(--max);margin:0 auto}
-.sessions-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:28px;gap:16px;flex-wrap:wrap}
+.sessions-main{padding:28px 40px 72px;max-width:var(--max);margin:0 auto}
+/* Calendar mode (founder 2026-10-07: "minimize the empty black spaces,
+   give more space for the calendar") — wider canvas, less chrome. */
+.sessions-main.cal-mode{max-width:1440px}
+.sessions-main.cal-mode .sessions-toolbar{margin-bottom:14px}
+.sessions-toolbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;gap:16px;flex-wrap:wrap}
 .sessions-count{font-size:13px;color:var(--muted)}
 .sessions-count strong{color:var(--white);font-weight:700}
 
@@ -351,7 +355,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 .loop-divider{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:4px 0 12px;text-align:center}
 
 @media(max-width:900px){.sessions-grid{grid-template-columns:repeat(2,1fr)}}
-@media(max-width:600px){.sessions-grid{grid-template-columns:1fr}.sessions-main{padding:32px 20px 80px}.loop-actions{grid-template-columns:1fr}}
+@media(max-width:600px){.sessions-grid{grid-template-columns:1fr}.sessions-main{padding:20px 16px 64px}.loop-actions{grid-template-columns:1fr}}
 
 
 /* ══ AUTH MODAL ══════════════════════════════════════════════ */
@@ -459,7 +463,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 @keyframes cal-fade-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 
 .cal-header{
-  display:flex;align-items:center;justify-content:space-between;margin-bottom:22px;
+  display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;
   gap:18px;flex-wrap:wrap;
 }
 .cal-month-label{
@@ -497,7 +501,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
   /* Fit the whole month on screen: 6 rows + headers should sit inside
      the viewport. We aim for (viewport - chrome) / 6, clamped so the
      cell never collapses below 70px or stretches past 130px. */
-  min-height:clamp(70px, calc((100vh - 340px) / 6), 130px);
+  min-height:clamp(78px, calc((100vh - 300px) / 6), 150px);
   padding:7px 8px 8px;
   background:var(--dark2);border:1px solid rgba(255,255,255,.04);border-radius:12px;
   cursor:default;transition:transform .2s ease, border-color .25s, box-shadow .25s, background .25s;
@@ -752,7 +756,6 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
         </div>
       </div>
     </div>
-  </div>
 
     <!-- ── MONTHLY CALENDAR VIEW ── -->
     <div class="cal-wrap" id="calView">
@@ -766,6 +769,8 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       </div>
       <div class="cal-grid" id="calGrid"></div>
     </div>
+  </div>
+
 </main>
 
 <!-- BOOKING MODAL -->
@@ -1990,6 +1995,9 @@ function setView(view) {
   var tog = document.querySelector('.view-toggle');
   if (tog) tog.setAttribute('data-active', view === 'calendar' ? 'calendar' : 'list');
 
+  var main = document.querySelector('.sessions-main');
+  if (main) main.classList.toggle('cal-mode', view === 'calendar');
+
   if(view === 'calendar') {
     grid.style.display = 'none';
     document.querySelector('.sessions-toolbar > div').querySelector('.sessions-count').style.display = 'none';
@@ -2054,7 +2062,7 @@ function renderCalendar() {
 
   // Leading empty cells from previous month
   for(var i=0; i<firstDay; i++) {
-    var prevDate = new Date(year, month, 0 - (firstDay - i - 2));
+    var prevDate = new Date(year, month, i - firstDay + 1);
     html += '<div class="cal-day other-month"><div class="cal-day-num">'+prevDate.getDate()+'</div></div>';
   }
 
