@@ -5,6 +5,49 @@ const streak       = require('../services/streak');
 const referrals    = require('../services/referrals');
 const achievements = require('../services/achievements');
 
+// ── Time-change notices (founder 2026-10-08) ──────────────────
+// Editing a session's time used to be impossible from the admin form;
+// now that it is, members who already booked must hear about it or
+// they turn up at the old time. In-app notification + push, best-effort.
+const TIME_TZ = 'Asia/Dubai';
+function _fmtWhen(d) {
+  return new Date(d).toLocaleString('en-GB', {
+    weekday: 'short', day: 'numeric', month: 'short',
+    hour: 'numeric', minute: '2-digit', hour12: true, timeZone: TIME_TZ,
+  });
+}
+async function _notifyTimeChange(session, oldAt) {
+  try {
+    if (!session || !oldAt || !session.scheduled_at) return 0;
+    if (new Date(oldAt).getTime() === new Date(session.scheduled_at).getTime()) return 0;
+    if (new Date(session.scheduled_at) < new Date()) return 0;
+    const { rows } = await query(
+      `SELECT DISTINCT member_id FROM bookings
+        WHERE session_id = $1 AND status IN ('confirmed','pending_payment')`,
+      [session.id]
+    );
+    if (!rows.length) return 0;
+    const title = `Time change: ${session.name}`;
+    const body = `Now ${_fmtWhen(session.scheduled_at)} (was ${_fmtWhen(oldAt)}). Your spot is still booked.`;
+    for (const r of rows) {
+      await query(
+        `INSERT INTO notifications (member_id, type, title, body, data)
+         VALUES ($1, 'session_time_changed', $2, $3, $4)`,
+        [r.member_id, title, body, JSON.stringify({ session_id: session.id, url: `/sessions.html?session=${session.id}` })]
+      ).catch(() => {});
+    }
+    try {
+      await require('../services/push').sendBatch(rows.map((r) => r.member_id), {
+        title, body, push_type: 'session_time_changed', data: { session_id: session.id },
+      });
+    } catch (_) { /* push is a bonus */ }
+    return rows.length;
+  } catch (e) {
+    console.warn('[sessions] time-change notice failed:', e.message);
+    return 0;
+  }
+}
+
 // Sponsor "Powered by" — validate the admin-supplied logo + click URLs.
 // Logo: https:// , data:image/...;base64 , or an /api/cms/media/<id>
 // upload ref. Click URL: https?:// only (no javascript:/data:). Returns
@@ -1000,6 +1043,13 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
       stream_url,
     } = req.body;
 
+    // The time before this edit — to tell booked members if it moves.
+    let oldScheduledAt = null;
+    try {
+      const { rows: prev } = await query('SELECT scheduled_at FROM sessions WHERE id=$1', [id]);
+      oldScheduledAt = prev.length ? prev[0].scheduled_at : null;
+    } catch (_) { /* notices are best-effort */ }
+
     let rows;
     try {
       const r = await query(
@@ -1123,6 +1173,9 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
     } catch (e) {
       if (e.code !== '42703') throw e;
     }
+
+    // Moved? Tell everyone already booked (fire-and-forget).
+    if (scheduled_at) _notifyTimeChange(rows[0], oldScheduledAt).catch(() => {});
 
     // is_streamable — defensive UPDATE, only when the admin sent the field.
     if (is_streamable !== undefined) {
@@ -1515,6 +1568,16 @@ router.patch('/admin/series-update', authenticate, requireAdmin, async (req, res
       params.push(req.body.courts ? JSON.stringify(req.body.courts) : null);
       sets.push(`courts=$${params.length}`);
     }
+    // New time of day for the whole series (founder 2026-10-08): each
+    // session keeps its own date and moves to this Dubai clock time.
+    const timeOfDay = String(req.body.time_of_day || '');
+    if (timeOfDay) {
+      if (!/^([01]\d|2[0-3]):[0-5]\d$/.test(timeOfDay)) {
+        return res.status(400).json({ error: 'time_of_day must be HH:MM' });
+      }
+      params.push(timeOfDay);
+      sets.push(`scheduled_at=(((scheduled_at AT TIME ZONE '${TIME_TZ}')::date + $${params.length}::time) AT TIME ZONE '${TIME_TZ}')`);
+    }
     if (!sets.length) return res.status(400).json({ error: 'no fields to update' });
 
     params.push(matchName);
@@ -1523,10 +1586,30 @@ router.patch('/admin/series-update', authenticate, requireAdmin, async (req, res
     if (req.body.exclude_id)    { params.push(req.body.exclude_id);    where += ` AND id<>$${params.length}`; }
 
     try {
+      // Old times first, so booked members can be told what moved.
+      // Same filter as the UPDATE, numbered from $1 for this SELECT.
+      const bParams = [matchName];
+      let bWhere = `LOWER(name)=LOWER($1) AND status='upcoming' AND scheduled_at >= NOW()`;
+      if (req.body.match_city_id) { bParams.push(req.body.match_city_id); bWhere += ` AND city_id=$${bParams.length}`; }
+      if (req.body.exclude_id)    { bParams.push(req.body.exclude_id);    bWhere += ` AND id<>$${bParams.length}`; }
+      const { rows: before } = timeOfDay
+        ? await query(`SELECT id, scheduled_at FROM sessions WHERE ${bWhere}`, bParams).catch(() => ({ rows: [] }))
+        : { rows: [] };
       const { rows } = await query(
-        `UPDATE sessions SET ${sets.join(', ')}, updated_at=NOW() WHERE ${where} RETURNING id`,
+        `UPDATE sessions SET ${sets.join(', ')}, updated_at=NOW() WHERE ${where} RETURNING *`,
         params
       );
+      if (timeOfDay || req.body.duration_mins !== undefined) {
+        await query(
+          `UPDATE sessions SET ends_at = scheduled_at + (COALESCE(duration_mins, 60) || ' minutes')::interval
+            WHERE id = ANY($1::uuid[])`,
+          [rows.map(r => r.id)]
+        ).catch((e) => { if (e.code !== '42703') throw e; });
+      }
+      if (timeOfDay) {
+        const oldById = Object.fromEntries(before.map(b => [b.id, b.scheduled_at]));
+        for (const r of rows) _notifyTimeChange(r, oldById[r.id]).catch(() => {});
+      }
       res.json({ updated: rows.length, ids: rows.map(r => r.id) });
     } catch (e) {
       // Pre-migration DB missing one of the newer columns — retry with

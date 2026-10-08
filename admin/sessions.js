@@ -198,6 +198,30 @@ function handleSessionIntroUpload(input) {
 }
 
 // Convert "HH:MM" pair to a positive minute delta. Crosses midnight if end < start.
+// ── Edit-mode date/time (founder 2026-10-08) ─────────────────────
+// Edit used to have no date/time fields at all, so times never showed
+// and a changed time was never sent. Sessions run on Dubai time.
+function _dubaiParts(when) {
+  if (!when) return { date: '', time: '' };
+  var d = new Date(when);
+  if (isNaN(d.getTime())) return { date: '', time: '' };
+  var parts = {};
+  new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Asia/Dubai', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(d).forEach(function(p){ parts[p.type] = p.value; });
+  var hh = parts.hour === '24' ? '00' : parts.hour;
+  return { date: parts.year + '-' + parts.month + '-' + parts.day, time: hh + ':' + parts.minute };
+}
+
+// Edit shows one occurrence's date + start/end; create shows the day picker.
+function _setSessionEditMode(on) {
+  var edit = document.getElementById('editWhenBlock');
+  var create = document.getElementById('createScheduleBlock');
+  if (edit) edit.style.display = on ? '' : 'none';
+  if (create) create.style.display = on ? 'none' : '';
+}
+
 function _minutesBetween(start, end) {
   if (!start || !end) return 0;
   var s = start.split(':'); var e = end.split(':');
@@ -553,6 +577,7 @@ async function duplicateSessionById(id) {
   document.getElementById('sEndDate').value = '';
   document.querySelectorAll('.day-check-btn input').forEach(function(cb){ cb.checked = false; });
   var dtc = document.getElementById('dayTimesContainer'); if (dtc) dtc.innerHTML = '';
+  _setSessionEditMode(false);
 
   var fTitle = document.getElementById('sessionFormTitle');
   if (fTitle) fTitle.textContent = 'Duplicate Session — pick new days & times';
@@ -679,10 +704,29 @@ async function createSession() {
 
   var courts = cat === 'team_sports' ? getCourtsData() : null;
   // CREATE: scheduled_at comes from the first day in the recurrence set.
-  // EDIT: there's no date editor in the form (sEditDate doesn't exist), so
-  // we leave scheduled_at undefined → omitted from the JSON body → server
-  // COALESCE keeps the existing column value instead of nulling it.
-  var scheduled_at = repeat_dates ? repeat_dates[0] : (document.getElementById('sEditDate')?.value || undefined);
+  // EDIT: the Date / Start / End fields (Dubai time, +04:00) — the start
+  // moves the session, start→end sets the duration. Left blank, the field
+  // is omitted and the server keeps the existing time.
+  var scheduled_at = repeat_dates ? repeat_dates[0] : undefined;
+  var editTimeOfDay = null;
+  if (isEdit) {
+    var eDate  = (document.getElementById('sEditDate')  || {}).value || '';
+    var eStart = (document.getElementById('sEditStart') || {}).value || '';
+    var eEnd   = (document.getElementById('sEditEnd')   || {}).value || '';
+    if (eDate && eStart) {
+      scheduled_at = eDate + 'T' + eStart + ':00+04:00';
+      editTimeOfDay = eStart;
+    }
+    if (eStart && eEnd) {
+      var eMins = _minutesBetween(eStart, eEnd);
+      if (eMins <= 0) {
+        msgEl.textContent = '⚠️ The end time must be after the start time.';
+        msgEl.style.cssText = 'display:block;background:#2a1010;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+        return;
+      }
+      duration = eMins;
+    }
+  }
 
   var intro_video_url = (document.getElementById('sIntroVideo') || {}).value || null;
   if (intro_video_url === 'Uploading…') intro_video_url = null;
@@ -787,8 +831,13 @@ async function createSession() {
               match_city_id: orig.city_id || null,
               exclude_id: SESSION_EDIT_ID,
             });
-            // Per-occurrence fields must never propagate.
+            // Per-occurrence fields must never propagate — except a new
+            // START TIME, which moves every session to that clock time on
+            // its own date (server: time_of_day).
             delete seriesPayload.scheduled_at;
+            if (editTimeOfDay && editTimeOfDay !== _dubaiParts(orig.scheduled_at).time) {
+              seriesPayload.time_of_day = editTimeOfDay;
+            }
             delete seriesPayload.repeat_dates;
             delete seriesPayload.assigned_ambassador_ids;
             var sRes = await fetch('/api/sessions/admin/series-update', {
@@ -861,6 +910,10 @@ function resetSessionForm() {
   });
   SESSION_AMBS_PICK = [];
   if (typeof renderAmbassadorPicker === 'function') renderAmbassadorPicker();
+  ['sEditDate','sEditStart','sEditEnd'].forEach(function(id){
+    var el = document.getElementById(id); if (el) el.value = '';
+  });
+  _setSessionEditMode(false);
   document.getElementById('sessionFormTitle').textContent = 'Create New Session';
   document.getElementById('sessionSubmitLabel').textContent = '＋ Create Session';
   document.getElementById('cancelEditBtn').style.display = 'none';
@@ -986,6 +1039,15 @@ async function editSession(s) {
     }
   }
   toggleCorporateSessionFields();
+
+  // Date + start/end of THIS occurrence, in Dubai time.
+  var startP = _dubaiParts(s.scheduled_at);
+  var endAt = s.ends_at || (s.scheduled_at ? new Date(new Date(s.scheduled_at).getTime() + (Number(s.duration_mins) || 60) * 60000) : null);
+  var endP = _dubaiParts(endAt);
+  var dEl = document.getElementById('sEditDate');  if (dEl) dEl.value = startP.date;
+  var stEl2 = document.getElementById('sEditStart'); if (stEl2) stEl2.value = startP.time;
+  var enEl = document.getElementById('sEditEnd');   if (enEl) enEl.value = endP.time;
+  _setSessionEditMode(true);
 
   document.getElementById('sessionFormTitle').textContent = 'Edit Session';
   document.getElementById('sessionSubmitLabel').textContent = '✓ Save Changes';
