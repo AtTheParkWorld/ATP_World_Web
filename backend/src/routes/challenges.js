@@ -4,6 +4,7 @@ const { query, transaction } = require('../db');
 const { authenticate, requireAdmin, optionalAuth } = require('../middleware/auth');
 const audit = require('../services/audit');
 const challengeProgress = require('../services/challengeProgress');
+const refunds = require('../services/refunds');
 
 // Decorate a row coming out of the SELECT (or any plain object) with a
 // `requires_device` flag — true when the challenge's metric is one we
@@ -432,36 +433,45 @@ router.patch('/:id/cancel', authenticate, requireAdmin, async (req, res, next) =
     if (c.status === 'cancelled') return res.status(409).json({ error: 'Already cancelled' });
     if (c.status === 'closed')    return res.status(409).json({ error: 'Cannot cancel a closed challenge' });
 
-    // Refund every participant who paid an entry fee
+    // Refund every participant who paid an entry fee — in points, the
+    // way they paid.
     const { rows: parts } = await query(
-      `SELECT id, member_id, entry_paid_points
+      `SELECT id, member_id, entry_paid_points, joined_at
        FROM challenge_participants
        WHERE challenge_id=$1 AND entry_paid_points > 0 AND refunded_at IS NULL`,
       [req.params.id]
     );
 
+    let refundedCount = 0;
     for (const p of parts) {
-      await transaction(async (client) => {
-        const { rows: m } = await client.query(
-          'SELECT points_balance FROM members WHERE id=$1 FOR UPDATE',
-          [p.member_id]
-        );
-        const newBalance = (m[0]?.points_balance || 0) + p.entry_paid_points;
-        await client.query(
-          `INSERT INTO points_ledger
-            (member_id, amount, balance, reason, reference_id, description)
-           VALUES ($1, $2, $3, 'challenge_refund', $4, $5)`,
-          [p.member_id, p.entry_paid_points, newBalance, c.id,
-           'Refund — challenge cancelled: ' + c.title]
-        );
-        await client.query(
-          'UPDATE members SET points_balance=$1, last_active_at=NOW() WHERE id=$2',
-          [newBalance, p.member_id]
-        );
-        await client.query(
-          'UPDATE challenge_participants SET refunded_at=NOW() WHERE id=$1',
+      const preReset = await refunds.paidBeforePointsReset(p.joined_at);
+      const out = await transaction(async (client) => {
+        // Claim the participant first: two cancels at once (double
+        // click) used to refund the entry fee twice.
+        const { rows: claimed } = await client.query(
+          'UPDATE challenge_participants SET refunded_at=NOW() WHERE id=$1 AND refunded_at IS NULL RETURNING id',
           [p.id]
         );
+        if (!claimed.length) return null;
+        const rec = await refunds.recordRefund(client, {
+          key: `challenge:${p.id}`,
+          member_id: p.member_id,
+          source_type: 'challenge_entry',
+          source_id: p.id,
+          description: 'Challenge entry: ' + c.title,
+          method: 'points',
+          points: p.entry_paid_points,
+          status: refunds.STATUS.REFUNDED,
+          reason: 'challenge_cancelled',
+          actor_id: req.member.id,
+          paid_before_points_reset: preReset,
+        });
+        const newBalance = await refunds.creditPoints(client, p.member_id, p.entry_paid_points, {
+          reason: 'challenge_refund',
+          referenceId: c.id,
+          description: 'Refund — challenge cancelled: ' + c.title,
+        });
+        await client.query('UPDATE members SET last_active_at=NOW() WHERE id=$1', [p.member_id]);
         await client.query(
           `INSERT INTO notifications (member_id, type, title, body)
            VALUES ($1, 'challenge_cancelled', $2, $3)`,
@@ -469,7 +479,12 @@ router.patch('/:id/cancel', authenticate, requireAdmin, async (req, res, next) =
            '↩️ Challenge cancelled: ' + c.title,
            'Your ' + p.entry_paid_points + '-point entry has been refunded to your wallet.']
         );
+        return { row: rec ? rec.row : null, balance: newBalance };
       });
+      if (out) {
+        refundedCount++;
+        if (out.row) refunds.notifyRefundSoon(out.row.id, { points_balance: out.balance });
+      }
     }
 
     await query(
@@ -478,8 +493,8 @@ router.patch('/:id/cancel', authenticate, requireAdmin, async (req, res, next) =
        WHERE id=$2`,
       [req.member.id, req.params.id]
     );
-    audit && audit.log && audit.log(req, 'challenge.cancelled', 'challenge', req.params.id, { refunded: parts.length });
-    res.json({ success: true, status: 'cancelled', refunded_count: parts.length });
+    audit && audit.log && audit.log(req, 'challenge.cancelled', 'challenge', req.params.id, { refunded: refundedCount });
+    res.json({ success: true, status: 'cancelled', refunded_count: refundedCount });
   } catch (err) { next(err); }
 });
 

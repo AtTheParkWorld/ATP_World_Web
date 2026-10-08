@@ -257,12 +257,16 @@ async function syncSubscription(stripeSub) {
 
 // Record every webhook event for audit/debug, with idempotency on event_id.
 // Returns true if this is the first time we've seen this event id.
+// An event whose earlier attempt FAILED (error set) counts as new again:
+// Stripe retries failed deliveries, and treating the retry as a
+// duplicate meant a failed event was never processed at all.
 async function recordEvent(event) {
   try {
     const { rowCount } = await query(
       `INSERT INTO billing_events (event_id, event_type, object_id, payload, processed_at)
        VALUES ($1, $2, $3, $4, NOW())
-       ON CONFLICT (event_id) DO NOTHING`,
+       ON CONFLICT (event_id) DO UPDATE SET error = NULL, processed_at = NOW()
+         WHERE billing_events.error IS NOT NULL`,
       [event.id, event.type, event.data?.object?.id || null, JSON.stringify(event)]
     );
     return rowCount > 0;
@@ -270,6 +274,62 @@ async function recordEvent(event) {
     console.warn('[billing] recordEvent failed', e.message);
     return true; // don't block processing on audit failure
   }
+}
+
+// A Checkout payment arrived for a booking we can't confirm (session
+// full, cancelled or over). Records the payment on the booking, then
+// refunds it through services/refunds.js so it is logged once, can be
+// retried from the admin Refunds list if Stripe fails, and the member
+// gets the branded refund email (with `note` saying why) exactly once.
+async function _refundUnconfirmedPayment(b, checkoutSession, { reason, note }) {
+  const refunds = require('./refunds');
+  const amount = (checkoutSession.amount_total || 0) / 100;
+  const currency = String(checkoutSession.currency || 'aed').toUpperCase();
+  const paymentIntent = checkoutSession.payment_intent || null;
+  // Payment details on the row (paid_at stays NULL, so revenue reports
+  // never count it) — the refund and the admin list need them.
+  try {
+    await query(
+      `UPDATE bookings
+          SET status='payment_failed', paid_at=NULL,
+              payment_method='stripe', payment_amount=$2, payment_currency=$3,
+              stripe_session_id=$4, stripe_payment_intent_id=$5
+        WHERE id=$1`,
+      [b.id, amount, currency, checkoutSession.id, paymentIntent]
+    );
+  } catch (e) {
+    if (e.code !== '42703') throw e;
+    await query(`UPDATE bookings SET status='payment_failed', paid_at=NULL WHERE id=$1`, [b.id]).catch(() => {});
+  }
+  if (!paymentIntent) return;
+  const booking = {
+    id: b.id, member_id: b.member_id, session_id: b.session_id, session_name: b.session_name,
+    scheduled_at: b.scheduled_at, payment_method: 'stripe', payment_amount: amount,
+    payment_currency: currency, stripe_session_id: checkoutSession.id,
+    stripe_payment_intent_id: paymentIntent,
+  };
+  const rec = await refunds.recordRefund(null, {
+    key: refunds.bookingRefundKey(booking),
+    member_id: b.member_id, source_type: 'session_booking', source_id: b.id,
+    description: refunds.describeSession(b.session_name), item_at: b.scheduled_at,
+    method: 'card', amount, currency, status: refunds.STATUS.PENDING, reason,
+    stripe_payment_intent_id: paymentIntent,
+  });
+  if (rec && rec.row && rec.row.status === refunds.STATUS.REFUNDED) return;
+  let row = rec ? rec.row : null;
+  if (rec && !rec.inserted) {
+    // A redelivery after an earlier failed attempt: new attempt number,
+    // so Stripe doesn't replay the cached failure for the old key.
+    row = await refunds.updateRefund(null, row.id, {
+      status: refunds.STATUS.PENDING, error: null, attempts: (row.attempts || 1) + 1,
+    }) || row;
+  }
+  const out = await refunds.issueBookingCardRefund(booking, { refundRow: row });
+  if (!out.ok) {
+    console.error('[billing] auto-refund failed for', b.id, out.error);
+    return;
+  }
+  if (out.row) refunds.notifyRefundSoon(out.row.id, { note });
 }
 
 // Confirms a one-time session booking after Stripe Checkout completes.
@@ -287,8 +347,8 @@ async function _confirmSessionBooking(checkoutSession) {
   const emailService = require('./email');
 
   const { rows } = await query(
-    `SELECT b.id, b.status, b.member_id, b.session_id,
-            s.name AS session_name, s.scheduled_at, s.location,
+    `SELECT b.id, b.status, b.member_id, b.session_id, b.refunded_at,
+            s.name AS session_name, s.scheduled_at, s.location, s.status AS session_status,
             s.sponsor_name, s.sponsor_logo_url, s.sponsor_url,
             m.member_number, m.first_name, m.last_name, m.email
      FROM bookings b
@@ -300,8 +360,8 @@ async function _confirmSessionBooking(checkoutSession) {
     // Pre-migration fallback: sponsor_* columns don't exist yet.
     if (e.code === '42703') {
       return query(
-        `SELECT b.id, b.status, b.member_id, b.session_id,
-                s.name AS session_name, s.scheduled_at, s.location,
+        `SELECT b.id, b.status, b.member_id, b.session_id, NULL AS refunded_at,
+                s.name AS session_name, s.scheduled_at, s.location, s.status AS session_status,
                 NULL AS sponsor_name, NULL AS sponsor_logo_url, NULL AS sponsor_url,
                 m.member_number, m.first_name, m.last_name, m.email
          FROM bookings b
@@ -317,6 +377,22 @@ async function _confirmSessionBooking(checkoutSession) {
   }
   const b = rows[0];
   if (b.status === 'confirmed') return; // already processed (Stripe redelivery)
+  // Already paid back by an earlier delivery of this event (below).
+  if (b.status === 'payment_failed' && b.refunded_at) return;
+
+  // The member paid for a session that ATP cancelled (or that already
+  // ran) while they were on the Stripe page. Confirming would take their
+  // money for nothing — refund it instead, same as a full session.
+  if (b.session_status === 'cancelled' || b.session_status === 'completed') {
+    console.warn('[billing] paid for a', b.session_status, 'session, refunding booking', b.id);
+    await _refundUnconfirmedPayment(b, checkoutSession, {
+      reason: 'session_unavailable',
+      note: b.session_status === 'cancelled'
+        ? 'This session was cancelled while you were paying, so we refunded you in full.'
+        : 'This session had already taken place when your payment came through, so we refunded you in full.',
+    });
+    return;
+  }
 
   // Founder rule 2026-10-03: an unpaid booking holds no seat, so the
   // session can legitimately fill while this member is in checkout.
@@ -335,27 +411,10 @@ async function _confirmSessionBooking(checkoutSession) {
     const taken = parseInt((capRows[0] || {}).taken, 10) || 0;
     if (cap && taken >= cap) {
       console.warn('[billing] session filled during checkout, refunding booking', b.id);
-      await query(
-        `UPDATE bookings SET status='payment_failed', paid_at=NULL WHERE id=$1`, [b.id]
-      ).catch(() => {});
-      try {
-        if (checkoutSession.payment_intent) {
-          await stripe().refunds.create({ payment_intent: checkoutSession.payment_intent });
-          await query(
-            `UPDATE bookings SET refunded_at=NOW(), refund_method='stripe' WHERE id=$1`, [b.id]
-          ).catch(() => {});
-        }
-      } catch (e) { console.error('[billing] auto-refund failed for', b.id, e.message); }
-      try {
-        await emailService.sendRaw({
-          to: b.email,
-          subject: `Sorry — ${b.session_name} filled up`,
-          html: `<p>Hi ${b.first_name},</p><p>${b.session_name} filled up while you were paying, `
-              + `so we could not hold your place. Your payment has been refunded in full and `
-              + `should be back with you within five to ten working days.</p>`
-              + `<p>Sorry about that — places on paid sessions go to whoever completes payment first.</p>`,
-        });
-      } catch (e) { /* refund already issued; email is best effort */ }
+      await _refundUnconfirmedPayment(b, checkoutSession, {
+        reason: 'session_full',
+        note: 'The session filled up while you were paying, so we could not hold your place. Places on paid sessions go to whoever completes payment first.',
+      });
       return;
     }
   } catch (e) {
@@ -440,7 +499,9 @@ async function _confirmSessionBooking(checkoutSession) {
       member: { first_name: b.first_name, last_name: b.last_name, email: b.email, member_number: b.member_number },
       session: { name: b.session_name, scheduled_at: b.scheduled_at, location: b.location,
         sponsor_name: b.sponsor_name, sponsor_logo_url: b.sponsor_logo_url, sponsor_url: b.sponsor_url },
-      payment: { amount: amount / 100, currency, method: 'Stripe', paid_at: new Date().toISOString(), stripe_payment_intent_id: paymentIntent },
+      // `amount` is already in major units (amount_total / 100 above);
+      // dividing again printed AED 0.50 on a AED 50 receipt.
+      payment: { amount, currency, method: 'Stripe', paid_at: new Date().toISOString(), stripe_payment_intent_id: paymentIntent },
     });
   } catch (e) { console.warn('[billing] paid session receipt email failed', e.message); }
 }
@@ -566,6 +627,13 @@ async function handleWebhookEvent(event) {
       }
       break;
     }
+    case 'charge.refunded': {
+      // A refund landed on a card payment — ours (already logged, this
+      // just fills in card details) or one made by hand in the Stripe
+      // dashboard (logged + the member gets the refund email once).
+      await require('./refunds').handleChargeRefunded(event.data.object);
+      break;
+    }
     case 'payment_intent.canceled':
     case 'payment_intent.amount_capturable_updated': {
       // Coach 1-on-1 manual-capture holds (card flow). PaymentIntents
@@ -585,7 +653,14 @@ async function handleWebhookEvent(event) {
 // don't have it stored locally (older bookings), then call
 // stripe.refunds.create. Idempotent on the booking row — repeated
 // calls won't double-refund (we check stripe_refund_id first).
-async function refundStripeBooking(booking) {
+//
+// opts.atpRefundId    — the refunds-table row this refund completes; it
+//                       rides along in the Stripe metadata so the
+//                       charge.refunded webhook recognises our own refund
+//                       and never logs (or emails) it twice.
+// opts.idempotencyKey — Stripe idempotency key (services/refunds.js uses
+//                       one per attempt).
+async function refundStripeBooking(booking, opts = {}) {
   if (booking.stripe_refund_id) {
     return { id: booking.stripe_refund_id, already_refunded: true };
   }
@@ -606,16 +681,23 @@ async function refundStripeBooking(booking) {
       e.code = 'NO_PAYMENT_INTENT';
       throw e;
     }
+    // Keep it, so the refund webhook can map this payment to the booking.
+    await query(
+      'UPDATE bookings SET stripe_payment_intent_id=$1 WHERE id=$2 AND stripe_payment_intent_id IS NULL',
+      [paymentIntentId, booking.id]
+    ).catch(() => {});
   }
-  const refund = await s.refunds.create({
-    payment_intent: paymentIntentId,
-    metadata: {
-      booking_id: booking.id,
-      member_id:  booking.member_id,
-      session_id: booking.session_id,
-      reason:     'booking_cancellation',
-    },
-  });
+  const metadata = {
+    booking_id: booking.id,
+    member_id:  booking.member_id,
+    session_id: booking.session_id,
+    reason:     'booking_cancellation',
+  };
+  if (opts.atpRefundId) metadata.atp_refund_id = opts.atpRefundId;
+  const refund = await s.refunds.create(
+    { payment_intent: paymentIntentId, metadata },
+    opts.idempotencyKey ? { idempotencyKey: opts.idempotencyKey } : undefined
+  );
   return refund;
 }
 

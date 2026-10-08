@@ -48,6 +48,7 @@ async function cancelSession(sessionId, sessionName) {
     if (name === 'surveys')    { if (typeof loadSurveysSection === 'function') loadSurveysSection(); }
     if (name === 'appeals')    { if (typeof loadAppealsSection === 'function') loadAppealsSection(); }
     if (name === 'coachpayouts') { if (typeof loadCoachPayoutsSection === 'function') loadCoachPayoutsSection(); }
+    if (name === 'refunds')    { if (typeof loadRefundsSection === 'function') loadRefundsSection(); }
     if (name === 'corporate')  { if (typeof loadCorporateSection === 'function') loadCorporateSection(); }
     if (name === 'partners')   { if (typeof initPromoBannerAdmin === 'function') initPromoBannerAdmin(); }
   };

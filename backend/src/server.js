@@ -1130,6 +1130,18 @@ async function _ensureBootSchema() {
       ADD COLUMN IF NOT EXISTS settlement_note TEXT`);
     console.log('[boot] coach card-payment schema ensured');
   } catch (e) { console.warn('[boot] coach card-payment schema:', e.message); }
+
+  // Refunds log (founder 2026-10-08: refund emails + admin Refunds
+  // list). One row per refund event across bookings, coach sessions,
+  // challenge entries and Stripe-dashboard refunds — see
+  // services/refunds.js. The backfill copies refunds made before the
+  // log existed (idempotent, never emails, never moves money).
+  try {
+    const refunds = require('./services/refunds');
+    await refunds.ensureSchema();
+    const { inserted } = await refunds.backfillLegacyRefunds();
+    console.log(`[boot] refunds log ensured${inserted ? ` (${inserted} earlier refund(s) added)` : ''}`);
+  } catch (e) { console.warn('[boot] refunds schema:', e.message); }
 }
 
 if (require.main === module) {
