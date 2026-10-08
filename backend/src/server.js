@@ -432,6 +432,20 @@ app.get(['/delete-account', '/account-deletion'], (req, res) => res.redirect(301
 // in routes/postShare.js.
 app.use(require('./routes/postShare'));
 
+// ── Short session links — /s/<code> ──────────────────────────
+// The daily WhatsApp message (services/whatsappDigest.js) links each
+// session as atthepark.world/s/<first 8 hex of its id>; this opens the
+// sessions page on that session (sessions.html already handles
+// ?session=<id>). Unknown codes land on the full schedule.
+app.get('/s/:code', async (req, res) => {
+  try {
+    const id = await require('./services/whatsappDigest').resolveShortCode(req.params.code);
+    res.redirect(302, id ? `/sessions.html?session=${encodeURIComponent(id)}` : '/sessions.html');
+  } catch (_) {
+    res.redirect(302, '/sessions.html');
+  }
+});
+
 // HTML pages must never be cached (so deploys propagate immediately).
 // JS/CSS/assets get a sensible short cache. Bundles use content-hash
 // invalidation via ?cb=… cache-busters in the page templates.
@@ -733,6 +747,7 @@ const ROUTES = [
   ['community',    require('./routes/community')],
   ['challenges',   require('./routes/challenges')],
   ['notifications',require('./routes/notifications')],
+  ['whatsapp-digest', require('./routes/whatsappDigest')],
   ['admin',        require('./routes/admin')],
   ['cms',          require('./routes/cms')],
   ['cities',       require('./routes/cities')],
@@ -1417,6 +1432,17 @@ if (require.main === module) {
       } catch (e) { console.error('[maintenance] post-session NPS failed:', e.message); }
     };
     setTimeout(() => { npsTick(); setInterval(npsTick, 60 * 60 * 1000); }, 10 * 60 * 1000);
+
+    // ── Every 10 min: the daily WhatsApp message ──────────────────
+    // Sends once per Dubai day at/after the time set in the admin panel
+    // (services/whatsappDigest.js keeps the last-sent date).
+    const whatsappDigestTick = async () => {
+      try {
+        const r = await require('./services/whatsappDigest').tick();
+        if (r && r.recipients !== undefined) console.log('[whatsapp-digest] sent', JSON.stringify({ day: r.day, sessions: r.sessions, recipients: r.recipients, delivered: r.delivered }));
+      } catch (e) { console.error('[whatsapp-digest] failed:', e.message); }
+    };
+    setTimeout(() => { whatsappDigestTick(); setInterval(whatsappDigestTick, 10 * 60 * 1000); }, 3 * 60 * 1000);
   });
 }
 

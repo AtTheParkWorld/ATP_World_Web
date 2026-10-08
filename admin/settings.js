@@ -1391,6 +1391,9 @@ function _liveAge(s) {
 function loadAdminLiveStreams() {
   var el = document.getElementById('adminLiveStreamsList');
   if (!el) return;
+  // Same section as the daily WhatsApp card — fill its preview once.
+  var waPre = document.getElementById('waDigestPreview');
+  if (waPre && waPre.value === 'Loading…') adminWaDigestLoad();
   fetch(ATP_API + '/streams/admin/live', { headers: { 'Authorization': 'Bearer ' + getToken() } })
     .then(function(r){
       if (!r.ok) throw new Error('HTTP ' + r.status);
@@ -1472,6 +1475,80 @@ function adminEndStaleStreams() {
 // Sends ONE push to the signed-in admin's own phone and says exactly why
 // when it doesn't arrive. Phone push had silently never worked; this is
 // the end-to-end check (2026-10-03).
+// ── Daily WhatsApp message (founder 2026-10-08) ─────────────────
+// Preview of tomorrow's message + the send time. The server pushes it to
+// the admins every evening (services/whatsappDigest.js).
+function adminWaDigestLoad() {
+  var pre = document.getElementById('waDigestPreview');
+  if (!pre) return;
+  fetch(ATP_API + '/whatsapp-digest/admin', { headers: { 'Authorization': 'Bearer ' + getToken() } })
+    .then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); })
+    .then(function(x){
+      if (!x.ok) { pre.value = (x.body && x.body.error) || 'Could not load the preview.'; return; }
+      var p = x.body.preview || {}, s = x.body.settings || {};
+      pre.value = p.sessions ? p.text : 'No public sessions tomorrow — nothing will be sent tonight.';
+      var open = document.getElementById('waDigestOpen');
+      if (open) open.href = p.whatsapp_url || '#';
+      var en = document.getElementById('waDigestEnabled'); if (en) en.checked = !!s.enabled;
+      var tm = document.getElementById('waDigestTime'); if (tm && s.time) tm.value = s.time;
+      var rc = document.getElementById('waDigestRecipients');
+      if (rc) rc.textContent = (x.body.recipient_count || 0) + ' recipient(s)' + (s.last_sent ? ' · last sent ' + s.last_sent : '');
+    })
+    .catch(function(e){ pre.value = 'Failed: ' + e.message; });
+}
+
+function adminWaDigestSave() {
+  var en = document.getElementById('waDigestEnabled');
+  var tm = document.getElementById('waDigestTime');
+  var out = document.getElementById('waDigestResult');
+  fetch(ATP_API + '/whatsapp-digest/admin', {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+    body: JSON.stringify({ enabled: !!(en && en.checked), time: tm ? tm.value : undefined }),
+  })
+    .then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); })
+    .then(function(x){
+      if (!out) return;
+      if (!x.ok) { out.style.color = '#ef4444'; out.textContent = (x.body && x.body.error) || 'Could not save.'; return; }
+      var s = x.body.settings || {};
+      out.style.color = '#A8FF00';
+      out.textContent = s.enabled ? ('✅ Saved — it will go out every day at ' + s.time + ' (Dubai).') : '✅ Saved — daily message is OFF.';
+    })
+    .catch(function(e){ if (out) { out.style.color = '#ef4444'; out.textContent = 'Failed: ' + e.message; } });
+}
+
+function adminWaDigestCopy() {
+  var pre = document.getElementById('waDigestPreview');
+  var out = document.getElementById('waDigestResult');
+  if (!pre) return;
+  var done = function(){ if (out) { out.style.color = '#A8FF00'; out.textContent = '✅ Copied — paste it into the WhatsApp group.'; } };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(pre.value).then(done, function(){ pre.select(); document.execCommand('copy'); done(); });
+  else { pre.select(); document.execCommand('copy'); done(); }
+}
+
+function adminWaDigestSend(toAll) {
+  var out = document.getElementById('waDigestResult');
+  if (toAll && !window.confirm('Push tomorrow\'s WhatsApp message to every recipient now?')) return;
+  if (out) { out.style.color = '#888'; out.textContent = 'Sending…'; }
+  fetch(ATP_API + '/whatsapp-digest/admin/send', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+    body: JSON.stringify({ to_all: !!toAll }),
+  })
+    .then(function(r){ return r.json().then(function(b){ return { ok: r.ok, body: b }; }); })
+    .then(function(x){
+      if (!out) return;
+      var b = x.body || {};
+      if (!x.ok) { out.style.color = '#ef4444'; out.textContent = b.error || 'Could not send.'; return; }
+      if (b.skipped === 'no_sessions_tomorrow') { out.style.color = '#f59e0b'; out.textContent = 'No public sessions tomorrow — nothing to send.'; return; }
+      out.style.color = b.delivered ? '#A8FF00' : '#f59e0b';
+      out.textContent = b.delivered
+        ? ('✅ Pushed to ' + b.delivered + ' of ' + b.recipients + ' phone(s). Tap it to open WhatsApp.')
+        : ('⚠ Not delivered to any phone (' + b.recipients + ' recipient(s)). Check "Send me a test push" above.');
+    })
+    .catch(function(e){ if (out) { out.style.color = '#ef4444'; out.textContent = 'Failed: ' + e.message; } });
+}
+
 function adminSendTestPush() {
   var el = document.getElementById('adminTestPushResult');
   if (el) { el.style.color = '#888'; el.textContent = 'Sending…'; }

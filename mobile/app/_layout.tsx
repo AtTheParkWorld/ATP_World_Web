@@ -26,12 +26,13 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StripeProvider } from '@stripe/stripe-react-native';
 import * as Sentry from '@sentry/react-native';
 import * as Updates from 'expo-updates';
-import { AppState } from 'react-native';
+import { AppState, Linking } from 'react-native';
 import Constants from 'expo-constants';
 import { StatusBar } from 'expo-status-bar';
 import { useAuthStore } from '@/lib/stores/auth.store';
 import { RouteErrorBoundary } from '@/lib/components/RouteErrorBoundary';
 import { WhatsAppBubble } from '@/lib/components/WhatsAppBubble';
+import { API_BASE, WEB_BASE } from '@/lib/api/client';
 import '../global.css';
 
 const extra = (Constants.expoConfig?.extra || {}) as Record<string, string>;
@@ -67,6 +68,20 @@ function routeForPush(data: any): string | null {
   return '/inbox';
 }
 
+// Daily WhatsApp message (founder 2026-10-08): the evening push carries
+// no text, so a tap fetches tomorrow's message and opens WhatsApp with it
+// filled in — the admin just picks the group and sends.
+async function openWhatsAppDigest() {
+  try {
+    const res = await fetch(`${API_BASE}/whatsapp-digest/tomorrow`);
+    const d = await res.json();
+    if (!d || !d.text) throw new Error('no digest');
+    await Linking.openURL(`https://wa.me/?text=${encodeURIComponent(d.text)}`);
+  } catch {
+    Linking.openURL(`${WEB_BASE}/sessions.html`).catch(() => {});
+  }
+}
+
 // A tap on a cold start arrives before the navigator exists; park it
 // until the root layout has mounted.
 let navReady = false;
@@ -84,7 +99,9 @@ try {
     OneSignal.initialize(extra.oneSignalAppId);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     OneSignal.Notifications.addEventListener('click', (event: any) => {
-      const route = routeForPush(event?.notification?.additionalData);
+      const data = event?.notification?.additionalData;
+      if (data && data.kind === 'whatsapp_digest') { openWhatsAppDigest(); return; }
+      const route = routeForPush(data);
       if (route) openRoute(route);
     });
     oneSignal = OneSignal;
