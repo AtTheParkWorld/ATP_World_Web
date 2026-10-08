@@ -28,6 +28,7 @@ const router = require('express').Router();
 const { query, transaction } = require('../db');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const billing = require('../services/billing');
+const refunds = require('../services/refunds');
 
 // How long a coach has to confirm (capture) or decline (release) a
 // card-hold booking before it auto-expires. Stripe card auths live ~7
@@ -685,7 +686,9 @@ router.post('/:id/cancel', authenticate, async (req, res, next) => {
     );
     if (!bRows.length) return res.status(404).json({ error: 'Booking not found' });
     const booking = bRows[0];
-    if (['completed','cancelled_by_member','cancelled_by_coach','declined','expired','payment_failed'].includes(booking.status)) {
+    // gift_expired: use-it-or-lose-it — the coach was already paid, the
+    // sender is not refunded (autoExpireGifts).
+    if (['completed','cancelled_by_member','cancelled_by_coach','declined','expired','payment_failed','gift_expired'].includes(booking.status)) {
       return res.status(400).json({ error: 'This booking is already finalised.' });
     }
 
@@ -709,26 +712,34 @@ router.post('/:id/cancel', authenticate, async (req, res, next) => {
         catch (e) { console.warn('[coach-1on1] cancel: PI release failed (auto-releases in 7d):', e.message); }
       }
       const cardStatus = actor === 'coach' ? 'cancelled_by_coach' : 'cancelled_by_member';
-      await query(
+      const { rowCount: cardClaimed } = await query(
         `UPDATE coach_session_bookings SET
            status=$1, payment_status='canceled', cancellation_actor=$2,
            cancellation_reason=$3, cancelled_at=NOW(), updated_at=NOW()
          WHERE id=$4 AND status='pending_coach'`,
         [cardStatus, actor, reason || null, booking.id]
       );
+      // Admin Refunds list: a released hold (nothing was charged).
+      if (cardClaimed) await refunds.recordReleasedHold(booking, { reason: actor === 'coach' ? 'coach_cancel' : 'member_cancel' });
       return res.json({ success: true, refund_aed: 0, hold_released: true, actor });
     }
 
     // Compute refund matrix
     const now = new Date();
-    const sched = new Date(booking.scheduled_at);
-    const hoursUntil = (sched.getTime() - now.getTime()) / 3600000;
+    // A gift nobody has redeemed yet has no time slot (scheduled_at is
+    // NULL). It used to fall through to the "<2h / no-show" branch
+    // (new Date(null) is 1970), so the sender lost everything and the
+    // coach was paid for a session that was never booked. Nothing has
+    // been reserved, so it is a full refund, like cancelling 24h+ ahead.
+    const unredeemedGift = booking.status === 'gift_pending_redemption' || !booking.scheduled_at;
+    const sched = booking.scheduled_at ? new Date(booking.scheduled_at) : null;
+    const hoursUntil = sched ? (sched.getTime() - now.getTime()) / 3600000 : Infinity;
 
     let refundAed = 0, coachKeepAed = 0, atpKeepAed = 0;
     let newStatus = actor === 'coach' ? 'cancelled_by_coach' : 'cancelled_by_member';
 
-    if (actor === 'coach') {
-      // Coach cancels — 100% back to member
+    if (actor === 'coach' || unredeemedGift) {
+      // Coach cancels (or the gift was never scheduled) — 100% back to member
       refundAed = booking.price_paid_aed;
       coachKeepAed = 0;
       atpKeepAed = 0;
@@ -750,76 +761,129 @@ router.post('/:id/cancel', authenticate, async (req, res, next) => {
       coachKeepAed = booking.coach_payout_aed;
     }
 
-    await transaction(async (client) => {
-      // Refund to payer's wallet (mixed points + AED return: prioritise points
-      // back first up to original, then AED)
-      const originalPoints = booking.points_used || 0;
-      const pointsValueOfRefund = Math.min(originalPoints * 0.1, refundAed); // 1 pt = 0.1 AED
-      const pointsToReturn = Math.round(pointsValueOfRefund * 10);
-      const aedToReturn = refundAed - Math.round(pointsValueOfRefund);
-
-      if (pointsToReturn > 0) {
-        const { rows: mr } = await client.query(`SELECT points_balance FROM members WHERE id=$1 FOR UPDATE`, [booking.payer_id]);
-        const bal = mr[0]?.points_balance || 0;
-        const newBal = bal + pointsToReturn;
-        await client.query(
-          `INSERT INTO points_ledger (member_id, amount, balance, reason, description)
-           VALUES ($1, $2, $3, 'cancellation_refund', $4)`,
-          [booking.payer_id, pointsToReturn, newBal, 'Cancellation refund (points portion): ' + booking.id]
-        );
-        await client.query(`UPDATE members SET points_balance=$1 WHERE id=$2`, [newBal, booking.payer_id]);
-      }
-      if (aedToReturn > 0) {
-        await client.query(`INSERT INTO member_wallet (member_id) VALUES ($1) ON CONFLICT DO NOTHING`, [booking.payer_id]);
-        await client.query(`UPDATE member_wallet SET balance_aed = balance_aed + $1, updated_at = NOW() WHERE member_id=$2`, [aedToReturn, booking.payer_id]);
-        const { rows: wr } = await client.query(`SELECT balance_aed FROM member_wallet WHERE member_id=$1`, [booking.payer_id]);
-        await client.query(
-          `INSERT INTO member_wallet_transactions (member_id, amount_aed, balance_after, txn_type, reference_type, reference_id, description)
-           VALUES ($1, $2, $3, 'refund', 'coach_session_booking', $4, $5)`,
-          [booking.payer_id, aedToReturn, wr[0].balance_aed, booking.id, 'Cancellation refund (AED): ' + actor + ' cancelled']
-        );
-      }
-
-      // Coach pending → balance for the kept portion
-      await client.query(
-        `UPDATE member_wallet SET
-           pending_aed = pending_aed - $1,
-           balance_aed = balance_aed + $1,
-           updated_at = NOW()
-         WHERE member_id=$2`,
-        [coachKeepAed, booking.coach_id]
-      );
-      if (coachKeepAed > 0) {
-        const { rows: cwr } = await client.query(`SELECT balance_aed FROM member_wallet WHERE member_id=$1`, [booking.coach_id]);
-        await client.query(
-          `INSERT INTO member_wallet_transactions (member_id, amount_aed, balance_after, txn_type, reference_type, reference_id, description)
-           VALUES ($1, $2, $3, 'cancellation_compensation', 'coach_session_booking', $4, $5)`,
-          [booking.coach_id, coachKeepAed, cwr[0].balance_aed, booking.id, 'Cancellation compensation: ' + actor + ' cancelled']
-        );
-      } else {
-        // If 0% kept, still need to drop pending
-        const { rows: cwr } = await client.query(`SELECT balance_aed FROM member_wallet WHERE member_id=$1`, [booking.coach_id]);
-        await client.query(
-          `INSERT INTO member_wallet_transactions (member_id, amount_aed, balance_after, txn_type, reference_type, reference_id, description)
-           VALUES ($1, 0, $2, 'cancellation_compensation', 'coach_session_booking', $3, $4)`,
-          [booking.coach_id, cwr[0].balance_aed, booking.id, 'Booking cancelled — no compensation']
-        );
-      }
-
-      // Update booking
-      await client.query(
-        `UPDATE coach_session_bookings SET
-           status=$1, cancellation_actor=$2, cancellation_reason=$3,
-           cancelled_at=NOW(), refund_aed=$4, coach_compensation_aed=$5,
-           updated_at=NOW()
-         WHERE id=$6`,
-        [newStatus, actor, reason || null, refundAed, coachKeepAed, booking.id]
-      );
+    // The refund goes back the way the member paid (founder 2026-10-08):
+    // points → points, wallet → wallet, a mixed payment in the same
+    // proportion. (It used to return points first, so a 50% refund of a
+    // half-points booking came back entirely as points.)
+    const split = refunds.splitMixedRefund({
+      priceAed: booking.price_paid_aed, pointsUsed: booking.points_used, refundAed,
     });
+    const preReset = split.points > 0 ? await refunds.paidBeforePointsReset(booking.created_at) : false;
+    const { rows: ctxRows } = await query(
+      `SELECT o.title, c.first_name, c.last_name
+         FROM coach_session_bookings cb
+         LEFT JOIN coach_offerings o ON o.id = cb.offering_id
+         LEFT JOIN members c ON c.id = cb.coach_id
+        WHERE cb.id=$1`,
+      [booking.id]
+    ).catch(() => ({ rows: [] }));
+    const ctx = ctxRows[0] || {};
+    const coachName = [ctx.first_name, ctx.last_name].filter(Boolean).join(' ');
+    const description = (ctx.title || '1-on-1 session') + (coachName ? ' with ' + coachName : '');
+
+    // The coach's pending balance was credited with coach_payout_aed
+    // when the session got a time (at booking, or at gift redemption).
+    // An unredeemed gift never touched it.
+    const pendingCredited = unredeemedGift ? 0 : (booking.coach_payout_aed || 0);
+
+    let refundRow = null, pointsBalance = null;
+    try {
+      await transaction(async (client) => {
+        // Claim first: only the request that moves the booking out of an
+        // open status refunds it (two taps / member + coach at once).
+        const { rows: claimed } = await client.query(
+          `UPDATE coach_session_bookings SET
+             status=$1, cancellation_actor=$2, cancellation_reason=$3,
+             cancelled_at=NOW(), refund_aed=$4, coach_compensation_aed=$5,
+             updated_at=NOW()
+           WHERE id=$6
+             AND status NOT IN ('completed','cancelled_by_member','cancelled_by_coach',
+                                'declined','expired','payment_failed','gift_expired')
+           RETURNING id`,
+          [newStatus, actor, reason || null, refundAed, coachKeepAed, booking.id]
+        );
+        if (!claimed.length) {
+          const e = new Error('This booking is already finalised.');
+          e.statusCode = 400;
+          throw e;
+        }
+
+        // Refund to the payer, split the way they paid.
+        if (refundAed > 0) {
+          const rec = await refunds.recordRefund(client, {
+            key: `coach:${booking.id}`,
+            member_id: booking.payer_id,
+            source_type: 'coach_session',
+            source_id: booking.id,
+            description,
+            item_at: booking.scheduled_at || null,
+            method: refunds.methodFor(split.points, split.walletAed),
+            amount: split.walletAed > 0 ? split.walletAed : null,
+            currency: 'AED',
+            points: split.points > 0 ? split.points : null,
+            status: refunds.STATUS.REFUNDED,
+            reason: actor === 'coach' ? 'coach_cancel' : 'member_cancel',
+            actor_id: req.member.id,
+            paid_before_points_reset: preReset,
+          });
+          refundRow = rec ? rec.row : null;
+          if (split.points > 0) {
+            pointsBalance = await refunds.creditPoints(client, booking.payer_id, split.points, {
+              reason: 'cancellation_refund',
+              referenceId: booking.id,
+              description: 'Cancellation refund (points portion): ' + booking.id,
+            });
+          }
+          if (split.walletAed > 0) {
+            await refunds.creditWallet(client, booking.payer_id, split.walletAed, {
+              refType: 'coach_session_booking',
+              refId: booking.id,
+              description: 'Cancellation refund (AED): ' + actor + ' cancelled',
+            });
+          }
+        }
+
+        // Coach side: release what was parked in pending, pay out the
+        // kept portion. (It used to subtract only the kept portion, so
+        // every full refund left the whole payout stuck in pending.)
+        await client.query(`INSERT INTO member_wallet (member_id) VALUES ($1) ON CONFLICT DO NOTHING`, [booking.coach_id]);
+        await client.query(
+          `UPDATE member_wallet SET
+             pending_aed = GREATEST(0, pending_aed - $1),
+             balance_aed = balance_aed + $2,
+             updated_at = NOW()
+           WHERE member_id=$3`,
+          [pendingCredited, coachKeepAed, booking.coach_id]
+        );
+        const { rows: cwr } = await client.query(`SELECT balance_aed FROM member_wallet WHERE member_id=$1`, [booking.coach_id]);
+        if (coachKeepAed > 0) {
+          await client.query(
+            `INSERT INTO member_wallet_transactions (member_id, amount_aed, balance_after, txn_type, reference_type, reference_id, description)
+             VALUES ($1, $2, $3, 'cancellation_compensation', 'coach_session_booking', $4, $5)`,
+            [booking.coach_id, coachKeepAed, cwr[0].balance_aed, booking.id, 'Cancellation compensation: ' + actor + ' cancelled']
+          );
+        } else {
+          // If 0% kept, still log that the pending payout was dropped
+          await client.query(
+            `INSERT INTO member_wallet_transactions (member_id, amount_aed, balance_after, txn_type, reference_type, reference_id, description)
+             VALUES ($1, 0, $2, 'cancellation_compensation', 'coach_session_booking', $3, $4)`,
+            [booking.coach_id, cwr[0].balance_aed, booking.id, 'Booking cancelled — no compensation']
+          );
+        }
+      });
+    } catch (e) {
+      if (e.statusCode === 400) return res.status(400).json({ error: e.message });
+      throw e;
+    }
+
+    // One branded refund email to the payer (fire-and-forget).
+    if (refundRow) refunds.notifyRefundSoon(refundRow.id, { points_balance: pointsBalance });
 
     res.json({
       success: true,
       refund_aed: refundAed,
+      refunded_points: split.points,
+      refunded_wallet_aed: split.walletAed,
       coach_kept_aed: coachKeepAed,
       atp_kept_aed: atpKeepAed,
       actor,
@@ -966,6 +1030,7 @@ router.post('/bookings/:id/coach-confirm', authenticate, async (req, res, next) 
       );
       try { await billing.stripe().paymentIntents.cancel(booking.payment_intent_id); }
       catch (e2) { /* already canceled/expired — fine */ }
+      await refunds.recordReleasedHold(booking, { reason: 'capture_failed' });
       await _notify(booking.member_id, 'coach_session_payment_failed',
         '💳 Card hold expired',
         'Your card hold expired — please rebook',
@@ -1011,7 +1076,7 @@ router.post('/bookings/:id/coach-decline', authenticate, async (req, res, next) 
       }
     }
 
-    await query(
+    const { rowCount: declined } = await query(
       `UPDATE coach_session_bookings
           SET status='declined', payment_status='canceled',
               cancellation_actor='coach', cancellation_reason=$1,
@@ -1019,6 +1084,7 @@ router.post('/bookings/:id/coach-decline', authenticate, async (req, res, next) 
         WHERE id=$2 AND status='pending_coach'`,
       [reason || null, booking.id]
     );
+    if (declined) await refunds.recordReleasedHold(booking, { reason: 'coach_declined' });
     await _notify(booking.member_id, 'coach_session_declined',
       '😔 Session declined',
       `${_coachName(booking)} can't take this session${reason ? ` — "${reason}"` : ''}. Your card was not charged.`,
@@ -1193,7 +1259,8 @@ router.post('/admin/payouts/:coachId/settle', authenticate, requireAdmin, async 
 // both sides. Fire-and-forget safe: per-row try/catch, race-safe flip.
 async function autoExpirePendingCoachBookings() {
   const { rows: stale } = await query(
-    `SELECT b.id, b.coach_id, b.member_id, b.payment_intent_id,
+    `SELECT b.id, b.coach_id, b.member_id, b.payer_id, b.payment_intent_id,
+            b.price_paid_aed, b.scheduled_at,
             o.title AS offering_title,
             c.first_name AS coach_first,
             m.first_name AS member_first
@@ -1223,6 +1290,7 @@ async function autoExpirePendingCoachBookings() {
         try { await billing.stripe().paymentIntents.cancel(bk.payment_intent_id); }
         catch (e) { console.warn(`[coach-1on1] expire ${bk.id}: PI cancel failed (auto-releases in 7d):`, e.message); }
       }
+      await refunds.recordReleasedHold(bk, { reason: 'hold_expired' });
 
       await _notify(bk.member_id, 'coach_session_expired',
         '⏰ Booking request expired',

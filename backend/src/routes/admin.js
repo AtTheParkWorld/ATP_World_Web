@@ -783,6 +783,216 @@ router.get('/maintenance/failed-refunds', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── GET /api/admin/refunds ────────────────────────────────────
+// The admin Refunds list (founder 2026-10-08). Every refund event from
+// the refunds log (services/refunds.js): session bookings (card or
+// points), coach 1-on-1 (wallet / points / card, incl. released card
+// holds), challenge entry fees, and refunds made in the Stripe
+// dashboard (charge.refunded webhook) — plus what happened before the
+// log existed (backfilled at boot).
+//
+// Query params (all optional):
+//   from, to    YYYY-MM-DD, Dubai calendar days, inclusive
+//   method      card | points | wallet | mixed  (points / wallet also
+//               match mixed points+wallet refunds)
+//   status      refunded | failed | pending | released
+//   type        session_booking | coach_session | challenge_entry |
+//               subscription | stripe_payment
+//   search      member name / email / member number, item name, Stripe id
+//   page, limit 1-based page; limit 1..200 (default 50)
+//   format=csv  every matching row (max 5000) as a CSV download
+//
+// Online-store (Shopify) refunds are not here: the backend's Shopify
+// token has no read_orders scope, so the response carries a link to
+// Shopify admin instead.
+const REFUND_METHODS = new Set(['card', 'points', 'wallet', 'mixed']);
+const REFUND_STATUSES = new Set(['refunded', 'failed', 'pending', 'released']);
+const REFUND_TYPES = new Set(['session_booking', 'coach_session', 'challenge_entry', 'subscription', 'stripe_payment']);
+const REFUND_TYPE_LABEL = {
+  session_booking: 'Session', coach_session: 'Coach 1-on-1', challenge_entry: 'Challenge entry',
+  subscription: 'Membership', stripe_payment: 'Card payment',
+};
+const REFUND_REASON_LABEL = {
+  member_cancel: 'Member cancelled', admin_cancel: 'Admin cancelled', session_cancelled: 'Session cancelled by ATP',
+  coach_cancel: 'Coach cancelled', coach_declined: 'Coach declined', hold_expired: 'Coach did not confirm in 72h',
+  capture_failed: 'Card capture failed', challenge_cancelled: 'Challenge cancelled', session_full: 'Session filled while paying',
+  session_unavailable: 'Session cancelled/over while paying', stripe_dashboard: 'Refunded in Stripe dashboard',
+  admin_retry: 'Admin retry', legacy: 'Before the refunds log',
+};
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+function _refundFilters(q) {
+  const where = [];
+  const params = [];
+  const p = (v) => { params.push(v); return '$' + params.length; };
+  const at = 'COALESCE(r.refunded_at, r.created_at)';
+  if (DATE_RE.test(q.from || '')) where.push(`${at} >= (${p(q.from)}::date)::timestamp AT TIME ZONE 'Asia/Dubai'`);
+  if (DATE_RE.test(q.to || '')) where.push(`${at} < ((${p(q.to)}::date) + 1)::timestamp AT TIME ZONE 'Asia/Dubai'`);
+  const method = String(q.method || '').toLowerCase();
+  if (method === 'points') where.push(`r.method IN ('points','mixed') AND COALESCE(r.points,0) > 0`);
+  else if (method === 'wallet') where.push(`r.method IN ('wallet','mixed')`);
+  else if (REFUND_METHODS.has(method)) where.push(`r.method = ${p(method)}`);
+  const status = String(q.status || '').toLowerCase();
+  if (REFUND_STATUSES.has(status)) where.push(`r.status = ${p(status)}`);
+  const type = String(q.type || '').toLowerCase();
+  if (REFUND_TYPES.has(type)) where.push(`r.source_type = ${p(type)}`);
+  const search = String(q.search || q.q || '').trim().slice(0, 100);
+  if (search) {
+    const like = p('%' + search.replace(/[\\%_]/g, '\\$&') + '%');
+    where.push(`(m.first_name ILIKE ${like} OR m.last_name ILIKE ${like}
+                 OR (m.first_name || ' ' || m.last_name) ILIKE ${like}
+                 OR m.email ILIKE ${like} OR m.member_number ILIKE ${like}
+                 OR r.description ILIKE ${like}
+                 OR r.stripe_refund_id ILIKE ${like} OR r.stripe_payment_intent_id ILIKE ${like})`);
+  }
+  return { sql: where.length ? where.join(' AND ') : 'true', params };
+}
+
+function _refundDto(r) {
+  const pi = r.stripe_payment_intent_id || null;
+  const staleMs = 2 * 60 * 1000;
+  const retryable = r.method === 'card' && r.source_type === 'session_booking' && !r.stripe_refund_id &&
+    (r.status === 'failed' ||
+     (r.status === 'pending' && r.updated_at && (Date.now() - new Date(r.updated_at).getTime()) > staleMs));
+  return {
+    id: r.id,
+    date: r.refunded_at || r.created_at,
+    created_at: r.created_at,
+    refunded_at: r.refunded_at,
+    member: {
+      id: r.member_id,
+      name: [r.first_name, r.last_name].filter(Boolean).join(' ') || null,
+      email: r.email || null,
+      member_number: r.member_number || null,
+    },
+    what: {
+      type: r.source_type,
+      type_label: REFUND_TYPE_LABEL[r.source_type] || r.source_type,
+      id: r.source_id,
+      name: r.description,
+      date: r.item_at,
+    },
+    method: r.method,
+    amount: r.amount != null ? Number(r.amount) : null,
+    currency: r.currency || null,
+    points: r.points != null ? Number(r.points) : null,
+    status: r.status,
+    reason: r.reason,
+    reason_label: REFUND_REASON_LABEL[r.reason] || r.reason || null,
+    reference: r.stripe_refund_id || (r.method === 'card' ? pi : null),
+    stripe_refund_id: r.stripe_refund_id || null,
+    payment_intent: pi,
+    stripe_payment_url: pi && /^pi_/.test(pi) ? `https://dashboard.stripe.com/payments/${pi}` : null,
+    email_sent: !!r.email_sent_at,
+    email_sent_at: r.email_sent_at,
+    email_error: r.email_error || null,
+    error: r.error || null,
+    attempts: r.attempts,
+    paid_before_points_reset: !!r.paid_before_points_reset,
+    retry: retryable ? { booking_id: r.source_id, endpoint: `/api/bookings/${r.source_id}/retry-refund` } : null,
+  };
+}
+
+const REFUND_CSV_COLS = [
+  ['date', (d) => d.date], ['member_name', (d) => d.member.name], ['member_email', (d) => d.member.email],
+  ['member_number', (d) => d.member.member_number], ['member_id', (d) => d.member.id],
+  ['type', (d) => d.what.type_label], ['item', (d) => d.what.name], ['item_date', (d) => d.what.date],
+  ['method', (d) => d.method], ['amount', (d) => d.amount], ['currency', (d) => d.currency],
+  ['points', (d) => d.points], ['status', (d) => d.status], ['reason', (d) => d.reason_label],
+  ['stripe_refund_id', (d) => d.stripe_refund_id], ['payment_intent', (d) => d.payment_intent],
+  ['stripe_payment_url', (d) => d.stripe_payment_url], ['email_sent_at', (d) => d.email_sent_at],
+  ['error', (d) => d.error], ['paid_before_points_reset', (d) => d.paid_before_points_reset],
+];
+
+router.get('/refunds', async (req, res, next) => {
+  try {
+    const csv = String(req.query.format || '').toLowerCase() === 'csv';
+    const limit = csv ? 5000 : Math.min(200, Math.max(1, parseInt(req.query.limit, 10) || 50));
+    const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+    const offset = csv ? 0 : (page - 1) * limit;
+    const f = _refundFilters(req.query);
+
+    const shopifyDomain = (process.env.SHOPIFY_DOMAIN || 'atp-store-7903.myshopify.com').replace(/\.myshopify\.com$/, '');
+    const shopify = {
+      note: 'Online store refunds: see Shopify admin',
+      url: `https://admin.shopify.com/store/${encodeURIComponent(shopifyDomain)}/orders?financial_status=refunded%2Cpartially_refunded`,
+    };
+
+    let rows, totals;
+    try {
+      ({ rows } = await query(
+        `SELECT r.*, m.first_name, m.last_name, m.email, m.member_number
+           FROM refunds r
+           LEFT JOIN members m ON m.id = r.member_id
+          WHERE ${f.sql}
+          ORDER BY COALESCE(r.refunded_at, r.created_at) DESC, r.id
+          LIMIT $${f.params.length + 1} OFFSET $${f.params.length + 2}`,
+        [...f.params, limit, offset]
+      ));
+      ({ rows: [totals] } = await query(
+        `SELECT COUNT(*)::int AS count,
+                COALESCE(SUM(r.amount) FILTER (WHERE r.status='refunded' AND r.method='card' AND COALESCE(r.currency,'AED')='AED'), 0)::numeric(12,2) AS card_aed,
+                COALESCE(SUM(r.amount) FILTER (WHERE r.status='refunded' AND r.method IN ('wallet','mixed')), 0)::numeric(12,2) AS wallet_aed,
+                COALESCE(SUM(r.points) FILTER (WHERE r.status='refunded'), 0)::int AS points_refunded,
+                COUNT(*) FILTER (WHERE r.status='refunded')::int AS refunded,
+                COUNT(*) FILTER (WHERE r.status='failed')::int AS failed,
+                COUNT(*) FILTER (WHERE r.status='pending')::int AS pending,
+                COUNT(*) FILTER (WHERE r.status='released')::int AS released,
+                COALESCE(SUM(r.amount) FILTER (WHERE r.status='released'), 0)::numeric(12,2) AS released_aed,
+                COALESCE(json_agg(json_build_object('currency', r.currency, 'amount', r.amount))
+                  FILTER (WHERE r.status='refunded' AND r.method='card' AND COALESCE(r.currency,'AED')<>'AED'), '[]') AS other_currency_rows
+           FROM refunds r
+           LEFT JOIN members m ON m.id = r.member_id
+          WHERE ${f.sql}`,
+        f.params
+      ));
+    } catch (e) {
+      // Refunds log not created yet (first boot still running).
+      if (e.code !== '42P01' && e.code !== '42703') throw e;
+      rows = [];
+      totals = null;
+    }
+
+    const items = rows.map(_refundDto);
+    if (csv) {
+      const lines = [REFUND_CSV_COLS.map((c) => c[0]).join(',')];
+      for (const d of items) lines.push(REFUND_CSV_COLS.map((c) => _csvCell(c[1](d))).join(','));
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', `attachment; filename="atp-refunds-${new Date().toISOString().slice(0, 10)}.csv"`);
+      return res.send(lines.join('\n'));
+    }
+
+    const t = totals || {};
+    const other = {};
+    for (const x of (Array.isArray(t.other_currency_rows) ? t.other_currency_rows : [])) {
+      const cur = String(x.currency || '').toUpperCase();
+      other[cur] = Math.round(((other[cur] || 0) + Number(x.amount || 0)) * 100) / 100;
+    }
+    const cardAed = Number(t.card_aed || 0);
+    const walletAed = Number(t.wallet_aed || 0);
+    res.json({
+      refunds: items,
+      total: t.count || 0,
+      page, limit,
+      totals: {
+        count: t.count || 0,
+        aed_refunded: Math.round((cardAed + walletAed) * 100) / 100,
+        card_aed: cardAed,
+        wallet_aed: walletAed,
+        points_refunded: t.points_refunded || 0,
+        refunded: t.refunded || 0,
+        failed: t.failed || 0,
+        pending: t.pending || 0,
+        released: t.released || 0,
+        released_aed: Number(t.released_aed || 0),
+        other_currencies: Object.entries(other).map(([currency, amount]) => ({ currency, amount })),
+      },
+      shopify,
+      log_ready: totals !== null,
+    });
+  } catch (err) { next(err); }
+});
+
 // ── PATCH /api/admin/members/:id/ban ─────────────────────────
 router.patch('/members/:id/ban', async (req, res, next) => {
   try {

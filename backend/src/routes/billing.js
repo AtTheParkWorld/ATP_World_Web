@@ -212,6 +212,9 @@ const REQUIRED_EVENTS = [
   'invoice.payment_failed',
   'payment_intent.canceled',
   'payment_intent.amount_capturable_updated',
+  // Refunds made in the Stripe dashboard → logged in the admin Refunds
+  // list + the member's refund email (services/refunds.js).
+  'charge.refunded',
 ];
 
 router.get('/admin/webhook-check', authenticate, requireAdmin, async (req, res, next) => {

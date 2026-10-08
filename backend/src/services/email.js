@@ -91,14 +91,18 @@ function emailServiceStatus() {
 //   Returns: { ok:true } on success
 //            { ok:false, code:'EMAIL_NOT_CONFIGURED', reason } when env not set
 //            { ok:false, code:'EMAIL_SEND_FAILED',    reason } on SendGrid error
-async function send(to, subject, html) {
+// `text` (optional) is the plain-text twin; the new-look layout
+// (services/emailLayout.js) always supplies one.
+async function send(to, subject, html, text) {
   const status = emailServiceStatus();
   if (!status.configured) {
     console.warn(`[EMAIL MOCK] To: ${to} | Subject: ${subject} | Reason: ${status.reason}`);
     return { ok: false, code: 'EMAIL_NOT_CONFIGURED', reason: status.reason };
   }
   try {
-    await sgMail.send({ to, from: FROM, subject, html });
+    const msg = { to, from: FROM, subject, html };
+    if (text) msg.text = text;
+    await sgMail.send(msg);
     return { ok: true };
   } catch (err) {
     const sgErrors = err.response?.body?.errors;
@@ -603,6 +607,146 @@ async function sendSessionCancellation(member, session, refund) {
   await send(member.email, `Cancelled: ${session.name || 'Your ATP session'}`, html);
 }
 
+// ── REFUND CONFIRMATION (founder 2026-10-08) ──────────────────
+// One email per refund event (services/refunds.js guarantees the
+// "once"). First email on the new-look layout — see emailLayout.js.
+//
+// `refund` is a row of the refunds table (method card | points |
+// wallet | mixed, amount, currency, points, description, item_at,
+// refunded_at, stripe_refund_id, card_brand, card_last4, source_type)
+// plus optional extras: points_balance (balance after the refund) and
+// note (one line explaining why, e.g. "The session filled up while you
+// were paying").
+const CARD_BRANDS = {
+  visa: 'Visa', mastercard: 'Mastercard', amex: 'American Express',
+  american_express: 'American Express', discover: 'Discover', diners: 'Diners Club',
+  jcb: 'JCB', unionpay: 'UnionPay',
+};
+
+function _dubaiDateTime(d, withTime) {
+  if (!d) return '';
+  const dt = new Date(d);
+  if (isNaN(dt.getTime())) return '';
+  return dt.toLocaleString('en-GB', withTime === false
+    ? { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric', timeZone: 'Asia/Dubai' }
+    : { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+        hour: 'numeric', minute: '2-digit', hour12: true, timeZone: 'Asia/Dubai' });
+}
+
+function _money(amount, currency) {
+  return `${String(currency || 'AED').toUpperCase()} ${Number(amount || 0).toFixed(2)}`;
+}
+
+function buildRefundEmail(member, refund) {
+  const { renderEmail } = require('./emailLayout');
+  const r = refund || {};
+  const method = r.method || 'card';
+  const points = parseInt(r.points, 10) || 0;
+  const amount = Number(r.amount || 0);
+  const firstName = (member && member.first_name) || 'there';
+  const what = r.description || 'your ATP booking';
+  const ref = r.stripe_refund_id || ('ATP-RF-' + String(r.id || '').replace(/-/g, '').slice(0, 8).toUpperCase());
+
+  const brand = CARD_BRANDS[String(r.card_brand || '').toLowerCase()] ||
+    (r.card_brand ? String(r.card_brand).charAt(0).toUpperCase() + String(r.card_brand).slice(1) : '');
+  const cardLabel = brand && r.card_last4 ? `${brand} ending ${r.card_last4}`
+    : brand ? `Your ${brand} card`
+    : r.card_last4 ? `Card ending ${r.card_last4}`
+    : 'Your original payment card';
+
+  // Where the button goes: the profile tab that lists what was refunded.
+  const base = FRONTEND_URL;
+  const link = {
+    session_booking: { label: 'View my bookings',   url: `${base}/profile.html#sessions` },
+    coach_session:   { label: 'View my bookings',   url: `${base}/profile.html#sessions` },
+    challenge_entry: { label: 'View my challenges', url: `${base}/profile.html#challenges` },
+    subscription:    { label: 'View my membership', url: `${base}/plans.html` },
+  }[r.source_type] || { label: 'View my bookings', url: `${base}/profile.html#sessions` };
+
+  // Headline = white part + lime accent, e.g. "Your refund is on its" + "way."
+  let headline, accent, eyebrow, summaryValue, summarySub, refundedTo, notice, subject, preheader;
+  if (method === 'points') {
+    eyebrow = 'Points refunded';
+    headline = 'Your points are';
+    accent = 'back.';
+    summaryValue = `+${points.toLocaleString('en-US')} pts`;
+    summarySub = 'Added back to your ATP points balance.';
+    refundedTo = 'ATP points balance';
+    notice = { title: 'Available now', text: 'Your points are already in your balance. Use them on your next booking or reward.' };
+    subject = `Your ${points.toLocaleString('en-US')} points are back · ${what}`;
+    preheader = `${points.toLocaleString('en-US')} points are back in your ATP balance, ready to use now.`;
+  } else if (method === 'wallet' || method === 'mixed') {
+    eyebrow = 'Wallet refunded';
+    headline = 'Your wallet is topped';
+    accent = 'back up.';
+    summaryValue = method === 'mixed' && points > 0
+      ? `${_money(amount, r.currency || 'AED')} + ${points.toLocaleString('en-US')} pts`
+      : _money(amount, r.currency || 'AED');
+    summarySub = method === 'mixed' && points > 0
+      ? 'Back in your ATP wallet and points balance, the same way you paid.'
+      : 'Back in your ATP wallet.';
+    refundedTo = method === 'mixed' && points > 0 ? 'ATP wallet + points balance' : 'ATP wallet';
+    notice = { title: 'Available now', text: method === 'mixed' && points > 0
+      ? 'It is already in your ATP wallet and points balance. Use it on your next booking.'
+      : 'The money is already in your ATP wallet. Use it on your next booking.' };
+    subject = `${_money(amount, r.currency || 'AED')} back in your ATP wallet · ${what}`;
+    preheader = `${summaryValue} is back in your ATP account, ready to use now.`;
+  } else {
+    eyebrow = 'Refund confirmed';
+    headline = 'Your refund is on its';
+    accent = 'way.';
+    summaryValue = _money(amount, r.currency);
+    summarySub = `Going back to ${cardLabel === 'Your original payment card' ? 'your original payment card' : cardLabel}.`;
+    refundedTo = cardLabel;
+    notice = { title: 'When you will see it',
+      text: 'Card refunds usually reach your bank in 5–10 business days. Some banks show it as a reversal of the original payment rather than a new credit.' };
+    subject = `Refund on its way: ${_money(amount, r.currency)} · ${what}`;
+    preheader = `${_money(amount, r.currency)} is on its way back to your card. Reference ${ref}.`;
+  }
+
+  const rows = [
+    { label: 'For', value: what },
+    r.item_at ? { label: r.source_type === 'challenge_entry' ? 'Ends' : 'Session date', value: _dubaiDateTime(r.item_at, r.source_type !== 'challenge_entry') } : null,
+    { label: 'Refunded to', value: refundedTo },
+    { label: 'Refund date', value: _dubaiDateTime(r.refunded_at || r.created_at || new Date(), false) },
+    (method === 'points' || method === 'mixed') && r.points_balance != null
+      ? { label: 'Points balance now', value: `${Number(r.points_balance).toLocaleString('en-US')} pts` } : null,
+    { label: 'Reference', value: ref, mono: true,
+      hint: method === 'card' ? 'Your bank may show this as a reversal' : null },
+    r.note ? { label: 'Why', value: r.note } : null,
+  ].filter(Boolean);
+
+  const { html, text } = renderEmail({
+    title: subject,
+    preheader,
+    headerLabel: 'Refund',
+    eyebrow,
+    headline,
+    headlineAccent: accent,
+    greeting: `Hi ${firstName},`,
+    intro: method === 'card'
+      ? `We've refunded your payment for ${what}. Here are the details for your records.`
+      : method === 'points'
+        ? `We've refunded ${what} the same way you paid: in points. Here are the details for your records.`
+        : `We've refunded ${what} the same way you paid: back to your ATP account. Here are the details for your records.`,
+    summary: { label: method === 'points' ? 'Points refunded' : 'Amount refunded', value: summaryValue, sub: summarySub },
+    rows,
+    notice,
+    cta: link,
+    footerNote: 'You are receiving this because a payment on your ATP account was refunded.',
+  });
+  return { subject, html, text };
+}
+
+async function sendRefundConfirmation(member, refund) {
+  if (!member || !member.email) return { ok: false, code: 'NO_EMAIL', reason: 'member has no email' };
+  try {
+    await require('./emailRateLimit').checkAndRecord(member.id || null, 'booking_refund', { critical: true });
+  } catch (e) { /* the log is best effort; refunds are always sent */ }
+  const { subject, html, text } = buildRefundEmail(member, refund);
+  return send(member.email, subject, html, text);
+}
+
 function escapeHtml(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -626,4 +770,6 @@ module.exports = {
   sendCoachThreadReply,
   sendCorporateInvitation,
   sendPaidSessionReceipt,
+  sendRefundConfirmation,
+  buildRefundEmail,
 };

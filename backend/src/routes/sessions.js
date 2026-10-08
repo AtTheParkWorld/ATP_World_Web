@@ -1351,6 +1351,9 @@ router.get('/:id/registrations', authenticate, requireScanner, async (req, res, 
 // member, so the 12h cutoff doesn't apply (force_refund=true). Pass
 // ?refund=skip to keep the cancellation but skip refunds (rare case).
 router.patch('/:id/cancel', authenticate, requireAdmin, async (req, res, next) => {
+  // PATCH /series/cancel is registered further down; without this it was
+  // swallowed here ("series" isn't a uuid → 500) and never ran.
+  if (req.params.id === 'series') return next('route');
   try {
     const { reason } = req.body;
     const skipRefund = (String(req.query.refund || '').toLowerCase() === 'skip');
@@ -1362,135 +1365,7 @@ router.patch('/:id/cancel', authenticate, requireAdmin, async (req, res, next) =
     );
     if (!rows.length) return res.status(404).json({ error: 'Session not found' });
 
-    // Pull every booking that paid for this session (points or Stripe,
-    // confirmed status) and process refunds individually so a single
-    // Stripe failure doesn't block the others.
-    let refundResults = [];
-    if (!skipRefund) {
-      const { rows: bks } = await query(
-        `SELECT * FROM bookings
-         WHERE session_id=$1
-           AND status IN ('confirmed','pending_payment')
-           AND (refunded_at IS NULL OR refunded_at = refunded_at)`,
-        [req.params.id]
-      ).catch(() => ({ rows: [] }));
-
-      // Lazy-require to avoid a circular import at module load.
-      const { _cancelAndMaybeRefund } = require('./bookings.js');
-      // _cancelAndMaybeRefund isn't exported — use a direct re-implementation
-      // here by calling the admin-cancel endpoint logic via internal helper.
-      // Cleaner: just do the same DB ops inline.
-      const billing = require('../services/billing');
-      const { transaction } = require('../db');
-
-      for (const b of bks) {
-        // Augment with session.scheduled_at + session_type so the helper
-        // can compute the 12h delta. Inline mirror of bookings.js helper.
-        let stripeRefund = null, stripeErr = null;
-        if (b.payment_method === 'stripe' && !b.refunded_at) {
-          try { stripeRefund = await billing.refundStripeBooking(b); }
-          catch (e) { stripeErr = e.message; console.warn('[sessions/cancel] Stripe refund failed', b.id, e.message); }
-        }
-        await transaction(async (client) => {
-          await client.query(
-            `UPDATE bookings SET status='cancelled', cancelled_at=NOW(), cancelled_by_admin=true WHERE id=$1`,
-            [b.id]
-          ).catch(async function(e){
-            if (e.code !== '42703') throw e;
-            await client.query(`UPDATE bookings SET status='cancelled', cancelled_at=NOW() WHERE id=$1`, [b.id]);
-          });
-          if (b.payment_method === 'points' && b.points_paid > 0 && !b.refunded_at) {
-            const { rows: m } = await client.query('SELECT points_balance FROM members WHERE id=$1 FOR UPDATE', [b.member_id]);
-            const refund = parseInt(b.points_paid, 10) || 0;
-            const newBalance = (m[0]?.points_balance || 0) + refund;
-            await client.query(
-              `INSERT INTO points_ledger (member_id, amount, balance, reason, reference_id, description)
-               VALUES ($1, $2, $3, 'session_refund', $4, $5)`,
-              [b.member_id, refund, newBalance, b.session_id, 'Refund (session cancelled)']
-            );
-            await client.query('UPDATE members SET points_balance=$1 WHERE id=$2', [newBalance, b.member_id]);
-            await client.query('SAVEPOINT rf');
-            try {
-              await client.query(`UPDATE bookings SET refunded_at=NOW(), refund_method='points', refunded_points=$1 WHERE id=$2`, [refund, b.id]);
-              await client.query('RELEASE SAVEPOINT rf');
-            } catch (e) {
-              if (e.code !== '42703') throw e;
-              await client.query('ROLLBACK TO SAVEPOINT rf');
-              await client.query('UPDATE bookings SET refunded_at=NOW() WHERE id=$1', [b.id]).catch(() => {});
-            }
-          }
-          if (stripeRefund && stripeRefund.id) {
-            await client.query('SAVEPOINT rs');
-            try {
-              await client.query(
-                `UPDATE bookings SET refunded_at=NOW(), refund_method='stripe',
-                                     stripe_refund_id=$1, refunded_amount=$2, refunded_currency=$3
-                 WHERE id=$4`,
-                [stripeRefund.id,
-                 stripeRefund.amount != null ? Number(stripeRefund.amount)/100 : b.payment_amount,
-                 (stripeRefund.currency || b.payment_currency || 'AED').toUpperCase(),
-                 b.id]
-              );
-              await client.query('RELEASE SAVEPOINT rs');
-            } catch (e) {
-              if (e.code !== '42703') throw e;
-              await client.query('ROLLBACK TO SAVEPOINT rs');
-              await client.query('UPDATE bookings SET refunded_at=NOW() WHERE id=$1', [b.id]).catch(() => {});
-            }
-          }
-        });
-        refundResults.push({
-          booking_id: b.id,
-          method: b.payment_method,
-          refunded_points: b.payment_method === 'points' ? (parseInt(b.points_paid, 10) || 0) : 0,
-          refunded_amount: stripeRefund ? (stripeRefund.amount != null ? Number(stripeRefund.amount)/100 : b.payment_amount) : 0,
-          stripe_refund_id: stripeRefund && stripeRefund.id || null,
-          stripe_error: stripeErr,
-        });
-      }
-    }
-
-    // Notify registered members via notifications table
-    await query(
-      `INSERT INTO notifications (member_id, type, title, body)
-       SELECT b.member_id, 'session_cancelled', $1, $2
-       FROM bookings b WHERE b.session_id=$3 AND b.status IN ('confirmed','cancelled')
-                          AND b.cancelled_at >= NOW() - INTERVAL '5 minutes'`,
-      [`Session Cancelled: ${rows[0].name}`,
-       reason || 'This session has been cancelled by the organiser. Any payment has been refunded.',
-       req.params.id]
-    ).catch(() => {});
-
-    // Audit 4.2 — actually deliver email so members find out before
-    // they show up at the venue. Best-effort, fire-and-forget; the
-    // notifications row above is the source of truth in-app.
-    try {
-      const emailService = require('../services/email');
-      const { rows: affected } = await query(
-        `SELECT m.id, m.first_name, m.email
-           FROM bookings b
-           JOIN members m ON m.id = b.member_id
-          WHERE b.session_id = $1
-            AND b.cancelled_at >= NOW() - INTERVAL '5 minutes'
-            AND m.email IS NOT NULL`,
-        [req.params.id]
-      );
-      const session = rows[0];
-      // Map refunds to a refund object keyed by booking id so we can
-      // tailor each email's "we credited X back" line. refundResults
-      // is empty when ?refund=skip is used.
-      const refundByBooking = {};
-      for (const r of refundResults) refundByBooking[r.booking_id] = r;
-      // Don't await the loop — just kick them off in parallel.
-      Promise.all(affected.map((m) => emailService.sendSessionCancellation(
-        { id: m.id, first_name: m.first_name, email: m.email },
-        { name: session.name, scheduled_at: session.scheduled_at, cancellation_reason: reason || null },
-        refundByBooking[m.id] || null
-      ).catch(function(e){ console.warn('[email] cancellation send failed for', m.email, e.message); }))).catch(() => {});
-    } catch (e) {
-      console.warn('[sessions/cancel] email notify failed:', e.message);
-    }
-
+    const refundResults = await _cancelSessionBookings(rows[0], { reason, skipRefund, actorId: req.member.id });
     res.json({
       session: rows[0],
       refunds: refundResults,
@@ -1498,6 +1373,95 @@ router.patch('/:id/cancel', authenticate, requireAdmin, async (req, res, next) =
     });
   } catch (err) { next(err); }
 });
+
+// Cancels every booking on a session ATP just cancelled, refunds each
+// one the way it was paid (points → points, card → card) through the
+// same flow a member/admin cancel uses (routes/bookings.js
+// _cancelAndMaybeRefund, forced past the 12h rule), then tells members
+// in-app + by email. One booking failing never stops the others.
+// Shared by the single-session and the series cancel.
+async function _cancelSessionBookings(session, { reason, skipRefund, actorId }) {
+  const refundResults = [];
+  if (!skipRefund) {
+    const { rows: bks } = await query(
+      `SELECT b.*, s.scheduled_at, s.session_type, s.name AS session_name
+         FROM bookings b JOIN sessions s ON s.id = b.session_id
+        WHERE b.session_id=$1
+          AND b.status IN ('confirmed','pending_payment')`,
+      [session.id]
+    ).catch(() => ({ rows: [] }));
+
+    // Lazy-require: bookings.js doesn't need this file, so no cycle.
+    const { _cancelAndMaybeRefund } = require('./bookings.js');
+    for (const b of bks) {
+      try {
+        const out = await _cancelAndMaybeRefund(b, {
+          byAdmin: true, forceRefund: true, reason: 'session_cancelled',
+          ledgerNote: 'Refund (session cancelled)', actorId,
+        });
+        if (out.alreadyCancelled) continue;
+        const r = out.response;
+        refundResults.push({
+          booking_id: b.id,
+          member_id: b.member_id,
+          method: b.payment_method,
+          refunded_points: r.refunded_points,
+          refunded_amount: r.refunded_amount,
+          refunded_currency: r.refunded_currency,
+          stripe_refund_id: r.stripe_refund_id,
+          stripe_error: r.stripe_refund_error,
+        });
+      } catch (e) {
+        console.warn('[sessions/cancel] booking cancel failed', b.id, e.message);
+        refundResults.push({ booking_id: b.id, member_id: b.member_id, method: b.payment_method, error: e.message });
+      }
+    }
+  }
+
+  // Notify registered members via notifications table
+  await query(
+    `INSERT INTO notifications (member_id, type, title, body)
+     SELECT b.member_id, 'session_cancelled', $1, $2
+     FROM bookings b WHERE b.session_id=$3 AND b.status IN ('confirmed','cancelled')
+                        AND b.cancelled_at >= NOW() - INTERVAL '5 minutes'`,
+    [`Session Cancelled: ${session.name}`,
+     reason || (skipRefund
+       ? 'This session has been cancelled by the organiser.'
+       : 'This session has been cancelled by the organiser. Any payment has been refunded.'),
+     session.id]
+  ).catch(() => {});
+
+  // Audit 4.2 — actually deliver email so members find out before
+  // they show up at the venue. Best-effort, fire-and-forget; the
+  // notifications row above is the source of truth in-app. (The refund
+  // itself gets its own confirmation email from services/refunds.js.)
+  try {
+    const emailService = require('../services/email');
+    const { rows: affected } = await query(
+      `SELECT m.id, m.first_name, m.email
+         FROM bookings b
+         JOIN members m ON m.id = b.member_id
+        WHERE b.session_id = $1
+          AND b.cancelled_at >= NOW() - INTERVAL '5 minutes'
+          AND m.email IS NOT NULL`,
+      [session.id]
+    );
+    // Refund per MEMBER (one booking per member per session) so each
+    // email's "we credited X back" line is theirs. It was keyed by
+    // booking id but looked up by member id, so the line never showed.
+    const refundByMember = {};
+    for (const r of refundResults) refundByMember[r.member_id] = r;
+    // Don't await the loop — just kick them off in parallel.
+    Promise.all(affected.map((m) => emailService.sendSessionCancellation(
+      { id: m.id, first_name: m.first_name, email: m.email },
+      { name: session.name, scheduled_at: session.scheduled_at, cancellation_reason: reason || null },
+      refundByMember[m.id] || null
+    ).catch(function(e){ console.warn('[email] cancellation send failed for', m.email, e.message); }))).catch(() => {});
+  } catch (e) {
+    console.warn('[sessions/cancel] email notify failed:', e.message);
+  }
+  return refundResults;
+}
 
 // ── PATCH /api/sessions/series/:name/cancel ───────────────────
 // ── Series helpers (founder 2026-08-07: "save on one session should
@@ -1576,12 +1540,26 @@ router.patch('/admin/series-update', authenticate, requireAdmin, async (req, res
 router.patch('/series/cancel', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { name, city_id, reason } = req.body;
+    if (!name || !city_id) return res.status(400).json({ error: 'name and city_id are required' });
     const { rows } = await query(
       `UPDATE sessions SET status='cancelled', cancellation_reason=$1, updated_at=NOW()
-       WHERE name=$2 AND city_id=$3 AND status='upcoming' RETURNING id`,
+       WHERE name=$2 AND city_id=$3 AND status='upcoming' RETURNING *`,
       [reason || null, name, city_id]
     );
-    res.json({ cancelled: rows.length, ids: rows.map(r => r.id) });
+    // Each cancelled session's bookings are cancelled + refunded exactly
+    // like a single-session cancel. Before this, a series cancel left
+    // every booking 'confirmed' on a cancelled session and nobody was
+    // refunded or told.
+    const refundResults = [];
+    for (const sess of rows) {
+      try {
+        const r = await _cancelSessionBookings(sess, { reason, skipRefund: false, actorId: req.member.id });
+        refundResults.push(...r.map((x) => ({ ...x, session_id: sess.id })));
+      } catch (e) {
+        console.warn('[sessions/series-cancel] refunds failed for', sess.id, e.message);
+      }
+    }
+    res.json({ cancelled: rows.length, ids: rows.map(r => r.id), refunds: refundResults });
   } catch (err) { next(err); }
 });
 
