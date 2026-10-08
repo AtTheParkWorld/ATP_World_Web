@@ -35,9 +35,24 @@ function loadSessionTemplatesAdmin() {
   host.innerHTML = '<div class="admin-section" style="padding:18px"><div style="color:#888">Loading session names…</div></div>';
   var token = getToken();
   fetch('/api/sessions/admin/templates', { headers: { 'Authorization': 'Bearer ' + token } })
-    .then(function(r){ return r.json(); })
+    .then(function(r){
+      // An expired session used to render as "No templates yet" — an
+      // empty list that invited the admin to retype names that were
+      // already there, then threw the save away (founder 2026-08-30).
+      // Say what actually happened instead.
+      if (r.status === 401 || r.status === 403) {
+        host.innerHTML = '<div class="admin-section" style="padding:18px;color:#f87171">' +
+          'Your admin session expired — sign in again to see and edit session names. ' +
+          'Nothing has been lost.</div>';
+        throw new Error('_session_expired_');
+      }
+      return r.json();
+    })
     .then(function(d){ renderSessionTemplatesAdmin((d && d.templates) || []); })
-    .catch(function(){ host.innerHTML = '<div class="admin-section" style="padding:18px;color:#f87171">Failed. Run migrate-session-templates first.</div>'; });
+    .catch(function(e){
+      if (e && e.message === '_session_expired_') return;
+      host.innerHTML = '<div class="admin-section" style="padding:18px;color:#f87171">Couldn\'t load session names. Refresh the page — if it persists, run migrate-session-templates.</div>';
+    });
 }
 
 function renderSessionTemplatesAdmin(list) {
@@ -156,6 +171,8 @@ function saveSessionTemplate() {
     try { localStorage.removeItem('atp_st_draft'); } catch(e){}
     document.getElementById('sessionTemplateFormWrap').innerHTML = '';
     loadSessionTemplatesAdmin();
+    // Keep the create-session dropdown in step without a page reload.
+    if (typeof loadSessionTemplates === 'function') loadSessionTemplates();
   }).catch(function(err){
     if (err && err.message === '_session_expired_') return;
     showToast('❌ ' + (err && err.message || 'Network error'), true);
@@ -615,7 +632,7 @@ window._achMeta = _achMeta;
 function showAchievementForm() {
   document.getElementById('achievementFormWrap').style.display = 'block';
   document.getElementById('achievementFormTitle').textContent = 'New achievement';
-  ['achEditId','achName','achDesc','achIcon','achBadge','achMaxRecipients','achFrom','achUntil'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
+  ['achEditId','achName','achDesc','achStory','achIcon','achBadge','achMaxRecipients','achFrom','achUntil'].forEach(function(id){ var el = document.getElementById(id); if (el) el.value = ''; });
   var rr = document.getElementById('achRarity'); if (rr) rr.value = 'standard';
   document.getElementById('achCriteriaType').value = 'manual';
   document.getElementById('achCriteriaValue').value = '0';
@@ -639,6 +656,7 @@ function editAchievement(e, btn) {
       document.getElementById('achEditId').value       = id;
       document.getElementById('achName').value         = a.name || '';
       document.getElementById('achDesc').value         = a.description || '';
+      document.getElementById('achStory').value        = a.story || '';
       document.getElementById('achIcon').value         = a.icon || '';
       document.getElementById('achBadge').value        = a.badge_image_url || '';
       document.getElementById('achCriteriaType').value = a.criteria_type || 'manual';
@@ -659,6 +677,7 @@ function saveAchievement() {
   var body = {
     name:            document.getElementById('achName').value.trim(),
     description:     document.getElementById('achDesc').value.trim() || null,
+    story:           document.getElementById('achStory').value.trim() || null,
     icon:            document.getElementById('achIcon').value.trim() || null,
     badge_image_url: document.getElementById('achBadge').value.trim() || null,
     criteria_type:   document.getElementById('achCriteriaType').value,
@@ -1224,7 +1243,7 @@ function loadPendingBookings() {
           var color = hours > 24 ? '#f87171' : (hours > 6 ? '#ffc400' : '#aaa');
           var createdAt = p.created_at ? new Date(p.created_at).toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
           return '<tr style="border-bottom:1px solid #111">' +
-            '<td style="padding:8px 6px;color:#fff">' + nameSafe + '<div style="font-size:10px;color:#666">' + (p.email||'') + '</div></td>' +
+            '<td style="padding:8px 6px;color:#fff">' + nameSafe + '<div style="font-size:10px;color:#666">' + String(p.email||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div></td>' +
             '<td style="padding:8px 6px;color:#aaa">' + sessionSafe + '</td>' +
             '<td style="padding:8px 6px;text-align:right;color:' + color + ';font-weight:700">' + hours.toFixed(1) + 'h</td>' +
             '<td style="padding:8px 6px;text-align:right;color:#666;font-size:11px">' + createdAt + '</td>' +
@@ -1269,7 +1288,7 @@ function loadFailedRefunds() {
           var amount = (p.payment_currency || 'AED').toUpperCase() + ' ' + Number(p.payment_amount || 0).toFixed(2);
           var cancelledAt = p.cancelled_at ? new Date(p.cancelled_at).toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
           return '<tr style="border-bottom:1px solid #111">' +
-            '<td style="padding:8px 6px;color:#fff">' + nameSafe + '<div style="font-size:10px;color:#666">' + (p.email||'') + '</div></td>' +
+            '<td style="padding:8px 6px;color:#fff">' + nameSafe + '<div style="font-size:10px;color:#666">' + String(p.email||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div></td>' +
             '<td style="padding:8px 6px;color:#aaa">' + sessionSafe + '</td>' +
             '<td style="padding:8px 6px;text-align:right;color:#fff;font-weight:700">' + amount + '</td>' +
             '<td style="padding:8px 6px;text-align:right;color:#666;font-size:11px">' + cancelledAt + '</td>' +
@@ -1330,6 +1349,7 @@ var _streamDashTimer = null;
 
 function loadStreamingAdmin() {
   loadStreamDashboard();
+  loadAdminLiveStreams();
   loadStreamAdsList();
   // Live polling — only while the tab is visible, so we don't burn
   // requests when the admin clicks elsewhere.
@@ -1341,7 +1361,141 @@ function loadStreamingAdmin() {
       return;
     }
     loadStreamDashboard();
+    loadAdminLiveStreams();
   }, 10_000);
+}
+
+// ── Live streams kill switch ────────────────────────────────
+// Lists every stream marked live, with how long since its last video
+// chunk, and lets an admin end any of them. Needed because a stream
+// only ends when its broadcaster presses Stop — lose the tab and it
+// stays listed forever (founder 2026-10-03).
+var _STALE_AFTER_S = 120;
+// Local: every esc() in the admin bundle is scoped inside another
+// function, so there is no global escape helper to call from here.
+function _liveEsc(v) {
+  return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+  });
+}
+
+function _liveAge(s) {
+  if (s.last_chunk_age_s == null) return { text: 'No video', stale: true };
+  if (s.last_chunk_age_s > _STALE_AFTER_S) {
+    var m = Math.round(s.last_chunk_age_s / 60);
+    return { text: 'No video for ' + m + ' min', stale: true };
+  }
+  return { text: 'Sending video', stale: false };
+}
+
+function loadAdminLiveStreams() {
+  var el = document.getElementById('adminLiveStreamsList');
+  if (!el) return;
+  fetch(ATP_API + '/streams/admin/live', { headers: { 'Authorization': 'Bearer ' + getToken() } })
+    .then(function(r){
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .then(function(d){
+      var list = (d && d.streams) || [];
+      window._ADMIN_LIVE = list;
+      if (!list.length) {
+        el.innerHTML = '<div style="padding:8px 0;color:#666">Nothing is live.</div>';
+        return;
+      }
+      el.innerHTML = list.map(function(s){
+        var age = _liveAge(s);
+        var started = s.started_at ? new Date(s.started_at) : null;
+        var mins = started ? Math.round((Date.now() - started.getTime()) / 60000) : null;
+        var codecTag = s.codec
+          ? '<span style="font-size:10px;padding:2px 6px;border-radius:4px;margin-left:6px;' +
+              (s.codec === 'H.264' ? 'background:#0d1a0a;color:#A8FF00' : 'background:#2a1a0a;color:#f59e0b') + '">' +
+              _liveEsc(s.codec) + (s.codec === 'H.264' ? '' : ' · no iPhone') + '</span>'
+          : '';
+        return '<div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-top:1px solid #2a1515;flex-wrap:wrap">' +
+                 '<div style="flex:1;min-width:200px">' +
+                   '<div style="color:#fff;font-weight:700">' + _liveEsc(s.title || 'Untitled') + codecTag + '</div>' +
+                   '<div style="font-size:11px;color:#888;margin-top:3px">' +
+                     _liveEsc(s.host_name || '?') +
+                     (mins != null ? ' · live ' + mins + ' min' : '') +
+                     ' · ' + (s.concurrent_viewers || 0) + ' watching' +
+                   '</div>' +
+                   '<div style="font-size:11px;margin-top:3px;color:' + (age.stale ? '#f59e0b' : '#A8FF00') + '">' +
+                     (age.stale ? '⚠ ' : '● ') + _liveEsc(age.text) +
+                   '</div>' +
+                 '</div>' +
+                 '<button class="admin-btn admin-btn-danger" style="font-size:11px;padding:6px 14px" ' +
+                   'data-atp-call="adminEndStream" data-args=\'["' + s.id + '"]\'>End stream</button>' +
+               '</div>';
+      }).join('');
+    })
+    .catch(function(e){
+      el.innerHTML = '<div style="color:#ef4444">Couldn\u2019t load live streams (' + _liveEsc(e.message) + ').</div>';
+    });
+}
+
+function adminEndStream(id) {
+  var s = (window._ADMIN_LIVE || []).find(function(x){ return x.id === id; }) || {};
+  var watching = s.concurrent_viewers || 0;
+  var msg = 'End "' + (s.title || 'this stream') + '"?' +
+            (watching ? '\n\n' + watching + ' member(s) are watching — they\u2019ll see "Stream ended".' : '');
+  if (!confirm(msg)) return;
+  return fetch(ATP_API + '/streams/' + encodeURIComponent(id) + '/end', {
+    method: 'POST', headers: { 'Authorization': 'Bearer ' + getToken() },
+  })
+    .then(function(r){ return r.json().then(function(j){ return { ok: r.ok, j: j }; }); })
+    .then(function(res){
+      if (!res.ok) throw new Error((res.j && res.j.error) || 'Failed');
+      showToast('✅ Stream ended');
+      loadAdminLiveStreams();
+      loadStreamDashboard();
+    })
+    .catch(function(e){ showToast('❌ ' + e.message, true); });
+}
+
+function adminEndStaleStreams() {
+  var stale = (window._ADMIN_LIVE || []).filter(function(s){ return _liveAge(s).stale; });
+  if (!stale.length) { showToast('No streams without video'); return; }
+  if (!confirm('End ' + stale.length + ' stream(s) that are not sending video?')) return;
+  Promise.all(stale.map(function(s){
+    return fetch(ATP_API + '/streams/' + encodeURIComponent(s.id) + '/end', {
+      method: 'POST', headers: { 'Authorization': 'Bearer ' + getToken() },
+    }).then(function(r){ return r.ok; }).catch(function(){ return false; });
+  })).then(function(results){
+    var ok = results.filter(Boolean).length;
+    showToast((ok === stale.length ? '✅ ' : '⚠ ') + 'Ended ' + ok + ' of ' + stale.length);
+    loadAdminLiveStreams();
+    loadStreamDashboard();
+  });
+}
+
+// Sends ONE push to the signed-in admin's own phone and says exactly why
+// when it doesn't arrive. Phone push had silently never worked; this is
+// the end-to-end check (2026-10-03).
+function adminSendTestPush() {
+  var el = document.getElementById('adminTestPushResult');
+  if (el) { el.style.color = '#888'; el.textContent = 'Sending…'; }
+  fetch(ATP_API + '/notifications/test-push', {
+    method: 'POST', headers: { 'Authorization': 'Bearer ' + getToken() },
+  })
+    .then(function(r){ return r.json().then(function(b){ return { ok: r.ok, status: r.status, body: b }; }); })
+    .then(function(x){
+      if (!el) return;
+      var b = x.body || {};
+      var res = b.result || {};
+      var why = {
+        ONESIGNAL_NOT_CONFIGURED: 'OneSignal keys are missing on the server (Render → ONESIGNAL_APP_ID / ONESIGNAL_REST_API_KEY).',
+        NO_SUBSCRIBED_DEVICE: 'No phone is linked to this account yet. Open the updated ATP app on your phone, signed in as this same account, allow notifications, then try again.',
+        NO_DEVICES: 'No phone is linked to this account yet.',
+        API_ERROR: 'OneSignal rejected the request — check the REST API key on Render.',
+        NETWORK_ERROR: 'The server could not reach OneSignal.',
+      };
+      if (!x.ok) { el.style.color = '#ef4444'; el.textContent = (b.error || ('HTTP ' + x.status)); return; }
+      if (res.delivered) { el.style.color = '#A8FF00'; el.textContent = '✅ Sent — it should appear on your phone within seconds.'; return; }
+      el.style.color = '#f59e0b';
+      el.textContent = '⚠ Not sent: ' + (why[res.reason] || res.reason || 'unknown reason');
+    })
+    .catch(function(e){ if (el) { el.style.color = '#ef4444'; el.textContent = 'Failed: ' + e.message; } });
 }
 
 function loadStreamDashboard() {

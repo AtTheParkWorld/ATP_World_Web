@@ -1243,7 +1243,7 @@ function loadPendingBookings() {
           var color = hours > 24 ? '#f87171' : (hours > 6 ? '#ffc400' : '#aaa');
           var createdAt = p.created_at ? new Date(p.created_at).toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
           return '<tr style="border-bottom:1px solid #111">' +
-            '<td style="padding:8px 6px;color:#fff">' + nameSafe + '<div style="font-size:10px;color:#666">' + (p.email||'') + '</div></td>' +
+            '<td style="padding:8px 6px;color:#fff">' + nameSafe + '<div style="font-size:10px;color:#666">' + String(p.email||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div></td>' +
             '<td style="padding:8px 6px;color:#aaa">' + sessionSafe + '</td>' +
             '<td style="padding:8px 6px;text-align:right;color:' + color + ';font-weight:700">' + hours.toFixed(1) + 'h</td>' +
             '<td style="padding:8px 6px;text-align:right;color:#666;font-size:11px">' + createdAt + '</td>' +
@@ -1288,7 +1288,7 @@ function loadFailedRefunds() {
           var amount = (p.payment_currency || 'AED').toUpperCase() + ' ' + Number(p.payment_amount || 0).toFixed(2);
           var cancelledAt = p.cancelled_at ? new Date(p.cancelled_at).toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
           return '<tr style="border-bottom:1px solid #111">' +
-            '<td style="padding:8px 6px;color:#fff">' + nameSafe + '<div style="font-size:10px;color:#666">' + (p.email||'') + '</div></td>' +
+            '<td style="padding:8px 6px;color:#fff">' + nameSafe + '<div style="font-size:10px;color:#666">' + String(p.email||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;') + '</div></td>' +
             '<td style="padding:8px 6px;color:#aaa">' + sessionSafe + '</td>' +
             '<td style="padding:8px 6px;text-align:right;color:#fff;font-weight:700">' + amount + '</td>' +
             '<td style="padding:8px 6px;text-align:right;color:#666;font-size:11px">' + cancelledAt + '</td>' +
