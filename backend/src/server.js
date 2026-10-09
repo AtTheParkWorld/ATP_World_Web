@@ -432,19 +432,8 @@ app.get(['/delete-account', '/account-deletion'], (req, res) => res.redirect(301
 // in routes/postShare.js.
 app.use(require('./routes/postShare'));
 
-// ── Short session links — /s/<code> ──────────────────────────
-// The daily WhatsApp message (services/whatsappDigest.js) links each
-// session as atthepark.world/s/<first 8 hex of its id>; this opens the
-// sessions page on that session (sessions.html already handles
-// ?session=<id>). Unknown codes land on the full schedule.
-app.get('/s/:code', async (req, res) => {
-  try {
-    const id = await require('./services/whatsappDigest').resolveShortCode(req.params.code);
-    res.redirect(302, id ? `/sessions.html?session=${encodeURIComponent(id)}` : '/sessions.html');
-  } catch (_) {
-    res.redirect(302, '/sessions.html');
-  }
-});
+// Short session links (/s/<code>) — used by the daily WhatsApp message
+// and the "Invite friends" buttons — also live in routes/postShare.js.
 
 // HTML pages must never be cached (so deploys propagate immediately).
 // JS/CSS/assets get a sensible short cache. Bundles use content-hash

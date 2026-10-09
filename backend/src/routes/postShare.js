@@ -164,6 +164,12 @@ background:var(--d2);border:1px solid rgba(255,255,255,.14);text-align:left}
 .web:hover,.badge:hover{border-color:var(--g);color:var(--w)}
 .gone{padding:40px 22px;text-align:center}
 .gone .kick{font-size:38px}
+.sess{padding:22px 20px 20px;border-top:4px solid var(--tc)}
+.sess .tribe{display:block;margin-bottom:8px}
+.sess h1{font-family:var(--fd);font-weight:900;font-size:40px;line-height:.95;text-transform:uppercase;letter-spacing:.01em;margin-bottom:16px}
+.facts{list-style:none;display:grid;gap:9px;font-size:15px;color:var(--li)}
+.facts b{color:var(--w);font-weight:700}
+.sess .btn{margin:22px 0 0;max-width:none}
 .foot{text-align:center;color:var(--mu);font-size:12px;padding:28px 16px 34px;line-height:1.7}
 .foot a{color:var(--mu)}
 `;
@@ -344,6 +350,121 @@ ${_ctaBlock(platform, null, null)}`;
   });
 }
 
+// ── Session invites — GET /s/:code ─────────────────────────────
+// Founder 2026-10-09: members can now invite friends to any session.
+// The invite link is /s/<first 8 hex of the session id>. People are sent
+// straight on to the session on sessions.html (302, as before); link
+// previewers (WhatsApp, iMessage, Telegram…) don't follow it there, so
+// they get a small page whose Open Graph tags carry the session's name,
+// time and place. Private company sessions and past / cancelled ones
+// only ever show the generic At The Park card.
+const PREVIEW_BOT_RE = /WhatsApp|facebookexternalhit|Facebot|Twitterbot|TelegramBot|Slackbot|LinkedInBot|Discordbot|SkypeUriPreview|Applebot|Googlebot|bingbot|Pinterest|redditbot|Embedly|Iframely|Viber|Snapchat|vkShare/i;
+
+async function loadInviteSession(id) {
+  const { rows } = await db.query(
+    `SELECT s.id, s.name, s.scheduled_at, s.location, s.session_type, s.price,
+            s.price_points, s.currency_code,
+            t.name AS tribe_name, t.color AS tribe_color,
+            c.name AS city_name,
+            TRIM(CONCAT(m.first_name, ' ', m.last_name)) AS coach_name
+       FROM sessions s
+       LEFT JOIN tribes t  ON t.id = s.tribe_id
+       LEFT JOIN cities c  ON c.id = s.city_id
+       LEFT JOIN members m ON m.id = s.coach_id
+      WHERE s.id = $1
+        AND s.status = 'upcoming'
+        AND COALESCE(s.is_corporate_only, false) = false
+      LIMIT 1`,
+    [id]
+  );
+  return rows[0] || null;
+}
+
+function _sessionPrice(s) {
+  if (Number(s.price) > 0) return `${String(s.currency_code || 'AED').toUpperCase()} ${Number(s.price).toFixed(0)}`;
+  if (Number(s.price_points) > 0) return `${Number(s.price_points).toLocaleString('en-US')} pts`;
+  return 'Free';
+}
+
+function renderSessionPage(session, { code = '' } = {}) {
+  const site = _site();
+  const target = session
+    ? `${site}/sessions.html?session=${encodeURIComponent(session.id)}`
+    : `${site}/sessions.html`;
+  const canonical = code ? `${site}/s/${code}` : target;
+  if (!session) {
+    return _page({
+      title: 'At The Park sessions',
+      description: "Free outdoor training across the UAE — find a session and book your spot. Never train alone.",
+      image: null,
+      canonical,
+      appArgument: null,
+      body: `<article class="card gone">
+  <h1 class="kick">Find your<br><em>next session.</em></h1>
+  <p class="sub">Free outdoor training across the UAE.</p>
+  <a class="btn btn-p" href="${esc(target)}">See all sessions</a>
+</article>`,
+    });
+  }
+  const at = new Date(session.scheduled_at);
+  const day = at.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', timeZone: 'Asia/Dubai' });
+  const dayLong = at.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'Asia/Dubai' });
+  const time = at.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Dubai' });
+  const place = [session.location, session.city_name].filter(Boolean)
+    .filter((v, i, a) => i === 0 || !String(a[0]).toLowerCase().includes(String(v).toLowerCase()))
+    .join(', ');
+  const coach = String(session.coach_name || '').trim();
+  const price = _sessionPrice(session);
+  const tribeColor = /^#[0-9a-f]{3,8}$/i.test(String(session.tribe_color || '')) ? session.tribe_color : BRAND_GREEN;
+  const description = [place ? `📍 ${place}` : null, coach ? `Coach ${coach}` : null, price]
+    .filter(Boolean).join(' · ') + ' — book your spot. Never train alone.';
+  const body = `<article class="card sess" style="--tc:${tribeColor}">
+  ${session.tribe_name ? `<span class="tribe">${esc(session.tribe_name)} tribe</span>` : ''}
+  <h1>${esc(session.name)}</h1>
+  <ul class="facts">
+    <li>📅 <b>${esc(dayLong)}</b> · ${esc(time)}</li>
+    ${place ? `<li>📍 ${esc(place)}</li>` : ''}
+    ${coach ? `<li>🎽 Coach ${esc(coach)}</li>` : ''}
+    <li>🎟️ ${esc(price)}</li>
+  </ul>
+  <a class="btn btn-p" href="${esc(target)}">Book your spot</a>
+</article>`;
+  return _page({
+    title: `${session.name} · ${day}, ${time}`,
+    description: clip(description, 200),
+    image: null,
+    canonical,
+    appArgument: null,
+    body,
+  });
+}
+
+router.get('/s/:code', async (req, res) => {
+  const ua = String(req.headers['user-agent'] || '');
+  const code = String(req.params.code || '').toLowerCase().replace(/[^0-9a-f]/g, '').slice(0, 32);
+  const isPreview = PREVIEW_BOT_RE.test(ua);
+  let id = null;
+  try {
+    id = await require('../services/whatsappDigest').resolveShortCode(code);
+  } catch (e) {
+    console.warn('[share] session code lookup failed:', e.message);
+  }
+  if (!isPreview) {
+    return res.redirect(302, id ? `/sessions.html?session=${encodeURIComponent(id)}` : '/sessions.html');
+  }
+  let session = null;
+  if (id) {
+    try { session = await loadInviteSession(id); } catch (e) {
+      console.warn('[share] session lookup failed:', e.message);
+    }
+  }
+  res.vary('User-Agent');
+  res.setHeader('Cache-Control', 'no-cache');
+  res.setHeader('X-Robots-Tag', 'noindex');
+  res.type('html');
+  return res.status(200).send(renderSessionPage(session, { code }));
+});
+
 router.get('/p/:id', async (req, res) => {
   const ua = String(req.headers['user-agent'] || '');
   // Output depends on the UA (store badges, WhatsApp image) — and no
@@ -369,4 +490,5 @@ router.get('/p/:id', async (req, res) => {
 module.exports = router;
 module.exports.renderPostPage = renderPostPage;
 module.exports.renderUnavailablePage = renderUnavailablePage;
+module.exports.renderSessionPage = renderSessionPage;
 module.exports._internal = { esc, clip, mediaUrl, parseMedia, platformOf };

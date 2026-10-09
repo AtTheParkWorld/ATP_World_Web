@@ -14,7 +14,7 @@
  * fresh state ("You're in").
  */
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Modal, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useStickyFooterPad } from '@/lib/components/StickyFooter';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -33,6 +33,7 @@ import { CorporateSessionBadge } from '@/lib/components/SessionCard';
 import { Avatar } from '@/lib/components/Avatar';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { dayHeader, timeShort } from '@/lib/utils/date';
+import { sessionInviteMessage } from '@/lib/utils/shareLinks';
 
 export default function SessionDetail() {
   const footerPad = useStickyFooterPad();
@@ -223,6 +224,18 @@ export default function SessionDetail() {
         <View className="px-5 pt-2 flex-row items-center justify-between">
           <Pressable onPress={() => router.back()} className="p-2 -ml-2">
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-lg">←</Text>
+          </Pressable>
+          {/* Invite friends — any member, booked or not (founder
+              2026-10-09: "there is no option throughout the app"). */}
+          <Pressable
+            onPress={() => { Share.share({ message: sessionInviteMessage(s) }).catch(() => {}); }}
+            accessibilityRole="button"
+            accessibilityLabel="Invite friends to this session"
+            hitSlop={8}
+            style={inviteBtn}
+            className="active:opacity-70"
+          >
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green, fontSize: 13 }}>↗  Invite friends</Text>
           </Pressable>
         </View>
 
@@ -630,3 +643,15 @@ function InfoPill({ label, accent }: { label: string; accent?: string }) {
     </View>
   );
 }
+
+// Plain style object — NativeWind drops Pressable style functions.
+const inviteBtn = {
+  flexDirection: 'row' as const,
+  alignItems: 'center' as const,
+  borderRadius: 999,
+  borderWidth: 1,
+  borderColor: 'rgba(168,255,0,0.35)',
+  backgroundColor: 'rgba(168,255,0,0.08)',
+  paddingHorizontal: 14,
+  paddingVertical: 8,
+};

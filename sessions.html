@@ -348,6 +348,9 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 .loop-btn-cal:hover{background:rgba(168,255,0,.2)}
 .loop-btn-wa{background:rgba(37,211,102,.1);color:#25d366;border:1px solid rgba(37,211,102,.25)}
 .loop-btn-wa:hover{background:rgba(37,211,102,.2)}
+.modal-invite-cap{font-size:12px;color:var(--muted);margin:14px 0 6px}
+.modal-invite{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 14px}
+.modal-invite .loop-btn{padding:11px 10px;font-size:13px;white-space:nowrap}
 .loop-btn-next{background:rgba(255,255,255,.05);color:var(--white);border:1px solid rgba(255,255,255,.1)}
 .loop-btn-next:hover{border-color:rgba(255,255,255,.3)}
 .loop-btn-app{background:rgba(168,255,0,.9);color:var(--white);border:none}
@@ -804,6 +807,17 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
         </button>
         <div id="modalWhoList" hidden style="margin-top:10px;max-height:190px;overflow-y:auto;border:1px solid rgba(255,255,255,.08);border-radius:10px;background:#0a0f08;padding:6px"></div>
       </div>
+      <!-- Invite friends (founder 2026-10-09) — any member can share any
+           session, booked or not. Filled in by _paintSessionInvite(). -->
+      <div class="modal-invite-cap">Invite friends to this session</div>
+      <div class="modal-invite" id="modalInvite">
+        <a class="loop-btn loop-btn-wa" id="modalInviteWa" href="#" target="_blank" rel="noopener">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 5c0-1.7-1.3-3-3-3H5C3.3 2 2 3.3 2 5v4c0 1.7 1.3 3 3 3h1v2l2.5-2H11c1.7 0 3-1.3 3-3V5z"/></svg> WhatsApp
+        </a>
+        <button type="button" class="loop-btn loop-btn-next" id="modalInviteCopy" data-atp-call="copySessionInvite">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> <span id="modalInviteCopyLabel">Copy link</span>
+        </button>
+      </div>
       <div class="modal-member" id="modalMember" style="margin:14px 0;padding:10px 12px;background:rgba(168,255,0,.06);border:1px solid rgba(168,255,0,.2);border-radius:10px;font-size:13px;color:var(--light)">
         Booking as <strong id="modalMemberName" style="color:var(--white)"></strong>
         <span style="opacity:.7"> · </span>
@@ -1187,6 +1201,77 @@ function _formatBookingWhen(s, fallbackDayTime) {
   } catch(e) { return fallbackDayTime || ''; }
 }
 
+// ── Invite friends ──
+// Founder 2026-10-09: "How can I send a session invitation link if I did
+// not register for that session?" — the only invite button lived on the
+// post-booking screen. The modal now carries one for every member. The
+// /s/<code> short link opens straight on the session, and its page shows
+// the session's name, time and place in the WhatsApp preview.
+function _sessionShortLink(id) {
+  var code = String(id || '').replace(/-/g, '').slice(0, 8);
+  return code.length === 8
+    ? 'https://atthepark.world/s/' + code
+    : 'https://atthepark.world/sessions.html' + (id ? '?session=' + encodeURIComponent(id) : '');
+}
+function _sessionPriceLabel(s) {
+  if (!s) return '';
+  var ccy = String(s.currency_code || 'AED').toUpperCase();
+  if (Number(s.price || 0) > 0) return ccy + ' ' + Number(s.price).toFixed(0);
+  if (parseInt(s.price_points || 0, 10) > 0) return parseInt(s.price_points, 10).toLocaleString() + ' pts';
+  return 'Free';
+}
+function _sessionInviteText(s, sFull, opener) {
+  var when = s.dayTime || '';
+  if (sFull && sFull.scheduled_at) {
+    try {
+      var d = new Date(sFull.scheduled_at);
+      when = d.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short', timeZone: 'Asia/Dubai' })
+        + ' · ' + d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'Asia/Dubai' });
+    } catch (e) {}
+  }
+  var price = _sessionPriceLabel(sFull);
+  return (opener || ('Join me at ' + s.name + ' 💚')) + '\n'
+    + (when ? '📅 ' + when + '\n' : '')
+    + (s.loc ? '📍 ' + s.loc + '\n' : '')
+    + (price === 'Free' ? "It's free 🙌\n" : (price ? '🎟️ ' + price + '\n' : ''))
+    + '\nBook your spot: ' + _sessionShortLink(s.id);
+}
+function _paintSessionInvite(s, sFull) {
+  var wa = document.getElementById('modalInviteWa');
+  if (wa) wa.href = 'https://wa.me/?text=' + encodeURIComponent(_sessionInviteText(s, sFull));
+  var lbl = document.getElementById('modalInviteCopyLabel');
+  if (lbl) lbl.textContent = _inviteUsesShareSheet() ? 'Other apps' : 'Copy link';
+}
+function _inviteUsesShareSheet() {
+  return !!(navigator.share && window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+}
+function copySessionInvite() {
+  var s = activeSession;
+  if (!s || !s.id) return;
+  var sFull = (window._atpSessions || []).find(function(x){ return x.id === s.id; }) || null;
+  var text = _sessionInviteText(s, sFull);
+  var lbl = document.getElementById('modalInviteCopyLabel');
+  function done(ok) { if (lbl) lbl.textContent = ok ? 'Copied ✓' : 'Copy failed'; }
+  // Phones get the native share sheet (Instagram, SMS, any app);
+  // desktops copy the message + link to the clipboard.
+  if (_inviteUsesShareSheet()) {
+    navigator.share({ text: text }).catch(function(){});
+    return;
+  }
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function(){ done(true); }, function(){ done(false); });
+    return;
+  }
+  try {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    done(document.execCommand('copy'));
+    ta.remove();
+  } catch (e) { done(false); }
+}
+window.copySessionInvite = copySessionInvite;
+
 function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId) {
   if(!atpUser) {
     // Store what they wanted to book and show auth
@@ -1243,6 +1328,7 @@ function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId)
   // Wire the freshly-rendered "Member feedback" toggle. innerHTML above
   // replaced any previous toggle node, so no listener stacking.
   _wireSessionFeedback(sessionId);
+  _paintSessionInvite(activeSession, sFull);
   document.getElementById('modalForm').style.display = 'block';
   document.getElementById('confirmPanel').style.display = 'none';
 
@@ -1771,9 +1857,8 @@ function showConfirmation(name, email, apiQrData, apiQrToken) {
   // ── WHATSAPP INVITE ──
   // Deep-link straight to the session being shared, so the friend lands
   // on it rather than on the calendar and has to hunt for it.
-  var _shareUrl = 'https://atthepark.world/sessions.html'
-    + (s.id ? '?session=' + encodeURIComponent(s.id) : '');
-  var waMsg = '👋 Hey! I just booked a free ' + s.name + ' session at At The Park — ' + s.dayTime + ' at ' + s.loc + '.\n\nJoin me! It\'s completely free 🙌\nBook here: ' + _shareUrl;
+  var sFullW = (window._atpSessions || []).find(function(x){ return x.id === s.id; }) || null;
+  var waMsg = _sessionInviteText(s, sFullW, '👋 I just booked ' + s.name + ' at At The Park — join me!');
   document.getElementById('waBtn').href = 'https://wa.me/?text=' + encodeURIComponent(waMsg);
 
   document.getElementById('modalForm').style.display = 'none';
