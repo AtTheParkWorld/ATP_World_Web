@@ -139,7 +139,8 @@ export async function getMyOrders(opts: { fresh?: boolean } = {}): Promise<MyOrd
   return {
     orders: r.orders || [],
     reason: (r.reason ?? null) as OrdersReason,
-    account_orders_url: r.account_orders_url || 'https://atp-store-7903.myshopify.com/account',
+    account_orders_url: (r.account_orders_url || 'https://shop.atthepark.world/account')
+      .replace('atp-store-7903.myshopify.com', 'shop.atthepark.world'),
   };
 }
 

@@ -1113,7 +1113,8 @@ document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
 // ── INDEX SHOP: Squatwolf-style carousel ────────────────────
 (function() {
   var TOKEN  = "31a1a5554b7f2fdaf2aa4dc44e13a127";
-  var DOMAIN = "atp-store-7903.myshopify.com";
+  var DOMAIN = "atp-store-7903.myshopify.com";   // Storefront API host
+  var SHOP_LINK = "https://shop.atthepark.world"; // what members click
 
   function load() {
     var track = document.getElementById("indexShopGrid");
@@ -1157,7 +1158,7 @@ document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
         var price = parseFloat(p.priceRange.minVariantPrice.amount);
         var cur = p.priceRange.minVariantPrice.currencyCode;
         // Card deep-links straight to the product on the Shopify storefront.
-        var productUrl = p.handle ? "https://" + DOMAIN + "/products/" + p.handle : "/store";
+        var productUrl = p.handle ? SHOP_LINK + "/products/" + p.handle : "/store";
         return [
           '<a href="' + productUrl + '" class="swf-card">',
             '<div class="swf-img">',

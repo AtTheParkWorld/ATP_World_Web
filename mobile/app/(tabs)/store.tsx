@@ -32,11 +32,12 @@ import { useAuthStore } from '@/lib/stores/auth.store';
 import { buyerIdentityScript, isCheckoutUrl, isOrderCompleteUrl, isShopifyHost } from '@/lib/utils/shopCheckout';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 
-// The custom shop.atthepark.world domain has no DNS record (yet) —
-// the store lives on the Shopify-issued domain. Swap back when the
-// custom domain is wired up in Shopify → Settings → Domains.
-const SHOP_URL = 'https://atp-store-7903.myshopify.com';
-const SHOP_HOST = new URL(SHOP_URL).hostname;
+// shop.atthepark.world is the store's primary domain since 2026-10-13;
+// the old myshopify address now 301s to it. Both count as "the shop".
+const SHOP_URL = 'https://shop.atthepark.world';
+const SHOP_HOST = new URL(SHOP_URL).hostname;   // checkout prefill only runs on this host
+const SHOP_HOSTS = [SHOP_HOST, 'atp-store-7903.myshopify.com'];
+const isShopPage = (url: string) => SHOP_HOSTS.some((h) => url.includes(h));
 
 type Segment = 'shop' | 'rewards';
 
@@ -130,7 +131,7 @@ export default function StoreHub() {
     if (isCheckoutUrl(url)) {
       inCheckout.current = true;
       if (!checkoutStartedAt.current) checkoutStartedAt.current = Date.now();
-    } else if (url.includes(SHOP_HOST)) {
+    } else if (isShopPage(url)) {
       // Back on a shop page: this checkout round is over without an order.
       inCheckout.current = false;
       checkoutStartedAt.current = null;

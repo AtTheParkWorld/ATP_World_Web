@@ -175,7 +175,8 @@ describe('GET /api/store/orders — Shopify not ready', () => {
     const res = await get(ALICE);
     expect(res.status).toBe(200);
     expect(res.body).toMatchObject({ orders: [], reason: 'shopify_unavailable' });
-    expect(res.body.account_orders_url).toBe('https://atp-test.myshopify.com/account');
+    // Members are sent to the shop's own domain, not the myshopify API host.
+    expect(res.body.account_orders_url).toBe('https://shop.atthepark.world/account');
     // The warning never carries the member's email.
     expect(JSON.stringify(warn.mock.calls)).not.toMatch(/alice/i);
   });

@@ -3534,7 +3534,8 @@ function _atpHandleStripeReturn() {
 // (network, no products, timeout) the card hides itself so the sidebar
 // stays clean.
 var ATP_SHOPIFY_TOKEN  = '31a1a5554b7f2fdaf2aa4dc44e13a127';
-var ATP_SHOPIFY_DOMAIN = 'atp-store-7903.myshopify.com';
+var ATP_SHOPIFY_DOMAIN = 'atp-store-7903.myshopify.com';   // Storefront API host
+var ATP_SHOP_LINK = 'https://shop.atthepark.world';          // what members click
 var __atpBestSellersLoaded = false;
 
 // Legacy best-seller loader — kept as a no-op so existing call sites
@@ -3595,7 +3596,7 @@ function loadStoreBestSellers() {
       // on the store; the explicit Support Now button is the conversion
       // point.
       body.innerHTML =
-        '<a href="https://' + ATP_SHOPIFY_DOMAIN + '/products/' + safeHandle + '" style="text-decoration:none;color:inherit;display:block">' +
+        '<a href="' + ATP_SHOP_LINK + '/products/' + safeHandle + '" style="text-decoration:none;color:inherit;display:block">' +
           (imgUrl
             ? '<div style="aspect-ratio:1;background:#0d0d0d;border-radius:10px;overflow:hidden;margin-bottom:12px;border:1px solid rgba(255,255,255,.06)"><img src="' + imgUrl + '" alt="' + alt.replace(/"/g, '&quot;') + '" style="width:100%;height:100%;object-fit:cover;display:block" loading="lazy"></div>'
             : '<div style="aspect-ratio:1;background:#0d0d0d;border-radius:10px;margin-bottom:12px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:34px">🛒</div>') +
@@ -3605,7 +3606,7 @@ function loadStoreBestSellers() {
             : '<div style="margin-bottom:14px"></div>') +
         '</a>' +
         // The Support Now CTA — full-width, bright green, hard-to-miss.
-        '<a href="https://' + ATP_SHOPIFY_DOMAIN + '/products/' + safeHandle + '" class="atp-btn atp-btn--primary" style="display:block;text-align:center;text-decoration:none;font-size:13px;padding:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase">Support Now \u2192</a>';
+        '<a href="' + ATP_SHOP_LINK + '/products/' + safeHandle + '" class="atp-btn atp-btn--primary" style="display:block;text-align:center;text-decoration:none;font-size:13px;padding:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase">Support Now \u2192</a>';
     })
     .catch(function(err){
       console.warn('[best-sellers] fetch failed', err && err.message);
@@ -5769,7 +5770,7 @@ function showRedeemResult(data) {
       '<div style="display:flex;gap:8px;margin-top:10px">' +
         '<button type="button" id="redeemCopyBtn" style="flex:1;background:transparent;border:1px solid rgba(168,255,0,.35);color:var(--green);font-size:11px;font-weight:700;padding:8px;border-radius:6px;cursor:pointer;text-transform:uppercase;letter-spacing:.05em">Copy code</button>' +
         (data.shopify_active
-          ? '<a href="https://' + ATP_SHOPIFY_DOMAIN + '/discount/' + encodeURIComponent(code) + '" target="_blank" rel="noopener" style="flex:1;display:inline-flex;align-items:center;justify-content:center;background:var(--green);color:#0a0a0a;font-size:11px;font-weight:800;padding:8px;border-radius:6px;text-decoration:none;text-transform:uppercase;letter-spacing:.05em">Apply in store →</a>'
+          ? '<a href="' + ATP_SHOP_LINK + '/discount/' + encodeURIComponent(code) + '" target="_blank" rel="noopener" style="flex:1;display:inline-flex;align-items:center;justify-content:center;background:var(--green);color:#0a0a0a;font-size:11px;font-weight:800;padding:8px;border-radius:6px;text-decoration:none;text-transform:uppercase;letter-spacing:.05em">Apply in store →</a>'
           : '') +
       '</div>' +
     '</div>';
@@ -6117,7 +6118,7 @@ function renderFeaturedStore(col, products) {
     var img = p.images && p.images.edges[0] && p.images.edges[0].node.url;
     var price = p.priceRange && p.priceRange.minVariantPrice;
     var priceStr = price ? (price.currencyCode + ' ' + Math.round(Number(price.amount))) : '';
-    return '<a href="https://' + FEATURED_SHOPIFY_DOMAIN + '/products/' + esc(p.handle || '') + '" style="display:block;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden;text-decoration:none;color:inherit;transition:transform .2s,border-color .2s" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.borderColor=\'rgba(168,255,0,.3)\'" onmouseout="this.style.transform=\'\';this.style.borderColor=\'rgba(255,255,255,.06)\'">' +
+    return '<a href="' + ATP_SHOP_LINK + '/products/' + esc(p.handle || '') + '" style="display:block;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.06);border-radius:10px;overflow:hidden;text-decoration:none;color:inherit;transition:transform .2s,border-color .2s" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.borderColor=\'rgba(168,255,0,.3)\'" onmouseout="this.style.transform=\'\';this.style.borderColor=\'rgba(255,255,255,.06)\'">' +
       (img ? '<div style="aspect-ratio:1/1;background:#0a0a0a"><img src="' + esc(img) + '" alt="" style="width:100%;height:100%;object-fit:cover"></div>' : '<div style="aspect-ratio:1/1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:32px">🎽</div>') +
       '<div style="padding:10px 12px">' +
         '<div style="font-size:12px;color:#fff;font-weight:600;line-height:1.3;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' + esc(p.title || '') + '</div>' +
@@ -6196,7 +6197,7 @@ function renderFeaturedSidebarSlide() {
     return '<span onclick="jumpFeaturedSidebar(' + i + ')" style="width:' + (active ? '20' : '6') + 'px;height:6px;border-radius:3px;background:' + (active ? 'var(--green)' : 'rgba(255,255,255,.18)') + ';transition:all .3s;cursor:pointer"></span>';
   }).join('');
   body.innerHTML =
-    '<a href="https://' + FEATURED_SHOPIFY_DOMAIN + '/products/' + esc(p.handle || '') + '" style="display:block;text-decoration:none;color:inherit">' +
+    '<a href="' + ATP_SHOP_LINK + '/products/' + esc(p.handle || '') + '" style="display:block;text-decoration:none;color:inherit">' +
       (img
         ? '<div style="aspect-ratio:1/1;background:#0a0a0a;border-radius:8px;overflow:hidden;margin-bottom:10px"><img src="' + esc(img) + '" alt="" style="width:100%;height:100%;object-fit:cover;display:block;transition:transform .5s" onmouseover="this.style.transform=\'scale(1.05)\'" onmouseout="this.style.transform=\'\'"></div>'
         : '<div style="aspect-ratio:1/1;background:#1a1a1a;display:flex;align-items:center;justify-content:center;font-size:42px;border-radius:8px;margin-bottom:10px">🎽</div>') +

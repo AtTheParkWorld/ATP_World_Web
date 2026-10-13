@@ -38,8 +38,10 @@ const STATUS_LABEL = {
   refunded:        'Refunded',
 };
 
+// Member-facing store address (the shop's primary domain since
+// 2026-10-13). SHOPIFY_DOMAIN stays the myshopify host for API calls.
 function _shopUrl() {
-  return 'https://' + (process.env.SHOPIFY_DOMAIN || 'atp-store-7903.myshopify.com');
+  return (process.env.SHOP_URL || 'https://shop.atthepark.world').replace(/\/+$/, '');
 }
 
 function _money(set) {

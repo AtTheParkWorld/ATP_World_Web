@@ -400,9 +400,9 @@ app.get('/.well-known/assetlinks.json', (req, res) => {
 // page is retired. Every /store link — nav, bookmarks, email CTAs —
 // redirects there. Registered BEFORE express.static so the redirect
 // wins over public/store.html. 302 (not 301) so browsers don't cache
-// the hop while the custom-domain switch is still ahead; SHOP_URL env
-// flips it to shop.atthepark.world without a code change.
-const SHOP_URL = process.env.SHOP_URL || 'https://atp-store-7903.myshopify.com';
+// the hop. The shop's own domain, shop.atthepark.world, went live as
+// Shopify's primary domain on 2026-10-13 (SHOP_URL env can override).
+const SHOP_URL = process.env.SHOP_URL || 'https://shop.atthepark.world';
 app.get(['/store', '/store.html'], (req, res) => res.redirect(302, SHOP_URL));
 
 // Brand-sponsorship packages were dropped from the public site
