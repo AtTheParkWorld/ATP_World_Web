@@ -1,6 +1,7 @@
 // ── ANALYTICS ─────────────────────────────────────────────────
 const router = require('express').Router();
 const { query } = require('../db');
+const { COUNTED_MEMBER_SQL } = require('../services/memberCount');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 
 // GET /api/analytics/overview
@@ -9,7 +10,7 @@ router.get('/overview', authenticate, requireAdmin, async (req, res, next) => {
     const [members, sessions, challenges, topMembers, growth, cityBreakdown, activityBreakdown] = await Promise.all([
       // Member stats
       query(`SELECT
-        COUNT(*) AS total,
+        (SELECT COUNT(*) FROM members mc WHERE ${COUNTED_MEMBER_SQL}) AS total,
         COUNT(*) FILTER (WHERE joined_at > NOW() - INTERVAL '30 days') AS new_this_month,
         COUNT(*) FILTER (WHERE joined_at > NOW() - INTERVAL '7 days') AS new_this_week,
         COUNT(*) FILTER (WHERE is_ambassador=true) AS ambassadors,
@@ -340,7 +341,7 @@ router.get('/v2', authenticate, requireAdmin, async (req, res, next) => {
       query(
         `SELECT
            (SELECT COUNT(*)::int FROM members WHERE created_at BETWEEN $1 AND $2)                                     AS new_members,
-           (SELECT COUNT(*)::int FROM members)                                                                        AS total_members,
+           (SELECT COUNT(*)::int FROM members WHERE ${COUNTED_MEMBER_SQL})                                                  AS total_members,
            (SELECT COUNT(*)::int FROM bookings b JOIN sessions s ON s.id=b.session_id
              WHERE s.scheduled_at BETWEEN $1 AND $2)                                                                  AS bookings_in_range,
            (SELECT COUNT(*)::int FROM bookings b JOIN sessions s ON s.id=b.session_id

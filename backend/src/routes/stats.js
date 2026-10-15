@@ -9,6 +9,7 @@
  */
 const router = require('express').Router();
 const { query } = require('../db');
+const { COUNTED_MEMBER_SQL } = require('../services/memberCount');
 
 let _cache = null;
 let _cacheExpires = 0;
@@ -25,7 +26,7 @@ async function _computeStats() {
 
   const [members, activities, sessionsThisMonth, cities, coaches, ambassadors] = await Promise.all([
     safe(async () => {
-      const { rows } = await query(`SELECT COUNT(*)::int AS n FROM members WHERE COALESCE(is_banned,false)=false`);
+      const { rows } = await query(`SELECT COUNT(*)::int AS n FROM members WHERE ${COUNTED_MEMBER_SQL}`);
       return rows[0].n;
     }, 0),
     safe(async () => {

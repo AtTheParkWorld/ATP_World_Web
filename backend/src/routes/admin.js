@@ -1,5 +1,6 @@
 const router = require('express').Router();
 const { query, transaction } = require('../db');
+const { COUNTED_MEMBER_SQL } = require('../services/memberCount');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 const audit = require('../services/audit');
 
@@ -9,9 +10,9 @@ router.use(authenticate, requireAdmin);
 // ── GET /api/admin/dashboard ──────────────────────────────────
 router.get('/dashboard', async (req, res, next) => {
   try {
-    const [members, sessions, points, revenue, checkins] = await Promise.all([
+    const [members, sessions, points, checkins] = await Promise.all([
       query(`SELECT
-        COUNT(*) AS total,
+        COUNT(*) FILTER (WHERE ${COUNTED_MEMBER_SQL}) AS total,
         COUNT(*) FILTER (WHERE joined_at >= DATE_TRUNC('month', NOW())) AS this_month,
         COUNT(*) FILTER (WHERE joined_at >= DATE_TRUNC('month', NOW()) - INTERVAL '1 month'
                            AND joined_at < DATE_TRUNC('month', NOW())) AS last_month,
