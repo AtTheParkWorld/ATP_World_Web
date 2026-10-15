@@ -823,9 +823,18 @@ router.post('/messages/:messageId/report', authenticate, async (req, res, next) 
 });
 
 // ── GET /api/community/messages ───────────────────────────────
+// A chat that holds nothing but the automatic welcome FROM the viewer
+// (Coach Fredy's note to every new member) stays out of the viewer's
+// list until the other member writes back (founder 2026-10-15). The new
+// member still sees it: for them the welcome is from someone else.
+const INBOX_HIDE_WELCOME_ONLY = `
+         AND EXISTS (SELECT 1 FROM messages x
+                      WHERE x.conversation_id = cv.id
+                        AND (x.sender_id <> $1 OR NOT x.is_welcome))`;
+
 router.get('/messages', authenticate, async (req, res, next) => {
   try {
-    const { rows } = await query(
+    const sql = (hideWelcome) =>
       `SELECT cv.id, cv.last_message_at,
               CASE WHEN cv.member_a=$1 THEN m2.id ELSE m1.id END AS other_id,
               CASE WHEN cv.member_a=$1 THEN m2.first_name ELSE m1.first_name END AS other_first,
@@ -841,10 +850,15 @@ router.get('/messages', authenticate, async (req, res, next) => {
        FROM conversations cv
        JOIN members m1 ON m1.id=cv.member_a
        JOIN members m2 ON m2.id=cv.member_b
-       WHERE cv.member_a=$1 OR cv.member_b=$1
-       ORDER BY cv.last_message_at DESC NULLS LAST`,
-      [req.member.id]
-    );
+       WHERE (cv.member_a=$1 OR cv.member_b=$1)${hideWelcome ? INBOX_HIDE_WELCOME_ONLY : ''}
+       ORDER BY cv.last_message_at DESC NULLS LAST`;
+    let rows;
+    try {
+      ({ rows } = await query(sql(true), [req.member.id]));
+    } catch (err) {
+      if (err.code !== '42703') throw err;   // is_welcome not added yet (boot race)
+      ({ rows } = await query(sql(false), [req.member.id]));
+    }
     res.json({ conversations: rows });
   } catch (err) { next(err); }
 });

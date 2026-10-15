@@ -105,10 +105,20 @@ async function sendWelcomeMessage(memberId, firstName) {
     );
     if (already.length) return { skipped: 'already_sent' };
 
-    await query(
-      'INSERT INTO messages (conversation_id, sender_id, content) VALUES ($1,$2,$3)',
-      [conversationId, sender, welcomeText(firstName)]
-    );
+    // is_welcome keeps the note out of the SENDER's inbox until the member
+    // replies (founder 2026-10-15); the member still sees it as a message.
+    try {
+      await query(
+        'INSERT INTO messages (conversation_id, sender_id, content, is_welcome) VALUES ($1,$2,$3,true)',
+        [conversationId, sender, welcomeText(firstName)]
+      );
+    } catch (err) {
+      if (err.code !== '42703') throw err;   // column not added yet (boot race)
+      await query(
+        'INSERT INTO messages (conversation_id, sender_id, content) VALUES ($1,$2,$3)',
+        [conversationId, sender, welcomeText(firstName)]
+      );
+    }
     return { sent: true };
   } catch (err) {
     console.warn('[welcome] could not send welcome message:', err.message);
@@ -116,8 +126,25 @@ async function sendWelcomeMessage(memberId, firstName) {
   }
 }
 
+/**
+ * Boot: add messages.is_welcome and flag the welcomes sent before it
+ * existed — today's note and the original 2026-10-03 one ("Hey …,
+ * welcome to At The Park … Fredy & Tatiana"). Idempotent.
+ */
+async function ensureWelcomeFlag() {
+  await query('ALTER TABLE messages ADD COLUMN IF NOT EXISTS is_welcome BOOLEAN NOT NULL DEFAULT false');
+  await query(
+    `UPDATE messages SET is_welcome = true
+      WHERE is_welcome = false
+        AND (content = $1
+             OR (content LIKE 'Hey %, welcome to At The Park.%' AND content LIKE '%Fredy & Tatiana'))`,
+    [FOUNDER_WELCOME_MESSAGE]
+  );
+}
+
 module.exports = {
   sendWelcomeMessage,
+  ensureWelcomeFlag,
   welcomeText,
   FOUNDER_WELCOME_MESSAGE,
   FOUNDER_WELCOME_TITLE,

@@ -832,6 +832,11 @@ async function _ensureBootSchema() {
   await query(`ALTER TABLE coach_feedback ADD COLUMN IF NOT EXISTS ip_hash VARCHAR(64)`)
     .catch((e) => console.warn('[boot] coach_feedback.ip_hash:', e.message));
 
+  // Welcome DMs (founder 2026-10-15): flag them so a welcome-only chat
+  // stays out of the sender's inbox until the member replies.
+  await require('./services/welcomeMessage').ensureWelcomeFlag()
+    .catch((e) => console.warn('[boot] messages.is_welcome:', e.message));
+
   // Residence (founder 2026-09-11): "where I live" is demographic and
   // must accept ANY country — distinct from members.country_id, which
   // is an FK to the OPERATING countries table (UAE/Oman) that drives
