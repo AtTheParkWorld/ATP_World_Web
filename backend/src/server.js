@@ -692,6 +692,15 @@ app.get('/checkin',  (req, res) => res.sendFile(path.join(__dirname, '../public/
 // (/privacy, /terms, /appeal, /guidelines); these 404'd before.
 app.get('/privacy',  (req, res) => res.sendFile(path.join(__dirname, '../public/privacy.html')));
 app.get('/terms',    (req, res) => res.sendFile(path.join(__dirname, '../public/terms.html')));
+// Partner link for Dubai Internet City's 30x30 Fitness Hub page (founder
+// 2026-10-16): opens our calendar filtered to the DIC Amphitheatre. 302 so
+// we can change the destination without DIC touching their page; any
+// tracking params (utm_*) pass through.
+app.get(['/30x30', '/30x30/'], (req, res) => {
+  const qs = new URLSearchParams(req.query);
+  qs.set('venue', 'dic');
+  res.redirect(302, '/sessions.html?' + qs.toString());
+});
 app.get('/appeal',   (req, res) => res.sendFile(path.join(__dirname, '../public/appeal.html')));
 app.get('/guidelines', (req, res) => res.redirect(302, '/legal.html#terms'));
 // Combined legal page — privacy + terms + refund in one place, deep-linkable.

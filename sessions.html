@@ -709,6 +709,10 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
     <div class="sessions-toolbar">
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <p class="sessions-count"><strong id="sessionCount">12</strong> sessions this week</p>
+        <div id="venueBar" style="display:none;margin-top:10px;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px">
+          <span style="background:rgba(168,255,0,.12);border:1px solid rgba(168,255,0,.45);color:#A8FF00;font-weight:700;padding:6px 12px;border-radius:999px" id="venueLabel"></span>
+          <button type="button" onclick="clearVenue()" style="background:none;border:0;color:#bbb;text-decoration:underline;cursor:pointer;font-size:14px;padding:0">Show all sessions</button>
+        </div>
         <div class="view-toggle" data-active="calendar">
           <button class="view-btn" id="listViewBtn" data-atp-call="setView" data-args='["list"]'>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/></svg>
@@ -909,7 +913,7 @@ var LOGO_SRC = "/atp-logo-transparent.webp";
 })();
 
 
-document.getElementById("nav-logo-img").src = LOGO_SRC;
+var _navLogo = document.getElementById("nav-logo-img"); if (_navLogo) _navLogo.src = LOGO_SRC;
 if(document.getElementById("footer-logo-img")) document.getElementById("footer-logo-img").src = LOGO_SRC;
 // Nav scroll — lazy-resolve since the nav is mounted async by atp-components.js
 window.addEventListener("scroll", function(){ var n = document.getElementById("nav"); if (n) n.classList.toggle("scrolled", window.scrollY > 40); }, {passive:true});
@@ -923,6 +927,36 @@ document.querySelectorAll('.nav-links a').forEach(function(a){
 });
 
 var currentTribe = 'all', currentDay = 'all', currentActivity = 'all', currentCity = 'all';
+// Venue links from partners (founder 2026-10-16): atthepark.world/30x30 →
+// /sessions.html?venue=dic shows only the Dubai Internet City sessions,
+// so visitors from DIC's own event page land on the 30x30 hub calendar.
+var VENUES = {
+  dic: { match: /internet city/i, label: '30x30 Fitness Hub · Dubai Internet City' }
+};
+var currentVenue = (function(){
+  try { var v = (new URLSearchParams(window.location.search).get('venue') || '').toLowerCase(); return VENUES[v] ? v : ''; }
+  catch (e) { return ''; }
+})();
+function _venueOk(location) {
+  return !currentVenue || VENUES[currentVenue].match.test(String(location || ''));
+}
+function _showVenueBar() {
+  var bar = document.getElementById('venueBar');
+  if (!currentVenue || !bar) return;
+  document.getElementById('venueLabel').textContent = VENUES[currentVenue].label;
+  bar.style.display = 'flex';
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _showVenueBar);
+else _showVenueBar();
+function clearVenue() {
+  currentVenue = '';
+  try {
+    var u = new URL(window.location.href); u.searchParams.delete('venue');
+    window.history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
+  } catch (e) {}
+  var bar = document.getElementById('venueBar'); if (bar) bar.style.display = 'none';
+  applyFilters();
+}
 var activeSession = {};
 
 // Resolve the hardcoded tribe filter buttons' slugs ("better" / "faster"
@@ -974,6 +1008,7 @@ function filterCity(cityId) {
 }
 function resetFilters() {
   currentTribe = 'all'; currentDay = 'all'; currentActivity = 'all'; currentCity = 'all';
+  if (currentVenue) clearVenue();
   document.querySelectorAll('.filter-tab')[0].click();
   document.querySelectorAll('.day-btn')[0].click();
   var a = document.getElementById('activityFilter'); if (a) a.value = 'all';
@@ -1042,7 +1077,8 @@ function _sessionMatchesFilters(s) {
   return tribeOk
     && (currentDay      === 'all' || dayName === currentDay)
     && (currentActivity === 'all' || actKey === String(currentActivity))
-    && (currentCity     === 'all' || String(s.city_id || '') === String(currentCity));
+    && (currentCity     === 'all' || String(s.city_id || '') === String(currentCity))
+    && _venueOk(s.location);
 }
 
 function applyFilters() {
@@ -1057,7 +1093,8 @@ function applyFilters() {
     var ok = tribeOk
            && (currentDay      === 'all' || c.dataset.day      === currentDay)
            && (currentActivity === 'all' || c.dataset.activity === currentActivity)
-           && (currentCity     === 'all' || c.dataset.city     === currentCity);
+           && (currentCity     === 'all' || c.dataset.city     === currentCity)
+           && _venueOk(c.dataset.location);
     c.style.display = ok ? '' : 'none';
     if(ok) count++;
   });
@@ -2691,6 +2728,7 @@ function renderSessionsGrid(sessions) {
     article.setAttribute('data-day', dayName);
     article.setAttribute('data-activity', s.activity_slug || s.activity_id || '');
     article.setAttribute('data-city', s.city_id || '');
+    article.setAttribute('data-location', s.location || '');
     article.setAttribute('data-session-id', s.id);
     if (s.intro_video_url) article.setAttribute('data-intro-video', s.intro_video_url);
     // Card UI shows only what the visitor needs to decide whether to open
