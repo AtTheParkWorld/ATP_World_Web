@@ -17,6 +17,7 @@ import { router } from 'expo-router';
 import { useQuery } from '@tanstack/react-query';
 import { listMyBookings, type BookingRecord } from '@/lib/api/bookings';
 import { colors, fontFamily } from '@/lib/theme/tokens';
+import { PinkRibbon } from '@/lib/components/PinkRibbon';
 
 function BookingCard({ b, width }: { b: BookingRecord; width: number }) {
   return (
@@ -25,9 +26,12 @@ function BookingCard({ b, width }: { b: BookingRecord; width: number }) {
       style={{ width }}
       className="bg-atp-dark rounded-atp-lg border border-white/5 p-5 active:opacity-70"
     >
-      <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs uppercase tracking-widest mb-1">
-        {b.tribe_name || b.city_name || 'Booked'}
-      </Text>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
+        <PinkRibbon height={16} />
+        <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs uppercase tracking-widest">
+          {b.tribe_name || b.city_name || 'Booked'}
+        </Text>
+      </View>
       <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-2xl uppercase tracking-tight" numberOfLines={2}>
         {b.session_name}
       </Text>

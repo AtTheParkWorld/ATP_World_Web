@@ -34,6 +34,7 @@ import { Avatar } from '@/lib/components/Avatar';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { dayHeader, timeShort } from '@/lib/utils/date';
 import { sessionInviteMessage } from '@/lib/utils/shareLinks';
+import { PinkRibbon, isPinkOctober } from '@/lib/components/PinkRibbon';
 
 export default function SessionDetail() {
   const footerPad = useStickyFooterPad();
@@ -245,10 +246,15 @@ export default function SessionDetail() {
               <CorporateSessionBadge companyName={corporateName} />
             </View>
           )}
-          {!!s.tribe_name && (
-            <Text style={{ fontFamily: fontFamily.bodyBold, color: tColor }} className="text-xs uppercase tracking-widest mb-2">
-              {s.tribe_name}
-            </Text>
+          {(!!s.tribe_name || isPinkOctober()) && (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <PinkRibbon height={20} />
+              {!!s.tribe_name && (
+                <Text style={{ fontFamily: fontFamily.bodyBold, color: tColor }} className="text-xs uppercase tracking-widest">
+                  {s.tribe_name}
+                </Text>
+              )}
+            </View>
           )}
           <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-4xl uppercase tracking-tight">
             {s.name}

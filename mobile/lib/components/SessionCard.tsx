@@ -15,6 +15,7 @@ import { router } from 'expo-router';
 import { VideoView, useVideoPlayer } from 'expo-video';
 import type { Session } from '@/lib/api/sessions';
 import { IconLock } from '@/lib/components/icons';
+import { PinkRibbon } from '@/lib/components/PinkRibbon';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
 import { timeShort, relativeStartLabel } from '@/lib/utils/date';
@@ -123,6 +124,7 @@ function _SessionCard({ session, compact, onPress }: Props) {
       <View className="flex-row items-start justify-between">
         <View className="flex-1 pr-3">
           <View className="flex-row items-center gap-2 mb-1">
+            <PinkRibbon height={16} />
             {!!session.tribe_name && (
               <Text
                 style={{ fontFamily: fontFamily.bodyBold, color: tColor }}
