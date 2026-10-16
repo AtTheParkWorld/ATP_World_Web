@@ -702,6 +702,8 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       <button class="filter-tab" data-atp-call="filterTribe" data-args='["better"]'><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8" cy="3" r="1.5"/><path d="M4 8c0-2 1.5-3.5 4-3.5s4 1.5 4 3.5"/><path d="M2 10c1.5-1 3.5-1.5 6-1.5s4.5.5 6 1.5"/><line x1="8" y1="8" x2="8" y2="14"/></svg> Better Tribe</button>
       <button class="filter-tab" data-atp-call="filterTribe" data-args='["faster"]'><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="10" cy="2.5" r="1.5"/><path d="M7 5l1.5 3L6 11"/><path d="M9 8l3-1"/><path d="M6 11l-2 3"/><path d="M6 11l3 3"/></svg> Faster Tribe</button>
       <button class="filter-tab" data-atp-call="filterTribe" data-args='["stronger"]'><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 8c0-2.5 1.5-4 4-4s4 1.5 4 4c0 2.5-1.5 4-4 4"/><path d="M2 12c.5-1.5 2-2.5 4-3"/><path d="M14 12c-.5-1.5-2-2.5-4-3"/></svg> Stronger Tribe</button>
+      <div class="filter-sep" id="tab30x30Sep"></div>
+      <button class="filter-tab" id="tab30x30" data-atp-call="filterEvent" data-args='["dic"]'><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14.5s-4.5-4.2-4.5-7.8a4.5 4.5 0 0 1 9 0c0 3.6-4.5 7.8-4.5 7.8z"/><circle cx="8" cy="6.6" r="1.6"/></svg> DIC 30x30 Hub</button>
     </div>
   </div>
 
@@ -709,10 +711,6 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
     <div class="sessions-toolbar">
       <div style="display:flex;align-items:center;gap:16px;flex-wrap:wrap">
         <p class="sessions-count"><strong id="sessionCount">12</strong> sessions this week</p>
-        <div id="venueBar" style="display:none;margin-top:10px;align-items:center;gap:10px;flex-wrap:wrap;font-size:14px">
-          <span style="background:rgba(168,255,0,.12);border:1px solid rgba(168,255,0,.45);color:#A8FF00;font-weight:700;padding:6px 12px;border-radius:999px" id="venueLabel"></span>
-          <button type="button" onclick="clearVenue()" style="background:none;border:0;color:#bbb;text-decoration:underline;cursor:pointer;font-size:14px;padding:0">Show all sessions</button>
-        </div>
         <div class="view-toggle" data-active="calendar">
           <button class="view-btn" id="listViewBtn" data-atp-call="setView" data-args='["list"]'>
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="2" y1="4" x2="14" y2="4"/><line x1="2" y1="8" x2="14" y2="8"/><line x1="2" y1="12" x2="14" y2="12"/></svg>
@@ -927,36 +925,54 @@ document.querySelectorAll('.nav-links a').forEach(function(a){
 });
 
 var currentTribe = 'all', currentDay = 'all', currentActivity = 'all', currentCity = 'all';
-// Venue links from partners (founder 2026-10-16): atthepark.world/30x30 →
-// /sessions.html?venue=dic shows only the Dubai Internet City sessions,
-// so visitors from DIC's own event page land on the 30x30 hub calendar.
+// Event tab (founder 2026-10-16): "DIC 30x30 Hub" sits in the tribe row but
+// is NOT a tribe — members can't pick it, points/leaderboards don't change.
+// It shows Dubai Internet City sessions during the hub (31 Oct – 29 Nov) and
+// hides itself afterwards. DIC's page links to atthepark.world/30x30, which
+// redirects here with ?venue=dic so visitors land with the tab selected.
 var VENUES = {
-  dic: { match: /internet city/i, label: '30x30 Fitness Hub · Dubai Internet City' }
+  dic: { match: /internet city/i,
+         from: Date.parse('2026-10-31T00:00:00+04:00'),
+         to:   Date.parse('2026-11-30T00:00:00+04:00') }
 };
+function _eventLive(v) { return !!VENUES[v] && Date.now() < VENUES[v].to; }
 var currentVenue = (function(){
-  try { var v = (new URLSearchParams(window.location.search).get('venue') || '').toLowerCase(); return VENUES[v] ? v : ''; }
+  try { var v = (new URLSearchParams(window.location.search).get('venue') || '').toLowerCase(); return _eventLive(v) ? v : ''; }
   catch (e) { return ''; }
 })();
-function _venueOk(location) {
-  return !currentVenue || VENUES[currentVenue].match.test(String(location || ''));
+function _venueOk(location, at) {
+  if (!currentVenue) return true;
+  var V = VENUES[currentVenue], t = Date.parse(at || '');
+  return V.match.test(String(location || '')) && t >= V.from && t < V.to;
 }
-function _showVenueBar() {
-  var bar = document.getElementById('venueBar');
-  if (!currentVenue || !bar) return;
-  document.getElementById('venueLabel').textContent = VENUES[currentVenue].label;
-  bar.style.display = 'flex';
-}
-if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _showVenueBar);
-else _showVenueBar();
-function clearVenue() {
-  currentVenue = '';
+function _setVenueParam(v) {
   try {
-    var u = new URL(window.location.href); u.searchParams.delete('venue');
+    var u = new URL(window.location.href);
+    if (v) u.searchParams.set('venue', v); else u.searchParams.delete('venue');
     window.history.replaceState(null, '', u.pathname + (u.search || '') + u.hash);
   } catch (e) {}
-  var bar = document.getElementById('venueBar'); if (bar) bar.style.display = 'none';
+}
+function filterEvent(key, btn) {
+  if (!_eventLive(key)) return;
+  currentVenue = key; currentTribe = 'all';
+  document.querySelectorAll('.filter-tab').forEach(function(b){ b.classList.remove('active'); });
+  if (btn) btn.classList.add('active');
+  _setVenueParam(key);
+  populateActivityFilter();
   applyFilters();
 }
+function clearVenue() { currentVenue = ''; _setVenueParam(''); }
+function _initEventTab() {
+  var tab = document.getElementById('tab30x30'), sep = document.getElementById('tab30x30Sep');
+  if (!tab) return;
+  if (!_eventLive('dic')) { tab.style.display = 'none'; if (sep) sep.style.display = 'none'; return; }
+  if (currentVenue !== 'dic') return;
+  document.querySelectorAll('.filter-tab').forEach(function(b){ b.classList.remove('active'); });
+  tab.classList.add('active');
+  try { tab.scrollIntoView({ inline: 'center', block: 'nearest' }); } catch (e) {}
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', _initEventTab);
+else _initEventTab();
 var activeSession = {};
 
 // Resolve the hardcoded tribe filter buttons' slugs ("better" / "faster"
@@ -985,6 +1001,7 @@ var activeSession = {};
 })();
 
 function filterTribe(tribe, btn) {
+  if (currentVenue) clearVenue();
   currentTribe = tribe;
   document.querySelectorAll('.filter-tab').forEach(function(b){ b.classList.remove('active'); });
   btn.classList.add('active');
@@ -1078,7 +1095,7 @@ function _sessionMatchesFilters(s) {
     && (currentDay      === 'all' || dayName === currentDay)
     && (currentActivity === 'all' || actKey === String(currentActivity))
     && (currentCity     === 'all' || String(s.city_id || '') === String(currentCity))
-    && _venueOk(s.location);
+    && _venueOk(s.location, s.scheduled_at);
 }
 
 function applyFilters() {
@@ -1094,7 +1111,7 @@ function applyFilters() {
            && (currentDay      === 'all' || c.dataset.day      === currentDay)
            && (currentActivity === 'all' || c.dataset.activity === currentActivity)
            && (currentCity     === 'all' || c.dataset.city     === currentCity)
-           && _venueOk(c.dataset.location);
+           && _venueOk(c.dataset.location, c.dataset.at);
     c.style.display = ok ? '' : 'none';
     if(ok) count++;
   });
@@ -1106,6 +1123,12 @@ function applyFilters() {
   // Only show "empty" when we've actually loaded and zero match current filters
   document.getElementById('emptyState').style.display =
     (!loadingVisible && !errorVisible && cards.length > 0 && count === 0) ? 'flex' : 'none';
+  var et = document.querySelector('#emptyState .atp-empty__title'), ed = document.querySelector('#emptyState .atp-empty__desc');
+  if (et && !et.dataset.orig) { et.dataset.orig = et.textContent; ed.dataset.orig = ed.textContent; }
+  if (et) {
+    et.textContent = currentVenue ? '30x30 sessions are coming soon' : et.dataset.orig;
+    ed.textContent = currentVenue ? 'The DIC 30x30 Fitness Hub runs 31 Oct – 29 Nov at the Dubai Internet City Amphitheatre. Sessions open for booking here very soon.' : ed.dataset.orig;
+  }
   // Calendar renders from session objects, not the cards hidden above —
   // redraw it so both views always agree with the active filters.
   var calView = document.getElementById('calView');
@@ -2152,7 +2175,7 @@ function setView(view) {
 var CAL_REAL_SESSIONS = [];
 
 function loadCalendarSessions() {
-  return fetch('/api/sessions?status=upcoming&limit=200')
+  return fetch('/api/sessions?status=upcoming&limit=500')
     .then(function(r){ return r.json(); })
     .then(function(d){ CAL_REAL_SESSIONS = (d && d.sessions) || []; renderCalendar(); })
     .catch(function(){ CAL_REAL_SESSIONS = []; renderCalendar(); });
@@ -2729,6 +2752,7 @@ function renderSessionsGrid(sessions) {
     article.setAttribute('data-activity', s.activity_slug || s.activity_id || '');
     article.setAttribute('data-city', s.city_id || '');
     article.setAttribute('data-location', s.location || '');
+    article.setAttribute('data-at', s.scheduled_at || '');
     article.setAttribute('data-session-id', s.id);
     if (s.intro_video_url) article.setAttribute('data-intro-video', s.intro_video_url);
     // Card UI shows only what the visitor needs to decide whether to open
