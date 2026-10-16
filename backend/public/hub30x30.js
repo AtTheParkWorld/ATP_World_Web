@@ -247,7 +247,10 @@
     var main = document.querySelector('.sessions-main'); if (!main) return;
     var on = typeof currentVenue !== 'undefined' && currentVenue === 'dic';
     main.classList.toggle('hub-mode', on);
+    var p = document.getElementById('hub30');
     if (on) render();
+    else if (p) { p.innerHTML = ''; p.style.display = 'none'; }
+    if (on && (p = document.getElementById('hub30'))) p.style.display = '';
   }
   window.Hub30 = { sync: sync, open: open };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sync); else sync();
