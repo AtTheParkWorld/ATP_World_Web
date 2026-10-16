@@ -3,6 +3,11 @@
    Everything is scoped under .hub30 / .h30-* so the rest of the page keeps
    the ATP theme. */
 .sessions-main.hub-mode > *:not(#hub30) { display: none !important; }
+/* White, edge to edge, from the tab row to the footer (founder 2026-10-16) —
+   the box-shadow + clip-path pair paints the full viewport width without
+   touching the page layout. */
+.sessions-main.hub-mode { background: #fff; box-shadow: 0 0 0 100vmax #fff; clip-path: inset(0 -100vmax); }
+.sessions-main.hub-mode .hub30 { margin: 0; padding-left: 0; padding-right: 0; border-radius: 0; }
 
 .hub30 {
   --h30-ink: #222; --h30-ink2: #414042; --h30-mu: #6f6f6f; --h30-line: #e6e6e6;
