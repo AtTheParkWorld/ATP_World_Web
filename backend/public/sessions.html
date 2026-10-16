@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <link rel="stylesheet" href="/atp.min.css?v=6e112e3c3a">
+  <link rel="stylesheet" href="/hub30x30.css?v=1">
   <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
   <script src="/atp.bundle.min.js?v=a217626e8d"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -1135,6 +1136,8 @@ function applyFilters() {
   if (calView && calView.classList.contains('visible') && typeof renderCalendar === 'function') {
     renderCalendar();
   }
+  // DIC 30x30 Hub tab → the hub view (hub30x30.js) replaces list/calendar.
+  if (window.Hub30) window.Hub30.sync();
 }
 
 // URL param auto-filter on load — e.g. /sessions.html?tribe=faster
@@ -2953,6 +2956,7 @@ function renderCalendarFromSessions(sessions) {
   if (document.getElementById('calView') && document.getElementById('calView').classList.contains('visible')) {
     renderCalendar();
   }
+  if (window.Hub30) window.Hub30.sync();
 }
 
 async function loadSessions() {
@@ -3022,5 +3026,6 @@ async function loadSessions() {
 
 </script>
 
+<script src="/hub30x30.js?v=1"></script>
 </body>
 </html>
