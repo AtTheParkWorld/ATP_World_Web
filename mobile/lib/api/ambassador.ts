@@ -19,6 +19,11 @@ export interface AttendanceRow {
   checked_in_at: string | null;
   qr_token: string | null;
   check_in_method?: string | null;
+  /** Manual check-in approval (founder 2026-10-16): 'pending' while an
+   *  admin reviews an ambassador's manual check-in, then 'approved' or
+   *  'rejected'. Null/absent for QR check-ins and older deploys. */
+  checkin_review?: 'pending' | 'approved' | 'rejected' | null;
+  checkin_requested_at?: string | null;
   /** Joined server-side since 2026-08-30; null on older deploys
    *  (tribeColor() falls back to the default green). */
   tribe_name: string | null;
@@ -64,6 +69,10 @@ export interface CheckinResponse {
   /** Never sent on 200 — a duplicate scan surfaces as a thrown ApiError
    *  (409, code ALREADY_CHECKED_IN). */
   already_checked_in?: boolean;
+  /** 202: an ambassador's/coach's manual check-in now waits for an admin
+   *  (founder 2026-10-16). Nothing counts until it's approved. */
+  pending?: boolean;
+  message?: string;
 }
 
 export function checkInMember(sessionId: string, payload: { qr_token?: string; member_id?: string; method?: 'qr' | 'manual' }):

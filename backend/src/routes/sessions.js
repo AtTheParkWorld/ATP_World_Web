@@ -748,8 +748,9 @@ router.patch('/:id/complete', authenticate, async (req, res, next) => {
 // ── GET /api/sessions/:id/attendance ─────────────────────────
 router.get('/:id/attendance', authenticate, requireScanner, async (req, res, next) => {
   try {
-    const { rows } = await query(
+    const sql = (review) =>
       `SELECT b.id, b.status, b.qr_token, b.checked_in_at, b.check_in_method,
+              ${review ? 'b.checkin_review, b.checkin_requested_at,' : ''}
               m.id AS member_id, m.first_name, m.last_name,
               m.member_number, m.avatar_url,
               t.name AS tribe_name, t.slug AS tribe_slug
@@ -758,10 +759,178 @@ router.get('/:id/attendance', authenticate, requireScanner, async (req, res, nex
        LEFT JOIN tribes t ON t.id = m.tribe_id
        WHERE b.session_id = $1
          AND b.status IN ('confirmed','attended')
-       ORDER BY b.checked_in_at NULLS LAST, m.first_name`,
-      [req.params.id]
-    );
+       ORDER BY b.checked_in_at NULLS LAST, m.first_name`;
+    let rows;
+    try { ({ rows } = await query(sql(true), [req.params.id])); }
+    catch (e) { if (e.code !== '42703') throw e; ({ rows } = await query(sql(false), [req.params.id])); }
     res.json({ attendance: rows });
+  } catch (err) { next(err); }
+});
+
+// ── Finish a check-in ─────────────────────────────────────────
+// Marks the booking attended and runs the side effects (streak, inactivity
+// clock, referral reward, achievements). Used by live check-ins and by an
+// admin approving a manual one — then `at` is the ORIGINAL request time and
+// `late` is true. recordCheckin() assumes check-ins arrive in date order,
+// so a late approval only touches the streak when it isn't older than the
+// member's latest check-in (otherwise it would reset their streak).
+async function _finalizeCheckin(booking, { by, method, at = new Date(), late = false }) {
+  let streakNow = 0;
+  try {
+    let record = true;
+    if (late) {
+      const { rows } = await query('SELECT last_check_in_at FROM member_streaks WHERE member_id=$1', [booking.member_id]);
+      const last = rows.length ? rows[0].last_check_in_at : null;
+      record = !last || new Date(last) <= at;
+    }
+    if (record) streakNow = (await streak.recordCheckin(booking.member_id, at)).current;
+  } catch (e) {
+    // Streak failure must not block check-in
+    console.warn('[streak] recordCheckin failed:', e.message);
+  }
+
+  await query(
+    `UPDATE bookings
+     SET status='attended', checked_in_at=$5,
+         checked_in_by=$1, check_in_method=$2,
+         streak_at_checkin=$3
+     WHERE id=$4`,
+    [by, method, streakNow || null, booking.id, at]
+  );
+  // A QR scan supersedes a manual request still waiting for approval.
+  if (!late) {
+    query("UPDATE bookings SET checkin_review=NULL WHERE id=$1 AND checkin_review='pending'", [booking.id])
+      .catch(function(){ /* column may not exist yet */ });
+  }
+
+  // Maintain members.last_session_at — drives the 30-day inactivity rule (#21).
+  await query(
+    'UPDATE members SET last_session_at = GREATEST(COALESCE(last_session_at, $2), $2) WHERE id = $1',
+    [booking.member_id, at]
+  ).catch(function(e){ console.warn('[checkin] last_session_at update:', e.message); });
+
+  // Theme 4 / #24 — reward the referrer (if any) for this check-in.
+  // 1 pt for free members, 2 pts for premium. Fire-and-forget so a
+  // referral failure never fails the check-in for the ambassador.
+  referrals.rewardReferrerForCheckin(booking.member_id, booking.session_id)
+    .catch(function(){});
+
+  // Theme 5c / #12 — evaluate achievements (session-count + streak
+  // milestones) for this member. Idempotent + fire-and-forget.
+  achievements.checkAndAward(booking.member_id).catch(function(){});
+  return streakNow;
+}
+
+// ── Admin: manual check-in approvals ──────────────────────────
+// GET  /api/sessions/admin/checkin-approvals?status=pending|approved|rejected|all
+// POST /api/sessions/admin/checkin-approvals/approve  { booking_ids: [] }
+// POST /api/sessions/admin/checkin-approvals/reject   { booking_ids: [], note? }
+router.get('/admin/checkin-approvals', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const status = ['pending', 'approved', 'rejected', 'all'].includes(req.query.status) ? req.query.status : 'pending';
+    const limit = Math.min(500, Math.max(1, parseInt(req.query.limit, 10) || 200));
+    const { rows } = await query(
+      `SELECT b.id AS booking_id, b.status AS booking_status, b.checkin_review AS review,
+              b.checkin_requested_at AS requested_at, b.checkin_reviewed_at AS reviewed_at,
+              b.checkin_review_note AS note,
+              m.id AS member_id, m.first_name, m.last_name, m.member_number, m.avatar_url,
+              s.id AS session_id, s.name AS session_name, s.scheduled_at, s.location, s.status AS session_status,
+              c.name AS city_name,
+              rq.first_name AS requested_by_first, rq.last_name AS requested_by_last,
+              rv.first_name AS reviewed_by_first, rv.last_name AS reviewed_by_last
+         FROM bookings b
+         JOIN members  m  ON m.id = b.member_id
+         JOIN sessions s  ON s.id = b.session_id
+         LEFT JOIN cities  c  ON c.id = s.city_id
+         LEFT JOIN members rq ON rq.id = b.checkin_requested_by
+         LEFT JOIN members rv ON rv.id = b.checkin_reviewed_by
+        WHERE b.checkin_review IS NOT NULL
+          AND ($1 = 'all' OR b.checkin_review = $1)
+        ORDER BY CASE WHEN b.checkin_review='pending' THEN 0 ELSE 1 END,
+                 b.checkin_requested_at DESC
+        LIMIT $2`,
+      [status, limit]
+    );
+    const { rows: counts } = await query(
+      `SELECT checkin_review AS review, COUNT(*)::int AS n FROM bookings
+        WHERE checkin_review IS NOT NULL GROUP BY checkin_review`
+    );
+    const c = { pending: 0, approved: 0, rejected: 0 };
+    counts.forEach(function(r){ c[r.review] = r.n; });
+    res.json({ approvals: rows, counts: c });
+  } catch (err) {
+    if (err.code === '42703') return res.json({ approvals: [], counts: { pending: 0, approved: 0, rejected: 0 } });
+    next(err);
+  }
+});
+
+function _bookingIds(body) {
+  const ids = Array.isArray(body && body.booking_ids) ? body.booking_ids : [];
+  return ids.map(String).filter(function(id){ return /^[0-9a-f-]{36}$/i.test(id); }).slice(0, 200);
+}
+
+router.post('/admin/checkin-approvals/approve', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const ids = _bookingIds(req.body);
+    if (!ids.length) return res.status(400).json({ error: 'booking_ids required' });
+    const points = require('../services/points');
+    let approved = 0; const skipped = [];
+    for (const id of ids) {
+      const { rows } = await query(
+        `SELECT b.*, s.status AS session_status, s.points_reward, s.name AS session_name
+           FROM bookings b JOIN sessions s ON s.id = b.session_id
+          WHERE b.id=$1 AND b.checkin_review='pending'`,
+        [id]
+      );
+      if (!rows.length) { skipped.push({ id, reason: 'not pending' }); continue; }
+      const b = rows[0];
+      if (b.status !== 'confirmed' && b.status !== 'in_progress') {
+        // Already attended (QR scanned later) or cancelled — nothing to count.
+        await query(
+          `UPDATE bookings SET checkin_review=$2, checkin_reviewed_at=NOW(), checkin_reviewed_by=$3,
+                  checkin_review_note=COALESCE(checkin_review_note, $4) WHERE id=$1`,
+          [id, b.status === 'attended' ? 'approved' : 'rejected', req.member.id,
+           b.status === 'attended' ? 'Already checked in by QR' : 'Booking was ' + b.status]
+        );
+        skipped.push({ id, reason: 'booking ' + b.status });
+        continue;
+      }
+      await _finalizeCheckin(b, {
+        by: b.checkin_requested_by || req.member.id,
+        method: 'manual',
+        at: b.checkin_requested_at ? new Date(b.checkin_requested_at) : new Date(),
+        late: true,
+      });
+      await query(
+        `UPDATE bookings SET checkin_review='approved', checkin_reviewed_at=NOW(), checkin_reviewed_by=$2 WHERE id=$1`,
+        [id, req.member.id]
+      );
+      // The session already completed → its points run is over; credit this
+      // member now, exactly like the hourly auto-complete job does.
+      if (b.session_status === 'completed' && Number(b.points_reward) > 0) {
+        try {
+          await points.awardPoints(b.member_id, b.points_reward, 'session_checkin', `Session attendance: ${b.session_name}`, b.session_id);
+          await query('UPDATE bookings SET points_awarded=$1 WHERE id=$2 AND points_awarded=0', [b.points_reward, id]);
+        } catch (e) { console.warn('[checkin-approval] points:', e.message); }
+      }
+      approved++;
+    }
+    res.json({ approved, skipped });
+  } catch (err) { next(err); }
+});
+
+router.post('/admin/checkin-approvals/reject', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const ids = _bookingIds(req.body);
+    if (!ids.length) return res.status(400).json({ error: 'booking_ids required' });
+    const note = String((req.body && req.body.note) || '').trim().slice(0, 300) || null;
+    const { rowCount } = await query(
+      `UPDATE bookings SET checkin_review='rejected', checkin_reviewed_at=NOW(), checkin_reviewed_by=$2,
+              checkin_review_note=$3
+        WHERE id = ANY($1::uuid[]) AND checkin_review='pending'`,
+      [ids, req.member.id, note]
+    );
+    res.json({ rejected: rowCount });
   } catch (err) { next(err); }
 });
 
@@ -904,40 +1073,40 @@ router.post('/:id/checkin', authenticate, requireScanner, async (req, res, next)
       });
     }
 
-    // Update streak first so we can snapshot it on the booking
-    let streakNow = 0;
-    try {
-      const r = await streak.recordCheckin(booking.member_id, new Date());
-      streakNow = r.current;
-    } catch (e) {
-      // Streak failure must not block check-in
-      console.warn('[streak] recordCheckin failed:', e.message);
+    // Second level of approval (founder 2026-10-16): a MANUAL check-in by an
+    // ambassador or coach — picking the member from the list instead of
+    // scanning their QR or typing their booking code — waits for an admin.
+    // Nothing counts yet (no attendance, streak, points or badges); the
+    // admin approves or rejects it in Admin → Check-in approvals. Admins'
+    // own manual check-ins and every QR / code check-in stay instant.
+    if (!qr_token && member_id && !req.member.is_admin) {
+      if (booking.checkin_review === 'pending') {
+        return res.status(409).json({
+          error: `${booking.first_name}'s check-in is already waiting for an admin to approve it`,
+          code: 'CHECKIN_PENDING',
+          member: { first_name: booking.first_name, last_name: booking.last_name },
+        });
+      }
+      try {
+        await query(
+          `UPDATE bookings
+              SET checkin_review='pending', checkin_requested_at=NOW(), checkin_requested_by=$1,
+                  checkin_reviewed_at=NULL, checkin_reviewed_by=NULL, checkin_review_note=NULL
+            WHERE id=$2`,
+          [req.member.id, booking.id]
+        );
+        return res.status(202).json({
+          success: true,
+          pending: true,
+          message: 'Sent to an admin for approval',
+          member: { first_name: booking.first_name, last_name: booking.last_name, member_number: booking.member_number },
+        });
+      } catch (e) {
+        if (e.code !== '42703') throw e;   // review columns not added yet (boot race) → old behaviour
+      }
     }
 
-    await query(
-      `UPDATE bookings
-       SET status='attended', checked_in_at=NOW(),
-           checked_in_by=$1, check_in_method=$2,
-           streak_at_checkin=$3
-       WHERE id=$4`,
-      [req.member.id, method, streakNow || null, booking.id]
-    );
-
-    // Maintain members.last_session_at — drives the 30-day inactivity rule (#21).
-    await query(
-      'UPDATE members SET last_session_at = NOW() WHERE id = $1',
-      [booking.member_id]
-    ).catch(function(e){ console.warn('[checkin] last_session_at update:', e.message); });
-
-    // Theme 4 / #24 — reward the referrer (if any) for this check-in.
-    // 1 pt for free members, 2 pts for premium. Fire-and-forget so a
-    // referral failure never fails the check-in for the ambassador.
-    referrals.rewardReferrerForCheckin(booking.member_id, req.params.id)
-      .catch(function(){});
-
-    // Theme 5c / #12 — evaluate achievements (session-count + streak
-    // milestones) for this member. Idempotent + fire-and-forget.
-    achievements.checkAndAward(booking.member_id).catch(function(){});
+    const streakNow = await _finalizeCheckin(booking, { by: req.member.id, method });
 
     res.json({
       success: true,

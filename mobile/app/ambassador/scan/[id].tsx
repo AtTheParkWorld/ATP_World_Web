@@ -15,6 +15,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { CameraView, Camera, type BarcodeScanningResult } from 'expo-camera';
 import { getAttendance, checkInMember, type AttendanceRow } from '@/lib/api/ambassador';
 import { getSession } from '@/lib/api/sessions';
+import { useAuthStore } from '@/lib/stores/auth.store';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
 
@@ -22,6 +23,9 @@ export default function ScanScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const sessionId = String(id || '');
   const qc = useQueryClient();
+  // Manual check-ins by ambassadors/coaches wait for an admin (founder
+  // 2026-10-16); an admin's own manual check-in is instant.
+  const isAdmin = !!(useAuthStore((s) => s.member) as any)?.is_admin;
 
   const [permission, setPermission] = useState<boolean | null>(null);
   const scanLockRef = useRef(false);
@@ -48,12 +52,20 @@ export default function ScanScreen() {
       checkInMember(sessionId, payload),
     onSuccess: (res) => {
       const name = `${res.member.first_name} ${res.member.last_name}`;
-      const pts  = res.points_awarded ? ` · +${res.points_awarded} pts` : '';
-      const dup  = res.already_checked_in ? ' (already checked in)' : '';
-      Alert.alert('✓ Checked in', `${name}${pts}${dup}`);
+      if (res.pending) {
+        Alert.alert('⏳ Sent for approval', `${name}'s manual check-in is waiting for an admin to approve it. It counts once approved.`);
+      } else {
+        const pts  = res.points_awarded ? ` · +${res.points_awarded} pts` : '';
+        const dup  = res.already_checked_in ? ' (already checked in)' : '';
+        Alert.alert('✓ Checked in', `${name}${pts}${dup}`);
+      }
       qc.invalidateQueries({ queryKey: ['attendance', sessionId] });
     },
     onError: (err: any) => {
+      if (err?.code === 'CHECKIN_PENDING') {
+        Alert.alert('⏳ Waiting for approval', err.message);
+        return;
+      }
       Alert.alert('Check-in failed', err?.message || 'Try again.');
     },
   });
@@ -81,7 +93,9 @@ export default function ScanScreen() {
   function manualCheckIn(row: AttendanceRow) {
     Alert.alert(
       `Check in ${row.first_name} ${row.last_name}?`,
-      'Use only when their QR isn\'t scanning (e.g., phone battery died).',
+      isAdmin
+        ? 'Use only when their QR isn\'t scanning (e.g., phone battery died).'
+        : 'Use only when their QR isn\'t scanning (e.g., phone battery died). Manual check-ins are sent to an admin for approval before they count.',
       [
         { text: 'Cancel', style: 'cancel' },
         { text: 'Check in', onPress: () => checkinMu.mutate({ member_id: row.member_id, method: 'manual' }) },
@@ -92,6 +106,7 @@ export default function ScanScreen() {
   const session = sessionQ.data;
   const roster  = rosterQ.data || [];
   const checkedIn = roster.filter((r) => r.checked_in_at).length;
+  const pendingCount = roster.filter((r) => !r.checked_in_at && r.checkin_review === 'pending').length;
 
   return (
     <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>
@@ -104,7 +119,7 @@ export default function ScanScreen() {
             {session?.name || 'Session'}
           </Text>
           <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs">
-            {checkedIn} / {roster.length} checked in
+            {checkedIn} / {roster.length} checked in{pendingCount ? ` · ${pendingCount} pending approval` : ''}
           </Text>
         </View>
       </View>
@@ -144,10 +159,12 @@ export default function ScanScreen() {
         {roster.map((row) => {
           const tColor = tribeColor(row.tribe_slug);
           const isCheckedIn = !!row.checked_in_at;
+          const isPending  = !isCheckedIn && row.checkin_review === 'pending';
+          const isRejected = !isCheckedIn && row.checkin_review === 'rejected';
           return (
             <Pressable
               key={String(row.booking_id)}
-              onLongPress={() => !isCheckedIn && manualCheckIn(row)}
+              onLongPress={() => !isCheckedIn && !isPending && manualCheckIn(row)}
               className={`mx-5 mb-2 rounded-atp p-3 flex-row items-center gap-3 ${isCheckedIn ? 'bg-atp-green/10 border border-atp-green/40' : 'bg-atp-dark border border-white/5'}`}
             >
               <View
@@ -169,6 +186,14 @@ export default function ScanScreen() {
               {isCheckedIn ? (
                 <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs uppercase tracking-widest">
                   ✓
+                </Text>
+              ) : isPending ? (
+                <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.warning }} className="text-[10px] uppercase tracking-widest">
+                  ⏳ Pending
+                </Text>
+              ) : isRejected ? (
+                <Text style={{ fontFamily: fontFamily.body, color: colors.danger }} className="text-[10px] text-right">
+                  Rejected · long-press{'\n'}to request again
                 </Text>
               ) : (
                 <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-[10px]">

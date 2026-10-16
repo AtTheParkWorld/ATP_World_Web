@@ -846,6 +846,18 @@ async function _ensureBootSchema() {
   await require('./services/welcomeMessage').ensureWelcomeFlag()
     .catch((e) => console.warn('[boot] messages.is_welcome:', e.message));
 
+  // Manual check-in approvals (founder 2026-10-16): an ambassador's or
+  // coach's manual check-in waits on the booking until an admin approves it.
+  for (const col of [
+    'checkin_review VARCHAR(10)', 'checkin_requested_at TIMESTAMPTZ', 'checkin_requested_by UUID',
+    'checkin_reviewed_at TIMESTAMPTZ', 'checkin_reviewed_by UUID', 'checkin_review_note TEXT',
+  ]) {
+    await query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS ${col}`)
+      .catch((e) => console.warn('[boot] bookings.' + col.split(' ')[0] + ':', e.message));
+  }
+  await query(`CREATE INDEX IF NOT EXISTS idx_bookings_checkin_pending ON bookings (checkin_requested_at) WHERE checkin_review = 'pending'`)
+    .catch((e) => console.warn('[boot] idx_bookings_checkin_pending:', e.message));
+
   // Residence (founder 2026-09-11): "where I live" is demographic and
   // must accept ANY country — distinct from members.country_id, which
   // is an FK to the OPERATING countries table (UAE/Oman) that drives
