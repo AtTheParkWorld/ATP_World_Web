@@ -77,6 +77,8 @@ function selectCategory(cat) {
   document.querySelector('[data-cat="'+cat+'"]').classList.add('active');
   document.getElementById('teamSportsSection').style.display = cat === 'team_sports' ? 'block' : 'none';
   if (cat === 'team_sports') buildCourtsUI();
+  var hint = document.getElementById('hub30Hint');
+  if (hint) hint.style.display = cat === '30x30_hub' ? 'block' : 'none';
 }
 
 // Renders one start/end time row per checked day, plus a "Same time
@@ -1088,8 +1090,8 @@ async function loadSessionsList() {
       return;
     }
 
-    var catIcon = {regular:'🏃',social:'🎉',team_sports:'🏆'};
-    var catLabel = {regular:'Regular',social:'Social',team_sports:'Team Sports'};
+    var catIcon = {regular:'🏃',social:'🎉',team_sports:'🏆','30x30_hub':'🔥'};
+    var catLabel = {regular:'Regular',social:'Social',team_sports:'Team Sports','30x30_hub':'30x30 Hub'};
 
     tbody.innerHTML = sessions.forEach(function(s){ SESSIONS_CACHE[s.id]=s; });
     tbody.innerHTML = sessions.map(function(s) {

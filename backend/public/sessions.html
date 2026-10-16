@@ -680,7 +680,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-  <script src="/pink-october.js?v=1"></script>
+  <script src="/pink-october.js?v=2"></script>
 </head>
 <body>
 
@@ -929,23 +929,22 @@ document.querySelectorAll('.nav-links a').forEach(function(a){
 var currentTribe = 'all', currentDay = 'all', currentActivity = 'all', currentCity = 'all';
 // Event tab (founder 2026-10-16): "DIC 30x30 Hub" sits in the tribe row but
 // is NOT a tribe — members can't pick it, points/leaderboards don't change.
-// It shows Dubai Internet City sessions during the hub (31 Oct – 29 Nov) and
-// hides itself afterwards. DIC's page links to atthepark.world/30x30, which
-// redirects here with ?venue=dic so visitors land with the tab selected.
+// It shows the sessions created in admin with the "30x30 Hub" session
+// category (founder 2026-10-16) and hides itself after the hub (31 Oct –
+// 29 Nov). DIC's page links to atthepark.world/30x30, which redirects here
+// with ?venue=dic so visitors land with the tab selected.
 var VENUES = {
-  dic: { match: /internet city/i,
-         from: Date.parse('2026-10-31T00:00:00+04:00'),
-         to:   Date.parse('2026-11-30T00:00:00+04:00') }
+  dic: { category: '30x30_hub',
+         to: Date.parse('2026-11-30T00:00:00+04:00') }
 };
 function _eventLive(v) { return !!VENUES[v] && Date.now() < VENUES[v].to; }
 var currentVenue = (function(){
   try { var v = (new URLSearchParams(window.location.search).get('venue') || '').toLowerCase(); return _eventLive(v) ? v : ''; }
   catch (e) { return ''; }
 })();
-function _venueOk(location, at) {
+function _venueOk(category) {
   if (!currentVenue) return true;
-  var V = VENUES[currentVenue], t = Date.parse(at || '');
-  return V.match.test(String(location || '')) && t >= V.from && t < V.to;
+  return String(category || '') === VENUES[currentVenue].category;
 }
 function _setVenueParam(v) {
   try {
@@ -1097,7 +1096,7 @@ function _sessionMatchesFilters(s) {
     && (currentDay      === 'all' || dayName === currentDay)
     && (currentActivity === 'all' || actKey === String(currentActivity))
     && (currentCity     === 'all' || String(s.city_id || '') === String(currentCity))
-    && _venueOk(s.location, s.scheduled_at);
+    && _venueOk(s.session_category);
 }
 
 function applyFilters() {
@@ -1113,7 +1112,7 @@ function applyFilters() {
            && (currentDay      === 'all' || c.dataset.day      === currentDay)
            && (currentActivity === 'all' || c.dataset.activity === currentActivity)
            && (currentCity     === 'all' || c.dataset.city     === currentCity)
-           && _venueOk(c.dataset.location, c.dataset.at);
+           && _venueOk(c.dataset.category);
     c.style.display = ok ? '' : 'none';
     if(ok) count++;
   });
@@ -2755,8 +2754,7 @@ function renderSessionsGrid(sessions) {
     article.setAttribute('data-day', dayName);
     article.setAttribute('data-activity', s.activity_slug || s.activity_id || '');
     article.setAttribute('data-city', s.city_id || '');
-    article.setAttribute('data-location', s.location || '');
-    article.setAttribute('data-at', s.scheduled_at || '');
+    article.setAttribute('data-category', s.session_category || 'regular');
     article.setAttribute('data-session-id', s.id);
     if (s.intro_video_url) article.setAttribute('data-intro-video', s.intro_video_url);
     // Card UI shows only what the visitor needs to decide whether to open
@@ -3027,6 +3025,6 @@ async function loadSessions() {
 
 </script>
 
-<script src="/hub30x30.js?v=3"></script>
+<script src="/hub30x30.js?v=4"></script>
 </body>
 </html>

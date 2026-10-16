@@ -2,9 +2,11 @@
  *
  * When the "DIC 30x30 Hub" tab is on (currentVenue === 'dic'), the normal
  * list/calendar is hidden and this panel shows the hub in the 30x30 landing
- * page's design: weekly Sat–Fri grid (accordion on phones), category chips,
+ * page's design: weekly Sat–Fri grid (accordion on phones), activity chips,
  * week tabs, and the 30x30 booking card. Data and booking are the page's
- * own: sessions come from CAL_REAL_SESSIONS (same upcoming list), booking is
+ * own: sessions come from CAL_REAL_SESSIONS (same upcoming list) — the ones
+ * created in admin with the "30x30 Hub" session category — and the chips are
+ * the Activities picked on those sessions (Running, Yoga, Zumba…). Booking is
  * POST /api/bookings, sign-in goes through requireAuth() (in-page sign-up,
  * then the card reopens).
  */
@@ -13,14 +15,7 @@
 
   var HUB_START = Date.UTC(2026, 9, 30, 20);          // 31 Oct 00:00 Dubai
   var WEEKS = [[1, 7], [8, 14], [15, 21], [22, 28], [29, 30]];
-  var CAT = { all: 'All', run: 'Running', yoga: 'Yoga & Mindfulness', strength: 'Strength & Conditioning', dance: 'Dance', special: 'Special Event' };
-  var DESC = {
-    run: 'A coached group run around Dubai Internet City — every pace welcome.',
-    yoga: 'A calm, coached session to move, stretch and reset. Mats recommended.',
-    strength: 'A coached strength and conditioning session for every level.',
-    dance: 'High-energy dance fitness with music up and the whole community.',
-    special: 'A special 30x30 community moment at the hub.'
-  };
+  var DESC = 'A free coached session at the 30x30 Fitness Hub, Dubai Internet City Amphitheatre — every level welcome.';
   var DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   var DOWL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -34,14 +29,13 @@
   function dayDate(i) { return new Date(Date.UTC(2026, 9, 30 + i)); }
   function hhmm(iso) { var d = dubai(iso); return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); }
   function t12(t) { var p = t.split(':'), h = +p[0]; return (h % 12 || 12) + ':' + p[1] + ' ' + (h < 12 ? 'AM' : 'PM'); }
-  function catOf(s) {
-    var t = ((s.name || '') + ' ' + (s.activity_name || '') + ' ' + (s.activity_slug || '')).toLowerCase();
-    if (/opening night|festival|together|finale/.test(t)) return 'special';
-    if (/run/.test(t)) return 'run';
-    if (/zumba|latin|pound|danc/.test(t)) return 'dance';
-    if (/yoga|meditat|breath|sound|stretch|tai chi|recover|mindful|pilates/.test(t)) return 'yoga';
-    return 'strength';
+  // Filter chip = the Activity chosen when the session was created in admin.
+  function actOf(s) {
+    var key = String(s.activity_slug || s.activity_id || '');
+    return key ? { key: key, name: s.activity_name || 'Session', icon: s.activity_icon || '' } : { key: 'other', name: 'Other', icon: '' };
   }
+  // Highlight style only (the gold "special" button), from the session name.
+  function isSpecial(s) { return /opening night|festival|finale|special event|celebration/i.test(s.name || ''); }
   function token() { try { return localStorage.getItem('atp_token') || ''; } catch (e) { return ''; } }
   function api(path, opts) {
     opts = opts || {};
@@ -61,8 +55,8 @@
   // ── data ───────────────────────────────────────────────
   function hubSessions() {
     var list = (typeof CAL_REAL_SESSIONS !== 'undefined' && CAL_REAL_SESSIONS) || [];
-    return list.filter(function (s) { return typeof _venueOk === 'function' ? _venueOk(s.location, s.scheduled_at) : false; })
-      .map(function (s) { return { s: s, day: hubDay(s.scheduled_at), t: hhmm(s.scheduled_at), cat: catOf(s) }; })
+    return list.filter(function (s) { return typeof _venueOk === 'function' ? _venueOk(s.session_category) : false; })
+      .map(function (s) { var a = actOf(s); return { s: s, day: hubDay(s.scheduled_at), t: hhmm(s.scheduled_at), cat: a.key, act: a, sp: isSpecial(s) }; })
       .filter(function (x) { return x.day >= 1 && x.day <= 30; })
       .sort(function (a, b) { return a.s.scheduled_at < b.s.scheduled_at ? -1 : 1; });
   }
@@ -86,7 +80,7 @@
   }
   function sesBtn(x, mobile) {
     var s = x.s, cap = +s.capacity || 0, bk = +s.registrations_count || 0, full = cap && bk >= cap;
-    var cls = 'h30-ses' + (x.cat === 'special' ? ' sp' : '') + (full ? ' full' : '') + (st.mine[s.id] ? ' mine' : '');
+    var cls = 'h30-ses' + (x.sp ? ' sp' : '') + (full ? ' full' : '') + (st.mine[s.id] ? ' mine' : '');
     var sub = full ? 'Full · join waitlist' : '';
     if (mobile) return '<button type="button" class="' + cls + '" data-h30="' + esc(s.id) + '"><strong>' + t12(x.t) + '</strong><span>' + esc(s.name) + (sub ? '<small>' + sub + '</small>' : '') + '</span></button>';
     return '<button type="button" class="' + cls + '" data-h30="' + esc(s.id) + '">' + esc(s.name) + (sub ? '<small>' + sub + '</small>' : '') + '</button>';
@@ -95,6 +89,10 @@
     var p = panel(); if (!p) return;
     var all = hubSessions();
     if (st.week === null) st.week = defaultWeek(all);
+    // Chips: one per activity on the hub's sessions, A–Z, "Other" last.
+    var acts = {}; all.forEach(function (x) { if (!acts[x.cat]) acts[x.cat] = x.act; });
+    var chips = Object.keys(acts).sort(function (p, q) { return p === 'other' ? 1 : q === 'other' ? -1 : acts[p].name.localeCompare(acts[q].name); });
+    if (st.cat !== 'all' && !acts[st.cat]) st.cat = 'all';
     var items = all.filter(function (x) { return st.cat === 'all' || x.cat === st.cat; });
     var w = WEEKS[st.week], days = [], i;
     for (i = w[0]; i <= w[1]; i++) days.push(i);
@@ -104,14 +102,17 @@
     var h = '<div class="h30-top"><div class="h30-eyebrow"><small>Dubai Fitness Challenge</small><h2>30x30 Fitness Hub Schedule</h2>' +
       '<p>31 Oct – 29 Nov · Dubai Internet City Amphitheatre · Free. Tap a session to book your spot.</p></div>' +
       '<div class="h30-logos"><img src="/img/30x30/logo-dic.png" alt="Dubai Internet City"><i></i><img src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub"></div></div>';
-    h += '<div class="h30-chips">' + Object.keys(CAT).map(function (k) { return '<button type="button" class="h30-chip' + (st.cat === k ? ' on' : '') + '" data-h30cat="' + k + '">' + CAT[k] + '</button>'; }).join('') + '</div>';
+    if (chips.length > 1) h += '<div class="h30-chips">' + ['all'].concat(chips).map(function (k) {
+      var label = k === 'all' ? 'All' : (acts[k].icon ? acts[k].icon + ' ' : '') + acts[k].name;
+      return '<button type="button" class="h30-chip' + (st.cat === k ? ' on' : '') + '" data-h30cat="' + esc(k) + '">' + esc(label) + '</button>';
+    }).join('') + '</div>';
     h += '<div class="h30-wtabs">' + WEEKS.map(function (r, k) { return '<button type="button" class="h30-wtab' + (k === st.week ? ' on' : '') + '" data-h30week="' + k + '">Week ' + (k + 1) + '</button>'; }).join('') + '</div>';
     h += '<div class="h30-whead"><b>WEEK ' + (st.week + 1) + '</b><span>' + a.getUTCDate() + ' ' + MONL[a.getUTCMonth()] + (w[0] === w[1] ? '' : ' – ' + b.getUTCDate() + ' ' + MONL[b.getUTCMonth()]) + '</span></div>';
 
     var inWeek = items.filter(function (x) { return x.day >= w[0] && x.day <= w[1]; });
     if (!inWeek.length) {
       h += '<div class="h30-empty">' + (!loaded ? '<b>Loading the schedule…</b>' :
-        all.length ? '<b>No sessions this week' + (st.cat !== 'all' ? ' in ' + CAT[st.cat] : '') + '</b>Try another week or category.' :
+        all.length ? '<b>No ' + (st.cat !== 'all' ? esc(acts[st.cat].name) + ' ' : '') + 'sessions this week</b>Try another week' + (st.cat !== 'all' ? ' or activity' : '') + '.' :
         '<b>30x30 sessions are coming soon</b>The hub runs 31 Oct – 29 Nov. Sessions open for booking here very soon.') + '</div>';
     } else {
       var times = {}; inWeek.forEach(function (x) { times[x.t] = 1; });
@@ -174,14 +175,14 @@
     var s = x.s, d = dayDate(x.day), free = !(+s.price > 0 || +s.price_points > 0);
     var cap = +s.capacity || 0, bk = +s.registrations_count || 0;
     var m = modal();
-    document.getElementById('h30Top').innerHTML = '<small>' + CAT[x.cat] + ' · 30x30 Fitness Hub</small><h3 id="h30Title">' + esc(s.name) + '</h3><button type="button" class="h30-x" data-h30close aria-label="Close">✕</button>';
+    document.getElementById('h30Top').innerHTML = '<small>' + esc(x.act.key === 'other' ? '30x30 Fitness Hub' : x.act.name + ' · 30x30 Fitness Hub') + '</small><h3 id="h30Title">' + esc(s.name) + '</h3><button type="button" class="h30-x" data-h30close aria-label="Close">✕</button>';
     m.setAttribute('aria-labelledby', 'h30Title');
     var venue = s.location_maps_url ? '<a href="' + esc(s.location_maps_url) + '" target="_blank" rel="noopener">' + esc(s.location) + ' ↗</a>' : esc(s.location || 'DIC Amphitheatre');
     document.getElementById('h30Body').innerHTML =
       '<div class="h30-info"><div><h5>Date</h5><p>' + DOWL[d.getUTCDay()] + ', ' + d.getUTCDate() + ' ' + MONL[d.getUTCMonth()] + '</p></div>' +
       '<div><h5>Time</h5><p>' + t12(x.t) + (s.duration_mins ? ' · ' + s.duration_mins + ' min' : '') + '</p></div>' +
       '<div><h5>Venue</h5><p>' + venue + '</p></div><div><h5>Price</h5><p>' + (free ? 'Free' : (+s.price > 0 ? esc((s.currency_code || 'AED').toUpperCase()) + ' ' + Number(s.price).toFixed(0) : +s.price_points + ' pts')) + '</p></div></div>' +
-      '<p class="h30-desc">' + esc(s.description || DESC[x.cat]) + '</p>' +
+      '<p class="h30-desc">' + esc(s.description || DESC) + '</p>' +
       (cap ? '<div class="h30-cap"><div class="h30-bar"><i style="width:' + Math.min(100, Math.round(bk / cap * 100)) + '%"></i></div><p><span>' + bk + ' / ' + cap + ' booked' + (+s.waitlist_count ? ' · ' + s.waitlist_count + ' on waitlist' : '') + '</span><span>' + (bk >= cap ? 'Full — join the waitlist' : (cap - bk) + ' spots left') + '</span></p></div>' : '') +
       '<div class="h30-inv"><button type="button" class="wa" data-h30wa="' + esc(s.id) + '">Invite on WhatsApp</button><button type="button" data-h30copy="' + esc(s.id) + '">Copy invite link</button></div>' +
       '<div id="h30Act"></div>';

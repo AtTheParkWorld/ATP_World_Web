@@ -183,7 +183,7 @@ async function loadAnalytics() {
 
     // Session categories
     var cats = overview.activity_breakdown || [];
-    var catNames = {regular:'🏃 Regular',social:'🎉 Social',team_sports:'🏆 Team Sports'};
+    var catNames = {regular:'🏃 Regular',social:'🎉 Social',team_sports:'🏆 Team Sports','30x30_hub':'🔥 30x30 Hub'};
     var maxCat = Math.max.apply(null, cats.map(function(c){return c.count;})) || 1;
     document.getElementById('sessionCategoryChart').innerHTML = cats.map(function(c) {
       var pct = Math.round((c.count/maxCat)*100);
