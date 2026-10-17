@@ -701,6 +701,10 @@ app.get(['/30x30', '/30x30/'], (req, res) => {
   qs.set('venue', 'dic');
   res.redirect(302, '/sessions.html?' + qs.toString());
 });
+// Our own 30x30 Fitness Hub landing page (founder 2026-10-17): schedule from
+// the '30x30 Hub' session category with real booking, challenge rules,
+// charity story. /30x30 above stays DIC's link to the calendar.
+app.get(['/30x30-hub', '/30x30-hub/'], (req, res) => res.sendFile(path.join(__dirname, '../public/30x30-hub.html')));
 app.get('/appeal',   (req, res) => res.sendFile(path.join(__dirname, '../public/appeal.html')));
 app.get('/guidelines', (req, res) => res.redirect(302, '/legal.html#terms'));
 // Combined legal page — privacy + terms + refund in one place, deep-linkable.

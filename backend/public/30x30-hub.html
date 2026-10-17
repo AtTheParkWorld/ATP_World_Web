@@ -1,0 +1,784 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Dubai Internet City 30x30 Fitness Hub | At The Park</title>
+<meta name="description" content="Free daily fitness sessions at the Dubai Internet City Amphitheatre, 31 Oct – 29 Nov 2026, part of Dubai Fitness Challenge. Book your spot with At The Park.">
+<link rel="canonical" href="https://atthepark.world/30x30-hub">
+<meta property="og:title" content="Dubai Internet City 30x30 Fitness Hub">
+<meta property="og:description" content="31 Oct – 29 Nov · DIC Amphitheatre · Free. Running, yoga, strength, dance and the 30x30 Challenge Series.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://atthepark.world/30x30-hub">
+<meta property="og:image" content="https://atthepark.world/img/30x30/dic-campus.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png"><link rel="icon" href="/favicon.ico"><link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<style>
+:root{
+  --ink:#222; --ink2:#414042; --mu:#6f6f6f; --line:#e6e6e6; --bg:#fff; --grey:#f7f7f7; --grey2:#f8f8f8;
+  --sand:#c9ba9e; --sand-l:#f2eee6; --sand-d:#a8987a; --red:#f90000; --red-d:#d40000; --black:#111;
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{font-family:var(--font);color:var(--ink2);background:var(--bg);line-height:1.6;font-size:16px;overflow-x:hidden}
+body.lock{overflow:hidden}
+a{color:inherit}
+img{display:block;max-width:100%}
+button,input{font:inherit;color:inherit}
+button{background:none;border:0;cursor:pointer}
+.wrap{max-width:1280px;margin:0 auto;padding:0 80px}
+@media(max-width:900px){.wrap{padding:0 20px}}
+h1,h2,h3,h4{color:var(--ink);font-weight:700;line-height:1.15}
+.mock-unused{background:#fff7d6;color:#5b4a00;font-size:12px;font-weight:600;text-align:center;padding:6px 16px;border-bottom:1px solid #f0e2a8}
+.sample{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#8a6d00;background:#fff7d6;border:1px dashed #e0c860;border-radius:4px;padding:1px 6px;vertical-align:middle;margin-left:6px;white-space:nowrap}
+
+/* buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:12px 22px;border-radius:5px;font-size:15px;font-weight:600;text-decoration:none;transition:background .15s,border-color .15s,color .15s;white-space:nowrap}
+.btn-red{background:var(--red);color:#fff}
+.btn-red:hover{background:var(--red-d)}
+.btn-line{border:1px solid var(--ink);color:var(--ink);background:#fff}
+.btn-line:hover{background:var(--ink);color:#fff}
+.btn-sand{background:var(--sand);color:#000}
+.btn-sand:hover{background:var(--sand-d)}
+.btn-done{background:#fff;color:var(--ink);border:1px solid var(--sand)}
+.btn-block{width:100%}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+
+/* header */
+.hdr{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.97);border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}
+.hdr-in{display:flex;align-items:center;justify-content:space-between;gap:24px;height:76px}
+.logos{display:flex;align-items:center;gap:18px}
+.logos img.dic{height:40px}
+.logos img.atp{height:20px}
+.logos img.hub{height:40px}
+.logos i{width:1px;height:34px;background:var(--line)}
+.nav{display:flex;gap:26px;font-size:15px}
+.nav a{text-decoration:none;color:var(--ink2)}
+.nav a:hover{color:var(--red)}
+@media(max-width:1100px){.nav{display:none}}
+@media(max-width:600px){.logos img.dic{height:32px}.logos img.atp{height:15px}.logos img.hub{height:32px}.logos{gap:10px}.hdr .btn{display:none}}
+
+/* hero */
+.hero{position:relative;height:min(78vh,640px);min-height:420px;overflow:hidden}
+.hero img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 40%}
+.hero::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.18) 0%,rgba(0,0,0,.30) 45%,rgba(255,255,255,0) 75%,#fff 100%)}
+.hero-t{position:absolute;z-index:1;left:0;right:0;top:50%;transform:translateY(-62%)}
+.hero h1{color:#fff;font-size:clamp(44px,7vw,104px);letter-spacing:-.02em;line-height:1;text-shadow:0 2px 30px rgba(0,0,0,.25);max-width:1100px}
+.hero p{color:#fff;font-size:18px;margin-top:18px;font-weight:500;text-shadow:0 1px 12px rgba(0,0,0,.35)}
+
+/* layout with sidebar */
+.main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:64px;padding-top:56px;padding-bottom:40px}
+@media(max-width:1000px){.main{grid-template-columns:1fr;gap:36px}}
+.side{position:relative}
+.side-in{position:sticky;top:100px;display:flex;flex-direction:column;gap:22px}
+.side h4{font-size:20px;margin-bottom:8px}
+.side p{font-size:16px;color:var(--ink2)}
+.side .hublogo{width:100%;max-width:240px;margin:0}
+.side .cd{font-size:13px;color:var(--mu)}
+.side .cd b{color:var(--ink);font-variant-numeric:tabular-nums}
+.side .sync{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--mu);padding:12px 14px;background:var(--grey);border-left:3px solid var(--sand)}
+.side .sync b{color:var(--ink)}
+@media(max-width:1000px){.side-in{position:static;display:grid;grid-template-columns:1fr 1fr;gap:18px}.side .hublogo{display:none}.side .ctas{grid-column:1/-1}}
+@media(max-width:520px){.side-in{grid-template-columns:1fr}}
+
+.about h2{font-size:40px;margin-bottom:28px}
+.about h3{font-size:28px;margin-bottom:20px;color:var(--ink2)}
+.about p{margin-bottom:18px;font-size:16px}
+.steps{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:30px;counter-reset:s}
+@media(max-width:700px){.steps{grid-template-columns:1fr}}
+.steps li{padding:18px 18px 16px;background:var(--grey);border-left:3px solid var(--sand);font-size:15px}
+.steps li::before{counter-increment:s;content:'0' counter(s);display:block;font-size:13px;font-weight:700;color:var(--sand-d);letter-spacing:.08em;margin-bottom:6px}
+.steps li b{display:block;color:var(--ink);font-size:17px;margin-bottom:4px}
+
+/* section heads (DIC style) */
+.sec{padding:56px 0}
+.eyebrow{border-left:4px solid var(--red);padding-left:16px;margin-bottom:26px}
+.eyebrow small{display:block;font-size:13px;font-weight:700;letter-spacing:.14em;color:var(--red);text-transform:uppercase}
+.eyebrow h2{font-size:32px;margin-top:4px}
+.eyebrow p{margin-top:8px;color:var(--mu);font-size:15px;max-width:720px}
+
+/* schedule */
+.chips{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.chip{padding:8px 16px;border:1px solid var(--line);border-radius:999px;font-size:14px;font-weight:600;color:var(--ink);background:#fff;transition:all .15s}
+.chip:hover{border-color:var(--sand)}
+.chip.on{background:var(--sand);border-color:var(--sand);color:#000}
+.wtabs{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);margin-bottom:16px}
+.wtab{padding:13px 6px;font-size:14px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8a8a8a;border-left:1px solid var(--line);text-align:center}
+.wtab:first-child{border-left:0}
+.wtab.on{background:var(--sand);color:#000}
+@media(max-width:600px){.wtab{font-size:11px;letter-spacing:.06em;padding:11px 2px}}
+.whead{display:flex;justify-content:space-between;align-items:center;background:var(--sand);padding:16px 20px;color:#000}
+.whead b{font-size:21px;letter-spacing:.02em}
+.whead span{font-size:16px;font-weight:500}
+.grid{width:100%;border-collapse:collapse;table-layout:fixed}
+.grid th{background:#1d1d1d;color:var(--sand);padding:12px 4px;font-size:12px;letter-spacing:.14em;text-transform:uppercase;font-weight:700}
+.grid th b{display:block;color:#fff;font-size:18px;letter-spacing:0;text-transform:none;margin-top:2px}
+.grid th.time{width:96px}
+.grid td{border:1px solid var(--line);padding:6px;vertical-align:middle;height:72px}
+.grid td.time{text-align:center;background:#fff}
+.tchip{display:inline-block;padding:3px 10px;background:var(--grey2);border-radius:999px;font-size:13px;font-weight:700;color:var(--ink);background:#e9e2d4}
+.ses{display:block;width:100%;text-align:left;background:var(--grey2);border-left:3px solid var(--sand);padding:7px 8px;font-size:13px;font-weight:600;color:var(--ink);line-height:1.25;transition:background .15s;margin:3px 0}
+.ses:hover{background:var(--sand-l)}
+.ses small{display:block;font-size:11px;font-weight:500;color:var(--mu);margin-top:2px}
+.ses.ch{border-left-color:var(--red);background:#fff5f5}
+.ses.ch:hover{background:#ffeaea}
+.ses.sp{border-left-color:var(--ink);background:#f1f1f1}
+.ses.booked::after{content:' ✓';color:#1a8f4a}
+.grid tr.chrow td{background:#fffafa}
+.grid tr.chrow .tchip{background:#ffe3e3;color:var(--red-d)}
+.sched-desk{display:block}
+.sched-mob{display:none}
+@media(max-width:900px){.sched-desk{display:none}.sched-mob{display:block}}
+.mday{border:1px solid var(--line);border-top:0}
+.mday summary{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;font-weight:700;color:var(--ink)}
+.mday summary span{font-weight:500;color:var(--mu);font-size:14px}
+.mday summary::after{content:'+';font-size:20px;color:var(--sand-d);margin-left:10px}
+.mday[open] summary::after{content:'–'}
+.mday ul{list-style:none;padding:0 12px 12px}
+.mday li .ses{display:flex;gap:12px;align-items:center;font-size:14px;padding:10px 12px}
+.mday li .ses strong{flex:0 0 52px;color:var(--ink)}
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:14px;font-size:13px;color:var(--mu)}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.legend i{width:14px;height:14px;border-left:3px solid var(--sand);background:var(--grey2);display:inline-block}
+
+/* challenges */
+.ch-how{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border:1px solid var(--line);margin-bottom:24px}
+@media(max-width:800px){.ch-how{grid-template-columns:1fr 1fr}}
+.ch-how div{padding:16px 18px;border-left:1px solid var(--line)}
+.ch-how div:first-child{border-left:0}
+.ch-how small{display:block;font-size:12px;font-weight:700;letter-spacing:.1em;color:var(--sand-d);text-transform:uppercase}
+.ch-how b{display:block;color:var(--ink);font-size:17px;margin-top:4px}
+.ch-how p{font-size:14px;color:var(--mu);margin-top:2px}
+.chs{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
+@media(max-width:1100px){.chs{grid-template-columns:1fr 1fr}}
+@media(max-width:600px){.chs{grid-template-columns:1fr}}
+.chc{display:flex;flex-direction:column;border:1px solid var(--line);padding:22px 20px 20px;background:#fff;position:relative}
+.chc::before{content:'';position:absolute;left:-1px;top:-1px;right:-1px;height:4px;background:var(--sand)}
+.chc.reg::before{background:var(--red)}
+.chc .no{font-size:12px;font-weight:700;letter-spacing:.12em;color:var(--sand-d);text-transform:uppercase}
+.chc h3{font-size:24px;margin-top:6px}
+.chc .tl{font-size:13px;font-weight:700;letter-spacing:.06em;color:var(--red);text-transform:uppercase;margin-top:2px}
+.chc p{font-size:15px;margin-top:12px}
+.chc dl{margin:14px 0 18px;font-size:14px;flex:1}
+.chc dt{font-size:11px;font-weight:700;letter-spacing:.1em;color:var(--mu);text-transform:uppercase;margin-top:10px}
+.chc dd{color:var(--ink)}
+.chc .lnk{margin-top:10px;font-size:14px;text-align:center;color:var(--ink2)}
+
+/* results */
+.res-ctl{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.seg{display:inline-flex;border:1px solid var(--line)}
+.seg button{padding:8px 16px;font-size:14px;font-weight:600;color:var(--mu)}
+.seg button.on{background:var(--ink);color:#fff}
+.wkp{display:inline-flex;align-items:center;gap:10px;font-size:14px;font-weight:600;color:var(--ink)}
+.wkp button{width:34px;height:34px;border:1px solid var(--line);font-size:16px}
+.wkp button:disabled{opacity:.3}
+.pubnote{display:flex;gap:10px;align-items:center;font-size:13px;color:var(--mu);margin-bottom:14px}
+.pubnote b{color:var(--ink)}
+.pubnote .dot{width:8px;height:8px;border-radius:50%;background:#1a8f4a;flex:0 0 8px}
+.res{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:24px;align-items:start}
+@media(max-width:1000px){.res{grid-template-columns:1fr}}
+.rtab{width:100%;border-collapse:collapse}
+.rtab th{background:#1d1d1d;color:var(--sand);font-size:12px;letter-spacing:.12em;text-transform:uppercase;text-align:left;padding:12px 14px}
+.rtab td{padding:11px 14px;border-bottom:1px solid var(--line);font-size:15px;color:var(--ink)}
+.rtab td.rk{width:56px;font-weight:700;color:var(--mu)}
+.rtab tr.top td.rk{color:var(--ink)}
+.rtab td.v{text-align:right;font-weight:700;font-variant-numeric:tabular-nums;white-space:nowrap}
+.rtab td small{display:block;font-size:12px;color:var(--mu)}
+.rtab tr.cut td{padding:6px 14px;background:var(--sand-l);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--sand-d);text-align:center;border-bottom:1px solid var(--sand)}
+.rtab tr.gap td{text-align:center;color:#bbb;letter-spacing:.3em;padding:4px}
+.rtab tr.me td{background:#fff5f5}
+.rtab tr.me td.rk{color:var(--red)}
+.mine{border:1px solid var(--line);padding:22px}
+.mine h4{font-size:18px}
+.mine .big{font-size:44px;font-weight:700;color:var(--ink);margin-top:10px;font-variant-numeric:tabular-nums}
+.mine .st{display:inline-block;margin-top:8px;padding:4px 10px;font-size:13px;font-weight:700}
+.mine .st.ok{background:#e9f7ef;color:#1a8f4a}
+.mine .st.no{background:#fff3e0;color:#b25e00}
+.mine p{font-size:14px;color:var(--mu);margin-top:12px}
+.mine .row{display:flex;justify-content:space-between;border-top:1px solid var(--line);margin-top:14px;padding-top:12px;font-size:14px}
+.mine .row b{color:var(--ink)}
+
+/* panels */
+.panel{background:var(--grey);padding:48px 40px;display:grid;grid-template-columns:1fr 1.2fr;gap:40px;align-items:center}
+@media(max-width:900px){.panel{grid-template-columns:1fr;padding:32px 22px;gap:22px}}
+.panel h2{font-size:44px;letter-spacing:-.01em;line-height:1.05}
+.panel p{font-size:16px;color:var(--ink2)}
+.panel ul{list-style:none;display:flex;flex-direction:column;gap:12px;margin:0 0 22px}
+.panel li{padding-left:16px;border-left:3px solid var(--sand);font-size:15px}
+.panel li b{color:var(--ink)}
+.stores{display:flex;gap:10px;flex-wrap:wrap}
+.store{display:inline-flex;align-items:center;gap:10px;padding:9px 16px;border-radius:7px;background:#000;color:#fff;text-decoration:none}
+.store svg{width:20px;height:20px}
+.store small{display:block;font-size:10px;opacity:.8}
+.store b{display:block;font-size:15px;line-height:1.1}
+
+/* faq */
+.faq details{border-bottom:1px solid var(--line)}
+.faq summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;gap:20px;padding:18px 0;font-size:18px;font-weight:600;color:var(--ink)}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:'+';font-size:22px;color:var(--sand-d);line-height:1}
+.faq details[open] summary::after{content:'–'}
+.faq p{padding:0 40px 18px 0;font-size:16px}
+
+/* footer */
+.foot{background:#f7f7f7;margin-top:56px;padding:44px 0 0}
+.foot-in{display:flex;justify-content:space-between;align-items:flex-start;gap:30px;flex-wrap:wrap;padding-bottom:34px}
+.foot .logos img.dic{height:44px}
+.foot-links{display:flex;gap:56px;flex-wrap:wrap;font-size:14px}
+.foot-links h5{font-size:14px;color:var(--ink);padding-bottom:6px;border-bottom:2px solid var(--sand);display:inline-block;margin-bottom:12px}
+.foot-links a{display:block;text-decoration:none;color:var(--ink2);margin-bottom:8px}
+.foot-bar{background:#666;color:#fff;font-size:13px;padding:14px 0}
+.foot-bar .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+/* charity story */
+.cause-band{display:grid;grid-template-columns:1fr 1.1fr;background:var(--grey);min-height:560px}
+@media(max-width:900px){.cause-band{grid-template-columns:1fr}}
+.cb-img{position:relative;min-height:320px}
+.cb-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.cb-tag{position:absolute;left:20px;bottom:20px;background:#fff;color:var(--ink);font-size:13px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:8px 12px;border-left:4px solid var(--red)}
+.cb-txt{padding:48px 48px 44px}
+@media(max-width:900px){.cb-txt{padding:30px 22px}}
+.cb-txt>small{display:block;font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--red)}
+.cb-txt h2{font-size:clamp(34px,4vw,52px);letter-spacing:-.015em;line-height:1.02;margin:8px 0 16px}
+.cb-txt .lead{font-size:18px;color:var(--ink2);max-width:560px}
+.cb-txt .lead b{color:var(--ink)}
+.cb-steps{list-style:none;counter-reset:c;margin:24px 0;display:flex;flex-direction:column;gap:14px}
+.cb-steps li{position:relative;padding-left:48px;font-size:15px}
+.cb-steps li::before{counter-increment:c;content:counter(c);position:absolute;left:0;top:0;width:32px;height:32px;border-radius:50%;background:var(--sand);color:#000;font-weight:700;display:grid;place-items:center;font-size:15px}
+.cb-steps li b{display:block;color:var(--ink);font-size:17px}
+.pot{background:#fff;padding:18px 20px;margin-bottom:22px;border-left:4px solid #1a8f4a}
+.pot>div:first-child{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.pot .pl{flex-basis:100%;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
+.pot b{font-size:34px;color:var(--ink);font-variant-numeric:tabular-nums}
+.pot .ps{font-size:14px;color:var(--mu)}
+.pbar{height:6px;background:#e9efe9;margin:10px 0}
+.pbar i{display:block;height:100%;background:#1a8f4a}
+.pot p{font-size:13px;color:var(--mu)}
+.cb-cta{display:flex;gap:10px;flex-wrap:wrap}
+.chc.give::before{background:#1a8f4a}
+.chc.give .no{color:#1a8f4a}
+a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decoration:none;margin-bottom:10px}
+/* team sign-up */
+.seg2{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line)}
+.seg2 button{padding:11px;font-size:15px;font-weight:600;color:var(--mu)}
+.seg2 button.on{background:var(--ink);color:#fff}
+.tprev{margin-top:10px;padding:12px 14px;background:var(--sand-l);border-left:3px solid var(--sand-d)}
+.tprev b{display:block;color:var(--ink)}
+.tprev span{font-size:13px;color:var(--mu)}
+.givebox{background:#f2f8f3;padding:14px;border-left:3px solid #1a8f4a}
+.roster{border:1px solid var(--line);margin:14px auto;max-width:340px;text-align:left;font-size:14px}
+.roster>div{display:flex;gap:12px;padding:9px 14px;border-top:1px solid var(--line);color:var(--ink)}
+.roster>div span{color:var(--mu);width:14px}
+.roster>div.wait{color:#aaa;font-style:italic}
+.roster .rh{border-top:0;background:var(--sand-l);justify-content:space-between}
+.roster .rh span{width:auto;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.roster .rh b{color:var(--ink);letter-spacing:.06em}
+.thanks{font-size:14px;color:#1a8f4a;font-weight:600;margin-bottom:12px}
+.live{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--mu);margin:-12px 0 18px}
+.live i{width:8px;height:8px;border-radius:50%;background:#1a8f4a;flex:0 0 8px}
+.live.demo i{background:#c9a400}
+
+/* modal */
+.mdl{position:fixed;inset:0;z-index:100;display:none;align-items:center;justify-content:center;padding:20px}
+.mdl.on{display:flex}
+.mdl-bg{position:absolute;inset:0;background:rgba(0,0,0,.55)}
+.mdl-card{position:relative;width:100%;max-width:560px;max-height:calc(100vh - 40px);overflow:auto;background:#fff;border-radius:4px;box-shadow:0 30px 80px rgba(0,0,0,.35);animation:pop .25s ease-out}
+@keyframes pop{from{transform:translateY(16px);opacity:0}}
+@media(max-width:600px){.mdl{padding:0;align-items:flex-end}.mdl-card{max-height:94vh;border-radius:14px 14px 0 0}}
+.mdl-top{background:var(--sand);padding:18px 60px 16px 24px;position:relative}
+.mdl-top small{display:block;font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#000;opacity:.7}
+.mdl-top h3{font-size:26px;margin-top:4px;padding-right:40px}
+.mdl-x{position:absolute;right:14px;top:14px;width:34px;height:34px;border-radius:50%;background:#fff;font-size:16px;color:#000}
+.mdl-body{padding:20px 24px 24px}
+.info{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px;margin-bottom:16px}
+.info div h5{font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
+.info div p{font-size:15px;color:var(--ink);font-weight:600}
+.mdl-ds{font-size:15px;margin-bottom:16px}
+.cap{margin-bottom:16px}
+.cap .bar{height:5px;background:#eee}
+.cap .bar i{display:block;height:100%;background:var(--sand-d)}
+.cap p{display:flex;justify-content:space-between;font-size:13px;color:var(--mu);margin-top:6px}
+.inv{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px}
+.inv button{padding:10px;border:1px solid var(--line);font-size:14px;font-weight:600;color:var(--ink);border-radius:4px}
+.inv button.wa{color:#128c4b;border-color:#bfe5cf}
+.as{padding:11px 13px;background:var(--grey);font-size:14px;margin-bottom:12px}
+.as b{color:var(--ink)}
+.tc{display:flex;gap:10px;align-items:flex-start;font-size:14px;margin-bottom:16px;cursor:pointer}
+.tc input{margin-top:4px;accent-color:var(--red)}
+.tc a{color:var(--red)}
+.note{font-size:13px;color:var(--mu);text-align:center;margin-top:10px}
+.done{text-align:center;padding-top:6px}
+.done .ok{width:56px;height:56px;border-radius:50%;background:#e9f7ef;color:#1a8f4a;font-size:28px;font-weight:700;display:grid;place-items:center;margin:0 auto 10px}
+.done h3{font-size:24px}
+.done p{font-size:15px;margin-top:6px}
+.qr{width:168px;height:168px;margin:16px auto 6px;padding:10px;border:1px solid var(--line);display:grid;grid-template-columns:repeat(25,1fr)}
+.qr i.k{background:#111}
+.qrimg{display:block;width:180px;height:180px;margin:16px auto 6px;border:1px solid var(--line);padding:8px;background:#fff}
+.done .acts{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.done .cx{margin-top:12px;font-size:13px;color:var(--mu);text-decoration:underline}
+.rules{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px}
+.rules div{background:var(--grey);padding:11px 12px}
+.rules small{display:block;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
+.rules b{display:block;font-size:14px;color:var(--ink);margin-top:2px}
+.ladder{border:1px solid var(--line);margin-bottom:16px;font-size:14px}
+.ladder div{display:flex;justify-content:space-between;padding:7px 12px;border-top:1px solid var(--line)}
+.ladder div:first-child{border-top:0;background:#1d1d1d;color:var(--sand);font-weight:700;font-size:12px;letter-spacing:.1em;text-transform:uppercase}
+.ladder b{color:var(--ink)}
+.fm{display:flex;flex-direction:column;gap:14px;margin-bottom:16px}
+.fm label.t{display:block;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:6px}
+.opts{display:flex;gap:6px;flex-wrap:wrap}
+.opts button{padding:8px 14px;border:1px solid var(--line);border-radius:999px;font-size:14px;font-weight:600;color:var(--ink)}
+.opts button.on{background:var(--sand);border-color:var(--sand)}
+.fm input[type=text]{width:100%;padding:11px 0;border:0;border-bottom:2px solid var(--line);font-size:16px;outline:none;background:transparent}
+.fm input[type=text]:focus{border-color:var(--sand-d)}
+.team{display:grid;grid-template-columns:1fr 1fr;gap:4px 14px}
+.hint{font-size:12px;color:var(--mu);margin-top:4px}
+.pass{border:1px solid var(--line);margin:14px auto 0;max-width:340px;text-align:left}
+.pass .ph{background:#1d1d1d;color:var(--sand);padding:10px 14px;display:flex;justify-content:space-between;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.pass .pb{display:flex;justify-content:space-between;align-items:center;padding:12px 14px}
+.pass .pb b{font-size:20px;color:var(--ink)}
+.pass .pb small{display:block;font-size:12px;color:var(--mu)}
+.pass .pb .num{font-size:28px;font-weight:800;color:var(--red)}
+.pass .qr{margin:0 auto 14px;width:140px;height:140px}
+
+.toast{position:fixed;left:50%;bottom:24px;transform:translate(-50%,150%);opacity:0;visibility:hidden;z-index:120;background:#111;color:#fff;font-size:14px;font-weight:600;padding:12px 20px;border-radius:4px;transition:transform .3s,opacity .2s;max-width:calc(100vw - 32px)}
+.toast.on{transform:translate(-50%,0);opacity:1;visibility:visible}
+.mbar{display:none}
+@media(max-width:700px){.mbar{display:flex;gap:8px;position:fixed;left:0;right:0;bottom:0;z-index:60;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line)}.mbar .btn{flex:1}.toast{bottom:84px}}
+.cb-note{font-size:13px;color:var(--mu);margin-top:12px}
+.chc .soon{margin:auto 0 10px;font-size:13px;font-weight:700;color:var(--red)}
+</style>
+</head>
+<body>
+
+
+<header class="hdr">
+  <div class="wrap hdr-in">
+    <div class="logos">
+      <img class="dic" src="/img/30x30/logo-dic.png" alt="Dubai Internet City">
+      <i></i>
+      <img class="atp" src="/img/30x30/logo-atp-dark.png" alt="At The Park">
+      <i></i>
+      <img class="hub" src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub">
+    </div>
+    <nav class="nav"><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#challenges">Challenges</a><a href="#charity">Charity</a><a href="#faq">FAQ</a></nav>
+    <a class="btn btn-red" href="#schedule">Book a session</a>
+  </div>
+</header>
+
+<section class="hero">
+  <img src="/img/30x30/dic-campus.jpg" alt="Dubai Internet City">
+  <div class="hero-t"><div class="wrap">
+    <h1>Dubai Internet City 30x30 Fitness Hub</h1>
+    <p>31 Oct – 29 Nov 2026 · Dubai Internet City Amphitheatre · Free</p>
+  </div></div>
+</section>
+
+<div class="wrap main" id="about">
+  <div>
+    <section class="about">
+      <h2>About the Event</h2>
+      <h3>A 30-day fitness movement at Dubai Internet City</h3>
+      <p>As part of Dubai Fitness Challenge, the Dubai Internet City 30x30 Fitness Hub turns the community into a wellness destination for a whole month.</p>
+      <p>Curated by At The Park with Dubai Internet City, the programme brings free daily sessions — running, yoga, strength and conditioning, dance and mindfulness — led by professional coaches, plus the 30x30 Challenge Series and the Al Ameen Corporate Challenge.</p>
+      <p>Open to everyone. <b>Book here or in the ATP app</b> — one account, one booking, one QR code to check in.</p>
+      <ol class="steps">
+        <li><b>Join ATP — free</b>Create your account in under a minute, on the web or in the app.</li>
+        <li><b>Book a session</b>Pick a class from the schedule. Full? Join the waitlist.</li>
+        <li><b>Check in with your QR</b>Show your QR code to the ATP crew at the amphitheatre.</li>
+      </ol>
+    </section>
+
+  </div>
+
+  <aside class="side">
+    <div class="side-in">
+      <div><h4>Date &amp; Time :</h4><p>31 Oct – 29 Nov 2026<br>Weekdays: 6:30 PM to 9:30 PM<br>Weekends: 6:30 AM to 9:30 PM</p></div>
+      <div><h4>Venue:</h4><p>Dubai Internet City Amphitheatre<br><a href="https://www.google.com/maps/search/?api=1&amp;query=Dubai+Internet+City+Amphitheatre" target="_blank" rel="noopener" style="font-size:14px">Open in Google Maps ↗</a></p></div>
+      <img class="hublogo" src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub">
+      <div class="ctas" style="display:flex;flex-direction:column;gap:8px">
+        <a class="btn btn-red btn-block" href="#schedule">Book a session</a>
+        <a class="btn btn-line btn-block" href="#app">Get the ATP app</a>
+        <p class="cd" style="text-align:center;margin-top:4px">Opening Night in <b id="cd">—</b></p>
+      </div>
+    </div>
+  </aside>
+</div>
+
+<div class="wrap">
+  <section class="sec" id="schedule" style="padding-top:8px">
+    <div class="eyebrow"><small>Dubai Fitness Challenge</small><h2>30x30 Fitness Hub Schedule</h2><p>Tap any session to book your free spot. Challenge nights are shown in red — tap one to see the qualifier and final slots.</p></div>
+    <div class="live demo" id="liveNote"><i></i><span>Preview: DIC’s published schedule. Sessions open for booking as soon as they’re added to the ATP calendar.</span></div>
+    <div class="chips" id="chips"></div>
+    <div class="wtabs" id="wtabs"></div>
+    <div class="whead"><b id="wTitle">WEEK 1</b><span id="wRange"></span></div>
+    <div class="sched-desk"><table class="grid" id="grid"></table></div>
+    <div class="sched-mob" id="mlist"></div>
+    <div class="legend"><span><i></i>Class</span><span><i style="border-left-color:var(--ink);background:#f1f1f1"></i>Special event</span><span><i style="border-left-color:var(--red);background:#fff5f5"></i>Challenge</span></div>
+  </section>
+
+  <section class="sec" id="challenges" style="padding-top:20px">
+    <div class="eyebrow"><small>The 30x30 Challenge Series</small><h2>Compete every day. Finals every weekend.</h2><p>Four challenges with a weekly leaderboard each, all free to enter: three individual challenges with men's and women's categories, plus the Al Ameen Corporate Challenge for company teams.</p></div>
+    <div class="ch-how">
+      <div><small>Mon – Fri · 6–9 PM</small><b>Qualify</b><p>One scored try per day.</p></div>
+      <div><small>All week</small><b>Climb the board</b><p>Your best result of the week counts.</p></div>
+      <div><small>Top 15 · Top 10 teams</small><b>Make the cut</b><p>Per challenge, men and women.</p></div>
+      <div><small>Sat &amp; Sun · 6–9 PM</small><b>Finals</b><p>Champions crowned every week.</p></div>
+    </div>
+    <div class="chs" id="chs"></div>
+  </section>
+
+  <section class="sec" id="charity" style="padding-top:8px">
+    <div class="cause-band">
+      <div class="cb-img"><img src="/img/30x30/charity-teams.jpg" alt="Company teams at the DIC Amphitheatre"><span class="cb-tag">Al Ameen Corporate Challenge</span></div>
+      <div class="cb-txt">
+        <small>A competition with a cause</small>
+        <h2>Companies compete.<br>Charity wins.</h2>
+        <p class="lead">Every week, company teams race a 4 km relay at the DIC Amphitheatre. The prize isn’t cash — <b>100% of it goes to charity</b>, donated in the winning company’s name.</p>
+        <ol class="cb-steps">
+          <li><b>Your company enters</b>Field one or more teams of 2–4 colleagues. The captain creates the team; colleagues join with the team link.</li>
+          <li><b>Race for your company</b>Qualify on weekday evenings. Teams are ranked company vs company, and the fastest race the Corporate final on Finals Night.</li>
+          <li><b>Charity wins</b>The prize is donated in the winning company’s name — no cash to staff, no HR or gift-policy friction.</li>
+        </ol>
+        <p class="cb-note">Charity partner to be announced.</p>
+        <div class="cb-cta"><a class="btn btn-red" href="mailto:general@atthepark.world?subject=Al%20Ameen%20Corporate%20Challenge%20%E2%80%94%20company%20team">Register your company’s interest</a><button class="btn btn-line" data-chreg="relay">How it works</button></div>
+        <p class="cb-note">Company team sign-up opens soon — register your interest and we’ll be in touch.</p>
+      </div>
+    </div>
+  </section>
+
+
+  <section class="sec" id="app" style="padding-top:0">
+    <div class="panel" style="background:#fff;border:1px solid var(--line)">
+      <div><h2>All in the ATP app</h2><p style="margin-top:12px">Everything you book on this page is waiting for you in the app.</p></div>
+      <div>
+        <ul>
+          <li><b>Book and check in</b> — your QR code is one tap away.</li>
+          <li><b>Challenge results</b> — your rank and the finals cut, as soon as they're published.</li>
+          <li><b>Reminders</b> — tomorrow's sessions and your qualifier days.</li>
+        </ul>
+        <div class="stores">
+          <a class="store" href="https://apps.apple.com/ae/app/at-the-park-world-fitness/id6796708497" target="_blank" rel="noopener"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M15.5 10.5c0-2.2 1.8-3.3 1.9-3.3-1-1.5-2.6-1.7-3.2-1.8-1.4-.1-2.7.8-3.4.8-.7 0-1.8-.8-2.9-.8-1.5 0-2.9.9-3.7 2.2-1.6 2.7-.4 6.8 1.1 9 .7 1.1 1.6 2.3 2.8 2.2 1.1 0 1.5-.7 2.9-.7 1.3 0 1.7.7 2.9.7 1.2 0 2-1.1 2.7-2.2.9-1.3 1.2-2.6 1.2-2.6-.1-.1-2.3-.9-2.3-3.5zm-2.1-6.5c.6-.7 1-1.7.9-2.7-.9 0-1.9.6-2.5 1.3-.6.6-1.1 1.6-.9 2.6.9.1 1.9-.5 2.5-1.2z"/></svg><span><small>Download on the</small><b>App Store</b></span></a>
+          <a class="store" href="https://play.google.com/store/apps/details?id=world.atthepark.app" target="_blank" rel="noopener"><svg viewBox="0 0 20 20" fill="currentColor"><path d="M3.2 1.5L11.7 10 3.2 18.5C2.7 18.2 2.5 17.7 2.5 17V3C2.5 2.3 2.7 1.8 3.2 1.5ZM14.5 7.5L5.8 2.5 13.2 10 14.5 12.5V7.5ZM5.8 17.5L14.5 12.5V7.5L5.8 17.5ZM15.5 11L17.3 10 15.5 9 14.5 12.5Z"/></svg><span><small>Get it on</small><b>Google Play</b></span></a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="sec" id="faq" style="padding-top:0">
+    <div class="eyebrow"><small>Good to know</small><h2>FAQ</h2></div>
+    <div class="faq">
+      <details open><summary>Is it free?</summary><p>Yes. Every session at the 30x30 Fitness Hub and all four challenges are free — you just need to book your spot.</p></details>
+      <details><summary>Do I need an ATP account?</summary><p>Yes, a free one. It's how we save your spot, give you your check-in QR code and add your challenge results.</p></details>
+      <details><summary>If I book here, is it in the app too?</summary><p>Yes. The website and the ATP app share the same booking system — book in one, it shows up in the other with the same QR code.</p></details>
+      <details><summary>How do the challenge qualifiers work?</summary><p>Qualifiers run every weekday evening: Al Ameen Corporate Challenge 6–7 PM, Redline 400 7–8 PM and Last One Standing 8–9 PM. One scored try per day; your best result of the week counts. Burpee Blitz schedule <span class="sample">TBC</span></p></details>
+      <details><summary>How do I register on the same team as my colleagues?</summary><p>Company team sign-up opens soon. One colleague will be the captain: they create the team and share a team link, and everyone else joins with their own free ATP account. Teams are 2–4 colleagues from the same company. To get your company on the list now, <a href="mailto:general@atthepark.world?subject=Al%20Ameen%20Corporate%20Challenge%20%E2%80%94%20company%20team">email us</a>.</p></details>
+      <details><summary>Where does the charity money go?</summary><p>100% of the Al Ameen Corporate Challenge prize goes to charity in the winning company's name. Our charity partner will be announced soon.</p></details>
+      <details><summary>Who makes the weekend finals?</summary><p>The week's top 15 men and 15 women in each individual challenge, and the top 10 Al Ameen Corporate Challenge teams. Results are checked and published by the ATP team after each session.</p></details>
+    </div>
+  </section>
+
+</div>
+
+<footer class="foot">
+  <div class="wrap foot-in">
+    <div class="logos"><img class="dic" src="/img/30x30/logo-dic.png" alt="Dubai Internet City"><i></i><img class="atp" src="/img/30x30/logo-atp-dark.png" alt="At The Park"><i></i><img class="hub" src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub"></div>
+    <div class="foot-links">
+      <div><h5>The hub</h5><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#challenges">Challenges</a><a href="#charity">Charity</a></div>
+      <div><h5>At The Park</h5><a href="https://atthepark.world">atthepark.world</a><a href="https://shop.atthepark.world">ATP Store</a><a href="mailto:general@atthepark.world">general@atthepark.world</a></div>
+    </div>
+  </div>
+  <div class="foot-bar"><div class="wrap"><span>© 2026 At The Park · in partnership with Dubai Internet City</span><span><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></span></div></div>
+</footer>
+
+<div class="mbar"><a class="btn btn-red" href="#schedule">Book a session</a><a class="btn btn-line" href="#challenges">Challenges</a></div>
+
+<div class="mdl" id="mdl" role="dialog" aria-modal="true" aria-labelledby="mdlTitle">
+  <div class="mdl-bg" data-close></div>
+  <div class="mdl-card"><div class="mdl-top" id="mdlTop"></div><div class="mdl-body" id="mdlBody"></div></div>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  function esc(s){ return String(s).replace(/[&<>"]/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]; }); }
+  var toastEl = document.getElementById('toast'), tT;
+  function toast(m){ toastEl.textContent = m; toastEl.classList.add('on'); clearTimeout(tT); tT = setTimeout(function(){ toastEl.classList.remove('on'); }, 2400); }
+
+  // countdown (sidebar)
+  var target = Date.parse('2026-10-31T18:00:00+04:00');
+  function tick(){ var s = Math.max(0, Math.floor((target - Date.now()) / 1000)); document.getElementById('cd').textContent = Math.floor(s/86400) + 'd ' + String(Math.floor(s%86400/3600)).padStart(2,'0') + 'h ' + String(Math.floor(s%3600/60)).padStart(2,'0') + 'm'; }
+  tick(); setInterval(tick, 30000);
+
+  // ── official schedule (dic.ae/the-community/events/fitness-hub, 2026-10-14) ──
+  var DIC_SCHED = {"1":[["18:00","Opening Night Event","special"]],"2":[["07:00","Beginner Run","run"],["07:30","Run Technique","run"],["09:00","Opening Flow Yoga by Zoga","zoga"],["18:30","Zumba","dance"],["19:00","Latin Dance","dance"],["19:30","Traditional Yoga","yoga"],["20:00","Meditation","yoga"]],"3":[["19:00","Hatha Yoga","yoga"],["19:30","ATP Kickboxing","strength"],["20:00","Breathwork","yoga"]],"4":[["19:00","Tone & Flow Yoga","yoga"],["19:30","Hybrid Training","strength"]],"5":[["19:00","Social Run","run"],["19:30","Cardio Calisthenics","strength"],["20:00","Stretching","yoga"]],"6":[["19:00","Interval Run","run"],["19:30","Traditional Yoga","yoga"],["20:00","Meditation","yoga"]],"7":[["18:30","Pound","dance"],["19:00","Latin Dance","dance"],["19:30","Bootcamp","strength"],["20:00","Stretching","yoga"]],"8":[["07:00","Social Run","run"],["07:30","Hatha Yoga","yoga"],["18:00","ATP Kickboxing","strength"],["18:30","Hybrid Training","strength"],["19:00","Tone & Flow Yoga","yoga"],["19:30","Sound Healing","yoga"],["20:00","Meditation","yoga"]],"9":[["07:00","Beginner Run","run"],["07:30","Run Technique","run"],["18:30","Zumba","dance"],["19:00","Latin Dance","dance"],["19:30","Traditional Yoga","yoga"],["20:00","Meditation","yoga"]],"10":[["19:00","Hatha Yoga","yoga"],["19:30","ATP Kickboxing","strength"],["20:00","Breathwork","yoga"]],"11":[["19:00","Tone & Flow Yoga","yoga"],["19:30","Hybrid Training","strength"]],"12":[["19:00","Social Run","run"],["19:30","Cardio Calisthenics","strength"],["20:00","Stretching","yoga"]],"13":[["08:00","Tai Chi in the Park by Zoga","zoga"],["19:00","Interval Run","run"],["19:30","Traditional Yoga","yoga"],["20:00","Meditation","yoga"]],"14":[["18:30","Pound","dance"],["19:00","Latin Dance","dance"],["19:30","Bootcamp","strength"],["20:00","Stretching","yoga"]],"15":[["07:00","Social Run","run"],["07:30","Hatha Yoga","yoga"],["18:00","ATP Kickboxing","strength"],["18:30","Hybrid Training","strength"],["19:00","Tone & Flow Yoga","yoga"],["19:30","Sound Healing","yoga"],["20:00","Meditation","yoga"],["","Fitness Festival","special"]],"16":[["07:00","Beginner Run","run"],["07:30","Run Technique","run"],["09:00","Recover & Reset by Zoga","zoga"],["18:30","Zumba","dance"],["19:00","Latin Dance","dance"],["19:30","Traditional Yoga","yoga"],["20:00","Meditation","yoga"]],"17":[["19:00","Hatha Yoga","yoga"],["19:30","ATP Kickboxing","strength"],["20:00","Breathwork","yoga"]],"18":[["19:00","Tone & Flow Yoga","yoga"],["19:30","Hybrid Training","strength"]],"19":[["19:00","Social Run","run"],["19:30","Cardio Calisthenics","strength"],["20:00","Stretching","yoga"]],"20":[["19:00","Interval Run","run"],["19:30","Traditional Yoga","yoga"],["20:00","Meditation","yoga"]],"21":[["18:30","Pound","dance"],["19:00","Latin Dance","dance"],["19:30","Bootcamp","strength"],["20:00","Stretching","yoga"]],"22":[["07:00","Social Run","run"],["07:30","Hatha Yoga","yoga"],["18:00","ATP Kickboxing","strength"],["18:30","Hybrid Training","strength"],["19:00","Tone & Flow Yoga","yoga"],["19:30","Sound Healing","yoga"],["20:00","Meditation","yoga"]],"23":[["07:00","Beginner Run","run"],["07:30","Run Technique","run"],["09:00","Recover & Reset by Zoga","zoga"],["18:30","Zumba","dance"],["19:00","Latin Dance","dance"],["19:30","Traditional Yoga","yoga"],["20:00","Meditation","yoga"],["","Run Together","special"]],"24":[["19:00","Hatha Yoga","yoga"],["19:30","ATP Kickboxing","strength"],["20:00","Breathwork","yoga"]],"25":[["19:00","Tone & Flow Yoga","yoga"],["19:30","Hybrid Training","strength"]],"26":[["19:00","Social Run","run"],["19:30","Cardio Calisthenics","strength"],["20:00","Stretching","yoga"]],"27":[["19:00","Interval Run","run"],["19:30","Traditional Yoga","yoga"],["20:00","Meditation","yoga"]],"28":[["18:30","Pound","dance"],["19:00","Latin Dance","dance"],["19:30","Bootcamp","strength"],["20:00","Stretching","yoga"]],"29":[["07:00","Social Run","run"],["07:30","Hatha Yoga","yoga"],["18:00","ATP Kickboxing","strength"],["18:30","Hybrid Training","strength"],["19:00","Tone & Flow Yoga","yoga"],["19:30","Sound Healing","yoga"],["20:00","Meditation","yoga"],["","Yoga Together","special"]],"30":[["07:00","Beginner Run","run"],["07:30","Run Technique","run"],["09:00","Breath by Zoga","zoga"],["18:30","Zumba","dance"],["19:00","Latin Dance","dance"],["19:30","Traditional Yoga","yoga"],["20:00","Meditation","yoga"],["","30x30 Finale","special"]]};
+  var CAT = { all:'All', run:'Running', yoga:'Yoga & Mindfulness', strength:'Strength & Conditioning', dance:'Dance', special:'Special Event', ch:'Challenges' };
+  var DOW = ['SUN','MON','TUE','WED','THU','FRI','SAT'], DOWL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'], MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], MONL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+  function dt(i){ return new Date(Date.UTC(2026, 9, 30 + i)); }   // 1 → Sat 31 Oct
+  function lbl(i){ var d = dt(i); return d.getUTCDate() + ' ' + MON[d.getUTCMonth()]; }
+  function t12(t){ if (!t) return 'Time TBC'; var p = t.split(':'), h = +p[0]; return (h % 12 || 12) + ':' + p[1] + ' ' + (h < 12 ? 'AM' : 'PM'); }
+  var WEEKS = [[1,7],[8,14],[15,21],[22,28],[29,30]];
+
+  // challenge slots (DIC 30x30 sheet, CHALLENGES tab)
+  var CH = [
+    { k:'redline', n:'Redline 400', tl:'Fastest 400 m', ds:'One lap, flat out. Run in heats and chip-timed.', win:'Fastest single lap of the week wins.', q:'Mon – Fri · 7–8 PM', f:'Sat & Sun · 7–8 PM', cut:'Top 15 men + 15 women', unit:'time' },
+    { k:'relay', n:'Al Ameen Corporate Challenge', tl:'4 km company team relay', ds:'Company teams of 2–4 colleagues split a fixed 4 km in 400 m runs.', win:'Fastest team time wins — the prize goes to charity.', q:'Mon – Fri · 6–7 PM', f:'Sat & Sun · 6–7 PM', cut:'Top 10 teams', unit:'time', team:true, charity:true },
+    { k:'burpee', n:'Burpee Blitz', tl:'60-second sprint', ds:'Max burpee jump-overs in one minute — chest to floor, jump the bar.', win:'Most valid reps in 60 seconds wins.', q:'Schedule TBC', f:'TBC', cut:'Top 15 men + 15 women', unit:'reps' },
+    { k:'los', n:'Last One Standing', tl:'The pace ladder', ds:'Everyone runs 400 m; the time cap tightens each round (5:00 → 2:00), 1 min rest.', win:'Last runner to beat the cap wins.', q:'Mon – Fri · 8–9 PM', f:'Sat & Sun · 8–9 PM', cut:'Top 15 men + 15 women', unit:'level' }
+  ];
+  var chBy = {}; CH.forEach(function(c){ chBy[c.k] = c; });
+  function chSlots(i){
+    var w = dt(i).getUTCDay();
+    if (i <= 2) return [['18:30','relay','q'],['19:00','redline','q'],['19:30','relay','f'],['20:00','redline','f'],['20:30','los','x']];
+    if (w >= 1 && w <= 5) return [['18:00','relay','q'],['19:00','redline','q'],['20:00','los','q']];
+    return [['18:00','relay','f'],['19:00','redline','f'],['20:00','los','f']];
+  }
+  var DESC = {
+    run:'A coached group run around Dubai Internet City — every pace welcome.',
+    yoga:'A calm, coached session to move, stretch and reset. Mats recommended.',
+    strength:'A coached strength and conditioning session for every level.',
+    dance:'High-energy dance fitness with music up and the whole community.',
+    special:'A special 30x30 community moment at the hub. Details to follow.'
+  };
+  var DESC_ANY = 'A free coached session at the 30x30 Fitness Hub, Dubai Internet City Amphitheatre — every level welcome.';
+  function catName(k){ return k && k !== 'a:other' && CAT[k] ? String(CAT[k]).replace(/^\W+\s/, '') : ''; }
+
+  // ── ATP calendar connection ──────────────────────────
+  // The hub schedule is read from the ATP sessions calendar (same API as the
+  // website's Sessions page and the app), so a booking made here is the same
+  // booking members see in the app. Until the hub sessions exist in the
+  // calendar, DIC's published schedule is shown as a preview.
+  var API = window.ATP_API_BASE || '/api';
+  var SHARE_BASE = /^https?:/.test(location.protocol) && !/localhost|127\.0\.0\.1/.test(location.hostname) ? location.origin : 'https://atthepark.world';
+  // Hub sessions = the ones created in admin with the '30x30 Hub' session
+  // category — the same list as the DIC 30x30 Hub tab on the Sessions page.
+  var HUB_CAT = '30x30_hub';
+  var SCHED = DIC_SCHED, LIVE = false, LIVE_BY_ID = {};
+  function dubai(iso){ return new Date(Date.parse(iso) + 4 * 3600000); }   // UAE: UTC+4, no DST
+  function hubDay(iso){ var d = dubai(iso); return Math.round((Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - Date.UTC(2026, 9, 30)) / 86400000); }
+  // Live filter chip = the Activity chosen when the session was created.
+  function actOf(s){ var k = String(s.activity_slug || s.activity_id || ''); return k ? { k:'a:' + k, n:(s.activity_icon ? s.activity_icon + ' ' : '') + (s.activity_name || 'Session') } : { k:'a:other', n:'Other' }; }
+  function token(){ try { return localStorage.getItem('atp_token'); } catch (e) { return null; } }
+  function apiFetch(path, opts){
+    opts = opts || {}; var h = { 'Accept':'application/json' }, tk = token();
+    if (tk) h.Authorization = 'Bearer ' + tk;
+    if (opts.body) h['Content-Type'] = 'application/json';
+    return fetch(API + path, { method: opts.method || 'GET', headers: h, body: opts.body ? JSON.stringify(opts.body) : undefined })
+      .then(function(r){ return r.json().catch(function(){ return {}; }).then(function(j){ return { status: r.status, data: j }; }); });
+  }
+  function loadHub(){
+    if (!/^https?:/.test(location.protocol)) return Promise.resolve();
+    return apiFetch('/sessions?status=upcoming&limit=1000').then(function(r){
+      var by = {}, n = 0, acts = {};
+      ((r.data && r.data.sessions) || []).forEach(function(x){
+        if (x.session_category !== HUB_CAT) return;
+        var day = hubDay(x.scheduled_at); if (day < 1 || day > 30) return;
+        var d = dubai(x.scheduled_at), t = String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
+        var a = actOf(x); acts[a.k] = a.n; if (/opening night|festival|finale|special event|celebration/i.test(x.name)) a.k += '|sp';
+        (by[day] = by[day] || []).push([t, x.name, a.k, x]); LIVE_BY_ID[x.id] = { day: day, x: x }; n++;
+      });
+      if (n) {
+        SCHED = by; LIVE = true;
+        var keys = Object.keys(acts).sort(function(p, q){ return p === 'a:other' ? 1 : q === 'a:other' ? -1 : acts[p].replace(/^\W+\s/, '').localeCompare(acts[q].replace(/^\W+\s/, '')); });
+        CAT = { all:'All' }; keys.forEach(function(k){ CAT[k] = acts[k]; }); CAT.ch = 'Challenges';
+        state.cat = 'all'; renderChips();
+      }
+    }).catch(function(){});
+  }
+  function shortLink(id){ var c = String(id).replace(/-/g, '').slice(0, 8); return SHARE_BASE + '/s/' + c; }
+  function inviteText(x){
+    var d = dt(x.day);
+    return 'Join me at ' + x.n + ' 💚\n📅 ' + DOWL[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + MON[d.getUTCMonth()] + ' · ' + t12(x.t) + '\n📍 DIC Amphitheatre · 30x30 Fitness Hub\nIt’s free 🙌\n\nBook your spot: ' + (x.ses ? shortLink(x.ses.id) : SHARE_BASE + '/30x30-hub');
+  }
+
+  function dayItems(i){
+    var list = (SCHED[i] || []).map(function(s){ var c = String(s[2]).split('|'); return { kind:'class', day:i, t:s[0], n:s[1], cat:c[0] === 'zoga' ? 'yoga' : c[0], sp:c[0] === 'special' || c[1] === 'sp', ses:s[3] || null, key:i + '|' + (s[3] ? s[3].id : s[1]) }; });
+    chSlots(i).forEach(function(c){ list.push({ kind:'ch', day:i, t:c[0], ch:c[1], phase:c[2], n:chBy[c[1]].n, cat:'ch', key:i + '|ch|' + c[1] + '|' + c[2] }); });
+    return list;
+  }
+  function itemLabel(x){
+    if (x.kind !== 'ch') return '';
+    return x.day <= 2 ? (x.phase === 'f' ? 'Opening final' : x.phase === 'x' ? 'Opening showcase' : 'Opening qualifier') : (x.phase === 'f' ? 'Final' : 'Qualifier');
+  }
+
+  var state = { cat:'all', week:0, booked:{}, reg:{}, regInfo:{}, tab:'redline', sex:'w', rwk:2, relayView:'teams' };
+
+  // chips + week tabs
+  var chipsEl = document.getElementById('chips');
+  function renderChips(){ chipsEl.innerHTML = Object.keys(CAT).map(function(k){ return '<button class="chip' + (k === state.cat ? ' on' : '') + '" data-cat="' + esc(k) + '">' + esc(CAT[k]) + '</button>'; }).join(''); }
+  renderChips();
+  chipsEl.addEventListener('click', function(e){ var b = e.target.closest('[data-cat]'); if (!b) return; state.cat = b.getAttribute('data-cat'); chipsEl.querySelectorAll('.chip').forEach(function(x){ x.classList.toggle('on', x === b); }); renderSched(); });
+  var wtabs = document.getElementById('wtabs');
+  wtabs.innerHTML = WEEKS.map(function(w, i){ return '<button class="wtab' + (i === 0 ? ' on' : '') + '" data-w="' + i + '">Week ' + (i + 1) + '</button>'; }).join('');
+  wtabs.addEventListener('click', function(e){ var b = e.target.closest('[data-w]'); if (!b) return; state.week = +b.getAttribute('data-w'); wtabs.querySelectorAll('.wtab').forEach(function(x){ x.classList.toggle('on', x === b); }); renderSched(); });
+
+  function visible(x){ return state.cat === 'all' || state.cat === x.cat; }
+  // "All" view: one compact challenge-night chip per day; the Challenges filter shows each slot
+  function viewItems(d){
+    if (state.cat !== 'all') return dayItems(d).filter(visible);
+    var list = dayItems(d).filter(function(x){ return x.kind !== 'ch'; }), w = dt(d).getUTCDay();
+    list.push({ kind:'chday', day:d, t:'CH', cat:'ch', key:d + '|chday', n: d <= 2 ? 'Opening challenges' : (w >= 1 && w <= 5) ? 'Challenge qualifiers' : 'Challenge finals', sub: d <= 2 ? '6:30 – 9 PM' : '6 – 9 PM' });
+    return list;
+  }
+  function sesBtn(x, mobile){
+    if (x.kind === 'chday') return '<button class="ses ch" data-chday="' + x.day + '">' + (mobile ? '<strong>' + (x.day <= 2 ? '18:30' : '18:00') + '</strong><span>' + x.n + '<small>Al Ameen · Redline 400 · Last One Standing</small></span>' : x.n + '<small>Al Ameen · Redline · LOS</small>') + '</button>';
+    var cls = 'ses' + (x.kind === 'ch' ? ' ch' : x.sp ? ' sp' : '') + (state.booked[x.key] || (x.kind === 'ch' && state.reg[x.ch]) ? ' booked' : '');
+    var attr = x.kind === 'ch' ? 'data-chreg="' + x.ch + '"' : 'data-open="' + esc(x.key) + '"';
+    if (mobile) return '<button class="' + cls + '" ' + attr + '><strong>' + (x.t || 'TBC') + '</strong><span>' + esc(x.n) + (x.kind === 'ch' ? '<small>' + itemLabel(x) + '</small>' : '') + '</span></button>';
+    return '<button class="' + cls + '" ' + attr + '>' + esc(x.n) + (x.kind === 'ch' ? '<small>' + itemLabel(x) + '</small>' : '') + '</button>';
+  }
+  function renderSched(){
+    var w = WEEKS[state.week], days = [];
+    for (var i = w[0]; i <= w[1]; i++) days.push(i);
+    var a = dt(w[0]), b = dt(w[1]);
+    document.getElementById('wTitle').textContent = 'WEEK ' + (state.week + 1);
+    document.getElementById('wRange').textContent = a.getUTCDate() + ' ' + MONL[a.getUTCMonth()] + (w[0] === w[1] ? '' : ' – ' + b.getUTCDate() + ' ' + MONL[b.getUTCMonth()]);
+    var items = {}, times = {};
+    days.forEach(function(d){ items[d] = viewItems(d); items[d].forEach(function(x){ times[x.t || 'TBC'] = 1; }); });
+    var tlist = Object.keys(times).filter(function(t){ return t !== 'TBC' && t !== 'CH'; }).sort();
+    if (times.CH) tlist.push('CH');
+    if (times.TBC) tlist.push('TBC');
+    var h = '<thead><tr><th class="time">Time</th>' + days.map(function(d){ return '<th>' + DOW[dt(d).getUTCDay()] + '<b>' + lbl(d) + '</b></th>'; }).join('') + (days.length < 7 ? '<th colspan="' + (7 - days.length) + '"></th>' : '') + '</tr></thead><tbody>';
+    if (!tlist.length) h += '<tr><td colspan="8" style="text-align:center;color:var(--mu);height:90px">No sessions in this category this week.</td></tr>';
+    tlist.forEach(function(t){
+      h += '<tr' + (t === 'CH' ? ' class="chrow"' : '') + '><td class="time"><span class="tchip">' + (t === 'CH' ? '6–9 PM' : t) + '</span></td>';
+      days.forEach(function(d){ h += '<td>' + items[d].filter(function(x){ return (x.t || 'TBC') === t; }).map(function(x){ return sesBtn(x); }).join('') + '</td>'; });
+      if (days.length < 7) h += '<td colspan="' + (7 - days.length) + '" style="background:#fafafa"></td>';
+      h += '</tr>';
+    });
+    document.getElementById('grid').innerHTML = h + '</tbody>';
+    document.getElementById('mlist').innerHTML = days.map(function(d, j){
+      var its = items[d].slice().sort(function(p, q){ var a = p.t === 'CH' ? '18:00~' : (p.t || '99'), b = q.t === 'CH' ? '18:00~' : (q.t || '99'); return a < b ? -1 : a > b ? 1 : 0; });
+      return '<details class="mday"' + (j === 0 ? ' open' : '') + '><summary>' + DOWL[dt(d).getUTCDay()] + ' ' + lbl(d) + '<span>' + its.length + ' session' + (its.length === 1 ? '' : 's') + '</span></summary><ul>' + its.map(function(x){ return '<li>' + sesBtn(x, true) + '</li>'; }).join('') + '</ul></details>';
+    }).join('');
+  }
+
+  // ── modal ────────────────────────────────────────────
+  var mdl = document.getElementById('mdl'), mTop = document.getElementById('mdlTop'), mBody = document.getElementById('mdlBody');
+  function showMdl(){ if (!mdl.classList.contains('on')) { mdl.classList.add('on'); document.body.classList.add('lock'); mdl.querySelector('.mdl-card').scrollTop = 0; } }
+  function closeMdl(){ mdl.classList.remove('on'); document.body.classList.remove('lock'); }
+  mdl.addEventListener('click', function(e){ if (e.target.closest('[data-close]')) closeMdl(); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeMdl(); });
+  function findClass(key){ var d = +key.split('|')[0]; return dayItems(d).filter(function(x){ return x.key === key; })[0]; }
+  function openLive(s){
+    var x = s.ses, d = dt(s.day), free = !(Number(x.price) > 0 || Number(x.price_points) > 0);
+    var cap = Number(x.capacity) || 0, bk = Number(x.registrations_count) || 0;
+    mTop.innerHTML = '<small>' + esc(catName(s.cat) ? catName(s.cat) + ' · 30x30 Fitness Hub' : '30x30 Fitness Hub') + '</small><h3 id="mdlTitle">' + esc(x.name) + '</h3><button class="mdl-x" data-close aria-label="Close">✕</button>';
+    mBody.innerHTML =
+      '<div class="info"><div><h5>Date</h5><p>' + DOWL[d.getUTCDay()] + ', ' + d.getUTCDate() + ' ' + MONL[d.getUTCMonth()] + '</p></div><div><h5>Time</h5><p>' + t12(s.t) + (x.duration_mins ? ' · ' + x.duration_mins + ' min' : '') + '</p></div>' +
+      '<div><h5>Venue</h5><p>' + (x.location_maps_url ? '<a href="' + esc(x.location_maps_url) + '" target="_blank" rel="noopener">' + esc(x.location) + ' ↗</a>' : esc(x.location || 'DIC Amphitheatre')) + '</p></div><div><h5>Price</h5><p>' + (free ? 'Free' : Number(x.price) > 0 ? esc((x.currency_code || 'AED').toUpperCase()) + ' ' + Number(x.price).toFixed(0) : Number(x.price_points) + ' pts') + '</p></div></div>' +
+      '<p class="mdl-ds">' + esc(x.description || DESC[s.cat] || DESC_ANY) + '</p>' +
+      (cap ? '<div class="cap"><div class="bar"><i style="width:' + Math.min(100, Math.round(bk / cap * 100)) + '%"></i></div><p><span>' + bk + ' / ' + cap + ' booked' + (x.waitlist_count ? ' · ' + x.waitlist_count + ' on waitlist' : '') + '</span><span>' + (bk >= cap ? 'Full — join the waitlist' : (cap - bk) + ' spots left') + '</span></p></div>' : '') +
+      '<div class="inv"><button class="wa" data-wa="' + esc(s.key) + '">Invite on WhatsApp</button><button data-copy="' + esc(s.key) + '">Copy invite link</button></div>' +
+      '<div id="liveAct"><p class="note">Checking your booking…</p></div>';
+    showMdl();
+    var act = document.getElementById('liveAct');
+    if (!token()) {
+      act.innerHTML = '<a class="btn btn-red btn-block" id="mdlLogin" href="/join?mode=login&amp;next=' + encodeURIComponent(location.pathname + '?session=' + x.id) + '">Sign in to book — it’s free</a><p class="note">New to ATP? Joining takes a minute — then you come straight back here.</p>';
+      return;
+    }
+    apiFetch('/sessions/' + x.id).then(function(r){
+      var mb = r.data && r.data.myBooking;
+      if (mb && mb.status !== 'cancelled') {
+        act.innerHTML = '<div class="done"><div class="ok">✓</div><h3>You’re booked</h3><p>Show this QR code at the amphitheatre. It’s also in the ATP app under My bookings.</p>' +
+          (mb.qr_token ? '<img class="qrimg" alt="Check-in QR code" src="' + API + '/bookings/qr/' + encodeURIComponent(mb.qr_token) + '.png">' : '') +
+          '<div class="acts"><a class="btn btn-line" href="' + shortLink(x.id) + '">Open in ATP</a><button class="btn btn-line" data-wa="' + esc(s.key) + '">Invite friends</button></div><button class="cx" id="mdlCancel">Cancel booking</button></div>';
+        state.booked[s.key] = true; renderSched();
+        document.getElementById('mdlCancel').addEventListener('click', function(){
+          apiFetch('/bookings/' + mb.id, { method:'DELETE' }).then(function(c){
+            if (c.status >= 400) { toast((c.data && c.data.error) || 'Could not cancel — try again'); return; }
+            delete state.booked[s.key]; x.registrations_count = Math.max(0, bk - 1); openLive(s); renderSched(); toast('Booking cancelled');
+          });
+        });
+        return;
+      }
+      if (r.data && typeof r.data.myWaitlistPos === 'number') { act.innerHTML = '<div class="done"><h3>You’re on the waitlist</h3><p>Position #' + r.data.myWaitlistPos + '. We’ll let you know in the ATP app if a spot opens.</p></div>'; return; }
+      act.innerHTML = '<label class="tc"><input type="checkbox" id="mdlTc"> <span>I agree to the <a href="/terms" target="_blank" rel="noopener">terms &amp; conditions</a> for this session.</span></label><button class="btn btn-red btn-block" id="mdlGo" disabled>' + (cap && bk >= cap ? 'Join the waitlist' : free ? 'Book my free spot' : 'Book') + '</button><p class="note">Your booking appears in the ATP app straight away — same QR code.</p>';
+      var tc = document.getElementById('mdlTc'), go = document.getElementById('mdlGo');
+      tc.addEventListener('change', function(){ go.disabled = !tc.checked; });
+      go.addEventListener('click', function(){
+        go.disabled = true;
+        apiFetch('/bookings', { method:'POST', body:{ session_id: x.id } }).then(function(b){
+          if (b.status === 201 || b.status === 409) { x.registrations_count = bk + (b.status === 201 ? 1 : 0); openLive(s); toast('Booked — it’s in your ATP app too'); return; }
+          if (b.status === 202 && b.data && b.data.status === 'waitlisted') { openLive(s); toast('You’re on the waitlist'); return; }
+          if (b.status === 202) { location.href = '/sessions.html?session=' + encodeURIComponent(x.id); return; }   // paid: finish on the Sessions page
+          if (b.status === 401) { location.href = '/join?mode=login&next=' + encodeURIComponent(location.pathname + '?session=' + x.id); return; }
+          go.disabled = false; toast((b.data && b.data.error) || 'Booking failed — try again');
+        });
+      });
+    });
+  }
+  function openClass(key){
+    var s = findClass(key); if (!s) return;
+    if (s.ses) { openLive(s); return; }
+    var d = dt(s.day);
+    mTop.innerHTML = '<small>' + esc(catName(s.cat) || CAT[s.cat] || '30x30') + ' · 30x30 Fitness Hub</small><h3 id="mdlTitle">' + esc(s.n) + '</h3><button class="mdl-x" data-close aria-label="Close">✕</button>';
+    mBody.innerHTML =
+      '<div class="info"><div><h5>Date</h5><p>' + DOWL[d.getUTCDay()] + ', ' + d.getUTCDate() + ' ' + MONL[d.getUTCMonth()] + '</p></div><div><h5>Time</h5><p>' + t12(s.t) + '</p></div><div><h5>Venue</h5><p>DIC Amphitheatre</p></div><div><h5>Price</h5><p>Free</p></div></div>' +
+      '<p class="mdl-ds">' + (DESC[s.cat] || DESC_ANY) + '</p>' +
+      '<div class="inv"><button class="wa" data-wa="' + esc(s.key) + '">Invite on WhatsApp</button><button data-copy="' + esc(s.key) + '">Copy invite link</button></div>' +
+      '<div class="done"><h3>Booking opens soon</h3><p>This session is being added to the ATP calendar. Join ATP free now — then book here or in the app as soon as it opens.</p></div>' +
+      '<a class="btn btn-red btn-block" href="/join">Join ATP — free</a>';
+    showMdl();
+  }
+
+  var LADDER = ['5:00','4:30','4:00','3:30','3:00','2:30','2:00'];
+  function openCh(k){
+    var c = chBy[k]; if (!c) return;
+    mTop.innerHTML = '<small>' + (c.charity ? 'Companies compete · Charity wins' : '30x30 Challenge Series · Free to enter') + '</small><h3 id="mdlTitle">' + esc(c.n) + '</h3><button class="mdl-x" data-close aria-label="Close">✕</button>';
+    var rules = '<p class="mdl-ds">' + esc(c.ds) + '</p><div class="rules"><div><small>How to win</small><b>' + esc(c.win) + '</b></div><div><small>Make the cut</small><b>' + c.cut + '</b></div><div><small>Qualifiers</small><b>' + c.q + '</b></div><div><small>Finals</small><b>' + c.f + '</b></div></div>' +
+      (k === 'los' ? '<div class="ladder"><div><span>The pace ladder</span><span>1:00 rest</span></div>' + LADDER.map(function(t, j){ return '<div><span>Level ' + (j + 1) + '</span><b>400 m under ' + t + '</b></div>'; }).join('') + '</div>' : '');
+    mBody.innerHTML = rules + (c.team
+      ? '<div class="done"><h3>Company team sign-up opens soon</h3><p>Teams of 2–4 colleagues from the same company. Register your company’s interest and we’ll be in touch as soon as sign-up opens.</p></div><a class="btn btn-red btn-block" href="mailto:general@atthepark.world?subject=Al%20Ameen%20Corporate%20Challenge%20%E2%80%94%20company%20team">Register your company’s interest</a>'
+      : '<div class="done"><h3>Registration opens soon</h3><p>Entry is free. Join ATP now so you’re ready — you’ll enter here or in the ATP app as soon as registration opens.</p></div><a class="btn btn-red btn-block" href="/join">Join ATP — free</a>');
+    showMdl();
+  }
+
+  // ── challenge cards ──────────────────────────────────
+  function renderCh(){
+    document.getElementById('chs').innerHTML = CH.map(function(c, i){
+      var r = false;
+      return '<div class="chc' + (r ? ' reg' : '') + (c.charity ? ' give' : '') + '"><span class="no">' + (c.charity ? 'Charity challenge' : 'Challenge 0' + (i + 1)) + '</span><h3>' + esc(c.n) + '</h3><span class="tl">' + esc(c.tl) + '</span><p>' + esc(c.ds) + '</p>' +
+        '<dl><dt>How to win</dt><dd>' + esc(c.win) + '</dd><dt>Qualifiers</dt><dd>' + c.q + '</dd><dt>Finals</dt><dd>' + c.f + '</dd></dl>' +
+        (c.charity ? '<a class="cause" href="#charity">💚 100% of the prize goes to charity →</a>' : '') + '<p class="soon">Registration opens soon</p><button class="btn btn-line btn-block" data-chreg="' + c.k + '">See the rules</button></div>';
+    }).join('');
+  }
+
+  // ── shared clicks ────────────────────────────────────
+  document.addEventListener('click', function(e){
+    var wa = e.target.closest('[data-wa]'), cp = e.target.closest('[data-copy]');
+    if (wa || cp) {
+      var it = findClass((wa || cp).getAttribute(wa ? 'data-wa' : 'data-copy')); if (!it) return;
+      if (wa) { window.open('https://wa.me/?text=' + encodeURIComponent(inviteText(it)), '_blank', 'noopener'); return; }
+      var txt = inviteText(it);
+      (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function(){ toast('Invite copied — paste it anywhere'); }, function(){ toast('Copy failed — long-press to copy'); });
+      return;
+    }
+    var cd = e.target.closest('[data-chday]');
+    if (cd) { state.cat = 'ch'; chipsEl.querySelectorAll('.chip').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-cat') === 'ch'); }); renderSched(); document.getElementById('schedule').scrollIntoView({ behavior:'smooth' }); toast('Showing challenge slots — tap one for the rules'); return; }
+    var cr = e.target.closest('[data-chreg]');
+    if (cr) { openCh(cr.getAttribute('data-chreg')); return; }
+    var o = e.target.closest('[data-open]');
+    if (o) openClass(o.getAttribute('data-open'));
+  });
+
+  renderSched(); renderCh();
+  loadHub().then(function(){
+    if (LIVE) {
+      var ln = document.getElementById('liveNote'); ln.classList.remove('demo');
+      ln.querySelector('span').textContent = 'Live from the ATP calendar — book here or in the ATP app. Same booking, same QR code.';
+      renderSched();
+    }
+    var sid = new URLSearchParams(location.search).get('session'), hit = sid && LIVE_BY_ID[sid];
+    if (hit) {
+      var w = WEEKS.findIndex(function(r){ return hit.day >= r[0] && hit.day <= r[1]; });
+      if (w >= 0) wtabs.querySelector('[data-w="' + w + '"]').click();
+      openClass(hit.day + '|' + sid);
+    }
+  });
+})();
+</script>
+</body>
+</html>
