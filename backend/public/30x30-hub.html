@@ -349,6 +349,34 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
 @media(max-width:700px){.mbar{display:flex;gap:8px;position:fixed;left:0;right:0;bottom:0;z-index:60;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line)}.mbar .btn{flex:1}.toast{bottom:84px}}
 .cb-note{font-size:13px;color:var(--mu);margin-top:12px}
 .chc .soon{margin:auto 0 10px;font-size:13px;font-weight:700;color:var(--red)}
+.hero-t .kick{margin-top:10px;font-size:16px;display:inline-block;background:#e8458b;color:#fff;padding:6px 12px;border-radius:3px}
+.hero-t .kick b{color:#fff}
+/* charity band: the team photo shows in full above the story */
+.cause-band{grid-template-columns:1fr;min-height:0}
+.cb-img{min-height:0;aspect-ratio:3/2}
+.cb-img img{object-position:50% 40%}
+@media(min-width:901px){.cb-steps{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}.cb-txt .lead{max-width:760px}}
+.sched-empty{text-align:center;color:var(--mu);padding:34px 16px;font-size:15px;line-height:1.5}
+.sched-empty b{display:block;color:var(--ink);font-size:17px;margin-bottom:4px}
+td.sched-empty{height:120px}
+/* sponsor logos (Powered by) */
+.spw{display:inline-flex;align-items:center;gap:8px}
+.spw img{display:block;object-fit:contain}
+.slogo{display:flex;margin-top:5px}.slogo img{height:16px;max-width:72px}
+@media(max-width:900px){.ses .slogo{margin:0 0 0 auto}.ses .slogo img{height:20px;max-width:80px}}
+.mdl-sp{margin-top:10px;background:#fff;padding:6px 10px;border-radius:4px}
+.mdl-sp small{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
+.mdl-sp img{height:26px;max-width:120px}
+.done-sp{display:flex;justify-content:center;margin:0 auto 12px}.done-sp img{height:40px;max-width:160px}
+.pass-sp img{height:34px;max-width:110px}
+.pass .qrimg{margin:4px auto 14px;border:0}
+.ch-sp{display:flex;margin-bottom:12px}.ch-sp img{height:34px;max-width:120px}
+.chc .soon.open{color:#1a8f4a}
+.slots{margin-top:18px}
+.slots h4{font-size:13px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu);margin-bottom:8px}
+.slots button{display:flex;justify-content:space-between;gap:12px;width:100%;text-align:left;padding:11px 12px;margin:6px 0;background:var(--grey2);border-left:3px solid var(--red);font-size:14px;color:var(--ink)}
+.slots button:hover{background:#ffeaea}
+.slots button span{color:var(--mu);font-size:13px}
 </style>
 </head>
 <body>
@@ -373,6 +401,7 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
   <div class="hero-t"><div class="wrap">
     <h1>Dubai Internet City 30x30 Fitness Hub</h1>
     <p>31 Oct – 29 Nov 2026 · Dubai Internet City Amphitheatre · Free</p>
+    <p class="kick">Kick-off: the <b>Pink Run</b> · Saturday 31 October, morning</p>
   </div></div>
 </section>
 
@@ -382,7 +411,8 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
       <h2>About the Event</h2>
       <h3>A 30-day fitness movement at Dubai Internet City</h3>
       <p>As part of Dubai Fitness Challenge, the Dubai Internet City 30x30 Fitness Hub turns the community into a wellness destination for a whole month.</p>
-      <p>Curated by At The Park with Dubai Internet City, the programme brings free daily sessions — running, yoga, strength and conditioning, dance and mindfulness — led by professional coaches, plus the 30x30 Challenge Series and the Al Ameen Corporate Challenge.</p>
+      <p>Curated by At The Park with Dubai Internet City, the programme brings free daily sessions — running, yoga, strength and conditioning, dance and mindfulness — led by professional coaches, plus the 30x30 Challenge Series and the Al Ameen Run Challenge.</p>
+      <p>It all starts on the <b>morning of Saturday 31 October with the Pink Run</b>.</p>
       <p>Open to everyone. <b>Book here or in the ATP app</b> — one account, one booking, one QR code to check in.</p>
       <ol class="steps">
         <li><b>Join ATP — free</b>Create your account in under a minute, on the web or in the app.</li>
@@ -395,13 +425,13 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
 
   <aside class="side">
     <div class="side-in">
-      <div><h4>Date &amp; Time :</h4><p>31 Oct – 29 Nov 2026<br>Weekdays: 6:30 PM to 9:30 PM<br>Weekends: 6:30 AM to 9:30 PM</p></div>
+      <div><h4>Date &amp; Time :</h4><p>31 Oct – 29 Nov 2026<br>Kick-off: Pink Run, Sat 31 Oct (morning)<br>Weekdays: 6:30 PM to 9:30 PM<br>Weekends: 6:30 AM to 9:30 PM</p></div>
       <div><h4>Venue:</h4><p>Dubai Internet City Amphitheatre<br><a href="https://www.google.com/maps/search/?api=1&amp;query=Dubai+Internet+City+Amphitheatre" target="_blank" rel="noopener" style="font-size:14px">Open in Google Maps ↗</a></p></div>
       <img class="hublogo" src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub">
       <div class="ctas" style="display:flex;flex-direction:column;gap:8px">
         <a class="btn btn-red btn-block" href="#schedule">Book a session</a>
         <a class="btn btn-line btn-block" href="#app">Get the ATP app</a>
-        <p class="cd" style="text-align:center;margin-top:4px">Opening Night in <b id="cd">—</b></p>
+        <p class="cd" style="text-align:center;margin-top:4px">Pink Run in <b id="cd">—</b></p>
       </div>
     </div>
   </aside>
@@ -409,8 +439,8 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
 
 <div class="wrap">
   <section class="sec" id="schedule" style="padding-top:8px">
-    <div class="eyebrow"><small>Dubai Fitness Challenge</small><h2>30x30 Fitness Hub Schedule</h2><p>Tap any session to book your free spot. Challenge nights are shown in red — tap one to see the qualifier and final slots.</p></div>
-    <div class="live demo" id="liveNote"><i></i><span>Preview: DIC’s published schedule. Sessions open for booking as soon as they’re added to the ATP calendar.</span></div>
+    <div class="eyebrow"><small>Dubai Fitness Challenge</small><h2>30x30 Fitness Hub Schedule</h2><p>Tap any session to book your free spot. Challenge sessions are shown in red.</p></div>
+    <div class="live demo" id="liveNote"><i></i><span>Loading the schedule…</span></div>
     <div class="chips" id="chips"></div>
     <div class="wtabs" id="wtabs"></div>
     <div class="whead"><b id="wTitle">WEEK 1</b><span id="wRange"></span></div>
@@ -420,7 +450,7 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
   </section>
 
   <section class="sec" id="challenges" style="padding-top:20px">
-    <div class="eyebrow"><small>The 30x30 Challenge Series</small><h2>Compete every day. Finals every weekend.</h2><p>Four challenges with a weekly leaderboard each, all free to enter: three individual challenges with men's and women's categories, plus the Al Ameen Corporate Challenge for company teams.</p></div>
+    <div class="eyebrow"><small>The 30x30 Challenge Series</small><h2>Compete every day. Finals every weekend.</h2><p>Four challenges with a weekly leaderboard each, all free to enter: three individual challenges with men's and women's categories, plus the Al Ameen Run Challenge for company teams.</p></div>
     <div class="ch-how">
       <div><small>Mon – Fri · 6–9 PM</small><b>Qualify</b><p>One scored try per day.</p></div>
       <div><small>All week</small><b>Climb the board</b><p>Your best result of the week counts.</p></div>
@@ -432,7 +462,7 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
 
   <section class="sec" id="charity" style="padding-top:8px">
     <div class="cause-band">
-      <div class="cb-img"><img src="/img/30x30/charity-teams.jpg" alt="Company teams at the DIC Amphitheatre"><span class="cb-tag">Al Ameen Corporate Challenge</span></div>
+      <div class="cb-img"><img src="/img/30x30/charity-atp-team.jpg" alt="The At The Park team at the DIC Amphitheatre"><span class="cb-tag">Al Ameen Run Challenge</span></div>
       <div class="cb-txt">
         <small>A competition with a cause</small>
         <h2>Companies compete.<br>Charity wins.</h2>
@@ -443,7 +473,7 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
           <li><b>Charity wins</b>The prize is donated in the winning company’s name — no cash to staff, no HR or gift-policy friction.</li>
         </ol>
         <p class="cb-note">Charity partner to be announced.</p>
-        <div class="cb-cta"><a class="btn btn-red" href="mailto:general@atthepark.world?subject=Al%20Ameen%20Corporate%20Challenge%20%E2%80%94%20company%20team">Register your company’s interest</a><button class="btn btn-line" data-chreg="relay">How it works</button></div>
+        <div class="cb-cta"><a class="btn btn-red" href="mailto:general@atthepark.world?subject=Al%20Ameen%20Run%20Challenge%20%E2%80%94%20company%20team">Register your company’s interest</a><button class="btn btn-line" data-chreg="relay">How it works</button></div>
         <p class="cb-note">Company team sign-up opens soon — register your interest and we’ll be in touch.</p>
       </div>
     </div>
@@ -473,10 +503,10 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
       <details open><summary>Is it free?</summary><p>Yes. Every session at the 30x30 Fitness Hub and all four challenges are free — you just need to book your spot.</p></details>
       <details><summary>Do I need an ATP account?</summary><p>Yes, a free one. It's how we save your spot, give you your check-in QR code and add your challenge results.</p></details>
       <details><summary>If I book here, is it in the app too?</summary><p>Yes. The website and the ATP app share the same booking system — book in one, it shows up in the other with the same QR code.</p></details>
-      <details><summary>How do the challenge qualifiers work?</summary><p>Qualifiers run every weekday evening: Al Ameen Corporate Challenge 6–7 PM, Redline 400 7–8 PM and Last One Standing 8–9 PM. One scored try per day; your best result of the week counts. Burpee Blitz schedule <span class="sample">TBC</span></p></details>
-      <details><summary>How do I register on the same team as my colleagues?</summary><p>Company team sign-up opens soon. One colleague will be the captain: they create the team and share a team link, and everyone else joins with their own free ATP account. Teams are 2–4 colleagues from the same company. To get your company on the list now, <a href="mailto:general@atthepark.world?subject=Al%20Ameen%20Corporate%20Challenge%20%E2%80%94%20company%20team">email us</a>.</p></details>
-      <details><summary>Where does the charity money go?</summary><p>100% of the Al Ameen Corporate Challenge prize goes to charity in the winning company's name. Our charity partner will be announced soon.</p></details>
-      <details><summary>Who makes the weekend finals?</summary><p>The week's top 15 men and 15 women in each individual challenge, and the top 10 Al Ameen Corporate Challenge teams. Results are checked and published by the ATP team after each session.</p></details>
+      <details><summary>How do the challenge qualifiers work?</summary><p>Qualifiers run every weekday evening: Al Ameen Run Challenge 6–7 PM, Redline 400 7–8 PM and Last One Standing 8–9 PM. One scored try per day; your best result of the week counts. Reebok Burpee Challenge schedule <span class="sample">TBC</span></p></details>
+      <details><summary>How do I register on the same team as my colleagues?</summary><p>Company team sign-up opens soon. One colleague will be the captain: they create the team and share a team link, and everyone else joins with their own free ATP account. Teams are 2–4 colleagues from the same company. To get your company on the list now, <a href="mailto:general@atthepark.world?subject=Al%20Ameen%20Run%20Challenge%20%E2%80%94%20company%20team">email us</a>.</p></details>
+      <details><summary>Where does the charity money go?</summary><p>100% of the Al Ameen Run Challenge prize goes to charity in the winning company's name. Our charity partner will be announced soon.</p></details>
+      <details><summary>Who makes the weekend finals?</summary><p>The week's top 15 men and 15 women in each individual challenge, and the top 10 Al Ameen Run Challenge teams. Results are checked and published by the ATP team after each session.</p></details>
     </div>
   </section>
 
@@ -507,59 +537,71 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
   var toastEl = document.getElementById('toast'), tT;
   function toast(m){ toastEl.textContent = m; toastEl.classList.add('on'); clearTimeout(tT); tT = setTimeout(function(){ toastEl.classList.remove('on'); }, 2400); }
 
-  // countdown (sidebar)
-  var target = Date.parse('2026-10-31T18:00:00+04:00');
-  function tick(){ var s = Math.max(0, Math.floor((target - Date.now()) / 1000)); document.getElementById('cd').textContent = Math.floor(s/86400) + 'd ' + String(Math.floor(s%86400/3600)).padStart(2,'0') + 'h ' + String(Math.floor(s%3600/60)).padStart(2,'0') + 'm'; }
+  // countdown (sidebar) to the Pink Run — the hub opens on the morning of
+  // Sat 31 Oct. Uses the Pink Run session's real start once it is in the
+  // calendar; 6:30 AM (weekend opening time) until then.
+  var target = Date.parse('2026-10-31T06:30:00+04:00'), cdEl = document.getElementById('cd');
+  function tick(){
+    var s = Math.max(0, Math.floor((target - Date.now()) / 1000));
+    if (!s) { cdEl.parentNode.style.display = 'none'; return; }
+    cdEl.textContent = Math.floor(s/86400) + 'd ' + String(Math.floor(s%86400/3600)).padStart(2,'0') + 'h ' + String(Math.floor(s%3600/60)).padStart(2,'0') + 'm';
+  }
   tick(); setInterval(tick, 30000);
 
-  // ── official schedule (dic.ae/the-community/events/fitness-hub, 2026-10-14) ──
-  var DIC_SCHED = {"1":[["18:00","Opening Night Event","special"]],"2":[["07:00","Beginner Run","run"],["07:30","Run Technique","run"],["09:00","Opening Flow Yoga by Zoga","zoga"],["18:30","Zumba","dance"],["19:00","Latin Dance","dance"],["19:30","Traditional Yoga","yoga"],["20:00","Meditation","yoga"]],"3":[["19:00","Hatha Yoga","yoga"],["19:30","ATP Kickboxing","strength"],["20:00","Breathwork","yoga"]],"4":[["19:00","Tone & Flow Yoga","yoga"],["19:30","Hybrid Training","strength"]],"5":[["19:00","Social Run","run"],["19:30","Cardio Calisthenics","strength"],["20:00","Stretching","yoga"]],"6":[["19:00","Interval Run","run"],["19:30","Traditional Yoga","yoga"],["20:00","Meditation","yoga"]],"7":[["18:30","Pound","dance"],["19:00","Latin Dance","dance"],["19:30","Bootcamp","strength"],["20:00","Stretching","yoga"]],"8":[["07:00","Social Run","run"],["07:30","Hatha Yoga","yoga"],["18:00","ATP Kickboxing","strength"],["18:30","Hybrid Training","strength"],["19:00","Tone & Flow Yoga","yoga"],["19:30","Sound Healing","yoga"],["20:00","Meditation","yoga"]],"9":[["07:00","Beginner Run","run"],["07:30","Run Technique","run"],["18:30","Zumba","dance"],["19:00","Latin Dance","dance"],["19:30","Traditional Yoga","yoga"],["20:00","Meditation","yoga"]],"10":[["19:00","Hatha Yoga","yoga"],["19:30","ATP Kickboxing","strength"],["20:00","Breathwork","yoga"]],"11":[["19:00","Tone & Flow Yoga","yoga"],["19:30","Hybrid Training","strength"]],"12":[["19:00","Social Run","run"],["19:30","Cardio Calisthenics","strength"],["20:00","Stretching","yoga"]],"13":[["08:00","Tai Chi in the Park by Zoga","zoga"],["19:00","Interval Run","run"],["19:30","Traditional Yoga","yoga"],["20:00","Meditation","yoga"]],"14":[["18:30","Pound","dance"],["19:00","Latin Dance","dance"],["19:30","Bootcamp","strength"],["20:00","Stretching","yoga"]],"15":[["07:00","Social Run","run"],["07:30","Hatha Yoga","yoga"],["18:00","ATP Kickboxing","strength"],["18:30","Hybrid Training","strength"],["19:00","Tone & Flow Yoga","yoga"],["19:30","Sound Healing","yoga"],["20:00","Meditation","yoga"],["","Fitness Festival","special"]],"16":[["07:00","Beginner Run","run"],["07:30","Run Technique","run"],["09:00","Recover & Reset by Zoga","zoga"],["18:30","Zumba","dance"],["19:00","Latin Dance","dance"],["19:30","Traditional Yoga","yoga"],["20:00","Meditation","yoga"]],"17":[["19:00","Hatha Yoga","yoga"],["19:30","ATP Kickboxing","strength"],["20:00","Breathwork","yoga"]],"18":[["19:00","Tone & Flow Yoga","yoga"],["19:30","Hybrid Training","strength"]],"19":[["19:00","Social Run","run"],["19:30","Cardio Calisthenics","strength"],["20:00","Stretching","yoga"]],"20":[["19:00","Interval Run","run"],["19:30","Traditional Yoga","yoga"],["20:00","Meditation","yoga"]],"21":[["18:30","Pound","dance"],["19:00","Latin Dance","dance"],["19:30","Bootcamp","strength"],["20:00","Stretching","yoga"]],"22":[["07:00","Social Run","run"],["07:30","Hatha Yoga","yoga"],["18:00","ATP Kickboxing","strength"],["18:30","Hybrid Training","strength"],["19:00","Tone & Flow Yoga","yoga"],["19:30","Sound Healing","yoga"],["20:00","Meditation","yoga"]],"23":[["07:00","Beginner Run","run"],["07:30","Run Technique","run"],["09:00","Recover & Reset by Zoga","zoga"],["18:30","Zumba","dance"],["19:00","Latin Dance","dance"],["19:30","Traditional Yoga","yoga"],["20:00","Meditation","yoga"],["","Run Together","special"]],"24":[["19:00","Hatha Yoga","yoga"],["19:30","ATP Kickboxing","strength"],["20:00","Breathwork","yoga"]],"25":[["19:00","Tone & Flow Yoga","yoga"],["19:30","Hybrid Training","strength"]],"26":[["19:00","Social Run","run"],["19:30","Cardio Calisthenics","strength"],["20:00","Stretching","yoga"]],"27":[["19:00","Interval Run","run"],["19:30","Traditional Yoga","yoga"],["20:00","Meditation","yoga"]],"28":[["18:30","Pound","dance"],["19:00","Latin Dance","dance"],["19:30","Bootcamp","strength"],["20:00","Stretching","yoga"]],"29":[["07:00","Social Run","run"],["07:30","Hatha Yoga","yoga"],["18:00","ATP Kickboxing","strength"],["18:30","Hybrid Training","strength"],["19:00","Tone & Flow Yoga","yoga"],["19:30","Sound Healing","yoga"],["20:00","Meditation","yoga"],["","Yoga Together","special"]],"30":[["07:00","Beginner Run","run"],["07:30","Run Technique","run"],["09:00","Breath by Zoga","zoga"],["18:30","Zumba","dance"],["19:00","Latin Dance","dance"],["19:30","Traditional Yoga","yoga"],["20:00","Meditation","yoga"],["","30x30 Finale","special"]]};
-  var CAT = { all:'All', run:'Running', yoga:'Yoga & Mindfulness', strength:'Strength & Conditioning', dance:'Dance', special:'Special Event', ch:'Challenges' };
+  // ── sponsors ─────────────────────────────────────────
+  // A session's own "Powered by" logo (admin → session → sponsor) wins;
+  // otherwise the hub's challenge sponsors are matched by session name.
+  // A logo file that isn't there yet simply doesn't show (see the error
+  // listener below), so dropping the PNG in /img/30x30/ switches it on.
+  var SPONSORS = [
+    { re:/al\s*ameen/i, name:'Al Ameen', logo:'/img/30x30/sponsor-al-ameen.png' },
+    { re:/reebok|burpee/i, name:'Reebok', logo:'/img/30x30/sponsor-reebok.png' }
+  ];
+  function sponsorOf(s){
+    if (s && s.sponsor_logo_url) return { name: s.sponsor_name || 'Partner', logo: s.sponsor_logo_url };
+    var n = String((s && (s.name || s.n)) || '');
+    for (var i = 0; i < SPONSORS.length; i++) if (SPONSORS[i].re.test(n)) return SPONSORS[i];
+    return null;
+  }
+  var NO_LOGO = {};   // logo files that failed once aren't asked for again
+  function spLogo(sp, cls, label){
+    return sp && !NO_LOGO[sp.logo] ? '<span class="spw ' + cls + '">' + (label ? '<small>' + label + '</small>' : '') + '<img data-sp src="' + esc(sp.logo) + '" alt="' + esc(sp.name) + '"></span>' : '';
+  }
+  document.addEventListener('error', function(e){ var t = e.target; if (t && t.tagName === 'IMG' && t.hasAttribute('data-sp')) { NO_LOGO[t.getAttribute('src')] = 1; var w = t.closest('.spw'); (w || t).remove(); } }, true);
+
   var DOW = ['SUN','MON','TUE','WED','THU','FRI','SAT'], DOWL = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'], MON = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], MONL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   function dt(i){ return new Date(Date.UTC(2026, 9, 30 + i)); }   // 1 → Sat 31 Oct
   function lbl(i){ var d = dt(i); return d.getUTCDate() + ' ' + MON[d.getUTCMonth()]; }
   function t12(t){ if (!t) return 'Time TBC'; var p = t.split(':'), h = +p[0]; return (h % 12 || 12) + ':' + p[1] + ' ' + (h < 12 ? 'AM' : 'PM'); }
   var WEEKS = [[1,7],[8,14],[15,21],[22,28],[29,30]];
 
-  // challenge slots (DIC 30x30 sheet, CHALLENGES tab)
+  // The 30x30 Challenge Series. Slots are the calendar sessions whose name
+  // matches (re) — e.g. "Reebok Burpee Challenge · Qualifier" created in admin.
   var CH = [
-    { k:'redline', n:'Redline 400', tl:'Fastest 400 m', ds:'One lap, flat out. Run in heats and chip-timed.', win:'Fastest single lap of the week wins.', q:'Mon – Fri · 7–8 PM', f:'Sat & Sun · 7–8 PM', cut:'Top 15 men + 15 women', unit:'time' },
-    { k:'relay', n:'Al Ameen Corporate Challenge', tl:'4 km company team relay', ds:'Company teams of 2–4 colleagues split a fixed 4 km in 400 m runs.', win:'Fastest team time wins — the prize goes to charity.', q:'Mon – Fri · 6–7 PM', f:'Sat & Sun · 6–7 PM', cut:'Top 10 teams', unit:'time', team:true, charity:true },
-    { k:'burpee', n:'Burpee Blitz', tl:'60-second sprint', ds:'Max burpee jump-overs in one minute — chest to floor, jump the bar.', win:'Most valid reps in 60 seconds wins.', q:'Schedule TBC', f:'TBC', cut:'Top 15 men + 15 women', unit:'reps' },
-    { k:'los', n:'Last One Standing', tl:'The pace ladder', ds:'Everyone runs 400 m; the time cap tightens each round (5:00 → 2:00), 1 min rest.', win:'Last runner to beat the cap wins.', q:'Mon – Fri · 8–9 PM', f:'Sat & Sun · 8–9 PM', cut:'Top 15 men + 15 women', unit:'level' }
+    { k:'redline', re:/redline/i, n:'Redline 400', tl:'Fastest 400 m', ds:'One lap, flat out. Run in heats and chip-timed.', win:'Fastest single lap of the week wins.', q:'Mon – Fri · 7–8 PM', f:'Sat & Sun · 7–8 PM', cut:'Top 15 men + 15 women' },
+    { k:'relay', re:/al\s*ameen/i, n:'Al Ameen Run Challenge', tl:'4 km company team relay', ds:'Company teams of 2–4 colleagues split a fixed 4 km in 400 m runs.', win:'Fastest team time wins — the prize goes to charity.', q:'Mon – Fri · 6–7 PM', f:'Sat & Sun · 6–7 PM', cut:'Top 10 teams', team:true, charity:true },
+    { k:'burpee', re:/reebok|burpee/i, n:'Reebok Burpee Challenge', tl:'60-second sprint', ds:'Max burpee jump-overs in one minute — chest to floor, jump the bar.', win:'Most valid reps in 60 seconds wins.', q:'Schedule TBC', f:'TBC', cut:'Top 15 men + 15 women' },
+    { k:'los', re:/last one standing/i, n:'Last One Standing', tl:'The pace ladder', ds:'Everyone runs 400 m; the time cap tightens each round (5:00 → 2:00), 1 min rest.', win:'Last runner to beat the cap wins.', q:'Mon – Fri · 8–9 PM', f:'Sat & Sun · 8–9 PM', cut:'Top 15 men + 15 women' }
   ];
   var chBy = {}; CH.forEach(function(c){ chBy[c.k] = c; });
-  function chSlots(i){
-    var w = dt(i).getUTCDay();
-    if (i <= 2) return [['18:30','relay','q'],['19:00','redline','q'],['19:30','relay','f'],['20:00','redline','f'],['20:30','los','x']];
-    if (w >= 1 && w <= 5) return [['18:00','relay','q'],['19:00','redline','q'],['20:00','los','q']];
-    return [['18:00','relay','f'],['19:00','redline','f'],['20:00','los','f']];
-  }
-  var DESC = {
-    run:'A coached group run around Dubai Internet City — every pace welcome.',
-    yoga:'A calm, coached session to move, stretch and reset. Mats recommended.',
-    strength:'A coached strength and conditioning session for every level.',
-    dance:'High-energy dance fitness with music up and the whole community.',
-    special:'A special 30x30 community moment at the hub. Details to follow.'
-  };
+  var CH_RE = /challenge|redline|last one standing|burpee/i;
+  var SP_RE = /pink run|opening night|festival|finale|special event|celebration/i;
+  var MAIL = 'mailto:general@atthepark.world?subject=Al%20Ameen%20Run%20Challenge%20%E2%80%94%20company%20team';
   var DESC_ANY = 'A free coached session at the 30x30 Fitness Hub, Dubai Internet City Amphitheatre — every level welcome.';
-  function catName(k){ return k && k !== 'a:other' && CAT[k] ? String(CAT[k]).replace(/^\W+\s/, '') : ''; }
 
-  // ── ATP calendar connection ──────────────────────────
-  // The hub schedule is read from the ATP sessions calendar (same API as the
-  // website's Sessions page and the app), so a booking made here is the same
-  // booking members see in the app. Until the hub sessions exist in the
-  // calendar, DIC's published schedule is shown as a preview.
+  // ── ATP calendar ─────────────────────────────────────
+  // Exactly the sessions created in admin with the '30x30 Hub' session
+  // category — the same list as the DIC 30x30 Hub tab on the Sessions page —
+  // so a booking made here is the same booking members see in the app.
   var API = window.ATP_API_BASE || '/api';
   var SHARE_BASE = /^https?:/.test(location.protocol) && !/localhost|127\.0\.0\.1/.test(location.hostname) ? location.origin : 'https://atthepark.world';
-  // Hub sessions = the ones created in admin with the '30x30 Hub' session
-  // category — the same list as the DIC 30x30 Hub tab on the Sessions page.
   var HUB_CAT = '30x30_hub';
-  var SCHED = DIC_SCHED, LIVE = false, LIVE_BY_ID = {};
+  var SCHED = {}, LIVE = false, LOADED = false, LIVE_BY_ID = {}, CAT = { all:'All' };
   function dubai(iso){ return new Date(Date.parse(iso) + 4 * 3600000); }   // UAE: UTC+4, no DST
   function hubDay(iso){ var d = dubai(iso); return Math.round((Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - Date.UTC(2026, 9, 30)) / 86400000); }
-  // Live filter chip = the Activity chosen when the session was created.
+  // Filter chip = the Activity chosen when the session was created.
   function actOf(s){ var k = String(s.activity_slug || s.activity_id || ''); return k ? { k:'a:' + k, n:(s.activity_icon ? s.activity_icon + ' ' : '') + (s.activity_name || 'Session') } : { k:'a:other', n:'Other' }; }
+  function catName(k){ return k && k !== 'a:other' && CAT[k] ? String(CAT[k]).replace(/^\W+\s/, '') : ''; }
   function token(){ try { return localStorage.getItem('atp_token'); } catch (e) { return null; } }
   function apiFetch(path, opts){
     opts = opts || {}; var h = { 'Accept':'application/json' }, tk = token();
@@ -571,63 +613,56 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
   function loadHub(){
     if (!/^https?:/.test(location.protocol)) return Promise.resolve();
     return apiFetch('/sessions?status=upcoming&limit=1000').then(function(r){
-      var by = {}, n = 0, acts = {};
+      var by = {}, n = 0, acts = {}, pinkAt = 0;
       ((r.data && r.data.sessions) || []).forEach(function(x){
         if (x.session_category !== HUB_CAT) return;
         var day = hubDay(x.scheduled_at); if (day < 1 || day > 30) return;
         var d = dubai(x.scheduled_at), t = String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
-        var a = actOf(x); acts[a.k] = a.n; if (/opening night|festival|finale|special event|celebration/i.test(x.name)) a.k += '|sp';
-        (by[day] = by[day] || []).push([t, x.name, a.k, x]); LIVE_BY_ID[x.id] = { day: day, x: x }; n++;
+        var a = actOf(x); acts[a.k] = a.n;
+        if (/pink run/i.test(x.name)) { var ts = Date.parse(x.scheduled_at); if (!pinkAt || ts < pinkAt) pinkAt = ts; }
+        (by[day] = by[day] || []).push({ t:t, x:x, cat:a.k }); LIVE_BY_ID[x.id] = { day: day, x: x }; n++;
       });
-      if (n) {
-        SCHED = by; LIVE = true;
-        var keys = Object.keys(acts).sort(function(p, q){ return p === 'a:other' ? 1 : q === 'a:other' ? -1 : acts[p].replace(/^\W+\s/, '').localeCompare(acts[q].replace(/^\W+\s/, '')); });
-        CAT = { all:'All' }; keys.forEach(function(k){ CAT[k] = acts[k]; }); CAT.ch = 'Challenges';
-        state.cat = 'all'; renderChips();
-      }
-    }).catch(function(){});
+      SCHED = by; LIVE = n > 0;
+      if (pinkAt) { target = pinkAt; tick(); }
+      var keys = Object.keys(acts).sort(function(p, q){ return p === 'a:other' ? 1 : q === 'a:other' ? -1 : acts[p].replace(/^\W+\s/, '').localeCompare(acts[q].replace(/^\W+\s/, '')); });
+      CAT = { all:'All' }; keys.forEach(function(k){ CAT[k] = acts[k]; });
+    }).catch(function(){}).then(function(){ LOADED = true; });
   }
   function shortLink(id){ var c = String(id).replace(/-/g, '').slice(0, 8); return SHARE_BASE + '/s/' + c; }
   function inviteText(x){
     var d = dt(x.day);
-    return 'Join me at ' + x.n + ' 💚\n📅 ' + DOWL[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + MON[d.getUTCMonth()] + ' · ' + t12(x.t) + '\n📍 DIC Amphitheatre · 30x30 Fitness Hub\nIt’s free 🙌\n\nBook your spot: ' + (x.ses ? shortLink(x.ses.id) : SHARE_BASE + '/30x30-hub');
+    return 'Join me at ' + x.n + ' 💚\n📅 ' + DOWL[d.getUTCDay()] + ' ' + d.getUTCDate() + ' ' + MON[d.getUTCMonth()] + ' · ' + t12(x.t) + '\n📍 DIC Amphitheatre · 30x30 Fitness Hub\nIt’s free 🙌\n\nBook your spot: ' + shortLink(x.ses.id);
   }
 
   function dayItems(i){
-    var list = (SCHED[i] || []).map(function(s){ var c = String(s[2]).split('|'); return { kind:'class', day:i, t:s[0], n:s[1], cat:c[0] === 'zoga' ? 'yoga' : c[0], sp:c[0] === 'special' || c[1] === 'sp', ses:s[3] || null, key:i + '|' + (s[3] ? s[3].id : s[1]) }; });
-    chSlots(i).forEach(function(c){ list.push({ kind:'ch', day:i, t:c[0], ch:c[1], phase:c[2], n:chBy[c[1]].n, cat:'ch', key:i + '|ch|' + c[1] + '|' + c[2] }); });
-    return list;
+    return (SCHED[i] || []).map(function(s){ return { day:i, t:s.t, n:s.x.name, cat:s.cat, ch:CH_RE.test(s.x.name), sp:SP_RE.test(s.x.name), ses:s.x, key:i + '|' + s.x.id }; })
+      .sort(function(p, q){ return p.t < q.t ? -1 : p.t > q.t ? 1 : 0; });
   }
-  function itemLabel(x){
-    if (x.kind !== 'ch') return '';
-    return x.day <= 2 ? (x.phase === 'f' ? 'Opening final' : x.phase === 'x' ? 'Opening showcase' : 'Opening qualifier') : (x.phase === 'f' ? 'Final' : 'Qualifier');
-  }
+  function allItems(){ var out = []; for (var i = 1; i <= 30; i++) out = out.concat(dayItems(i)); return out; }
 
-  var state = { cat:'all', week:0, booked:{}, reg:{}, regInfo:{}, tab:'redline', sex:'w', rwk:2, relayView:'teams' };
+  var state = { cat:'all', week:0, booked:{} };
 
   // chips + week tabs
   var chipsEl = document.getElementById('chips');
-  function renderChips(){ chipsEl.innerHTML = Object.keys(CAT).map(function(k){ return '<button class="chip' + (k === state.cat ? ' on' : '') + '" data-cat="' + esc(k) + '">' + esc(CAT[k]) + '</button>'; }).join(''); }
+  function renderChips(){
+    var keys = Object.keys(CAT);
+    chipsEl.style.display = keys.length > 2 ? '' : 'none';   // one activity → nothing to filter
+    chipsEl.innerHTML = keys.map(function(k){ return '<button class="chip' + (k === state.cat ? ' on' : '') + '" data-cat="' + esc(k) + '">' + esc(CAT[k]) + '</button>'; }).join('');
+  }
   renderChips();
   chipsEl.addEventListener('click', function(e){ var b = e.target.closest('[data-cat]'); if (!b) return; state.cat = b.getAttribute('data-cat'); chipsEl.querySelectorAll('.chip').forEach(function(x){ x.classList.toggle('on', x === b); }); renderSched(); });
   var wtabs = document.getElementById('wtabs');
-  wtabs.innerHTML = WEEKS.map(function(w, i){ return '<button class="wtab' + (i === 0 ? ' on' : '') + '" data-w="' + i + '">Week ' + (i + 1) + '</button>'; }).join('');
-  wtabs.addEventListener('click', function(e){ var b = e.target.closest('[data-w]'); if (!b) return; state.week = +b.getAttribute('data-w'); wtabs.querySelectorAll('.wtab').forEach(function(x){ x.classList.toggle('on', x === b); }); renderSched(); });
+  function renderWeeks(){ wtabs.innerHTML = WEEKS.map(function(w, i){ return '<button class="wtab' + (i === state.week ? ' on' : '') + '" data-w="' + i + '">Week ' + (i + 1) + '</button>'; }).join(''); }
+  renderWeeks();
+  wtabs.addEventListener('click', function(e){ var b = e.target.closest('[data-w]'); if (!b) return; state.week = +b.getAttribute('data-w'); renderWeeks(); renderSched(); });
+  function weekOf(day){ for (var w = 0; w < WEEKS.length; w++) if (day >= WEEKS[w][0] && day <= WEEKS[w][1]) return w; return 0; }
 
   function visible(x){ return state.cat === 'all' || state.cat === x.cat; }
-  // "All" view: one compact challenge-night chip per day; the Challenges filter shows each slot
-  function viewItems(d){
-    if (state.cat !== 'all') return dayItems(d).filter(visible);
-    var list = dayItems(d).filter(function(x){ return x.kind !== 'ch'; }), w = dt(d).getUTCDay();
-    list.push({ kind:'chday', day:d, t:'CH', cat:'ch', key:d + '|chday', n: d <= 2 ? 'Opening challenges' : (w >= 1 && w <= 5) ? 'Challenge qualifiers' : 'Challenge finals', sub: d <= 2 ? '6:30 – 9 PM' : '6 – 9 PM' });
-    return list;
-  }
   function sesBtn(x, mobile){
-    if (x.kind === 'chday') return '<button class="ses ch" data-chday="' + x.day + '">' + (mobile ? '<strong>' + (x.day <= 2 ? '18:30' : '18:00') + '</strong><span>' + x.n + '<small>Al Ameen · Redline 400 · Last One Standing</small></span>' : x.n + '<small>Al Ameen · Redline · LOS</small>') + '</button>';
-    var cls = 'ses' + (x.kind === 'ch' ? ' ch' : x.sp ? ' sp' : '') + (state.booked[x.key] || (x.kind === 'ch' && state.reg[x.ch]) ? ' booked' : '');
-    var attr = x.kind === 'ch' ? 'data-chreg="' + x.ch + '"' : 'data-open="' + esc(x.key) + '"';
-    if (mobile) return '<button class="' + cls + '" ' + attr + '><strong>' + (x.t || 'TBC') + '</strong><span>' + esc(x.n) + (x.kind === 'ch' ? '<small>' + itemLabel(x) + '</small>' : '') + '</span></button>';
-    return '<button class="' + cls + '" ' + attr + '>' + esc(x.n) + (x.kind === 'ch' ? '<small>' + itemLabel(x) + '</small>' : '') + '</button>';
+    var cls = 'ses' + (x.ch ? ' ch' : x.sp ? ' sp' : '') + (state.booked[x.key] ? ' booked' : '');
+    var logo = spLogo(sponsorOf(x.ses), 'slogo');
+    if (mobile) return '<button class="' + cls + '" data-open="' + esc(x.key) + '"><strong>' + (x.t || 'TBC') + '</strong><span>' + esc(x.n) + '</span>' + logo + '</button>';
+    return '<button class="' + cls + '" data-open="' + esc(x.key) + '">' + esc(x.n) + logo + '</button>';
   }
   function renderSched(){
     var w = WEEKS[state.week], days = [];
@@ -635,41 +670,46 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
     var a = dt(w[0]), b = dt(w[1]);
     document.getElementById('wTitle').textContent = 'WEEK ' + (state.week + 1);
     document.getElementById('wRange').textContent = a.getUTCDate() + ' ' + MONL[a.getUTCMonth()] + (w[0] === w[1] ? '' : ' – ' + b.getUTCDate() + ' ' + MONL[b.getUTCMonth()]);
-    var items = {}, times = {};
-    days.forEach(function(d){ items[d] = viewItems(d); items[d].forEach(function(x){ times[x.t || 'TBC'] = 1; }); });
-    var tlist = Object.keys(times).filter(function(t){ return t !== 'TBC' && t !== 'CH'; }).sort();
-    if (times.CH) tlist.push('CH');
+    var items = {}, times = {}, total = 0;
+    days.forEach(function(d){ items[d] = dayItems(d).filter(visible); total += items[d].length; items[d].forEach(function(x){ times[x.t || 'TBC'] = 1; }); });
+    var tlist = Object.keys(times).filter(function(t){ return t !== 'TBC'; }).sort();
     if (times.TBC) tlist.push('TBC');
+    var empty = !LOADED ? '<b>Loading the schedule…</b>' :
+      !LIVE ? '<b>30x30 sessions are coming soon</b>The hub opens on the morning of Saturday 31 October with the Pink Run. Sessions open for booking here and in the ATP app very soon.' :
+      '<b>No ' + (state.cat !== 'all' ? esc(catName(state.cat) || 'matching') + ' ' : '') + 'sessions this week</b>Try another week' + (state.cat !== 'all' ? ' or activity' : '') + '.';
     var h = '<thead><tr><th class="time">Time</th>' + days.map(function(d){ return '<th>' + DOW[dt(d).getUTCDay()] + '<b>' + lbl(d) + '</b></th>'; }).join('') + (days.length < 7 ? '<th colspan="' + (7 - days.length) + '"></th>' : '') + '</tr></thead><tbody>';
-    if (!tlist.length) h += '<tr><td colspan="8" style="text-align:center;color:var(--mu);height:90px">No sessions in this category this week.</td></tr>';
+    if (!total) h += '<tr><td colspan="8" class="sched-empty">' + empty + '</td></tr>';
     tlist.forEach(function(t){
-      h += '<tr' + (t === 'CH' ? ' class="chrow"' : '') + '><td class="time"><span class="tchip">' + (t === 'CH' ? '6–9 PM' : t) + '</span></td>';
+      h += '<tr><td class="time"><span class="tchip">' + t + '</span></td>';
       days.forEach(function(d){ h += '<td>' + items[d].filter(function(x){ return (x.t || 'TBC') === t; }).map(function(x){ return sesBtn(x); }).join('') + '</td>'; });
       if (days.length < 7) h += '<td colspan="' + (7 - days.length) + '" style="background:#fafafa"></td>';
       h += '</tr>';
     });
     document.getElementById('grid').innerHTML = h + '</tbody>';
-    document.getElementById('mlist').innerHTML = days.map(function(d, j){
-      var its = items[d].slice().sort(function(p, q){ var a = p.t === 'CH' ? '18:00~' : (p.t || '99'), b = q.t === 'CH' ? '18:00~' : (q.t || '99'); return a < b ? -1 : a > b ? 1 : 0; });
-      return '<details class="mday"' + (j === 0 ? ' open' : '') + '><summary>' + DOWL[dt(d).getUTCDay()] + ' ' + lbl(d) + '<span>' + its.length + ' session' + (its.length === 1 ? '' : 's') + '</span></summary><ul>' + its.map(function(x){ return '<li>' + sesBtn(x, true) + '</li>'; }).join('') + '</ul></details>';
+    var firstOpen = -1; days.forEach(function(d, j){ if (firstOpen < 0 && items[d].length) firstOpen = j; });
+    document.getElementById('mlist').innerHTML = !total ? '<div class="sched-empty">' + empty + '</div>' : days.map(function(d, j){
+      var its = items[d];
+      return '<details class="mday"' + (j === firstOpen ? ' open' : '') + '><summary>' + DOWL[dt(d).getUTCDay()] + ' ' + lbl(d) + '<span>' + its.length + ' session' + (its.length === 1 ? '' : 's') + '</span></summary><ul>' + its.map(function(x){ return '<li>' + sesBtn(x, true) + '</li>'; }).join('') + '</ul></details>';
     }).join('');
   }
 
   // ── modal ────────────────────────────────────────────
   var mdl = document.getElementById('mdl'), mTop = document.getElementById('mdlTop'), mBody = document.getElementById('mdlBody');
-  function showMdl(){ if (!mdl.classList.contains('on')) { mdl.classList.add('on'); document.body.classList.add('lock'); mdl.querySelector('.mdl-card').scrollTop = 0; } }
+  function showMdl(){ if (!mdl.classList.contains('on')) { mdl.classList.add('on'); document.body.classList.add('lock'); } mdl.querySelector('.mdl-card').scrollTop = 0; }
   function closeMdl(){ mdl.classList.remove('on'); document.body.classList.remove('lock'); }
   mdl.addEventListener('click', function(e){ if (e.target.closest('[data-close]')) closeMdl(); });
   document.addEventListener('keydown', function(e){ if (e.key === 'Escape') closeMdl(); });
   function findClass(key){ var d = +key.split('|')[0]; return dayItems(d).filter(function(x){ return x.key === key; })[0]; }
+  function openClass(key){ var s = findClass(key); if (s) openLive(s); }
   function openLive(s){
     var x = s.ses, d = dt(s.day), free = !(Number(x.price) > 0 || Number(x.price_points) > 0);
-    var cap = Number(x.capacity) || 0, bk = Number(x.registrations_count) || 0;
-    mTop.innerHTML = '<small>' + esc(catName(s.cat) ? catName(s.cat) + ' · 30x30 Fitness Hub' : '30x30 Fitness Hub') + '</small><h3 id="mdlTitle">' + esc(x.name) + '</h3><button class="mdl-x" data-close aria-label="Close">✕</button>';
+    var cap = Number(x.capacity) || 0, bk = Number(x.registrations_count) || 0, sp = sponsorOf(x);
+    var when = DOWL[d.getUTCDay()] + ', ' + d.getUTCDate() + ' ' + MONL[d.getUTCMonth()];
+    mTop.innerHTML = '<small>' + esc(catName(s.cat) ? catName(s.cat) + ' · 30x30 Fitness Hub' : '30x30 Fitness Hub') + '</small><h3 id="mdlTitle">' + esc(x.name) + '</h3>' + spLogo(sp, 'mdl-sp', 'Powered by') + '<button class="mdl-x" data-close aria-label="Close">✕</button>';
     mBody.innerHTML =
-      '<div class="info"><div><h5>Date</h5><p>' + DOWL[d.getUTCDay()] + ', ' + d.getUTCDate() + ' ' + MONL[d.getUTCMonth()] + '</p></div><div><h5>Time</h5><p>' + t12(s.t) + (x.duration_mins ? ' · ' + x.duration_mins + ' min' : '') + '</p></div>' +
+      '<div class="info"><div><h5>Date</h5><p>' + when + '</p></div><div><h5>Time</h5><p>' + t12(s.t) + (x.duration_mins ? ' · ' + x.duration_mins + ' min' : '') + '</p></div>' +
       '<div><h5>Venue</h5><p>' + (x.location_maps_url ? '<a href="' + esc(x.location_maps_url) + '" target="_blank" rel="noopener">' + esc(x.location) + ' ↗</a>' : esc(x.location || 'DIC Amphitheatre')) + '</p></div><div><h5>Price</h5><p>' + (free ? 'Free' : Number(x.price) > 0 ? esc((x.currency_code || 'AED').toUpperCase()) + ' ' + Number(x.price).toFixed(0) : Number(x.price_points) + ' pts') + '</p></div></div>' +
-      '<p class="mdl-ds">' + esc(x.description || DESC[s.cat] || DESC_ANY) + '</p>' +
+      '<p class="mdl-ds">' + esc(x.description || DESC_ANY) + '</p>' +
       (cap ? '<div class="cap"><div class="bar"><i style="width:' + Math.min(100, Math.round(bk / cap * 100)) + '%"></i></div><p><span>' + bk + ' / ' + cap + ' booked' + (x.waitlist_count ? ' · ' + x.waitlist_count + ' on waitlist' : '') + '</span><span>' + (bk >= cap ? 'Full — join the waitlist' : (cap - bk) + ' spots left') + '</span></p></div>' : '') +
       '<div class="inv"><button class="wa" data-wa="' + esc(s.key) + '">Invite on WhatsApp</button><button data-copy="' + esc(s.key) + '">Copy invite link</button></div>' +
       '<div id="liveAct"><p class="note">Checking your booking…</p></div>';
@@ -682,8 +722,11 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
     apiFetch('/sessions/' + x.id).then(function(r){
       var mb = r.data && r.data.myBooking;
       if (mb && mb.status !== 'cancelled') {
-        act.innerHTML = '<div class="done"><div class="ok">✓</div><h3>You’re booked</h3><p>Show this QR code at the amphitheatre. It’s also in the ATP app under My bookings.</p>' +
-          (mb.qr_token ? '<img class="qrimg" alt="Check-in QR code" src="' + API + '/bookings/qr/' + encodeURIComponent(mb.qr_token) + '.png">' : '') +
+        // confirmation + QR code card (sponsor logo on both when the session has one)
+        act.innerHTML = '<div class="done">' + spLogo(sp, 'done-sp') + '<div class="ok">✓</div><h3>You’re booked</h3><p>Show this QR code at the amphitheatre. It’s also in the ATP app under My bookings.</p>' +
+          '<div class="pass"><div class="ph"><span>' + esc(x.name) + '</span><span>30x30 · 2026</span></div>' +
+          '<div class="pb"><div><b>' + when + '</b><small>' + t12(s.t) + ' · DIC Amphitheatre</small></div>' + spLogo(sp, 'pass-sp') + '</div>' +
+          (mb.qr_token ? '<img class="qrimg" alt="Check-in QR code" src="' + API + '/bookings/qr/' + encodeURIComponent(mb.qr_token) + '.png">' : '') + '</div>' +
           '<div class="acts"><a class="btn btn-line" href="' + shortLink(x.id) + '">Open in ATP</a><button class="btn btn-line" data-wa="' + esc(s.key) + '">Invite friends</button></div><button class="cx" id="mdlCancel">Cancel booking</button></div>';
         state.booked[s.key] = true; renderSched();
         document.getElementById('mdlCancel').addEventListener('click', function(){
@@ -694,7 +737,7 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
         });
         return;
       }
-      if (r.data && typeof r.data.myWaitlistPos === 'number') { act.innerHTML = '<div class="done"><h3>You’re on the waitlist</h3><p>Position #' + r.data.myWaitlistPos + '. We’ll let you know in the ATP app if a spot opens.</p></div>'; return; }
+      if (r.data && typeof r.data.myWaitlistPos === 'number') { act.innerHTML = '<div class="done">' + spLogo(sp, 'done-sp') + '<h3>You’re on the waitlist</h3><p>Position #' + r.data.myWaitlistPos + '. We’ll let you know in the ATP app if a spot opens.</p></div>'; return; }
       act.innerHTML = '<label class="tc"><input type="checkbox" id="mdlTc"> <span>I agree to the <a href="/terms" target="_blank" rel="noopener">terms &amp; conditions</a> for this session.</span></label><button class="btn btn-red btn-block" id="mdlGo" disabled>' + (cap && bk >= cap ? 'Join the waitlist' : free ? 'Book my free spot' : 'Book') + '</button><p class="note">Your booking appears in the ATP app straight away — same QR code.</p>';
       var tc = document.getElementById('mdlTc'), go = document.getElementById('mdlGo');
       tc.addEventListener('change', function(){ go.disabled = !tc.checked; });
@@ -710,39 +753,33 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
       });
     });
   }
-  function openClass(key){
-    var s = findClass(key); if (!s) return;
-    if (s.ses) { openLive(s); return; }
-    var d = dt(s.day);
-    mTop.innerHTML = '<small>' + esc(catName(s.cat) || CAT[s.cat] || '30x30') + ' · 30x30 Fitness Hub</small><h3 id="mdlTitle">' + esc(s.n) + '</h3><button class="mdl-x" data-close aria-label="Close">✕</button>';
-    mBody.innerHTML =
-      '<div class="info"><div><h5>Date</h5><p>' + DOWL[d.getUTCDay()] + ', ' + d.getUTCDate() + ' ' + MONL[d.getUTCMonth()] + '</p></div><div><h5>Time</h5><p>' + t12(s.t) + '</p></div><div><h5>Venue</h5><p>DIC Amphitheatre</p></div><div><h5>Price</h5><p>Free</p></div></div>' +
-      '<p class="mdl-ds">' + (DESC[s.cat] || DESC_ANY) + '</p>' +
-      '<div class="inv"><button class="wa" data-wa="' + esc(s.key) + '">Invite on WhatsApp</button><button data-copy="' + esc(s.key) + '">Copy invite link</button></div>' +
-      '<div class="done"><h3>Booking opens soon</h3><p>This session is being added to the ATP calendar. Join ATP free now — then book here or in the app as soon as it opens.</p></div>' +
-      '<a class="btn btn-red btn-block" href="/join">Join ATP — free</a>';
-    showMdl();
-  }
 
+  // ── challenges: rules + the bookable slots from the calendar ──
   var LADDER = ['5:00','4:30','4:00','3:30','3:00','2:30','2:00'];
+  function chSlots(c){ return allItems().filter(function(x){ return c.re.test(x.n); }); }
   function openCh(k){
     var c = chBy[k]; if (!c) return;
-    mTop.innerHTML = '<small>' + (c.charity ? 'Companies compete · Charity wins' : '30x30 Challenge Series · Free to enter') + '</small><h3 id="mdlTitle">' + esc(c.n) + '</h3><button class="mdl-x" data-close aria-label="Close">✕</button>';
+    var slots = chSlots(c), sp = sponsorOf({ name: c.n });
+    mTop.innerHTML = '<small>' + (c.charity ? 'Companies compete · Charity wins' : '30x30 Challenge Series · Free to enter') + '</small><h3 id="mdlTitle">' + esc(c.n) + '</h3>' + spLogo(sp, 'mdl-sp', 'Powered by') + '<button class="mdl-x" data-close aria-label="Close">✕</button>';
     var rules = '<p class="mdl-ds">' + esc(c.ds) + '</p><div class="rules"><div><small>How to win</small><b>' + esc(c.win) + '</b></div><div><small>Make the cut</small><b>' + c.cut + '</b></div><div><small>Qualifiers</small><b>' + c.q + '</b></div><div><small>Finals</small><b>' + c.f + '</b></div></div>' +
       (k === 'los' ? '<div class="ladder"><div><span>The pace ladder</span><span>1:00 rest</span></div>' + LADDER.map(function(t, j){ return '<div><span>Level ' + (j + 1) + '</span><b>400 m under ' + t + '</b></div>'; }).join('') + '</div>' : '');
-    mBody.innerHTML = rules + (c.team
-      ? '<div class="done"><h3>Company team sign-up opens soon</h3><p>Teams of 2–4 colleagues from the same company. Register your company’s interest and we’ll be in touch as soon as sign-up opens.</p></div><a class="btn btn-red btn-block" href="mailto:general@atthepark.world?subject=Al%20Ameen%20Corporate%20Challenge%20%E2%80%94%20company%20team">Register your company’s interest</a>'
-      : '<div class="done"><h3>Registration opens soon</h3><p>Entry is free. Join ATP now so you’re ready — you’ll enter here or in the ATP app as soon as registration opens.</p></div><a class="btn btn-red btn-block" href="/join">Join ATP — free</a>');
+    var book = slots.length
+      ? '<div class="slots"><h4>Book a slot</h4>' + slots.map(function(x){ var d = dt(x.day); return '<button type="button" data-open="' + esc(x.key) + '"><b>' + DOW[d.getUTCDay()].charAt(0) + DOW[d.getUTCDay()].slice(1).toLowerCase() + ' ' + lbl(x.day) + ' · ' + t12(x.t) + '</b><span>' + esc(x.n) + '</span></button>'; }).join('') + '</div>' +
+        (c.team ? '<p class="note">Entering as a company team? <a href="' + MAIL + '">Register your company’s interest</a>.</p>' : '')
+      : c.team
+        ? '<div class="done"><h3>Company team sign-up opens soon</h3><p>Teams of 2–4 colleagues from the same company. Register your company’s interest and we’ll be in touch as soon as sign-up opens.</p></div><a class="btn btn-red btn-block" href="' + MAIL + '">Register your company’s interest</a>'
+        : '<div class="done"><h3>Registration opens soon</h3><p>Entry is free. Join ATP now so you’re ready — you’ll book here or in the ATP app as soon as registration opens.</p></div><a class="btn btn-red btn-block" href="/join">Join ATP — free</a>';
+    mBody.innerHTML = rules + book;
     showMdl();
   }
-
-  // ── challenge cards ──────────────────────────────────
   function renderCh(){
     document.getElementById('chs').innerHTML = CH.map(function(c, i){
-      var r = false;
-      return '<div class="chc' + (r ? ' reg' : '') + (c.charity ? ' give' : '') + '"><span class="no">' + (c.charity ? 'Charity challenge' : 'Challenge 0' + (i + 1)) + '</span><h3>' + esc(c.n) + '</h3><span class="tl">' + esc(c.tl) + '</span><p>' + esc(c.ds) + '</p>' +
+      var n = chSlots(c).length;
+      return '<div class="chc' + (c.charity ? ' give' : '') + '">' + spLogo(sponsorOf({ name: c.n }), 'ch-sp') + '<span class="no">' + (c.charity ? 'Charity challenge' : 'Challenge 0' + (i + 1)) + '</span><h3>' + esc(c.n) + '</h3><span class="tl">' + esc(c.tl) + '</span><p>' + esc(c.ds) + '</p>' +
         '<dl><dt>How to win</dt><dd>' + esc(c.win) + '</dd><dt>Qualifiers</dt><dd>' + c.q + '</dd><dt>Finals</dt><dd>' + c.f + '</dd></dl>' +
-        (c.charity ? '<a class="cause" href="#charity">💚 100% of the prize goes to charity →</a>' : '') + '<p class="soon">Registration opens soon</p><button class="btn btn-line btn-block" data-chreg="' + c.k + '">See the rules</button></div>';
+        (c.charity ? '<a class="cause" href="#charity">💚 100% of the prize goes to charity →</a>' : '') +
+        (n ? '<p class="soon open">' + n + ' slot' + (n === 1 ? '' : 's') + ' open for booking</p><button class="btn btn-red btn-block" data-chreg="' + c.k + '">Book a slot</button>'
+           : '<p class="soon">Registration opens soon</p><button class="btn btn-line btn-block" data-chreg="' + c.k + '">See the rules</button>') + '</div>';
     }).join('');
   }
 
@@ -756,8 +793,6 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
       (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function(){ toast('Invite copied — paste it anywhere'); }, function(){ toast('Copy failed — long-press to copy'); });
       return;
     }
-    var cd = e.target.closest('[data-chday]');
-    if (cd) { state.cat = 'ch'; chipsEl.querySelectorAll('.chip').forEach(function(x){ x.classList.toggle('on', x.getAttribute('data-cat') === 'ch'); }); renderSched(); document.getElementById('schedule').scrollIntoView({ behavior:'smooth' }); toast('Showing challenge slots — tap one for the rules'); return; }
     var cr = e.target.closest('[data-chreg]');
     if (cr) { openCh(cr.getAttribute('data-chreg')); return; }
     var o = e.target.closest('[data-open]');
@@ -766,15 +801,19 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
 
   renderSched(); renderCh();
   loadHub().then(function(){
+    var ln = document.getElementById('liveNote');
     if (LIVE) {
-      var ln = document.getElementById('liveNote'); ln.classList.remove('demo');
+      ln.classList.remove('demo');
       ln.querySelector('span').textContent = 'Live from the ATP calendar — book here or in the ATP app. Same booking, same QR code.';
-      renderSched();
+      var today = hubDay(new Date().toISOString()), first = allItems()[0];
+      state.week = today >= 1 && today <= 30 ? weekOf(today) : first ? weekOf(first.day) : 0;
+    } else {
+      ln.querySelector('span').textContent = '30x30 sessions are being added to the ATP calendar — they open for booking here and in the ATP app very soon.';
     }
+    renderChips(); renderWeeks(); renderSched(); renderCh();
     var sid = new URLSearchParams(location.search).get('session'), hit = sid && LIVE_BY_ID[sid];
     if (hit) {
-      var w = WEEKS.findIndex(function(r){ return hit.day >= r[0] && hit.day <= r[1]; });
-      if (w >= 0) wtabs.querySelector('[data-w="' + w + '"]').click();
+      state.week = weekOf(hit.day); renderWeeks(); renderSched();
       openClass(hit.day + '|' + sid);
     }
   });
