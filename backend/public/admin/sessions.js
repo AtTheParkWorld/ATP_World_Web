@@ -216,11 +216,45 @@ function _minutesBetween(start, end) {
   return mins;
 }
 
+// Cities keep the country exactly as typed in Settings → Cities ("SA",
+// "KSA", "Saudi Arabia", "UK"…), while this form's Country list uses fixed
+// keys. Compare on one canonical key so every city shows up under its
+// country (founder 2026-10-18: Riyadh saved as "SA" never appeared under
+// Saudi Arabia).
+var COUNTRY_ALIASES = {
+  UAE:     ['uae', 'ae', 'united arab emirates', 'emirates'],
+  Oman:    ['oman', 'om'],
+  KSA:     ['ksa', 'sa', 'saudi', 'saudi arabia', 'kingdom of saudi arabia'],
+  Bahrain: ['bahrain', 'bh'],
+  Qatar:   ['qatar', 'qa'],
+  Kuwait:  ['kuwait', 'kw'],
+  UK:      ['uk', 'gb', 'united kingdom', 'great britain', 'england']
+};
+var COUNTRY_LABELS = { UK: '🇬🇧 United Kingdom' };
+function canonCountry(v) {
+  var t = String(v || '').trim().toLowerCase().replace(/\./g, '');
+  if (!t) return '';
+  for (var k in COUNTRY_ALIASES) if (COUNTRY_ALIASES[k].indexOf(t) !== -1) return k;
+  return String(v).trim();
+}
+// A city in a country the list doesn't have yet (e.g. London / UK) gets
+// that country added, so it can still be picked.
+function _ensureCountryOptions() {
+  var sel = document.getElementById('sCountry');
+  if (!sel) return;
+  var have = {};
+  Array.from(sel.options).forEach(function(o){ if (o.value) have[canonCountry(o.value)] = 1; });
+  ALL_CITIES.forEach(function(c){
+    var k = canonCountry(c.country || 'UAE');
+    if (k && !have[k]) { have[k] = 1; sel.add(new Option(COUNTRY_LABELS[k] || k, k)); }
+  });
+}
+
 function filterCitiesByCountry() {
-  var country = document.getElementById('sCountry').value;
+  var country = canonCountry(document.getElementById('sCountry').value);
   var cityEl = document.getElementById('sCity');
   cityEl.innerHTML = '<option value="">Select City</option>';
-  var filtered = ALL_CITIES.filter(function(c){ return !country || c.country === country; });
+  var filtered = ALL_CITIES.filter(function(c){ return !country || canonCountry(c.country || 'UAE') === country; });
   // Deduplicate by name - keep first occurrence
   var seen = {};
   filtered = filtered.filter(function(c){ if(seen[c.name]) return false; seen[c.name]=true; return true; });
@@ -241,6 +275,7 @@ async function loadCities() {
   try {
     var data = await apiGet('/cities');
     ALL_CITIES = data.cities || [];
+    _ensureCountryOptions();
     filterCitiesByCountry();
   } catch(e) { console.warn('Cities load error:', e.message); }
 }
@@ -892,7 +927,7 @@ async function editSession(s) {
   // Set city + country
   var cityObj = ALL_CITIES.find(function(c){ return c.id === s.city_id; });
   if (cityObj) {
-    document.getElementById('sCountry').value = cityObj.country || 'UAE';
+    document.getElementById('sCountry').value = canonCountry(cityObj.country || 'UAE');
     filterCitiesByCountry();
     document.getElementById('sCity').value = s.city_id;
   }

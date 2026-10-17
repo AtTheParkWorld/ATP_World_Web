@@ -257,7 +257,8 @@ function _showCityForm(c) {
       '<input type="hidden" id="cityEditId" value="' + (c ? c.id : '') + '">' +
       '<div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;margin-bottom:10px">' +
         '<div><label class="admin-form-label">City name *</label><input class="admin-form-input" id="cityName" placeholder="Dubai" value="' + (c ? esc(c.name) : '') + '"></div>' +
-        '<div><label class="admin-form-label">Country *</label><input class="admin-form-input" id="cityCountry" placeholder="UAE" value="' + (c ? esc(c.country || 'UAE') : 'UAE') + '"></div>' +
+        '<div><label class="admin-form-label">Country *</label><input class="admin-form-input" id="cityCountry" list="cityCountryList" placeholder="UAE" value="' + (c ? esc(c.country || 'UAE') : 'UAE') + '">' +
+          '<datalist id="cityCountryList"><option value="UAE"><option value="KSA">Saudi Arabia</option><option value="Oman"><option value="Bahrain"><option value="Qatar"><option value="Kuwait"><option value="UK">United Kingdom</option></datalist></div>' +
       '</div>' +
       '<div style="display:flex;gap:8px">' +
         '<button class="admin-btn admin-btn-primary" onclick="saveCity()" style="font-size:12px">' + (c ? 'Save' : 'Create') + '</button>' +
@@ -269,7 +270,8 @@ function saveCity() {
   var id = document.getElementById('cityEditId').value;
   var body = {
     name: (document.getElementById('cityName').value || '').trim(),
-    country: (document.getElementById('cityCountry').value || 'UAE').trim(),
+    // Saved under the same key the session form uses ("SA" → "KSA").
+    country: (typeof canonCountry === 'function' ? canonCountry(document.getElementById('cityCountry').value) : (document.getElementById('cityCountry').value || '').trim()) || 'UAE',
   };
   if (!body.name) { showToast('City name required', true); return; }
   var url = id ? ('/api/cities/' + id) : '/api/cities';
