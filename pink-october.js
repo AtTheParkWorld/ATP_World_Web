@@ -21,6 +21,7 @@
     'vertical-align:-3px;background:url(/img/pink-ribbon.png) center/contain no-repeat}' +
     '.pink-oct .cal-popover .cal-session-dot::before{width:9px;height:15px;margin-right:7px;vertical-align:-3px}' +
     '@media(max-width:600px){.pink-oct .cal-day.has-session::after{content:"";width:7px;height:12px;bottom:4px;' +
+    'top:auto;right:auto;padding:0;border-radius:0;' +   // today's cell carries the TODAY-badge box styles
     'background:url(/img/pink-ribbon.png) center/contain no-repeat}}';
   var st = document.createElement('style');
   st.setAttribute('data-pink-october', '');
