@@ -369,6 +369,51 @@ function removeSessionAmbassador(id) {
   SESSION_AMBS_PICK = SESSION_AMBS_PICK.filter(function(x){ return x !== id; });
   renderAmbassadorPicker();
 }
+// "Select all" / "Clear" next to the picker (founder 2026-10-18).
+function selectAllSessionAmbassadors() {
+  ALL_AMBASSADORS.forEach(function(m){ if (SESSION_AMBS_PICK.indexOf(m.id) < 0) SESSION_AMBS_PICK.push(m.id); });
+  renderAmbassadorPicker();
+}
+function clearSessionAmbassadors() {
+  SESSION_AMBS_PICK = [];
+  renderAmbassadorPicker();
+}
+
+// Venue → Google Maps link (founder 2026-10-18). Typing (or picking from
+// the suggestions) a venue used on an earlier session fills the Maps field
+// with the link it had last time. A link the admin typed is never replaced;
+// one this helper (or the session-name auto-fill) put there is.
+var KNOWN_LOCATIONS = null;
+function loadKnownLocations() {
+  return apiGet('/sessions/admin/locations').then(function(d){
+    KNOWN_LOCATIONS = (d && d.locations) || [];
+    var dl = document.getElementById('sLocList');
+    if (dl) dl.innerHTML = KNOWN_LOCATIONS.map(function(l){
+      return '<option value="' + String(l.location).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;') + '"></option>';
+    }).join('');
+  }).catch(function(){ KNOWN_LOCATIONS = KNOWN_LOCATIONS || []; });
+}
+function autofillMapsFromLocation() {
+  var loc = document.getElementById('sLoc'), maps = document.getElementById('sMaps'), hint = document.getElementById('sMapsHint');
+  if (!loc || !maps || !KNOWN_LOCATIONS) return;
+  var key = loc.value.trim().toLowerCase();
+  var hit = key ? KNOWN_LOCATIONS.find(function(l){ return String(l.location).toLowerCase() === key; }) : null;
+  var cur = maps.value.trim(), auto = maps.dataset.auto || '';
+  var typedByAdmin = cur && cur !== auto;
+  if (hit && !typedByAdmin) {
+    maps.value = hit.maps_url; maps.dataset.auto = hit.maps_url;
+    if (hint) hint.textContent = '📍 Filled from earlier sessions at this venue';
+  } else if (hint && !(hit && cur === hit.maps_url)) {
+    hint.textContent = '';
+  }
+}
+(function bindVenueAutofill() {
+  document.addEventListener('input', function(ev){
+    if (!ev.target) return;
+    if (ev.target.id === 'sLoc') autofillMapsFromLocation();
+    if (ev.target.id === 'sMaps') { var h = document.getElementById('sMapsHint'); if (h) h.textContent = ''; }
+  });
+})();
 // Wire the picker change once on first run.
 (function bindAmbassadorPicker() {
   document.addEventListener('change', function(ev){
@@ -813,7 +858,7 @@ async function createSession() {
       msgEl.textContent = isEdit ? '✅ Session updated!' : '✅ '+count+' session(s) created!';
       msgEl.style.cssText = 'display:block;background:#0d1a0a;color:#A8FF00;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
       resetSessionForm();
-      setTimeout(function(){ loadSessionsList(); loadDashboardAPI(); }, 800);
+      setTimeout(function(){ loadSessionsList(); loadDashboardAPI(); loadKnownLocations(); }, 800);
     } else {
       throw new Error(data.error || 'Failed to save session');
     }
@@ -832,6 +877,8 @@ function resetSessionForm() {
   document.getElementById('sDesc').value = '';
   document.getElementById('sLoc').value = '';
   document.getElementById('sMaps').value = '';
+  document.getElementById('sMaps').dataset.auto = '';
+  if (document.getElementById('sMapsHint')) document.getElementById('sMapsHint').textContent = '';
   document.getElementById('sCity').value = '';
   document.getElementById('sCountry').value = '';
   document.getElementById('sStartDate').value = '';
@@ -1257,6 +1304,8 @@ async function onSessionTemplateChange() {
     setVal('sDesc',     d.description);
     setVal('sLoc',      d.location);
     setVal('sMaps',     d.location_maps_url);
+    var mapsEl = document.getElementById('sMaps');
+    if (mapsEl) mapsEl.dataset.auto = d.location_maps_url || '';
     setVal('sDuration', d.duration_mins || 60);
     setVal('sCap',      d.capacity || 30);
     setVal('sPoints',   d.points_reward || 10);
@@ -1268,8 +1317,15 @@ async function onSessionTemplateChange() {
     if (d.price)        setVal('sPrice',       Number(d.price).toFixed(2));
     if (d.price_points) setVal('sPricePoints', d.price_points);
     if (d.currency_code)setVal('sCurrency',    d.currency_code);
+    // The previous session's ambassadors come along (founder 2026-10-18),
+    // added to any already picked; ones no longer ambassadors are skipped.
+    var ambIds = (data.assigned_ambassador_ids || []).filter(function(id){
+      return !ALL_AMBASSADORS.length || ALL_AMBASSADORS.some(function(m){ return m.id === id; });
+    });
+    ambIds.forEach(function(id){ if (SESSION_AMBS_PICK.indexOf(id) < 0) SESSION_AMBS_PICK.push(id); });
+    if (ambIds.length) renderAmbassadorPicker();
     // Visual confirmation
-    if (typeof showToast === 'function') showToast('✅ Auto-populated from last "' + name + '"');
+    if (typeof showToast === 'function') showToast('✅ Auto-populated from last "' + name + '"' + (ambIds.length ? ' · ' + ambIds.length + ' ambassador' + (ambIds.length === 1 ? '' : 's') : ''));
   } catch (e) {
     if (typeof showToast === 'function') showToast('❌ Auto-fill failed: ' + (e && e.message || e), true);
   }

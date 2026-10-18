@@ -1910,7 +1910,15 @@ router.get('/admin/templates/last-details', authenticate, requireAdmin, async (r
         LIMIT 1`,
       [name]
     );
-    res.json({ defaults: rows[0] || null });
+    // Founder 2026-10-18: the previous session's ambassadors come along too.
+    let assigned_ambassador_ids = [];
+    if (rows[0]) {
+      try {
+        const a = await query('SELECT ambassador_id FROM session_ambassadors WHERE session_id = $1', [rows[0].id]);
+        assigned_ambassador_ids = a.rows.map((r) => r.ambassador_id);
+      } catch (e) { if (e.code !== '42P01') throw e; }
+    }
+    res.json({ defaults: rows[0] || null, assigned_ambassador_ids });
   } catch (err) {
     if (err.code === '42P01') return res.json({ defaults: null });
     // Auto-fill is a convenience: degrade with the REAL reason attached
@@ -1918,6 +1926,24 @@ router.get('/admin/templates/last-details', authenticate, requireAdmin, async (r
     console.error('[sessions] last-details failed:', err.message);
     res.status(500).json({ error: err.message, code: err.code || null });
   }
+});
+
+// ── GET /api/sessions/admin/locations ───────────────────────────
+// Every venue typed on a session before, with the latest Google Maps
+// link used for it — the admin form fills the Maps field as soon as a
+// known venue is typed (founder 2026-10-18). Matched case-insensitively.
+router.get('/admin/locations', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT DISTINCT ON (LOWER(TRIM(location)))
+              TRIM(location) AS location, TRIM(location_maps_url) AS maps_url, city_id
+         FROM sessions
+        WHERE COALESCE(TRIM(location), '') <> ''
+          AND COALESCE(TRIM(location_maps_url), '') <> ''
+        ORDER BY LOWER(TRIM(location)), created_at DESC`
+    );
+    res.json({ locations: rows });
+  } catch (err) { next(err); }
 });
 
 // ── GET /api/sessions/ambassador/my-sessions ────────────────────

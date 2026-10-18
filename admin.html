@@ -456,11 +456,11 @@
             </div>
             <div class="admin-form-group">
               <label class="admin-form-label" for="sLoc">Location / Venue *</label>
-              <input class="admin-form-input" type="text" id="sLoc" placeholder="e.g. Safa Park, Gate 1" aria-label="e.g. Safa Park, Gate 1">
+              <input class="admin-form-input" type="text" id="sLoc" list="sLocList" autocomplete="off" placeholder="e.g. Safa Park, Gate 1" aria-label="e.g. Safa Park, Gate 1"><datalist id="sLocList"></datalist>
             </div>
             <div class="admin-form-group">
               <label class="admin-form-label" for="sMaps">Google Maps URL</label>
-              <input class="admin-form-input" type="text" id="sMaps" placeholder="https://maps.google.com/..." aria-label="https://maps.google.com/...">
+              <input class="admin-form-input" type="text" id="sMaps" placeholder="https://maps.google.com/..." aria-label="https://maps.google.com/..."><div id="sMapsHint" style="font-size:11px;color:#A8FF00;margin-top:4px;min-height:0"></div>
             </div>
             <!-- Duration is now derived from each day's start + end time
                  (see "Days & times" below). Field kept hidden so any code
@@ -535,6 +535,10 @@
               <select class="admin-form-select" id="sAmbassadorPicker" style="margin-bottom:8px">
                 <option value="">— Add ambassador —</option>
               </select>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px">
+                <button type="button" class="admin-btn" data-atp-call="selectAllSessionAmbassadors" style="font-size:12px;padding:6px 12px;background:rgba(168,255,0,.12);color:#A8FF00;border:1px solid rgba(168,255,0,.35)">✓ Select all ambassadors</button>
+                <button type="button" class="admin-btn" data-atp-call="clearSessionAmbassadors" style="font-size:12px;padding:6px 12px">Clear</button>
+              </div>
               <div id="sAmbassadorChips" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px"></div>
             </div>
 
@@ -2346,7 +2350,7 @@
 <div class="admin-toast" id="adminToast"></div>
 <!-- Admin modules — load order matters: core defines globals + showAdminSection
      hook in init.js wires the per-section loaders, so init.js must come last. -->
-<script src="/admin/bundle.min.js?v=d6a2baad5c"></script>
+<script src="/admin/bundle.min.js?v=301c47b1a8"></script>
 
 
 
