@@ -1,0 +1,268 @@
+/* ════════════════════════════════════════════════════════════════
+ * ATP Admin — 30x30 Challenges (founder 2026-10-19)
+ * Competition challenges for the DIC 30x30 Fitness Hub. The slots are
+ * sessions created in Sessions with the "30x30 Challenge" category; this
+ * section sets each challenge up and runs it:
+ *   - setup: individual / team (exact size or min–max), time or score,
+ *     men/women boards, finals cut, charity cause (link to the charity's
+ *     own donation page), qualifier dates + final date, published
+ *   - registrations: athletes and teams (captain, members, invite link)
+ *   - results: pick a slot → type each athlete's result → leaderboard
+ * API: /api/hub-challenges/admin…  (public boards: /api/hub-challenges/:id/leaderboard)
+ * Every member-typed value goes through _escH before it touches HTML.
+ * ════════════════════════════════════════════════════════════════ */
+
+var _hcState = { list: [], view: 'list', current: null, slots: [], slot: null, roster: [], stage: 'qualifier' };
+
+function _escH(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function _hcApi(method, path, body) {
+  return fetch(ATP_API + '/hub-challenges/admin' + path, {
+    method: method, headers: Object.assign({ Authorization: 'Bearer ' + getToken() }, body ? { 'Content-Type': 'application/json' } : {}),
+    body: body ? JSON.stringify(body) : undefined,
+  }).then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || ('HTTP ' + r.status)); return j; }); });
+}
+function _hcToast(msg, ok) { if (typeof showToast === 'function') showToast(msg, !ok); else alert(msg); }
+function _hcDay(d) {
+  if (!d) return '—';
+  try { return new Date(String(d).slice(0, 10) + 'T12:00:00Z').toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' }); } catch (e) { return String(d); }
+}
+function _hcWhen(iso) {
+  try { return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Dubai', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return String(iso); }
+}
+function _hcFmt(v, c) {
+  if (v == null || v === '') return '';
+  if (c && c.result_type === 'score') return String(+v) + (c.result_unit ? ' ' + c.result_unit : '');
+  var s = +v, m = Math.floor(s / 60), r = s - m * 60;
+  var rs = (Math.round(r * 10) / 10).toFixed(r % 1 ? 1 : 0);
+  return m ? m + ':' + (r < 10 ? '0' : '') + rs : rs + 's';
+}
+function _hcKind(c) { return c.kind === 'team' ? 'Team · ' + (c.team_min === c.team_max ? c.team_max : c.team_min + '–' + c.team_max) + ' members' : 'Individual'; }
+
+function loadHubChallengesSection() {
+  _hcState.view = 'list';
+  var host = document.getElementById('hubChBody');
+  if (!host) return;
+  host.innerHTML = '<div style="padding:30px;color:#555;text-align:center">Loading challenges…</div>';
+  _hcApi('GET', '').then(function (d) {
+    _hcState.list = d.challenges || [];
+    if (typeof HUB_CH_OPTIONS !== 'undefined') HUB_CH_OPTIONS = _hcState.list;
+    _renderHcList();
+  }).catch(function (e) { host.innerHTML = '<div style="padding:30px;color:#f87171;text-align:center">Failed to load: ' + _escH(e.message) + '</div>'; });
+}
+
+function _renderHcList() {
+  var host = document.getElementById('hubChBody');
+  var html = '<div style="display:flex;gap:8px;justify-content:space-between;align-items:center;flex-wrap:wrap;margin-bottom:14px">' +
+    '<div style="color:#888;font-size:12px">Create the challenge here, then its slots in <b>Sessions</b> → category <b>🏁 30x30 Challenge</b> (pick the challenge + Qualifier or Final).</div>' +
+    '<button class="admin-btn admin-btn-primary" onclick="openHubChallengeForm()" style="font-size:12px">+ New challenge</button></div>';
+  if (!_hcState.list.length) {
+    host.innerHTML = html + '<div style="padding:50px 20px;text-align:center;color:#666;border:1px dashed #222;border-radius:12px">No 30x30 challenges yet — create the first one.</div>';
+    return;
+  }
+  html += _hcState.list.map(function (c) {
+    return '<div style="background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;padding:16px;margin-bottom:12px">' +
+      '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">' +
+        '<strong style="color:#fff;font-size:16px">' + _escH(c.name) + '</strong>' +
+        '<span style="font-size:11px;color:#A8FF00;border:1px solid rgba(168,255,0,.35);border-radius:4px;padding:1px 6px">' + _escH(_hcKind(c)) + '</span>' +
+        (c.charity_enabled ? '<span style="font-size:11px;color:#4ade80">💚 ' + _escH(c.charity_name) + '</span>' : '') +
+        (c.finals_cut_enabled ? '<span style="font-size:11px;color:#f5c042">Finals cut: top ' + c.finals_cut + '</span>' : '') +
+        (c.is_published ? '' : '<span style="font-size:11px;color:#f87171">Unpublished</span>') +
+      '</div>' +
+      '<div style="color:#888;font-size:12px;margin-top:6px">Qualifiers ' + _hcDay(c.qualifier_start) + ' → ' + _hcDay(c.qualifier_end) + ' · Final ' + _hcDay(c.final_date) +
+        ' · ' + c.qualifier_slots + ' qualifier slot' + (c.qualifier_slots === 1 ? '' : 's') + ', ' + c.final_slots + ' final' +
+        ' · ' + c.entries_count + ' registered' + (c.kind === 'team' ? ' in ' + c.teams_count + ' team' + (c.teams_count === 1 ? '' : 's') : '') +
+        (c.charity_enabled ? ' · ' + c.donors_count + ' said yes to donating' : '') + '</div>' +
+      '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
+        '<button class="admin-btn" onclick="openHubChallengeResults(\'' + c.id + '\')" style="font-size:12px;padding:6px 12px;background:rgba(168,255,0,.12);color:#A8FF00;border:1px solid rgba(168,255,0,.35)">⏱ Results & leaderboard</button>' +
+        '<button class="admin-btn" onclick="openHubChallengeRegs(\'' + c.id + '\')" style="font-size:12px;padding:6px 12px">👥 Registrations</button>' +
+        '<button class="admin-btn" onclick="openHubChallengeForm(\'' + c.id + '\')" style="font-size:12px;padding:6px 12px">✏️ Edit</button>' +
+      '</div></div>';
+  }).join('');
+  host.innerHTML = html;
+}
+
+// ── setup form ──────────────────────────────────────────────────
+function openHubChallengeForm(id) {
+  var c = id ? _hcState.list.find(function (x) { return x.id === id; }) : null;
+  c = c || { kind: 'individual', result_type: 'time', split_gender: true, is_published: true, team_min: 2, team_max: 4 };
+  var host = document.getElementById('hubChBody');
+  var exact = c.kind === 'team' && c.team_min === c.team_max;
+  var row = function (label, inner, hint) { return '<div style="margin-bottom:12px"><label class="admin-form-label">' + label + '</label>' + inner + (hint ? '<div style="font-size:11px;color:#666;margin-top:4px">' + hint + '</div>' : '') + '</div>'; };
+  var inp = function (idx, val, type, ph) { return '<input class="admin-form-input" id="' + idx + '" type="' + (type || 'text') + '" value="' + _escH(val == null ? '' : val) + '" placeholder="' + _escH(ph || '') + '">'; };
+  var d10 = function (v) { return v ? String(v).slice(0, 10) : ''; };
+  host.innerHTML =
+    '<div style="background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;padding:18px;max-width:760px">' +
+    '<div style="font-size:15px;font-weight:800;color:#fff;margin-bottom:14px">' + (id ? 'Edit challenge' : 'New 30x30 challenge') + '</div>' +
+    '<input type="hidden" id="hcId" value="' + _escH(id || '') + '">' +
+    row('Name *', inp('hcName', c.name, 'text', 'e.g. Reebok Burpee Challenge')) +
+    row('Description', '<textarea class="admin-form-input" id="hcDesc" rows="3" placeholder="How it works, how to win…">' + _escH(c.description || '') + '</textarea>') +
+    row('Type *', '<select class="admin-form-select" id="hcKind" onchange="_hcFormSync()"><option value="individual"' + (c.kind !== 'team' ? ' selected' : '') + '>Individual</option><option value="team"' + (c.kind === 'team' ? ' selected' : '') + '>Team</option></select>') +
+    '<div id="hcTeamBox" style="padding:12px;border:1px solid #222;border-radius:8px;margin-bottom:12px">' +
+      row('Team size', '<select class="admin-form-select" id="hcSizeMode" onchange="_hcFormSync()"><option value="exact"' + (exact ? ' selected' : '') + '>Exactly N members</option><option value="range"' + (!exact ? ' selected' : '') + '>Between a minimum and a maximum</option></select>') +
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+        '<div id="hcMinBox">' + row('Minimum members', inp('hcMin', c.team_min, 'number')) + '</div>' +
+        row('<span id="hcMaxLabel">Maximum members</span>', inp('hcMax', c.team_max, 'number')) +
+      '</div><div style="font-size:11px;color:#666">The captain registers the team; teammates join with the link. A team ranks once it has the minimum number of results in one slot — its result is the members’ total.</div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
+      row('Results are', '<select class="admin-form-select" id="hcResType"><option value="time"' + (c.result_type !== 'score' ? ' selected' : '') + '>Time — lowest wins (mm:ss)</option><option value="score"' + (c.result_type === 'score' ? ' selected' : '') + '>Score — highest wins</option></select>') +
+      row('Score unit (optional)', inp('hcUnit', c.result_unit, 'text', 'reps, level, m…')) +
+    '</div>' +
+    '<label id="hcGenderBox" style="display:flex;gap:8px;align-items:center;margin-bottom:12px;color:#ccc;font-size:13px"><input type="checkbox" id="hcGender"' + (c.split_gender !== false ? ' checked' : '') + '> Separate men’s and women’s leaderboards (uses the member’s profile gender)</label>' +
+    '<label style="display:flex;gap:8px;align-items:center;margin-bottom:8px;color:#ccc;font-size:13px"><input type="checkbox" id="hcCutOn" onchange="_hcFormSync()"' + (c.finals_cut_enabled ? ' checked' : '') + '> Finals cut</label>' +
+    '<div id="hcCutBox" style="margin:0 0 12px 24px">' + row('How many qualify for the final' + (c.kind === 'team' ? '' : ' (per board)'), inp('hcCut', c.finals_cut, 'number', '15')) + '</div>' +
+    '<label style="display:flex;gap:8px;align-items:center;margin-bottom:8px;color:#ccc;font-size:13px"><input type="checkbox" id="hcCharityOn" onchange="_hcFormSync()"' + (c.charity_enabled ? ' checked' : '') + '> Charity cause — members are asked (optional) if they’d like to donate</label>' +
+    '<div id="hcCharityBox" style="margin:0 0 12px 24px">' +
+      row('Charity / cause name *', inp('hcCharityName', c.charity_name, 'text', 'e.g. Dubai Cares')) +
+      row('Charity’s donation page *', inp('hcCharityUrl', c.charity_url, 'url', 'https://…'), 'Members donate on the charity’s own page — the money never passes through ATP.') +
+      row('Short description', '<textarea class="admin-form-input" id="hcCharityDesc" rows="2">' + _escH(c.charity_description || '') + '</textarea>') +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px">' +
+      row('Qualifiers start', inp('hcQStart', d10(c.qualifier_start), 'date')) + row('Qualifiers end', inp('hcQEnd', d10(c.qualifier_end), 'date')) + row('Final date', inp('hcFinal', d10(c.final_date), 'date')) +
+    '</div>' +
+    '<label style="display:flex;gap:8px;align-items:center;margin-bottom:14px;color:#ccc;font-size:13px"><input type="checkbox" id="hcPub"' + (c.is_published !== false ? ' checked' : '') + '> Published (shown on the landing page and open for registration)</label>' +
+    '<div id="hcFormMsg" style="display:none;margin-bottom:12px;padding:10px 12px;border-radius:8px;font-size:13px"></div>' +
+    '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="admin-btn admin-btn-primary" onclick="saveHubChallenge()" style="font-size:13px">' + (id ? 'Save changes' : 'Create challenge') + '</button>' +
+    '<button class="admin-btn" onclick="loadHubChallengesSection()" style="font-size:13px">Cancel</button>' +
+    (id ? '<button class="admin-btn" onclick="deleteHubChallenge(\'' + id + '\')" style="font-size:13px;color:#f87171;margin-left:auto">Delete</button>' : '') + '</div>' +
+    '</div>';
+  _hcFormSync();
+}
+function _hcFormSync() {
+  var g = function (x) { return document.getElementById(x); };
+  var team = g('hcKind').value === 'team', exact = g('hcSizeMode').value === 'exact';
+  g('hcTeamBox').style.display = team ? '' : 'none';
+  g('hcGenderBox').style.display = team ? 'none' : 'flex';
+  g('hcMinBox').style.display = exact ? 'none' : '';
+  g('hcMaxLabel').textContent = exact ? 'Members per team' : 'Maximum members';
+  g('hcCutBox').style.display = g('hcCutOn').checked ? '' : 'none';
+  g('hcCharityBox').style.display = g('hcCharityOn').checked ? '' : 'none';
+}
+function saveHubChallenge() {
+  var g = function (x) { return document.getElementById(x); };
+  var id = g('hcId').value;
+  var body = {
+    name: g('hcName').value, description: g('hcDesc').value, kind: g('hcKind').value,
+    team_size_mode: g('hcSizeMode').value, team_min: g('hcMin').value, team_max: g('hcMax').value,
+    result_type: g('hcResType').value, result_unit: g('hcUnit').value, split_gender: g('hcGender').checked,
+    finals_cut_enabled: g('hcCutOn').checked, finals_cut: g('hcCut').value,
+    charity_enabled: g('hcCharityOn').checked, charity_name: g('hcCharityName').value, charity_url: g('hcCharityUrl').value, charity_description: g('hcCharityDesc').value,
+    qualifier_start: g('hcQStart').value, qualifier_end: g('hcQEnd').value, final_date: g('hcFinal').value, is_published: g('hcPub').checked,
+  };
+  _hcApi(id ? 'PATCH' : 'POST', id ? '/' + id : '', body)
+    .then(function () { _hcToast(id ? 'Challenge saved' : 'Challenge created', true); HUB_CH_OPTIONS = null; loadHubChallengesSection(); })
+    .catch(function (e) { var m = g('hcFormMsg'); m.textContent = '⚠️ ' + e.message; m.style.cssText = 'display:block;margin-bottom:12px;padding:10px 12px;border-radius:8px;font-size:13px;background:#2a1010;color:#f87171'; });
+}
+function deleteHubChallenge(id) {
+  if (!window.confirm('Delete this challenge? Its slots stay as normal sessions.')) return;
+  _hcApi('DELETE', '/' + id).then(function () { _hcToast('Deleted', true); HUB_CH_OPTIONS = null; loadHubChallengesSection(); })
+    .catch(function (e) { _hcToast(e.message, false); });
+}
+
+// ── registrations ───────────────────────────────────────────────
+function openHubChallengeRegs(id) {
+  var c = _hcState.list.find(function (x) { return x.id === id; }); _hcState.current = c;
+  var host = document.getElementById('hubChBody');
+  host.innerHTML = '<div style="padding:30px;color:#555;text-align:center">Loading registrations…</div>';
+  _hcApi('GET', '/' + id + '/registrations').then(function (d) {
+    var back = '<button class="admin-btn" onclick="loadHubChallengesSection()" style="font-size:12px;margin-bottom:12px">← All challenges</button>';
+    var head = '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:4px">' + _escH(c.name) + ' — registrations</div><div style="color:#888;font-size:12px;margin-bottom:14px">' + _escH(_hcKind(c)) + ' · ' + d.entries.length + ' registered</div>';
+    var person = function (e) {
+      return '<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #161616">' +
+        '<div style="flex:1;min-width:0"><span style="color:#fff">' + _escH((e.first_name || '') + ' ' + (e.last_name || '')) + '</span> <span style="color:#666;font-size:11px">' + _escH(e.member_number || '') + ' · ' + _escH(e.email || '') + '</span></div>' +
+        '<span style="color:#888;font-size:11px">' + e.slots_booked + ' slot' + (e.slots_booked === 1 ? '' : 's') + '</span>' +
+        (c.charity_enabled ? '<span style="font-size:11px;color:' + (e.donation_choice === 'yes' ? '#4ade80' : '#666') + '">' + (e.donation_choice === 'yes' ? '💚 donating' : e.donation_choice === 'no' ? 'no donation' : '—') + '</span>' : '') +
+        '<button class="admin-btn" onclick="removeHubEntry(\'' + c.id + '\',\'' + e.entry_id + '\')" style="font-size:11px;padding:3px 8px;color:#f87171">Remove</button></div>';
+    };
+    var body;
+    if (c.kind === 'team') {
+      body = d.teams.length ? d.teams.map(function (t) {
+        var n = t.members.length, ok = n >= c.team_min;
+        return '<div style="background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;padding:14px;margin-bottom:10px">' +
+          '<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><strong style="color:#fff">' + _escH(t.name) + '</strong>' +
+          '<span style="font-size:11px;color:' + (ok ? '#A8FF00' : '#f5c042') + '">' + n + ' / ' + c.team_max + (ok ? ' · ready' : ' · needs ' + (c.team_min - n) + ' more') + '</span>' +
+          (t.slot_at ? '<span style="font-size:11px;color:#888">Slot ' + _hcWhen(t.slot_at) + '</span>' : '') +
+          '<button class="admin-btn" onclick="navigator.clipboard&&navigator.clipboard.writeText(\'' + _escH(t.invite_url) + '\');_hcToast(\'Invite link copied\',true)" style="font-size:11px;padding:3px 8px;margin-left:auto">Copy invite link</button></div>' +
+          t.members.map(function (e) { return person(e).replace('<span style="color:#fff">', '<span style="color:#fff">' + (e.member_id === t.captain_id ? '👑 ' : '')); }).join('') + '</div>';
+      }).join('') : '<div style="color:#666;padding:20px;text-align:center">No teams yet.</div>';
+    } else {
+      body = d.entries.length ? '<div style="background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;padding:6px 14px">' + d.entries.map(person).join('') + '</div>' : '<div style="color:#666;padding:20px;text-align:center">Nobody has registered yet.</div>';
+    }
+    host.innerHTML = back + head + body;
+  }).catch(function (e) { host.innerHTML = '<div style="padding:30px;color:#f87171;text-align:center">' + _escH(e.message) + '</div>'; });
+}
+function removeHubEntry(cid, eid) {
+  if (!window.confirm('Remove this registration? Their results for this challenge are removed too (their slot bookings stay).')) return;
+  _hcApi('DELETE', '/' + cid + '/entries/' + eid).then(function () { _hcToast('Removed', true); openHubChallengeRegs(cid); })
+    .catch(function (e) { _hcToast(e.message, false); });
+}
+
+// ── results ─────────────────────────────────────────────────────
+function openHubChallengeResults(id, slotId) {
+  var c = _hcState.list.find(function (x) { return x.id === id; }); _hcState.current = c;
+  var host = document.getElementById('hubChBody');
+  host.innerHTML = '<div style="padding:30px;color:#555;text-align:center">Loading slots…</div>';
+  _hcApi('GET', '/' + id + '/slots').then(function (d) {
+    _hcState.slots = d.slots || [];
+    var opts = _hcState.slots.map(function (s) {
+      return '<option value="' + s.id + '"' + (s.id === slotId ? ' selected' : '') + '>' + (s.stage === 'final' ? '🏆 FINAL · ' : '') + _hcWhen(s.scheduled_at) + ' · ' + s.booked + ' booked · ' + s.results + ' results</option>';
+    }).join('');
+    host.innerHTML = '<button class="admin-btn" onclick="loadHubChallengesSection()" style="font-size:12px;margin-bottom:12px">← All challenges</button>' +
+      '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:4px">' + _escH(c.name) + ' — results</div>' +
+      '<div style="color:#888;font-size:12px;margin-bottom:14px">' + (c.result_type === 'score' ? 'Score — highest wins' + (c.result_unit ? ' (' + _escH(c.result_unit) + ')' : '') : 'Time — lowest wins. Type 1:02.5 or 62.5') + ' · every attempt counts, the best one ranks' + (c.kind === 'team' ? ' · team result = members’ total in one slot' : '') + '</div>' +
+      (_hcState.slots.length
+        ? '<label class="admin-form-label">Slot</label><select class="admin-form-select" id="hcSlotSel" onchange="loadHubRoster()" style="max-width:520px"><option value="">— Pick a slot —</option>' + opts + '</select>'
+        : '<div style="color:#f5c042;padding:12px 0">No slots yet — create them in Sessions with the 🏁 30x30 Challenge category.</div>') +
+      '<div id="hcRoster" style="margin-top:14px"></div>' +
+      '<div style="margin-top:22px;display:flex;gap:8px;align-items:center"><div style="font-size:14px;font-weight:800;color:#fff">Leaderboard</div>' +
+        '<button class="admin-btn" onclick="loadHubBoard(\'qualifier\')" style="font-size:11px;padding:4px 10px">Qualifiers</button>' +
+        '<button class="admin-btn" onclick="loadHubBoard(\'final\')" style="font-size:11px;padding:4px 10px">Final</button></div>' +
+      '<div id="hcBoard" style="margin-top:10px"></div>';
+    if (slotId) loadHubRoster();
+    loadHubBoard('qualifier');
+  }).catch(function (e) { host.innerHTML = '<div style="padding:30px;color:#f87171;text-align:center">' + _escH(e.message) + '</div>'; });
+}
+function loadHubRoster() {
+  var c = _hcState.current, sid = (document.getElementById('hcSlotSel') || {}).value, host = document.getElementById('hcRoster');
+  if (!sid) { host.innerHTML = ''; return; }
+  host.innerHTML = '<div style="color:#555;padding:10px">Loading athletes…</div>';
+  _hcApi('GET', '/' + c.id + '/slots/' + sid + '/roster').then(function (d) {
+    _hcState.roster = d.roster || []; _hcState.slot = sid;
+    if (!_hcState.roster.length) {
+      host.innerHTML = '<div style="color:#666;padding:14px;border:1px dashed #222;border-radius:10px">' + (d.stage === 'final' ? 'Nobody inside the finals cut yet — enter the qualifier results first.' : 'Nobody is booked in this slot yet.') + '</div>';
+      return;
+    }
+    host.innerHTML = '<div style="background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;padding:6px 14px">' +
+      (d.stage === 'final' ? '<div style="color:#f5c042;font-size:12px;padding:8px 0">🏆 Final — athletes inside the finals cut</div>' : '') +
+      _hcState.roster.map(function (r) {
+        return '<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #161616">' +
+          '<div style="flex:1;min-width:0"><span style="color:#fff">' + _escH((r.first_name || '') + ' ' + (r.last_name || '')) + '</span> <span style="color:#666;font-size:11px">' + _escH(r.member_number || '') + (r.team_name ? ' · ' + _escH(r.team_name) : '') + '</span></div>' +
+          '<input class="admin-form-input" data-hc-entry="' + r.entry_id + '" value="' + _escH(r.value == null ? '' : (c.result_type === 'score' ? +r.value : _hcFmt(r.value, c).replace(/s$/, ''))) + '" placeholder="' + (c.result_type === 'score' ? (c.result_unit || 'score') : 'm:ss.s') + '" style="width:120px;padding:6px 8px">' +
+        '</div>';
+      }).join('') +
+      '<div style="padding:12px 0;display:flex;gap:8px;align-items:center"><button class="admin-btn admin-btn-primary" onclick="saveHubResults()" style="font-size:12px">Save results</button><span style="color:#666;font-size:11px">Leave empty for no result (did not start)</span></div></div>';
+  }).catch(function (e) { host.innerHTML = '<div style="color:#f87171;padding:10px">' + _escH(e.message) + '</div>'; });
+}
+function saveHubResults() {
+  var c = _hcState.current;
+  var results = Array.prototype.map.call(document.querySelectorAll('#hcRoster [data-hc-entry]'), function (el) { return { entry_id: el.getAttribute('data-hc-entry'), value: el.value }; });
+  _hcApi('POST', '/' + c.id + '/results', { session_id: _hcState.slot, results: results })
+    .then(function (d) { _hcToast(d.saved + ' result' + (d.saved === 1 ? '' : 's') + ' saved', true); openHubChallengeResults(c.id, _hcState.slot); })
+    .catch(function (e) { _hcToast(e.message, false); });
+}
+function loadHubBoard(stage) {
+  var c = _hcState.current, host = document.getElementById('hcBoard');
+  host.innerHTML = '<div style="color:#555;padding:8px">Loading…</div>';
+  fetch(ATP_API + '/hub-challenges/' + c.id + '/leaderboard?stage=' + stage).then(function (r) { return r.json(); }).then(function (d) {
+    if (!d.boards) { host.innerHTML = '<div style="color:#666;padding:8px">' + (c.is_published ? 'No results yet.' : 'Publish the challenge to see its board.') + '</div>'; return; }
+    host.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">' + d.boards.map(function (b) {
+      return '<div style="background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;padding:12px"><div style="color:#A8FF00;font-size:12px;font-weight:800;text-transform:uppercase;margin-bottom:6px">' + _escH(b.label) + (stage === 'final' ? ' · final' : '') + '</div>' +
+        (b.rows.length ? b.rows.map(function (r) {
+          return '<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid #161616;font-size:13px;' + (r.qualified === false ? 'opacity:.55' : '') + '"><span style="width:24px;color:#888">' + r.rank + '</span><span style="flex:1;color:#fff">' + _escH(r.name) + '</span><span style="color:#ddd">' + _escH(_hcFmt(r.value, c)) + '</span>' +
+            (r.qualified === true ? '<span style="color:#A8FF00;font-size:11px">Q</span>' : '') + '</div>';
+        }).join('') : '<div style="color:#666;font-size:12px">No results yet.</div>') + '</div>';
+    }).join('') + '</div>' + (d.finals_cut ? '<div style="color:#888;font-size:11px;margin-top:6px">Q = inside the finals cut (top ' + d.finals_cut + (c.kind === 'team' ? '' : ' per board') + ')</div>' : '');
+  }).catch(function () { host.innerHTML = '<div style="color:#f87171;padding:8px">Couldn’t load the leaderboard.</div>'; });
+}

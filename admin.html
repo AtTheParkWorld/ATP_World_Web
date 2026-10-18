@@ -398,10 +398,22 @@
                 <div style="font-weight:700;font-size:13px">Team Sports</div>
                 <div style="font-size:11px;color:#888;margin-top:2px">Padel, Football...</div>
               </div>
+              <div class="session-cat-btn" data-cat="30x30_challenge" data-atp-call="selectCategory" data-args='["30x30_challenge"]'>
+                <div style="font-size:20px;margin-bottom:4px">🏁</div>
+                <div style="font-weight:700;font-size:13px">30x30 Challenge</div>
+                <div style="font-size:11px;color:#888;margin-top:2px">Qualifier / final slot</div>
+              </div>
               <div class="session-cat-btn" data-cat="30x30_hub" data-atp-call="selectCategory" data-args='["30x30_hub"]'>
                 <div style="font-size:20px;margin-bottom:4px">🔥</div>
                 <div style="font-weight:700;font-size:13px">30x30 Hub</div>
                 <div style="font-size:11px;color:#888;margin-top:2px">DIC 30x30 Hub calendar</div>
+              </div>
+            </div>
+            <div id="hubChBlock" style="display:none;margin-top:10px;padding:12px;border-radius:8px;background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.3)">
+              <div style="font-size:12px;color:#ccc;line-height:1.5;margin-bottom:10px">🏁 A slot of a <b>30x30 Challenge</b>. Members register by booking it (team challenges: after creating / joining their team). Set the challenge up first in <b>30x30 Challenges</b>.</div>
+              <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px">
+                <div><label class="admin-form-label" for="sHubChallenge">Challenge *</label><select class="admin-form-select" id="sHubChallenge"><option value="">Loading…</option></select></div>
+                <div><label class="admin-form-label" for="sHubStage">Stage *</label><select class="admin-form-select" id="sHubStage"><option value="qualifier">Qualifier slot</option><option value="final">Final</option></select></div>
               </div>
             </div>
             <div id="hub30Hint" style="display:none;margin-top:10px;padding:10px 12px;border-radius:8px;background:rgba(168,255,0,.06);border:1px solid rgba(168,255,0,.25);font-size:12px;color:#ccc;line-height:1.5">
@@ -706,6 +718,7 @@
               <option value="social">Social</option>
               <option value="team_sports">Team Sports</option>
               <option value="30x30_hub">30x30 Hub</option>
+              <option value="30x30_challenge">30x30 Challenge</option>
             </select>
             <select class="admin-form-select" id="filterStatus" onchange="loadSessionsList()" style="width:130px;padding:6px 10px;font-size:12px">
               <option value="upcoming">Upcoming</option>
@@ -2350,7 +2363,7 @@
 <div class="admin-toast" id="adminToast"></div>
 <!-- Admin modules — load order matters: core defines globals + showAdminSection
      hook in init.js wires the per-section loaders, so init.js must come last. -->
-<script src="/admin/bundle.min.js?v=cd60fc3c76"></script>
+<script src="/admin/bundle.min.js?v=0377eaba44"></script>
 
 
 

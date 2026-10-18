@@ -79,6 +79,27 @@ function selectCategory(cat) {
   if (cat === 'team_sports') buildCourtsUI();
   var hint = document.getElementById('hub30Hint');
   if (hint) hint.style.display = cat === '30x30_hub' ? 'block' : 'none';
+  var chb = document.getElementById('hubChBlock');
+  if (chb) chb.style.display = cat === '30x30_challenge' ? 'block' : 'none';
+  if (cat === '30x30_challenge') loadHubChallengeOptions();
+}
+
+// 30x30 Challenges (founder 2026-10-19): a challenge slot names its
+// challenge + stage. Options come from the 30x30 Challenges section.
+var HUB_CH_OPTIONS = null;
+function loadHubChallengeOptions(selectId) {
+  var sel = document.getElementById('sHubChallenge');
+  if (!sel) return Promise.resolve();
+  var paint = function () {
+    var keep = selectId || sel.value;
+    sel.innerHTML = '<option value="">— Pick the challenge —</option>' + (HUB_CH_OPTIONS || []).map(function (c) {
+      return '<option value="' + c.id + '">' + String(c.name).replace(/</g, '&lt;') + (c.kind === 'team' ? ' (team)' : '') + (c.is_published ? '' : ' · unpublished') + '</option>';
+    }).join('');
+    if (keep) sel.value = keep;
+  };
+  if (HUB_CH_OPTIONS) { paint(); return Promise.resolve(); }
+  return apiGet('/hub-challenges/admin').then(function (d) { HUB_CH_OPTIONS = (d && d.challenges) || []; paint(); })
+    .catch(function () { sel.innerHTML = '<option value="">Couldn’t load challenges</option>'; });
 }
 
 // Renders one start/end time row per checked day, plus a "Same time
@@ -739,6 +760,11 @@ async function createSession() {
   var cat       = (document.querySelector('.session-cat-btn.active') || {}).dataset?.cat || 'regular';
   var sport     = document.getElementById('sSport').value || null;
 
+  if (cat === '30x30_challenge' && !((document.getElementById('sHubChallenge') || {}).value)) {
+    msgEl.textContent = '⚠️ Pick which 30x30 Challenge this slot belongs to.';
+    msgEl.style.cssText = 'display:block;background:#2a1010;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
+    return;
+  }
   if (!name || !city_id || !location) {
     msgEl.textContent = '⚠️ Session Name, City and Location are required.';
     msgEl.style.cssText = 'display:block;background:#2a1010;color:#f87171;padding:10px 14px;border-radius:8px;margin-bottom:16px;font-size:13px';
@@ -838,6 +864,8 @@ async function createSession() {
     location_maps_url: maps, session_type: stype, capacity,
     scheduled_at, duration_mins: duration, points_reward: points,
     is_live_enabled: is_streamable, session_category: cat,
+    hub_challenge_id: cat === '30x30_challenge' ? ((document.getElementById('sHubChallenge') || {}).value || null) : null,
+    hub_challenge_stage: cat === '30x30_challenge' ? ((document.getElementById('sHubStage') || {}).value || 'qualifier') : null,
     sport_type: sport, courts,
     // Paid-session pricing (Theme 11)
     price:          price_currency || 0,
@@ -1070,6 +1098,10 @@ async function editSession(s) {
     document.getElementById('sCity').value = s.city_id;
   }
   selectCategory(s.session_category || 'regular');
+  if (s.session_category === '30x30_challenge') {
+    loadHubChallengeOptions(s.hub_challenge_id);
+    var stEl2 = document.getElementById('sHubStage'); if (stEl2) stEl2.value = s.hub_challenge_stage || 'qualifier';
+  }
   if (s.sport_type) document.getElementById('sSport').value = s.sport_type;
   // Court prefill — hand the saved courts to buildCourtsUI so names,
   // player counts and ticked levels all come back on edit (they were
@@ -1172,8 +1204,8 @@ async function loadSessionsList() {
       return;
     }
 
-    var catIcon = {regular:'🏃',social:'🎉',team_sports:'🏆','30x30_hub':'🔥'};
-    var catLabel = {regular:'Regular',social:'Social',team_sports:'Team Sports','30x30_hub':'30x30 Hub'};
+    var catIcon = {regular:'🏃',social:'🎉',team_sports:'🏆','30x30_hub':'🔥','30x30_challenge':'🏁'};
+    var catLabel = {regular:'Regular',social:'Social',team_sports:'Team Sports','30x30_hub':'30x30 Hub','30x30_challenge':'30x30 Challenge'};
 
     tbody.innerHTML = sessions.forEach(function(s){ SESSIONS_CACHE[s.id]=s; });
     tbody.innerHTML = sessions.map(function(s) {
