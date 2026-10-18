@@ -489,7 +489,11 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 .cal-nav-btn.today-btn{width:auto;padding:0 14px;font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase}
 
 .cal-grid{
-  display:grid;grid-template-columns:repeat(7,1fr);gap:6px;
+  /* minmax(0,1fr): equal columns whatever the session titles inside —
+     plain 1fr let long titles widen their column, so columns came out
+     uneven and the grid overflowed (Saturday cut at ~1280px; uneven,
+     cramped days on a Galaxy S24, founder 2026-10-18). */
+  display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:6px;
   padding:6px;background:transparent;
   border:1px solid rgba(255,255,255,.06);border-radius:16px;
   background:linear-gradient(180deg, rgba(255,255,255,.015), transparent);
@@ -602,7 +606,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
    click handler on .cal-session-dot already opens the modal,
    so each row inside the popover is selectable.            */
 .cal-day.has-session{z-index:1}
-.cal-day.has-session:hover{z-index:60}
+.cal-day.has-session:hover,.cal-day.is-open{z-index:60}
 .cal-popover{
   position:absolute;left:50%;top:calc(100% + 6px);
   transform:translateX(-50%) translateY(-4px) scale(.97);
@@ -664,6 +668,10 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
    that were display:none, which is exactly what the founder saw:
    the date header and nothing under it (report 2, 2026-10-03). */
 @media(max-width:600px){.cal-day > .cal-session-dot{display:none}.cal-day.has-session::after{content:"•";color:var(--green);position:absolute;bottom:4px;left:50%;transform:translateX(-50%);font-size:14px}}
+/* Phones: a day cell is ~40px wide, so the count badge, "+N more" and the
+   TODAY pill sat on top of the day number. The dot (ribbon in October)
+   marks days with sessions; tapping shows the list with its count. */
+@media(max-width:600px){.cal-day > .cal-day-count,.cal-day > .cal-more{display:none}.cal-day.today:not(.has-session)::after{display:none}.cal-day{padding:7px 6px 8px}}
 
 
 /* ── QR CODE ─────────────────────────────────────────────── */
@@ -2321,6 +2329,19 @@ function renderCalendar() {
   var grid = document.getElementById('calGrid');
   if (!grid || grid._clickBound) return;
   grid._clickBound = true;
+  // Phones: the 260px+ popover centred on a ~40px cell ran off-screen for
+  // every column but Sun/Sat (founder 2026-10-18, Galaxy S24). Below 600px
+  // it spans the whole grid, still anchored under/over the tapped row.
+  function fitPopover(day) {
+    var pop = day.querySelector('.cal-popover');
+    if (!pop) return;
+    if (window.innerWidth > 600) { pop.removeAttribute('style'); return; }
+    var g = grid.getBoundingClientRect(), c = day.getBoundingClientRect();
+    pop.style.minWidth = '0'; pop.style.maxWidth = 'none'; pop.style.right = 'auto';
+    pop.style.width = Math.round(g.width - 12) + 'px';
+    pop.style.left = Math.round(g.left + 6 - c.left) + 'px';
+    pop.style.transform = 'none';
+  }
   function closeAllDays(except) {
     grid.querySelectorAll('.cal-day.is-open').forEach(function(d){
       if (d !== except) d.classList.remove('is-open');
@@ -2335,7 +2356,7 @@ function renderCalendar() {
       if (day) {
         var wasOpen = day.classList.contains('is-open');
         closeAllDays();
-        if (!wasOpen) day.classList.add('is-open');
+        if (!wasOpen) { fitPopover(day); day.classList.add('is-open'); }
         e.stopPropagation();
       } else {
         closeAllDays();
