@@ -15,7 +15,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/atp.min.css?v=6e112e3c3a">
 <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
-<script src="/atp.bundle.min.js?v=a217626e8d"></script>
+<script src="/atp.bundle.min.js?v=b0fcf261bf"></script>
 <style>
 :root{
   --green:#A8FF00; --green-dark:#8FD800; --green-light:#C6FF55;
@@ -794,9 +794,24 @@ Always free.</h1>
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: email, password: pw })
       })
-        .then(function (r) { return r.json().then(function (b) { return { ok: r.ok, body: b }; }); })
+        .then(function (r) { return r.text().then(function (t) { var b = {}; try { b = JSON.parse(t); } catch (e) {} return { ok: r.ok, status: r.status, body: b }; }); })
         .then(function (res) {
-          if (!res.ok) return showError((res.body && res.body.error) || 'Wrong email or password.');
+          if (!res.ok) {
+            // No password on this account (created by magic link, Google/
+            // Apple or by the ATP team): go straight to the sign-in-link
+            // panel with the email filled in (founder 2026-10-18, KSA team).
+            if (res.body && res.body.code === 'NO_PASSWORD') {
+              btn.disabled = false; btn.textContent = btnText; msg.textContent = '';
+              showMagic(email);
+              magicMsg.textContent = 'This account doesn’t have a password yet. Tap “Send sign-in link” — after signing in you can set a password.';
+              magicMsg.className = 'auth-msg';
+              return;
+            }
+            if (res.status === 401) return showError('Wrong email or password. Forgot it? Tap “Forgot password?” above for a sign-in link.');
+            if (res.status === 429) return showError('Too many attempts from this connection. Please wait 15 minutes, or use “Forgot password?” above.');
+            if (res.status >= 500) return showError('Server error — please try again in a minute.');
+            return showError((res.body && res.body.error) || 'Wrong email or password.');
+          }
           msg.textContent = '✅ Welcome back. Redirecting…';
           msg.className = 'auth-msg ok';
           try {

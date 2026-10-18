@@ -40,7 +40,10 @@ export default function Welcome() {
       if (err instanceof ApiError && err.status === 401) {
         setError('Wrong email or password.');
       } else if (err instanceof ApiError && (err.data as any)?.code === 'NO_PASSWORD') {
-        setError('This account uses magic link or social login — use "Forgot password" below or Apple/Google.');
+        // No password yet (magic-link / Apple / Google / created by the ATP
+        // team): straight to the sign-in-link screen, email filled in
+        // (founder 2026-10-18, KSA team).
+        router.push({ pathname: '/(auth)/magic-link', params: { email: email.trim().toLowerCase(), reason: 'no_password' } });
       } else {
         setError((err as Error).message || 'Login failed. Try again.');
       }
@@ -116,7 +119,7 @@ export default function Welcome() {
           </View>
 
           {/* 2 — forgot password right below → magic-link flow */}
-          <Pressable onPress={() => router.push('/(auth)/magic-link')} className="items-start">
+          <Pressable onPress={() => router.push({ pathname: '/(auth)/magic-link', params: email.trim() ? { email: email.trim().toLowerCase() } : {} })} className="items-start">
             <Text style={{ fontFamily: fontFamily.body }} className="text-atp-light text-sm">
               Forgot password?  <Text className="text-atp-green">Email me a magic link</Text>
             </Text>

@@ -173,8 +173,12 @@ const writeLimiter = rateLimit({
 // load, and members share IPs (venue WiFi at sessions, UAE CGNAT) — a
 // blanket /api/auth limiter locked whole groups out at peak moments.
 const AUTH_CREDENTIAL_RE = /^\/api\/(?:v1\/)?auth\/(login|register|magic-link|google|apple)\/?$/;
+// Only FAILED attempts count (founder 2026-10-18): a team signing in
+// together on one venue WiFi / mobile network shared one budget of 10, so
+// the 11th person was locked out even with the right password.
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, max: 10,
+  windowMs: 15 * 60 * 1000, max: 20,
+  skipSuccessfulRequests: true,
   standardHeaders: 'draft-7', legacyHeaders: false,
   skip: (req) => req.method !== 'POST' || !AUTH_CREDENTIAL_RE.test(req.originalUrl.split('?')[0]),
   message: { error: 'Too many auth attempts, please try again later.' },

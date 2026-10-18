@@ -61,31 +61,44 @@
     const headers = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = 'Bearer ' + token;
 
-    const res = await fetch(API_BASE + path, {
-      method,
-      headers,
-      body: body ? JSON.stringify(body) : undefined,
-      ...opts,
-    });
+    let res;
+    try {
+      res = await fetch(API_BASE + path, {
+        method,
+        headers,
+        body: body ? JSON.stringify(body) : undefined,
+        ...opts,
+      });
+    } catch (e) {
+      // The request never got an answer (offline, DNS, blocked) — the
+      // only case that is really a connection problem.
+      throw Object.assign(new Error('Network error'), { status: 0, network: true, data: { error: 'Network error' } });
+    }
+
+    // Read the body ONCE. It used to be read twice on a 401 (token check,
+    // then the error path), the second read always failed, and every wrong
+    // password surfaced as "Network error" → "Connection error. Please
+    // check your internet." (KSA team, founder 2026-10-18).
+    const text = res.status === 204 ? '' : await res.text().catch(() => '');
+    let data = null;
+    if (text) { try { data = JSON.parse(text); } catch (e) { data = null; } }
 
     // Token expired — clear and redirect to login
-    if (res.status === 401) {
-      const data = await res.json().catch(() => ({}));
-      if (data.code === 'TOKEN_EXPIRED') {
-        clearToken();
-        window.location.href = '/index.html';
-        return;
-      }
+    if (res.status === 401 && data && data.code === 'TOKEN_EXPIRED') {
+      clearToken();
+      window.location.href = '/index.html';
+      return;
     }
 
     if (!res.ok) {
-      const err = await res.json().catch(() => ({ error: 'Network error' }));
+      const err = (data && typeof data === 'object') ? data
+        : { error: res.status >= 500 ? 'Server error — please try again in a minute.' : 'Request failed (' + res.status + ')' };
       throw Object.assign(new Error(err.error || 'Request failed'), { status: res.status, data: err });
     }
 
     // 204 No Content
     if (res.status === 204) return null;
-    return res.json();
+    return data;
   }
 
   const get    = (path)        => request('GET',    path);

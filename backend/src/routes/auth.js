@@ -641,7 +641,7 @@ router.post('/login', async (req, res, next) => {
     }
     if (!member.password_hash) {
       return res.status(400).json({
-        error: 'This account uses magic link or social login. Use those instead.',
+        error: 'This account doesn’t have a password yet. Use “Forgot password” to get a one-tap sign-in link by email — then you can set a password.',
         code: 'NO_PASSWORD',
       });
     }

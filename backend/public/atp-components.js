@@ -238,6 +238,18 @@
           '</div>' +
           '<button type="submit" class="atp-btn atp-btn--primary atp-btn--lg" id="atpaSubmit" style="width:100%">Join free</button>' +
         '</form>' +
+        // Login mode only: password forgotten / account without one → a
+        // one-tap sign-in link by email (founder 2026-10-18).
+        '<div id="atp-auth-forgot" style="display:none;text-align:center;margin-top:14px">' +
+          '<button type="button" data-atp-action="auth-forgot" style="background:none;border:none;color:var(--atp-fg-muted);text-decoration:underline;cursor:pointer;font-size:13px;padding:0">Forgot your password? Email me a sign-in link</button>' +
+        '</div>' +
+        '<div id="atp-auth-magic" style="display:none">' +
+          '<p id="atp-auth-magic-intro" style="margin:0 0 14px;color:var(--atp-fg-muted);font-size:14px;line-height:1.5"></p>' +
+          '<input class="atp-input" id="atpaMagicEmail" type="email" placeholder="you@email.com" autocomplete="email" style="margin-bottom:12px">' +
+          '<button type="button" class="atp-btn atp-btn--primary atp-btn--lg" data-atp-action="auth-magic-send" id="atpaMagicSend" style="width:100%">Email me a sign-in link</button>' +
+          '<div id="atp-auth-magic-msg" style="display:none;margin-top:12px;font-size:14px;line-height:1.5"></div>' +
+          '<div style="text-align:center;margin-top:14px"><button type="button" data-atp-action="auth-magic-back" style="background:none;border:none;color:var(--atp-fg-muted);cursor:pointer;font-size:13px;padding:0">← Back to log in</button></div>' +
+        '</div>' +
         '<div style="margin-top:16px;text-align:center;font-size:var(--atp-text-sm);color:var(--atp-fg-muted)">' +
           '<span id="atp-auth-switch-text">Already a member?</span> ' +
           '<button type="button" data-atp-action="auth-toggle" style="background:none;border:none;color:var(--atp-green);cursor:pointer;font-weight:600;padding:0">Log in</button>' +
@@ -311,6 +323,7 @@
     banner.style.display = 'none';
     banner.textContent = '';
     clearForm('#atp-auth-form');
+    _showMagicView(false);
     modal.style.display = 'flex';
     document.body.style.overflow = 'hidden'; // lock background scroll
     _installFocusTrap(modal);
@@ -339,6 +352,62 @@
     var b = document.getElementById('atp-auth-banner');
     b.textContent = msg;
     b.style.display = 'block';
+  }
+
+  // Sign-in-link view (replaces the form inside the same modal).
+  function _showMagicView(on, intro) {
+    var form = document.getElementById('atp-auth-form');
+    var magic = document.getElementById('atp-auth-magic');
+    var forgot = document.getElementById('atp-auth-forgot');
+    var sw = document.querySelector('#atp-auth-modal [data-atp-action="auth-toggle"]');
+    if (!form || !magic) return;
+    form.style.display = on ? 'none' : '';
+    magic.style.display = on ? '' : 'none';
+    if (forgot) forgot.style.display = (!on && _authMode === 'login') ? '' : 'none';
+    if (sw && sw.parentNode) sw.parentNode.style.display = on ? 'none' : '';
+    if (!on) return;
+    document.getElementById('atp-auth-banner').style.display = 'none';
+    document.getElementById('atp-auth-magic-intro').textContent = intro ||
+      'Enter your email and we’ll send you a one-tap sign-in link. After signing in you can set a new password.';
+    var em = document.getElementById('atpaMagicEmail');
+    var typed = (document.getElementById('atpaEmail') || {}).value || '';
+    if (typed && !em.value) em.value = typed.trim();
+    var msg = document.getElementById('atp-auth-magic-msg');
+    msg.style.display = 'none'; msg.textContent = '';
+    var btn = document.getElementById('atpaMagicSend');
+    btn.disabled = false; btn.textContent = 'Email me a sign-in link';
+    setTimeout(function() { em.focus(); }, 50);
+  }
+
+  function _sendMagicLink() {
+    var em = document.getElementById('atpaMagicEmail');
+    var email = (em.value || '').trim().toLowerCase();
+    var msg = document.getElementById('atp-auth-magic-msg');
+    var btn = document.getElementById('atpaMagicSend');
+    var say = function(text, ok) {
+      msg.textContent = text; msg.style.display = 'block';
+      msg.style.color = ok ? 'var(--atp-green)' : '#f87171';
+    };
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { say('Enter a valid email.'); return; }
+    btn.disabled = true; btn.textContent = 'Sending…';
+    fetch('/api/auth/magic-link', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email: email })
+    }).then(function(r) {
+      return r.text().then(function(t) { var d = {}; try { d = JSON.parse(t); } catch (e) {} return { status: r.status, data: d }; });
+    }).then(function(res) {
+      btn.disabled = false; btn.textContent = 'Email me a sign-in link';
+      if (res.status >= 200 && res.status < 300) {
+        say('✓ Sent! Check ' + email + ' (and your spam folder) and tap the link on this device to sign in.', true);
+        btn.textContent = 'Send again';
+      } else if (res.status === 404) {
+        say('No ATP account uses this email. Check the spelling, or join free.');
+      } else {
+        say((res.data && res.data.error) || 'We couldn’t send the link — please try again.');
+      }
+    }).catch(function() {
+      btn.disabled = false; btn.textContent = 'Email me a sign-in link';
+      say('Connection error. Please check your internet and try again.');
+    });
   }
 
   function submitAuth() {
@@ -400,6 +469,25 @@
       if (err && err.status === 403 && err.data && /suspended/i.test(err.data.error || '')) {
         closeAuthModal();
         window.location.href = '/appeal.html';
+        return;
+      }
+      // Say what actually happened (founder 2026-10-18: every failed login
+      // read as "Connection error", so members thought the site was down).
+      var data = (err && err.data) || {};
+      if (_authMode === 'login' && data.code === 'NO_PASSWORD') {
+        _showMagicView(true, 'This account doesn’t have a password yet. We’ll email you a one-tap sign-in link — after signing in you can set a password.');
+        return;
+      }
+      if (err && err.status === 401) {
+        _showBanner(_authMode === 'login' ? 'Wrong email or password. Forgot it? Use the sign-in link below.' : (data.error || 'Something went wrong. Please try again.'));
+        return;
+      }
+      if (err && err.status === 429) {
+        _showBanner('Too many attempts from this connection. Please wait 15 minutes and try again' + (_authMode === 'login' ? ', or use the sign-in link below.' : '.'));
+        return;
+      }
+      if (err && err.status && data.error && data.error !== 'Network error') {
+        _showBanner(data.error);
         return;
       }
       _showBanner('Connection error. Please check your internet.');
@@ -608,6 +696,9 @@
     var act = btn.getAttribute('data-atp-action');
     if (act === 'auth-close') closeAuthModal();
     else if (act === 'auth-toggle') openAuthModal(_authMode === 'login' ? 'signup' : 'login');
+    else if (act === 'auth-forgot') _showMagicView(true);
+    else if (act === 'auth-magic-back') _showMagicView(false);
+    else if (act === 'auth-magic-send') _sendMagicLink();
   }
 
   /* ── Generic [data-atp-call] delegator ─────────────────────────

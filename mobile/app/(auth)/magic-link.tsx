@@ -8,12 +8,16 @@
  */
 import { useState } from 'react';
 import { KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { router, Link } from 'expo-router';
+import { router, Link, useLocalSearchParams } from 'expo-router';
 import { requestMagicLink } from '@/lib/api/auth';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 
 export default function MagicLink() {
-  const [email, setEmail]   = useState('');
+  // Arriving from the login screen: email already filled in; reason
+  // 'no_password' when the account has no password yet (founder 2026-10-18).
+  const params = useLocalSearchParams<{ email?: string; reason?: string }>();
+  const noPassword = params.reason === 'no_password';
+  const [email, setEmail]   = useState(typeof params.email === 'string' ? params.email : '');
   const [busy,  setBusy]    = useState(false);
   const [sent,  setSent]    = useState(false);
   const [error, setError]   = useState<string | null>(null);
@@ -71,7 +75,9 @@ export default function MagicLink() {
           Email me{'\n'}a link.
         </Text>
         <Text style={{ fontFamily: fontFamily.body }} className="text-atp-light text-base mt-4 leading-relaxed">
-          No password needed. We'll send you a one-tap sign-in link.
+          {noPassword
+            ? "This account doesn't have a password yet. We'll email you a one-tap sign-in link — after signing in you can set a password in your profile."
+            : "No password needed. We'll send you a one-tap sign-in link."}
         </Text>
 
         <View className="mt-10 gap-3">
