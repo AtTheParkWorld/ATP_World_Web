@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <link rel="stylesheet" href="/atp.min.css?v=6e112e3c3a">
-  <link rel="stylesheet" href="/hub30x30.css?v=3">
+  <link rel="stylesheet" href="/hub30x30.css?v=4">
   <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
   <script src="/atp.bundle.min.js?v=b0fcf261bf"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -714,6 +714,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       <button class="filter-tab" data-atp-call="filterTribe" data-args='["stronger"]'><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 8c0-2.5 1.5-4 4-4s4 1.5 4 4c0 2.5-1.5 4-4 4"/><path d="M2 12c.5-1.5 2-2.5 4-3"/><path d="M14 12c-.5-1.5-2-2.5-4-3"/></svg> Stronger Tribe</button>
       <div class="filter-sep" id="tab30x30Sep"></div>
       <button class="filter-tab" id="tab30x30" data-atp-call="filterEvent" data-args='["dic"]'><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 14.5s-4.5-4.2-4.5-7.8a4.5 4.5 0 0 1 9 0c0 3.6-4.5 7.8-4.5 7.8z"/><circle cx="8" cy="6.6" r="1.6"/></svg> DIC 30x30 Hub</button>
+      <button class="filter-tab" id="tab30x30ch" data-atp-call="filterEvent" data-args='["chal"]'><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 14V2.5"/><path d="M3.5 3h8l-2 2.5 2 2.5h-8"/></svg> 30x30 Challenges</button>
     </div>
   </div>
 
@@ -943,7 +944,11 @@ var currentTribe = 'all', currentDay = 'all', currentActivity = 'all', currentCi
 // with ?venue=dic so visitors land with the tab selected.
 var VENUES = {
   dic: { category: '30x30_hub',
-         to: Date.parse('2026-11-30T00:00:00+04:00') }
+         to: Date.parse('2026-11-30T00:00:00+04:00') },
+  // 30x30 Challenges (founder 2026-10-19): challenge slots, registration,
+  // teams and leaderboards (hub-challenges.js), same white hub look.
+  chal: { category: '30x30_challenge',
+          to: Date.parse('2026-11-30T00:00:00+04:00') }
 };
 function _eventLive(v) { return !!VENUES[v] && Date.now() < VENUES[v].to; }
 var currentVenue = (function(){
@@ -972,10 +977,14 @@ function filterEvent(key, btn) {
 }
 function clearVenue() { currentVenue = ''; _setVenueParam(''); }
 function _initEventTab() {
-  var tab = document.getElementById('tab30x30'), sep = document.getElementById('tab30x30Sep');
+  var tabs = { dic: document.getElementById('tab30x30'), chal: document.getElementById('tab30x30ch') };
+  var sep = document.getElementById('tab30x30Sep');
+  if (!tabs.dic) return;
+  var anyLive = false;
+  Object.keys(tabs).forEach(function (k) { if (!tabs[k]) return; if (_eventLive(k)) anyLive = true; else tabs[k].style.display = 'none'; });
+  if (!anyLive && sep) sep.style.display = 'none';
+  var tab = tabs[currentVenue];
   if (!tab) return;
-  if (!_eventLive('dic')) { tab.style.display = 'none'; if (sep) sep.style.display = 'none'; return; }
-  if (currentVenue !== 'dic') return;
   document.querySelectorAll('.filter-tab').forEach(function(b){ b.classList.remove('active'); });
   tab.classList.add('active');
   try { tab.scrollIntoView({ inline: 'center', block: 'nearest' }); } catch (e) {}
@@ -3046,6 +3055,7 @@ async function loadSessions() {
 
 </script>
 
-<script src="/hub30x30.js?v=4"></script>
+<script src="/hub-challenges.js?v=1"></script>
+<script src="/hub30x30.js?v=5"></script>
 </body>
 </html>

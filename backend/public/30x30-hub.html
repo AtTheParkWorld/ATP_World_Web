@@ -391,7 +391,7 @@ td.sched-empty{height:120px}
       <i></i>
       <img class="hub" src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub">
     </div>
-    <nav class="nav"><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#challenges">Challenges</a><a href="#charity">Charity</a><a href="#faq">FAQ</a></nav>
+    <nav class="nav"><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#challenges">Challenges</a><a href="#charity">Charity</a><a href="#results">Results</a><a href="#faq">FAQ</a></nav>
     <a class="btn btn-red" href="#schedule">Book a session</a>
   </div>
 </header>
@@ -450,14 +450,16 @@ td.sched-empty{height:120px}
   </section>
 
   <section class="sec" id="challenges" style="padding-top:20px">
-    <div class="eyebrow"><small>The 30x30 Challenge Series</small><h2>Compete every day. Finals every weekend.</h2><p>Four challenges with a weekly leaderboard each, all free to enter: three individual challenges with men's and women's categories, plus the Al Ameen Run Challenge for company teams.</p></div>
+    <div class="eyebrow"><small>The 30x30 Challenge Series</small><h2>Compete every day. Finals to finish.</h2><p>Individual and team challenges, all free to enter. Book a qualifier slot — every attempt counts and your best result ranks. The top athletes and teams make the final.</p></div>
     <div class="ch-how">
-      <div><small>Mon – Fri · 6–9 PM</small><b>Qualify</b><p>One scored try per day.</p></div>
-      <div><small>All week</small><b>Climb the board</b><p>Your best result of the week counts.</p></div>
-      <div><small>Top 15 · Top 10 teams</small><b>Make the cut</b><p>Per challenge, men and women.</p></div>
-      <div><small>Sat &amp; Sun · 6–9 PM</small><b>Finals</b><p>Champions crowned every week.</p></div>
+      <div><small>Qualifier slots</small><b>Qualify</b><p>Book a slot — one per day.</p></div>
+      <div><small>Every attempt counts</small><b>Climb the board</b><p>Your best result ranks.</p></div>
+      <div><small>Finals cut</small><b>Make the cut</b><p>The top athletes and teams qualify.</p></div>
+      <div><small>Finals day</small><b>Final</b><p>Champions crowned.</p></div>
     </div>
-    <div class="chs" id="chs"></div>
+    <div id="hcCards"></div>
+    <div class="eyebrow" id="challenge-calendar" style="margin-top:40px"><small>Book your attempt</small><h2>Challenge calendar</h2><p>Tap a slot to register. Team challenges: the captain registers the team and shares the invite link.</p></div>
+    <div id="hcCalendar"></div>
   </section>
 
   <section class="sec" id="charity" style="padding-top:8px">
@@ -472,13 +474,18 @@ td.sched-empty{height:120px}
           <li><b>Race for your company</b>Qualify on weekday evenings. Teams are ranked company vs company, and the fastest race the Corporate final on Finals Night.</li>
           <li><b>Charity wins</b>The prize is donated in the winning company’s name — no cash to staff, no HR or gift-policy friction.</li>
         </ol>
-        <p class="cb-note">Charity partner to be announced.</p>
-        <div class="cb-cta"><a class="btn btn-red" href="mailto:general@atthepark.world?subject=Al%20Ameen%20Run%20Challenge%20%E2%80%94%20company%20team">Register your company’s interest</a><button class="btn btn-line" data-chreg="relay">How it works</button></div>
-        <p class="cb-note">Company team sign-up opens soon — register your interest and we’ll be in touch.</p>
+        <p class="cb-note" id="hcCharityNote">Charity partner to be announced.</p>
+        <div class="cb-cta"><button class="btn btn-red" type="button" data-hc-team-cta>Register your team</button><a class="btn btn-line" href="#challenge-calendar">See the slots</a></div>
+        <p class="cb-note">Questions about company teams? <a href="mailto:general@atthepark.world?subject=Al%20Ameen%20Run%20Challenge%20%E2%80%94%20company%20team">general@atthepark.world</a></p>
       </div>
     </div>
   </section>
 
+
+  <section class="sec" id="results">
+    <div class="eyebrow"><small>Official results</small><h2>Leaderboards</h2><p>Checked and published by the ATP team after each session. Every attempt counts — the best result ranks.</p></div>
+    <div id="hcBoards"></div>
+  </section>
 
   <section class="sec" id="app" style="padding-top:0">
     <div class="panel" style="background:#fff;border:1px solid var(--line)">
@@ -486,7 +493,7 @@ td.sched-empty{height:120px}
       <div>
         <ul>
           <li><b>Book and check in</b> — your QR code is one tap away.</li>
-          <li><b>Challenge results</b> — your rank and the finals cut, as soon as they're published.</li>
+          <li><b>Your QR code</b> — the same one for sessions and challenge slots.</li>
           <li><b>Reminders</b> — tomorrow's sessions and your qualifier days.</li>
         </ul>
         <div class="stores">
@@ -503,10 +510,10 @@ td.sched-empty{height:120px}
       <details open><summary>Is it free?</summary><p>Yes. Every session at the 30x30 Fitness Hub and all four challenges are free — you just need to book your spot.</p></details>
       <details><summary>Do I need an ATP account?</summary><p>Yes, a free one. It's how we save your spot, give you your check-in QR code and add your challenge results.</p></details>
       <details><summary>If I book here, is it in the app too?</summary><p>Yes. The website and the ATP app share the same booking system — book in one, it shows up in the other with the same QR code.</p></details>
-      <details><summary>How do the challenge qualifiers work?</summary><p>Qualifiers run every weekday evening: Al Ameen Run Challenge 6–7 PM, Redline 400 7–8 PM and Last One Standing 8–9 PM. One scored try per day; your best result of the week counts. Reebok Burpee Challenge schedule <span class="sample">TBC</span></p></details>
-      <details><summary>How do I register on the same team as my colleagues?</summary><p>Company team sign-up opens soon. One colleague will be the captain: they create the team and share a team link, and everyone else joins with their own free ATP account. Teams are 2–4 colleagues from the same company. To get your company on the list now, <a href="mailto:general@atthepark.world?subject=Al%20Ameen%20Run%20Challenge%20%E2%80%94%20company%20team">email us</a>.</p></details>
-      <details><summary>Where does the charity money go?</summary><p>100% of the Al Ameen Run Challenge prize goes to charity in the winning company's name. Our charity partner will be announced soon.</p></details>
-      <details><summary>Who makes the weekend finals?</summary><p>The week's top 15 men and 15 women in each individual challenge, and the top 10 Al Ameen Run Challenge teams. Results are checked and published by the ATP team after each session.</p></details>
+      <details><summary>How do the challenge qualifiers work?</summary><p>Each challenge has qualifier slots in the challenge calendar. Book a slot to register — one slot per day per challenge. You can try on several days: every attempt counts and your best result ranks. Results are checked and published by the ATP team.</p></details>
+      <details><summary>How do I register on the same team as my colleagues?</summary><p>One colleague is the captain: they open a team challenge slot, name the team and book. They get an invite link to share (WhatsApp or copy). Teammates open the link, sign in with their own free ATP account, join and book the team’s slot. A team’s result is the total of its members’ results.</p></details>
+      <details><summary>Where does the charity money go?</summary><p>Challenges with a charity cause show it on the challenge. After you register you’re asked — optionally — if you’d like to donate; donations are made directly on the charity’s own page, so 100% goes to the cause.</p></details>
+      <details><summary>Who makes the final?</summary><p>Each challenge has a finals cut — for example the top 15 men and top 15 women, or the top 10 teams — shown on the leaderboard. You can’t register for the final directly: you get there through the qualifiers.</p></details>
     </div>
   </section>
 
@@ -516,7 +523,7 @@ td.sched-empty{height:120px}
   <div class="wrap foot-in">
     <div class="logos"><img class="dic" src="/img/30x30/logo-dic.png" alt="Dubai Internet City"><i></i><img class="atp" src="/img/30x30/logo-atp-dark.png" alt="At The Park"><i></i><img class="hub" src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub"></div>
     <div class="foot-links">
-      <div><h5>The hub</h5><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#challenges">Challenges</a><a href="#charity">Charity</a></div>
+      <div><h5>The hub</h5><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#challenges">Challenges</a><a href="#charity">Charity</a><a href="#results">Results</a></div>
       <div><h5>At The Park</h5><a href="https://atthepark.world">atthepark.world</a><a href="https://shop.atthepark.world">ATP Store</a><a href="mailto:general@atthepark.world">general@atthepark.world</a></div>
     </div>
   </div>
@@ -575,15 +582,6 @@ td.sched-empty{height:120px}
   function t12(t){ if (!t) return 'Time TBC'; var p = t.split(':'), h = +p[0]; return (h % 12 || 12) + ':' + p[1] + ' ' + (h < 12 ? 'AM' : 'PM'); }
   var WEEKS = [[1,7],[8,14],[15,21],[22,28],[29,30]];
 
-  // The 30x30 Challenge Series. Slots are the calendar sessions whose name
-  // matches (re) — e.g. "Reebok Burpee Challenge · Qualifier" created in admin.
-  var CH = [
-    { k:'redline', re:/redline/i, n:'Redline 400', tl:'Fastest 400 m', ds:'One lap, flat out. Run in heats and chip-timed.', win:'Fastest single lap of the week wins.', q:'Mon – Fri · 7–8 PM', f:'Sat & Sun · 7–8 PM', cut:'Top 15 men + 15 women' },
-    { k:'relay', re:/al\s*ameen/i, n:'Al Ameen Run Challenge', tl:'4.8 km company team relay', ds:'Company teams of 2–4 colleagues split a fixed 4.8 km in 400 m runs.', win:'Fastest team time wins — the prize goes to charity.', q:'Mon – Fri · 6–7 PM', f:'Sat & Sun · 6–7 PM', cut:'Top 10 teams', team:true, charity:true },
-    { k:'burpee', re:/reebok|burpee/i, n:'Reebok Burpee Challenge', tl:'60-second sprint', ds:'Max burpee jump-overs in one minute — chest to floor, jump the bar.', win:'Most valid reps in 60 seconds wins.', q:'Schedule TBC', f:'TBC', cut:'Top 15 men + 15 women' },
-    { k:'los', re:/last one standing/i, n:'Last One Standing', tl:'The pace ladder', ds:'Everyone runs 400 m; the time cap tightens each round (5:00 → 2:00), 1 min rest.', win:'Last runner to beat the cap wins.', q:'Mon – Fri · 8–9 PM', f:'Sat & Sun · 8–9 PM', cut:'Top 15 men + 15 women' }
-  ];
-  var chBy = {}; CH.forEach(function(c){ chBy[c.k] = c; });
   var CH_RE = /challenge|redline|last one standing|burpee/i;
   var SP_RE = /pink run|opening night|festival|finale|special event|celebration/i;
   var MAIL = 'mailto:general@atthepark.world?subject=Al%20Ameen%20Run%20Challenge%20%E2%80%94%20company%20team';
@@ -754,35 +752,6 @@ td.sched-empty{height:120px}
     });
   }
 
-  // ── challenges: rules + the bookable slots from the calendar ──
-  var LADDER = ['5:00','4:30','4:00','3:30','3:00','2:30','2:00'];
-  function chSlots(c){ return allItems().filter(function(x){ return c.re.test(x.n); }); }
-  function openCh(k){
-    var c = chBy[k]; if (!c) return;
-    var slots = chSlots(c), sp = sponsorOf({ name: c.n });
-    mTop.innerHTML = '<small>' + (c.charity ? 'Companies compete · Charity wins' : '30x30 Challenge Series · Free to enter') + '</small><h3 id="mdlTitle">' + esc(c.n) + '</h3>' + spLogo(sp, 'mdl-sp', 'Powered by') + '<button class="mdl-x" data-close aria-label="Close">✕</button>';
-    var rules = '<p class="mdl-ds">' + esc(c.ds) + '</p><div class="rules"><div><small>How to win</small><b>' + esc(c.win) + '</b></div><div><small>Make the cut</small><b>' + c.cut + '</b></div><div><small>Qualifiers</small><b>' + c.q + '</b></div><div><small>Finals</small><b>' + c.f + '</b></div></div>' +
-      (k === 'los' ? '<div class="ladder"><div><span>The pace ladder</span><span>1:00 rest</span></div>' + LADDER.map(function(t, j){ return '<div><span>Level ' + (j + 1) + '</span><b>400 m under ' + t + '</b></div>'; }).join('') + '</div>' : '');
-    var book = slots.length
-      ? '<div class="slots"><h4>Book a slot</h4>' + slots.map(function(x){ var d = dt(x.day); return '<button type="button" data-open="' + esc(x.key) + '"><b>' + DOW[d.getUTCDay()].charAt(0) + DOW[d.getUTCDay()].slice(1).toLowerCase() + ' ' + lbl(x.day) + ' · ' + t12(x.t) + '</b><span>' + esc(x.n) + '</span></button>'; }).join('') + '</div>' +
-        (c.team ? '<p class="note">Entering as a company team? <a href="' + MAIL + '">Register your company’s interest</a>.</p>' : '')
-      : c.team
-        ? '<div class="done"><h3>Company team sign-up opens soon</h3><p>Teams of 2–4 colleagues from the same company. Register your company’s interest and we’ll be in touch as soon as sign-up opens.</p></div><a class="btn btn-red btn-block" href="' + MAIL + '">Register your company’s interest</a>'
-        : '<div class="done"><h3>Registration opens soon</h3><p>Entry is free. Join ATP now so you’re ready — you’ll book here or in the ATP app as soon as registration opens.</p></div><a class="btn btn-red btn-block" href="/join">Join ATP — free</a>';
-    mBody.innerHTML = rules + book;
-    showMdl();
-  }
-  function renderCh(){
-    document.getElementById('chs').innerHTML = CH.map(function(c, i){
-      var n = chSlots(c).length;
-      return '<div class="chc' + (c.charity ? ' give' : '') + '">' + spLogo(sponsorOf({ name: c.n }), 'ch-sp') + '<span class="no">' + (c.charity ? 'Charity challenge' : 'Challenge 0' + (i + 1)) + '</span><h3>' + esc(c.n) + '</h3><span class="tl">' + esc(c.tl) + '</span><p>' + esc(c.ds) + '</p>' +
-        '<dl><dt>How to win</dt><dd>' + esc(c.win) + '</dd><dt>Qualifiers</dt><dd>' + c.q + '</dd><dt>Finals</dt><dd>' + c.f + '</dd></dl>' +
-        (c.charity ? '<a class="cause" href="#charity">💚 100% of the prize goes to charity →</a>' : '') +
-        (n ? '<p class="soon open">' + n + ' slot' + (n === 1 ? '' : 's') + ' open for booking</p><button class="btn btn-red btn-block" data-chreg="' + c.k + '">Book a slot</button>'
-           : '<p class="soon">Registration opens soon</p><button class="btn btn-line btn-block" data-chreg="' + c.k + '">See the rules</button>') + '</div>';
-    }).join('');
-  }
-
   // ── shared clicks ────────────────────────────────────
   document.addEventListener('click', function(e){
     var wa = e.target.closest('[data-wa]'), cp = e.target.closest('[data-copy]');
@@ -793,13 +762,11 @@ td.sched-empty{height:120px}
       (navigator.clipboard ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function(){ toast('Invite copied — paste it anywhere'); }, function(){ toast('Copy failed — long-press to copy'); });
       return;
     }
-    var cr = e.target.closest('[data-chreg]');
-    if (cr) { openCh(cr.getAttribute('data-chreg')); return; }
     var o = e.target.closest('[data-open]');
     if (o) openClass(o.getAttribute('data-open'));
   });
 
-  renderSched(); renderCh();
+  renderSched();
   loadHub().then(function(){
     var ln = document.getElementById('liveNote');
     if (LIVE) {
@@ -810,12 +777,30 @@ td.sched-empty{height:120px}
     } else {
       ln.querySelector('span').textContent = '30x30 sessions are being added to the ATP calendar — they open for booking here and in the ATP app very soon.';
     }
-    renderChips(); renderWeeks(); renderSched(); renderCh();
+    renderChips(); renderWeeks(); renderSched();
     var sid = new URLSearchParams(location.search).get('session'), hit = sid && LIVE_BY_ID[sid];
     if (hit) {
       state.week = weekOf(hit.day); renderWeeks(); renderSched();
       openClass(hit.day + '|' + sid);
     }
+  });
+})();
+</script>
+<script src="/hub-challenges.js?v=1"></script>
+<script>
+/* 30x30 Challenges (founder 2026-10-19): cards, challenge calendar and
+   leaderboards come live from the ATP calendar (hub-challenges.js). */
+(function () {
+  if (!window.HubCh) return;
+  HubCh.mount({ cards: document.getElementById('hcCards'), calendar: document.getElementById('hcCalendar'), boards: document.getElementById('hcBoards') }).then(function () {
+    var list = HubCh.state.challenges || [];
+    var team = list.filter(function (c) { return c.kind === 'team' && /al\s*ameen/i.test(c.name); })[0] || list.filter(function (c) { return c.kind === 'team'; })[0];
+    var note = document.getElementById('hcCharityNote');
+    if (team && team.charity_enabled && note) note.textContent = 'Supporting ' + team.charity_name + '.';
+    document.querySelectorAll('[data-hc-team-cta]').forEach(function (b) {
+      if (!team) { b.textContent = 'Team registration opens soon'; b.disabled = true; return; }
+      b.addEventListener('click', function () { HubCh.openChallenge(team.id); });
+    });
   });
 })();
 </script>

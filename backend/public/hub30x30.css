@@ -2,10 +2,12 @@
    Same look as the 30x30 landing page: white, minimal, DIC sand + red.
    Everything is scoped under .hub30 / .h30-* so the rest of the page keeps
    the ATP theme. */
-.sessions-main.hub-mode > *:not(#hub30) { display: none !important; }
+.sessions-main.hub-mode > *:not(#hub30):not(#hubch) { display: none !important; }
 /* The 30x30 panel exists ONLY on the DIC tab — every other tab keeps the
    regular sessions page untouched (founder bug 2026-10-16). */
 .sessions-main:not(.hub-mode) > #hub30 { display: none !important; }
+.sessions-main:not(.hub-mode) > #hubch { display: none !important; }
+#hubch .hubch-h { font-size: 22px; color: #222; margin: 36px 0 14px; }
 /* White, edge to edge, from the tab row to the footer (founder 2026-10-16) —
    the box-shadow + clip-path pair paints the full viewport width without
    touching the page layout. */

@@ -244,14 +244,36 @@
   }
 
   // ── hook from applyFilters() on the sessions page ─────────
+  // 30x30 Challenges tab (founder 2026-10-19): same white hub look; the
+  // content (cards, challenge calendar, registration, leaderboards) is the
+  // shared hub-challenges.js, mounted once.
+  function syncChallenges(on, main) {
+    var cp = document.getElementById('hubch');
+    if (!on) { if (cp) cp.style.display = 'none'; return; }
+    if (!cp) {
+      cp = document.createElement('section'); cp.id = 'hubch'; cp.className = 'hub30';
+      cp.innerHTML = '<div class="h30-top"><div class="h30-eyebrow"><small>Dubai Fitness Challenge</small><h2>30x30 Challenge Series</h2>' +
+        '<p>Individual and team challenges at the Dubai Internet City Amphitheatre · Free. Book a qualifier slot — every attempt counts, your best result ranks.</p></div>' +
+        '<div class="h30-logos"><img src="/img/30x30/logo-dic.png" alt="Dubai Internet City"><i></i><img src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub"></div></div>' +
+        '<div id="hubchCards"></div><h3 class="hubch-h">Challenge calendar</h3><div id="hubchCal"></div>' +
+        '<h3 class="hubch-h">Leaderboards</h3><div id="hubchBoards"></div>' +
+        '<div class="h30-foot"><span>Register here or in the ATP app — same booking, same QR code.</span><a href="#" data-h30all>Show all ATP sessions</a></div>';
+      main.insertBefore(cp, main.firstChild);
+      cp.addEventListener('click', function (e) { if (e.target.closest('[data-h30all]')) { e.preventDefault(); var all = document.querySelector('.filter-tab[data-atp-call="filterTribe"]'); if (all) all.click(); } });
+      if (window.HubCh) window.HubCh.mount({ cards: document.getElementById('hubchCards'), calendar: document.getElementById('hubchCal'), boards: document.getElementById('hubchBoards') });
+    }
+    cp.style.display = '';
+  }
   function sync() {
     var main = document.querySelector('.sessions-main'); if (!main) return;
-    var on = typeof currentVenue !== 'undefined' && currentVenue === 'dic';
-    main.classList.toggle('hub-mode', on);
+    var venue = typeof currentVenue !== 'undefined' ? currentVenue : '';
+    var on = venue === 'dic', chal = venue === 'chal';
+    main.classList.toggle('hub-mode', on || chal);
     var p = document.getElementById('hub30');
     if (on) render();
     else if (p) { p.innerHTML = ''; p.style.display = 'none'; }
     if (on && (p = document.getElementById('hub30'))) p.style.display = '';
+    syncChallenges(chal, main);
   }
   window.Hub30 = { sync: sync, open: open };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', sync); else sync();
