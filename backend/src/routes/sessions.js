@@ -51,6 +51,15 @@ async function _notifyTimeChange(session, oldAt) {
 // Sponsor "Powered by" — validate the admin-supplied logo + click URLs.
 // Logo: https:// , data:image/...;base64 , or an /api/cms/media/<id>
 // upload ref. Click URL: https?:// only (no javascript:/data:). Returns
+// 30x30 Challenges: only '30x30_challenge' sessions carry a challenge link.
+function _hubChallengeFields(body) {
+  const isCh = body && body.session_category === '30x30_challenge' && /^[0-9a-f-]{36}$/i.test(String(body.hub_challenge_id || ''));
+  return {
+    hub_challenge_id: isCh ? String(body.hub_challenge_id) : null,
+    hub_challenge_stage: isCh ? (body.hub_challenge_stage === 'final' ? 'final' : 'qualifier') : null,
+  };
+}
+
 // a clean { sponsor_name, sponsor_logo_url, sponsor_url } object; bad
 // values are dropped to null rather than throwing.
 // ─────────────────────────────────────────────────────────────
@@ -161,6 +170,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
                 s.session_category, s.sport_type, s.courts, s.cancellation_reason,
                 s.city_id, s.coach_id, s.activity_id, s.tribe_id, s.intro_video_url,
                 s.sponsor_name, s.sponsor_logo_url, s.sponsor_url,
+                s.hub_challenge_id, s.hub_challenge_stage,
                 s.is_corporate_only, s.corporate_account_id,
                 ca.company_name AS corporate_company_name,
                 ca.logo_url     AS corporate_logo_url,
@@ -636,6 +646,21 @@ router.post('/', authenticate, requireAdmin, async (req, res, next) => {
           } catch (e) {
             await client.query('ROLLBACK TO SAVEPOINT set_sponsor');
             if (e.code !== '42703') throw e;
+          }
+        }
+        // 30x30 Challenges (founder 2026-10-19): a '30x30_challenge' slot is
+        // linked to its challenge + stage (qualifier / final).
+        {
+          const hub = _hubChallengeFields(req.body);
+          await client.query('SAVEPOINT set_hubch');
+          try {
+            await client.query(`UPDATE sessions SET hub_challenge_id=$1, hub_challenge_stage=$2 WHERE id=$3`,
+              [hub.hub_challenge_id, hub.hub_challenge_stage, rows[0].id]);
+            Object.assign(rows[0], hub);
+            await client.query('RELEASE SAVEPOINT set_hubch');
+          } catch (e) {
+            await client.query('ROLLBACK TO SAVEPOINT set_hubch');
+            if (e.code !== '42703' && e.code !== '22P02') throw e;
           }
         }
         // is_streamable + assigned_ambassador_ids — same defensive pattern
@@ -1291,6 +1316,11 @@ router.put('/:id', authenticate, requireAdmin, async (req, res, next) => {
 
     // Sponsor "Powered by" — separate UPDATE, only when the admin sent at
     // least one sponsor field. Pre-migration DBs (no sponsor_* cols) skip.
+    if (req.body.session_category !== undefined || req.body.hub_challenge_id !== undefined) {
+      const hub = _hubChallengeFields(req.body);
+      await query(`UPDATE sessions SET hub_challenge_id=$1, hub_challenge_stage=$2 WHERE id=$3`, [hub.hub_challenge_id, hub.hub_challenge_stage, id])
+        .catch((e) => { if (e.code !== '42703' && e.code !== '22P02') throw e; });
+    }
     if (req.body.sponsor_name !== undefined || req.body.sponsor_logo_url !== undefined || req.body.sponsor_url !== undefined) {
       const sp = _sanitizeSponsor(req.body);
       try {

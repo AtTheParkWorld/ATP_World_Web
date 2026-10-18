@@ -783,6 +783,12 @@ const ROUTES = [
   ['promos',       require('./routes/promos')],
   ['config',       require('./routes/config')],
 ];
+// 30x30 Challenges (founder 2026-10-19). Admin routes first so /admin/…
+// never reaches the public router's /:id patterns.
+{
+  const hubCh = require('./routes/hubChallenges');
+  ROUTES.push(['hub-challenges/admin', hubCh.admin], ['hub-challenges', hubCh.router]);
+}
 for (const [prefix, router] of ROUTES) {
   app.use('/api/'    + prefix, router);
   app.use('/api/v1/' + prefix, router);
@@ -853,6 +859,10 @@ async function _ensureBootSchema() {
   // stays out of the sender's inbox until the member replies.
   await require('./services/welcomeMessage').ensureWelcomeFlag()
     .catch((e) => console.warn('[boot] messages.is_welcome:', e.message));
+
+  // 30x30 Challenges (founder 2026-10-19): tables + sessions.hub_challenge_* columns.
+  await require('./services/hubChallenges').ensureSchema()
+    .catch((e) => console.warn('[boot] hub challenges:', e.message));
 
   // Manual check-in approvals (founder 2026-10-16): an ambassador's or
   // coach's manual check-in waits on the booking until an admin approves it.

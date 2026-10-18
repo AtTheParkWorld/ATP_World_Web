@@ -6,6 +6,7 @@ const emailService = require('../services/email');
 const billing = require('../services/billing');
 const refunds = require('../services/refunds');
 const livestreamNotify = require('../services/livestreamNotify');
+const hubChallenges = require('../services/hubChallenges');
 
 // ── Helpers ─────────────────────────────────────────────────────
 // Builds the QR payload + token for a confirmed booking. Used in three
@@ -95,6 +96,11 @@ router.post('/', authenticate, async (req, res, next) => {
     if (session.status !== 'upcoming') {
       return res.status(400).json({ error: 'Session is no longer available for booking' });
     }
+
+    // 30x30 Challenges (founder 2026-10-19): the final isn't bookable, team
+    // challenge slots need a team first, one slot per day per challenge.
+    const hcBlock = await hubChallenges.bookingGate(session_id, req.member.id);
+    if (hcBlock) return res.status(hcBlock.status).json(hcBlock.body);
 
     // Corporate-exclusive gate (Phase 3): only employees of the target
     // company can book a corporate-only session. Check is_active +
@@ -337,6 +343,9 @@ router.post('/', authenticate, async (req, res, next) => {
 
     // Premium members get told they can watch this one live.
     livestreamNotify.onBookingConfirmed(member.id, session_id, req.member.subscription_type);
+
+    // An individual challenge slot booking is the challenge registration.
+    await hubChallenges.afterBooking(session_id, req.member.id).catch((e) => console.warn('[bookings] hub challenge entry:', e.message));
 
     res.status(201).json({ booking: txResult.row, qrData: txResult.qrData, qrToken: txResult.qrToken });
   } catch (err) {
