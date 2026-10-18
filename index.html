@@ -587,6 +587,30 @@ a.product-card:hover{transform:translateY(-4px)}
     <span class="trust-ticker-item">Gulf News featured</span>
   </div>
 </div>
+<script>
+/* The lime banner shows the active Announcements from Admin → Settings →
+   Announcements (founder 2026-10-18), so the founder can change it any
+   time without a code change. None active → the standard text above. */
+(function () {
+  var track = document.querySelector('.trust-bar .trust-ticker');
+  if (!track || !window.fetch) return;
+  fetch('/api/announcements').then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+    var items = ((d && d.announcements) || []).filter(function (a) { return a && String(a.message || '').trim(); });
+    if (!items.length) return;
+    function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+    function one(a) {
+      var t = esc(String(a.message).trim());
+      var url = /^(https?:\/\/|\/)/i.test(a.link_url || '') ? a.link_url : '';
+      return '<span class="trust-ticker-item">' + (url ? '<a href="' + esc(url) + '" tabindex="-1" style="color:inherit;text-decoration:none">' + t + '</a>' : t) + '</span>';
+    }
+    // The track scrolls by half its width, so each half needs enough items to cover the screen.
+    var half = [];
+    while (half.length < 8) half = half.concat(items);
+    var html = half.map(one).join('');
+    track.innerHTML = html + html;
+  }).catch(function () {});
+})();
+</script>
 
 <!-- STORY -->
 <section id="story" class="story-section" aria-labelledby="story-heading" itemscope itemtype="https://schema.org/AboutPage">
