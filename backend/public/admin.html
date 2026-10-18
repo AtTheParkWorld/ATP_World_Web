@@ -168,6 +168,11 @@
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h8a3 3 0 010 6H7"/><path d="M6 3L3 6l3 3"/></svg>
         Refunds
       </div>
+      <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["reports"]'>
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 14V2.5"/><path d="M3 3h8.5l-1.6 3 1.6 3H3"/></svg>
+        Reports
+        <span id="rpNavBadge" style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:800;border-radius:999px;padding:1px 7px;line-height:16px"></span>
+      </div>
       <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["checkins"]'>
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8.2l2 2 4-4.4"/></svg>
         Check-in approvals
@@ -2364,6 +2369,17 @@
     </div>
 
     <!-- ═══ CHECK-IN APPROVALS SECTION ═══ -->
+    <div id="section-reports" style="display:none">
+      <div class="admin-page-title">🚩 Reports</div>
+      <div class="admin-page-sub">Posts, comments, members and messages reported by members. See exactly what was reported and by whom, then remove it, dismiss it, ban the author or mark it as done. Closing one report closes every open report on the same content.</div>
+      <div style="display:flex;justify-content:flex-end;margin-top:6px">
+        <button class="admin-btn" onclick="loadReportsSection()" style="font-size:11px;padding:6px 12px">↻ Refresh</button>
+      </div>
+      <div id="reportsBody" style="margin-top:14px">
+        <div style="padding:60px;text-align:center;color:#555">Loading reports…</div>
+      </div>
+    </div>
+
     <div id="section-checkins" style="display:none">
       <div class="admin-page-title">✅ Check-in approvals</div>
       <div class="admin-page-sub">Manual check-ins by ambassadors and coaches — picking a member from the list instead of scanning their QR — wait here. Approve to count the attendance (streak, badges and points, at the time it happened). Reject if it shouldn't count. QR scans, booking-code check-ins and admins' own check-ins are never held.</div>
@@ -2391,7 +2407,7 @@
 <div class="admin-toast" id="adminToast"></div>
 <!-- Admin modules — load order matters: core defines globals + showAdminSection
      hook in init.js wires the per-section loaders, so init.js must come last. -->
-<script src="/admin/bundle.min.js?v=301c47b1a8"></script>
+<script src="/admin/bundle.min.js?v=cd60fc3c76"></script>
 
 
 

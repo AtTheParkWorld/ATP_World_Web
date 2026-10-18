@@ -49,6 +49,7 @@ JS_TARGETS = [
     'admin/coachPayouts.js',
     'admin/refunds.js',
     'admin/checkins.js',
+    'admin/reports.js',
     'admin/corporate.js',
     'admin/init.js',
 ]
@@ -138,6 +139,7 @@ def main() -> None:
         'admin/coachPayouts.min.js',
         'admin/refunds.min.js',
         'admin/checkins.min.js',
+        'admin/reports.min.js',
         'admin/corporate.min.js',
         'admin/init.min.js',          # last so its hook into showAdminSection wraps everything else
     ]

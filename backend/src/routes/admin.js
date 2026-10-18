@@ -1011,16 +1011,48 @@ router.patch('/members/:id/ban', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// ── GET /api/admin/reports ────────────────────────────────────
-// Rulebook ref: R-MOD-001 (OQ-36). target_type can now be 'post' |
-// 'comment' | 'member' | 'message'. The query optionally LATERAL-
-// joins the target so admins see a preview (post excerpt, comment
-// snippet, member name, etc.) without needing a per-row API call.
+// ── GET /api/admin/reports?status=open|resolved|all ───────────
+// Rulebook ref: R-MOD-001 (OQ-36). target_type 'post' | 'comment' |
+// 'member' | 'message'. Founder 2026-10-18: admins need to SEE what was
+// reported (full post text + photos, the author, who reported it and
+// why) and close it. `target` carries everything for the review card;
+// target_preview / target_member_id stay for older callers.
+let _reportColsReady = null;
+function ensureReportCols() {
+  if (!_reportColsReady) {
+    _reportColsReady = query(`ALTER TABLE reports ADD COLUMN IF NOT EXISTS resolution VARCHAR(20)`)
+      .then(() => query(`ALTER TABLE reports ADD COLUMN IF NOT EXISTS resolution_note TEXT`))
+      .catch((e) => { _reportColsReady = null; throw e; });
+  }
+  return _reportColsReady;
+}
+const _AUTHOR = (a) => `'author_id', ${a}.id, 'author_name', TRIM(CONCAT(${a}.first_name,' ',${a}.last_name)),
+                        'author_email', ${a}.email, 'author_number', ${a}.member_number,
+                        'author_avatar', ${a}.avatar_url, 'author_banned', COALESCE(${a}.is_banned, false)`;
 router.get('/reports', async (req, res, next) => {
   try {
+    await ensureReportCols();
+    const status = ['open', 'resolved', 'all'].includes(req.query.status) ? req.query.status : 'open';
     const { rows } = await query(
-      `SELECT r.*,
-              m.first_name AS reporter_first, m.last_name AS reporter_last,
+      `SELECT r.id, r.target_type, r.target_id, r.reason, r.description, r.created_at,
+              r.resolved, r.resolved_at, r.resolution, r.resolution_note,
+              r.reporter_id, m.first_name AS reporter_first, m.last_name AS reporter_last,
+              TRIM(CONCAT(rv.first_name,' ',rv.last_name)) AS resolved_by_name,
+              (SELECT COUNT(*)::int FROM reports r2
+                WHERE r2.target_type = r.target_type AND r2.target_id = r.target_id) AS reports_on_target,
+              CASE r.target_type
+                WHEN 'post' THEN (SELECT json_build_object('content', p.content, 'media', p.media,
+                        'is_deleted', p.is_deleted, 'created_at', p.created_at, ${_AUTHOR('a')})
+                     FROM posts p JOIN members a ON a.id = p.member_id WHERE p.id = r.target_id)
+                WHEN 'comment' THEN (SELECT json_build_object('content', c.content, 'is_deleted', c.is_deleted,
+                        'created_at', c.created_at, 'post_id', c.post_id, 'post_content', LEFT(pp.content, 240), ${_AUTHOR('a')})
+                     FROM comments c JOIN members a ON a.id = c.member_id LEFT JOIN posts pp ON pp.id = c.post_id
+                    WHERE c.id = r.target_id)
+                WHEN 'member' THEN (SELECT json_build_object(${_AUTHOR('a')}) FROM members a WHERE a.id = r.target_id)
+                WHEN 'message' THEN (SELECT json_build_object('content', mm.content, 'created_at', mm.created_at, ${_AUTHOR('a')})
+                     FROM messages mm JOIN members a ON a.id = mm.sender_id WHERE mm.id = r.target_id)
+                ELSE NULL
+              END AS target,
               CASE r.target_type
                 WHEN 'post'    THEN (SELECT LEFT(content, 200) FROM posts    WHERE id=r.target_id)
                 WHEN 'comment' THEN (SELECT LEFT(content, 200) FROM comments WHERE id=r.target_id)
@@ -1034,11 +1066,60 @@ router.get('/reports', async (req, res, next) => {
                 ELSE NULL
               END AS target_member_id
        FROM reports r
-       JOIN members m ON m.id=r.reporter_id
-       WHERE r.resolved=false
-       ORDER BY r.created_at DESC`
+       JOIN members m ON m.id = r.reporter_id
+       LEFT JOIN members rv ON rv.id = r.resolved_by
+       WHERE ($1 = 'all' OR ($1 = 'open' AND r.resolved = false) OR ($1 = 'resolved' AND r.resolved = true))
+       ORDER BY ${status === 'resolved' ? 'r.resolved_at DESC NULLS LAST' : 'r.created_at DESC'}
+       LIMIT 300`,
+      [status]
     );
-    res.json({ reports: rows });
+    const { rows: c } = await query(
+      `SELECT COUNT(*) FILTER (WHERE resolved = false)::int AS open,
+              COUNT(*) FILTER (WHERE resolved = true)::int  AS resolved
+         FROM reports`
+    );
+    res.json({ reports: rows, counts: c[0] || { open: 0, resolved: 0 } });
+  } catch (err) { next(err); }
+});
+
+// ── POST /api/admin/reports/:id/action ───────────────────────
+// Body: { action: 'remove' | 'dismiss' | 'done', note? }
+//   remove  → hide the post / comment from the community (soft delete,
+//             same as an admin delete) and close the report
+//   dismiss → nothing wrong; close it (a post shows again on its share page)
+//   done    → handled another way (talked to the member, banned…); close it
+// Every open report on the same post/comment/member closes together, so
+// the same content never needs reviewing twice.
+const REPORT_ACTIONS = { remove: 'removed', dismiss: 'dismissed', done: 'actioned' };
+router.post('/reports/:id/action', async (req, res, next) => {
+  try {
+    await ensureReportCols();
+    const action = String((req.body && req.body.action) || '');
+    const note = req.body && req.body.note ? String(req.body.note).slice(0, 500) : null;
+    if (!REPORT_ACTIONS[action]) return res.status(400).json({ error: 'action must be remove, dismiss or done' });
+    const { rows } = await query('SELECT id, target_type, target_id FROM reports WHERE id=$1', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ error: 'Report not found' });
+    const r = rows[0];
+
+    if (action === 'remove') {
+      if (r.target_type === 'post') {
+        await query('UPDATE posts SET is_deleted=true, deleted_by=$1, deleted_at=NOW() WHERE id=$2 AND is_deleted=false',
+          [req.member.id, r.target_id]);
+      } else if (r.target_type === 'comment') {
+        const { rows: cm } = await query('UPDATE comments SET is_deleted=true WHERE id=$1 AND is_deleted=false RETURNING post_id', [r.target_id]);
+        if (cm.length) await query('UPDATE posts SET comments_count = GREATEST(comments_count - 1, 0) WHERE id=$1', [cm[0].post_id]).catch(() => {});
+      } else {
+        return res.status(400).json({ error: 'Only posts and comments can be removed. Use “Ban member” or “Mark as done”.' });
+      }
+    }
+
+    const { rowCount } = await query(
+      `UPDATE reports SET resolved=true, resolved_by=$1, resolved_at=NOW(), resolution=$2, resolution_note=$3
+        WHERE target_type=$4 AND target_id=$5 AND resolved=false`,
+      [req.member.id, REPORT_ACTIONS[action], note, r.target_type, r.target_id]
+    );
+    audit.log(req, 'report.' + REPORT_ACTIONS[action], r.target_type, r.target_id, { report_id: r.id, note });
+    res.json({ ok: true, resolution: REPORT_ACTIONS[action], closed: rowCount });
   } catch (err) { next(err); }
 });
 

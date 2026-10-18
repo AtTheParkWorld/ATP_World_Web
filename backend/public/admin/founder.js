@@ -82,14 +82,16 @@ function renderOpsPulse(d) {
 
   // ── Reports ───────────────────────────────────────────────
   var rp = d.reports || { open_count:0, recent:[] };
+  // Each row opens the Reports section on that report (founder 2026-10-18:
+  // "how can I take action? There is no way to see what is the post").
   var reportsBody = rp.recent.length ? rp.recent.map(function(r){
-    return '<div style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)">' +
+    return '<div onclick="openReportFromFounder(\''+esc(r.id)+'\')" title="Review this report" style="padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04);cursor:pointer">' +
       '<div><span style="background:#333;color:#fff;font-size:10px;padding:2px 6px;border-radius:4px">'+esc(r.target_type)+'</span> ' +
       '<strong style="color:#fff">'+esc(r.reason)+'</strong></div>' +
       '<div style="margin:3px 0;color:#bbb">'+esc((r.description||'').slice(0,140))+'</div>' +
-      '<div style="font-size:11px;color:#666">reported by '+esc(r.reporter_name)+' &middot; '+fmtAgo(r.created_at)+'</div>' +
+      '<div style="font-size:11px;color:#666">reported by '+esc(r.reporter_name)+' &middot; '+fmtAgo(r.created_at)+' &middot; <span style="color:#A8FF00">Review →</span></div>' +
     '</div>';
-  }).join('') : emptyRow('No open reports — community is healthy.');
+  }).join('') + '<div style="padding-top:10px"><a href="#" onclick="openReportFromFounder();return false" style="color:#A8FF00;font-size:12px;font-weight:700">Review all reports →</a></div>' : emptyRow('No open reports — community is healthy.');
   var reportsCard = card('🚩 Open Reports', rp.open_count, rp.open_count > 0 ? '#ef4444' : '#444', reportsBody);
 
   // ── Pending self-deletes ──────────────────────────────────
