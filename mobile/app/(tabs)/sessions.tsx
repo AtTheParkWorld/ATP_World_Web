@@ -29,9 +29,11 @@
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { router } from 'expo-router';
 import Animated, { FadeInDown, FadeOut } from 'react-native-reanimated';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { listSessions, listTribes, type Session } from '@/lib/api/sessions';
+import { HUB_END } from '@/lib/api/hubChallenges';
 import { SessionCard } from '@/lib/components/SessionCard';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { LoadError } from '@/lib/components/LoadError';
@@ -205,6 +207,16 @@ export default function Sessions() {
           {monthLabel}
         </Text>
       </View>
+
+      {/* DIC 30x30 Fitness Hub (founder 2026-10-19): its own schedule,
+          challenges and results, beyond this tab's two-week strip. */}
+      {Date.now() < HUB_END && (
+        <Pressable onPress={() => router.push('/hub30x30')} className="mx-5 mt-1 mb-2 rounded-atp px-4 py-2.5 flex-row items-center justify-between active:opacity-80"
+          style={{ backgroundColor: '#ffffff' }}>
+          <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.black }} className="text-sm">🔥 DIC 30x30 Fitness Hub · Challenges</Text>
+          <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.black }} className="text-base">→</Text>
+        </Pressable>
+      )}
 
       {/* Week strip — slim single row of ~40px pills. flexGrow:0 pins
           the ScrollView to its content height so it can never expand

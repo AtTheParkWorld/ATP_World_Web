@@ -58,6 +58,9 @@ export interface Session {
   status: 'upcoming' | 'live' | 'completed' | 'cancelled' | 'paused' | string;
   is_live_enabled: boolean;
   session_category: string | null;
+  // 30x30 Challenges (founder 2026-10-19): a '30x30_challenge' slot's challenge + stage.
+  hub_challenge_id?: string | null;
+  hub_challenge_stage?: 'qualifier' | 'final' | null;
   sport_type: string | null;
   city_id: string | null;
   coach_id: string | null;

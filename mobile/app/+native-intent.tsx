@@ -39,6 +39,12 @@ export function redirectSystemPath({ path }: { path: string; initial: boolean })
     if (p === '/store' || p === '/store.html') {
       return '/(tabs)/store';
     }
+    // 30x30 Fitness Hub (founder 2026-10-19): the landing page and team
+    // invite links open the in-app hub; ?team=CODE joins that team.
+    if (p === '/30x30-hub' || p === '/30x30-hub/' || p === '/30x30' || p === '/30x30/') {
+      const team = q.get('team');
+      return team ? `/hub30x30/join?code=${encodeURIComponent(team)}` : '/hub30x30';
+    }
     // Magic-link path is claimed + already routes (app/auth/verify.tsx);
     // preserve its query string.
     if (p === '/auth/verify') {

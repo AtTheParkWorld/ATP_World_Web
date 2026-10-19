@@ -32,6 +32,7 @@ import { NotificationBell } from '@/lib/components/NotificationBell';
 import { Avatar } from '@/lib/components/Avatar';
 import { DeviceWeekCard } from '@/lib/components/DeviceWeekCard';
 import { MyNextSession } from '@/lib/components/MyNextSession';
+import { HUB_END } from '@/lib/api/hubChallenges';
 import { Icon, type IconName } from '@/lib/components/icons';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 
@@ -153,6 +154,23 @@ export default function Home() {
             <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.black, fontSize: 26 }}>→</Text>
           </Pressable>
         </View>
+
+
+        {/* DIC 30x30 Fitness Hub (founder 2026-10-19) — schedule, challenges,
+            results; disappears after the hub ends (29 Nov). */}
+        {Date.now() < HUB_END && (
+          <View className="px-5 mt-5">
+            <Pressable onPress={() => router.push('/hub30x30')} className="rounded-atp-lg p-5 flex-row items-center justify-between active:opacity-80"
+              style={{ backgroundColor: '#ffffff' }}>
+              <View className="flex-1">
+                <Text style={{ fontFamily: fontFamily.bodyBold, color: '#f90000' }} className="text-[10px] uppercase tracking-widest">Dubai Fitness Challenge · 31 Oct – 29 Nov</Text>
+                <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.black }} className="text-2xl uppercase tracking-tight mt-0.5">DIC 30x30 Fitness Hub</Text>
+                <Text style={{ fontFamily: fontFamily.body, color: 'rgba(0,0,0,0.65)' }} className="text-xs mt-0.5">Schedule · Challenges · Results — all free</Text>
+              </View>
+              <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.black, fontSize: 26 }}>→</Text>
+            </Pressable>
+          </View>
+        )}
 
         {/* My next session — the member's own soonest booking */}
         <View className="px-5 mt-7">
