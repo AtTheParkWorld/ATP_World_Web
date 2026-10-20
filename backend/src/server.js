@@ -103,7 +103,11 @@ app.use(helmet({
       // Stripe Payment Element renders inside js.stripe.com iframes;
       // hooks.stripe.com handles 3DS challenges. Without an explicit
       // frame-src the helmet default-src 'self' fallback would block them.
-      "frame-src":  ["'self'", "https://js.stripe.com", "https://hooks.stripe.com"],
+      // Google Maps: the venue map at the top of a booking's detail pop-up
+      // (profile → My sessions) showed "This content is blocked" (founder
+      // 2026-10-21) — maps.google.com redirects to www.google.com/maps.
+      "frame-src":  ["'self'", "https://js.stripe.com", "https://hooks.stripe.com",
+                     "https://maps.google.com", "https://www.google.com"],
       "media-src":  ["'self'", "https:"],
       "frame-ancestors": ["'none'"],            // prevent clickjacking
       "object-src": ["'none'"],
