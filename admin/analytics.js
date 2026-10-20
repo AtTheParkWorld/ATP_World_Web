@@ -34,7 +34,9 @@ async function loadDashboardWidgets() {
     // ── RECENT SESSIONS ATTENDANCE ──
     // Fetch recent completed sessions with checkin counts
     try {
-      var recent = await fetch(ATP_API+'/sessions?status=completed&limit=3', {headers:{'Authorization':'Bearer '+token}}).then(r=>r.json());
+      // order=recent: newest first — without it this showed the three OLDEST
+      // completed sessions (founder 2026-10-20).
+      var recent = await fetch(ATP_API+'/sessions?status=completed&order=recent&limit=5', {headers:{'Authorization':'Bearer '+token}}).then(r=>r.json());
       var recentList = recent.sessions || [];
       // Always update the "Recent Sessions Attendance" section — real data or empty state
       var sections = document.querySelectorAll('.admin-section');
@@ -48,13 +50,14 @@ async function loadDashboardWidgets() {
             } else {
               body.innerHTML = recentList.map(function(ss) {
                 var dt = ss.scheduled_at ? new Date(ss.scheduled_at).toLocaleDateString('en-GB',{weekday:'short',day:'2-digit',month:'short'}) : '—';
-                var att = parseInt(ss.checkins_count)||0;
-                var cap = parseInt(ss.capacity)||1;
+                var att = parseInt(ss.attended_count)||0;
+                var booked = parseInt(ss.registrations_count)||0;
+                var cap = parseInt(ss.capacity)||Math.max(booked,1);
                 var pct = Math.min(100, Math.round((att/cap)*100));
                 return '<div style="margin-bottom:14px">'+
                   '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">'+
                     '<div><div style="font-weight:700;font-size:14px">'+ss.name+' · '+dt+'</div><div style="font-size:11px;color:#555">'+(ss.location||'')+'</div></div>'+
-                    '<div style="text-align:right"><div style="font-family:var(--ff-display);font-size:18px;font-weight:900;color:#A8FF00">'+att+'/'+cap+'</div><div style="font-size:10px;color:#555">checked in</div></div>'+
+                    '<div style="text-align:right"><div style="font-family:var(--ff-display);font-size:18px;font-weight:900;color:#A8FF00">'+att+'/'+cap+'</div><div style="font-size:10px;color:#555">checked in · '+booked+' booked</div></div>'+
                   '</div>'+
                   '<div style="height:6px;background:#1a1a1a;border-radius:3px"><div style="width:'+pct+'%;height:100%;background:#A8FF00;border-radius:3px"></div></div>'+
                 '</div>';

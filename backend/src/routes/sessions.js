@@ -115,6 +115,9 @@ function _sanitizeSponsor(body) {
 router.get('/', optionalAuth, async (req, res, next) => {
   try {
     const { city_id, tribe, tribe_id, activity_id, activity, status = 'upcoming', limit = 20, offset = 0 } = req.query;
+    // ?order=recent → newest first (admin dashboard "Recent Sessions
+    // Attendance" asked for completed sessions and got the OLDEST three).
+    const orderSql = req.query.order === 'recent' ? 's.scheduled_at DESC' : 's.scheduled_at ASC';
 
     let where = ['s.status = $1'];
     const params = [status];
@@ -182,6 +185,8 @@ router.get('/', optionalAuth, async (req, res, next) => {
                 TRIM(CONCAT(m.first_name, ' ', m.last_name)) AS coach_name,
                 (SELECT COUNT(*) FROM bookings b
                  WHERE b.session_id=s.id AND b.status IN ('confirmed','attended')) AS registrations_count,
+                (SELECT COUNT(*) FROM bookings b
+                 WHERE b.session_id=s.id AND b.checked_in_at IS NOT NULL) AS attended_count,
                 (SELECT COUNT(*) FROM waiting_list wl WHERE wl.session_id=s.id) AS waitlist_count,
                 sr.series_rating_avg, sr.series_rating_count
          FROM sessions s
@@ -201,7 +206,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
            WHERE LOWER(s2.name) = LOWER(s.name)
          ) sr ON true
          WHERE ${where.join(' AND ')}
-         ORDER BY s.scheduled_at ASC
+         ORDER BY ${orderSql}
          LIMIT $${idx} OFFSET $${idx + 1}`,
         [...params, limit, offset]
       );
@@ -233,7 +238,7 @@ router.get('/', optionalAuth, async (req, res, next) => {
          LEFT JOIN cities c ON c.id = s.city_id
          LEFT JOIN members m ON m.id = s.coach_id
          WHERE ${where.join(' AND ')}
-         ORDER BY s.scheduled_at ASC
+         ORDER BY ${orderSql}
          LIMIT $${idx} OFFSET $${idx + 1}`,
         [...params, limit, offset]
       );

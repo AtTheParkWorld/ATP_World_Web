@@ -133,7 +133,11 @@ router.get('/dashboard', authenticate, requireAdmin, async (req, res, next) => {
         ck AS (
           SELECT c.cohort_wk,
                  c.member_id,
-                 EXTRACT(WEEK FROM AGE(b.checked_in_at, c.cohort_wk))::int AS rel_wk
+                 -- Whole weeks since the signup week. EXTRACT(WEEK FROM <interval>)
+                 -- is an error in Postgres ("unit week not supported for type
+                 -- interval") — it broke the whole dashboard once recent
+                 -- cohorts had check-ins (founder 2026-10-20).
+                 FLOOR(EXTRACT(EPOCH FROM (b.checked_in_at - c.cohort_wk)) / 604800)::int AS rel_wk
           FROM cohorts c
           LEFT JOIN bookings b
             ON b.member_id = c.member_id
@@ -415,7 +419,11 @@ router.get('/ops-pulse', authenticate, requireAdmin, async (req, res, next) => {
          ORDER BY an.created_at DESC LIMIT 10
       `).catch((e) => noTable(e) ? { rows: [] } : Promise.reject(e)),
 
-      // 6. Post-session NPS rolling (R-SV-006 / OQ-40a)
+      // 6. Post-session NPS rolling (R-SV-006 / OQ-40a). Members rate a
+      // session (1–5) in the app / on the website into session_feedback;
+      // the old 'post-session-nps' survey is counted too if it gets
+      // answers. Reading only the survey left this card permanently empty
+      // (founder 2026-10-20).
       query(`
         WITH s AS (SELECT id FROM surveys WHERE slug='post-session-nps' LIMIT 1),
              q AS (SELECT id FROM survey_questions
@@ -423,6 +431,9 @@ router.get('/ops-pulse', authenticate, requireAdmin, async (req, res, next) => {
                       AND question_type='rating'
                     ORDER BY sort_order ASC LIMIT 1),
              responses AS (
+               SELECT rating::int AS rating FROM session_feedback
+                WHERE created_at > NOW() - INTERVAL '30 days'
+               UNION ALL
                SELECT NULLIF(answers ->> (SELECT id::text FROM q), '')::int AS rating
                  FROM survey_responses
                 WHERE survey_id=(SELECT id FROM s)
