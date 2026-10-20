@@ -8,7 +8,7 @@
  *   - Results:    leaderboards with the finals cut
  */
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -135,7 +135,6 @@ function ScheduleTab({ sessions, loading }: { sessions?: Session[]; loading: boo
 
 // ── Challenges: the 30x30 Challenge Series ─────────────────────────
 function ChallengesTab({ challenges, sessions, loading }: { challenges?: HubChallenge[]; sessions?: Session[]; loading: boolean }) {
-  const [code, setCode] = useState('');
   if (loading) return <View className="pt-10 items-center"><ActivityIndicator color={colors.green} /></View>;
   const list = challenges || [];
   const slotsOf = (id: string) => (sessions || []).filter((s: any) => s.session_category === '30x30_challenge' && s.hub_challenge_id === id && s.hub_challenge_stage !== 'final').length;
@@ -168,18 +167,6 @@ function ChallengesTab({ challenges, sessions, loading }: { challenges?: HubChal
           </Pressable>
         );
       })}
-      <View className="bg-atp-dark rounded-atp border border-white/5 p-4 mt-2">
-        <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">Joining a team?</Text>
-        <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-1">Open your captain’s invite link, or type the team code from it (e.g. UQIKT4X).</Text>
-        <View className="flex-row mt-3 gap-2">
-          <TextInput value={code} onChangeText={(t) => setCode(t.toUpperCase().replace(/[^A-Z0-9]/g, ''))} placeholder="Team code" placeholderTextColor={colors.muted} autoCapitalize="characters"
-            style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="flex-1 bg-white/5 border border-white/10 rounded-atp px-3 py-2.5 text-base" />
-          <Pressable disabled={code.length < 4} onPress={() => router.push({ pathname: '/hub30x30/join', params: { code } })}
-            className={`rounded-atp px-4 justify-center ${code.length < 4 ? 'bg-white/10' : 'bg-atp-green'}`}>
-            <Text style={{ fontFamily: fontFamily.bodyBold, color: code.length < 4 ? colors.muted : colors.black }} className="text-sm">Join</Text>
-          </Pressable>
-        </View>
-      </View>
     </View>
   );
 }

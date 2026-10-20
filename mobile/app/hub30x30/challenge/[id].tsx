@@ -40,6 +40,7 @@ export default function HubChallengeScreen() {
   const [picked, setPicked] = useState<string | null>(null);
   const [terms, setTerms] = useState(false);
   const [teamName, setTeamName] = useState('');
+  const [joinCode, setJoinCode] = useState('');
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [done, setDone] = useState<string | null>(null);
@@ -99,8 +100,22 @@ export default function HubChallengeScreen() {
         {c.kind === 'team' && needsTeam && (
           <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm mt-5 leading-5">
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }}>Team registration: </Text>
-            the captain picks a slot below, names the team and gets an invite to share. Teammates join with the invite link or the team code (Hub → Challenges → “Joining a team?”).
+            the captain picks a slot below, names the team and gets an invite to share. Teammates join with the invite link or the team code below.
           </Text>
+        )}
+        {c.kind === 'team' && needsTeam && (
+          <View className="bg-atp-dark rounded-atp border border-white/5 p-4 mt-4">
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">Joining a team?</Text>
+            <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-1">Open your captain’s invite link, or type the team code from it (e.g. UQIKT4X).</Text>
+            <View className="flex-row mt-3 gap-2">
+              <TextInput value={joinCode} onChangeText={(v) => setJoinCode(v.toUpperCase().replace(/[^A-Z0-9]/g, ''))} placeholder="Team code" placeholderTextColor={colors.muted} autoCapitalize="characters"
+                style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="flex-1 bg-white/5 border border-white/10 rounded-atp px-3 py-2.5 text-base" />
+              <Pressable disabled={joinCode.length < 4} onPress={() => router.push({ pathname: '/hub30x30/join', params: { code: joinCode } })}
+                className={`rounded-atp px-4 justify-center ${joinCode.length < 4 ? 'bg-white/10' : 'bg-atp-green'}`}>
+                <Text style={{ fontFamily: fontFamily.bodyBold, color: joinCode.length < 4 ? colors.muted : colors.black }} className="text-sm">Join</Text>
+              </Pressable>
+            </View>
+          </View>
         )}
 
         <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mt-6 mb-2">Qualifier slots — one per day</Text>
