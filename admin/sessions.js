@@ -931,9 +931,18 @@ async function createSession() {
           });
           var cData = cRes.ok ? await cRes.json() : null;
           var others = (cData && cData.count) || 0;
+          // Say it loudly when the CATEGORY is about to change on the whole
+          // series — one OK on this moved every Reebok challenge slot into
+          // the 30x30 Hub (founder 2026-10-21).
+          var CAT_NAMES = { regular: 'Regular', social: 'Social', team_sports: 'Team Sports', '30x30_hub': '30x30 Hub', '30x30_challenge': '30x30 Challenge' };
+          var origCat = orig.session_category || 'regular';
+          var catWarn = origCat !== cat
+            ? '\n\n⚠️ CATEGORY CHANGE: ' + (CAT_NAMES[origCat] || origCat) + ' → ' + (CAT_NAMES[cat] || cat) + ' on ALL of them.'
+              + (origCat === '30x30_challenge' ? ' They will leave the challenge calendar.' : '')
+            : '';
           if (others > 0 && confirm(
             'This session is part of a series — there ' + (others === 1 ? 'is 1 other upcoming "' : 'are ' + others + ' other upcoming "')
-            + seriesName + '" session' + (others === 1 ? '' : 's') + '.\n\n'
+            + seriesName + '" session' + (others === 1 ? '' : 's') + '.' + catWarn + '\n\n'
             + 'OK  = apply these changes to the WHOLE series\n'
             + 'Cancel = save only this one session')) {
             var seriesPayload = Object.assign({}, payload, {
@@ -1461,6 +1470,16 @@ async function onSessionTemplateChange() {
     if (d.price)        setVal('sPrice',       Number(d.price).toFixed(2));
     if (d.price_points) setVal('sPricePoints', d.price_points);
     if (d.currency_code)setVal('sCurrency',    d.currency_code);
+    // Category + 30x30 challenge link come along too (founder 2026-10-21):
+    // a second set of Reebok slots was created under the wrong category
+    // because the template left it on whatever was clicked.
+    if (d.session_category) {
+      selectCategory(d.session_category);
+      if (d.session_category === '30x30_challenge') {
+        loadHubChallengeOptions(d.hub_challenge_id);
+        var stT = document.getElementById('sHubStage'); if (stT) stT.value = d.hub_challenge_stage || 'qualifier';
+      }
+    }
     // The previous session's ambassadors come along (founder 2026-10-18),
     // added to any already picked; ones no longer ambassadors are skipped.
     var ambIds = (data.assigned_ambassador_ids || []).filter(function(id){

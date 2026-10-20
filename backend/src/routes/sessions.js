@@ -1772,6 +1772,16 @@ router.patch('/admin/series-update', authenticate, requireAdmin, async (req, res
       params.push(req.body.courts ? JSON.stringify(req.body.courts) : null);
       sets.push(`courts=$${params.length}`);
     }
+    // 30x30 Challenges: the challenge link travels WITH the category. A
+    // series edit used to copy the category alone — it turned every
+    // "Reebok burpee Challenge" slot into a 30x30 Hub session and left the
+    // new ones unlinked, so they vanished from the challenge calendar
+    // (founder 2026-10-21).
+    if (req.body.session_category !== undefined) {
+      const hub = _hubChallengeFields(req.body);
+      params.push(hub.hub_challenge_id);    sets.push(`hub_challenge_id=$${params.length}`);
+      params.push(hub.hub_challenge_stage); sets.push(`hub_challenge_stage=$${params.length}`);
+    }
     // New time of day for the whole series (founder 2026-10-08): each
     // session keeps its own date and moves to this Dubai clock time.
     const timeOfDay = String(req.body.time_of_day || '');
