@@ -411,7 +411,7 @@ td.sched-empty{height:120px}
       <h2>About the Event</h2>
       <h3>A 30-day fitness movement at Dubai Internet City</h3>
       <p>As part of Dubai Fitness Challenge, the Dubai Internet City 30x30 Fitness Hub turns the community into a wellness destination for a whole month.</p>
-      <p>Curated by At The Park with Dubai Internet City, the programme brings free daily sessions — running, yoga, strength and conditioning, dance and mindfulness — led by professional coaches, plus the 30x30 Challenge Series and the Al Ameen Run Challenge.</p>
+      <p>Curated by At The Park with Dubai Internet City, the programme brings free daily sessions — running, yoga, strength and conditioning, dance and mindfulness — led by professional coaches, plus the 30x30 Challenge Series and the Relay Rumble.</p>
       <p>It all starts on the <b>morning of Saturday 31 October with the Pink Run</b>.</p>
       <p>Open to everyone. <b>Book here or in the ATP app</b> — one account, one booking, one QR code to check in.</p>
       <ol class="steps">
@@ -464,7 +464,7 @@ td.sched-empty{height:120px}
 
   <section class="sec" id="charity" style="padding-top:8px">
     <div class="cause-band">
-      <div class="cb-img"><img src="/img/30x30/charity-atp-team.jpg" alt="The At The Park team at the DIC Amphitheatre"><span class="cb-tag">Al Ameen Run Challenge</span></div>
+      <div class="cb-img"><img src="/img/30x30/charity-atp-team.jpg" alt="The At The Park team at the DIC Amphitheatre"><span class="cb-tag">Relay Rumble</span></div>
       <div class="cb-txt">
         <small>A competition with a cause</small>
         <h2>Companies compete.<br>Charity wins.</h2>
@@ -476,7 +476,7 @@ td.sched-empty{height:120px}
         </ol>
         <p class="cb-note" id="hcCharityNote">Charity partner to be announced.</p>
         <div class="cb-cta"><button class="btn btn-red" type="button" data-hc-team-cta>Register your team</button><a class="btn btn-line" href="#challenge-calendar">See the slots</a></div>
-        <p class="cb-note">Questions about company teams? <a href="mailto:general@atthepark.world?subject=Al%20Ameen%20Run%20Challenge%20%E2%80%94%20company%20team">general@atthepark.world</a></p>
+        <p class="cb-note">Questions about company teams? <a href="mailto:general@atthepark.world?subject=Relay%20Rumble%20%E2%80%94%20company%20team">general@atthepark.world</a></p>
       </div>
     </div>
   </section>
@@ -561,7 +561,6 @@ td.sched-empty{height:120px}
   // A logo file that isn't there yet simply doesn't show (see the error
   // listener below), so dropping the PNG in /img/30x30/ switches it on.
   var SPONSORS = [
-    { re:/al\s*ameen/i, name:'Al Ameen', logo:'/img/30x30/sponsor-al-ameen.png' },
     { re:/reebok|burpee/i, name:'Reebok', logo:'/img/30x30/sponsor-reebok.png' }
   ];
   function sponsorOf(s){
@@ -584,7 +583,7 @@ td.sched-empty{height:120px}
 
   var CH_RE = /challenge|redline|last one standing|burpee/i;
   var SP_RE = /pink run|opening night|festival|finale|special event|celebration/i;
-  var MAIL = 'mailto:general@atthepark.world?subject=Al%20Ameen%20Run%20Challenge%20%E2%80%94%20company%20team';
+  var MAIL = 'mailto:general@atthepark.world?subject=Relay%20Rumble%20%E2%80%94%20company%20team';
   var DESC_ANY = 'A free coached session at the 30x30 Fitness Hub, Dubai Internet City Amphitheatre — every level welcome.';
 
   // ── ATP calendar ─────────────────────────────────────
@@ -786,7 +785,7 @@ td.sched-empty{height:120px}
   });
 })();
 </script>
-<script src="/hub-challenges.js?v=1"></script>
+<script src="/hub-challenges.js?v=2"></script>
 <script>
 /* 30x30 Challenges (founder 2026-10-19): cards, challenge calendar and
    leaderboards come live from the ATP calendar (hub-challenges.js). */
@@ -794,7 +793,7 @@ td.sched-empty{height:120px}
   if (!window.HubCh) return;
   HubCh.mount({ cards: document.getElementById('hcCards'), calendar: document.getElementById('hcCalendar'), boards: document.getElementById('hcBoards') }).then(function () {
     var list = HubCh.state.challenges || [];
-    var team = list.filter(function (c) { return c.kind === 'team' && /al\s*ameen/i.test(c.name); })[0] || list.filter(function (c) { return c.kind === 'team'; })[0];
+    var team = list.filter(function (c) { return c.kind === 'team' && /relay|rumble/i.test(c.name); })[0] || list.filter(function (c) { return c.kind === 'team'; })[0];
     var note = document.getElementById('hcCharityNote');
     if (team && team.charity_enabled && note) note.textContent = 'Supporting ' + team.charity_name + '.';
     document.querySelectorAll('[data-hc-team-cta]').forEach(function (b) {

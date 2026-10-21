@@ -24,7 +24,6 @@
   var DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'], DOWL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], MONL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
   var SPONSORS = [
-    { re: /al\s*ameen/i, name: 'Al Ameen', logo: '/img/30x30/sponsor-al-ameen.png' },
     { re: /reebok|burpee/i, name: 'Reebok', logo: '/img/30x30/sponsor-reebok.png' }
   ];
 
