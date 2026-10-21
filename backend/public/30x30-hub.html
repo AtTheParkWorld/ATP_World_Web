@@ -103,6 +103,19 @@ h1,h2,h3,h4{color:var(--ink);font-weight:700;line-height:1.15}
 .chip{padding:8px 16px;border:1px solid var(--line);border-radius:999px;font-size:14px;font-weight:600;color:var(--ink);background:#fff;transition:all .15s}
 .chip:hover{border-color:var(--sand)}
 .chip.on{background:var(--sand);border-color:var(--sand);color:#000}
+/* activity menu (founder 2026-10-21): one burger button instead of a wall
+   of chips; the activities open in a dropdown */
+.chips.am{position:relative;z-index:6;display:block;margin-bottom:18px}
+.am-btn{display:inline-flex;align-items:center;gap:14px;padding:10px 16px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink);font:inherit;cursor:pointer;min-width:280px;text-align:left;transition:border-color .15s}
+.am-btn:hover,.am-btn[aria-expanded="true"]{border-color:var(--sand)}
+.am-burger{display:inline-flex;flex-direction:column;gap:4px;width:18px;flex:0 0 18px}.am-burger i{display:block;height:2px;background:var(--ink);border-radius:2px}
+.am-lbl{flex:1;display:flex;flex-direction:column;line-height:1.25}.am-lbl small{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--mu)}.am-lbl b{font-size:15px}
+.am-caret{width:9px;height:9px;border-right:2px solid var(--ink);border-bottom:2px solid var(--ink);transform:rotate(45deg);margin:-5px 4px 0 0;transition:transform .15s}.am-btn[aria-expanded="true"] .am-caret{transform:rotate(-135deg);margin-top:5px}
+.am-panel{position:absolute;top:calc(100% + 6px);left:0;width:min(560px,100%);max-height:min(60vh,420px);overflow:auto;background:#fff;border:1px solid var(--line);border-radius:8px;box-shadow:0 14px 34px rgba(0,0,0,.12);padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.am-panel[hidden]{display:none}
+.am-opt{text-align:left;padding:10px 12px;border:0;border-radius:5px;background:#fff;font:inherit;font-size:14px;font-weight:600;color:var(--ink);cursor:pointer}
+.am-opt:hover{background:var(--grey2)}.am-opt.on{background:var(--sand);color:#000}
+@media(max-width:600px){.am-btn{width:100%;min-width:0}.am-panel{width:100%}}
 .wtabs{display:grid;grid-template-columns:repeat(5,1fr);border:1px solid var(--line);margin-bottom:16px}
 .wtab{padding:13px 6px;font-size:14px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#8a8a8a;border-left:1px solid var(--line);text-align:center}
 .wtab:first-child{border-left:0}
@@ -456,7 +469,7 @@ td.sched-empty{height:120px}
   <section class="sec" id="schedule" style="padding-top:8px">
     <div class="eyebrow"><small>Dubai Fitness Challenge</small><h2>30x30 Fitness Hub Schedule</h2><p>Tap any session to book your free spot. Challenge sessions are shown in red.</p></div>
     <div class="live demo" id="liveNote"><i></i><span>Loading the schedule…</span></div>
-    <div class="chips" id="chips"></div>
+    <div class="chips am" id="chips"></div>
     <div class="wtabs" id="wtabs"></div>
     <div class="whead"><b id="wTitle">WEEK 1</b><span id="wRange"></span></div>
     <div class="sched-desk"><table class="grid" id="grid"></table></div>
@@ -671,13 +684,35 @@ td.sched-empty{height:120px}
 
   // chips + week tabs
   var chipsEl = document.getElementById('chips');
+  // Activity menu (founder 2026-10-21): a burger button showing the
+  // current activity; the list opens as a dropdown and closes on a pick,
+  // a click outside or Esc.
+  function amLabel(k){ return k === 'all' ? 'All activities' : CAT[k]; }
   function renderChips(){
     var keys = Object.keys(CAT);
+    if (!CAT[state.cat]) state.cat = 'all';
     chipsEl.style.display = keys.length > 2 ? '' : 'none';   // one activity → nothing to filter
-    chipsEl.innerHTML = keys.map(function(k){ return '<button class="chip' + (k === state.cat ? ' on' : '') + '" data-cat="' + esc(k) + '">' + esc(CAT[k]) + '</button>'; }).join('');
+    chipsEl.innerHTML =
+      '<button type="button" class="am-btn" aria-expanded="false" aria-controls="amPanel" data-am>' +
+        '<span class="am-burger" aria-hidden="true"><i></i><i></i><i></i></span>' +
+        '<span class="am-lbl"><small>Activity</small><b>' + esc(amLabel(state.cat)) + '</b></span>' +
+        '<span class="am-caret" aria-hidden="true"></span></button>' +
+      '<div class="am-panel" id="amPanel" role="menu" hidden>' + keys.map(function(k){
+        return '<button type="button" role="menuitemradio" aria-checked="' + (k === state.cat) + '" class="am-opt' + (k === state.cat ? ' on' : '') + '" data-cat="' + esc(k) + '">' + esc(amLabel(k)) + '</button>';
+      }).join('') + '</div>';
+  }
+  function amOpen(open){
+    var btn = chipsEl.querySelector('[data-am]'), panel = document.getElementById('amPanel'); if (!btn || !panel) return;
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false'); panel.hidden = !open;
   }
   renderChips();
-  chipsEl.addEventListener('click', function(e){ var b = e.target.closest('[data-cat]'); if (!b) return; state.cat = b.getAttribute('data-cat'); chipsEl.querySelectorAll('.chip').forEach(function(x){ x.classList.toggle('on', x === b); }); renderSched(); });
+  chipsEl.addEventListener('click', function(e){
+    if (e.target.closest('[data-am]')) { var p = document.getElementById('amPanel'); amOpen(p && p.hidden); return; }
+    var b = e.target.closest('[data-cat]'); if (!b) return;
+    state.cat = b.getAttribute('data-cat'); renderChips(); renderSched();
+  });
+  document.addEventListener('click', function(e){ if (!chipsEl.contains(e.target)) amOpen(false); });
+  document.addEventListener('keydown', function(e){ if (e.key === 'Escape') amOpen(false); });
   var wtabs = document.getElementById('wtabs');
   function renderWeeks(){ wtabs.innerHTML = WEEKS.map(function(w, i){ return '<button class="wtab' + (i === state.week ? ' on' : '') + '" data-w="' + i + '">Week ' + (i + 1) + '</button>'; }).join(''); }
   renderWeeks();

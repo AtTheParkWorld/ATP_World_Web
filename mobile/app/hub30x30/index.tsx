@@ -34,6 +34,40 @@ function Chip({ label, active, onPress }: { label: string; active: boolean; onPr
   );
 }
 
+// Activity menu (founder 2026-10-21): one burger button instead of a wall
+// of chips; the activities open underneath and close on a pick.
+function ActivityMenu({ acts, act, setAct }: { acts: [string, string][]; act: string; setAct: (k: string) => void }) {
+  const [open, setOpen] = useState(false);
+  const label = act === 'all' ? 'All activities' : acts.find(([k]) => k === act)?.[1] ?? 'All activities';
+  const options: [string, string][] = [['all', 'All activities'], ...acts];
+  return (
+    <View className="mt-1">
+      <Pressable onPress={() => setOpen(!open)} accessibilityRole="button" accessibilityState={{ expanded: open }}
+        className="flex-row items-center bg-atp-dark border border-white/10 rounded-atp px-4 py-3 active:opacity-80">
+        <View style={{ width: 18, gap: 4 }} className="mr-3">
+          {[0, 1, 2].map((i) => <View key={i} style={{ height: 2, borderRadius: 2, backgroundColor: colors.white }} />)}
+        </View>
+        <View className="flex-1">
+          <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-[10px] uppercase tracking-widest">Activity</Text>
+          <Text numberOfLines={1} style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm mt-0.5">{label}</Text>
+        </View>
+        {/* chevron */}
+        <View style={{ width: 9, height: 9, borderRightWidth: 2, borderBottomWidth: 2, borderColor: colors.light, marginRight: 4, marginTop: open ? 5 : -5, transform: [{ rotate: open ? '-135deg' : '45deg' }] }} />
+      </Pressable>
+      {open && (
+        <View className="bg-atp-dark border border-white/10 rounded-atp mt-2 p-1.5 flex-row flex-wrap">
+          {options.map(([k, l]) => (
+            <Pressable key={k} onPress={() => { setAct(k); setOpen(false); }} style={{ width: '50%' }} className="p-0.5 active:opacity-70">
+              <View className={`rounded-md px-3 py-2.5 ${act === k ? 'bg-atp-green' : ''}`}>
+                <Text numberOfLines={1} style={{ fontFamily: fontFamily.bodyBold, color: act === k ? colors.black : colors.light }} className="text-xs">{l}</Text>
+              </View>
+            </Pressable>
+          ))}
+        </View>
+      )}
+    </View>
+  );
+}
 
 export default function Hub30Screen() {
   const params = useLocalSearchParams<{ tab?: string }>();
@@ -106,12 +140,7 @@ function ScheduleTab({ sessions, loading }: { sessions?: Session[]; loading: boo
       <ScrollView horizontal showsHorizontalScrollIndicator={false} className="mb-1">
         {HUB_WEEKS.map((_, i) => <Chip key={i} label={`Week ${i + 1}`} active={i === week} onPress={() => setWeek(i)} />)}
       </ScrollView>
-      {acts.length > 1 && (
-        <View className="flex-row flex-wrap mt-1">
-          <Chip label="All" active={act === 'all'} onPress={() => setAct('all')} />
-          {acts.map(([k, label]) => <Chip key={k} label={label} active={act === k} onPress={() => setAct(act === k ? 'all' : k)} />)}
-        </View>
-      )}
+      {acts.length > 1 && <ActivityMenu acts={acts} act={act} setAct={setAct} />}
       {!hub.length ? (
         <Empty title="30x30 sessions are coming soon" body="The hub opens on the morning of Saturday 31 October with the Pink Run. Sessions open for booking here very soon." />
       ) : !items.length ? (

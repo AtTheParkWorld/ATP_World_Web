@@ -102,10 +102,16 @@
     var h = '<div class="h30-top"><div class="h30-eyebrow"><small>Dubai Fitness Challenge</small><h2>30x30 Fitness Hub Schedule</h2>' +
       '<p>31 Oct – 29 Nov · Dubai Internet City Amphitheatre · Free. Tap a session to book your spot.</p></div>' +
       '<div class="h30-logos"><img src="/img/30x30/logo-dic.png" alt="Dubai Internet City"><i></i><img src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub"></div></div>';
-    if (chips.length > 1) h += '<div class="h30-chips">' + ['all'].concat(chips).map(function (k) {
-      var label = k === 'all' ? 'All' : (acts[k].icon ? acts[k].icon + ' ' : '') + acts[k].name;
-      return '<button type="button" class="h30-chip' + (st.cat === k ? ' on' : '') + '" data-h30cat="' + esc(k) + '">' + esc(label) + '</button>';
-    }).join('') + '</div>';
+    // Activity menu (founder 2026-10-21): one burger button, the
+    // activities in a dropdown — same as the landing page.
+    var actLabel = function (k) { return k === 'all' ? 'All activities' : (acts[k].icon ? acts[k].icon + ' ' : '') + acts[k].name; };
+    if (chips.length > 1) h += '<div class="h30-am">' +
+      '<button type="button" class="h30-am-btn" aria-expanded="false" data-h30am>' +
+        '<span class="h30-am-burger" aria-hidden="true"><i></i><i></i><i></i></span>' +
+        '<span class="h30-am-lbl"><small>Activity</small><b>' + esc(actLabel(st.cat)) + '</b></span><span class="h30-am-caret" aria-hidden="true"></span></button>' +
+      '<div class="h30-am-panel" role="menu" hidden>' + ['all'].concat(chips).map(function (k) {
+        return '<button type="button" role="menuitemradio" aria-checked="' + (st.cat === k) + '" class="h30-am-opt' + (st.cat === k ? ' on' : '') + '" data-h30cat="' + esc(k) + '">' + esc(actLabel(k)) + '</button>';
+      }).join('') + '</div></div>';
     h += '<div class="h30-wtabs">' + WEEKS.map(function (r, k) { return '<button type="button" class="h30-wtab' + (k === st.week ? ' on' : '') + '" data-h30week="' + k + '">Week ' + (k + 1) + '</button>'; }).join('') + '</div>';
     h += '<div class="h30-whead"><b>WEEK ' + (st.week + 1) + '</b><span>' + a.getUTCDate() + ' ' + MONL[a.getUTCMonth()] + (w[0] === w[1] ? '' : ' – ' + b.getUTCDate() + ' ' + MONL[b.getUTCMonth()]) + '</span></div>';
 
@@ -136,7 +142,15 @@
     p.innerHTML = h;
   }
 
+  function amOpen(open) {
+    var b = document.querySelector('[data-h30am]'), pn = document.querySelector('.h30-am-panel'); if (!b || !pn) return;
+    b.setAttribute('aria-expanded', open ? 'true' : 'false'); pn.hidden = !open;
+  }
+  document.addEventListener('click', function (e) { if (!e.target.closest('.h30-am')) amOpen(false); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') amOpen(false); });
+
   function onClick(e) {
+    if (e.target.closest('[data-h30am]')) { var pn = document.querySelector('.h30-am-panel'); amOpen(pn && pn.hidden); return; }
     var c = e.target.closest('[data-h30cat]'); if (c) { st.cat = c.getAttribute('data-h30cat'); render(); return; }
     var w = e.target.closest('[data-h30week]'); if (w) { st.week = +w.getAttribute('data-h30week'); render(); return; }
     if (e.target.closest('[data-h30all]')) { e.preventDefault(); var all = document.querySelector('.filter-tab[data-atp-call="filterTribe"]'); if (all) all.click(); return; }
