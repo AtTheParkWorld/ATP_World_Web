@@ -377,21 +377,12 @@ td.sched-empty{height:120px}
 .slots button{display:flex;justify-content:space-between;gap:12px;width:100%;text-align:left;padding:11px 12px;margin:6px 0;background:var(--grey2);border-left:3px solid var(--red);font-size:14px;color:var(--ink)}
 .slots button:hover{background:#ffeaea}
 .slots button span{color:var(--mu);font-size:13px}
-/* partners section */
+/* partners section — just the logos, each linking to the partner */
 .partners{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
-@media(max-width:800px){.partners{grid-template-columns:1fr}}
-.partner{border:1px solid var(--line);background:#fff;display:flex;flex-direction:column}
-.p-logo{display:flex;align-items:center;justify-content:center;min-height:190px;padding:36px 40px;border-bottom:1px solid var(--line);background:#fff;transition:background .15s}
-.p-logo:hover{background:var(--grey2)}
+.p-logo{display:flex;align-items:center;justify-content:center;min-height:200px;padding:36px 40px;border:1px solid var(--line);background:#fff;transition:border-color .15s,box-shadow .15s}
+.p-logo:hover{border-color:var(--sand);box-shadow:0 6px 24px rgba(0,0,0,.06)}
 .p-logo img{max-width:100%;width:auto;object-fit:contain}
-.p-body{padding:22px 24px 24px;display:flex;flex-direction:column;flex:1}
-.p-body small{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--red)}
-.p-body h3{font-size:24px;margin:6px 0 8px;color:var(--ink)}
-.p-body p{font-size:15px;color:var(--mu);line-height:1.55}
-.p-tags{list-style:none;display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 18px;padding:0;flex:1;align-content:flex-start}
-.p-tags li{font-size:12px;background:var(--sand-l);color:var(--ink2);padding:5px 10px;border-radius:999px}
-.p-body .btn{align-self:flex-start}
-@media(max-width:520px){.p-logo{min-height:150px;padding:28px 24px}.p-logo img{max-height:76px}.p-body .btn{align-self:stretch}}
+@media(max-width:520px){.partners{gap:12px}.p-logo{min-height:120px;padding:22px 14px}.p-logo img{max-height:56px}}
 /* challenge partner (Reebok) — official lockup, clear space around it */
 .pband{display:flex;align-items:center;justify-content:flex-end;gap:14px;margin:-6px 0 18px}
 .pband small,.side-pt small{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mu)}
@@ -516,28 +507,10 @@ td.sched-empty{height:120px}
        link to their services. Logos sit on white with clear space around
        them (Reebok guidelines: Vector Red on light, no alterations). -->
   <section class="sec" id="partners">
-    <div class="eyebrow"><small>Our partners</small><h2>The brands behind the hub</h2><p>The 30x30 Fitness Hub is made possible by our partners. Tap a logo to explore what they offer.</p></div>
+    <div class="eyebrow"><h2>Our Partners</h2></div>
     <div class="partners">
-      <article class="partner">
-        <a class="p-logo" href="https://www.reebok.ae/" target="_blank" rel="noopener sponsored" aria-label="Reebok (opens in a new tab)"><img src="/img/partners/reebok-lockup-red.png" alt="Reebok" style="height:96px"></a>
-        <div class="p-body">
-          <small>Challenge partner</small>
-          <h3>Reebok</h3>
-          <p>Partner of the Reebok Burpee Challenge. Training shoes, apparel and gear for every session at the hub.</p>
-          <ul class="p-tags"><li>Reebok Burpee Challenge</li><li>Footwear</li><li>Apparel</li></ul>
-          <a class="btn btn-line" href="https://www.reebok.ae/" target="_blank" rel="noopener sponsored">Visit reebok.ae ↗</a>
-        </div>
-      </article>
-      <article class="partner">
-        <a class="p-logo" href="https://www.homehealthatunicare.com" target="_blank" rel="noopener sponsored" aria-label="UniCare Home Health (opens in a new tab)"><img src="/img/partners/unicare-logo.png" alt="UniCare Home Health" style="height:92px"></a>
-        <div class="p-body">
-          <small>Home healthcare partner</small>
-          <h3>UniCare Home Health</h3>
-          <p>Healthcare that comes to you in Dubai — a doctor on call, nursing care, physiotherapy and lab tests at home.</p>
-          <ul class="p-tags"><li>Doctor On Call</li><li>Nursing Care</li><li>Physiotherapy</li><li>Lab Tests at Home</li><li>IV Wellness Therapy</li><li>Care for the Elderly</li></ul>
-          <a class="btn btn-line" href="https://www.homehealthatunicare.com" target="_blank" rel="noopener sponsored">Explore UniCare services ↗</a>
-        </div>
-      </article>
+      <a class="p-logo" href="https://www.reebok.ae/" target="_blank" rel="noopener sponsored" aria-label="Reebok (opens in a new tab)"><img src="/img/partners/reebok-lockup-red.png" alt="Reebok" style="height:96px"></a>
+      <a class="p-logo" href="https://www.homehealthatunicare.com" target="_blank" rel="noopener sponsored" aria-label="UniCare Home Health (opens in a new tab)"><img src="/img/partners/unicare-logo.png" alt="UniCare Home Health" style="height:92px"></a>
     </div>
   </section>
 

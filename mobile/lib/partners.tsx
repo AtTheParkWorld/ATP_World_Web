@@ -88,56 +88,40 @@ export function PoweredBy({ partner, on = 'dark', height = 30, align = 'flex-end
 }
 
 // ── 30x30 hub partners (founder 2026-10-21) ────────────────────────
-// The app twin of the landing page's Partners section. Logos sit on
-// white tiles — UniCare's navy wordmark doesn't read on the dark app,
-// and Reebok's guidelines want Vector Red on light.
-export interface HubPartner {
-  key: string; name: string; role: string; blurb: string; url: string; cta: string;
-  logo: string; ratio: number; height: number;
-}
+// The app twin of the landing page's "Our Partners": just the logos,
+// each opening the partner's site. White tiles — UniCare's navy wordmark
+// doesn't read on the dark app, and Reebok's guidelines want Vector Red
+// on light.
+export interface HubPartner { key: string; name: string; url: string; logo: string; ratio: number; height: number }
 
 export const HUB_PARTNERS: HubPartner[] = [
-  {
-    key: 'reebok', name: 'Reebok', role: 'Challenge partner',
-    blurb: 'Partner of the Reebok Burpee Challenge. Training shoes, apparel and gear for every session at the hub.',
-    url: 'https://www.reebok.ae/', cta: 'Visit reebok.ae', logo: 'reebok-lockup-red.png', ratio: 360 / 182, height: 64,
-  },
-  {
-    key: 'unicare', name: 'UniCare Home Health', role: 'Home healthcare partner',
-    blurb: 'Healthcare that comes to you in Dubai — a doctor on call, nursing care, physiotherapy and lab tests at home.',
-    url: 'https://www.homehealthatunicare.com', cta: 'Explore UniCare services', logo: 'unicare-logo.png', ratio: 900 / 352, height: 58,
-  },
+  { key: 'reebok', name: 'Reebok', url: 'https://www.reebok.ae/', logo: 'reebok-lockup-red.png', ratio: 360 / 182, height: 46 },
+  { key: 'unicare', name: 'UniCare Home Health', url: 'https://www.homehealthatunicare.com', logo: 'unicare-logo.png', ratio: 900 / 352, height: 40 },
 ];
 
 export function HubPartners() {
   return (
     <View>
-      <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs uppercase tracking-widest">Our partners</Text>
-      <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-2xl uppercase mt-1">The brands behind the hub</Text>
-      {HUB_PARTNERS.map((p) => (
-        <Pressable
-          key={p.key}
-          onPress={() => Linking.openURL(p.url).catch(() => {})}
-          accessibilityRole="link"
-          accessibilityLabel={`${p.name} website`}
-          className="mt-3 rounded-atp-lg overflow-hidden border border-white/10 active:opacity-80"
-        >
-          <View className="items-center justify-center py-7" style={{ backgroundColor: '#ffffff' }}>
+      <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-2xl uppercase">Our Partners</Text>
+      <View className="flex-row gap-3 mt-3">
+        {HUB_PARTNERS.map((p) => (
+          <Pressable
+            key={p.key}
+            onPress={() => Linking.openURL(p.url).catch(() => {})}
+            accessibilityRole="link"
+            accessibilityLabel={`${p.name} website`}
+            className="flex-1 items-center justify-center rounded-atp-lg py-6 px-3 active:opacity-80"
+            style={{ backgroundColor: '#ffffff' }}
+          >
             <Image
               source={{ uri: `${WEB_BASE}/img/partners/${p.logo}` }}
-              style={{ height: p.height, width: Math.round(p.height * p.ratio) }}
+              style={{ height: p.height, width: Math.round(p.height * p.ratio), maxWidth: '100%' }}
               resizeMode="contain"
               accessibilityLabel={p.name}
             />
-          </View>
-          <View className="bg-atp-dark p-4">
-            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.danger }} className="text-[10px] uppercase tracking-widest">{p.role}</Text>
-            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-lg mt-0.5">{p.name}</Text>
-            <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm mt-1 leading-5">{p.blurb}</Text>
-            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-sm mt-3">{p.cta} ↗</Text>
-          </View>
-        </Pressable>
-      ))}
+          </Pressable>
+        ))}
+      </View>
     </View>
   );
 }
