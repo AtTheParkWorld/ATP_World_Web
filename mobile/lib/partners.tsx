@@ -1,0 +1,72 @@
+/**
+ * Partner brands on sessions + 30x30 challenges (founder 2026-10-21: "add
+ * Reebok logo everywhere on our website and app we can explore
+ * visibility"). The app twin of backend/public/partners.js — same list,
+ * same files, served from the website so an OTA (or a new file there)
+ * is all a new partner needs.
+ *
+ * A session / booking / challenge belongs to a partner when its name (or
+ * the admin's "Powered by" sponsor name) mentions the brand.
+ *
+ * Reebok brand guidelines (2022): official files only — never recoloured,
+ * stretched or given effects (these are their PNGs, trimmed of padding).
+ * Classic White on dark backgrounds (the app), Vector Red on light ones
+ * (the white QR card). Clear space around the mark; bottom-right /
+ * top-right where there is a choice.
+ */
+import { Image, Text, View } from 'react-native';
+import { WEB_BASE } from '@/lib/api/client';
+import { colors, fontFamily } from '@/lib/theme/tokens';
+
+export type PartnerKind = 'lockup' | 'wordmark' | 'vector';
+
+export interface Partner {
+  key: string;
+  name: string;
+  re: RegExp;
+  file: string;
+  /** width / height of each trimmed file */
+  ratio: Record<PartnerKind, number>;
+}
+
+export const PARTNERS: Partner[] = [
+  { key: 'reebok', name: 'Reebok', re: /reebok/i, file: 'reebok', ratio: { lockup: 360 / 182, wordmark: 360 / 74, vector: 360 / 102 } },
+];
+
+type Named = { name?: string | null; session_name?: string | null; sponsor_name?: string | null };
+
+export function partnerFor(x?: Named | string | null): Partner | null {
+  const t = typeof x === 'string' ? x : x ? [x.name, x.session_name, x.sponsor_name].filter(Boolean).join(' ') : '';
+  return t ? PARTNERS.find((p) => p.re.test(t)) ?? null : null;
+}
+
+export function partnerLogoUri(p: Partner, kind: PartnerKind = 'lockup', on: 'dark' | 'light' = 'dark'): string {
+  return `${WEB_BASE}/img/partners/${p.file}-${kind}-${on === 'dark' ? 'white' : 'red'}.png`;
+}
+
+export function PartnerLogo({ partner, kind = 'lockup', on = 'dark', height }: {
+  partner: Partner; kind?: PartnerKind; on?: 'dark' | 'light'; height: number;
+}) {
+  return (
+    <Image
+      source={{ uri: partnerLogoUri(partner, kind, on) }}
+      style={{ height, width: Math.round(height * partner.ratio[kind]) }}
+      resizeMode="contain"
+      accessibilityLabel={partner.name}
+    />
+  );
+}
+
+/** "POWERED BY <logo>" — the same strip the website shows. */
+export function PoweredBy({ partner, on = 'dark', height = 30, align = 'flex-end' }: {
+  partner: Partner; on?: 'dark' | 'light'; height?: number; align?: 'flex-start' | 'center' | 'flex-end';
+}) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: align, gap: 10 }}>
+      <Text style={{ fontFamily: fontFamily.bodyBold, color: on === 'dark' ? colors.muted : '#666' }} className="text-[9px] uppercase tracking-widest">
+        Powered by
+      </Text>
+      <PartnerLogo partner={partner} on={on} height={height} />
+    </View>
+  );
+}

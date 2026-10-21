@@ -18,6 +18,7 @@ import { listMyBookings, type BookingRecord } from '@/lib/api/bookings';
 import { LoadError } from '@/lib/components/LoadError';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { dayHeader, timeShort } from '@/lib/utils/date';
+import { partnerFor, PartnerLogo } from '@/lib/partners';
 
 const STATUS_LABEL: Record<string, string> = {
   confirmed:       'Confirmed',
@@ -129,6 +130,7 @@ export default function MyBookings() {
 function BookingRow({ booking }: { booking: BookingRecord }) {
   const b = booking;
   const canRate = b.status === 'attended';
+  const partner = partnerFor(b);
   return (
     <Pressable
       onPress={() => router.push(`/sessions/${b.session_id}`)}
@@ -164,6 +166,7 @@ function BookingRow({ booking }: { booking: BookingRecord }) {
               Rate →
             </Text>
           )}
+          {!!partner && <PartnerLogo partner={partner} height={24} />}
         </View>
       </View>
     </Pressable>

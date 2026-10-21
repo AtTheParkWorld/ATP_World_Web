@@ -16,6 +16,7 @@ import { VideoView, useVideoPlayer } from 'expo-video';
 import type { Session } from '@/lib/api/sessions';
 import { IconLock } from '@/lib/components/icons';
 import { PinkRibbon } from '@/lib/components/PinkRibbon';
+import { partnerFor, PoweredBy } from '@/lib/partners';
 import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { absUrl } from '@/lib/utils/imageUrl';
 import { timeShort, relativeStartLabel } from '@/lib/utils/date';
@@ -95,6 +96,7 @@ function _SessionCard({ session, compact, onPress }: Props) {
   // `minutes_until_start` fields were never sent, so the LIVE pill
   // could never show.
   const live     = session.is_live || session.status === 'live';
+  const partner  = partnerFor(session);
   const priceLbl = session.session_type === 'paid' && session.price
     ? `${session.currency_code || 'AED'} ${session.price}`
     : 'Free';
@@ -207,6 +209,13 @@ function _SessionCard({ session, compact, onPress }: Props) {
           {priceLbl}
         </Text>
       </View>
+
+      {/* Partner brand (Reebok…) — bottom-right, as on the website card. */}
+      {!!partner && (
+        <View className="mt-3 pt-3 border-t border-white/5">
+          <PoweredBy partner={partner} height={compact ? 24 : 28} />
+        </View>
+      )}
     </Pressable>
   );
 }

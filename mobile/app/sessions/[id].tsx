@@ -14,7 +14,7 @@
  * fresh state ("You're in").
  */
 import { useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, Alert, Image, Linking, Modal, Pressable, ScrollView, Share, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useStickyFooterPad } from '@/lib/components/StickyFooter';
 import { router, useLocalSearchParams } from 'expo-router';
@@ -35,6 +35,8 @@ import { colors, fontFamily, tribeColor } from '@/lib/theme/tokens';
 import { dayHeader, timeShort } from '@/lib/utils/date';
 import { sessionInviteMessage } from '@/lib/utils/shareLinks';
 import { PinkRibbon, isPinkOctober } from '@/lib/components/PinkRibbon';
+import { partnerFor, PartnerLogo, PoweredBy } from '@/lib/partners';
+import { absUrl } from '@/lib/utils/imageUrl';
 
 export default function SessionDetail() {
   const footerPad = useStickyFooterPad();
@@ -369,16 +371,27 @@ export default function SessionDetail() {
           </View>
         )}
 
-        {/* Sponsor */}
-        {!!s.sponsor_name && (
-          <View className="px-5 mt-6">
-            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-2">
+        {/* Sponsor — the admin's "Powered by" logo, else a partner brand
+            named on the session (Reebok…), else the sponsor's name. */}
+        {(!!s.sponsor_name || !!s.sponsor_logo_url || !!partnerFor(s)) && (
+          <Pressable
+            disabled={!s.sponsor_url}
+            onPress={() => s.sponsor_url && Linking.openURL(s.sponsor_url).catch(() => {})}
+            className="px-5 mt-6"
+          >
+            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-3">
               Powered by
             </Text>
-            <Text style={{ fontFamily: fontFamily.body, color: colors.white }} className="text-base">
-              {s.sponsor_name}
-            </Text>
-          </View>
+            {s.sponsor_logo_url ? (
+              <Image source={{ uri: absUrl(s.sponsor_logo_url)! }} style={{ height: 48, width: 180 }} resizeMode="contain" accessibilityLabel={s.sponsor_name || 'Sponsor'} />
+            ) : partnerFor(s) ? (
+              <PartnerLogo partner={partnerFor(s)!} height={52} />
+            ) : (
+              <Text style={{ fontFamily: fontFamily.body, color: colors.white }} className="text-base">
+                {s.sponsor_name}
+              </Text>
+            )}
+          </Pressable>
         )}
 
         {/* Check-in QR — only when the member has an active booking and the
@@ -411,6 +424,12 @@ export default function SessionDetail() {
                 An ambassador will scan this to confirm your attendance
                 {s.points_reward && earnsAtCheckin ? ` and credit +${s.points_reward} pts` : ''}.
               </Text>
+              {/* Partner on the QR card — Vector Red on this white card. */}
+              {!!partnerFor(s) && (
+                <View className="mt-4">
+                  <PoweredBy partner={partnerFor(s)!} on="light" height={30} align="center" />
+                </View>
+              )}
             </View>
           </View>
         )}

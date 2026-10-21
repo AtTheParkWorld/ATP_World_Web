@@ -23,9 +23,6 @@
   var WEEKS = [[1, 7], [8, 14], [15, 21], [22, 28], [29, 30]];
   var DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'], DOWL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], MONL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-  var SPONSORS = [
-    { re: /reebok|burpee/i, name: 'Reebok', logo: '/img/30x30/sponsor-reebok.png' }
-  ];
 
   var S = { challenges: [], byId: {}, slots: [], loaded: false, cat: 'all', week: null, boardCh: null, boardStage: 'qualifier', el: {} };
 
@@ -55,11 +52,14 @@
     var rs = r % 1 ? r.toFixed(1) : String(r);
     return m ? m + ':' + (r < 10 ? '0' : '') + rs : rs + 's';
   }
-  function sponsorOf(name) { for (var i = 0; i < SPONSORS.length; i++) if (SPONSORS[i].re.test(name || '')) return SPONSORS[i]; return null; }
+  // Partner logos (Reebok…) come from /partners.js — official files, red
+  // on this white look, Classic White on the dark board headers.
+  function partnerOf(name) { return window.ATPPartners ? window.ATPPartners.match(name) : null; }
   var NO_LOGO = {};
-  function logo(name, cls) {
-    var sp = sponsorOf(name);
-    return sp && !NO_LOGO[sp.logo] ? '<img class="' + cls + '" data-hc-logo src="' + sp.logo + '" alt="' + esc(sp.name) + '">' : '';
+  function logo(name, cls, kind, bg) {
+    var p = partnerOf(name); if (!p) return '';
+    var src = window.ATPPartners.src(p, kind || 'lockup', bg || 'light');
+    return NO_LOGO[src] ? '' : '<img class="' + cls + '" data-hc-logo src="' + src + '" alt="' + esc(p.name) + '">';
   }
   document.addEventListener('error', function (e) { var t = e.target; if (t && t.hasAttribute && t.hasAttribute('data-hc-logo')) { NO_LOGO[t.getAttribute('src')] = 1; t.remove(); } }, true);
   function kindLabel(c) { return c.kind === 'team' ? 'Team · ' + (c.team_min === c.team_max ? c.team_max : c.team_min + '–' + c.team_max) + ' members' : 'Individual'; }
@@ -100,7 +100,11 @@
       '.hc-card.team{border-top-color:#1a8f4a}.hc-card h3{font-size:22px;margin:6px 0 2px;color:#222}.hc-card .hc-kind{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#f90000}',
       '.hc-card.team .hc-kind{color:#1a8f4a}.hc-card p{font-size:14px;margin:10px 0 0;line-height:1.5}',
       '.hc-card dl{margin:12px 0 14px;font-size:13px;flex:1}.hc-card dt{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6f6f6f;margin-top:8px}.hc-card dd{margin:0;color:#222}',
-      '.hc-logo{height:32px;max-width:120px;object-fit:contain;display:block;margin-bottom:8px}',
+      '.hc-logo{height:36px;width:auto;display:block;margin-bottom:10px}',
+      '.hc-ctop{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.hc-plogo{height:40px;width:auto;flex:0 0 auto;margin:-4px 0 0}',
+      '.hc-svec{height:9px;width:auto;display:block;margin-top:4px}',
+      '.hc-pby{display:flex;align-items:center;justify-content:center;gap:10px;margin:2px 0 6px}.hc-pby small{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#6f6f6f}.hc-pby img{height:34px;width:auto}',
+      '.hc-board h4{display:flex;justify-content:space-between;align-items:center;gap:8px}.hc-bvec{height:11px;width:auto}',
       '.hc-btn{display:block;width:100%;border:0;border-radius:5px;padding:12px 16px;font:inherit;font-size:15px;font-weight:700;cursor:pointer;background:#f90000;color:#fff;text-align:center;text-decoration:none}',
       '.hc-btn:hover{background:#d40000}.hc-btn.line{background:#fff;color:#222;border:1px solid #222}.hc-btn.green{background:#1a8f4a}.hc-btn[disabled]{opacity:.5;cursor:default}',
       '.hc-mine{font-size:12px;color:#1a8f4a;font-weight:700;margin-bottom:8px}',
@@ -128,7 +132,7 @@
       '.hc-row{display:flex;gap:10px;padding:9px 14px;border-top:1px solid #f0f0f0;font-size:14px}.hc-row .rk{width:26px;color:#6f6f6f;font-weight:700}.hc-row .nm{flex:1;color:#222}.hc-row .v{font-weight:700;color:#222}',
       '.hc-row.q{background:#f3fbf5}.hc-row.out{opacity:.6}.hc-cutline{padding:6px 14px;background:#fff0f0;color:#c00;font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;text-align:center}',
       '.hc-toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%);background:#111;color:#fff;padding:12px 18px;border-radius:4px;font-size:14px;font-weight:600;z-index:2100;opacity:0;transition:opacity .2s;max-width:calc(100vw - 32px);text-align:center;pointer-events:none}.hc-toast.on{opacity:1}',
-      '@media(max-width:900px){.hc-desk{display:none}.hc-mob{display:block}.hc-wtab{font-size:11px;letter-spacing:.06em}.hc-ses{display:flex;gap:10px;align-items:center}.hc-ses strong{flex:0 0 48px}}'
+      '@media(max-width:900px){.hc-desk{display:none}.hc-mob{display:block}.hc-wtab{font-size:11px;letter-spacing:.06em}.hc-ses{display:flex;gap:10px;align-items:center}.hc-ses strong{flex:0 0 48px}.hc-ses>span{flex:1}.hc-smark .hc-svec{height:12px;margin:0}}'
     ].join('\n');
     document.head.appendChild(st);
   }
@@ -156,8 +160,8 @@
     el.innerHTML = '<div class="hc-cards">' + S.challenges.map(function (c) {
       var mine = c.my_entry, open = S.slots.filter(function (x) { return x.c.id === c.id && !x.final; }).length;
       var mineTxt = mine ? (c.kind === 'team' && mine.team ? '✓ Your team: ' + esc(mine.team.name) + ' (' + mine.team.members + '/' + c.team_max + ')' : '✓ You’re registered') : '';
-      return '<div class="hc-card' + (c.kind === 'team' ? ' team' : '') + '">' + logo(c.name, 'hc-logo') +
-        '<span class="hc-kind">' + esc(kindLabel(c)) + '</span><h3>' + esc(c.name) + '</h3>' +
+      return '<div class="hc-card' + (c.kind === 'team' ? ' team' : '') + '">' +
+        '<div class="hc-ctop"><span class="hc-kind">' + esc(kindLabel(c)) + '</span>' + logo(c.name, 'hc-plogo') + '</div><h3>' + esc(c.name) + '</h3>' +
         (c.description ? '<p>' + esc(c.description) + '</p>' : '') +
         '<dl>' + (c.qualifier_start ? '<dt>Qualifiers</dt><dd>' + dayLabel(c.qualifier_start) + ' – ' + dayLabel(c.qualifier_end) + '</dd>' : '') +
         (c.final_date ? '<dt>Final</dt><dd>' + dayLabel(c.final_date) + '</dd>' : '') +
@@ -210,8 +214,9 @@
   function slotBtn(x, mobile) {
     var cls = 'hc-ses' + (x.final ? ' final' : '');
     var sub = x.final ? 'Final · qualified athletes' : (x.c.kind === 'team' ? 'Team qualifier' : 'Qualifier');
-    if (mobile) return '<button type="button" class="' + cls + '" data-hc-slot="' + esc(x.s.id) + '"><strong>' + x.t + '</strong><span>' + esc(x.c.name) + '<small>' + sub + '</small></span></button>';
-    return '<button type="button" class="' + cls + '" data-hc-slot="' + esc(x.s.id) + '">' + esc(x.c.name) + '<small>' + sub + '</small></button>';
+    var mark = logo(x.c.name, 'hc-svec', 'vector');
+    if (mobile) return '<button type="button" class="' + cls + '" data-hc-slot="' + esc(x.s.id) + '"><strong>' + x.t + '</strong><span>' + esc(x.c.name) + '<small>' + sub + '</small></span>' + (mark ? '<i class="hc-smark">' + mark + '</i>' : '') + '</button>';
+    return '<button type="button" class="' + cls + '" data-hc-slot="' + esc(x.s.id) + '">' + esc(x.c.name) + '<small>' + sub + '</small>' + mark + '</button>';
   }
 
   // ── leaderboards ──────────────────────────────────────────────
@@ -235,7 +240,7 @@
           if (d.finals_cut && S.boardStage === 'qualifier' && !cutDrawn && row.qualified === false) { rows += '<div class="hc-cutline">Finals cut · top ' + d.finals_cut + '</div>'; cutDrawn = true; }
           rows += '<div class="hc-row' + (S.boardStage === 'qualifier' && row.qualified === true ? ' q' : '') + (S.boardStage === 'qualifier' && row.qualified === false ? ' out' : '') + '"><span class="rk">' + row.rank + '</span><span class="nm">' + esc(row.name) + '</span><span class="v">' + esc(fmt(row.value, c)) + '</span></div>';
         });
-        return '<div class="hc-board"><h4>' + esc(b.label) + '</h4>' + rows + '</div>';
+        return '<div class="hc-board"><h4><span>' + esc(b.label) + '</span>' + logo(c.name, 'hc-bvec', 'vector', 'dark') + '</h4>' + rows + '</div>';
       }).join('') + '</div>' + (d.finals_cut && S.boardStage === 'qualifier' ? '<p class="hc-note" style="text-align:left">Green = qualifying for the final. Every attempt counts — your best result ranks.</p>' : '');
     });
   }
@@ -341,7 +346,8 @@
     var act = document.getElementById('hcAct'); if (!act) return;
     var mine = c.my_entry;
     act.innerHTML = '<div style="text-align:center"><div class="hc-ok">✓</div><h3 style="margin:0 0 4px;font-size:20px;color:#222">You’re registered</h3><p>Show this QR code at the ' + esc(c.name) + ' station. It’s also in the ATP app under My bookings.</p>' +
-      (qr ? '<img class="hc-qr" alt="Check-in QR code" src="/api/bookings/qr/' + encodeURIComponent(qr) + '.png">' : '') + '</div>' +
+      (qr ? '<img class="hc-qr" alt="Check-in QR code" src="/api/bookings/qr/' + encodeURIComponent(qr) + '.png">' : '') +
+      (partnerOf(c.name) ? '<div class="hc-pby"><small>Powered by</small>' + logo(c.name, '') + '</div>' : '') + '</div>' +
       (mine && mine.team ? teamBox(c, mine.team) : '') + '<div id="hcCharity"></div>';
     if (c.charity_enabled && mine && !mine.donation_choice) charityAsk(c);
   }

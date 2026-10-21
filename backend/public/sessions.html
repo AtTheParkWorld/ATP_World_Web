@@ -5,6 +5,7 @@
   <link rel="stylesheet" href="/hub30x30.css?v=4">
   <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
   <script src="/atp.bundle.min.js?v=b0fcf261bf"></script>
+  <script src="/partners.js?v=1"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -2476,12 +2477,17 @@ window._atpSessions = [];
 function _sponsorStripHtml(s, variant) {
   if (!s) return '';
   var logo = (s.sponsor_logo_url || '').trim();
+  // No admin logo → a partner brand named on the session (Reebok…, see
+  // /partners.js): its official Classic White lockup on this dark page
+  // (founder 2026-10-21).
+  var partner = !logo && window.ATPPartners ? window.ATPPartners.match(s) : null;
+  if (partner) logo = window.ATPPartners.src(partner, 'lockup', 'dark');
   if (!logo) return '';
-  var ok = /^https:\/\//i.test(logo) || /^data:image\//i.test(logo) || /^\/api\/cms\/media\//.test(logo);
+  var ok = partner || /^https:\/\//i.test(logo) || /^data:image\//i.test(logo) || /^\/api\/cms\/media\//.test(logo);
   if (!ok) return '';
-  var name = escapeHtml(s.sponsor_name || 'our partner');
+  var name = escapeHtml(s.sponsor_name || (partner && partner.name) || 'our partner');
   var link = (s.sponsor_url || '').trim();
-  var maxH = variant === 'card' ? 24 : 40;
+  var maxH = variant === 'card' ? (partner ? 32 : 24) : (partner ? 48 : 40);
   var maxW = variant === 'card' ? 110 : 170;
   var img = '<img src="' + escapeHtml(logo) + '" alt="' + name + '" loading="lazy" ' +
             'style="max-height:' + maxH + 'px;max-width:' + maxW + 'px;width:auto;height:auto;object-fit:contain;vertical-align:middle">';
@@ -2489,7 +2495,9 @@ function _sponsorStripHtml(s, variant) {
   var inner = /^https?:\/\//i.test(link)
     ? '<a href="' + escapeHtml(link) + '" target="_blank" rel="noopener sponsored"' + stop + ' style="display:inline-flex;align-items:center;text-decoration:none">' + img + '</a>'
     : img;
-  var align = variant === 'card' ? 'flex-start' : 'center';
+  // Reebok's guidelines put the mark bottom-right — partner strips on
+  // cards align right; admin sponsors keep the left-aligned strip.
+  var align = variant === 'card' ? (partner ? 'flex-end' : 'flex-start') : 'center';
   var mt = variant === 'card' ? '10px' : '16px';
   // On the redesigned card the parent is a 3-col grid — span all
   // columns so the strip sits cleanly across the bottom.
@@ -3055,7 +3063,7 @@ async function loadSessions() {
 
 </script>
 
-<script src="/hub-challenges.js?v=2"></script>
+<script src="/hub-challenges.js?v=3"></script>
 <script src="/hub30x30.js?v=5"></script>
 </body>
 </html>

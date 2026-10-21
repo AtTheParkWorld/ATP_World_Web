@@ -17,6 +17,7 @@ import { createHubTeam, kindLabel, hubWhen, ymdLabel } from '@/lib/api/hubChalle
 import { SessionTerms } from '@/lib/components/SessionTerms';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { useHubData, HubEmpty as Empty, TeamCard, CharityAsk } from '@/lib/components/Hub30';
+import { partnerFor, PartnerLogo, PoweredBy } from '@/lib/partners';
 
 const GREEN2 = '#22c55e';
 
@@ -50,6 +51,7 @@ export default function HubChallengeScreen() {
   if (!c) return <SafeAreaView className="flex-1 bg-atp-black px-5"><Header title="Challenge" /><Empty title="Challenge not found" body="It may not be open yet." /></SafeAreaView>;
 
   const mine = c.my_entry;
+  const partner = partnerFor(c);
   const needsTeam = c.kind === 'team' && !(mine && mine.team);
   const refresh = () => Promise.all([qc.invalidateQueries({ queryKey: ['hub30'] }), qc.invalidateQueries({ queryKey: ['bookings'] })]);
 
@@ -74,7 +76,10 @@ export default function HubChallengeScreen() {
     <SafeAreaView className="flex-1 bg-atp-black" edges={['top']}>
       <Header title={c.name} />
       <ScrollView contentContainerStyle={{ padding: 20, paddingBottom: 60 }} keyboardShouldPersistTaps="handled">
-        <Text style={{ fontFamily: fontFamily.bodyBold, color: c.kind === 'team' ? GREEN2 : colors.danger }} className="text-xs uppercase tracking-widest">{kindLabel(c)}</Text>
+        <View className="flex-row items-start justify-between">
+          <Text style={{ fontFamily: fontFamily.bodyBold, color: c.kind === 'team' ? GREEN2 : colors.danger }} className="text-xs uppercase tracking-widest flex-1">{kindLabel(c)}</Text>
+          {!!partner && <PartnerLogo partner={partner} height={44} />}
+        </View>
         <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-3xl uppercase mt-1">{c.name}</Text>
         {!!c.description && <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm mt-2 leading-5">{c.description}</Text>}
         <View className="flex-row flex-wrap mt-4">
@@ -92,6 +97,7 @@ export default function HubChallengeScreen() {
             <Pressable onPress={() => router.push('/bookings')} className="mt-3 border border-white/20 rounded-atp px-4 py-2.5 active:opacity-70">
               <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">Open my QR code</Text>
             </Pressable>
+            {!!partner && <View className="mt-4"><PoweredBy partner={partner} height={32} align="center" /></View>}
           </View>
         )}
         {c.charity_enabled && mine && !mine.donation_choice && !answered && <CharityAsk c={c} onAnswered={setAnswered} />}

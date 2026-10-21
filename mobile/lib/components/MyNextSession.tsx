@@ -18,8 +18,10 @@ import { useQuery } from '@tanstack/react-query';
 import { listMyBookings, type BookingRecord } from '@/lib/api/bookings';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { PinkRibbon } from '@/lib/components/PinkRibbon';
+import { partnerFor, PartnerLogo } from '@/lib/partners';
 
 function BookingCard({ b, width }: { b: BookingRecord; width: number }) {
+  const partner = partnerFor(b);
   return (
     <Pressable
       onPress={() => router.push(`/sessions/${b.session_id}`)}
@@ -28,9 +30,11 @@ function BookingCard({ b, width }: { b: BookingRecord; width: number }) {
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
         <PinkRibbon height={16} />
-        <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs uppercase tracking-widest">
+        <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green, flex: 1 }} className="text-xs uppercase tracking-widest">
           {b.tribe_name || b.city_name || 'Booked'}
         </Text>
+        {/* Partner brand (Reebok…) top-right */}
+        {!!partner && <PartnerLogo partner={partner} height={30} />}
       </View>
       <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-2xl uppercase tracking-tight" numberOfLines={2}>
         {b.session_name}

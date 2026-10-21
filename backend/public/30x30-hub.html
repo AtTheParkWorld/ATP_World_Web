@@ -362,8 +362,8 @@ td.sched-empty{height:120px}
 /* sponsor logos (Powered by) */
 .spw{display:inline-flex;align-items:center;gap:8px}
 .spw img{display:block;object-fit:contain}
-.slogo{display:flex;margin-top:5px}.slogo img{height:16px;max-width:72px}
-@media(max-width:900px){.ses .slogo{margin:0 0 0 auto}.ses .slogo img{height:20px;max-width:80px}}
+.slogo{display:flex;margin-top:5px}.slogo img{height:22px;max-width:80px}
+@media(max-width:900px){.ses .slogo{margin:0 0 0 auto}.ses .slogo img{height:26px;max-width:90px}}
 .mdl-sp{margin-top:10px;background:#fff;padding:6px 10px;border-radius:4px}
 .mdl-sp small{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
 .mdl-sp img{height:26px;max-width:120px}
@@ -377,7 +377,15 @@ td.sched-empty{height:120px}
 .slots button{display:flex;justify-content:space-between;gap:12px;width:100%;text-align:left;padding:11px 12px;margin:6px 0;background:var(--grey2);border-left:3px solid var(--red);font-size:14px;color:var(--ink)}
 .slots button:hover{background:#ffeaea}
 .slots button span{color:var(--mu);font-size:13px}
+/* challenge partner (Reebok) — official lockup, clear space around it */
+.pband{display:flex;align-items:center;justify-content:flex-end;gap:14px;margin:-6px 0 18px}
+.pband small,.side-pt small{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mu)}
+.pband img{height:46px;width:auto}
+.side-pt{display:flex;flex-direction:column;align-items:center;gap:8px;padding:6px 0 4px}
+.side-pt img{height:52px;width:auto}
+.foot-legal{font-size:11px;opacity:.85}
 </style>
+<script src="/partners.js?v=1"></script>
 </head>
 <body>
 
@@ -428,6 +436,7 @@ td.sched-empty{height:120px}
       <div><h4>Date &amp; Time :</h4><p>31 Oct – 29 Nov 2026<br>Kick-off: Pink Run, Sat 31 Oct (morning)<br>Weekdays: 6:30 PM to 9:30 PM<br>Weekends: 6:30 AM to 9:30 PM</p></div>
       <div><h4>Venue:</h4><p>Dubai Internet City Amphitheatre<br><a href="https://www.google.com/maps/search/?api=1&amp;query=Dubai+Internet+City+Amphitheatre" target="_blank" rel="noopener" style="font-size:14px">Open in Google Maps ↗</a></p></div>
       <img class="hublogo" src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub">
+      <div class="side-pt"><small>Challenge partner</small><img src="/img/partners/reebok-lockup-red.png" alt="Reebok"></div>
       <div class="ctas" style="display:flex;flex-direction:column;gap:8px">
         <a class="btn btn-red btn-block" href="#schedule">Book a session</a>
         <a class="btn btn-line btn-block" href="#app">Get the ATP app</a>
@@ -457,6 +466,7 @@ td.sched-empty{height:120px}
       <div><small>Finals cut</small><b>Make the cut</b><p>The top athletes and teams qualify.</p></div>
       <div><small>Finals day</small><b>Final</b><p>Champions crowned.</p></div>
     </div>
+    <div class="pband"><small>Challenge partner</small><img src="/img/partners/reebok-lockup-red.png" alt="Reebok"></div>
     <div id="hcCards"></div>
     <div class="eyebrow" id="challenge-calendar" style="margin-top:40px"><small>Book your attempt</small><h2>Challenge calendar</h2><p>Tap a slot to register. Team challenges: the captain registers the team and shares the invite link.</p></div>
     <div id="hcCalendar"></div>
@@ -527,7 +537,7 @@ td.sched-empty{height:120px}
       <div><h5>At The Park</h5><a href="https://atthepark.world">atthepark.world</a><a href="https://shop.atthepark.world">ATP Store</a><a href="mailto:general@atthepark.world">general@atthepark.world</a></div>
     </div>
   </div>
-  <div class="foot-bar"><div class="wrap"><span>© 2026 At The Park · in partnership with Dubai Internet City</span><span><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></span></div></div>
+  <div class="foot-bar"><div class="wrap"><span>© 2026 At The Park · in partnership with Dubai Internet City<br><span class="foot-legal">Reebok® and the Vector logo are registered trademarks of Reebok International Limited.</span></span><span><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></span></div></div>
 </footer>
 
 <div class="mbar"><a class="btn btn-red" href="#schedule">Book a session</a><a class="btn btn-line" href="#challenges">Challenges</a></div>
@@ -558,16 +568,13 @@ td.sched-empty{height:120px}
   // ── sponsors ─────────────────────────────────────────
   // A session's own "Powered by" logo (admin → session → sponsor) wins;
   // otherwise the hub's challenge sponsors are matched by session name.
-  // A logo file that isn't there yet simply doesn't show (see the error
-  // listener below), so dropping the PNG in /img/30x30/ switches it on.
-  var SPONSORS = [
-    { re:/reebok|burpee/i, name:'Reebok', logo:'/img/30x30/sponsor-reebok.png' }
-  ];
+  // Partners (Reebok…) come from /partners.js — the official red lockup
+  // on this white page. A missing file simply doesn't show (see the error
+  // listener below).
   function sponsorOf(s){
     if (s && s.sponsor_logo_url) return { name: s.sponsor_name || 'Partner', logo: s.sponsor_logo_url };
-    var n = String((s && (s.name || s.n)) || '');
-    for (var i = 0; i < SPONSORS.length; i++) if (SPONSORS[i].re.test(n)) return SPONSORS[i];
-    return null;
+    var p = window.ATPPartners && window.ATPPartners.match(s);
+    return p ? { name: p.name, logo: window.ATPPartners.src(p, 'lockup', 'light') } : null;
   }
   var NO_LOGO = {};   // logo files that failed once aren't asked for again
   function spLogo(sp, cls, label){
@@ -785,7 +792,7 @@ td.sched-empty{height:120px}
   });
 })();
 </script>
-<script src="/hub-challenges.js?v=2"></script>
+<script src="/hub-challenges.js?v=3"></script>
 <script>
 /* 30x30 Challenges (founder 2026-10-19): cards, challenge calendar and
    leaderboards come live from the ATP calendar (hub-challenges.js). */

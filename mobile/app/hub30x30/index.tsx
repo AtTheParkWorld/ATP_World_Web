@@ -21,6 +21,7 @@ import { WEB_BASE } from '@/lib/api/client';
 import { SegmentedControl } from '@/lib/components/SegmentedControl';
 import { useHubData, HubEmpty as Empty } from '@/lib/components/Hub30';
 import { colors, fontFamily } from '@/lib/theme/tokens';
+import { partnerFor, PartnerLogo } from '@/lib/partners';
 
 type Tab = 'schedule' | 'challenges' | 'results';
 const PINK = '#e8458b';
@@ -123,6 +124,7 @@ function ScheduleTab({ sessions, loading }: { sessions?: Session[]; loading: boo
                   <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">{s.name}</Text>
                   {!!s.activity_name && <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-0.5">{s.activity_name}</Text>}
                 </View>
+                {!!partnerFor(s) && <View className="mr-3"><PartnerLogo partner={partnerFor(s)!} kind="vector" height={12} /></View>}
                 <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.light }} className="text-base">›</Text>
               </Pressable>
             ))}
@@ -150,7 +152,10 @@ function ChallengesTab({ challenges, sessions, loading }: { challenges?: HubChal
         return (
           <Pressable key={c.id} onPress={() => router.push(`/hub30x30/challenge/${c.id}`)} className="bg-atp-dark rounded-atp-lg border border-white/5 p-4 mb-3 active:opacity-70"
             style={{ borderTopWidth: 3, borderTopColor: c.kind === 'team' ? '#22c55e' : colors.danger }}>
-            <Text style={{ fontFamily: fontFamily.bodyBold, color: c.kind === 'team' ? '#22c55e' : colors.danger }} className="text-xs uppercase tracking-widest">{kindLabel(c)}</Text>
+            <View className="flex-row items-start justify-between">
+              <Text style={{ fontFamily: fontFamily.bodyBold, color: c.kind === 'team' ? '#22c55e' : colors.danger }} className="text-xs uppercase tracking-widest flex-1">{kindLabel(c)}</Text>
+              {!!partnerFor(c) && <PartnerLogo partner={partnerFor(c)!} height={36} />}
+            </View>
             <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-xl uppercase mt-1">{c.name}</Text>
             {!!c.description && <Text numberOfLines={3} style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm mt-1.5 leading-5">{c.description}</Text>}
             <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-2">
@@ -200,7 +205,10 @@ function ResultsTab({ challenges, loading }: { challenges?: HubChallenge[]; load
         let cutShown = false;
         return (
           <View key={b.key} className="bg-atp-dark rounded-atp border border-white/5 mb-3 overflow-hidden">
-            <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs uppercase tracking-widest px-4 py-2.5 bg-white/5">{b.label}</Text>
+            <View className="flex-row items-center justify-between px-4 py-2.5 bg-white/5">
+              <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green }} className="text-xs uppercase tracking-widest">{b.label}</Text>
+              {!!partnerFor(c) && <PartnerLogo partner={partnerFor(c)!} kind="vector" height={11} />}
+            </View>
             {b.rows.map((r) => {
               const cut = stage === 'qualifier' && d!.finals_cut && !cutShown && r.qualified === false;
               if (cut) cutShown = true;
