@@ -21,7 +21,7 @@ import { WEB_BASE } from '@/lib/api/client';
 import { SegmentedControl } from '@/lib/components/SegmentedControl';
 import { useHubData, HubEmpty as Empty } from '@/lib/components/Hub30';
 import { colors, fontFamily } from '@/lib/theme/tokens';
-import { partnerFor, PartnerLogo } from '@/lib/partners';
+import { partnerFor, PartnerLogo, HubPartners } from '@/lib/partners';
 
 type Tab = 'schedule' | 'challenges' | 'results';
 const PINK = '#e8458b';
@@ -74,6 +74,11 @@ export default function Hub30Screen() {
         {tab === 'schedule' && <ScheduleTab sessions={sessionsQ.data} loading={sessionsQ.isLoading} />}
         {tab === 'challenges' && <ChallengesTab challenges={challengesQ.data} sessions={sessionsQ.data} loading={challengesQ.isLoading} />}
         {tab === 'results' && <ResultsTab challenges={challengesQ.data} loading={challengesQ.isLoading} />}
+
+        {/* Partners — on every tab, like the landing page's section */}
+        <View className="px-5 mt-10">
+          <HubPartners />
+        </View>
       </ScrollView>
     </SafeAreaView>
   );

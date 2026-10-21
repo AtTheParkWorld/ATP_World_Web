@@ -377,6 +377,21 @@ td.sched-empty{height:120px}
 .slots button{display:flex;justify-content:space-between;gap:12px;width:100%;text-align:left;padding:11px 12px;margin:6px 0;background:var(--grey2);border-left:3px solid var(--red);font-size:14px;color:var(--ink)}
 .slots button:hover{background:#ffeaea}
 .slots button span{color:var(--mu);font-size:13px}
+/* partners section */
+.partners{display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
+@media(max-width:800px){.partners{grid-template-columns:1fr}}
+.partner{border:1px solid var(--line);background:#fff;display:flex;flex-direction:column}
+.p-logo{display:flex;align-items:center;justify-content:center;min-height:190px;padding:36px 40px;border-bottom:1px solid var(--line);background:#fff;transition:background .15s}
+.p-logo:hover{background:var(--grey2)}
+.p-logo img{max-width:100%;width:auto;object-fit:contain}
+.p-body{padding:22px 24px 24px;display:flex;flex-direction:column;flex:1}
+.p-body small{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--red)}
+.p-body h3{font-size:24px;margin:6px 0 8px;color:var(--ink)}
+.p-body p{font-size:15px;color:var(--mu);line-height:1.55}
+.p-tags{list-style:none;display:flex;flex-wrap:wrap;gap:6px;margin:14px 0 18px;padding:0;flex:1;align-content:flex-start}
+.p-tags li{font-size:12px;background:var(--sand-l);color:var(--ink2);padding:5px 10px;border-radius:999px}
+.p-body .btn{align-self:flex-start}
+@media(max-width:520px){.p-logo{min-height:150px;padding:28px 24px}.p-logo img{max-height:76px}.p-body .btn{align-self:stretch}}
 /* challenge partner (Reebok) — official lockup, clear space around it */
 .pband{display:flex;align-items:center;justify-content:flex-end;gap:14px;margin:-6px 0 18px}
 .pband small,.side-pt small{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--mu)}
@@ -399,7 +414,7 @@ td.sched-empty{height:120px}
       <i></i>
       <img class="hub" src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub">
     </div>
-    <nav class="nav"><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#challenges">Challenges</a><a href="#charity">Charity</a><a href="#results">Results</a><a href="#faq">FAQ</a></nav>
+    <nav class="nav"><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#challenges">Challenges</a><a href="#charity">Charity</a><a href="#results">Results</a><a href="#partners">Partners</a><a href="#faq">FAQ</a></nav>
     <a class="btn btn-red" href="#schedule">Book a session</a>
   </div>
 </header>
@@ -497,6 +512,35 @@ td.sched-empty{height:120px}
     <div id="hcBoards"></div>
   </section>
 
+  <!-- Partners (founder 2026-10-21): a space for each partner, logo +
+       link to their services. Logos sit on white with clear space around
+       them (Reebok guidelines: Vector Red on light, no alterations). -->
+  <section class="sec" id="partners">
+    <div class="eyebrow"><small>Our partners</small><h2>The brands behind the hub</h2><p>The 30x30 Fitness Hub is made possible by our partners. Tap a logo to explore what they offer.</p></div>
+    <div class="partners">
+      <article class="partner">
+        <a class="p-logo" href="https://www.reebok.ae/" target="_blank" rel="noopener sponsored" aria-label="Reebok (opens in a new tab)"><img src="/img/partners/reebok-lockup-red.png" alt="Reebok" style="height:96px"></a>
+        <div class="p-body">
+          <small>Challenge partner</small>
+          <h3>Reebok</h3>
+          <p>Partner of the Reebok Burpee Challenge. Training shoes, apparel and gear for every session at the hub.</p>
+          <ul class="p-tags"><li>Reebok Burpee Challenge</li><li>Footwear</li><li>Apparel</li></ul>
+          <a class="btn btn-line" href="https://www.reebok.ae/" target="_blank" rel="noopener sponsored">Visit reebok.ae ↗</a>
+        </div>
+      </article>
+      <article class="partner">
+        <a class="p-logo" href="https://www.homehealthatunicare.com" target="_blank" rel="noopener sponsored" aria-label="UniCare Home Health (opens in a new tab)"><img src="/img/partners/unicare-logo.png" alt="UniCare Home Health" style="height:92px"></a>
+        <div class="p-body">
+          <small>Home healthcare partner</small>
+          <h3>UniCare Home Health</h3>
+          <p>Healthcare that comes to you in Dubai — a doctor on call, nursing care, physiotherapy and lab tests at home.</p>
+          <ul class="p-tags"><li>Doctor On Call</li><li>Nursing Care</li><li>Physiotherapy</li><li>Lab Tests at Home</li><li>IV Wellness Therapy</li><li>Care for the Elderly</li></ul>
+          <a class="btn btn-line" href="https://www.homehealthatunicare.com" target="_blank" rel="noopener sponsored">Explore UniCare services ↗</a>
+        </div>
+      </article>
+    </div>
+  </section>
+
   <section class="sec" id="app" style="padding-top:0">
     <div class="panel" style="background:#fff;border:1px solid var(--line)">
       <div><h2>All in the ATP app</h2><p style="margin-top:12px">Everything you book on this page is waiting for you in the app.</p></div>
@@ -533,7 +577,7 @@ td.sched-empty{height:120px}
   <div class="wrap foot-in">
     <div class="logos"><img class="dic" src="/img/30x30/logo-dic.png" alt="Dubai Internet City"><i></i><img class="atp" src="/img/30x30/logo-atp-dark.png" alt="At The Park"><i></i><img class="hub" src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub"></div>
     <div class="foot-links">
-      <div><h5>The hub</h5><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#challenges">Challenges</a><a href="#charity">Charity</a><a href="#results">Results</a></div>
+      <div><h5>The hub</h5><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#challenges">Challenges</a><a href="#charity">Charity</a><a href="#results">Results</a><a href="#partners">Partners</a></div>
       <div><h5>At The Park</h5><a href="https://atthepark.world">atthepark.world</a><a href="https://shop.atthepark.world">ATP Store</a><a href="mailto:general@atthepark.world">general@atthepark.world</a></div>
     </div>
   </div>
