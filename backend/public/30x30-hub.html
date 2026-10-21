@@ -48,15 +48,23 @@ h1,h2,h3,h4{color:var(--ink);font-weight:700;line-height:1.15}
 /* header */
 .hdr{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.97);border-bottom:1px solid var(--line);backdrop-filter:blur(8px)}
 .hdr-in{display:flex;align-items:center;justify-content:space-between;gap:24px;height:76px}
-.logos{display:flex;align-items:center;gap:18px}
+.logos{display:flex;align-items:center;gap:18px;flex-shrink:0}
 .logos img.dic{height:40px}
 .logos img.atp{height:20px}
 .logos img.hub{height:40px}
 .logos i{width:1px;height:34px;background:var(--line)}
-.nav{display:flex;gap:26px;font-size:15px}
-.nav a{text-decoration:none;color:var(--ink2)}
+.logos a{display:flex;line-height:0;flex-shrink:0}.logos a img{flex-shrink:0;width:auto}
+/* way back to the main site (founder 2026-10-22) */
+.atp-strip{background:#0a0a0a;color:#fff;font-size:13px}
+.atp-strip .wrap{display:flex;align-items:center;justify-content:space-between;gap:12px;height:36px}
+.atp-strip a{color:#fff;text-decoration:none;font-weight:600;display:inline-flex;align-items:center;gap:8px}
+.atp-strip a:hover{color:#A8FF00}
+.atp-strip span{color:rgba(255,255,255,.6)}
+@media(max-width:600px){.atp-strip span{display:none}}
+.nav{display:flex;gap:22px;font-size:15px}
+.nav a{text-decoration:none;color:var(--ink2);white-space:nowrap}
 .nav a:hover{color:var(--red)}
-@media(max-width:1100px){.nav{display:none}}
+@media(max-width:1250px){.nav{display:none}}
 @media(max-width:600px){.logos img.dic{height:32px}.logos img.atp{height:15px}.logos img.hub{height:32px}.logos{gap:10px}.hdr .btn{display:none}}
 
 /* hero */
@@ -409,12 +417,13 @@ td.sched-empty{height:120px}
 <body>
 
 
+<div class="atp-strip"><div class="wrap"><a href="/">← At The Park home</a><span>atthepark.world · Never Train Alone</span></div></div>
 <header class="hdr">
   <div class="wrap hdr-in">
     <div class="logos">
       <img class="dic" src="/img/30x30/logo-dic.png" alt="Dubai Internet City">
       <i></i>
-      <img class="atp" src="/img/30x30/logo-atp-dark.png" alt="At The Park">
+      <a href="/" title="At The Park — home"><img class="atp" src="/img/30x30/logo-atp-dark.png" alt="At The Park"></a>
       <i></i>
       <img class="hub" src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub">
     </div>
@@ -561,10 +570,10 @@ td.sched-empty{height:120px}
 
 <footer class="foot">
   <div class="wrap foot-in">
-    <div class="logos"><img class="dic" src="/img/30x30/logo-dic.png" alt="Dubai Internet City"><i></i><img class="atp" src="/img/30x30/logo-atp-dark.png" alt="At The Park"><i></i><img class="hub" src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub"></div>
+    <div class="logos"><img class="dic" src="/img/30x30/logo-dic.png" alt="Dubai Internet City"><i></i><a href="/" title="At The Park — home"><img class="atp" src="/img/30x30/logo-atp-dark.png" alt="At The Park"></a><i></i><img class="hub" src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub"></div>
     <div class="foot-links">
       <div><h5>The hub</h5><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#challenges">Challenges</a><a href="#charity">Charity</a><a href="#results">Results</a><a href="#partners">Partners</a></div>
-      <div><h5>At The Park</h5><a href="https://atthepark.world">atthepark.world</a><a href="https://shop.atthepark.world">ATP Store</a><a href="mailto:general@atthepark.world">general@atthepark.world</a></div>
+      <div><h5>At The Park</h5><a href="/">Main website</a><a href="/sessions.html">All ATP sessions</a><a href="https://shop.atthepark.world">ATP Store</a><a href="mailto:general@atthepark.world">general@atthepark.world</a></div>
     </div>
   </div>
   <div class="foot-bar"><div class="wrap"><span>© 2026 At The Park · in partnership with Dubai Internet City<br><span class="foot-legal">Reebok® and the Vector logo are registered trademarks of Reebok International Limited.</span></span><span><a href="/privacy">Privacy</a> · <a href="/terms">Terms</a></span></div></div>

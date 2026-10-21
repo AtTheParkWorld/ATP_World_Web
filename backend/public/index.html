@@ -218,6 +218,28 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .stories-inner{max-width:var(--max);margin:0 auto}
 .stories-header{margin-bottom:40px}
 
+/* 30x30 FITNESS HUB — highlighted on the home page (founder 2026-10-22).
+   Hidden automatically once the hub is over (see the script below). */
+.hero-event{display:inline-flex;align-items:center;gap:10px;margin-bottom:22px;padding:8px 14px 8px 12px;border:1px solid rgba(255,255,255,.18);border-radius:999px;background:rgba(10,10,10,.55);backdrop-filter:blur(6px);color:var(--white);text-decoration:none;font-size:13px;font-weight:600;letter-spacing:.01em;transition:border-color .2s,background .2s}
+.hero-event:hover{border-color:var(--green);background:rgba(10,10,10,.75)}
+.hero-event .he-dot{width:8px;height:8px;border-radius:50%;background:#e8458b;box-shadow:0 0 0 4px rgba(232,69,139,.25)}
+.hero-event b{color:var(--green);font-weight:700}
+.hub-feature{padding:56px 40px 8px;background:var(--black)}
+.hf-card{position:relative;max-width:var(--max);margin:0 auto;border-radius:var(--radius-lg);overflow:hidden;border:1px solid rgba(255,255,255,.08);min-height:420px;display:flex;align-items:flex-end}
+.hf-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 40%}
+.hf-shade{position:absolute;inset:0;background:linear-gradient(90deg,rgba(10,10,10,.92) 0%,rgba(10,10,10,.75) 45%,rgba(10,10,10,.15) 100%)}
+.hf-inner{position:relative;padding:44px 48px;max-width:720px}
+.hf-logos{display:inline-flex;align-items:center;gap:14px;background:#fff;border-radius:8px;padding:10px 14px;margin-bottom:22px}
+.hf-logos img{height:34px;width:auto;display:block}.hf-logos i{width:1px;height:28px;background:#e6e6e6}
+.hf-eyebrow{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--green);margin-bottom:10px}
+.hf-h{font-family:var(--ff-display);font-size:clamp(36px,4.6vw,60px);font-weight:900;line-height:.95;text-transform:uppercase;letter-spacing:-.01em;color:var(--white);margin-bottom:14px}
+.hf-h .accent{color:var(--green)}
+.hf-sub{font-size:15px;color:var(--light);line-height:1.6;max-width:560px;margin-bottom:12px}
+.hf-kick{display:inline-block;background:#e8458b;color:#fff;font-size:13px;font-weight:700;padding:6px 12px;border-radius:4px;margin-bottom:24px}
+.hf-cta{display:flex;gap:12px;flex-wrap:wrap}
+.hf-cta .btn-hero{text-decoration:none;display:inline-flex;align-items:center;gap:10px}
+.hf-cta .btn-ghost{text-decoration:none;display:inline-flex;align-items:center;padding:15px 22px;font-size:14px}
+@media(max-width:760px){.hub-feature{padding:36px 16px 4px}.hf-card{min-height:0}.hf-shade{background:linear-gradient(180deg,rgba(10,10,10,.55) 0%,rgba(10,10,10,.92) 55%)}.hf-inner{padding:150px 22px 26px}.hf-logos img{height:28px}.hf-cta .btn-hero,.hf-cta .btn-ghost{flex:1 1 100%;justify-content:center}}
 /* APP — compact pre-footer banner.
    Was a full ~600px section with two phone mockups mid-page; replaced
    with a thin horizontal CTA strip that sits just before the footer.
@@ -525,6 +547,8 @@ a.product-card:hover{transform:translateY(-4px)}
   <div id="hero-media-slot" class="hero-bg" aria-hidden="true"></div>
   <div class="hero-bg-overlay" aria-hidden="true"></div>
   <div class="hero-left">
+    <!-- 30x30 Fitness Hub highlight (founder 2026-10-22) -->
+    <a class="hero-event" href="/30x30-hub" data-hub30-only><span class="he-dot" aria-hidden="true"></span><span data-hub30-when>DIC 30x30 Fitness Hub · 31 Oct – 29 Nov</span><b>→</b></a>
     <p class="hero-tag">Free Fitness Community</p>
     <h1 class="hero-h1" id="hero-heading">
       <span class="word-never">Never,</span>
@@ -612,6 +636,39 @@ a.product-card:hover{transform:translateY(-4px)}
     var html = half.map(one).join('');
     track.innerHTML = html + html;
   }).catch(function () {});
+})();
+</script>
+
+<!-- 30x30 FITNESS HUB — event feature (founder 2026-10-22). Links to the
+     landing page; the whole block hides itself after 29 Nov. -->
+<section class="hub-feature" id="hub30" aria-labelledby="hub30-heading" data-hub30-only>
+  <div class="hf-card reveal">
+    <img class="hf-bg" src="/img/30x30/dic-campus.jpg" alt="" loading="lazy">
+    <div class="hf-shade" aria-hidden="true"></div>
+    <div class="hf-inner">
+      <div class="hf-logos"><img src="/img/30x30/logo-dic.png" alt="Dubai Internet City"><i></i><img src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub"></div>
+      <p class="hf-eyebrow">Dubai Fitness Challenge · 31 Oct – 29 Nov 2026</p>
+      <h2 class="hf-h" id="hub30-heading">Dubai Internet City <span class="accent">30x30 Fitness Hub</span></h2>
+      <p class="hf-sub">30 days of free sessions at the Dubai Internet City Amphitheatre — running, yoga, strength, dance and more — plus the 30x30 Challenge Series with weekly leaderboards.</p>
+      <span class="hf-kick" data-hub30-kick>Kick-off: the Pink Run · Saturday 31 October, morning</span>
+      <div class="hf-cta">
+        <a class="btn-hero" href="/30x30-hub">Explore the 30x30 Hub <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
+        <a class="btn-ghost" href="/30x30-hub#schedule">Schedule</a>
+        <a class="btn-ghost" href="/30x30-hub#challenges">Challenges</a>
+      </div>
+    </div>
+  </div>
+</section>
+<script>
+/* Show the 30x30 highlight only while it's relevant: hidden from 30 Nov
+   (Dubai); "Happening now" once the hub has started. */
+(function () {
+  var now = Date.now(), start = Date.parse('2026-10-31T00:00:00+04:00'), end = Date.parse('2026-11-30T00:00:00+04:00');
+  if (now >= end) { document.querySelectorAll('[data-hub30-only]').forEach(function (el) { el.remove(); }); return; }
+  if (now >= start) {
+    var w = document.querySelector('[data-hub30-when]'); if (w) w.textContent = 'Happening now · DIC 30x30 Fitness Hub';
+    var k = document.querySelector('[data-hub30-kick]'); if (k) k.remove();
+  }
 })();
 </script>
 
