@@ -375,8 +375,11 @@ export default function SessionDetail() {
             named on the session (Reebok…), else the sponsor's name. */}
         {(!!s.sponsor_name || !!s.sponsor_logo_url || !!partnerFor(s)) && (
           <Pressable
-            disabled={!s.sponsor_url}
-            onPress={() => s.sponsor_url && Linking.openURL(s.sponsor_url).catch(() => {})}
+            disabled={!s.sponsor_url && !partnerFor(s)}
+            onPress={() => {
+              const url = s.sponsor_url || partnerFor(s)?.url;
+              if (url) Linking.openURL(url).catch(() => {});
+            }}
             className="px-5 mt-6"
           >
             <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-xs uppercase tracking-widest mb-3">
@@ -385,7 +388,7 @@ export default function SessionDetail() {
             {s.sponsor_logo_url ? (
               <Image source={{ uri: absUrl(s.sponsor_logo_url)! }} style={{ height: 48, width: 180 }} resizeMode="contain" accessibilityLabel={s.sponsor_name || 'Sponsor'} />
             ) : partnerFor(s) ? (
-              <PartnerLogo partner={partnerFor(s)!} height={52} />
+              <PartnerLogo partner={partnerFor(s)!} height={52} link={false} />
             ) : (
               <Text style={{ fontFamily: fontFamily.body, color: colors.white }} className="text-base">
                 {s.sponsor_name}

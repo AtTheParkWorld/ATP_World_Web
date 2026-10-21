@@ -13,8 +13,11 @@
  * Classic White on dark backgrounds (the app), Vector Red on light ones
  * (the white QR card). Clear space around the mark; bottom-right /
  * top-right where there is a choice.
+ *
+ * Tapping a logo opens the partner's site (founder 2026-10-21) — except
+ * the small marks inside rows that open a session (link={false}).
  */
-import { Image, Text, View } from 'react-native';
+import { Image, Linking, Pressable, Text, View } from 'react-native';
 import { WEB_BASE } from '@/lib/api/client';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 
@@ -24,13 +27,14 @@ export interface Partner {
   key: string;
   name: string;
   re: RegExp;
+  url: string;
   file: string;
   /** width / height of each trimmed file */
   ratio: Record<PartnerKind, number>;
 }
 
 export const PARTNERS: Partner[] = [
-  { key: 'reebok', name: 'Reebok', re: /reebok/i, file: 'reebok', ratio: { lockup: 360 / 182, wordmark: 360 / 74, vector: 360 / 102 } },
+  { key: 'reebok', name: 'Reebok', re: /reebok/i, url: 'https://www.reebok.ae/', file: 'reebok', ratio: { lockup: 360 / 182, wordmark: 360 / 74, vector: 360 / 102 } },
 ];
 
 type Named = { name?: string | null; session_name?: string | null; sponsor_name?: string | null };
@@ -44,16 +48,28 @@ export function partnerLogoUri(p: Partner, kind: PartnerKind = 'lockup', on: 'da
   return `${WEB_BASE}/img/partners/${p.file}-${kind}-${on === 'dark' ? 'white' : 'red'}.png`;
 }
 
-export function PartnerLogo({ partner, kind = 'lockup', on = 'dark', height }: {
-  partner: Partner; kind?: PartnerKind; on?: 'dark' | 'light'; height: number;
+export function openPartner(p: Partner) {
+  Linking.openURL(p.url).catch(() => {});
+}
+
+export function PartnerLogo({ partner, kind = 'lockup', on = 'dark', height, link = true }: {
+  partner: Partner; kind?: PartnerKind; on?: 'dark' | 'light'; height: number; link?: boolean;
 }) {
-  return (
+  const img = (
     <Image
       source={{ uri: partnerLogoUri(partner, kind, on) }}
       style={{ height, width: Math.round(height * partner.ratio[kind]) }}
       resizeMode="contain"
       accessibilityLabel={partner.name}
     />
+  );
+  if (!link) return img;
+  // Its own Pressable wins over the card it sits on — the card still
+  // opens everywhere else.
+  return (
+    <Pressable onPress={() => openPartner(partner)} hitSlop={8} accessibilityRole="link" accessibilityLabel={`${partner.name} website`} className="active:opacity-70">
+      {img}
+    </Pressable>
   );
 }
 

@@ -11,7 +11,9 @@
  * stretched, outlined or given effects — these are their PNGs trimmed of
  * padding, nothing else. Vector Red on light backgrounds, Classic White
  * on dark ones. Clear space around the mark; top-right / bottom-right
- * placement where there is a choice.
+ * placement where there is a choice. Logos link to the partner's site
+ * (founder 2026-10-21), except where the logo sits inside something that
+ * is itself clickable (a calendar slot, a session row).
  */
 (function () {
   if (window.ATPPartners) return;
@@ -20,6 +22,7 @@
     key: 'reebok',
     name: 'Reebok',
     re: /reebok/i,
+    url: 'https://www.reebok.ae/',
     files: { lockup: 'reebok-lockup', wordmark: 'reebok-wordmark', vector: 'reebok-vector' },
     // Trademark line from Reebok's guidelines (marketing material).
     legal: 'Reebok® and the Vector logo are registered trademarks of Reebok International Limited.'
@@ -39,5 +42,10 @@
   function src(p, kind, bg) {
     return IMG + p.files[kind || 'lockup'] + '-' + (bg === 'dark' ? 'white' : 'red') + '.png';
   }
-  window.ATPPartners = { list: LIST, match: match, src: src };
+  // <a> around a logo — new tab, marked as a sponsored link.
+  function link(p, inner, cls) {
+    return '<a href="' + p.url + '" target="_blank" rel="noopener sponsored"' + (cls ? ' class="' + cls + '"' : '') +
+      ' aria-label="' + p.name + ' (opens in a new tab)" onclick="event.stopPropagation()">' + inner + '</a>';
+  }
+  window.ATPPartners = { list: LIST, match: match, src: src, link: link };
 })();

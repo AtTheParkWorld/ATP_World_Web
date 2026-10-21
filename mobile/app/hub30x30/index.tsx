@@ -124,7 +124,7 @@ function ScheduleTab({ sessions, loading }: { sessions?: Session[]; loading: boo
                   <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">{s.name}</Text>
                   {!!s.activity_name && <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs mt-0.5">{s.activity_name}</Text>}
                 </View>
-                {!!partnerFor(s) && <View className="mr-3"><PartnerLogo partner={partnerFor(s)!} kind="vector" height={12} /></View>}
+                {!!partnerFor(s) && <View className="mr-3"><PartnerLogo partner={partnerFor(s)!} kind="vector" height={12} link={false} /></View>}
                 <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.light }} className="text-base">›</Text>
               </Pressable>
             ))}

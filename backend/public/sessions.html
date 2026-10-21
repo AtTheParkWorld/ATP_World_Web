@@ -5,7 +5,7 @@
   <link rel="stylesheet" href="/hub30x30.css?v=4">
   <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
   <script src="/atp.bundle.min.js?v=b0fcf261bf"></script>
-  <script src="/partners.js?v=1"></script>
+  <script src="/partners.js?v=2"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -2486,7 +2486,7 @@ function _sponsorStripHtml(s, variant) {
   var ok = partner || /^https:\/\//i.test(logo) || /^data:image\//i.test(logo) || /^\/api\/cms\/media\//.test(logo);
   if (!ok) return '';
   var name = escapeHtml(s.sponsor_name || (partner && partner.name) || 'our partner');
-  var link = (s.sponsor_url || '').trim();
+  var link = (s.sponsor_url || '').trim() || (partner && partner.url) || '';
   var maxH = variant === 'card' ? (partner ? 32 : 24) : (partner ? 48 : 40);
   var maxW = variant === 'card' ? 110 : 170;
   var img = '<img src="' + escapeHtml(logo) + '" alt="' + name + '" loading="lazy" ' +
@@ -3063,7 +3063,7 @@ async function loadSessions() {
 
 </script>
 
-<script src="/hub-challenges.js?v=3"></script>
+<script src="/hub-challenges.js?v=4"></script>
 <script src="/hub30x30.js?v=5"></script>
 </body>
 </html>

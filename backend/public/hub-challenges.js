@@ -56,10 +56,13 @@
   // on this white look, Classic White on the dark board headers.
   function partnerOf(name) { return window.ATPPartners ? window.ATPPartners.match(name) : null; }
   var NO_LOGO = {};
-  function logo(name, cls, kind, bg) {
+  // Links to the partner's site, except inside a slot button (nolink).
+  function logo(name, cls, kind, bg, nolink) {
     var p = partnerOf(name); if (!p) return '';
     var src = window.ATPPartners.src(p, kind || 'lockup', bg || 'light');
-    return NO_LOGO[src] ? '' : '<img class="' + cls + '" data-hc-logo src="' + src + '" alt="' + esc(p.name) + '">';
+    if (NO_LOGO[src]) return '';
+    var img = '<img class="' + cls + '" data-hc-logo src="' + src + '" alt="' + esc(p.name) + '">';
+    return nolink || !p.url ? img : window.ATPPartners.link(p, img, 'hc-plink');
   }
   document.addEventListener('error', function (e) { var t = e.target; if (t && t.hasAttribute && t.hasAttribute('data-hc-logo')) { NO_LOGO[t.getAttribute('src')] = 1; t.remove(); } }, true);
   function kindLabel(c) { return c.kind === 'team' ? 'Team · ' + (c.team_min === c.team_max ? c.team_max : c.team_min + '–' + c.team_max) + ' members' : 'Individual'; }
@@ -103,6 +106,7 @@
       '.hc-logo{height:36px;width:auto;display:block;margin-bottom:10px}',
       '.hc-ctop{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.hc-plogo{height:40px;width:auto;flex:0 0 auto;margin:-4px 0 0}',
       '.hc-svec{height:9px;width:auto;display:block;margin-top:4px}',
+      '.hc-plink{display:inline-flex;flex:0 0 auto;line-height:0}.hc-plink:hover{opacity:.85}',
       '.hc-pby{display:flex;align-items:center;justify-content:center;gap:10px;margin:2px 0 6px}.hc-pby small{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#6f6f6f}.hc-pby img{height:34px;width:auto}',
       '.hc-board h4{display:flex;justify-content:space-between;align-items:center;gap:8px}.hc-bvec{height:11px;width:auto}',
       '.hc-btn{display:block;width:100%;border:0;border-radius:5px;padding:12px 16px;font:inherit;font-size:15px;font-weight:700;cursor:pointer;background:#f90000;color:#fff;text-align:center;text-decoration:none}',
@@ -214,7 +218,7 @@
   function slotBtn(x, mobile) {
     var cls = 'hc-ses' + (x.final ? ' final' : '');
     var sub = x.final ? 'Final · qualified athletes' : (x.c.kind === 'team' ? 'Team qualifier' : 'Qualifier');
-    var mark = logo(x.c.name, 'hc-svec', 'vector');
+    var mark = logo(x.c.name, 'hc-svec', 'vector', 'light', true);
     if (mobile) return '<button type="button" class="' + cls + '" data-hc-slot="' + esc(x.s.id) + '"><strong>' + x.t + '</strong><span>' + esc(x.c.name) + '<small>' + sub + '</small></span>' + (mark ? '<i class="hc-smark">' + mark + '</i>' : '') + '</button>';
     return '<button type="button" class="' + cls + '" data-hc-slot="' + esc(x.s.id) + '">' + esc(x.c.name) + '<small>' + sub + '</small>' + mark + '</button>';
   }
