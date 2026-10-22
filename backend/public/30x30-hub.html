@@ -253,7 +253,7 @@ h1,h2,h3,h4{color:var(--ink);font-weight:700;line-height:1.15}
 .foot-bar{background:#666;color:#fff;font-size:13px;padding:14px 0}
 .foot-bar .wrap{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
 
-/* charity story */
+/* Relay Rumble team band */
 .cause-band{display:grid;grid-template-columns:1fr 1.1fr;background:var(--grey);min-height:560px}
 @media(max-width:900px){.cause-band{grid-template-columns:1fr}}
 .cb-img{position:relative;min-height:320px}
@@ -372,7 +372,7 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
 .chc .soon{margin:auto 0 10px;font-size:13px;font-weight:700;color:var(--red)}
 .hero-t .kick{margin-top:10px;font-size:16px;display:inline-block;background:#e8458b;color:#fff;padding:6px 12px;border-radius:3px}
 .hero-t .kick b{color:#fff}
-/* charity band: the team photo shows in full above the story */
+/* team band: the photo shows in full above the text */
 .cause-band{grid-template-columns:1fr;min-height:0}
 .cb-img{min-height:0;aspect-ratio:3/2}
 .cb-img img{object-position:50% 40%}
@@ -427,7 +427,7 @@ td.sched-empty{height:120px}
       <i></i>
       <img class="hub" src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub">
     </div>
-    <nav class="nav"><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#challenges">Challenges</a><a href="#charity">Charity</a><a href="#results">Results</a><a href="#partners">Partners</a><a href="#faq">FAQ</a></nav>
+    <nav class="nav"><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#challenges">Challenges</a><a href="#teams">Teams</a><a href="#results">Results</a><a href="#partners">Partners</a><a href="#faq">FAQ</a></nav>
     <a class="btn btn-red" href="#schedule">Book a session</a>
   </div>
 </header>
@@ -500,21 +500,23 @@ td.sched-empty{height:120px}
     <div id="hcCalendar"></div>
   </section>
 
-  <section class="sec" id="charity" style="padding-top:8px">
+  <!-- Relay Rumble — a normal team challenge (founder 2026-10-22: no
+       sponsor). Teams of 4 qualify during the week; the
+       fastest race the weekend finals. -->
+  <section class="sec" id="teams" style="padding-top:8px">
     <div class="cause-band">
-      <div class="cb-img"><img src="/img/30x30/charity-atp-team.jpg" alt="The At The Park team at the DIC Amphitheatre"><span class="cb-tag">Relay Rumble</span></div>
+      <div class="cb-img"><img src="/img/30x30/team-atp.jpg" alt="The At The Park team at the DIC Amphitheatre"><span class="cb-tag">Relay Rumble</span></div>
       <div class="cb-txt">
-        <small>A competition with a cause</small>
-        <h2>Companies compete.<br>Charity wins.</h2>
-        <p class="lead">Every week, company teams race a 4.8 km relay at the DIC Amphitheatre. The prize isn’t cash — <b>100% of it goes to charity</b>, donated in the winning company’s name.</p>
+        <small>Team challenge</small>
+        <h2>Bring your crew.<br>Race the Relay Rumble.</h2>
+        <p class="lead">Teams of 4 race a 4.8 km relay at the DIC Amphitheatre. Qualify during the week — the fastest teams race the <b>weekend finals</b>.</p>
         <ol class="cb-steps">
-          <li><b>Your company enters</b>Field one or more teams of 2–4 colleagues. The captain creates the team; colleagues join with the team link.</li>
-          <li><b>Race for your company</b>Qualify on weekday evenings. Teams are ranked company vs company, and the fastest race the Corporate final on Finals Night.</li>
-          <li><b>Charity wins</b>The prize is donated in the winning company’s name — no cash to staff, no HR or gift-policy friction.</li>
+          <li><b>Build your team</b>The captain registers the team and books a slot, then shares the invite link with 3 teammates.</li>
+          <li><b>Qualify during the week</b>Race on weekday evenings. Every attempt counts — your team’s best time ranks on the leaderboard.</li>
+          <li><b>Weekend finals</b>The fastest teams make the cut and race the final at the weekend.</li>
         </ol>
-        <p class="cb-note" id="hcCharityNote">Charity partner to be announced.</p>
         <div class="cb-cta"><button class="btn btn-red" type="button" data-hc-team-cta>Register your team</button><a class="btn btn-line" href="#challenge-calendar">See the slots</a></div>
-        <p class="cb-note">Questions about company teams? <a href="mailto:general@atthepark.world?subject=Relay%20Rumble%20%E2%80%94%20company%20team">general@atthepark.world</a></p>
+        <p class="cb-note">Questions about teams? <a href="mailto:general@atthepark.world?subject=Relay%20Rumble%20%E2%80%94%20team">general@atthepark.world</a></p>
       </div>
     </div>
   </section>
@@ -560,8 +562,7 @@ td.sched-empty{height:120px}
       <details><summary>Do I need an ATP account?</summary><p>Yes, a free one. It's how we save your spot, give you your check-in QR code and add your challenge results.</p></details>
       <details><summary>If I book here, is it in the app too?</summary><p>Yes. The website and the ATP app share the same booking system — book in one, it shows up in the other with the same QR code.</p></details>
       <details><summary>How do the challenge qualifiers work?</summary><p>Each challenge has qualifier slots in the challenge calendar. Book a slot to register — one slot per day per challenge. You can try on several days: every attempt counts and your best result ranks. Results are checked and published by the ATP team.</p></details>
-      <details><summary>How do I register on the same team as my colleagues?</summary><p>One colleague is the captain: they open a team challenge slot, name the team and book. They get an invite link to share (WhatsApp or copy). Teammates open the link, sign in with their own free ATP account, join and book the team’s slot. A team’s result is the total of its members’ results.</p></details>
-      <details><summary>Where does the charity money go?</summary><p>Challenges with a charity cause show it on the challenge. After you register you’re asked — optionally — if you’d like to donate; donations are made directly on the charity’s own page, so 100% goes to the cause.</p></details>
+      <details><summary>How do I register a team?</summary><p>One teammate is the captain: they open a team challenge slot, name the team and book. They get an invite link to share (WhatsApp or copy). Teammates open the link, sign in with their own free ATP account, join and book the team’s slot. Relay Rumble teams have 4 members, and a team’s result is the total of its members’ results.</p></details>
       <details><summary>Who makes the final?</summary><p>Each challenge has a finals cut — for example the top 15 men and top 15 women, or the top 10 teams — shown on the leaderboard. You can’t register for the final directly: you get there through the qualifiers.</p></details>
     </div>
   </section>
@@ -572,7 +573,7 @@ td.sched-empty{height:120px}
   <div class="wrap foot-in">
     <div class="logos"><img class="dic" src="/img/30x30/logo-dic.png" alt="Dubai Internet City"><i></i><a href="/" title="At The Park — home"><img class="atp" src="/img/30x30/logo-atp-dark.png" alt="At The Park"></a><i></i><img class="hub" src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub"></div>
     <div class="foot-links">
-      <div><h5>The hub</h5><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#challenges">Challenges</a><a href="#charity">Charity</a><a href="#results">Results</a><a href="#partners">Partners</a></div>
+      <div><h5>The hub</h5><a href="#about">About</a><a href="#schedule">Schedule</a><a href="#challenges">Challenges</a><a href="#teams">Teams</a><a href="#results">Results</a><a href="#partners">Partners</a></div>
       <div><h5>At The Park</h5><a href="/">Main website</a><a href="/sessions.html">All ATP sessions</a><a href="https://shop.atthepark.world">ATP Store</a><a href="mailto:general@atthepark.world">general@atthepark.world</a></div>
     </div>
   </div>
@@ -635,7 +636,7 @@ td.sched-empty{height:120px}
 
   var CH_RE = /challenge|redline|last one standing|burpee/i;
   var SP_RE = /pink run|opening night|festival|finale|special event|celebration/i;
-  var MAIL = 'mailto:general@atthepark.world?subject=Relay%20Rumble%20%E2%80%94%20company%20team';
+  var MAIL = 'mailto:general@atthepark.world?subject=Relay%20Rumble%20%E2%80%94%20team';
   var DESC_ANY = 'A free coached session at the 30x30 Fitness Hub, Dubai Internet City Amphitheatre — every level welcome.';
 
   // ── ATP calendar ─────────────────────────────────────
@@ -868,8 +869,6 @@ td.sched-empty{height:120px}
   HubCh.mount({ cards: document.getElementById('hcCards'), calendar: document.getElementById('hcCalendar'), boards: document.getElementById('hcBoards') }).then(function () {
     var list = HubCh.state.challenges || [];
     var team = list.filter(function (c) { return c.kind === 'team' && /relay|rumble/i.test(c.name); })[0] || list.filter(function (c) { return c.kind === 'team'; })[0];
-    var note = document.getElementById('hcCharityNote');
-    if (team && team.charity_enabled && note) note.textContent = 'Supporting ' + team.charity_name + '.';
     document.querySelectorAll('[data-hc-team-cta]').forEach(function (b) {
       if (!team) { b.textContent = 'Team registration opens soon'; b.disabled = true; return; }
       b.addEventListener('click', function () { HubCh.openChallenge(team.id); });
