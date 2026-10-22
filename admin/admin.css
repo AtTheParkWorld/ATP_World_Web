@@ -33,14 +33,20 @@ a{color:inherit;text-decoration:none}button{cursor:pointer;font-family:var(--ff-
 .admin-logo-wrap{padding:0 20px 24px;border-bottom:1px solid rgba(255,255,255,.07)}
 .admin-logo{height:30px;}
 .admin-version{font-size:10px;color:#333;margin-top:6px;letter-spacing:.08em;text-transform:uppercase}
-.admin-nav{flex:1;padding:16px 0}
+/* The section list scrolls on its own; logo stays on top, Sign out stays
+   pinned at the bottom. Without this the fixed sidebar couldn't scroll
+   and on shorter (Windows) laptop screens the lower sections and Sign out
+   were unreachable (founder 2026-10-22). */
+.admin-nav{flex:1;min-height:0;overflow-y:auto;overscroll-behavior:contain;padding:16px 0;scrollbar-width:thin;scrollbar-color:rgba(255,255,255,.18) transparent}
+.admin-nav::-webkit-scrollbar{width:6px}.admin-nav::-webkit-scrollbar-thumb{background:rgba(255,255,255,.18);border-radius:3px}.admin-nav::-webkit-scrollbar-track{background:transparent}
 .admin-nav-item{display:flex;align-items:center;gap:10px;padding:11px 20px;font-size:13px;font-weight:500;color:#555;cursor:pointer;transition:all .2s;border-left:2px solid transparent}
 .admin-nav-item:hover{color:#fff;background:rgba(255,255,255,.03)}
 .admin-nav-item.active{color:#fff;border-left-color:#A8FF00;background:rgba(168,255,0,.05)}
 .admin-nav-item svg{flex-shrink:0;opacity:.7}
 .admin-nav-item.active svg{opacity:1}
-.admin-logout{padding:16px 20px;border-top:1px solid rgba(255,255,255,.07);font-size:12px;color:#444;cursor:pointer;transition:color .2s}
-.admin-logout:hover{color:#ef4444}
+.admin-logout{flex-shrink:0;display:flex;align-items:center;gap:10px;margin:10px 14px 0;padding:11px 14px;border:1px solid rgba(255,255,255,.12);border-radius:8px;font-size:13px;font-weight:600;color:#ddd;cursor:pointer;transition:color .2s,border-color .2s,background .2s}
+.admin-logout:hover{color:#fff;border-color:#ef4444;background:rgba(239,68,68,.12)}
+.admin-logout svg{flex-shrink:0;opacity:.85}
 
 .admin-main{margin-left:220px;padding:32px 40px 80px;min-height:100vh}
 .admin-page-title{font-family:var(--ff-display);font-size:32px;font-weight:900;text-transform:uppercase;color:#fff;margin-bottom:4px}
