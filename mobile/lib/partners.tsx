@@ -97,21 +97,23 @@ export interface HubPartner { key: string; name: string; url: string; logo: stri
 export const HUB_PARTNERS: HubPartner[] = [
   { key: 'reebok', name: 'Reebok', url: 'https://www.reebok.ae/', logo: 'reebok-lockup-red.png', ratio: 360 / 182, height: 46 },
   { key: 'unicare', name: 'UniCare Home Health', url: 'https://www.homehealthatunicare.com', logo: 'unicare-logo.png', ratio: 900 / 352, height: 40 },
+  { key: 'alwasl', name: 'Al Wasl Water', url: 'https://alwaslwater.com/', logo: 'alwasl-logo.png', ratio: 700 / 721, height: 88 },
 ];
 
 export function HubPartners() {
   return (
     <View>
       <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-2xl uppercase">Our Partners</Text>
-      <View className="flex-row gap-3 mt-3">
+      {/* Two per row; an odd last tile sits centred at the same width. */}
+      <View className="flex-row flex-wrap justify-center mt-3" style={{ gap: 12 }}>
         {HUB_PARTNERS.map((p) => (
           <Pressable
             key={p.key}
             onPress={() => Linking.openURL(p.url).catch(() => {})}
             accessibilityRole="link"
             accessibilityLabel={`${p.name} website`}
-            className="flex-1 items-center justify-center rounded-atp-lg py-6 px-3 active:opacity-80"
-            style={{ backgroundColor: '#ffffff' }}
+            className="items-center justify-center rounded-atp-lg px-3 active:opacity-80"
+            style={{ backgroundColor: '#ffffff', flexBasis: '47%', flexGrow: 0, height: 120 }}
           >
             <Image
               source={{ uri: `${WEB_BASE}/img/partners/${p.logo}` }}
