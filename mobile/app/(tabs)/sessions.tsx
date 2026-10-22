@@ -127,7 +127,9 @@ export default function Sessions() {
   // catalogs, so members never tap a filter that yields zero sessions.
   const facetsQ = useQuery({
     queryKey: ['sessions', 'facets'],
-    queryFn:  () => listSessions({ status: 'upcoming', limit: 200 }).then(r => r.sessions),
+    // 500 (founder 2026-10-22): the 30x30 Hub pushed upcoming sessions past
+    // 100 and climbing — a lower cap silently drops the later dates.
+    queryFn:  () => listSessions({ status: 'upcoming', limit: 500 }).then(r => r.sessions),
     staleTime: 1000 * 60 * 5,
   });
 
@@ -138,7 +140,7 @@ export default function Sessions() {
       city_id:     cityId     ?? undefined,
       tribe:       tribeSlug  ?? undefined,
       activity_id: activityId ?? undefined,
-      limit:       200,
+      limit:       500,
     }).then(r => r.sessions),
   });
 

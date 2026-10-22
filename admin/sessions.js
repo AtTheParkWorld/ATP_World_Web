@@ -1193,11 +1193,19 @@ async function loadSessionsList() {
   tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#444;padding:24px">Loading...</td></tr>';
 
   try {
-    var params = 'limit=100';
+    // Founder 2026-10-22: "I'm not able to save more sessions" — they WERE
+    // saved; the list only loaded the first 100 upcoming (soonest first),
+    // so with 138 upcoming everything after 18 Nov never showed, and the
+    // category/search filters only searched those 100. Load them all (up to
+    // LIST_MAX) and say so if that's ever hit. Completed → newest first.
+    var LIST_MAX = 1000;
+    var params = 'limit=' + LIST_MAX;
     if (cityF) params += '&city_id='+cityF;
     if (statusF) params += '&status='+statusF;
+    if (statusF === 'completed') params += '&order=recent';
     var data = await apiGet('/sessions?'+params);
     var sessions = (data.sessions || []);
+    var truncated = sessions.length >= LIST_MAX;
 
     // Client-side filter for category + search
     if (catF) sessions = sessions.filter(function(s){ return s.session_category === catF; });
@@ -1206,7 +1214,7 @@ async function loadSessionsList() {
       sessions = sessions.filter(function(s){ return (s.name||'').toLowerCase().includes(q) || (s.location||'').toLowerCase().includes(q); });
     }
 
-    if (countEl) countEl.textContent = sessions.length + ' sessions';
+    if (countEl) countEl.textContent = sessions.length + ' sessions' + (truncated ? ' (first ' + LIST_MAX + ' — narrow with the filters)' : '');
 
     if (!sessions.length) {
       tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:#444;padding:24px">No sessions found</td></tr>';

@@ -3017,7 +3017,9 @@ async function loadSessions() {
   }
 
   try {
-    var data = await window.ATP.sessions.list({ status: 'upcoming', limit: 100 });
+    // 500, same as the calendar (founder 2026-10-22): with 100 the list view
+    // stopped at 18 Nov once 138 sessions were upcoming.
+    var data = await window.ATP.sessions.list({ status: 'upcoming', limit: 500 });
     var list = (data && data.sessions) || [];
     window._atpSessions = list;
     renderSessionsGrid(list);

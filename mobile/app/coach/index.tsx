@@ -63,7 +63,7 @@ export default function CoachIndex() {
   // fetch all upcoming and filter client-side. Small list, fine.
   const sessionsQ = useQuery({
     queryKey: ['sessions', 'upcoming'],
-    queryFn:  () => listSessions({ status: 'upcoming', limit: 100 }).then(r => r.sessions),
+    queryFn:  () => listSessions({ status: 'upcoming', limit: 500 }).then(r => r.sessions),   // 100 hid a coach's later sessions
   });
   const mySessions = (sessionsQ.data || []).filter((s) => s.coach_id === coachId);
 
