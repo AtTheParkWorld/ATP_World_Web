@@ -290,6 +290,9 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .cs-card:hover .cs-card-cover img,.cs-card:hover .cs-card-cover video{transform:scale(1.05)}
 .cs-card-cover::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,0) 50%,rgba(0,0,0,.7) 100%)}
 .cs-card-featured{position:absolute;top:10px;left:10px;z-index:2;background:var(--green);color:#0a0a0a;font-size:9px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;padding:4px 8px;border-radius:12px}
+.cs-card-top{position:relative}
+.cs-card-cover img.cs-cover-face{object-position:center}
+.cs-card-top:not(:has(.cs-card-photo)) + .cs-card-body{padding-top:16px}
 .cs-card-photo{position:absolute;bottom:-22px;left:14px;width:48px;height:48px;border-radius:50%;overflow:hidden;background:var(--dark3);border:2px solid var(--dark2);z-index:2}
 .cs-card-photo img,.cs-card-photo video{width:100%;height:100%;object-fit:cover}
 .cs-card-photo-fallback{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,var(--green),var(--green-dark));font-family:var(--ff-display);font-size:18px;font-weight:900;color:#0a0a0a}
@@ -1814,32 +1817,45 @@ window.handleGoogleSignIn = async function(response) {
       var coaches = (d && d.coaches) || [];
       if (!coaches.length) { grid.parentElement.parentElement.style.display = 'none'; return; }
 
-      // Already sorted by featured DESC, rating DESC, joined ASC server-side.
-      var picks = coaches.slice(0, 4);
+      // Server order is featured DESC, rating DESC, joined ASC. Keep
+      // featured first, then coaches WITH a photo, so the home page leads
+      // with faces (founder 2026-10-22: most coaches showed initials).
+      var photoOf = function(c){ var p = c.profile || {}; return p.display_photo_url || p.profile_photo_url || c.avatar_url || ''; };
+      var picks = coaches.map(function(c, i){ return { c: c, i: i }; }).sort(function(a, b){
+        var fa = (a.c.profile || {}).is_featured ? 1 : 0, fb = (b.c.profile || {}).is_featured ? 1 : 0;
+        if (fa !== fb) return fb - fa;
+        var pa = photoOf(a.c) ? 1 : 0, pb = photoOf(b.c) ? 1 : 0;
+        return pa !== pb ? pb - pa : a.i - b.i;
+      }).slice(0, 4).map(function(x){ return x.c; });
 
       grid.innerHTML = picks.map(function(c){
         var p = c.profile || {}, st = c.stats || {};
         var displayName = c.display_name || ((c.first_name || '') + ' ' + (c.last_name || '')).trim() || 'Coach';
         var initials = ((c.first_name || ' ')[0] + (c.last_name || ' ')[0]).toUpperCase().trim() || '·';
         var slugUrl = c.slug ? '/coach/' + encodeURIComponent(c.slug) : '/coach.html?id=' + encodeURIComponent(c.id);
-        var cover = p.cover_image_url
-          ? (isVid(p.cover_image_url)
-              ? '<video src="' + esc(p.cover_image_url) + '" muted autoplay loop playsinline></video>'
-              : '<img src="' + esc(p.cover_image_url) + '" alt="" loading="lazy">')
+        // The coach's photo is the coach-profile photo OR their ATP member
+        // photo (the API's display_photo_url — what /coaches already uses).
+        // Most coaches only have the member photo, so the strip showed
+        // initials (founder 2026-10-22). No cover image → the photo IS the
+        // cover and the small circle is dropped.
+        var photoUrl = photoOf(c);
+        var media = function(u, alt, cls){ return isVid(u)
+          ? '<video src="' + esc(u) + '" muted autoplay loop playsinline' + (cls ? ' class="' + cls + '"' : '') + '></video>'
+          : '<img src="' + esc(u) + '" alt="' + esc(alt) + '" loading="lazy"' + (cls ? ' class="' + cls + '"' : '') + '>'; };
+        var cover = p.cover_image_url ? media(p.cover_image_url, '') : (photoUrl ? media(photoUrl, displayName, 'cs-cover-face') : '');
+        var photo = (p.cover_image_url || !photoUrl)
+          ? '<div class="cs-card-photo">' + (photoUrl ? media(photoUrl, '') : '<div class="cs-card-photo-fallback">' + esc(initials) + '</div>') + '</div>'
           : '';
-        var photo = p.profile_photo_url
-          ? (isVid(p.profile_photo_url)
-              ? '<video src="' + esc(p.profile_photo_url) + '" muted autoplay loop playsinline></video>'
-              : '<img src="' + esc(p.profile_photo_url) + '" alt="">')
-          : '<div class="cs-card-photo-fallback">' + esc(initials) + '</div>';
         var featured = p.is_featured ? '<div class="cs-card-featured">⭐ Featured</div>' : '';
-        var sessionsLed = st.sessions_delivered || st.total_sessions || 0;
+        var sessionsLed = Number(st.sessions_delivered || st.total_sessions || 0);
         return '<a class="cs-card" href="' + slugUrl + '">'
-          + '<div class="cs-card-cover">' + featured + cover + '<div class="cs-card-photo">' + photo + '</div></div>'
+          // The circle sits OUTSIDE the cover (which clips for the hover
+          // zoom) so it can overlap the edge without being cut in half.
+          + '<div class="cs-card-top"><div class="cs-card-cover">' + featured + cover + '</div>' + photo + '</div>'
           + '<div class="cs-card-body">'
           +   '<div class="cs-card-name">' + esc(displayName) + '</div>'
           +   (p.tagline ? '<div class="cs-card-tagline">' + esc(p.tagline) + '</div>' : '')
-          +   '<div class="cs-card-foot">' + (sessionsLed ? sessionsLed + ' sessions led' : 'View profile →') + '</div>'
+          +   '<div class="cs-card-foot">' + (sessionsLed ? sessionsLed + (sessionsLed === 1 ? ' session led' : ' sessions led') : 'View profile →') + '</div>'
           + '</div>'
           + '</a>';
       }).join('');
