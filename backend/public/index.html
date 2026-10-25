@@ -336,6 +336,26 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .partner-tile-open:hover{background:var(--green)!important}
 .partner-name-open{font-family:var(--ff-display);font-size:20px;font-weight:800;color:rgba(168,255,0,.55);text-transform:uppercase;letter-spacing:.06em;transition:color .25s}
 .partner-tile-open:hover .partner-name-open{color:var(--white)}
+/* Partners redesign (founder 2026-10-25): every logo sits on its own WHITE
+   plate, so a logo supplied on a white background (Al Wasl) or a red one
+   (Reebok — their guidelines want Vector Red on light) looks intentional
+   instead of a white box pasted on a dark tile. Name + "Visit ↗" below. */
+.partners-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;background:none;border-radius:0;overflow:visible;margin-bottom:24px}
+.partner-tile{min-width:0;padding:0;min-height:0;flex-direction:column;align-items:stretch;justify-content:flex-start;background:var(--dark2);border:1px solid rgba(255,255,255,.07);border-radius:var(--radius-lg);overflow:hidden;text-decoration:none;transition:border-color .2s,transform .2s,box-shadow .2s}
+.partner-tile:hover{background:var(--dark2);border-color:rgba(168,255,0,.45);transform:translateY(-3px);box-shadow:0 16px 36px rgba(0,0,0,.35)}
+.partner-plate{background:#fff;height:150px;display:flex;align-items:center;justify-content:center;padding:22px 30px}
+.partner-plate .partner-logo{max-width:78%;max-height:88px;opacity:1}
+.partner-tile:hover .partner-plate .partner-logo{transform:scale(1.04)}
+.partner-plate .partner-name{color:#222;font-size:22px}
+.partner-tile:hover .partner-plate .partner-name{color:#000}
+.partner-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 16px}
+.partner-meta b{font-family:var(--ff-display);font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.partner-meta span{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--green);white-space:nowrap}
+.partner-tile-open{border:1px dashed rgba(168,255,0,.4)!important;background:rgba(168,255,0,.04)!important}
+.partner-tile-open:hover{background:rgba(168,255,0,.08)!important}
+.partner-plate-open{background:transparent;border-bottom:1px dashed rgba(168,255,0,.25)}
+.partner-tile-open:hover .partner-name-open{color:var(--green)}
+@media(max-width:600px){.partners-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.partner-plate{height:110px;padding:16px 18px}.partner-plate .partner-logo{max-height:72px}.partner-name-open{font-size:16px}.partner-tile-open .partner-meta b{display:none}.partner-tile-open .partner-meta{justify-content:center}.partner-meta{padding:10px 12px}.partner-meta b{font-size:13px}.partner-meta span{font-size:10px}}
 .partner-cta-strip{background:rgba(168,255,0,.06);border:1px solid rgba(168,255,0,.15);border-radius:var(--radius-lg);padding:26px;display:flex;align-items:center;justify-content:space-between;gap:24px}
 .partner-cta-text h3{font-family:var(--ff-display);font-size:22px;font-weight:800;text-transform:uppercase;color:var(--white);margin-bottom:3px}
 .partner-cta-text p{font-size:14px;color:var(--muted)}
@@ -958,12 +978,12 @@ a.product-card:hover{transform:translateY(-4px)}
          The hardcoded names below are the fallback shown until the
          directory has entries, so the strip is never empty. -->
     <div class="partners-grid reveal" id="partnersGrid">
-      <div class="partner-tile"><div class="partner-name">Dusit Thani</div></div>
-      <div class="partner-tile"><div class="partner-name">Al Wasl Water</div></div>
-      <div class="partner-tile"><div class="partner-name">DIC</div></div>
-      <div class="partner-tile"><div class="partner-name">Satyug Yoga</div></div>
+      <div class="partner-tile"><div class="partner-plate"><div class="partner-name">Dusit Thani</div></div><div class="partner-meta"><b>Dusit Thani</b></div></div>
+      <div class="partner-tile"><div class="partner-plate"><div class="partner-name">Al Wasl Water</div></div><div class="partner-meta"><b>Al Wasl Water</b></div></div>
+      <div class="partner-tile"><div class="partner-plate"><div class="partner-name">DIC</div></div><div class="partner-meta"><b>DIC</b></div></div>
+      <div class="partner-tile"><div class="partner-plate"><div class="partner-name">Satyug Yoga</div></div><div class="partner-meta"><b>Satyug Yoga</b></div></div>
       <div class="partner-tile partner-tile-open" role="button" tabindex="0" data-atp-call="openPartnerContact"
-           onkeydown="if(event.key==='Enter')openPartnerContact()" style="cursor:pointer"><div class="partner-name-open">Your brand here</div></div>
+           onkeydown="if(event.key==='Enter')openPartnerContact()" style="cursor:pointer"><div class="partner-plate partner-plate-open"><div class="partner-name-open">Your brand here</div></div><div class="partner-meta"><b>Become a partner</b><span>Contact us →</span></div></div>
     </div>
     <div class="partner-cta-strip reveal">
       <div class="partner-cta-text">
@@ -1142,19 +1162,22 @@ document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
         var logo = safeUrl(p.logo_url);
         // Show the logo when the admin has uploaded one; the name is the
         // fallback AND the alt text, so the tile always says who it is.
-        var inner = logo
+        // Logo on a white plate (works for any logo); name + "Visit ↗" below.
+        var plate = '<div class="partner-plate">' + (logo
           ? '<img class="partner-logo" src="' + esc(logo) + '" alt="' + name + '" loading="lazy" decoding="async">'
-          : '<div class="partner-name">' + name + '</div>';
+          : '<div class="partner-name">' + name + '</div>') + '</div>';
+        var meta = '<div class="partner-meta"><b>' + name + '</b>' + (url ? '<span>Visit ↗</span>' : '') + '</div>';
         return url
           ? '<a class="partner-tile" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer"'
-            + ' style="text-decoration:none" title="' + name + '" aria-label="' + name + ' — opens in a new tab">' + inner + '</a>'
-          : '<div class="partner-tile" title="' + name + '">' + inner + '</div>';
+            + ' title="' + name + '" aria-label="' + name + ' — opens in a new tab">' + plate + meta + '</a>'
+          : '<div class="partner-tile" title="' + name + '">' + plate + meta + '</div>';
       }).join('');
 
       grid.innerHTML = tiles +
         '<div class="partner-tile partner-tile-open" role="button" tabindex="0"'
         + ' onclick="openPartnerContact()" onkeydown="if(event.key===\'Enter\')openPartnerContact()"'
-        + ' style="cursor:pointer"><div class="partner-name-open">Your brand here</div></div>';
+        + ' style="cursor:pointer"><div class="partner-plate partner-plate-open"><div class="partner-name-open">Your brand here</div></div>'
+        + '<div class="partner-meta"><b>Become a partner</b><span>Contact us →</span></div></div>';
     })
     .catch(function () { /* fallback tiles stay */ });
 })();

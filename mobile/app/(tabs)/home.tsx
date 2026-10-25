@@ -32,6 +32,7 @@ import { NotificationBell } from '@/lib/components/NotificationBell';
 import { Avatar } from '@/lib/components/Avatar';
 import { DeviceWeekCard } from '@/lib/components/DeviceWeekCard';
 import { MyNextSession } from '@/lib/components/MyNextSession';
+import { PartnersStrip } from '@/lib/components/PartnersStrip';
 import { HUB_END } from '@/lib/api/hubChallenges';
 import { Icon, type IconName } from '@/lib/components/icons';
 import { colors, fontFamily } from '@/lib/theme/tokens';
@@ -246,6 +247,10 @@ export default function Home() {
             </View>
           )}
         </View>
+
+        {/* Partners — the admin's partner directory, like the website */}
+        <PartnersStrip />
+        <View style={{ height: 24 }} />
       </ScrollView>
     </SafeAreaView>
   );

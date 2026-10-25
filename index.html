@@ -119,6 +119,7 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .story-img-box{width:100%;aspect-ratio:3/4;background:var(--dark3);border-radius:var(--radius-lg);border:1px solid rgba(255,255,255,.08);display:flex;align-items:center;justify-content:center;overflow:hidden;position:relative}
 .story-img-box::after{content:'';position:absolute;bottom:0;left:0;right:0;height:3px;background:var(--green)}
 .img-ph{font-size:11px;color:#333;letter-spacing:.08em;text-transform:uppercase;text-align:center;line-height:1.8}
+.story-img{width:100%;height:100%;object-fit:cover;display:block}
 .story-badge{position:absolute;bottom:0;right:-18px;transform:translateY(50%);width:100px;height:100px;background:var(--green);border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;z-index:3;border:3px solid var(--dark2)}
 .story-badge-num{font-family:var(--ff-display);font-size:32px;font-weight:900;color:var(--black);line-height:1}
 .story-badge-label{font-size:10px;font-weight:700;color:rgba(0,0,0,.78);letter-spacing:.06em;text-transform:uppercase}
@@ -202,18 +203,20 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .session-badge{position:absolute;top:13px;right:13px;font-size:10px;font-weight:700;letter-spacing:.05em;padding:3px 8px;border-radius:20px;background:rgba(168,255,0,.12);color:var(--green)}
 .sessions-cta-row{text-align:center;padding-top:18px;border-top:1px solid rgba(255,255,255,.06)}
 
-/* MEMBER STORIES */
+/* Partner logos (2026-09-25): tiles used to render the partner NAME as
+   text and ignore logo_url, which the directory API has always returned.
+   Shown as supplied — no greyscale filter: a partner's logo should
+   look like their logo. Tiles are dark, so the admin guidance asks for
+   a white/light logo on a transparent background. */
+.partner-logo{max-width:84%;max-height:78px;width:auto;height:auto;object-fit:contain;
+  opacity:.92;transition:opacity .25s ease,transform .25s ease}
+.partner-tile:hover .partner-logo{opacity:1;transform:scale(1.04)}
+
+/* STORIES SECTION — now the homepage blog teaser (the member
+   -stories cards it was built for were removed 2026-09-24) */
 .stories-section{padding:100px 40px}
 .stories-inner{max-width:var(--max);margin:0 auto}
 .stories-header{margin-bottom:40px}
-.stories-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;align-items:start}
-.story-card{background:var(--dark2);border-radius:var(--radius-lg);overflow:hidden;border:1px solid rgba(255,255,255,.06)}
-.story-card-img{width:100%;aspect-ratio:4/3;background:var(--dark3);display:flex;align-items:center;justify-content:center}
-.story-card-img.tall{aspect-ratio:3/4}
-.story-card-body{padding:20px}
-.story-card-stat{font-family:var(--ff-display);font-size:32px;font-weight:900;color:var(--green);line-height:1;margin-bottom:4px}
-.story-card-name{font-size:13px;font-weight:600;color:var(--white);margin-bottom:8px}
-.story-card-quote{font-size:13px;line-height:1.65;color:var(--light);font-weight:300;font-style:italic}
 
 /* 30x30 FITNESS HUB — highlighted on the home page (founder 2026-10-22).
    Hidden automatically once the hub is over (see the script below). */
@@ -325,7 +328,7 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .pitch-why{font-size:13px;line-height:1.7;color:var(--muted);border-top:1px solid rgba(255,255,255,.06);padding-top:14px;margin-top:4px}
 .pitch-why strong{color:var(--light);font-weight:500}
 .partners-grid{display:flex;gap:1px;flex-wrap:wrap;background:rgba(255,255,255,.06);border-radius:var(--radius-lg);overflow:hidden;margin-bottom:24px}
-.partner-tile{flex:1;min-width:160px;background:var(--dark3);padding:32px 24px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .25s,box-shadow .25s}
+.partner-tile{flex:1;min-width:160px;background:var(--dark3);padding:24px;min-height:126px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:background .25s,box-shadow .25s}
 .partner-tile:hover{background:var(--green);box-shadow:inset 0 0 0 1px rgba(255,255,255,.15)}
 .partner-name{font-family:var(--ff-display);font-size:20px;font-weight:800;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.06em;transition:color .25s}
 .partner-tile:hover .partner-name{color:var(--white)}
@@ -333,6 +336,26 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .partner-tile-open:hover{background:var(--green)!important}
 .partner-name-open{font-family:var(--ff-display);font-size:20px;font-weight:800;color:rgba(168,255,0,.55);text-transform:uppercase;letter-spacing:.06em;transition:color .25s}
 .partner-tile-open:hover .partner-name-open{color:var(--white)}
+/* Partners redesign (founder 2026-10-25): every logo sits on its own WHITE
+   plate, so a logo supplied on a white background (Al Wasl) or a red one
+   (Reebok — their guidelines want Vector Red on light) looks intentional
+   instead of a white box pasted on a dark tile. Name + "Visit ↗" below. */
+.partners-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;background:none;border-radius:0;overflow:visible;margin-bottom:24px}
+.partner-tile{min-width:0;padding:0;min-height:0;flex-direction:column;align-items:stretch;justify-content:flex-start;background:var(--dark2);border:1px solid rgba(255,255,255,.07);border-radius:var(--radius-lg);overflow:hidden;text-decoration:none;transition:border-color .2s,transform .2s,box-shadow .2s}
+.partner-tile:hover{background:var(--dark2);border-color:rgba(168,255,0,.45);transform:translateY(-3px);box-shadow:0 16px 36px rgba(0,0,0,.35)}
+.partner-plate{background:#fff;height:150px;display:flex;align-items:center;justify-content:center;padding:22px 30px}
+.partner-plate .partner-logo{max-width:78%;max-height:88px;opacity:1}
+.partner-tile:hover .partner-plate .partner-logo{transform:scale(1.04)}
+.partner-plate .partner-name{color:#222;font-size:22px}
+.partner-tile:hover .partner-plate .partner-name{color:#000}
+.partner-meta{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 16px}
+.partner-meta b{font-family:var(--ff-display);font-size:15px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--white);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.partner-meta span{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--green);white-space:nowrap}
+.partner-tile-open{border:1px dashed rgba(168,255,0,.4)!important;background:rgba(168,255,0,.04)!important}
+.partner-tile-open:hover{background:rgba(168,255,0,.08)!important}
+.partner-plate-open{background:transparent;border-bottom:1px dashed rgba(168,255,0,.25)}
+.partner-tile-open:hover .partner-name-open{color:var(--green)}
+@media(max-width:600px){.partners-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.partner-plate{height:110px;padding:16px 18px}.partner-plate .partner-logo{max-height:72px}.partner-name-open{font-size:16px}.partner-tile-open .partner-meta b{display:none}.partner-tile-open .partner-meta{justify-content:center}.partner-meta{padding:10px 12px}.partner-meta b{font-size:13px}.partner-meta span{font-size:10px}}
 .partner-cta-strip{background:rgba(168,255,0,.06);border:1px solid rgba(168,255,0,.15);border-radius:var(--radius-lg);padding:26px;display:flex;align-items:center;justify-content:space-between;gap:24px}
 .partner-cta-text h3{font-family:var(--ff-display);font-size:22px;font-weight:800;text-transform:uppercase;color:var(--white);margin-bottom:3px}
 .partner-cta-text p{font-size:14px;color:var(--muted)}
@@ -678,7 +701,13 @@ a.product-card:hover{transform:translateY(-4px)}
 
     <div class="story-img-col reveal" style="position:relative">
       <div class="story-img-box">
-        <p class="img-ph">Fredy + Tatiana<br>founders photo</p>
+        <!-- Hydrated from Admin → Content → Home → Story → Founders Photo.
+             Ships hidden; the CMS fetcher reveals it and hides the
+             placeholder caption once a URL lands (founder 2026-09-17:
+             the photo saved fine but the page had no <img> for it). -->
+        <img class="story-img" data-cms-section="story" data-cms-key="founder_photo"
+             alt="Fredy and Tatiana, founders of At The Park" style="display:none" loading="lazy">
+        <p class="img-ph" data-cms-key="founder_photo_caption">Fredy + Tatiana<br>founders photo</p>
       </div>
       <div class="story-timeline">
         <div class="tl-item"><div class="tl-year">2015</div><div class="tl-event">Founded Al Formal Park, Abu Dhabi</div></div>
@@ -949,18 +978,20 @@ a.product-card:hover{transform:translateY(-4px)}
          The hardcoded names below are the fallback shown until the
          directory has entries, so the strip is never empty. -->
     <div class="partners-grid reveal" id="partnersGrid">
-      <div class="partner-tile"><div class="partner-name">Dusit Thani</div></div>
-      <div class="partner-tile"><div class="partner-name">Al Wasl Water</div></div>
-      <div class="partner-tile"><div class="partner-name">DIC</div></div>
-      <div class="partner-tile"><div class="partner-name">Satyug Yoga</div></div>
-      <div class="partner-tile partner-tile-open"><a href="business.html" style="text-decoration:none"><div class="partner-name-open">Your brand here</div></a></div>
+      <div class="partner-tile"><div class="partner-plate"><div class="partner-name">Dusit Thani</div></div><div class="partner-meta"><b>Dusit Thani</b></div></div>
+      <div class="partner-tile"><div class="partner-plate"><div class="partner-name">Al Wasl Water</div></div><div class="partner-meta"><b>Al Wasl Water</b></div></div>
+      <div class="partner-tile"><div class="partner-plate"><div class="partner-name">DIC</div></div><div class="partner-meta"><b>DIC</b></div></div>
+      <div class="partner-tile"><div class="partner-plate"><div class="partner-name">Satyug Yoga</div></div><div class="partner-meta"><b>Satyug Yoga</b></div></div>
+      <div class="partner-tile partner-tile-open" role="button" tabindex="0" data-atp-call="openPartnerContact"
+           onkeydown="if(event.key==='Enter')openPartnerContact()" style="cursor:pointer"><div class="partner-plate partner-plate-open"><div class="partner-name-open">Your brand here</div></div><div class="partner-meta"><b>Become a partner</b><span>Contact us →</span></div></div>
     </div>
     <div class="partner-cta-strip reveal">
       <div class="partner-cta-text">
         <h3>Ready to move with us?</h3>
-        <p>Brand partnerships <em>and</em> corporate wellness — real numbers, a community that trusts us. See both options and pick your path.</p>
+        <p>Tell us what you have in mind and we'll come back to you — usually within one working day.</p>
       </div>
-      <a href="business.html" class="btn-primary" style="white-space:nowrap;font-size:14px;padding:12px 28px">Partners &amp; Corporate →</a>
+      <button type="button" class="btn-primary" data-atp-call="openPartnerContact"
+              style="white-space:nowrap;font-size:14px;padding:12px 28px;border:none;cursor:pointer">Contact us →</button>
     </div>
   </div>
 </section>
@@ -1002,59 +1033,7 @@ a.product-card:hover{transform:translateY(-4px)}
 </main>
 
 <!-- FOOTER -->
-<footer role="contentinfo">
-  <div class="footer-inner">
-    <div class="footer-top">
-      <div>
-        <img loading="lazy" decoding="async" id="footer-logo-img" alt="At The Park" style="height:26px;width:auto;display:block;margin-bottom:14px;">
-        <p class="footer-tagline">Changing the world's fitness — one free session at a time. Dubai, UAE. Est. 2015.</p>
-        <div class="footer-socials">
-          <a class="social-btn" href="https://www.instagram.com/atthepark_world/?hl=en" target="_blank" rel="noopener" aria-label="Instagram"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C8.74 0 8.333.015 7.053.072 5.775.132 4.905.333 4.14.63c-.789.306-1.459.717-2.126 1.384S.935 3.35.63 4.14C.333 4.905.131 5.775.072 7.053.012 8.333 0 8.74 0 12s.015 3.667.072 4.947c.06 1.277.261 2.148.558 2.913.306.788.717 1.459 1.384 2.126.667.666 1.336 1.079 2.126 1.384.766.296 1.636.499 2.913.558C8.333 23.988 8.74 24 12 24s3.667-.015 4.947-.072c1.277-.06 2.148-.262 2.913-.558.788-.306 1.459-.718 2.126-1.384.666-.667 1.079-1.335 1.384-2.126.296-.765.499-1.636.558-2.913.06-1.28.072-1.687.072-4.947s-.015-3.667-.072-4.947c-.06-1.277-.262-2.149-.558-2.913-.306-.789-.718-1.459-1.384-2.126C21.319 1.347 20.651.935 19.86.63c-.765-.297-1.636-.499-2.913-.558C15.667.012 15.26 0 12 0zm0 2.16c3.203 0 3.585.016 4.85.071 1.17.055 1.805.249 2.227.415.562.217.96.477 1.382.896.42.42.679.819.896 1.381.164.422.36 1.057.413 2.227.057 1.266.07 1.646.07 4.85s-.015 3.585-.074 4.85c-.061 1.17-.256 1.805-.421 2.227-.224.562-.479.96-.899 1.382-.419.419-.824.679-1.38.896-.42.164-1.065.36-2.235.413-1.274.057-1.649.07-4.859.07-3.211 0-3.586-.015-4.859-.074-1.171-.061-1.816-.256-2.236-.421-.569-.224-.96-.479-1.379-.899-.421-.419-.69-.824-.9-1.38-.165-.42-.359-1.065-.42-2.235-.045-1.26-.061-1.649-.061-4.844 0-3.196.016-3.586.061-4.861.061-1.17.255-1.814.42-2.234.21-.57.479-.96.9-1.381.419-.419.81-.689 1.379-.898.42-.166 1.051-.361 2.221-.421 1.275-.045 1.65-.06 4.859-.06l.045.03zm0 3.678c-3.405 0-6.162 2.76-6.162 6.162 0 3.405 2.76 6.162 6.162 6.162 3.405 0 6.162-2.76 6.162-6.162 0-3.405-2.76-6.162-6.162-6.162zM12 16c-2.21 0-4-1.79-4-4s1.79-4 4-4 4 1.79 4 4-1.79 4-4 4zm7.846-10.405c0 .795-.646 1.44-1.44 1.44-.795 0-1.44-.646-1.44-1.44 0-.794.646-1.439 1.44-1.439.793-.001 1.44.645 1.44 1.439z"/></svg></a>
-          <a class="social-btn" href="https://www.facebook.com/theparkuae/" target="_blank" rel="noopener" aria-label="Facebook"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg></a>
-          <a class="social-btn" href="https://www.tiktok.com/@attheparkuae" target="_blank" rel="noopener" aria-label="TikTok"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.57-.26-1.1-.59-1.62-.93-.01 2.92.01 5.84-.02 8.75-.08 1.4-.54 2.79-1.35 3.94-1.31 1.92-3.58 3.17-5.91 3.21-1.43.08-2.86-.31-4.08-1.03-2.02-1.19-3.44-3.37-3.65-5.71-.02-.5-.03-1-.01-1.49.18-1.9 1.12-3.72 2.58-4.96 1.66-1.44 3.98-2.13 6.15-1.72.02 1.48-.04 2.96-.04 4.44-.99-.32-2.15-.23-3.02.37-.63.41-1.11 1.04-1.36 1.75-.21.51-.15 1.07-.14 1.61.24 1.64 1.82 3.02 3.5 2.87 1.12-.01 2.19-.66 2.77-1.61.19-.33.4-.67.41-1.06.1-1.79.06-3.57.07-5.36.01-4.03-.01-8.05.02-12.07z"/></svg></a>
-          <a class="social-btn" href="https://www.linkedin.com/company/atthepark/" target="_blank" rel="noopener" aria-label="LinkedIn"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg></a>
-          <a class="social-btn" href="https://api.whatsapp.com/send?phone=971585792378" target="_blank" rel="noopener" aria-label="WhatsApp"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448L.057 24zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.371-.025-.52-.075-.149-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/></svg></a>
-        </div>
-      </div>
-      <div class="footer-col"><h4>Sessions</h4><ul><li><a href="sessions.html">All sessions</a></li><li><a href="sessions.html?tribe=better">Better tribe</a></li><li><a href="sessions.html?tribe=faster">Faster tribe</a></li><li><a href="sessions.html?tribe=stronger">Stronger tribe</a></li><li><a href="sessions.html">Weekly calendar</a></li></ul></div>
-      <div class="footer-col"><h4>Community</h4><ul><li><a href="community.html">Feed</a></li><li><a href="community.html">Member stories</a></li><li><a href="community.html">Leaderboard</a></li><li><a href="community.html">Events</a></li><li><a href="community.html">Refer a friend</a></li></ul></div>
-      <div class="footer-col"><h4>ATP</h4><ul><li><a href="index.html#story">Our story</a></li><li><a href="coaches.html">Meet the coaches</a></li><li><a href="mailto:general@atthepark.world?subject=Coach%20application">Become a coach</a></li><li><a href="partners.html">Partner with us</a></li><li><a href="https://apps.apple.com/ae/app/at-the-park-world-fitness/id6796708497">Download app</a></li></ul></div>
-      <div class="footer-col"><h4>Support</h4><ul><li><a href="contacts.html">Contact us</a></li><li><a href="terms.html#refunds">Refund policy</a></li><li><a href="mailto:general@atthepark.world">FAQ</a></li></ul>
-        <div style="margin-top:22px">
-          <p style="font-size:11px;color:var(--muted);margin-bottom:6px;letter-spacing:.06em;text-transform:uppercase">Contact</p>
-          <a href="mailto:general@atthepark.world" style="font-size:13px;color:var(--muted)">general@atthepark.world</a><br>
-          <a href="tel:+971585792378" style="font-size:13px;color:var(--muted)">+971 58 579 2378</a>
-        </div>
-      </div>
-      <div class="footer-col"><h4>Legal</h4><ul><li><a href="privacy.html">Privacy</a></li><li><a href="terms.html">Terms</a></li><li><a href="contacts.html">Contacts</a></li></ul></div>
-    </div>
-    <!-- Newsletter signup (Audit 4.2) — captures emails for content
-         marketing / weekly digest. Posts to /api/newsletter/subscribe;
-         the route upserts so resubscribes are no-ops. -->
-    <div style="background:rgba(168,255,0,.05);border:1px solid rgba(168,255,0,.18);border-radius:14px;padding:24px 28px;margin:32px 0;display:flex;align-items:center;gap:24px;flex-wrap:wrap">
-      <div style="flex:1;min-width:240px">
-        <h4 style="font-family:var(--ff-display);font-size:18px;font-weight:900;text-transform:uppercase;color:var(--white);margin-bottom:6px">📬 Stay in the loop</h4>
-        <p style="font-size:13px;color:var(--muted);line-height:1.5;margin:0">Weekly drops on new sessions, member stories, and community events. No spam — unsubscribe in one click.</p>
-      </div>
-      <form id="atp-newsletter-form" style="display:flex;gap:8px;flex-wrap:wrap;flex:1;min-width:280px;justify-content:flex-end">
-        <input type="email" id="atp-newsletter-email" required placeholder="your@email.com"
-               style="flex:1;min-width:200px;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);border-radius:8px;padding:12px 14px;color:#fff;font-size:14px;font-family:inherit"
-               aria-label="Email address">
-        <button type="submit" id="atp-newsletter-btn"
-                style="background:var(--green);color:#0a0a0a;border:none;border-radius:8px;padding:12px 20px;font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;cursor:pointer;transition:opacity .2s">
-          Subscribe
-        </button>
-      </form>
-      <div id="atp-newsletter-msg" style="flex-basis:100%;font-size:12px;color:var(--muted);min-height:0"></div>
-    </div>
-
-    <div class="footer-bottom">
-      <p class="footer-copy">© 2026 At The Park. All rights reserved. Dubai, United Arab Emirates.</p>
-      <nav class="footer-legal" aria-label="Account"><a href="/join?mode=login">Log in</a><a href="/join" style="color:var(--green)">Join free →</a></nav>
-    </div>
-  </div>
-</footer>
-
+<div id="atp-footer-host"></div>
 <script>
 var LOGO_SRC = "/atp-logo-transparent.webp";
 (function() {
@@ -1180,17 +1159,25 @@ document.querySelectorAll(".reveal").forEach(function(el){ obs.observe(el); });
       var tiles = list.map(function (p) {
         var name = esc(p.name || '');
         var url  = safeUrl(p.website_url);
-        var inner = '<div class="partner-name">' + name + '</div>';
+        var logo = safeUrl(p.logo_url);
+        // Show the logo when the admin has uploaded one; the name is the
+        // fallback AND the alt text, so the tile always says who it is.
+        // Logo on a white plate (works for any logo); name + "Visit ↗" below.
+        var plate = '<div class="partner-plate">' + (logo
+          ? '<img class="partner-logo" src="' + esc(logo) + '" alt="' + name + '" loading="lazy" decoding="async">'
+          : '<div class="partner-name">' + name + '</div>') + '</div>';
+        var meta = '<div class="partner-meta"><b>' + name + '</b>' + (url ? '<span>Visit ↗</span>' : '') + '</div>';
         return url
           ? '<a class="partner-tile" href="' + esc(url) + '" target="_blank" rel="noopener noreferrer"'
-            + ' style="text-decoration:none" aria-label="' + name + ' — opens in a new tab">' + inner + '</a>'
-          : '<div class="partner-tile">' + inner + '</div>';
+            + ' title="' + name + '" aria-label="' + name + ' — opens in a new tab">' + plate + meta + '</a>'
+          : '<div class="partner-tile" title="' + name + '">' + plate + meta + '</div>';
       }).join('');
 
       grid.innerHTML = tiles +
-        '<a class="partner-tile partner-tile-open" href="business.html" style="text-decoration:none">' +
-          '<div class="partner-name-open">Your brand here</div>' +
-        '</a>';
+        '<div class="partner-tile partner-tile-open" role="button" tabindex="0"'
+        + ' onclick="openPartnerContact()" onkeydown="if(event.key===\'Enter\')openPartnerContact()"'
+        + ' style="cursor:pointer"><div class="partner-plate partner-plate-open"><div class="partner-name-open">Your brand here</div></div>'
+        + '<div class="partner-meta"><b>Become a partner</b><span>Contact us →</span></div></div>';
     })
     .catch(function () { /* fallback tiles stay */ });
 })();
@@ -1903,5 +1890,106 @@ window.handleGoogleSignIn = async function(response) {
 })();
 </script>
 
+
+<!-- ── PARTNER CONTACT (founder 2026-09-25) ─────────────────────────
+     Replaces the links that used to push people at the pitch deck.
+     Posts to /api/partners/inquire, which emails general@atthepark.world,
+     stores the lead in Admin → Partners → Inquiries, and auto-replies to
+     the sender — all of which already existed. -->
+<div id="partnerContactModal" role="dialog" aria-modal="true" aria-labelledby="pcm-title"
+     style="display:none;position:fixed;inset:0;z-index:9993;align-items:center;justify-content:center;
+            padding:20px;background:rgba(6,6,6,.86);backdrop-filter:blur(6px)">
+  <div style="width:100%;max-width:470px;background:#0d0d0d;border:1px solid rgba(168,255,0,.28);
+              border-radius:16px;padding:26px;max-height:90vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:14px;margin-bottom:6px">
+      <h3 id="pcm-title" style="font-family:var(--ff-display);font-size:26px;font-weight:900;
+                 text-transform:uppercase;letter-spacing:-.01em;color:#fff;margin:0">Contact us</h3>
+      <button type="button" onclick="closePartnerContact()" aria-label="Close"
+              style="background:none;border:none;color:#888;font-size:24px;line-height:1;cursor:pointer;padding:0">&times;</button>
+    </div>
+    <p style="font-size:13.5px;color:var(--muted);line-height:1.6;margin:0 0 18px">
+      Partnerships, sponsorship or wellness for your team — tell us what you're thinking and we'll reply, usually within one working day.
+    </p>
+    <form id="pcm-form" novalidate>
+      <input class="pcm-in" id="pcm-name"    placeholder="Your name *" autocomplete="name">
+      <input class="pcm-in" id="pcm-email"   type="email" placeholder="Email *" autocomplete="email">
+      <input class="pcm-in" id="pcm-company" placeholder="Company (optional)" autocomplete="organization">
+      <input class="pcm-in" id="pcm-phone"   placeholder="Phone (optional)" autocomplete="tel">
+      <textarea class="pcm-in" id="pcm-msg" rows="4" placeholder="How would you like to work with us?" style="resize:vertical"></textarea>
+      <button type="submit" id="pcm-btn" class="btn-primary"
+              style="width:100%;margin-top:4px;padding:14px;font-size:14px;border:none;cursor:pointer">Send enquiry</button>
+      <p id="pcm-out" role="status" aria-live="polite" style="font-size:13px;margin:12px 0 0;min-height:1em;text-align:center"></p>
+    </form>
+  </div>
+</div>
+<style>
+  .pcm-in{width:100%;background:#0a0a0a;border:1px solid rgba(255,255,255,.12);border-radius:9px;
+          padding:12px 14px;color:#fff;font-size:14px;font-family:inherit;margin-bottom:10px}
+  .pcm-in:focus{outline:none;border-color:var(--green)}
+  .pcm-in::placeholder{color:#666}
+</style>
+<script>
+function openPartnerContact() {
+  var m = document.getElementById('partnerContactModal');
+  if (m) { m.style.display = 'flex'; var n = document.getElementById('pcm-name'); if (n) n.focus(); }
+}
+function closePartnerContact() {
+  var m = document.getElementById('partnerContactModal');
+  if (m) m.style.display = 'none';
+}
+window.openPartnerContact = openPartnerContact;
+window.closePartnerContact = closePartnerContact;
+(function () {
+  var m = document.getElementById('partnerContactModal');
+  if (m) m.addEventListener('click', function (e) { if (e.target === m) closePartnerContact(); });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') closePartnerContact();
+  });
+  var f = document.getElementById('pcm-form');
+  if (!f) return;
+  f.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    var out = document.getElementById('pcm-out');
+    var btn = document.getElementById('pcm-btn');
+    var v = function (id) { return (document.getElementById(id).value || '').trim(); };
+    var body = {
+      contact_name:  v('pcm-name'),
+      contact_email: v('pcm-email'),
+      contact_phone: v('pcm-phone'),
+      company:       v('pcm-company'),
+      message:       v('pcm-msg'),
+      source:        'homepage_contact',
+    };
+    if (!body.contact_name || body.contact_email.indexOf('@') === -1) {
+      out.textContent = 'Please add your name and a valid email.';
+      out.style.color = '#f87171';
+      return;
+    }
+    btn.disabled = true;
+    var orig = btn.textContent;
+    btn.textContent = 'Sending…';
+    out.textContent = '';
+    fetch('/api/partners/inquire', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    })
+      .then(function (r) { return r.json().catch(function () { return {}; }).then(function (b) { return { ok: r.ok, b: b }; }); })
+      .then(function (res) {
+        if (!res.ok) throw new Error(res.b.error || 'Could not send — please try again.');
+        f.innerHTML = '<div style="text-align:center;padding:22px 0">'
+          + '<div style="font-size:34px;margin-bottom:10px">\u2705</div>'
+          + '<p style="font-size:16px;color:#fff;margin:0 0 6px">Thanks — your message is on its way.</p>'
+          + '<p style="font-size:13px;color:var(--muted);margin:0">We\u2019ll reply within one working day.</p></div>';
+      })
+      .catch(function (e) {
+        out.textContent = e.message || 'Could not send — please try again.';
+        out.style.color = '#f87171';
+        btn.disabled = false;
+        btn.textContent = orig;
+      });
+  });
+})();
+</script>
 </body>
 </html>
