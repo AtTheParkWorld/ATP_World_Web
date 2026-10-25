@@ -280,7 +280,8 @@ var BOOKED_MEMBERS = [
   try {
     var token = localStorage.getItem('atp_token');
     if (!token) return;
-    var data = await fetch('/api/sessions?status=upcoming&limit=30', {
+    // for=checkin: sessions stay listed until check-ins close (3h after the end).
+    var data = await fetch('/api/sessions?status=upcoming&limit=30&for=checkin', {
       headers: {'Authorization': 'Bearer ' + token}
     }).then(function(r) { return r.json(); });
     if (data.sessions && data.sessions.length) {

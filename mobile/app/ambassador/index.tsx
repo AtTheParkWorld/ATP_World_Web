@@ -25,7 +25,8 @@ export default function AmbassadorIndex() {
   // /api/sessions?ambassador_id=me parameter.
   const q = useQuery({
     queryKey: ['amb-sessions'],
-    queryFn:  () => listSessions({ status: 'upcoming', limit: 50 }).then(r => r.sessions),
+    // for:'checkin' keeps a session here until check-ins close, 3h after it ends.
+    queryFn:  () => listSessions({ status: 'upcoming', limit: 50, for: 'checkin' }).then(r => r.sessions),
   });
 
   const sessions = q.data || [];

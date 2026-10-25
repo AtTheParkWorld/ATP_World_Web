@@ -162,6 +162,8 @@ export interface ListSessionsParams {
   status?: 'upcoming' | 'completed' | 'cancelled';
   limit?: number;
   offset?: number;
+  /** 'checkin' → scanners: keep sessions listed until check-ins close (3h after they end). */
+  for?: 'checkin';
 }
 
 export function listSessions(params: ListSessionsParams = {}): Promise<{ sessions: Session[] }> {

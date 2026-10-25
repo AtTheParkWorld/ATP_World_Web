@@ -52,6 +52,11 @@ async function _notifyTimeChange(session, oldAt) {
 // Logo: https:// , data:image/...;base64 , or an /api/cms/media/<id>
 // upload ref. Click URL: https?:// only (no javascript:/data:). Returns
 // 30x30 Challenges: only '30x30_challenge' sessions carry a challenge link.
+// Check-ins close this many hours after a session ENDS (founder 2026-10-25:
+// 3h, was 2h). Sessions auto-complete at the same point (services/points
+// autoCompleteSessions: end + 3h), after which only admins can check in.
+const CHECKIN_CLOSE_HOURS = 3;
+
 function _hubChallengeFields(body) {
   const isCh = body && body.session_category === '30x30_challenge' && /^[0-9a-f-]{36}$/i.test(String(body.hub_challenge_id || ''));
   return {
@@ -130,7 +135,15 @@ router.get('/', optionalAuth, async (req, res, next) => {
     // 2-hour grace so a session that's currently underway still
     // appears in 'upcoming' lists until it visibly finishes.
     if (status === 'upcoming') {
-      where.push(`s.scheduled_at >= NOW() - INTERVAL '2 hours'`);
+      // ?for=checkin (ambassador / coach scanners): keep a session listed
+      // until its check-in window closes — CHECKIN_CLOSE_HOURS after it
+      // ENDS (founder 2026-10-25). The 2h-after-START grace hid a 1-hour
+      // session from scanners an hour after it finished.
+      if (req.query.for === 'checkin') {
+        where.push(`COALESCE(s.ends_at, s.scheduled_at + (COALESCE(s.duration_mins, 60) || ' minutes')::interval) >= NOW() - INTERVAL '${CHECKIN_CLOSE_HOURS} hours'`);
+      } else {
+        where.push(`s.scheduled_at >= NOW() - INTERVAL '2 hours'`);
+      }
     }
 
     if (city_id)     { where.push(`s.city_id = $${idx++}`);       params.push(city_id); }
@@ -992,7 +1005,8 @@ router.post('/:id/checkin', authenticate, requireScanner, async (req, res, next)
     }
 
     // Rulebook ref: R-CHK-004 (OQ-10). Check-ins are only valid in the
-    // window [scheduled_at - 2h, ends_at + 2h]. Outside that, scanners
+    // window [scheduled_at - 2h, ends_at + CHECKIN_CLOSE_HOURS] (3h since
+    // founder 2026-10-25; was 2h). Outside that, scanners
     // get a clear error so a stale screen showing yesterday's session
     // can't mark today's members "attended". Admins can override with
     // ?force=1 (legitimate edge cases: late-finishing event, ambassador
@@ -1000,6 +1014,7 @@ router.post('/:id/checkin', authenticate, requireScanner, async (req, res, next)
     const force = req.query.force === '1' && req.member && req.member.is_admin;
     if (!force && session.scheduled_at) {
       const TWO_H_MS = 2 * 60 * 60 * 1000;
+      const CLOSE_MS = CHECKIN_CLOSE_HOURS * 60 * 60 * 1000;
       const schedMs  = new Date(session.scheduled_at).getTime();
       const endsMs   = session.ends_at
         ? new Date(session.ends_at).getTime()
@@ -1012,11 +1027,11 @@ router.post('/:id/checkin', authenticate, requireScanner, async (req, res, next)
           opens_at: new Date(schedMs - TWO_H_MS).toISOString(),
         });
       }
-      if (now > endsMs + TWO_H_MS) {
+      if (now > endsMs + CLOSE_MS) {
         return res.status(400).json({
-          error: 'Check-ins closed (more than 2 hours after the session ended).',
+          error: `Check-ins closed (more than ${CHECKIN_CLOSE_HOURS} hours after the session ended).`,
           code:  'CHECKIN_TOO_LATE',
-          closed_at: new Date(endsMs + TWO_H_MS).toISOString(),
+          closed_at: new Date(endsMs + CLOSE_MS).toISOString(),
         });
       }
     }
@@ -2008,7 +2023,8 @@ router.get('/ambassador/my-sessions', authenticate, async (req, res, next) => {
        LEFT JOIN cities c ON c.id = s.city_id
        WHERE sa.ambassador_id = $1
          AND s.status = 'upcoming'
-         AND s.scheduled_at > NOW() - INTERVAL '2 hours'
+         -- listed until check-ins close (CHECKIN_CLOSE_HOURS after the end)
+         AND COALESCE(s.ends_at, s.scheduled_at + (COALESCE(s.duration_mins, 60) || ' minutes')::interval) >= NOW() - INTERVAL '${CHECKIN_CLOSE_HOURS} hours'
        ORDER BY s.scheduled_at ASC
        LIMIT 20`,
       [req.member.id]

@@ -1246,14 +1246,21 @@ if (require.main === module) {
     // Post-session feedback nudge (founder 2026-09-04; per-booking since
     // 2026-10-25 — see services/feedbackNudge.js): every checked-in member
     // gets an in-app notification + push that opens the session's
-    // feedback form. Runs every 15 minutes so the ask lands soon after
-    // the session ends; late-approved manual check-ins are caught too.
+    // feedback form. Every MINUTE — "send it straight away after the
+    // session ends" (founder 2026-10-25); a late check-in or a manual one
+    // approved later is asked within a minute too.
     const feedbackNudge = require('./services/feedbackNudge');
     const feedbackPromptTick = async () => {
       try { await feedbackNudge.sendFeedbackNudges(); }
       catch (e) { console.warn('[feedback-nudge] pass failed:', e.message); }
     };
-    setTimeout(() => { feedbackPromptTick(); setInterval(feedbackPromptTick, 15 * 60 * 1000); }, 2 * 60 * 1000);
+    let feedbackNudgeBusy = false;   // a slow pass never overlaps the next
+    const feedbackPromptTickOnce = async () => {
+      if (feedbackNudgeBusy) return;
+      feedbackNudgeBusy = true;
+      try { await feedbackPromptTick(); } finally { feedbackNudgeBusy = false; }
+    };
+    setTimeout(() => { feedbackPromptTickOnce(); setInterval(feedbackPromptTickOnce, 60 * 1000); }, 60 * 1000);
 
     const sessionsTick = async () => {
       try { await autoCompleteSessions(); }

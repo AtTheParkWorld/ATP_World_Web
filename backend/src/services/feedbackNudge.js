@@ -8,8 +8,9 @@
  * admin's approval) never got asked. And the push carried no session id,
  * so a tap opened the inbox instead of the session's feedback form.
  *
- * Now it's per BOOKING: every attended booking of a session that has
- * ended (within the last 3 days, so a late approval still counts) gets
+ * Now it's per BOOKING, checked every minute (so it lands right after the
+ * session ends): every attended booking of a session that has ended
+ * (within the last 3 days, so a late approval still counts) gets
  * one in-app notification + one push, unless the member has already left
  * feedback. bookings.feedback_prompted_at makes it exactly-once. Members
  * the old session-level pass already asked aren't asked again.
@@ -23,6 +24,9 @@ let _schemaReady = null;
 function ensureSchema() {
   if (!_schemaReady) {
     _schemaReady = query(`ALTER TABLE bookings ADD COLUMN IF NOT EXISTS feedback_prompted_at TIMESTAMPTZ`)
+      // Runs every minute — keep the "who's due" lookup on a small index.
+      .then(() => query(`CREATE INDEX IF NOT EXISTS idx_bookings_feedback_due ON bookings(session_id)
+                           WHERE status = 'attended' AND feedback_prompted_at IS NULL`).catch(() => {}))
       .catch((e) => { _schemaReady = null; throw e; });
   }
   return _schemaReady;
