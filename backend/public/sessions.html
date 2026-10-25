@@ -2587,15 +2587,20 @@ function _loadSessionFeedback(sessionId) {
   return p;
 }
 
-// Rows without a comment stay in the rating COUNT but are skipped in
-// the visible list — a bare star row adds noise, not signal.
+// Every rating shows, comment or not — hiding the comment-less ones made
+// "Member feedback (4)" open onto "No feedback yet" (founder 2026-10-25).
+// An average line sits on top.
 function _feedbackListHtml(d) {
   if (!d) return '<div class="modal-fb-empty">Could not load feedback right now.</div>';
-  var rows = (d.feedback || []).filter(function(f){
-    return f && f.comment && String(f.comment).trim();
-  });
+  var rows = (d.feedback || []).filter(function(f){ return f && f.rating; });
   if (!rows.length) return '<div class="modal-fb-empty">No feedback yet for this session.</div>';
-  return rows.map(function(f){
+  var total = parseInt(d.rating_count, 10) || rows.length;
+  var avg = d.rating_avg != null ? Number(d.rating_avg) : null;
+  var head = avg != null && !isNaN(avg)
+    ? '<div class="modal-fb-item" style="display:flex;align-items:baseline;gap:8px"><span class="modal-fb-stars" style="font-size:18px">★ ' + avg.toFixed(1) + '</span>'
+      + '<span class="modal-fb-date">average from ' + total + ' rating' + (total === 1 ? '' : 's') + (total > rows.length ? ' · latest ' + rows.length + ' below' : '') + '</span></div>'
+    : '';
+  return head + rows.map(function(f){
     var n = Math.max(0, Math.min(5, parseInt(f.rating, 10) || 0));
     var stars = n ? '★★★★★'.slice(0, n) : '';
     var when = '';
@@ -2609,7 +2614,7 @@ function _feedbackListHtml(d) {
       +   '<span class="modal-fb-who">' + escapeHtml(f.first_name || 'ATP Member') + '</span>'
       +   (when ? '<span class="modal-fb-date">' + escapeHtml(when) + '</span>' : '')
       + '</div>'
-      + '<p class="modal-fb-comment">' + escapeHtml(String(f.comment).trim()) + '</p>'
+      + (f.comment && String(f.comment).trim() ? '<p class="modal-fb-comment">' + escapeHtml(String(f.comment).trim()) + '</p>' : '')
       + '</div>';
   }).join('');
 }

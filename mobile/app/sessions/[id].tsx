@@ -588,9 +588,10 @@ export default function SessionDetail() {
 
 /**
  * Expandable "What members say" — rolling feedback across every session
- * sharing this one's name. Collapsed row + chevron; the feedback list
- * is fetched lazily on first expand and comment-less ratings are
- * skipped (they already count toward the pill's average).
+ * sharing this one's name. Collapsed row + chevron; the list is fetched
+ * lazily on first expand. Every rating shows (comment or not): hiding the
+ * comment-less ones made "(4)" open onto "No feedback yet" (founder
+ * 2026-10-25).
  */
 function MemberFeedback({ sessionId, count }: { sessionId: string; count: number }) {
   const [expanded, setExpanded] = useState(false);
@@ -601,7 +602,9 @@ function MemberFeedback({ sessionId, count }: { sessionId: string; count: number
     enabled:  expanded && !!sessionId,
   });
 
-  const rows = (feedbackQ.data?.feedback || []).filter((f) => !!f.comment);
+  const rows = feedbackQ.data?.feedback || [];
+  const avg = feedbackQ.data?.rating_avg ? Number(feedbackQ.data.rating_avg) : null;
+  const total = feedbackQ.data?.rating_count ?? count;
 
   return (
     <View className="px-5 mt-6">
@@ -633,7 +636,16 @@ function MemberFeedback({ sessionId, count }: { sessionId: string; count: number
               No feedback yet — be the first after the session.
             </Text>
           ) : (
-            rows.map((f, i) => (
+            <>
+            {avg != null && (
+              <View className="flex-row items-center py-3.5 border-b border-white/5">
+                <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.warning }} className="text-2xl">★ {avg.toFixed(1)}</Text>
+                <Text style={{ fontFamily: fontFamily.body, color: colors.muted }} className="text-xs ml-2">
+                  average from {total} rating{total === 1 ? '' : 's'}{total > rows.length ? ` · latest ${rows.length} below` : ''}
+                </Text>
+              </View>
+            )}
+            {rows.map((f, i) => (
               <View key={`${f.created_at}-${i}`} className={`py-3.5 ${i > 0 ? 'border-t border-white/5' : ''}`}>
                 <View className="flex-row items-center">
                   <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.warning, letterSpacing: 2 }} className="text-xs">
@@ -646,11 +658,14 @@ function MemberFeedback({ sessionId, count }: { sessionId: string; count: number
                     {dayHeader(f.session_at)}
                   </Text>
                 </View>
-                <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm mt-1.5 leading-relaxed">
-                  {f.comment}
-                </Text>
+                {!!f.comment && (
+                  <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm mt-1.5 leading-relaxed">
+                    {f.comment}
+                  </Text>
+                )}
               </View>
-            ))
+            ))}
+            </>
           )}
         </View>
       )}
