@@ -1,6 +1,7 @@
 // ── ANALYTICS ─────────────────────────────────────────────────
 const router = require('express').Router();
 const { query } = require('../db');
+const _query = query;   // the unshadowed one, for /v2's per-card wrapper
 const { COUNTED_MEMBER_SQL } = require('../services/memberCount');
 const { authenticate, requireAdmin } = require('../middleware/auth');
 
@@ -204,6 +205,12 @@ router.get('/v2', authenticate, requireAdmin, async (req, res, next) => {
   try {
     const { from, to } = _parseRange(req);
     const params = [from, to];
+    // One card's query failing must not blank the whole Analytics tab
+    // (founder 2026-10-27): log it and give that card no rows.
+    const query = (sql, p) => _query(sql, p).catch((e) => {
+      console.error('[analytics/v2] query failed:', e.code || '', e.message);
+      return { rows: [] };
+    });
 
     const [
       genderRows,
@@ -245,14 +252,18 @@ router.get('/v2', authenticate, requireAdmin, async (req, res, next) => {
                       AND b.checked_in_at > NOW() - INTERVAL '30 days'
                   ) AS is_active
            FROM members m
-           WHERE m.created_at <= $2
+           WHERE m.created_at <= $1
          )
          SELECT
            SUM(CASE WHEN is_active THEN 1 ELSE 0 END)::int AS active,
            SUM(CASE WHEN is_active THEN 0 ELSE 1 END)::int AS inactive,
            COUNT(*)::int AS total
          FROM cohort`,
-        params
+        // Only the END of the range matters here. Passing [from, to] with
+        // $1 unused made Postgres reject the whole query ("could not
+        // determine data type of parameter $1", 42P18) — and with it the
+        // entire Analytics tab (founder 2026-10-27).
+        [to]
       ),
 
       // 3. New members per month
@@ -423,11 +434,11 @@ router.get('/v2/:metric/export', authenticate, requireAdmin, async (req, res, ne
                     WHERE b.member_id = m.id AND b.checked_in_at IS NOT NULL
                       AND b.checked_in_at > NOW() - INTERVAL '30 days'
                   ) AS is_active
-           FROM members m WHERE m.created_at <= $2
+           FROM members m WHERE m.created_at <= $1
          )
          SELECT 'active' AS status, SUM(CASE WHEN is_active THEN 1 ELSE 0 END)::int AS count FROM cohort
          UNION ALL
-         SELECT 'inactive', SUM(CASE WHEN is_active THEN 0 ELSE 1 END)::int FROM cohort`, params);
+         SELECT 'inactive', SUM(CASE WHEN is_active THEN 0 ELSE 1 END)::int FROM cohort`, [to]);   // $1 = end of range (42P18 fix)
       rows = r.rows; columns = ['status','count']; name = 'active-vs-inactive';
     } else if (m === 'new_per_month') {
       const r = await query(
