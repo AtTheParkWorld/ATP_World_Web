@@ -1485,7 +1485,11 @@ async function onSessionTemplateChange() {
       selectCategory(d.session_category);
       if (d.session_category === '30x30_challenge') {
         loadHubChallengeOptions(d.hub_challenge_id);
-        var stT = document.getElementById('sHubStage'); if (stT) stT.value = d.hub_challenge_stage || 'qualifier';
+        // Always back to "Qualifier slot" (founder 2026-10-28): copying the
+        // stage turned ten weekday Relay slots into Finals — the last slot
+        // created under that name was the Final, and Finals can't be
+        // booked. A Final is a one-off you pick on purpose.
+        var stT = document.getElementById('sHubStage'); if (stT) stT.value = 'qualifier';
       }
     }
     // The previous session's ambassadors come along (founder 2026-10-18),
