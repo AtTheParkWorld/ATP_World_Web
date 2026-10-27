@@ -796,10 +796,12 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
     <button class="modal-close" data-atp-call="closeModal" aria-label="Close">×</button>
 
     <!-- STEP 1: BOOKING FORM
-         Only logged-in ATP members can reach this modal (openModal()
-         redirects to /join when atpUser is null), so no name / email
-         capture here — everything ties to the member's account and the
-         confirmation goes to their registered email. -->
+         Visitors see the whole session too (founder 2026-10-27: someone
+         opening an invite link should look around without joining). The
+         join-free / log-in step only comes up when they press Book — then
+         the booking finishes by itself. No name / email capture here:
+         everything ties to the member's account and the confirmation goes
+         to their registered email. -->
     <div id="modalForm">
       <p class="modal-tribe" id="modalTribe"></p>
       <h2 class="modal-name" id="modalName"></h2>
@@ -836,6 +838,13 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
         Booking as <strong id="modalMemberName" style="color:var(--white)"></strong>
         <span style="opacity:.7"> · </span>
         <span id="modalMemberEmail" style="color:var(--muted);font-size:12px"></span>
+      </div>
+      <!-- Visitors: what happens when they press Book. -->
+      <div class="modal-member" id="modalGuest" style="display:none;margin:14px 0;padding:10px 12px;background:rgba(168,255,0,.06);border:1px solid rgba(168,255,0,.2);border-radius:10px;font-size:13px;line-height:1.5;color:var(--light)">
+        New to At The Park? Booking is free — we’ll just ask your name and email to set up your free membership.
+        <span style="display:block;margin-top:4px">Already a member?
+          <button type="button" data-atp-call="guestLogIn" style="background:none;border:none;padding:0;font:inherit;font-weight:700;color:var(--green);cursor:pointer;text-decoration:underline;text-underline-offset:2px">Log in</button>
+        </span>
       </div>
       <div class="modal-tc" style="margin:18px 0 10px">
         <!-- Collapsed by default — click to reveal the full text. Keeps
@@ -1211,7 +1220,7 @@ function toggleSessionAttendees() {
 
   var token = localStorage.getItem('atp_token') || '';
   if (!token) {
-    list.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--muted)">Log in to see which members are going.</div>';
+    list.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--muted)"><button type="button" data-atp-call="guestLogIn" style="background:none;border:none;padding:0;font:inherit;font-weight:700;color:var(--green);cursor:pointer;text-decoration:underline">Log in</button> to see which members are going.</div>';
     return;
   }
   list.innerHTML = '<div style="padding:12px;font-size:12px;color:var(--muted)">Loading…</div>';
@@ -1353,13 +1362,16 @@ function copySessionInvite() {
 }
 window.copySessionInvite = copySessionInvite;
 
+function _isMember() {
+  return !!(window.ATP && typeof window.ATP.isLoggedIn === 'function' && window.ATP.isLoggedIn());
+}
+
 function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId) {
-  if(!atpUser) {
-    // Store what they wanted to book and show auth
-    pendingSession = {name:name,tribe:tribe,dayTime:dayTime,coach:coach,loc:loc,desc:desc,day:day,time:time,id:sessionId};
-    openAuth('signup');
-    return;
-  }
+  // Founder 2026-10-27: "When a new joiner clicks a session invite link
+  // [they] should be able to see and navigate on our website without
+  // having to become a member." Visitors get the full session; joining
+  // (or logging in) is asked only when they press Book — _askToJoin().
+  var guest = !_isMember();
   // Resolve the full session record from the cached list so we can show
   // the calendar date and pick the right submit-button copy.
   var sFull = (window._atpSessions || []).find(function(x){ return x.id === sessionId; }) || null;
@@ -1367,7 +1379,7 @@ function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId)
 
   activeSession = { id:sessionId, name:name, tribe:tribe, dayTime:dayTime, coach:coach, loc:loc, desc:desc, day:day, time:time, session_type: sessionType };
   // Team sports run on courts — fetch the board so the member can pick.
-  if (typeof loadCourtsForBooking === 'function') loadCourtsForBooking(sessionId);
+  _courtsReady = (typeof loadCourtsForBooking === 'function') ? loadCourtsForBooking(sessionId) : Promise.resolve();
   // innerHTML (not textContent) so the private-company badge can sit
   // next to the tribe label. Both halves are escaped.
   document.getElementById('modalTribe').innerHTML =
@@ -1413,8 +1425,11 @@ function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId)
   document.getElementById('modalForm').style.display = 'block';
   document.getElementById('confirmPanel').style.display = 'none';
 
-  // Populate the "Booking as" line from the cached member object — we
-  // know they're logged in (openModal early-returns otherwise).
+  // Members see "Booking as …"; visitors see how booking works for them.
+  var memberBox = document.getElementById('modalMember');
+  var guestBox  = document.getElementById('modalGuest');
+  if (memberBox) memberBox.style.display = guest ? 'none' : '';
+  if (guestBox)  guestBox.style.display  = guest ? '' : 'none';
   var lsMember = null;
   try { lsMember = JSON.parse(localStorage.getItem('atp_member') || 'null'); } catch(e){}
   var src = lsMember || atpUser || {};
@@ -1502,11 +1517,62 @@ function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId)
   document.getElementById('modalOverlay').classList.add('open');
   document.body.style.overflow = 'hidden';
   // Move focus onto the T&C checkbox so keyboard users land somewhere
-  // useful — we no longer have a name input to focus.
+  // useful — we no longer have a name input to focus. A visitor (often
+  // straight off an invite link) starts at the top, on the session.
+  var box = document.getElementById('modalBox');
+  if (box && guest) box.scrollTop = 0;
   setTimeout(function(){
     var t = document.getElementById('modalTcCheck');
-    if (t) t.focus();
+    if (t) t.focus(guest ? { preventScroll: true } : undefined);
   }, 300);
+}
+
+// ── Visitors: join free / log in when they press Book ──
+// The session stays open underneath the join form (z-index 500 over
+// 200). Once they're in, the atp:login handler reopens it as a member
+// and, if they had pressed Book, finishes the booking (_resumeBooking).
+var _courtsReady = Promise.resolve();
+function _askToJoin(mode, autoBook) {
+  var s = activeSession || {};
+  if (!s.id) return;
+  pendingSession = { name:s.name, tribe:s.tribe, dayTime:s.dayTime, coach:s.coach, loc:s.loc, desc:s.desc, day:s.day, time:s.time, id:s.id, autoBook: !!autoBook };
+  openAuth(mode);
+  _joinContext();
+}
+function guestLogIn() { _askToJoin('login', false); }
+window.guestLogIn = guestLogIn;
+// Name the session in the join / log-in form (and again when they
+// switch between the two).
+function _joinContext() {
+  var sub = document.getElementById('atp-auth-sub');
+  var title = document.getElementById('atp-auth-title');
+  if (!sub || !pendingSession || !pendingSession.name) return;
+  sub.textContent = (title && /log in/i.test(title.textContent))
+    ? 'Log in to book ' + pendingSession.name + '.'
+    : 'Join free to book ' + pendingSession.name + ' — it takes 30 seconds.';
+}
+document.addEventListener('click', function(e){
+  if (e.target.closest && e.target.closest('#atp-auth-modal [data-atp-action="auth-toggle"]')) setTimeout(_joinContext, 0);
+});
+// Back from the join form as a member: book what they asked for, unless
+// they already have a place (an existing member who just logged in).
+function _resumeBooking(sessionId) {
+  if (!window.ATP || !window.ATP.sessions) return;
+  Promise.all([
+    window.ATP.sessions.get(sessionId).catch(function(){ return null; }),
+    _courtsReady.catch(function(){}),
+  ]).then(function(r){
+    if (!activeSession || activeSession.id !== sessionId) return;
+    var data = r[0];
+    if (data && ((data.myBooking && data.myBooking.status !== 'cancelled') || data.myWaitlistPos)) return;
+    var btn = document.getElementById('modalSubmit');
+    if (!btn || btn.dataset.mode === 'cancel' || btn.dataset.mode === 'waitlisted') return;
+    var tc = document.getElementById('modalTcCheck');
+    if (tc) tc.checked = true;   // they agreed before pressing Book
+    _syncBookButton();
+    if (COURT_COUNT > 0 && !SELECTED_COURT) return;   // pick a court, then Book
+    submitBooking();
+  });
 }
 
 // Toggle the submit button enabled state when the T&C checkbox flips.
@@ -1542,6 +1608,9 @@ document.addEventListener('click', function(ev){
 function closeModal() {
   document.getElementById('modalOverlay').classList.remove('open');
   document.body.style.overflow = '';
+  // A visitor who walked away from the join form: logging in later
+  // mustn't reopen (or book) this session.
+  pendingSession = null;
 }
 function closeModalAndScroll() {
   closeModal();
@@ -1650,7 +1719,7 @@ function loadCourtsForBooking(sessionId) {
   var host = document.getElementById('modalCourts');
   if (host) { host.style.display = 'none'; host.innerHTML = ''; }
   var token; try { token = localStorage.getItem('atp_token'); } catch(e){}
-  fetch('/api/sessions/' + sessionId + '/courts', {
+  return fetch('/api/sessions/' + sessionId + '/courts', {
     headers: token ? { 'Authorization': 'Bearer ' + token } : {},
   })
     .then(function(r){ return r.ok ? r.json() : null; })
@@ -1724,6 +1793,15 @@ async function submitBooking() {
   // implicitly for the logged-in member, and the confirmation goes to
   // their registered email. Pull the member object straight from the
   // local cache for the legacy showConfirmation() fallback path below.
+  // A visitor pressing Book: this is where we ask them to join free (or
+  // log in). The session stays open underneath and the booking finishes
+  // by itself once they're in. Also catches a token that expired while
+  // the modal was open.
+  if (!_isMember()) {
+    _askToJoin('signup', true);
+    return;
+  }
+
   var lsMember = null;
   try { lsMember = JSON.parse(localStorage.getItem('atp_member') || 'null'); } catch(e){}
   var src   = lsMember || atpUser || {};
@@ -1734,16 +1812,6 @@ async function submitBooking() {
   var originalLabel = btn.textContent;
   btn.disabled = true;
   btn.textContent = 'Booking...';
-
-  // Must be logged in to book — openModal already guards this, but keep
-  // the runtime check in case the token expired between modal open + submit.
-  if (!window.ATP || !window.ATP.isLoggedIn()) {
-    btn.disabled = false;
-    btn.textContent = originalLabel;
-    closeModal();
-    openAuth('login');
-    return;
-  }
 
   if (!activeSession || !activeSession.id) {
     // Every session that opens this modal comes from the live API now;
@@ -2090,6 +2158,7 @@ window.addEventListener('atp:login', function() {
     var s = pendingSession; pendingSession = null;
     setTimeout(function(){
       openModal(s.name, s.tribe, s.dayTime, s.coach, s.loc, s.desc, s.day, s.time, s.id);
+      if (s.autoBook) _resumeBooking(s.id);
     }, 200);
   } else if (typeof pendingAuthCallback !== 'undefined' && pendingAuthCallback) {
     var cb = pendingAuthCallback; pendingAuthCallback = null;
