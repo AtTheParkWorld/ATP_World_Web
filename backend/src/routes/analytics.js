@@ -575,4 +575,183 @@ router.get('/members/export', authenticate, requireAdmin, async (req, res, next)
   } catch (err) { next(err); }
 });
 
+// ══════════════════════════════════════════════════════════════════
+// Registrations, check-ins and challenge results (founder 2026-10-27:
+// "an easy way to track and extract the data from everyone who
+// registered for all our sessions (30x30 sessions and challenges
+// included), who was checked in, and the results for the challenges").
+// Admin → Registrations uses these. Dates are Dubai days.
+// ══════════════════════════════════════════════════════════════════
+const _DUBAI = 'Asia/Dubai';
+const _CAT_SQL = `CASE COALESCE(s.session_category,'regular')
+    WHEN '30x30_hub' THEN '30x30 Hub' WHEN '30x30_challenge' THEN '30x30 Challenge'
+    WHEN 'team_sports' THEN 'Team sports' WHEN 'social' THEN 'Social' ELSE 'Regular' END`;
+const _CATS = ['regular', 'social', 'team_sports', '30x30_hub', '30x30_challenge'];
+
+// ?from=YYYY-MM-DD&to=YYYY-MM-DD as whole Dubai days (default: last 30 → next 30 days).
+function _dubaiRange(req) {
+  const ymd = (v) => (/^\d{4}-\d{2}-\d{2}$/.test(String(v || '')) ? String(v) : null);
+  const today = new Date(Date.now() + 4 * 3600000).toISOString().slice(0, 10);
+  const shift = (d, n) => new Date(Date.parse(d + 'T00:00:00Z') + n * 86400000).toISOString().slice(0, 10);
+  const from = ymd(req.query.from) || shift(today, -30);
+  const to = ymd(req.query.to) || shift(today, 30);
+  return { from, to, fromTs: from + 'T00:00:00+04:00', toTs: to + 'T23:59:59.999+04:00' };
+}
+
+// ── GET /api/analytics/registrations ─────────────────────────────
+//   ?from&to (Dubai days) &category= (regular|social|team_sports|30x30_hub|30x30_challenge)
+//   &q= (session name contains) &session_id= &checked_in=1 &include_cancelled=1
+//   format=json (default): { totals, sessions:[per-session counts] }  — or,
+//     with session_id, { attendees:[…] } for that one session
+//   format=csv|xlsx: one row per registration (who, which session, checked in?)
+router.get('/registrations', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const r = _dubaiRange(req);
+    const cat = _CATS.includes(req.query.category) ? req.query.category : '';
+    const q = String(req.query.q || '').trim().slice(0, 80);
+    const sid = /^[0-9a-f-]{36}$/i.test(String(req.query.session_id || '')) ? String(req.query.session_id) : '';
+    const onlyCheckedIn = req.query.checked_in === '1';
+    const withCancelled = req.query.include_cancelled === '1';
+    const fmt = String(req.query.format || 'json').toLowerCase();
+    const params = [r.fromTs, r.toTs, cat, q, sid];
+    const sessWhere = `s.scheduled_at BETWEEN $1 AND $2
+        AND ($3::text = '' OR COALESCE(s.session_category,'regular') = $3::text)
+        AND ($4::text = '' OR s.name ILIKE '%' || $4::text || '%')
+        AND ($5::text = '' OR s.id::text = $5::text)
+        AND s.status <> 'cancelled'`;
+    const bookWhere = `${withCancelled ? 'TRUE' : "b.status NOT IN ('cancelled','pending_payment')"}
+        ${onlyCheckedIn ? 'AND b.checked_in_at IS NOT NULL' : ''}`;
+
+    if (fmt === 'json' && !sid) {
+      const { rows } = await query(
+        `SELECT s.id AS session_id,
+                to_char(s.scheduled_at AT TIME ZONE '${_DUBAI}', 'YYYY-MM-DD') AS date,
+                to_char(s.scheduled_at AT TIME ZONE '${_DUBAI}', 'HH24:MI')    AS time,
+                s.name, ${_CAT_SQL} AS category, s.location, s.capacity,
+                COUNT(b.id) FILTER (WHERE b.status NOT IN ('cancelled','pending_payment'))::int AS registered,
+                COUNT(b.id) FILTER (WHERE b.checked_in_at IS NOT NULL)::int                   AS checked_in,
+                COUNT(b.id) FILTER (WHERE b.status = 'waitlisted')::int                       AS waitlisted,
+                COUNT(b.id) FILTER (WHERE b.status = 'cancelled')::int                        AS cancelled
+           FROM sessions s
+           LEFT JOIN bookings b ON b.session_id = s.id
+          WHERE ${sessWhere}
+          GROUP BY s.id
+          ORDER BY s.scheduled_at, s.name
+          LIMIT 2000`, params);
+      const totals = rows.reduce((t, x) => ({
+        sessions: t.sessions + 1, registered: t.registered + x.registered,
+        checked_in: t.checked_in + x.checked_in, waitlisted: t.waitlisted + x.waitlisted,
+      }), { sessions: 0, registered: 0, checked_in: 0, waitlisted: 0 });
+      res.set('Cache-Control', 'no-store');
+      return res.json({ range: { from: r.from, to: r.to }, totals, sessions: rows });
+    }
+
+    const { rows } = await query(
+      `SELECT to_char(s.scheduled_at AT TIME ZONE '${_DUBAI}', 'YYYY-MM-DD') AS session_date,
+              to_char(s.scheduled_at AT TIME ZONE '${_DUBAI}', 'HH24:MI')    AS session_time,
+              s.name AS session_name, ${_CAT_SQL} AS category, s.location, c.name AS city,
+              m.member_number, m.first_name, m.last_name, m.email, m.phone, m.gender,
+              b.status AS booking_status,
+              to_char(b.created_at AT TIME ZONE '${_DUBAI}', 'YYYY-MM-DD HH24:MI') AS registered_at,
+              CASE WHEN b.checked_in_at IS NOT NULL THEN 'Yes'
+                   WHEN b.checkin_review = 'pending' THEN 'Pending approval'
+                   ELSE 'No' END AS checked_in,
+              to_char(b.checked_in_at AT TIME ZONE '${_DUBAI}', 'YYYY-MM-DD HH24:MI') AS checked_in_at,
+              b.check_in_method,
+              s.id AS session_id, m.id AS member_id
+         FROM bookings b
+         JOIN sessions s ON s.id = b.session_id
+         JOIN members  m ON m.id = b.member_id
+         LEFT JOIN cities c ON c.id = s.city_id
+        WHERE ${sessWhere} AND ${bookWhere}
+        ORDER BY s.scheduled_at, s.name, m.first_name, m.last_name
+        LIMIT 50000`, params);
+    if (fmt === 'json') {   // one session's attendee list
+      res.set('Cache-Control', 'no-store');
+      return res.json({ attendees: rows });
+    }
+    const cols = ['session_date', 'session_time', 'session_name', 'category', 'location', 'city',
+      'member_number', 'first_name', 'last_name', 'email', 'phone', 'gender',
+      'booking_status', 'registered_at', 'checked_in', 'checked_in_at', 'check_in_method'];
+    const base = (onlyCheckedIn ? 'atp-checked-in' : 'atp-registrations') + (cat ? '-' + cat.replace(/_/g, '-') : '') + '-' + r.from + '-to-' + r.to;
+    return _sendData(req, res, rows, cols, base);
+  } catch (err) { next(err); }
+});
+
+// ── GET /api/analytics/challenge-results/:id ─────────────────────
+//   ?type=attempts (every recorded result) | leaderboard (&stage=qualifier|final)
+//   &format=csv|xlsx|json
+router.get('/challenge-results/:id', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const hc = require('../services/hubChallenges');
+    await hc.ensureSchema();
+    const { rows: cr } = await query('SELECT * FROM hub_challenges WHERE id = $1', [req.params.id]);
+    const c = cr[0];
+    if (!c) return res.status(404).json({ error: 'Challenge not found' });
+    const fmtVal = (v) => {
+      if (v == null) return '';
+      const n = Number(v);
+      if (c.result_type === 'score') return String(+n) + (c.result_unit ? ' ' + c.result_unit : '');
+      const mm = Math.floor(n / 60), rest = Math.round((n - mm * 60) * 10) / 10;
+      const rs = rest % 1 ? rest.toFixed(1) : String(rest);
+      return mm ? mm + ':' + (rest < 10 ? '0' : '') + rs : rs + 's';
+    };
+    const slug = String(c.name || 'challenge').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    const type = req.query.type === 'leaderboard' ? 'leaderboard' : 'attempts';
+
+    if (type === 'attempts') {
+      const { rows } = await query(
+        `SELECT r.stage,
+                to_char(s.scheduled_at AT TIME ZONE '${_DUBAI}', 'YYYY-MM-DD') AS slot_date,
+                to_char(s.scheduled_at AT TIME ZONE '${_DUBAI}', 'HH24:MI')    AS slot_time,
+                t.name AS team, m.member_number, m.first_name, m.last_name, m.gender, m.email, m.phone,
+                r.value::float AS raw_value,
+                to_char(r.recorded_at AT TIME ZONE '${_DUBAI}', 'YYYY-MM-DD HH24:MI') AS recorded_at
+           FROM hub_challenge_results r
+           JOIN hub_challenge_entries e ON e.id = r.entry_id
+           JOIN members m ON m.id = e.member_id
+           LEFT JOIN hub_challenge_teams t ON t.id = e.team_id
+           LEFT JOIN sessions s ON s.id = r.session_id
+          WHERE r.challenge_id = $1
+          ORDER BY r.stage, s.scheduled_at, t.name NULLS FIRST, m.first_name`, [c.id]);
+      rows.forEach((x) => { x.result = fmtVal(x.raw_value); });
+      const cols = ['stage', 'slot_date', 'slot_time', 'team', 'member_number', 'first_name', 'last_name', 'gender', 'email', 'phone', 'result', 'raw_value', 'recorded_at'];
+      if (c.kind !== 'team') cols.splice(cols.indexOf('team'), 1);
+      return _sendData(req, res, rows, cols, slug + '-all-results');
+    }
+
+    const stage = req.query.stage === 'final' ? 'final' : 'qualifier';
+    const board = await hc.computeBoard(c.id, stage);
+    const out = [];
+    if (c.kind === 'team') {
+      const { rows: members } = await query(
+        `SELECT e.team_id, string_agg(m.first_name || ' ' || m.last_name, ', ' ORDER BY m.first_name) AS members
+           FROM hub_challenge_entries e JOIN members m ON m.id = e.member_id
+          WHERE e.challenge_id = $1 AND e.team_id IS NOT NULL GROUP BY e.team_id`, [c.id]);
+      const byTeam = Object.fromEntries(members.map((x) => [x.team_id, x.members]));
+      (board ? board.boards : []).forEach((b) => b.rows.forEach((x) => out.push({
+        board: b.label, rank: x.rank, team: x.name, members: byTeam[x.team_id] || '',
+        best_result: fmtVal(x.value), raw_value: x.value,
+        qualified_for_final: x.qualified == null ? '' : x.qualified ? 'Yes' : 'No',
+      })));
+      return _sendData(req, res, out, ['board', 'rank', 'team', 'members', 'best_result', 'raw_value', 'qualified_for_final'], slug + '-' + stage + '-leaderboard');
+    }
+    const ids = [];
+    (board ? board.boards : []).forEach((b) => b.rows.forEach((x) => ids.push(x.member_id)));
+    const { rows: mrows } = ids.length
+      ? await query(`SELECT id, member_number, first_name, last_name, gender, email, phone FROM members WHERE id = ANY($1::uuid[])`, [ids])
+      : { rows: [] };
+    const byId = Object.fromEntries(mrows.map((x) => [x.id, x]));
+    (board ? board.boards : []).forEach((b) => b.rows.forEach((x) => {
+      const m = byId[x.member_id] || {};
+      out.push({
+        board: b.label, rank: x.rank, member_number: m.member_number, first_name: m.first_name, last_name: m.last_name,
+        gender: m.gender, email: m.email, phone: m.phone, best_result: fmtVal(x.value), raw_value: x.value,
+        qualified_for_final: x.qualified == null ? '' : x.qualified ? 'Yes' : 'No',
+      });
+    }));
+    return _sendData(req, res, out, ['board', 'rank', 'member_number', 'first_name', 'last_name', 'gender', 'email', 'phone', 'best_result', 'raw_value', 'qualified_for_final'], slug + '-' + stage + '-leaderboard');
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

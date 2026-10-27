@@ -122,6 +122,10 @@
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 14V2.5"/><path d="M3 3h8l-2 2.5L11 8H3"/><path d="M11 12h3"/></svg>
         30x30 Challenges
       </div>
+      <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["registrations"]'>
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="2" width="10" height="12" rx="1.5"/><path d="M6 2v1.5h4V2"/><path d="M5.5 7.5l1.5 1.5 3-3"/><path d="M5.5 11.5h5"/></svg>
+        Registrations
+      </div>
       <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["coaches"]'>
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5"/></svg>
         Coaches
@@ -764,6 +768,13 @@
       <div class="admin-page-title">🏁 30x30 Challenges</div>
       <div class="admin-page-sub">Competition challenges of the DIC 30x30 Fitness Hub — individual or team, charity cause, finals cut, results and leaderboards. Members register by booking a challenge slot (Sessions → 🏁 30x30 Challenge) on the landing page, website or app.</div>
       <div id="hubChBody" style="margin-top:14px"><div style="padding:60px;text-align:center;color:#555">Loading…</div></div>
+    </div>
+
+    <!-- Registrations & check-ins (founder 2026-10-27) — admin/registrations.js -->
+    <div id="section-registrations" style="display:none">
+      <div class="admin-page-title">📋 Registrations &amp; check-ins</div>
+      <div class="admin-page-sub">Everyone who registered for a session — regular, 30x30 Hub and 30x30 Challenge slots — who checked in, and the challenge results. Click a session to see its list; download any view as CSV or Excel.</div>
+      <div id="regBody" style="margin-top:14px"><div style="padding:60px;text-align:center;color:#555">Loading…</div></div>
     </div>
 
     <div id="section-challenges" style="display:none">
@@ -2433,7 +2444,7 @@
 <div class="admin-toast" id="adminToast"></div>
 <!-- Admin modules — load order matters: core defines globals + showAdminSection
      hook in init.js wires the per-section loaders, so init.js must come last. -->
-<script src="/admin/bundle.min.js?v=506064a461"></script>
+<script src="/admin/bundle.min.js?v=917b463d1f"></script>
 
 
 

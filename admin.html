@@ -118,6 +118,14 @@
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="8" r="6"/><path d="M8 4v4l3 2"/></svg>
         Challenges
       </div>
+      <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["hubchallenges"]'>
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 14V2.5"/><path d="M3 3h8l-2 2.5L11 8H3"/><path d="M11 12h3"/></svg>
+        30x30 Challenges
+      </div>
+      <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["registrations"]'>
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="2" width="10" height="12" rx="1.5"/><path d="M6 2v1.5h4V2"/><path d="M5.5 7.5l1.5 1.5 3-3"/><path d="M5.5 11.5h5"/></svg>
+        Registrations
+      </div>
       <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["coaches"]'>
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="8" cy="6" r="3"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5"/></svg>
         Coaches
@@ -167,6 +175,16 @@
       <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["refunds"]'>
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6h8a3 3 0 010 6H7"/><path d="M6 3L3 6l3 3"/></svg>
         Refunds
+      </div>
+      <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["reports"]'>
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 14V2.5"/><path d="M3 3h8.5l-1.6 3 1.6 3H3"/></svg>
+        Reports
+        <span id="rpNavBadge" style="display:none;margin-left:auto;background:#ef4444;color:#fff;font-size:10px;font-weight:800;border-radius:999px;padding:1px 7px;line-height:16px"></span>
+      </div>
+      <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["checkins"]'>
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="2" width="12" height="12" rx="2"/><path d="M5 8.2l2 2 4-4.4"/></svg>
+        Check-in approvals
+        <span id="ciNavBadge" style="display:none;margin-left:auto;background:#f5c042;color:#000;font-size:10px;font-weight:800;border-radius:999px;padding:1px 7px;line-height:16px"></span>
       </div>
       <div class="admin-nav-item" data-atp-call="showAdminSection" data-args='["corporate"]' style="background:rgba(245,192,66,.06);border-left:3px solid #f5c042">
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="#f5c042" stroke-width="1.8"><rect x="1" y="6" width="14" height="9" rx="1"/><path d="M5 6V3a1 1 0 011-1h4a1 1 0 011 1v3"/></svg>
@@ -746,6 +764,19 @@
 
     <!-- CHALLENGES -->
     <!-- ── CHALLENGES ────────────────────────── -->
+    <div id="section-hubchallenges" style="display:none">
+      <div class="admin-page-title">🏁 30x30 Challenges</div>
+      <div class="admin-page-sub">Competition challenges of the DIC 30x30 Fitness Hub — individual or team, charity cause, finals cut, results and leaderboards. Members register by booking a challenge slot (Sessions → 🏁 30x30 Challenge) on the landing page, website or app.</div>
+      <div id="hubChBody" style="margin-top:14px"><div style="padding:60px;text-align:center;color:#555">Loading…</div></div>
+    </div>
+
+    <!-- Registrations & check-ins (founder 2026-10-27) — admin/registrations.js -->
+    <div id="section-registrations" style="display:none">
+      <div class="admin-page-title">📋 Registrations &amp; check-ins</div>
+      <div class="admin-page-sub">Everyone who registered for a session — regular, 30x30 Hub and 30x30 Challenge slots — who checked in, and the challenge results. Click a session to see its list; download any view as CSV or Excel.</div>
+      <div id="regBody" style="margin-top:14px"><div style="padding:60px;text-align:center;color:#555">Loading…</div></div>
+    </div>
+
     <div id="section-challenges" style="display:none">
       <div class="admin-page-title">Challenges</div>
       <div class="admin-page-sub">Create and publish ATP challenges. Members track progress via manual entry or connected smart devices.</div>
@@ -1880,6 +1911,30 @@
               <div id="adminTestPushResult" style="font-size:12px;color:#888;margin-top:10px;line-height:1.5">Sends one notification to the phone signed in to the ATP app as <strong style="color:#aaa">this</strong> account.</div>
             </div>
 
+            <!-- Daily WhatsApp message (founder 2026-10-08): every evening the
+                 server writes tomorrow's sessions as a WhatsApp message and
+                 pushes it to the admins; one tap opens WhatsApp with it. -->
+            <div style="background:#0d0d0d;border:1px solid #1a1a1a;border-radius:10px;padding:16px;margin-bottom:20px">
+              <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+                <div style="font-family:var(--ff-display);font-size:14px;font-weight:800;text-transform:uppercase;color:#A8FF00">📲 Daily WhatsApp message</div>
+                <button class="admin-btn" style="margin-left:auto;font-size:11px;padding:6px 12px" data-atp-call="adminWaDigestLoad">Refresh preview</button>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin-top:12px;font-size:12px;color:#aaa">
+                <label style="display:flex;align-items:center;gap:6px"><input type="checkbox" id="waDigestEnabled"> Send every day</label>
+                <label style="display:flex;align-items:center;gap:6px">at <input type="time" id="waDigestTime" value="18:00" style="background:#111;border:1px solid #2a2a2a;color:#fff;border-radius:6px;padding:4px 6px"> Dubai time</label>
+                <button class="admin-btn admin-btn-primary" style="font-size:11px;padding:6px 12px" data-atp-call="adminWaDigestSave">Save</button>
+                <span id="waDigestRecipients" style="color:#666"></span>
+              </div>
+              <textarea id="waDigestPreview" readonly style="width:100%;min-height:220px;margin-top:12px;background:#111;border:1px solid #222;border-radius:8px;color:#ddd;font:12px/1.5 ui-monospace,Menlo,monospace;padding:10px;resize:vertical">Loading…</textarea>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+                <a id="waDigestOpen" href="#" target="_blank" rel="noopener" class="admin-btn admin-btn-primary" style="font-size:11px;padding:6px 12px;text-decoration:none">Open in WhatsApp</a>
+                <button class="admin-btn" style="font-size:11px;padding:6px 12px" data-atp-call="adminWaDigestCopy">Copy text</button>
+                <button class="admin-btn" style="font-size:11px;padding:6px 12px" data-atp-call="adminWaDigestSend" data-args='[false]'>Send me the push now</button>
+                <button class="admin-btn" style="font-size:11px;padding:6px 12px" data-atp-call="adminWaDigestSend" data-args='[true]'>Push to all recipients now</button>
+              </div>
+              <div id="waDigestResult" style="font-size:12px;color:#888;margin-top:10px;line-height:1.5">The push goes to every admin and Coach Fredy's account. Tapping it on the phone opens WhatsApp with this message ready — pick the group and send.</div>
+            </div>
+
             <!-- Live dashboard tiles -->
             <div id="streamDashTiles" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:24px">
               <div style="background:#0d0d0d;border:1px solid #1a1a1a;border-radius:10px;padding:14px">
@@ -2350,6 +2405,29 @@
       </div>
     </div>
 
+    <!-- ═══ CHECK-IN APPROVALS SECTION ═══ -->
+    <div id="section-reports" style="display:none">
+      <div class="admin-page-title">🚩 Reports</div>
+      <div class="admin-page-sub">Posts, comments, members and messages reported by members. See exactly what was reported and by whom, then remove it, dismiss it, ban the author or mark it as done. Closing one report closes every open report on the same content.</div>
+      <div style="display:flex;justify-content:flex-end;margin-top:6px">
+        <button class="admin-btn" onclick="loadReportsSection()" style="font-size:11px;padding:6px 12px">↻ Refresh</button>
+      </div>
+      <div id="reportsBody" style="margin-top:14px">
+        <div style="padding:60px;text-align:center;color:#555">Loading reports…</div>
+      </div>
+    </div>
+
+    <div id="section-checkins" style="display:none">
+      <div class="admin-page-title">✅ Check-in approvals</div>
+      <div class="admin-page-sub">Manual check-ins by ambassadors and coaches — picking a member from the list instead of scanning their QR — wait here. Approve to count the attendance (streak, badges and points, at the time it happened). Reject if it shouldn't count. QR scans, booking-code check-ins and admins' own check-ins are never held.</div>
+      <div style="display:flex;justify-content:flex-end;margin-top:6px">
+        <button class="admin-btn" onclick="loadCheckinApprovalsSection()" style="font-size:11px;padding:6px 12px">↻ Refresh</button>
+      </div>
+      <div id="checkinApprovalsBody" style="margin-top:14px">
+        <div style="padding:60px;text-align:center;color:#555">Loading check-ins…</div>
+      </div>
+    </div>
+
     <!-- ═══ CORPORATE WELLNESS SECTION ═══ -->
     <div id="section-corporate" style="display:none">
       <div class="admin-page-title">🏢 Corporate Wellness</div>
@@ -2366,7 +2444,7 @@
 <div class="admin-toast" id="adminToast"></div>
 <!-- Admin modules — load order matters: core defines globals + showAdminSection
      hook in init.js wires the per-section loaders, so init.js must come last. -->
-<script src="/admin/bundle.min.js?v=506064a461"></script>
+<script src="/admin/bundle.min.js?v=917b463d1f"></script>
 
 
 
