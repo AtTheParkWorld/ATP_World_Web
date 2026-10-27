@@ -841,7 +841,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
       </div>
       <!-- Visitors: what happens when they press Book. -->
       <div class="modal-member" id="modalGuest" style="display:none;margin:14px 0;padding:10px 12px;background:rgba(168,255,0,.06);border:1px solid rgba(168,255,0,.2);border-radius:10px;font-size:13px;line-height:1.5;color:var(--light)">
-        New to At The Park? Booking is free — we’ll just ask your name and email to set up your free membership.
+        New to At The Park? Joining the community is <strong style="color:var(--white)">free</strong> — no credit card needed, and you can cancel any time. We’ll just ask your name and email when you book.
         <span style="display:block;margin-top:4px">Already a member?
           <button type="button" data-atp-call="guestLogIn" style="background:none;border:none;padding:0;font:inherit;font-weight:700;color:var(--green);cursor:pointer;text-decoration:underline;text-underline-offset:2px">Log in</button>
         </span>
@@ -1549,7 +1549,7 @@ function _joinContext() {
   if (!sub || !pendingSession || !pendingSession.name) return;
   sub.textContent = (title && /log in/i.test(title.textContent))
     ? 'Log in to book ' + pendingSession.name + '.'
-    : 'Join free to book ' + pendingSession.name + ' — it takes 30 seconds.';
+    : 'Join free to book ' + pendingSession.name + ' — no credit card needed, cancel any time.';
 }
 document.addEventListener('click', function(e){
   if (e.target.closest && e.target.closest('#atp-auth-modal [data-atp-action="auth-toggle"]')) setTimeout(_joinContext, 0);
