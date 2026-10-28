@@ -559,6 +559,133 @@ router.get('/members/:id', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── PATCH /api/admin/members/:id ──────────────────────────────
+// Founder 2026-10-28: "give the admin the power to edit members
+// details". The fields a member can edit on their own profile, plus
+// email. Roles, plan, points and wallet keep their own endpoints.
+// Body: { changes: { field: value }, expected: { field: value } }.
+// `expected` is what the admin saw when they opened the form; if one of
+// those fields has since changed (the member edited it meanwhile) the
+// save is refused rather than silently overwriting it. Per field, not
+// updated_at: a login or a check-in bumps updated_at all day long.
+const ADMIN_MEMBER_FIELDS = {
+  first_name:         { label: 'First name', max: 100, required: true },
+  last_name:          { label: 'Last name', max: 100, required: true },
+  email:              { label: 'Email', max: 255, required: true },
+  phone:              { label: 'Phone', max: 30 },
+  date_of_birth:      { label: 'Date of birth', date: true },
+  gender:             { label: 'Gender', max: 20 },
+  nationality:        { label: 'Nationality', max: 100 },
+  residence_city:     { label: 'Lives in (city)', max: 120 },
+  residence_country:  { label: 'Lives in (country)', max: 80 },
+  city_id:            { label: 'City', uuid: true },
+  country_id:         { label: 'Country', uuid: true },
+  tribe_id:           { label: 'Tribe', uuid: true },
+  sports_preferences: { label: 'Favourite sports', list: true },
+  top_size:           { label: 'Top size', max: 10 },
+  bottom_size:        { label: 'Bottom size', max: 10 },
+  padel_level:        { label: 'Padel level', max: 20 },
+  volleyball_level:   { label: 'Volleyball level', max: 20 },
+};
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+// Raw body value → the value stored, or { error }. Lists come back as
+// a JS array; '' / null clear an optional field.
+function _memberFieldValue(key, raw) {
+  const rule = ADMIN_MEMBER_FIELDS[key];
+  if (rule.list) {
+    if (raw == null) return { value: [] };
+    if (!Array.isArray(raw)) return { error: `${rule.label} must be a list` };
+    return { value: [...new Set(raw.map((x) => String(x).trim()).filter(Boolean))].slice(0, 50) };
+  }
+  let v = raw == null ? '' : String(raw).trim();
+  if (!v) return rule.required ? { error: `${rule.label} can't be empty` } : { value: null };
+  if (key === 'email') {
+    v = v.toLowerCase();
+    if (!EMAIL_RE.test(v)) return { error: 'That email address doesn’t look right' };
+  }
+  if (rule.uuid && !UUID_RE.test(v)) return { error: `${rule.label} is not valid` };
+  if (rule.date && (!DATE_RE.test(v) || isNaN(Date.parse(v)))) return { error: `${rule.label} must be a date (YYYY-MM-DD)` };
+  if (rule.max && v.length > rule.max) return { error: `${rule.label} is too long (max ${rule.max})` };
+  return { value: v };
+}
+// Comparable form of a stored / incoming value.
+const _memberFieldKey = (v) => JSON.stringify(Array.isArray(v) ? v : (v == null || v === '' ? null : String(v)));
+
+router.patch('/members/:id', async (req, res, next) => {
+  try {
+    const id = req.params.id;
+    if (!UUID_RE.test(id)) return res.status(404).json({ error: 'Member not found' });
+    const changes = (req.body && req.body.changes) || {};
+    const expected = (req.body && req.body.expected) || {};
+
+    const cols = Object.keys(ADMIN_MEMBER_FIELDS)
+      .map((k) => (k === 'date_of_birth' ? `to_char(date_of_birth, 'YYYY-MM-DD') AS date_of_birth` : k));
+    const { rows } = await query(
+      `SELECT ${cols.join(', ')}, (password_hash = 'ACCOUNT_DELETED') AS is_deleted
+         FROM members WHERE id = $1`,
+      [id]
+    );
+    if (!rows.length) return res.status(404).json({ error: 'Member not found' });
+    const cur = rows[0];
+    if (cur.is_deleted) return res.status(409).json({ error: 'This account was deleted and anonymised — it can’t be edited.' });
+
+    const updates = {};
+    for (const key of Object.keys(changes)) {
+      if (!ADMIN_MEMBER_FIELDS[key]) continue;
+      const r = _memberFieldValue(key, changes[key]);
+      if (r.error) return res.status(400).json({ error: r.error, field: key });
+      if (_memberFieldKey(r.value) === _memberFieldKey(cur[key])) continue;
+      if (Object.prototype.hasOwnProperty.call(expected, key)
+          && _memberFieldKey(cur[key]) !== _memberFieldKey(_memberFieldValue(key, expected[key]).value)) {
+        return res.status(409).json({
+          error: `${ADMIN_MEMBER_FIELDS[key].label} was changed by someone else since you opened this member. Close and reopen it, then try again.`,
+          field: key,
+        });
+      }
+      updates[key] = r.value;
+    }
+    if (!Object.keys(updates).length) return res.json({ message: 'Nothing changed', changed: [] });
+
+    if (updates.email) {
+      const { rows: dup } = await query(
+        `SELECT 1 FROM members WHERE LOWER(email) = $1 AND id <> $2 LIMIT 1`, [updates.email, id]);
+      if (dup.length) return res.status(409).json({ error: 'Another member already uses this email.', field: 'email' });
+    }
+    if (updates.phone) {
+      const { rows: dup } = await query(
+        `SELECT 1 FROM members WHERE phone = $1 AND id <> $2 LIMIT 1`, [updates.phone, id]);
+      if (dup.length) return res.status(409).json({ error: 'Another member already uses this phone number.', field: 'phone' });
+    }
+
+    const keys = Object.keys(updates);
+    const sets = keys.map((k, i) => `${k} = $${i + 1}`);
+    // A new address hasn't been proven yet — the member verifies it the
+    // next time they sign in with an emailed link.
+    if (updates.email) sets.push('email_verified = false');
+    const values = keys.map((k) => (ADMIN_MEMBER_FIELDS[k].list ? JSON.stringify(updates[k]) : updates[k]));
+    try {
+      await query(
+        `UPDATE members SET ${sets.join(', ')}, updated_at = NOW() WHERE id = $${keys.length + 1}`,
+        [...values, id]
+      );
+    } catch (e) {
+      if (e.code === '23505') return res.status(409).json({ error: 'Another member already uses this ' + (/phone/i.test(e.detail || e.constraint || '') ? 'phone number.' : 'email.') });
+      if (e.code === '23503') return res.status(400).json({ error: 'That city, country or tribe no longer exists. Reload and pick again.' });
+      throw e;
+    }
+
+    // Same completion % (and one-time 100% bonus) as a member's own edit.
+    try { await require('./members').updateProfileCompletion(id); } catch (e) {
+      console.warn('[admin member edit] profile completion failed for', id, '-', e.message);
+    }
+    const diff = {};
+    keys.forEach((k) => { diff[k] = { from: cur[k], to: updates[k] }; });
+    audit.log(req, 'member.details.updated', 'member', id, { changes: diff });
+    res.json({ message: 'Member updated', changed: keys, email_unverified: !!updates.email });
+  } catch (err) { next(err); }
+});
+
 // ── PATCH /api/admin/members/:id/ambassador ───────────────────
 // Wrapped in a transaction so the role flip + member notification land
 // atomically — partial state (role flipped but no notification) was

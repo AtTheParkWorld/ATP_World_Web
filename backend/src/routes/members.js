@@ -1403,3 +1403,4 @@ router.post('/me/export', authenticate, async (req, res, next) => {
 
 module.exports = router;
 module.exports._anonymizeMember = _anonymizeMember;
+module.exports.updateProfileCompletion = updateProfileCompletion;

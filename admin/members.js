@@ -16,6 +16,8 @@ var MEMBERS_STATE = { offset: 0, limit: 50, sort: 'joined', dir: 'desc', total: 
 var _membersReq = 0;        // only the latest response renders (typing, double tab-load)
 var _membersFiltersReady = false;
 var _mDrawerId = null;      // member open in the detail drawer
+var _mDrawerData = null;    // last GET /admin/members/:id for that member
+var _mEditing = false;      // drawer is showing the edit form
 
 // Legacy entry point — kept because older call sites still use it.
 function renderMembers() { loadMembersAPI(); }
@@ -303,12 +305,15 @@ function _mDrawerEl() {
     '<div id="memberDrawerBody"></div></aside>';
   document.body.appendChild(el);
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' && _mDrawerId) closeMemberDetail();
+    if (e.key !== 'Escape' || !_mDrawerId) return;
+    if (_mEditing) cancelMemberEdit(); else closeMemberDetail();
   });
   return el;
 }
 function closeMemberDetail() {
+  if (_mEditing && _mEditDirty() && !confirm('Discard your changes to this member?')) return;
   _mDrawerId = null;
+  _mEditing = false;
   var el = document.getElementById('memberDrawer');
   if (el) el.hidden = true;
   document.body.style.overflow = '';
@@ -318,7 +323,10 @@ async function openMemberDetail(id, refresh) {
   if (!id) return;
   var el = _mDrawerEl();
   var body = document.getElementById('memberDrawerBody');
+  // A list refresh behind the drawer must not wipe a half-filled form.
+  if (refresh && _mEditing && _mDrawerId === id) return;
   _mDrawerId = id;
+  _mEditing = false;
   if (!refresh) {
     body.innerHTML = '<div class="m-drawer-loading">Loading member…</div>';
     el.hidden = false;
@@ -333,6 +341,8 @@ async function openMemberDetail(id, refresh) {
     var d = await res.json();
     if (_mDrawerId !== id) return;
     if (!res.ok || !d.member) throw new Error(d.error || ('HTTP ' + res.status));
+    if (_mEditing) return;
+    _mDrawerData = d;
     body.innerHTML = _memberDetailHtml(d);
   } catch (e) {
     if (_mDrawerId !== id) return;
@@ -404,6 +414,7 @@ function _memberDetailHtml(d) {
       '<button class="admin-btn" onclick="closeMemberDetail()" aria-label="Close">✕</button>' +
     '</div>' +
     '<div class="m-drawer-actions">' +
+      (m.account_status === 'deleted' ? '' : '<button class="admin-btn" onclick="editMemberDetails()">✏️ Edit details</button>') +
       '<button class="admin-btn" onclick="topupWallet(this.dataset.mid, this.dataset.name)" data-mid="' + id + '" data-name="' + label + '">💰 Top up wallet</button>' +
       '<button class="admin-btn" onclick="adjustPoints(this.dataset.mid, this.dataset.name)" data-mid="' + id + '" data-name="' + label + '">± Points</button>' +
       (m.is_ambassador
@@ -523,4 +534,223 @@ function _memberDetailHtml(d) {
     : '';
 
   return head + '<div class="m-drawer-groups">' + profile + contact + billing + activity + roles + account + other + '</div>';
+}
+
+// ── EDIT MEMBER DETAILS ───────────────────────────────────────
+// Founder 2026-10-28: "give the admin the power to edit members
+// details". Same fields a member edits on their own profile, plus
+// email. Only the fields the admin actually changed are sent, along
+// with what they looked like when the form opened, so a member's own
+// edit made in the meantime is never silently overwritten.
+// Option lists mirror the app's edit form (mobile/app/profile/edit.tsx);
+// a stored value outside the list is kept as its own option.
+var _M_EDIT_OPTS = {
+  gender: ['Female', 'Male', 'Other', 'Non-binary', 'Prefer not to say'],
+  padel_level: ['Beginner', 'Level D+', 'Level C-', 'Level C+', 'Level B'],
+  volleyball_level: ['Beginner', 'Intermediate', 'Advanced'],
+  top_size: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL'],
+  bottom_size: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL'],
+};
+var _M_EDIT_TEXT = ['first_name', 'last_name', 'email', 'phone', 'date_of_birth', 'nationality',
+                    'residence_city', 'residence_country'];
+var _M_EDIT_SELECT = ['gender', 'country_id', 'city_id', 'tribe_id', 'padel_level', 'volleyball_level',
+                      'top_size', 'bottom_size'];
+var _mEditOrig = null;   // field → value when the form opened
+
+function _mSports(v) {
+  if (typeof v === 'string') { try { v = JSON.parse(v); } catch (e) { v = v ? [v] : []; } }
+  return Array.isArray(v) ? v.map(String) : [];
+}
+function _mEditOriginal(m) {
+  var o = {};
+  _M_EDIT_TEXT.concat(_M_EDIT_SELECT).forEach(function(k) {
+    var v = m[k];
+    o[k] = v == null ? '' : String(v);
+  });
+  if (o.date_of_birth) o.date_of_birth = o.date_of_birth.slice(0, 10);
+  o.sports_preferences = _mSports(m.sports_preferences);
+  return o;
+}
+function _mOpt(value, label, current) {
+  return '<option value="' + _mEsc(value) + '"' + (String(value) === String(current) ? ' selected' : '') + '>' + _mEsc(label) + '</option>';
+}
+function _mStaticSelect(key, current, blank) {
+  var list = _M_EDIT_OPTS[key].slice();
+  if (current && list.indexOf(current) < 0) list.unshift(current);
+  return '<select class="admin-form-select" id="mEdit_' + key + '">' + _mOpt('', blank || '—', current) +
+    list.map(function(x) { return _mOpt(x, x, current); }).join('') + '</select>';
+}
+// City / country / tribe: the current value is an option straight away
+// so the form is right even before (or if never) the list loads.
+function _mLookupSelect(key, current, currentLabel, blank) {
+  return '<select class="admin-form-select" id="mEdit_' + key + '">' + _mOpt('', blank, current) +
+    (current ? _mOpt(current, currentLabel || current, current) : '') + '</select>';
+}
+function _mField(label, html, full) {
+  return '<div class="admin-form-group' + (full ? ' full' : '') + '"><label class="admin-form-label">' + _mEsc(label) + '</label>' + html + '</div>';
+}
+function _mInput(key, value, type, extra) {
+  return '<input class="admin-form-input" id="mEdit_' + key + '" type="' + (type || 'text') + '" value="' + _mEsc(value) + '"' + (extra || '') + '>';
+}
+
+function editMemberDetails() {
+  var d = _mDrawerData;
+  if (!d || !d.member || d.member.id !== _mDrawerId) return;
+  var m = d.member;
+  var o = _mEditOrig = _mEditOriginal(m);
+  _mEditing = true;
+  var name = ((m.first_name || '') + ' ' + (m.last_name || '')).trim() || 'Unknown';
+  var body = document.getElementById('memberDrawerBody');
+  body.innerHTML =
+    '<div class="m-drawer-head"><div>' +
+      '<div class="m-drawer-name">Edit ' + _mEsc(name) + '</div>' +
+      '<div class="admin-member-email">' + _mEsc(m.member_number || '') + '</div>' +
+    '</div><button class="admin-btn" onclick="cancelMemberEdit()" aria-label="Back">✕</button></div>' +
+    '<form id="mEditForm" class="m-edit" onsubmit="saveMemberDetails(event)" autocomplete="off">' +
+      '<section class="m-group"><h4>Name &amp; contact</h4><div class="admin-form-grid">' +
+        _mField('First name', _mInput('first_name', o.first_name, 'text', ' required maxlength="100"')) +
+        _mField('Last name', _mInput('last_name', o.last_name, 'text', ' required maxlength="100"')) +
+        _mField('Email', _mInput('email', o.email, 'email', ' required maxlength="255"')) +
+        _mField('Phone', _mInput('phone', o.phone, 'tel', ' maxlength="30" placeholder="+971 50 000 0000"')) +
+      '</div><div class="m-edit-note" id="mEditEmailNote" hidden>Changing the email marks it unverified until the member signs in with a link sent to the new address. Their password, if they have one, stays the same.</div></section>' +
+      '<section class="m-group"><h4>Profile</h4><div class="admin-form-grid">' +
+        _mField('Date of birth', _mInput('date_of_birth', o.date_of_birth, 'date')) +
+        _mField('Gender', _mStaticSelect('gender', o.gender)) +
+        _mField('Nationality', _mInput('nationality', o.nationality, 'text', ' maxlength="100"')) +
+        _mField('Tribe', _mLookupSelect('tribe_id', o.tribe_id, m.tribe_name, 'No tribe')) +
+      '</div></section>' +
+      '<section class="m-group"><h4>Home base</h4><div class="admin-form-grid">' +
+        _mField('Country (operating)', _mLookupSelect('country_id', o.country_id, m.country_name, '—')) +
+        _mField('City (operating)', _mLookupSelect('city_id', o.city_id, m.city_name, '—')) +
+        _mField('Lives in — city', _mInput('residence_city', o.residence_city, 'text', ' maxlength="120"')) +
+        _mField('Lives in — country', _mInput('residence_country', o.residence_country, 'text', ' maxlength="80"')) +
+      '</div></section>' +
+      '<section class="m-group"><h4>Favourite sports</h4><div class="m-edit-pills" id="mEditSports">' +
+        _mSportPills([], o.sports_preferences) + '</div></section>' +
+      '<section class="m-group"><h4>Levels &amp; kit</h4><div class="admin-form-grid">' +
+        _mField('Padel level', _mStaticSelect('padel_level', o.padel_level)) +
+        _mField('Volleyball level', _mStaticSelect('volleyball_level', o.volleyball_level)) +
+        _mField('Top size', _mStaticSelect('top_size', o.top_size)) +
+        _mField('Bottom size', _mStaticSelect('bottom_size', o.bottom_size)) +
+      '</div></section>' +
+      '<div class="m-edit-err" id="mEditErr" role="alert" hidden></div>' +
+      '<div class="m-edit-bar">' +
+        '<button type="button" class="admin-btn" onclick="cancelMemberEdit()">Cancel</button>' +
+        '<button type="submit" class="admin-btn admin-btn-primary" id="mEditSave">Save changes</button>' +
+      '</div>' +
+    '</form>';
+  var panel = document.querySelector('#memberDrawer .m-drawer-panel');
+  if (panel) panel.scrollTop = 0;
+  var email = document.getElementById('mEdit_email');
+  if (email) email.addEventListener('input', function() {
+    document.getElementById('mEditEmailNote').hidden = email.value.trim().toLowerCase() === o.email.toLowerCase();
+  });
+  _mEditLoadLists(m);
+}
+
+function _mSportPills(catalogue, selected) {
+  var names = catalogue.slice();
+  selected.forEach(function(s) { if (names.indexOf(s) < 0) names.push(s); });
+  if (!names.length) return '<span class="m-muted" style="font-size:12px">Loading activities…</span>';
+  return names.map(function(n) {
+    return '<label><input type="checkbox" value="' + _mEsc(n) + '"' + (selected.indexOf(n) >= 0 ? ' checked' : '') + '> ' + _mEsc(n) + '</label>';
+  }).join('');
+}
+
+function _mEditLoadLists(m) {
+  var id = m.id;
+  var still = function() { return _mEditing && _mDrawerId === id; };
+  var fill = function(key, items, blank) {
+    var sel = document.getElementById('mEdit_' + key);
+    if (!sel || !still()) return;
+    var cur = sel.value;
+    if (cur && !items.some(function(x) { return x[0] === cur; })) items.unshift([cur, sel.options[sel.selectedIndex].text]);
+    sel.innerHTML = _mOpt('', blank, cur) + items.map(function(x) { return _mOpt(x[0], x[1], cur); }).join('');
+  };
+  var get = function(path) { return fetch(ATP_API + path).then(function(r) { return r.ok ? r.json() : {}; }).catch(function() { return {}; }); };
+  get('/sessions/tribes').then(function(d) {
+    fill('tribe_id', (d.tribes || []).map(function(t) { return [t.id, t.name]; }), 'No tribe');
+  });
+  get('/countries').then(function(d) {
+    fill('country_id', (d.countries || []).map(function(c) { return [c.id, c.name || c.code]; }), '—');
+  });
+  get('/cities').then(function(d) {
+    fill('city_id', (d.cities || []).map(function(c) { return [c.id, c.name + (c.country ? ' · ' + c.country : '')]; }), '—');
+  });
+  get('/activities').then(function(d) {
+    var host = document.getElementById('mEditSports');
+    if (!host || !still()) return;
+    var picked = _mEditSportsValue();
+    var names = (d.activities || []).map(function(a) { return a.name; }).filter(Boolean);
+    host.innerHTML = names.length || picked.length
+      ? _mSportPills(names, picked)
+      : '<span class="m-muted" style="font-size:12px">No activities configured.</span>';
+  });
+}
+
+function _mEditSportsValue() {
+  var out = [];
+  document.querySelectorAll('#mEditSports input[type=checkbox]').forEach(function(c) { if (c.checked) out.push(c.value); });
+  return out;
+}
+// field → new value, for the fields that differ from when the form opened.
+function _mEditChanges() {
+  var o = _mEditOrig || {};
+  var ch = {};
+  _M_EDIT_TEXT.concat(_M_EDIT_SELECT).forEach(function(k) {
+    var el = document.getElementById('mEdit_' + k);
+    if (!el) return;
+    var v = el.value.trim();
+    var was = o[k] || '';
+    if (k === 'email' ? v.toLowerCase() !== was.toLowerCase() : v !== was) ch[k] = v;
+  });
+  if (document.getElementById('mEditSports')) {
+    var sp = _mEditSportsValue();
+    if (sp.slice().sort().join('\n') !== (o.sports_preferences || []).slice().sort().join('\n')) ch.sports_preferences = sp;
+  }
+  return ch;
+}
+function _mEditDirty() { return _mEditing && Object.keys(_mEditChanges()).length > 0; }
+
+function cancelMemberEdit() {
+  if (_mEditDirty() && !confirm('Discard your changes to this member?')) return;
+  _mEditing = false;
+  var body = document.getElementById('memberDrawerBody');
+  if (body && _mDrawerData) body.innerHTML = _memberDetailHtml(_mDrawerData);
+}
+
+async function saveMemberDetails(ev) {
+  if (ev) ev.preventDefault();
+  var id = _mDrawerId;
+  var err = document.getElementById('mEditErr');
+  var btn = document.getElementById('mEditSave');
+  var changes = _mEditChanges();
+  var keys = Object.keys(changes);
+  if (!keys.length) { _mEditing = false; return openMemberDetail(id, true); }
+  var expected = {};
+  keys.forEach(function(k) { expected[k] = _mEditOrig[k]; });
+  err.hidden = true;
+  btn.disabled = true;
+  btn.textContent = 'Saving…';
+  try {
+    var res = await fetch(ATP_API + '/admin/members/' + encodeURIComponent(id), {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+      body: JSON.stringify({ changes: changes, expected: expected }),
+    });
+    var d = await res.json().catch(function() { return {}; });
+    if (!res.ok) throw Object.assign(new Error(d.error || ('HTTP ' + res.status)), { field: d.field });
+    _mEditing = false;
+    showToast('✅ Member details saved' + (d.email_unverified ? ' — new email marked unverified' : ''));
+    await openMemberDetail(id, true);
+    if (document.getElementById('membersTbody')) loadMembersAPI();
+  } catch (e) {
+    if (_mDrawerId !== id) return;
+    err.textContent = e.message;
+    err.hidden = false;
+    var f = e.field && document.getElementById('mEdit_' + e.field);
+    if (f) f.focus();
+    btn.disabled = false;
+    btn.textContent = 'Save changes';
+  }
 }
