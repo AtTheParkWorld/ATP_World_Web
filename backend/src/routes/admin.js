@@ -569,6 +569,7 @@ router.get('/members/:id', async (req, res, next) => {
 // save is refused rather than silently overwriting it. Per field, not
 // updated_at: a login or a check-in bumps updated_at all day long.
 const ADMIN_MEMBER_FIELDS = {
+  avatar_url:         { label: 'Profile photo', url: true, max: 2048 },
   first_name:         { label: 'First name', max: 100, required: true },
   last_name:          { label: 'Last name', max: 100, required: true },
   email:              { label: 'Email', max: 255, required: true },
@@ -605,12 +606,22 @@ function _memberFieldValue(key, raw) {
     if (!EMAIL_RE.test(v)) return { error: 'That email address doesn’t look right' };
   }
   if (rule.uuid && !UUID_RE.test(v)) return { error: `${rule.label} is not valid` };
+  // Uploaded photos are absolute URLs; never a multi-MB data: URL.
+  if (rule.url && !/^https?:\/\/\S+$/i.test(v)) return { error: `${rule.label} must be an uploaded image link` };
   if (rule.date && (!DATE_RE.test(v) || isNaN(Date.parse(v)))) return { error: `${rule.label} must be a date (YYYY-MM-DD)` };
   if (rule.max && v.length > rule.max) return { error: `${rule.label} is too long (max ${rule.max})` };
   return { value: v };
 }
-// Comparable form of a stored / incoming value.
+// Comparable form of a stored / incoming value. `expected` goes through
+// _memberFieldPlain, not the validator: an old value that wouldn't pass
+// today's rules (a data: photo, a mixed-case email) must still compare.
 const _memberFieldKey = (v) => JSON.stringify(Array.isArray(v) ? v : (v == null || v === '' ? null : String(v)));
+function _memberFieldPlain(key, raw) {
+  if (ADMIN_MEMBER_FIELDS[key].list) return Array.isArray(raw) ? raw.map((x) => String(x).trim()).filter(Boolean) : [];
+  const v = raw == null ? '' : String(raw).trim();
+  return key === 'email' ? v.toLowerCase() : v;
+}
+const _memberCurPlain = (key, v) => (key === 'email' && v ? String(v).toLowerCase() : v);
 
 router.patch('/members/:id', async (req, res, next) => {
   try {
@@ -637,7 +648,7 @@ router.patch('/members/:id', async (req, res, next) => {
       if (r.error) return res.status(400).json({ error: r.error, field: key });
       if (_memberFieldKey(r.value) === _memberFieldKey(cur[key])) continue;
       if (Object.prototype.hasOwnProperty.call(expected, key)
-          && _memberFieldKey(cur[key]) !== _memberFieldKey(_memberFieldValue(key, expected[key]).value)) {
+          && _memberFieldKey(_memberCurPlain(key, cur[key])) !== _memberFieldKey(_memberFieldPlain(key, expected[key]))) {
         return res.status(409).json({
           error: `${ADMIN_MEMBER_FIELDS[key].label} was changed by someone else since you opened this member. Close and reopen it, then try again.`,
           field: key,
@@ -664,9 +675,17 @@ router.patch('/members/:id', async (req, res, next) => {
     // next time they sign in with an emailed link.
     if (updates.email) sets.push('email_verified = false');
     const values = keys.map((k) => (ADMIN_MEMBER_FIELDS[k].list ? JSON.stringify(updates[k]) : updates[k]));
+    // A new photo also joins the member's photo gallery, as when they
+    // upload one themselves (PATCH /api/members/avatar).
+    if (updates.avatar_url) {
+      values.push(JSON.stringify([updates.avatar_url]));
+      const g = `$${values.length}::jsonb`;
+      sets.push(`avatar_gallery = CASE WHEN COALESCE(avatar_gallery, '[]'::jsonb) @> ${g} THEN avatar_gallery
+                                       ELSE COALESCE(avatar_gallery, '[]'::jsonb) || ${g} END`);
+    }
     try {
       await query(
-        `UPDATE members SET ${sets.join(', ')}, updated_at = NOW() WHERE id = $${keys.length + 1}`,
+        `UPDATE members SET ${sets.join(', ')}, updated_at = NOW() WHERE id = $${values.length + 1}`,
         [...values, id]
       );
     } catch (e) {
@@ -680,7 +699,8 @@ router.patch('/members/:id', async (req, res, next) => {
       console.warn('[admin member edit] profile completion failed for', id, '-', e.message);
     }
     const diff = {};
-    keys.forEach((k) => { diff[k] = { from: cur[k], to: updates[k] }; });
+    const short = (v) => (typeof v === 'string' && v.length > 300 ? v.slice(0, 60) + '…' : v);
+    keys.forEach((k) => { diff[k] = { from: short(cur[k]), to: short(updates[k]) }; });
     audit.log(req, 'member.details.updated', 'member', id, { changes: diff });
     res.json({ message: 'Member updated', changed: keys, email_unverified: !!updates.email });
   } catch (err) { next(err); }

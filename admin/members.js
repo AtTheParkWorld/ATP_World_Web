@@ -420,6 +420,7 @@ function _memberDetailHtml(d) {
       (m.is_ambassador
         ? '<button class="admin-btn" onclick="removeAmbassador(this.dataset.mid)" data-mid="' + id + '">Remove Ambassador</button>'
         : '<button class="admin-btn" onclick="makeAmbassador(this.dataset.mid)" data-mid="' + id + '">Make Ambassador</button>') +
+      (m.is_coach ? '<button class="admin-btn" onclick="editCoachFromMember(this.dataset.mid)" data-mid="' + id + '">🎽 Edit coach profile</button>' : '') +
     '</div>';
 
   var sports = f('sports_preferences');
@@ -551,7 +552,7 @@ var _M_EDIT_OPTS = {
   top_size: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL'],
   bottom_size: ['XS', 'S', 'M', 'L', 'XL', 'XXL', '2XL', '3XL'],
 };
-var _M_EDIT_TEXT = ['first_name', 'last_name', 'email', 'phone', 'date_of_birth', 'nationality',
+var _M_EDIT_TEXT = ['avatar_url', 'first_name', 'last_name', 'email', 'phone', 'date_of_birth', 'nationality',
                     'residence_city', 'residence_country'];
 var _M_EDIT_SELECT = ['gender', 'country_id', 'city_id', 'tribe_id', 'padel_level', 'volleyball_level',
                       'top_size', 'bottom_size'];
@@ -607,6 +608,16 @@ function editMemberDetails() {
       '<div class="admin-member-email">' + _mEsc(m.member_number || '') + '</div>' +
     '</div><button class="admin-btn" onclick="cancelMemberEdit()" aria-label="Back">✕</button></div>' +
     '<form id="mEditForm" class="m-edit" onsubmit="saveMemberDetails(event)" autocomplete="off">' +
+      '<section class="m-group"><h4>Profile photo</h4><div class="m-edit-photo">' +
+        '<div class="m-drawer-av" id="mEditAvatarPrev"></div>' +
+        '<div>' +
+          '<input type="file" id="mEditAvatarFile" accept="image/*" hidden onchange="_mEditAvatarUpload()">' +
+          '<input type="hidden" id="mEdit_avatar_url" value="' + _mEsc(o.avatar_url) + '">' +
+          '<button type="button" class="admin-btn" onclick="document.getElementById(\'mEditAvatarFile\').click()">📁 Upload new photo</button> ' +
+          '<button type="button" class="admin-btn" id="mEditAvatarRemove" onclick="_mEditAvatarRemove()">Remove photo</button>' +
+          '<div class="m-sub" style="margin-top:6px">JPG or PNG, up to 5MB.</div>' +
+        '</div>' +
+      '</div></section>' +
       '<section class="m-group"><h4>Name &amp; contact</h4><div class="admin-form-grid">' +
         _mField('First name', _mInput('first_name', o.first_name, 'text', ' required maxlength="100"')) +
         _mField('Last name', _mInput('last_name', o.last_name, 'text', ' required maxlength="100"')) +
@@ -641,11 +652,58 @@ function editMemberDetails() {
     '</form>';
   var panel = document.querySelector('#memberDrawer .m-drawer-panel');
   if (panel) panel.scrollTop = 0;
+  _mEditAvatarPreview();
   var email = document.getElementById('mEdit_email');
   if (email) email.addEventListener('input', function() {
     document.getElementById('mEditEmailNote').hidden = email.value.trim().toLowerCase() === o.email.toLowerCase();
   });
   _mEditLoadLists(m);
+}
+
+// Profile photo: atpUpload (core.js) puts the uploaded image's URL in
+// the hidden field — 'Uploading…' while it runs, the old value back if
+// it fails.
+function _mEditAvatarPreview() {
+  var el = document.getElementById('mEditAvatarPrev');
+  var v = (document.getElementById('mEdit_avatar_url') || {}).value || '';
+  var m = (_mDrawerData && _mDrawerData.member) || {};
+  var rm = document.getElementById('mEditAvatarRemove');
+  if (!el) return;
+  if (rm) rm.hidden = !v || v === 'Uploading…';
+  if (v === 'Uploading…') { el.textContent = '…'; return; }
+  if (/^(https?:\/\/|data:image\/)/i.test(v)) {
+    el.innerHTML = '<img src="' + _mEsc(v) + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">';
+    return;
+  }
+  el.textContent = (((m.first_name || '?')[0] || '?') + ((m.last_name || '?')[0] || '?')).toUpperCase();
+}
+function _mEditAvatarUpload() {
+  var field = document.getElementById('mEdit_avatar_url');
+  atpUpload('mEditAvatarFile', 'mEdit_avatar_url', 'image', 5, function(url) {
+    // The no-R2 fallback returns a site-relative /api/cms/media/… link;
+    // the app needs the full address.
+    if (url && url.charAt(0) === '/') field.value = location.origin + url;
+  });
+  _mEditAvatarPreview();
+  var t = setInterval(function() {
+    if (!_mEditing || field.value !== 'Uploading…') { clearInterval(t); _mEditAvatarPreview(); }
+  }, 400);
+}
+function _mEditAvatarRemove() {
+  var field = document.getElementById('mEdit_avatar_url');
+  if (field) field.value = '';
+  _mEditAvatarPreview();
+}
+window._mEditAvatarUpload = _mEditAvatarUpload;
+window._mEditAvatarRemove = _mEditAvatarRemove;
+
+// Coach members: straight into the Coaches tab's full profile editor.
+async function editCoachFromMember(id) {
+  closeMemberDetail();
+  if (_mDrawerId || typeof openCoachModal !== 'function') return;
+  if (typeof showAdminSection === 'function') showAdminSection('coaches');
+  await openCoachModal(id);
+  if (window._editingCoach && window._editingCoach.id === id && typeof openCoachEditor === 'function') openCoachEditor();
 }
 
 function _mSportPills(catalogue, selected) {
@@ -724,11 +782,20 @@ async function saveMemberDetails(ev) {
   var id = _mDrawerId;
   var err = document.getElementById('mEditErr');
   var btn = document.getElementById('mEditSave');
+  if ((document.getElementById('mEdit_avatar_url') || {}).value === 'Uploading…') {
+    err.textContent = 'The photo is still uploading — save again in a moment.';
+    err.hidden = false;
+    return;
+  }
   var changes = _mEditChanges();
   var keys = Object.keys(changes);
   if (!keys.length) { _mEditing = false; return openMemberDetail(id, true); }
   var expected = {};
-  keys.forEach(function(k) { expected[k] = _mEditOrig[k]; });
+  keys.forEach(function(k) {
+    // An old photo can be a multi-MB data: URL — not worth sending back.
+    if (k === 'avatar_url' && (_mEditOrig[k] || '').length > 4096) return;
+    expected[k] = _mEditOrig[k];
+  });
   err.hidden = true;
   btn.disabled = true;
   btn.textContent = 'Saving…';
