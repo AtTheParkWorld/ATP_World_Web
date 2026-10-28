@@ -28,14 +28,37 @@
 
   // ── utils ─────────────────────────────────────────────────────
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
-  function token() { try { return localStorage.getItem('atp_token') || ''; } catch (e) { return ''; } }
+  // An expired login counts as signed out (founder 2026-10-29: a team
+  // invite's Join button failed with a bare "Token expired"). The stored
+  // login is dropped, so every view offers "Sign in" and carries on after.
+  function signOutLocal() {
+    try { ['atp_token', 'atp_member', 'atp:jwt', 'atp:user'].forEach(function (k) { localStorage.removeItem(k); }); } catch (e) {}
+    // sessions.html keeps its own copy of the member for requireAuth().
+    if ('atpUser' in window) window.atpUser = null;
+  }
+  function token() {
+    var tk = '';
+    try { tk = localStorage.getItem('atp_token') || ''; } catch (e) { return ''; }
+    try {
+      var p = tk.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      var exp = JSON.parse(atob(p + '==='.slice((p.length + 3) % 4))).exp;
+      if (exp && exp * 1000 < Date.now() + 30000) { signOutLocal(); return ''; }
+    } catch (e) { /* not a readable JWT — the server decides */ }
+    return tk;
+  }
   function api(path, opts) {
     opts = opts || {};
     var h = { Accept: 'application/json' }, tk = token();
     if (tk) h.Authorization = 'Bearer ' + tk;
     if (opts.body) h['Content-Type'] = 'application/json';
     return fetch('/api' + path, { method: opts.method || 'GET', headers: h, body: opts.body ? JSON.stringify(opts.body) : undefined })
-      .then(function (r) { return r.text().then(function (t) { var d = {}; try { d = JSON.parse(t); } catch (e) {} return { status: r.status, data: d }; }); },
+      .then(function (r) { return r.text().then(function (t) {
+              var d = {}; try { d = JSON.parse(t); } catch (e) {}
+              // The server turned the login down (expired / signed out
+              // elsewhere): forget it, and the caller asks to sign in.
+              if (r.status === 401 && tk) signOutLocal();
+              return { status: r.status, data: d };
+            }); },
             function () { return { status: 0, data: { error: 'Connection error — please check your internet.' } }; });
   }
   function dubai(iso) { return new Date(Date.parse(iso) + 4 * 3600000); }
@@ -341,7 +364,7 @@
         return refreshAll().then(function () { bookedView(S.byId[c.id] || c, s, b.data && b.data.qrToken, true); });
       }
       if (b.status === 202 && b.data && b.data.status === 'waitlisted') { document.getElementById('hcAct').innerHTML = '<div class="hc-box"><h4>You’re on the waitlist</h4><p style="margin:0">Position #' + b.data.position + '. We’ll let you know in the ATP app if a spot opens.</p></div>'; return; }
-      if (b.status === 401) { close(); signIn(function () { refreshAll().then(function () { openSlot(s.id); }); }); return; }
+      if (b.status === 401) { close(); signIn(function () { refreshAll().then(function () { openSlot(s.id); }); }, location.pathname + '?slot=' + encodeURIComponent(s.id) + '#challenges'); return; }
       btn.disabled = false;
       var e = document.getElementById('hcErr'); if (e) e.textContent = (b.data && b.data.error) || 'Registration failed — please try again.';
     });
@@ -381,6 +404,7 @@
       if (name.length < 2) { err.textContent = 'Give your team a name.'; return; }
       btn.disabled = true; err.textContent = '';
       api('/hub-challenges/' + encodeURIComponent(c.id) + '/teams', { method: 'POST', body: { name: name, session_id: s.id } }).then(function (r) {
+        if (r.status === 401) { close(); signIn(function () { refreshAll().then(function () { openSlot(s.id); }); }, location.pathname + '?slot=' + encodeURIComponent(s.id) + '#challenges'); return; }
         if (r.status !== 201) { btn.disabled = false; err.textContent = (r.data && r.data.error) || 'Couldn’t create the team.'; return; }
         return refreshAll().then(function () { return book(S.byId[c.id] || c, s, btn); });
       });
@@ -411,6 +435,7 @@
       go.addEventListener('click', function () {
         go.disabled = true;
         api('/hub-challenges/teams/' + encodeURIComponent(code) + '/join', { method: 'POST' }).then(function (j) {
+          if (j.status === 401) { close(); signIn(function () { refreshAll().then(function () { openJoin(code); }); }, location.pathname + '?team=' + encodeURIComponent(code)); return; }
           if (j.status !== 201 && j.status !== 200) { go.disabled = false; document.getElementById('hcErr').textContent = (j.data && j.data.error) || 'Couldn’t join the team.'; return; }
           toast('You joined ' + t.name);
           refreshAll().then(function () {

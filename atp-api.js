@@ -35,6 +35,23 @@
     }
   })();
 
+  // A login that has run out (30 days, admins 12 h) is dropped on page
+  // load, before any page reads it. Kept, it made the page look signed
+  // in and the next action failed with a bare "Token expired" — a team
+  // invite's Join button, founder 2026-10-29 — instead of asking the
+  // member to sign in again and carrying on.
+  (function dropExpiredLogin() {
+    try {
+      var tok = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(LEGACY_TOKEN_KEY);
+      if (!tok) return;
+      var part = tok.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      var exp = JSON.parse(atob(part + '==='.slice((part.length + 3) % 4))).exp;
+      if (exp && exp * 1000 < Date.now() + 30000) {
+        [TOKEN_KEY, USER_KEY, LEGACY_TOKEN_KEY, LEGACY_USER_KEY].forEach(function (k) { localStorage.removeItem(k); });
+      }
+    } catch (e) { /* not a JWT we can read — leave it to the server */ }
+  })();
+
   // ── TOKEN MANAGEMENT ────────────────────────────────────────
   function getToken() {
     return localStorage.getItem(TOKEN_KEY) || localStorage.getItem(LEGACY_TOKEN_KEY);
