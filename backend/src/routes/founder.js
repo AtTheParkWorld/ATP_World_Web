@@ -164,8 +164,11 @@ router.get('/dashboard', authenticate, requireAdmin, async (req, res, next) => {
       `),
 
       // ── 5) ENGAGEMENT — top sessions by check-ins (last 30d) ───
+      // sessions has `name`, not `title`: selecting s.title errored into
+      // the .catch below and the panel was always empty (founder
+      // 2026-10-29). Aliased so the client keeps reading .title.
       query(`
-        SELECT s.id, s.title, s.scheduled_at,
+        SELECT s.id, s.name AS title, s.scheduled_at,
                s.session_category,
                COUNT(b.id) FILTER (WHERE b.checked_in_at IS NOT NULL)::int AS attendees,
                s.capacity
@@ -242,12 +245,16 @@ router.get('/dashboard', authenticate, requireAdmin, async (req, res, next) => {
       // ── 9) Top-rated coaches (PUBLIC feedback, all-time) ───────
       // Min 3 ratings to make the average meaningful — single 5★ doesn't
       // promote a coach above someone with 4.7 across 50 sessions.
+      // session_feedback.coach_id is only filled for 1-on-1 coach
+      // sessions; a group session's rating reaches its coach through the
+      // session (founder 2026-10-29: panel empty with 40 ratings in).
       query(`
         SELECT m.id, m.first_name, m.last_name,
                COUNT(sf.id)::int AS rating_count,
                ROUND(AVG(sf.rating)::numeric, 2) AS avg_rating
           FROM session_feedback sf
-          JOIN members m ON m.id = sf.coach_id
+          LEFT JOIN sessions s ON s.id = sf.session_id
+          JOIN members m ON m.id = COALESCE(sf.coach_id, s.coach_id)
          WHERE sf.is_public = true
            AND sf.rating IS NOT NULL
          GROUP BY m.id
@@ -260,7 +267,7 @@ router.get('/dashboard', authenticate, requireAdmin, async (req, res, next) => {
       // Avg rating per session in the recent window. Shows founder which
       // session formats are landing — useful for repeating the winners.
       query(`
-        SELECT s.id, s.title, s.scheduled_at,
+        SELECT s.id, s.name AS title, s.scheduled_at,
                s.session_category,
                COUNT(sf.id)::int AS rating_count,
                ROUND(AVG(sf.rating)::numeric, 2) AS avg_rating,
