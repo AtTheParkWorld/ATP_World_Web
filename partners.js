@@ -29,13 +29,14 @@
   }, {
     // Zoga (founder 2026-10-30): their 30x30 Hub sessions ("… by Zoga",
     // "Zoga Yoga 30x30") carry the logo, linking to their Internet City
-    // shala booking page. One official file — the terracotta wordmark on
-    // transparent — used as-is on light and dark pages (no recolouring).
+    // shala booking page. Their official files: terracotta wordmark on
+    // light pages, the white one on dark pages (founder: "use Zoga black
+    // logo on the sessions cards").
     key: 'zoga',
     name: 'Zoga',
     re: /\bzoga\b/i,
     url: 'https://zoga.ae/book-a-class-internet-city-shala/',
-    logo: 'zoga-logo.png'
+    logo: { light: 'zoga-logo.png', dark: 'zoga-logo-white.png' }
   }];
   function text(x) {
     if (!x) return '';
@@ -49,9 +50,9 @@
     return null;
   }
   // kind: 'lockup' | 'wordmark' | 'vector'; bg: 'light' (red) | 'dark' (Classic White)
-  // — Reebok's file set; a partner with one `logo` file uses it everywhere.
+  // — Reebok's file set; a partner with a `logo` pair has one file per background.
   function src(p, kind, bg) {
-    if (p.logo) return IMG + p.logo;   // single-file partners (Zoga)
+    if (p.logo) return IMG + p.logo[bg === 'dark' ? 'dark' : 'light'];   // one file per background (Zoga)
     return IMG + p.files[kind || 'lockup'] + '-' + (bg === 'dark' ? 'white' : 'red') + '.png';
   }
   // <a> around a logo — new tab, marked as a sponsored link.

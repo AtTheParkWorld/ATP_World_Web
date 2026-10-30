@@ -31,16 +31,17 @@ export interface Partner {
   file: string;
   /** width / height of each trimmed file */
   ratio: Record<PartnerKind, number>;
-  /** One official file used for every kind, on dark and light (Zoga) —
+  /** One official file per background, used for every kind (Zoga) —
    *  instead of Reebok's `<file>-<kind>-<white|red>.png` set. */
-  logo?: string;
+  logo?: { dark: string; light: string };
 }
 
 export const PARTNERS: Partner[] = [
   { key: 'reebok', name: 'Reebok', re: /reebok/i, url: 'https://www.reebok.ae/', file: 'reebok', ratio: { lockup: 360 / 182, wordmark: 360 / 74, vector: 360 / 102 } },
   // Zoga (founder 2026-10-30): its 30x30 Hub sessions ("… by Zoga") link
-  // to their Internet City shala. Terracotta wordmark as-is, no recolour.
-  { key: 'zoga', name: 'Zoga', re: /\bzoga\b/i, url: 'https://zoga.ae/book-a-class-internet-city-shala/', file: 'zoga', logo: 'zoga-logo.png', ratio: { lockup: 720 / 230, wordmark: 720 / 230, vector: 720 / 230 } },
+  // to their Internet City shala. Their white logo on the dark app, the
+  // terracotta one on light cards (QR).
+  { key: 'zoga', name: 'Zoga', re: /\bzoga\b/i, url: 'https://zoga.ae/book-a-class-internet-city-shala/', file: 'zoga', logo: { dark: 'zoga-logo-white.png', light: 'zoga-logo.png' }, ratio: { lockup: 720 / 230, wordmark: 720 / 230, vector: 720 / 230 } },
 ];
 
 type Named = { name?: string | null; session_name?: string | null; sponsor_name?: string | null };
@@ -51,7 +52,7 @@ export function partnerFor(x?: Named | string | null): Partner | null {
 }
 
 export function partnerLogoUri(p: Partner, kind: PartnerKind = 'lockup', on: 'dark' | 'light' = 'dark'): string {
-  if (p.logo) return `${WEB_BASE}/img/partners/${p.logo}`;
+  if (p.logo) return `${WEB_BASE}/img/partners/${p.logo[on]}`;
   return `${WEB_BASE}/img/partners/${p.file}-${kind}-${on === 'dark' ? 'white' : 'red'}.png`;
 }
 
@@ -99,12 +100,17 @@ export function PoweredBy({ partner, on = 'dark', height = 30, align = 'flex-end
 // each opening the partner's site. White tiles — UniCare's navy wordmark
 // doesn't read on the dark app, and Reebok's guidelines want Vector Red
 // on light.
-export interface HubPartner { key: string; name: string; url: string; logo: string; ratio: number; height: number }
+export interface HubPartner { key: string; name: string; url?: string; logo: string; ratio: number; height: number }
 
 export const HUB_PARTNERS: HubPartner[] = [
   { key: 'reebok', name: 'Reebok', url: 'https://www.reebok.ae/', logo: 'reebok-lockup-red.png', ratio: 360 / 182, height: 46 },
   { key: 'unicare', name: 'UniCare Home Health', url: 'https://www.homehealthatunicare.com', logo: 'unicare-logo.png', ratio: 900 / 352, height: 40 },
   { key: 'alwasl', name: 'Al Wasl Water', url: 'https://alwaslwater.com/', logo: 'alwasl-logo.png', ratio: 700 / 721, height: 88 },
+  // Event partners added 2026-10-30. Marriott Bonvoy + Grand Plaza have
+  // no link yet (founder to send their URLs).
+  { key: 'zoga', name: 'Zoga', url: 'https://zoga.ae/book-a-class-internet-city-shala/', logo: 'zoga-logo.png', ratio: 720 / 230, height: 36 },
+  { key: 'marriott', name: 'Marriott Bonvoy', logo: 'marriott-bonvoy-logo.png', ratio: 900 / 268, height: 36 },
+  { key: 'grandplaza', name: 'Grand Plaza Mövenpick Media City', logo: 'grandplaza-logo.png', ratio: 1000 / 295, height: 38 },
 ];
 
 export function HubPartners() {
@@ -116,9 +122,10 @@ export function HubPartners() {
         {HUB_PARTNERS.map((p) => (
           <Pressable
             key={p.key}
-            onPress={() => Linking.openURL(p.url).catch(() => {})}
-            accessibilityRole="link"
-            accessibilityLabel={`${p.name} website`}
+            onPress={p.url ? () => Linking.openURL(p.url!).catch(() => {}) : undefined}
+            disabled={!p.url}
+            accessibilityRole={p.url ? 'link' : 'image'}
+            accessibilityLabel={p.url ? `${p.name} website` : p.name}
             className="items-center justify-center rounded-atp-lg px-3 active:opacity-80"
             style={{ backgroundColor: '#ffffff', flexBasis: '47%', flexGrow: 0, height: 120 }}
           >
