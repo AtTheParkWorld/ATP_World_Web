@@ -101,8 +101,12 @@ body{font-family:var(--ff-body);background:var(--black);color:var(--white);min-h
     sub.textContent   = 'Welcome back.';
     spinner.style.display = 'none';
   }
+  // Where to go once signed in: admins straight to the admin panel
+  // (founder 2026-10-30: the recovery link left him on /profile.html),
+  // everyone else to their profile. Set from /auth/me after verify.
+  var dest = '/profile.html';
   function goToProfile() {
-    window.location.href = '/profile.html';
+    window.location.href = dest;
   }
 
   // ── Magic-link → "set a new password?" prompt ──────────────────
@@ -176,12 +180,26 @@ body{font-family:var(--ff-body);background:var(--black);color:var(--white);min-h
       }
       jwt = res.body.token;
       try { localStorage.setItem('atp_token', jwt); } catch (e) {}
-      succeed();
-      if (res.body.viaMagicLink) {
-        showPwdPrompt();
-      } else {
-        setTimeout(goToProfile, 700);
-      }
+      var viaMagicLink = res.body.viaMagicLink;
+      // Cache the member (the admin panel's gate reads atp_member.is_admin
+      // to skip its password screen) and pick the destination.
+      return fetch('/api/auth/me', { headers: { 'Authorization': 'Bearer ' + jwt } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .catch(function () { return null; })
+        .then(function (me) {
+          var m = me && me.member;
+          if (m) {
+            try { localStorage.setItem('atp_member', JSON.stringify(m)); } catch (e) {}
+            if (m.is_admin) dest = '/admin';
+          }
+          succeed();
+          if (m && m.is_admin) sub.textContent = 'Welcome back. Taking you to the admin panel.';
+          if (viaMagicLink) {
+            showPwdPrompt();
+          } else {
+            setTimeout(goToProfile, 700);
+          }
+        });
     })
     .catch(function () {
       fail('Network error — please try again.');

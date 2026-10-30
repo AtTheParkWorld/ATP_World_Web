@@ -81,6 +81,9 @@
     <input class="admin-login-input" type="password" id="adminPass" placeholder="Password" onkeydown="if(event.key==='Enter')adminLogin()" aria-label="Password">
     <button class="admin-login-btn" data-atp-call="adminLogin">Sign in</button>
     <div class="admin-login-err" id="loginErr">Invalid credentials</div>
+    <!-- Recovery (founder 2026-10-30): the emailed sign-in link now
+         brings admins straight back here, signed in. -->
+    <a href="/join?mode=login&amp;next=%2Fadmin" style="display:block;margin-top:14px;font-size:13px;color:#A8FF00;text-decoration:none">Forgot password? Get a sign-in link by email</a>
   </div>
 </div>
 
