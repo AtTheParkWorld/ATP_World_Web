@@ -41,10 +41,12 @@
     // 5:30 Run (founder 2026-10-30): the Pink Run is "In collaboration
     // with 530run" — their logo with that label instead of "Powered by"
     // (pop-up, check-in card, confirmation). One file (gold + teal on
-    // transparent) for light and dark pages. No link yet.
+    // transparent) for light and dark pages. Links to their WhatsApp
+    // community (founder 2026-10-30).
     key: 'run530',
     name: '5:30 Run',
     re: /pink run/i,
+    url: 'https://chat.whatsapp.com/JdC1ZSC2Yfc3SnFZLXwPfJ?mode=gi_t',
     label: 'In collaboration with',
     logo: { light: '530run-logo.png', dark: '530run-logo.png' }
   }];

@@ -46,8 +46,9 @@ export const PARTNERS: Partner[] = [
   // terracotta one on light cards (QR).
   { key: 'zoga', name: 'Zoga', re: /\bzoga\b/i, url: 'https://zoga.ae/book-a-class-internet-city-shala/', file: 'zoga', logo: { dark: 'zoga-logo-white.png', light: 'zoga-logo.png' }, ratio: { lockup: 720 / 230, wordmark: 720 / 230, vector: 720 / 230 } },
   // 5:30 Run (founder 2026-10-30): the Pink Run is "In collaboration with
-  // 530run". One file (gold + teal, transparent) on dark and light.
-  { key: 'run530', name: '5:30 Run', re: /pink run/i, label: 'In collaboration with', file: '530run', logo: { dark: '530run-logo.png', light: '530run-logo.png' }, ratio: { lockup: 550 / 246, wordmark: 550 / 246, vector: 550 / 246 } },
+  // 530run". One file (gold + teal, transparent) on dark and light; links
+  // to their WhatsApp community.
+  { key: 'run530', name: '5:30 Run', re: /pink run/i, url: 'https://chat.whatsapp.com/JdC1ZSC2Yfc3SnFZLXwPfJ?mode=gi_t', label: 'In collaboration with', file: '530run', logo: { dark: '530run-logo.png', light: '530run-logo.png' }, ratio: { lockup: 550 / 246, wordmark: 550 / 246, vector: 550 / 246 } },
 ];
 
 type Named = { name?: string | null; session_name?: string | null; sponsor_name?: string | null };
