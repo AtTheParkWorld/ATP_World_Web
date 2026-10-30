@@ -26,6 +26,16 @@
     files: { lockup: 'reebok-lockup', wordmark: 'reebok-wordmark', vector: 'reebok-vector' },
     // Trademark line from Reebok's guidelines (marketing material).
     legal: 'Reebok® and the Vector logo are registered trademarks of Reebok International Limited.'
+  }, {
+    // Zoga (founder 2026-10-30): their 30x30 Hub sessions ("… by Zoga",
+    // "Zoga Yoga 30x30") carry the logo, linking to their Internet City
+    // shala booking page. One official file — the terracotta wordmark on
+    // transparent — used as-is on light and dark pages (no recolouring).
+    key: 'zoga',
+    name: 'Zoga',
+    re: /\bzoga\b/i,
+    url: 'https://zoga.ae/book-a-class-internet-city-shala/',
+    logo: 'zoga-logo.png'
   }];
   function text(x) {
     if (!x) return '';
@@ -39,7 +49,9 @@
     return null;
   }
   // kind: 'lockup' | 'wordmark' | 'vector'; bg: 'light' (red) | 'dark' (Classic White)
+  // — Reebok's file set; a partner with one `logo` file uses it everywhere.
   function src(p, kind, bg) {
+    if (p.logo) return IMG + p.logo;   // single-file partners (Zoga)
     return IMG + p.files[kind || 'lockup'] + '-' + (bg === 'dark' ? 'white' : 'red') + '.png';
   }
   // <a> around a logo — new tab, marked as a sponsored link.

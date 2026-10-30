@@ -31,10 +31,16 @@ export interface Partner {
   file: string;
   /** width / height of each trimmed file */
   ratio: Record<PartnerKind, number>;
+  /** One official file used for every kind, on dark and light (Zoga) —
+   *  instead of Reebok's `<file>-<kind>-<white|red>.png` set. */
+  logo?: string;
 }
 
 export const PARTNERS: Partner[] = [
   { key: 'reebok', name: 'Reebok', re: /reebok/i, url: 'https://www.reebok.ae/', file: 'reebok', ratio: { lockup: 360 / 182, wordmark: 360 / 74, vector: 360 / 102 } },
+  // Zoga (founder 2026-10-30): its 30x30 Hub sessions ("… by Zoga") link
+  // to their Internet City shala. Terracotta wordmark as-is, no recolour.
+  { key: 'zoga', name: 'Zoga', re: /\bzoga\b/i, url: 'https://zoga.ae/book-a-class-internet-city-shala/', file: 'zoga', logo: 'zoga-logo.png', ratio: { lockup: 720 / 230, wordmark: 720 / 230, vector: 720 / 230 } },
 ];
 
 type Named = { name?: string | null; session_name?: string | null; sponsor_name?: string | null };
@@ -45,6 +51,7 @@ export function partnerFor(x?: Named | string | null): Partner | null {
 }
 
 export function partnerLogoUri(p: Partner, kind: PartnerKind = 'lockup', on: 'dark' | 'light' = 'dark'): string {
+  if (p.logo) return `${WEB_BASE}/img/partners/${p.logo}`;
   return `${WEB_BASE}/img/partners/${p.file}-${kind}-${on === 'dark' ? 'white' : 'red'}.png`;
 }
 
