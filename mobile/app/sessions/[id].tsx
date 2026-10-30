@@ -249,9 +249,9 @@ export default function SessionDetail() {
               <CorporateSessionBadge companyName={corporateName} />
             </View>
           )}
-          {(!!s.tribe_name || isPinkOctober()) && (
+          {(!!s.tribe_name || isPinkOctober(s.scheduled_at)) && (
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <PinkRibbon height={20} />
+              <PinkRibbon height={20} at={s.scheduled_at} />
               {!!s.tribe_name && (
                 <Text style={{ fontFamily: fontFamily.bodyBold, color: tColor }} className="text-xs uppercase tracking-widest">
                   {s.tribe_name}

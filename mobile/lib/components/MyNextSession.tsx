@@ -29,7 +29,7 @@ function BookingCard({ b, width }: { b: BookingRecord; width: number }) {
       className="bg-atp-dark rounded-atp-lg border border-white/5 p-5 active:opacity-70"
     >
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 4 }}>
-        <PinkRibbon height={16} />
+        <PinkRibbon height={16} at={b.scheduled_at} />
         <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.green, flex: 1 }} className="text-xs uppercase tracking-widest">
           {b.tribe_name || b.city_name || 'Booked'}
         </Text>

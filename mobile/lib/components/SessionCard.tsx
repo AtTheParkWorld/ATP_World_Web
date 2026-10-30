@@ -126,7 +126,7 @@ function _SessionCard({ session, compact, onPress }: Props) {
       <View className="flex-row items-start justify-between">
         <View className="flex-1 pr-3">
           <View className="flex-row items-center gap-2 mb-1">
-            <PinkRibbon height={16} />
+            <PinkRibbon height={16} at={session.scheduled_at} />
             {!!session.tribe_name && (
               <Text
                 style={{ fontFamily: fontFamily.bodyBold, color: tColor }}

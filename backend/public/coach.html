@@ -241,7 +241,7 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
   .cp-cf-row{grid-template-columns:1fr}
 }
 </style>
-  <script src="/pink-october.js?v=3"></script>
+  <script src="/pink-october.js?v=4"></script>
 </head>
 <body>
 
@@ -639,7 +639,7 @@ button{cursor:pointer;font-family:var(--ff-body);background:none;border:none;col
         var capacity   = sess.capacity || 0;
         var seats = capacity ? (capacity - registered) + ' seats left' : 'Open';
         return '<a class="cp-session-card" href="/sessions.html#session-' + escapeHtml(sess.id) + '">'
-          + '<div class="cp-session-when">' + escapeHtml(when) + '</div>'
+          + '<div class="cp-session-when' + (window.atpPinkCls ? window.atpPinkCls(sess.scheduled_at) : '') + '">' + escapeHtml(when) + '</div>'
           + '<div class="cp-session-name">' + escapeHtml(sess.name || 'ATP Session') + '</div>'
           + '<div class="cp-session-loc">' + escapeHtml(sess.location || '') + '</div>'
           + '<div class="cp-session-foot"><span><strong>' + registered + '</strong> booked</span><span>' + escapeHtml(seats) + '</span></div>'

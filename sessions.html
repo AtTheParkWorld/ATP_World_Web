@@ -689,7 +689,7 @@ footer{background:var(--dark2);color:var(--white);padding:64px 40px 32px;border-
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 
-  <script src="/pink-october.js?v=3"></script>
+  <script src="/pink-october.js?v=4"></script>
 </head>
 <body>
 
@@ -1384,6 +1384,7 @@ function openModal(name, tribe, dayTime, coach, loc, desc, day, time, sessionId)
   // next to the tribe label. Both halves are escaped.
   document.getElementById('modalTribe').innerHTML =
     escapeHtml((tribe || 'ATP').toUpperCase() + ' TRIBE') + _corpBadgeHtml(sFull, 'modal');
+  document.getElementById('modalTribe').className = 'modal-tribe' + (window.atpPinkCls ? window.atpPinkCls((sFull && sFull.scheduled_at)) : '');   // pink ribbon: October sessions only
   document.getElementById('modalName').textContent = name;
   var whenLabel = _formatBookingWhen(sFull, dayTime);
   // Single tighter block: when / where / coach on one line with bullet
@@ -2332,7 +2333,7 @@ function renderCalendar() {
         + '<span class="cps-meta">' + escapeHtml(coach) + (loc ? ' · ' + escapeHtml(loc) : '') + '</span>'
         + corpBadge
       : escapeHtml(time + ' ' + nm);
-    return '<div class="cal-session-dot '+tribe+corpCls+'" '
+    return '<div class="cal-session-dot '+tribe+corpCls+(window.atpPinkCls ? window.atpPinkCls(s.scheduled_at) : '')+'" '
       + 'data-id="'+String(s.id).replace(/"/g,'&quot;')+'" '
       + 'data-name="'+safeNm+'" '
       + 'data-tribe="'+tribe+'" '
@@ -2365,7 +2366,8 @@ function renderCalendar() {
     if (dow === 0)                 flips += ' flip-right';
     if (dow === 6)                 flips += ' flip-left';
 
-    var cls = 'cal-day' + (isToday?' today':'') + (daySessions.length>0?' has-session':'') + flips;
+    var cls = 'cal-day' + (isToday?' today':'') + (daySessions.length>0?' has-session':'') + flips +
+      (daySessions.length && window.atpPinkCls ? window.atpPinkCls(daySessions[0].scheduled_at) : '');   // pink ribbon: October days only
     var dots = '';
     var maxShow = 2;
     daySessions.slice(0, maxShow).forEach(function(s){ dots += _buildDot(s, dayName, false); });
@@ -2888,7 +2890,7 @@ function renderSessionsGrid(sessions) {
         ratingBadge +
       '</div>' +
       '<div class="sc-mid">' +
-        '<div class="sc-tribe">' + escapeHtml(tribeLabel) + liveBadge + '</div>' +
+        '<div class="sc-tribe' + (window.atpPinkCls ? window.atpPinkCls(s.scheduled_at) : '') + '">' + escapeHtml(tribeLabel) + liveBadge + '</div>' +
         corpBadge +
         '<h3 class="sc-name">' + escapeHtml(s.name) + '</h3>' +
         '<p class="sc-loc">' + escapeHtml(loc) + escapeHtml(cityTag) + '</p>' +

@@ -554,7 +554,7 @@ a.product-card:hover{transform:translateY(-4px)}
 
 </style>
 
-  <script src="/pink-october.js?v=3"></script>
+  <script src="/pink-october.js?v=4"></script>
 </head>
 <body>
 
@@ -1662,7 +1662,7 @@ window.handleGoogleSignIn = async function(response) {
         var rd = i > 0 ? ' rd' + i : '';
         return '<article class="session-card reveal' + rd + '">' +
           badge +
-          '<p class="session-time">' + safe(t.time) + '</p>' +
+          '<p class="session-time' + (window.atpPinkCls ? window.atpPinkCls(s.scheduled_at) : '') + '">' + safe(t.time) + '</p>' +
           '<h3 class="session-name">' + safe(s.name) + '</h3>' +
           (s.tribe_name ? '<p class="session-coach">' + safe(s.tribe_name) + ' tribe</p>' : '') +
           '<p class="session-loc">' + safe(s.location || s.city_name || '') + '</p>' +

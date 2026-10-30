@@ -706,7 +706,7 @@ img{display:block;max-width:100%}a{color:inherit;text-decoration:none}button{cur
      even if cdnjs is blocked / down. -->
 <script src="/vendor/qrcode.min.js"></script>
 
-  <script src="/pink-october.js?v=3"></script>
+  <script src="/pink-october.js?v=4"></script>
 </head>
 <body>
 
@@ -2389,7 +2389,7 @@ function loadAmbTodaySessions() {
         return '<div class="session-row">' +
           '<div class="session-dot' + (hasDot ? ' ' + slug : '') + '"' + (hasDot ? '' : ' style="background:rgba(255,255,255,.25)"') + '></div>' +
           '<div class="session-info">' +
-            '<div class="session-name">' + escapeHtml(s.name || 'Session') + '</div>' +
+            '<div class="session-name' + (window.atpPinkCls ? window.atpPinkCls(s.scheduled_at) : '') + '">' + escapeHtml(s.name || 'Session') + '</div>' +
             '<div class="session-meta">' + escapeHtml(dayLabel + ' · ' + timeStr + (s.location ? ' · ' + s.location : '')) + '</div>' +
           '</div>' +
           '<span style="font-size:11px;color:var(--green);font-weight:700;flex-shrink:0">' + booked + ' booked</span>' +
@@ -2658,6 +2658,7 @@ async function loadBookingsFromAPI() {
         qr_token: b.qr_token,
         session_id: b.session_id,
         points_reward: b.points_reward || 10,
+        scheduled_at: b.scheduled_at,   // pink ribbon: October sessions only
       };
     });
     if (apiSessions.length) {
@@ -2785,7 +2786,7 @@ function renderSessions(el, sessions) {
     return "<div class='session-row' style='cursor:pointer' onclick=\"openSessionDetailModal('" + s.id + "')\" title='View details'>" +
       "<div class='session-dot " + s.tribe + "'></div>" +
       "<div class='session-info'>" +
-        "<div class='session-name'>" + s.name + "</div>" +
+        "<div class='session-name" + (window.atpPinkCls ? window.atpPinkCls(s.scheduled_at) : '') + "'>" + s.name + "</div>" +
         "<div class='session-meta'>" + s.day + " \u00b7 " + s.time + " \u00b7 " + (s.loc || s.location || '') + "</div>" +
       "</div>" +
       "<div style='display:flex;align-items:center;gap:8px'>" +
@@ -4971,7 +4972,7 @@ function renderCoachMySessions(sessions) {
     // coaches check members in from the ATP app at the session.
     return '<div class="session-row">' +
              '<div class="session-info">' +
-               '<div class="session-name">' + escapeHtml(s.name || 'Session') + '</div>' +
+               '<div class="session-name' + (window.atpPinkCls ? window.atpPinkCls(s.scheduled_at) : '') + '">' + escapeHtml(s.name || 'Session') + '</div>' +
                '<div class="session-meta">' + escapeHtml(whenStr) + (s.location ? ' · ' + escapeHtml(s.location) : '') + '</div>' +
              '</div>' +
              '<div style="display:flex;align-items:center;gap:8px">' +
@@ -5010,7 +5011,7 @@ function loadCoachMyBookings() {
         var statusLbl = (b.status === 'attended') ? 'Attended' : 'Booked';
         return '<div class="session-row" style="cursor:pointer" onclick="window.location=\'sessions.html#' + encodeURIComponent(b.session_id || '') + '\'">' +
                  '<div class="session-info">' +
-                   '<div class="session-name">' + escapeHtml(b.session_name || 'Session') + '</div>' +
+                   '<div class="session-name' + (window.atpPinkCls ? window.atpPinkCls(b.scheduled_at) : '') + '">' + escapeHtml(b.session_name || 'Session') + '</div>' +
                    '<div class="session-meta">' + escapeHtml(whenStr) + (b.location ? ' · ' + escapeHtml(b.location) : '') + '</div>' +
                  '</div>' +
                  '<span class="session-status upcoming">' + escapeHtml(statusLbl) + '</span>' +
