@@ -5,7 +5,7 @@
   <link rel="stylesheet" href="/hub30x30.css?v=5">
   <link rel="preload" as="image" href="/atp-logo-transparent.webp" type="image/webp">
   <script src="/atp.bundle.min.js?v=c430604b10"></script>
-  <script src="/partners.js?v=3"></script>
+  <script src="/partners.js?v=4"></script>
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
@@ -2575,7 +2575,7 @@ function _sponsorStripHtml(s, variant) {
   var gridSpan = variant === 'card' ? 'grid-column:1/-1;' : '';
   return '<div class="sc-sponsor" style="' + gridSpan + 'display:flex;align-items:center;gap:8px;justify-content:' + align +
          ';margin-top:' + mt + ';padding-top:10px;border-top:1px solid rgba(255,255,255,.07)">' +
-         '<span style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#888)">Powered by</span>' +
+         '<span style="font-size:9px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--muted,#888)">' + escapeHtml((partner && partner.label) || 'Powered by') + '</span>' +
          inner + '</div>';
 }
 

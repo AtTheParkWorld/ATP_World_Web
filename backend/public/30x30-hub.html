@@ -398,6 +398,13 @@ td.sched-empty{height:120px}
 .mdl-sp img{height:26px;max-width:120px}
 .done-sp{display:flex;justify-content:center;margin:0 auto 12px}.done-sp img{height:40px;max-width:160px}
 .pass-sp img{height:34px;max-width:110px}
+/* partner label ("In collaboration with" — 5:30 Run on the Pink Run) */
+.done-sp small,.pass-sp small{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
+.done-sp{flex-direction:column;gap:4px}
+.pass-sp{flex-direction:column;align-items:flex-end;gap:2px}.pass .pb .pass-sp small{font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
+.collab{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:-6px 0 18px}
+.collab small{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
+.collab img{height:72px;width:auto}
 .pass .qrimg{margin:4px auto 14px;border:0}
 .ch-sp{display:flex;margin-bottom:12px}.ch-sp img{height:34px;max-width:120px}
 .chc .soon.open{color:#1a8f4a}
@@ -421,7 +428,7 @@ a.p-logo:hover{border-color:var(--sand);box-shadow:0 6px 24px rgba(0,0,0,.06)}
 .side-pt img{height:52px;width:auto}
 .foot-legal{font-size:11px;opacity:.85}
 </style>
-<script src="/partners.js?v=3"></script>
+<script src="/partners.js?v=4"></script>
 </head>
 <body>
 
@@ -458,6 +465,7 @@ a.p-logo:hover{border-color:var(--sand);box-shadow:0 6px 24px rgba(0,0,0,.06)}
       <p>As part of Dubai Fitness Challenge, the Dubai Internet City 30x30 Fitness Hub turns the community into a wellness destination for a whole month.</p>
       <p>Curated by At The Park with Dubai Internet City, the programme brings free daily sessions — running, yoga, strength and conditioning, dance and mindfulness — led by professional coaches, plus the 30x30 Challenge Series and the Relay Rumble.</p>
       <p>It all starts on the <b>morning of Saturday 31 October with the Pink Run</b>.</p>
+      <p class="collab"><small>Pink Run in collaboration with</small><img src="/img/partners/530run-logo.png" alt="5:30 Run"></p>
       <p>Open to everyone. <b>Book here or in the ATP app</b> — one account, one booking, one QR code to check in.</p>
       <ol class="steps">
         <li><b>Join ATP — free</b>Create your account in under a minute, on the web or in the app.</li>
@@ -640,7 +648,7 @@ a.p-logo:hover{border-color:var(--sand);box-shadow:0 6px 24px rgba(0,0,0,.06)}
     var p = window.ATPPartners && window.ATPPartners.match(s);
     var url = (s && /^https:\/\//i.test(s.sponsor_url || '') && s.sponsor_url) || (p && p.url) || '';
     if (s && s.sponsor_logo_url) return { name: s.sponsor_name || 'Partner', logo: s.sponsor_logo_url, url: url };
-    return p ? { name: p.name, logo: window.ATPPartners.src(p, 'lockup', 'light'), url: url } : null;
+    return p ? { name: p.name, logo: window.ATPPartners.src(p, 'lockup', 'light'), url: url, label: p.label || '' } : null;
   }
   var NO_LOGO = {};   // logo files that failed once aren't asked for again
   function spLogo(sp, cls, label){
@@ -802,7 +810,7 @@ a.p-logo:hover{border-color:var(--sand);box-shadow:0 6px 24px rgba(0,0,0,.06)}
     var x = s.ses, d = dt(s.day), free = !(Number(x.price) > 0 || Number(x.price_points) > 0);
     var cap = Number(x.capacity) || 0, bk = Number(x.registrations_count) || 0, sp = sponsorOf(x);
     var when = DOWL[d.getUTCDay()] + ', ' + d.getUTCDate() + ' ' + MONL[d.getUTCMonth()];
-    mTop.innerHTML = '<small>' + esc(catName(s.cat) ? catName(s.cat) + ' · 30x30 Fitness Hub' : '30x30 Fitness Hub') + '</small><h3 id="mdlTitle">' + esc(x.name) + '</h3>' + spLogo(sp, 'mdl-sp', 'Powered by') + '<button class="mdl-x" data-close aria-label="Close">✕</button>';
+    mTop.innerHTML = '<small>' + esc(catName(s.cat) ? catName(s.cat) + ' · 30x30 Fitness Hub' : '30x30 Fitness Hub') + '</small><h3 id="mdlTitle">' + esc(x.name) + '</h3>' + spLogo(sp, 'mdl-sp', (sp && sp.label) || 'Powered by') + '<button class="mdl-x" data-close aria-label="Close">✕</button>';
     mBody.innerHTML =
       '<div class="info"><div><h5>Date</h5><p>' + when + '</p></div><div><h5>Time</h5><p>' + t12(s.t) + (x.duration_mins ? ' · ' + x.duration_mins + ' min' : '') + '</p></div>' +
       '<div><h5>Venue</h5><p>' + (x.location_maps_url ? '<a href="' + esc(x.location_maps_url) + '" target="_blank" rel="noopener">' + esc(x.location) + ' ↗</a>' : esc(x.location || 'DIC Amphitheatre')) + '</p></div><div><h5>Price</h5><p>' + (free ? 'Free' : Number(x.price) > 0 ? esc((x.currency_code || 'AED').toUpperCase()) + ' ' + Number(x.price).toFixed(0) : Number(x.price_points) + ' pts') + '</p></div></div>' +
@@ -820,9 +828,9 @@ a.p-logo:hover{border-color:var(--sand);box-shadow:0 6px 24px rgba(0,0,0,.06)}
       var mb = r.data && r.data.myBooking;
       if (mb && mb.status !== 'cancelled') {
         // confirmation + QR code card (sponsor logo on both when the session has one)
-        act.innerHTML = '<div class="done">' + spLogo(sp, 'done-sp') + '<div class="ok">✓</div><h3>You’re booked</h3><p>Show this QR code at the amphitheatre. It’s also in the ATP app under My bookings.</p>' +
+        act.innerHTML = '<div class="done">' + spLogo(sp, 'done-sp', sp && sp.label) + '<div class="ok">✓</div><h3>You’re booked</h3><p>Show this QR code at the amphitheatre. It’s also in the ATP app under My bookings.</p>' +
           '<div class="pass"><div class="ph"><span>' + esc(x.name) + '</span><span>30x30 · 2026</span></div>' +
-          '<div class="pb"><div><b>' + when + '</b><small>' + t12(s.t) + ' · DIC Amphitheatre</small></div>' + spLogo(sp, 'pass-sp') + '</div>' +
+          '<div class="pb"><div><b>' + when + '</b><small>' + t12(s.t) + ' · DIC Amphitheatre</small></div>' + spLogo(sp, 'pass-sp', sp && sp.label) + '</div>' +
           (mb.qr_token ? '<img class="qrimg" alt="Check-in QR code" src="' + API + '/bookings/qr/' + encodeURIComponent(mb.qr_token) + '.png">' : '') + '</div>' +
           '<p class="park-mini"><b>🅿️ Free parking</b> in the DIC parking area: press the buzzer at the entrance and tell security you’re taking part in 30x30 (1 hour before until 1 hour after the sessions).</p>' +
           '<div class="acts"><a class="btn btn-line" href="' + shortLink(x.id) + '">Open in ATP</a><button class="btn btn-line" data-wa="' + esc(s.key) + '">Invite friends</button></div><button class="cx" id="mdlCancel">Cancel booking</button></div>';
@@ -835,7 +843,7 @@ a.p-logo:hover{border-color:var(--sand);box-shadow:0 6px 24px rgba(0,0,0,.06)}
         });
         return;
       }
-      if (r.data && typeof r.data.myWaitlistPos === 'number') { act.innerHTML = '<div class="done">' + spLogo(sp, 'done-sp') + '<h3>You’re on the waitlist</h3><p>Position #' + r.data.myWaitlistPos + '. We’ll let you know in the ATP app if a spot opens.</p></div>'; return; }
+      if (r.data && typeof r.data.myWaitlistPos === 'number') { act.innerHTML = '<div class="done">' + spLogo(sp, 'done-sp', sp && sp.label) + '<h3>You’re on the waitlist</h3><p>Position #' + r.data.myWaitlistPos + '. We’ll let you know in the ATP app if a spot opens.</p></div>'; return; }
       act.innerHTML = '<label class="tc"><input type="checkbox" id="mdlTc"> <span>I agree to the <a href="/terms" target="_blank" rel="noopener">terms &amp; conditions</a> for this session.</span></label><button class="btn btn-red btn-block" id="mdlGo" disabled>' + (cap && bk >= cap ? 'Join the waitlist' : free ? 'Book my free spot' : 'Book') + '</button><p class="note">Your booking appears in the ATP app straight away — same QR code.</p>';
       var tc = document.getElementById('mdlTc'), go = document.getElementById('mdlGo');
       tc.addEventListener('change', function(){ go.disabled = !tc.checked; });

@@ -27,8 +27,11 @@ export interface Partner {
   key: string;
   name: string;
   re: RegExp;
-  url: string;
+  /** Partner site; no link when missing (5:30 Run). */
+  url?: string;
   file: string;
+  /** Wording before the logo — default "Powered by". */
+  label?: string;
   /** width / height of each trimmed file */
   ratio: Record<PartnerKind, number>;
   /** One official file per background, used for every kind (Zoga) —
@@ -42,6 +45,9 @@ export const PARTNERS: Partner[] = [
   // to their Internet City shala. Their white logo on the dark app, the
   // terracotta one on light cards (QR).
   { key: 'zoga', name: 'Zoga', re: /\bzoga\b/i, url: 'https://zoga.ae/book-a-class-internet-city-shala/', file: 'zoga', logo: { dark: 'zoga-logo-white.png', light: 'zoga-logo.png' }, ratio: { lockup: 720 / 230, wordmark: 720 / 230, vector: 720 / 230 } },
+  // 5:30 Run (founder 2026-10-30): the Pink Run is "In collaboration with
+  // 530run". One file (gold + teal, transparent) on dark and light.
+  { key: 'run530', name: '5:30 Run', re: /pink run/i, label: 'In collaboration with', file: '530run', logo: { dark: '530run-logo.png', light: '530run-logo.png' }, ratio: { lockup: 550 / 246, wordmark: 550 / 246, vector: 550 / 246 } },
 ];
 
 type Named = { name?: string | null; session_name?: string | null; sponsor_name?: string | null };
@@ -57,7 +63,7 @@ export function partnerLogoUri(p: Partner, kind: PartnerKind = 'lockup', on: 'da
 }
 
 export function openPartner(p: Partner) {
-  Linking.openURL(p.url).catch(() => {});
+  if (p.url) Linking.openURL(p.url).catch(() => {});
 }
 
 export function PartnerLogo({ partner, kind = 'lockup', on = 'dark', height, link = true }: {
@@ -71,7 +77,7 @@ export function PartnerLogo({ partner, kind = 'lockup', on = 'dark', height, lin
       accessibilityLabel={partner.name}
     />
   );
-  if (!link) return img;
+  if (!link || !partner.url) return img;
   // Its own Pressable wins over the card it sits on — the card still
   // opens everywhere else.
   return (
@@ -88,7 +94,7 @@ export function PoweredBy({ partner, on = 'dark', height = 30, align = 'flex-end
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: align, gap: 10 }}>
       <Text style={{ fontFamily: fontFamily.bodyBold, color: on === 'dark' ? colors.muted : '#666' }} className="text-[9px] uppercase tracking-widest">
-        Powered by
+        {partner.label ?? 'Powered by'}
       </Text>
       <PartnerLogo partner={partner} on={on} height={height} />
     </View>

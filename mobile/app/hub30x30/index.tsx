@@ -21,10 +21,11 @@ import { WEB_BASE } from '@/lib/api/client';
 import { SegmentedControl } from '@/lib/components/SegmentedControl';
 import { useHubData, HubEmpty as Empty, HubParking } from '@/lib/components/Hub30';
 import { colors, fontFamily } from '@/lib/theme/tokens';
-import { partnerFor, PartnerLogo, HubPartners } from '@/lib/partners';
+import { partnerFor, PartnerLogo, HubPartners, PARTNERS } from '@/lib/partners';
 
 type Tab = 'schedule' | 'challenges' | 'results';
 const PINK = '#e8458b';
+const RUN530 = PARTNERS.find((p) => p.key === 'run530');
 
 function Chip({ label, active, onPress }: { label: string; active: boolean; onPress: () => void }) {
   return (
@@ -97,6 +98,13 @@ export default function Hub30Screen() {
             <View className="self-start mt-3 rounded-md px-2.5 py-1.5" style={{ backgroundColor: PINK }}>
               <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-xs">Kick-off: the Pink Run · Sat 31 Oct, morning</Text>
             </View>
+            {/* 5:30 Run (founder 2026-10-30): "In collaboration with 530run" */}
+            {!!RUN530 && (
+              <View className="flex-row items-center mt-3" style={{ gap: 10 }}>
+                <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted }} className="text-[10px] uppercase tracking-widest">In collaboration with</Text>
+                <PartnerLogo partner={RUN530} height={34} />
+              </View>
+            )}
           </View>
         </View>
 

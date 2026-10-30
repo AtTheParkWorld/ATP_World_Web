@@ -37,6 +37,16 @@
     re: /\bzoga\b/i,
     url: 'https://zoga.ae/book-a-class-internet-city-shala/',
     logo: { light: 'zoga-logo.png', dark: 'zoga-logo-white.png' }
+  }, {
+    // 5:30 Run (founder 2026-10-30): the Pink Run is "In collaboration
+    // with 530run" — their logo with that label instead of "Powered by"
+    // (pop-up, check-in card, confirmation). One file (gold + teal on
+    // transparent) for light and dark pages. No link yet.
+    key: 'run530',
+    name: '5:30 Run',
+    re: /pink run/i,
+    label: 'In collaboration with',
+    logo: { light: '530run-logo.png', dark: '530run-logo.png' }
   }];
   function text(x) {
     if (!x) return '';
