@@ -19,7 +19,7 @@ import {
 } from '@/lib/api/hubChallenges';
 import { WEB_BASE } from '@/lib/api/client';
 import { SegmentedControl } from '@/lib/components/SegmentedControl';
-import { useHubData, HubEmpty as Empty } from '@/lib/components/Hub30';
+import { useHubData, HubEmpty as Empty, HubParking } from '@/lib/components/Hub30';
 import { colors, fontFamily } from '@/lib/theme/tokens';
 import { partnerFor, PartnerLogo, HubPartners } from '@/lib/partners';
 
@@ -98,6 +98,10 @@ export default function Hub30Screen() {
               <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-xs">Kick-off: the Pink Run · Sat 31 Oct, morning</Text>
             </View>
           </View>
+        </View>
+
+        <View className="px-5 mt-4">
+          <HubParking />
         </View>
 
         <View className="px-5 mt-5">

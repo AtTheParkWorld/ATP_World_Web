@@ -98,6 +98,14 @@ h1,h2,h3,h4{color:var(--ink);font-weight:700;line-height:1.15}
 .steps li{padding:18px 18px 16px;background:var(--grey);border-left:3px solid var(--sand);font-size:15px}
 .steps li::before{counter-increment:s;content:'0' counter(s);display:block;font-size:13px;font-weight:700;color:var(--sand-d);letter-spacing:.08em;margin-bottom:6px}
 .steps li b{display:block;color:var(--ink);font-size:17px;margin-bottom:4px}
+/* free parking highlight (founder 2026-10-30) */
+.park{scroll-margin-top:110px;display:flex;gap:18px;align-items:flex-start;margin-top:30px;padding:22px 24px;background:var(--sand-l);border:1px solid var(--sand);border-left:5px solid var(--red);border-radius:6px}
+.park .pk{flex:none;width:52px;height:52px;border-radius:8px;background:var(--red);color:#fff;font-size:30px;font-weight:800;line-height:52px;text-align:center}
+.park small{display:block;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--red)}
+.park h3{font-size:22px;margin:2px 0 8px;color:var(--ink)}
+.about .park p{margin:0;font-size:16px}
+@media(max-width:520px){.park{gap:14px;padding:18px 16px}.park .pk{width:40px;height:40px;line-height:40px;font-size:24px}.park h3{font-size:20px}}
+.done .park-mini{margin:12px auto 0;max-width:380px;padding:10px 12px;font-size:13px;line-height:1.45;text-align:left;background:var(--sand-l);border-left:3px solid var(--red);border-radius:4px}
 
 /* section heads (DIC style) */
 .sec{padding:56px 0}
@@ -456,6 +464,14 @@ td.sched-empty{height:120px}
         <li><b>Book a session</b>Pick a class from the schedule. Full? Join the waitlist.</li>
         <li><b>Check in with your QR</b>Show your QR code to the ATP crew at the amphitheatre.</li>
       </ol>
+      <div class="park" id="parking">
+        <div class="pk" aria-hidden="true">P</div>
+        <div>
+          <small>Good to know</small>
+          <h3>Free parking at Dubai Internet City</h3>
+          <p>Park for free in the <b>DIC parking area</b>. At the entrance, press the <b>buzzer</b> and tell security you’re taking part in <b>30x30</b>. Free parking runs from <b>1 hour before the event</b> until <b>1 hour after the sessions finish</b>.</p>
+        </div>
+      </div>
     </section>
 
   </div>
@@ -464,6 +480,7 @@ td.sched-empty{height:120px}
     <div class="side-in">
       <div><h4>Date &amp; Time :</h4><p>31 Oct – 29 Nov 2026<br>Kick-off: Pink Run, Sat 31 Oct (morning)<br>Weekdays: 6:30 PM to 9:30 PM<br>Weekends: 6:30 AM to 9:30 PM</p></div>
       <div><h4>Venue:</h4><p>Dubai Internet City Amphitheatre<br><a href="https://www.google.com/maps/search/?api=1&amp;query=Dubai+Internet+City+Amphitheatre" target="_blank" rel="noopener" style="font-size:14px">Open in Google Maps ↗</a></p></div>
+      <div><h4>Parking:</h4><p><b>Free</b> in the DIC parking area — press the buzzer and tell security you’re here for 30x30.<br><a href="#parking" style="font-size:14px">Parking details</a></p></div>
       <img class="hublogo" src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub">
       <div class="side-pt"><small>Challenge partner</small><a href="https://www.reebok.ae/" target="_blank" rel="noopener sponsored" aria-label="Reebok (opens in a new tab)"><img src="/img/partners/reebok-lockup-red.png" alt="Reebok"></a></div>
       <div class="ctas" style="display:flex;flex-direction:column;gap:8px">
@@ -561,6 +578,7 @@ td.sched-empty{height:120px}
     <div class="eyebrow"><small>Good to know</small><h2>FAQ</h2></div>
     <div class="faq">
       <details open><summary>Is it free?</summary><p>Yes. Every session at the 30x30 Fitness Hub and all four challenges are free — you just need to book your spot.</p></details>
+      <details><summary>Is there parking?</summary><p>Yes, and it’s free. Park in the DIC parking area: at the entrance, press the buzzer and tell security you’re taking part in 30x30. Free parking runs from 1 hour before the event until 1 hour after the sessions finish.</p></details>
       <details><summary>Do I need an ATP account?</summary><p>Yes, a free one. It's how we save your spot, give you your check-in QR code and add your challenge results.</p></details>
       <details><summary>If I book here, is it in the app too?</summary><p>Yes. The website and the ATP app share the same booking system — book in one, it shows up in the other with the same QR code.</p></details>
       <details><summary>How do the challenge qualifiers work?</summary><p>Each challenge has qualifier slots in the challenge calendar. Book a slot to register — one slot per day per challenge. You can try on several days: every attempt counts and your best result ranks. Results are checked and published by the ATP team.</p></details>
@@ -801,6 +819,7 @@ td.sched-empty{height:120px}
           '<div class="pass"><div class="ph"><span>' + esc(x.name) + '</span><span>30x30 · 2026</span></div>' +
           '<div class="pb"><div><b>' + when + '</b><small>' + t12(s.t) + ' · DIC Amphitheatre</small></div>' + spLogo(sp, 'pass-sp') + '</div>' +
           (mb.qr_token ? '<img class="qrimg" alt="Check-in QR code" src="' + API + '/bookings/qr/' + encodeURIComponent(mb.qr_token) + '.png">' : '') + '</div>' +
+          '<p class="park-mini"><b>🅿️ Free parking</b> in the DIC parking area: press the buzzer at the entrance and tell security you’re taking part in 30x30 (1 hour before until 1 hour after the sessions).</p>' +
           '<div class="acts"><a class="btn btn-line" href="' + shortLink(x.id) + '">Open in ATP</a><button class="btn btn-line" data-wa="' + esc(s.key) + '">Invite friends</button></div><button class="cx" id="mdlCancel">Cancel booking</button></div>';
         state.booked[s.key] = true; renderSched();
         document.getElementById('mdlCancel').addEventListener('click', function(){

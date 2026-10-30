@@ -37,6 +37,7 @@ import { sessionInviteMessage } from '@/lib/utils/shareLinks';
 import { PinkRibbon, isPinkOctober } from '@/lib/components/PinkRibbon';
 import { partnerFor, PartnerLogo, PoweredBy } from '@/lib/partners';
 import { absUrl } from '@/lib/utils/imageUrl';
+import { HubParking } from '@/lib/components/Hub30';
 
 export default function SessionDetail() {
   const footerPad = useStickyFooterPad();
@@ -356,6 +357,11 @@ export default function SessionDetail() {
                 </Text>
               </Pressable>
             )}
+          </View>
+        )}
+        {(s.session_category === '30x30_hub' || s.session_category === '30x30_challenge') && (
+          <View className="px-5 mt-4">
+            <HubParking />
           </View>
         )}
 

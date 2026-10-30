@@ -34,6 +34,25 @@ export function HubEmpty({ title, body }: { title: string; body: string }) {
 
 const GREEN2 = '#22c55e';
 
+// Free parking at DIC (founder 2026-10-30) — same copy as the landing
+// page's parking highlight. Shown on the hub screen and on every 30x30
+// session screen.
+export function HubParking() {
+  return (
+    <View className="flex-row rounded-atp p-4" style={{ backgroundColor: 'rgba(249,0,0,.08)', borderWidth: 1, borderColor: 'rgba(249,0,0,.35)' }}>
+      <View className="rounded-md items-center justify-center mr-3" style={{ width: 40, height: 40, backgroundColor: '#f90000' }}>
+        <Text style={{ fontFamily: fontFamily.displayBlack, color: colors.white }} className="text-xl">P</Text>
+      </View>
+      <View className="flex-1">
+        <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-base">Free parking at Dubai Internet City</Text>
+        <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm mt-1 leading-5">
+          Park for free in the DIC parking area. At the entrance, press the buzzer and tell security you’re taking part in 30x30. Free parking runs from 1 hour before the event until 1 hour after the sessions finish.
+        </Text>
+      </View>
+    </View>
+  );
+}
+
 export function TeamCard({ c, team }: { c: HubChallenge; team: HubTeam }) {
   const url = team.invite_url || inviteUrl(team.invite_code);
   const n = team.members || 1;
