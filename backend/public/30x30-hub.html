@@ -144,6 +144,9 @@ h1,h2,h3,h4{color:var(--ink);font-weight:700;line-height:1.15}
 .grid th.time{width:96px}
 .grid td{border:1px solid var(--line);padding:6px;vertical-align:middle;height:72px}
 .grid td.time{text-align:center;background:#fff}
+/* days of a Mon–Sun week outside the hub (before 31 Oct) */
+.grid th.off{background:#2b2b2b;color:#6f6f6f}.grid th.off b{color:#8a8a8a}
+.grid td.off{background:repeating-linear-gradient(135deg,#f6f6f6 0 8px,#efefef 8px 16px)}
 .tchip{display:inline-block;padding:3px 10px;background:var(--grey2);border-radius:999px;font-size:13px;font-weight:700;color:var(--ink);background:#e9e2d4}
 .ses{display:block;width:100%;text-align:left;background:var(--grey2);border-left:3px solid var(--sand);padding:7px 8px;font-size:13px;font-weight:600;color:var(--ink);line-height:1.25;transition:background .15s;margin:3px 0}
 .ses:hover{background:var(--sand-l)}
@@ -643,7 +646,11 @@ a.p-logo:hover{border-color:var(--sand);box-shadow:0 6px 24px rgba(0,0,0,.06)}
   function dt(i){ return new Date(Date.UTC(2026, 9, 30 + i)); }   // 1 → Sat 31 Oct
   function lbl(i){ var d = dt(i); return d.getUTCDate() + ' ' + MON[d.getUTCMonth()]; }
   function t12(t){ if (!t) return 'Time TBC'; var p = t.split(':'), h = +p[0]; return (h % 12 || 12) + ':' + p[1] + ' ' + (h < 12 ? 'AM' : 'PM'); }
-  var WEEKS = [[1,7],[8,14],[15,21],[22,28],[29,30]];
+  // Weeks run Monday → Sunday (founder 2026-11-02). Day 1 is Sat 31 Oct,
+  // so week 1 starts Mon 26 Oct (day -4) — the days before the hub opens
+  // show as closed columns — and week 5 ends Sun 29 Nov (day 30).
+  var WEEKS = [[-4,2],[3,9],[10,16],[17,23],[24,30]];
+  function inHub(d){ return d >= 1 && d <= 30; }
 
   var CH_RE = /challenge|redline|last one standing|burpee/i;
   var SP_RE = /opening night|festival|finale|special event|celebration/i;
@@ -748,25 +755,25 @@ a.p-logo:hover{border-color:var(--sand);box-shadow:0 6px 24px rgba(0,0,0,.06)}
   function renderSched(){
     var w = WEEKS[state.week], days = [];
     for (var i = w[0]; i <= w[1]; i++) days.push(i);
-    var a = dt(w[0]), b = dt(w[1]);
+    var a = dt(Math.max(w[0], 1)), b = dt(Math.min(w[1], 30));   // the hub's own dates
     document.getElementById('wTitle').textContent = 'WEEK ' + (state.week + 1);
-    document.getElementById('wRange').textContent = a.getUTCDate() + ' ' + MONL[a.getUTCMonth()] + (w[0] === w[1] ? '' : ' – ' + b.getUTCDate() + ' ' + MONL[b.getUTCMonth()]);
+    document.getElementById('wRange').textContent = a.getUTCDate() + ' ' + MONL[a.getUTCMonth()] + ' – ' + b.getUTCDate() + ' ' + MONL[b.getUTCMonth()];
     var items = {}, times = {}, total = 0;
-    days.forEach(function(d){ items[d] = dayItems(d).filter(visible); total += items[d].length; items[d].forEach(function(x){ times[x.t || 'TBC'] = 1; }); });
+    days.forEach(function(d){ items[d] = inHub(d) ? dayItems(d).filter(visible) : []; total += items[d].length; items[d].forEach(function(x){ times[x.t || 'TBC'] = 1; }); });
     var tlist = Object.keys(times).filter(function(t){ return t !== 'TBC'; }).sort();
     if (times.TBC) tlist.push('TBC');
     var empty = !LOADED ? '<b>Loading the schedule…</b>' :
       !LIVE ? '<b>30x30 sessions are coming soon</b>Sessions open for booking here and in the ATP app very soon.' :
       '<b>No ' + (state.cat !== 'all' ? esc(catName(state.cat) || 'matching') + ' ' : '') + 'sessions this week</b>Try another week' + (state.cat !== 'all' ? ' or activity' : '') + '.';
-    var h = '<thead><tr><th class="time">Time</th>' + days.map(function(d){ return '<th>' + DOW[dt(d).getUTCDay()] + '<b>' + lbl(d) + '</b></th>'; }).join('') + (days.length < 7 ? '<th colspan="' + (7 - days.length) + '"></th>' : '') + '</tr></thead><tbody>';
+    var h = '<thead><tr><th class="time">Time</th>' + days.map(function(d){ return '<th' + (inHub(d) ? '' : ' class="off"') + '>' + DOW[dt(d).getUTCDay()] + '<b>' + lbl(d) + '</b></th>'; }).join('') + '</tr></thead><tbody>';
     if (!total) h += '<tr><td colspan="8" class="sched-empty">' + empty + '</td></tr>';
     tlist.forEach(function(t){
       h += '<tr><td class="time"><span class="tchip">' + t + '</span></td>';
-      days.forEach(function(d){ h += '<td>' + items[d].filter(function(x){ return (x.t || 'TBC') === t; }).map(function(x){ return sesBtn(x); }).join('') + '</td>'; });
-      if (days.length < 7) h += '<td colspan="' + (7 - days.length) + '" style="background:#fafafa"></td>';
+      days.forEach(function(d){ h += '<td' + (inHub(d) ? '' : ' class="off"') + '>' + items[d].filter(function(x){ return (x.t || 'TBC') === t; }).map(function(x){ return sesBtn(x); }).join('') + '</td>'; });
       h += '</tr>';
     });
     document.getElementById('grid').innerHTML = h + '</tbody>';
+    days = days.filter(inHub);   // phones list the hub's days only
     var firstOpen = -1; days.forEach(function(d, j){ if (firstOpen < 0 && items[d].length) firstOpen = j; });
     document.getElementById('mlist').innerHTML = !total ? '<div class="sched-empty">' + empty + '</div>' : days.map(function(d, j){
       var its = items[d];
