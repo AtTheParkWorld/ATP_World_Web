@@ -235,7 +235,6 @@ button{cursor:pointer;font-family:var(--ff-body)}
 .hf-h{font-family:var(--ff-display);font-size:clamp(36px,4.6vw,60px);font-weight:900;line-height:.95;text-transform:uppercase;letter-spacing:-.01em;color:var(--white);margin-bottom:14px}
 .hf-h .accent{color:var(--green)}
 .hf-sub{font-size:15px;color:var(--light);line-height:1.6;max-width:560px;margin-bottom:12px}
-.hf-kick{display:inline-block;background:#e8458b;color:#fff;font-size:13px;font-weight:700;padding:6px 12px;border-radius:4px;margin-bottom:24px}
 .hf-cta{display:flex;gap:12px;flex-wrap:wrap}
 .hf-cta .btn-hero{text-decoration:none;display:inline-flex;align-items:center;gap:10px}
 .hf-cta .btn-ghost{text-decoration:none;display:inline-flex;align-items:center;padding:15px 22px;font-size:14px}
@@ -673,7 +672,6 @@ a.product-card:hover{transform:translateY(-4px)}
       <p class="hf-eyebrow">Dubai Fitness Challenge · 31 Oct – 29 Nov 2026</p>
       <h2 class="hf-h" id="hub30-heading">Dubai Internet City <span class="accent">30x30 Fitness Hub</span></h2>
       <p class="hf-sub">30 days of free sessions at the Dubai Internet City Amphitheatre — running, yoga, strength, dance and more — plus the 30x30 Challenge Series with weekly leaderboards.</p>
-      <span class="hf-kick" data-hub30-kick>Kick-off: the Pink Run · Saturday 31 October, morning</span>
       <div class="hf-cta">
         <a class="btn-hero" href="/30x30-hub">Explore the 30x30 Hub <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
         <a class="btn-ghost" href="/30x30-hub#schedule">Schedule</a>
@@ -690,7 +688,6 @@ a.product-card:hover{transform:translateY(-4px)}
   if (now >= end) { document.querySelectorAll('[data-hub30-only]').forEach(function (el) { el.remove(); }); return; }
   if (now >= start) {
     var w = document.querySelector('[data-hub30-when]'); if (w) w.textContent = 'Happening now · DIC 30x30 Fitness Hub';
-    var k = document.querySelector('[data-hub30-kick]'); if (k) k.remove();
   }
 })();
 </script>

@@ -83,8 +83,6 @@ h1,h2,h3,h4{color:var(--ink);font-weight:700;line-height:1.15}
 .side h4{font-size:20px;margin-bottom:8px}
 .side p{font-size:16px;color:var(--ink2)}
 .side .hublogo{width:100%;max-width:240px;margin:0}
-.side .cd{font-size:13px;color:var(--mu)}
-.side .cd b{color:var(--ink);font-variant-numeric:tabular-nums}
 .side .sync{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:var(--mu);padding:12px 14px;background:var(--grey);border-left:3px solid var(--sand)}
 .side .sync b{color:var(--ink)}
 @media(max-width:1000px){.side-in{position:static;display:grid;grid-template-columns:1fr 1fr;gap:18px}.side .hublogo{display:none}.side .ctas{grid-column:1/-1}}
@@ -378,8 +376,6 @@ a.cause{display:block;font-size:13px;font-weight:700;color:#1a8f4a;text-decorati
 @media(max-width:700px){.mbar{display:flex;gap:8px;position:fixed;left:0;right:0;bottom:0;z-index:60;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line)}.mbar .btn{flex:1}.toast{bottom:84px}}
 .cb-note{font-size:13px;color:var(--mu);margin-top:12px}
 .chc .soon{margin:auto 0 10px;font-size:13px;font-weight:700;color:var(--red)}
-.hero-t .kick{margin-top:10px;font-size:16px;display:inline-block;background:#e8458b;color:#fff;padding:6px 12px;border-radius:3px}
-.hero-t .kick b{color:#fff}
 /* team band: the photo shows in full above the text */
 .cause-band{grid-template-columns:1fr;min-height:0}
 .cb-img{min-height:0;aspect-ratio:3/2}
@@ -398,13 +394,10 @@ td.sched-empty{height:120px}
 .mdl-sp img{height:26px;max-width:120px}
 .done-sp{display:flex;justify-content:center;margin:0 auto 12px}.done-sp img{height:40px;max-width:160px}
 .pass-sp img{height:34px;max-width:110px}
-/* partner label ("In collaboration with" — 5:30 Run on the Pink Run) */
+/* partner label (a partner's own wording instead of "Powered by") */
 .done-sp small,.pass-sp small{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
 .done-sp{flex-direction:column;gap:4px}
 .pass-sp{flex-direction:column;align-items:flex-end;gap:2px}.pass .pb .pass-sp small{font-size:8px;font-weight:700;letter-spacing:.1em;text-transform:uppercase}
-.collab{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:-6px 0 18px}
-.collab small{font-size:11px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--mu)}
-.collab img{height:72px;width:auto}
 .pass .qrimg{margin:4px auto 14px;border:0}
 .ch-sp{display:flex;margin-bottom:12px}.ch-sp img{height:34px;max-width:120px}
 .chc .soon.open{color:#1a8f4a}
@@ -428,7 +421,7 @@ a.p-logo:hover{border-color:var(--sand);box-shadow:0 6px 24px rgba(0,0,0,.06)}
 .side-pt img{height:52px;width:auto}
 .foot-legal{font-size:11px;opacity:.85}
 </style>
-<script src="/partners.js?v=5"></script>
+<script src="/partners.js?v=6"></script>
 </head>
 <body>
 
@@ -453,7 +446,6 @@ a.p-logo:hover{border-color:var(--sand);box-shadow:0 6px 24px rgba(0,0,0,.06)}
   <div class="hero-t"><div class="wrap">
     <h1>Dubai Internet City 30x30 Fitness Hub</h1>
     <p>31 Oct – 29 Nov 2026 · Dubai Internet City Amphitheatre · Free</p>
-    <p class="kick">Kick-off: the <b>Pink Run</b> · Saturday 31 October, morning</p>
   </div></div>
 </section>
 
@@ -464,8 +456,6 @@ a.p-logo:hover{border-color:var(--sand);box-shadow:0 6px 24px rgba(0,0,0,.06)}
       <h3>A 30-day fitness movement at Dubai Internet City</h3>
       <p>As part of Dubai Fitness Challenge, the Dubai Internet City 30x30 Fitness Hub turns the community into a wellness destination for a whole month.</p>
       <p>Curated by At The Park with Dubai Internet City, the programme brings free daily sessions — running, yoga, strength and conditioning, dance and mindfulness — led by professional coaches, plus the 30x30 Challenge Series and the Relay Rumble.</p>
-      <p>It all starts on the <b>morning of Saturday 31 October with the Pink Run</b>.</p>
-      <p class="collab"><small>Pink Run in collaboration with</small><a href="https://chat.whatsapp.com/JdC1ZSC2Yfc3SnFZLXwPfJ?mode=gi_t" target="_blank" rel="noopener" aria-label="5:30 Run on WhatsApp (opens in a new tab)"><img src="/img/partners/530run-logo.png" alt="5:30 Run"></a></p>
       <p>Open to everyone. <b>Book here or in the ATP app</b> — one account, one booking, one QR code to check in.</p>
       <ol class="steps">
         <li><b>Join ATP — free</b>Create your account in under a minute, on the web or in the app.</li>
@@ -486,7 +476,7 @@ a.p-logo:hover{border-color:var(--sand);box-shadow:0 6px 24px rgba(0,0,0,.06)}
 
   <aside class="side">
     <div class="side-in">
-      <div><h4>Date &amp; Time :</h4><p>31 Oct – 29 Nov 2026<br>Kick-off: Pink Run, Sat 31 Oct (morning)<br>Weekdays: 6:30 PM to 9:30 PM<br>Weekends: 6:30 AM to 9:30 PM</p></div>
+      <div><h4>Date &amp; Time :</h4><p>31 Oct – 29 Nov 2026<br>Weekdays: 6:30 PM to 9:30 PM<br>Weekends: 6:30 AM to 9:30 PM</p></div>
       <div><h4>Venue:</h4><p>Dubai Internet City Amphitheatre<br><a href="https://www.google.com/maps/search/?api=1&amp;query=Dubai+Internet+City+Amphitheatre" target="_blank" rel="noopener" style="font-size:14px">Open in Google Maps ↗</a></p></div>
       <div><h4>Parking:</h4><p><b>Free</b> in the DIC parking area — press the buzzer and tell security you’re here for 30x30.<br><a href="#parking" style="font-size:14px">Parking details</a></p></div>
       <img class="hublogo" src="/img/30x30/logo-30x30-hub.png" alt="30x30 Fitness Hub">
@@ -494,7 +484,6 @@ a.p-logo:hover{border-color:var(--sand);box-shadow:0 6px 24px rgba(0,0,0,.06)}
       <div class="ctas" style="display:flex;flex-direction:column;gap:8px">
         <a class="btn btn-red btn-block" href="#schedule">Book a session</a>
         <a class="btn btn-line btn-block" href="#app">Get the ATP app</a>
-        <p class="cd" style="text-align:center;margin-top:4px">Pink Run in <b id="cd">—</b></p>
       </div>
     </div>
   </aside>
@@ -627,17 +616,6 @@ a.p-logo:hover{border-color:var(--sand);box-shadow:0 6px 24px rgba(0,0,0,.06)}
   var toastEl = document.getElementById('toast'), tT;
   function toast(m){ toastEl.textContent = m; toastEl.classList.add('on'); clearTimeout(tT); tT = setTimeout(function(){ toastEl.classList.remove('on'); }, 2400); }
 
-  // countdown (sidebar) to the Pink Run — the hub opens on the morning of
-  // Sat 31 Oct. Uses the Pink Run session's real start once it is in the
-  // calendar; 6:30 AM (weekend opening time) until then.
-  var target = Date.parse('2026-10-31T06:30:00+04:00'), cdEl = document.getElementById('cd');
-  function tick(){
-    var s = Math.max(0, Math.floor((target - Date.now()) / 1000));
-    if (!s) { cdEl.parentNode.style.display = 'none'; return; }
-    cdEl.textContent = Math.floor(s/86400) + 'd ' + String(Math.floor(s%86400/3600)).padStart(2,'0') + 'h ' + String(Math.floor(s%3600/60)).padStart(2,'0') + 'm';
-  }
-  tick(); setInterval(tick, 30000);
-
   // ── sponsors ─────────────────────────────────────────
   // A session's own "Powered by" logo (admin → session → sponsor) wins;
   // otherwise the hub's challenge sponsors are matched by session name.
@@ -668,7 +646,7 @@ a.p-logo:hover{border-color:var(--sand);box-shadow:0 6px 24px rgba(0,0,0,.06)}
   var WEEKS = [[1,7],[8,14],[15,21],[22,28],[29,30]];
 
   var CH_RE = /challenge|redline|last one standing|burpee/i;
-  var SP_RE = /pink run|opening night|festival|finale|special event|celebration/i;
+  var SP_RE = /opening night|festival|finale|special event|celebration/i;
   var MAIL = 'mailto:general@atthepark.world?subject=Relay%20Rumble%20%E2%80%94%20team';
   var DESC_ANY = 'A free coached session at the 30x30 Fitness Hub, Dubai Internet City Amphitheatre — every level welcome.';
 
@@ -696,17 +674,15 @@ a.p-logo:hover{border-color:var(--sand);box-shadow:0 6px 24px rgba(0,0,0,.06)}
   function loadHub(){
     if (!/^https?:/.test(location.protocol)) return Promise.resolve();
     return apiFetch('/sessions?status=upcoming&limit=1000').then(function(r){
-      var by = {}, n = 0, acts = {}, pinkAt = 0;
+      var by = {}, n = 0, acts = {};
       ((r.data && r.data.sessions) || []).forEach(function(x){
         if (x.session_category !== HUB_CAT) return;
         var day = hubDay(x.scheduled_at); if (day < 1 || day > 30) return;
         var d = dubai(x.scheduled_at), t = String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0');
         var a = actOf(x); acts[a.k] = a.n;
-        if (/pink run/i.test(x.name)) { var ts = Date.parse(x.scheduled_at); if (!pinkAt || ts < pinkAt) pinkAt = ts; }
         (by[day] = by[day] || []).push({ t:t, x:x, cat:a.k }); LIVE_BY_ID[x.id] = { day: day, x: x }; n++;
       });
       SCHED = by; LIVE = n > 0;
-      if (pinkAt) { target = pinkAt; tick(); }
       var keys = Object.keys(acts).sort(function(p, q){ return p === 'a:other' ? 1 : q === 'a:other' ? -1 : acts[p].replace(/^\W+\s/, '').localeCompare(acts[q].replace(/^\W+\s/, '')); });
       CAT = { all:'All' }; keys.forEach(function(k){ CAT[k] = acts[k]; });
     }).catch(function(){}).then(function(){ LOADED = true; });
@@ -780,7 +756,7 @@ a.p-logo:hover{border-color:var(--sand);box-shadow:0 6px 24px rgba(0,0,0,.06)}
     var tlist = Object.keys(times).filter(function(t){ return t !== 'TBC'; }).sort();
     if (times.TBC) tlist.push('TBC');
     var empty = !LOADED ? '<b>Loading the schedule…</b>' :
-      !LIVE ? '<b>30x30 sessions are coming soon</b>The hub opens on the morning of Saturday 31 October with the Pink Run. Sessions open for booking here and in the ATP app very soon.' :
+      !LIVE ? '<b>30x30 sessions are coming soon</b>Sessions open for booking here and in the ATP app very soon.' :
       '<b>No ' + (state.cat !== 'all' ? esc(catName(state.cat) || 'matching') + ' ' : '') + 'sessions this week</b>Try another week' + (state.cat !== 'all' ? ' or activity' : '') + '.';
     var h = '<thead><tr><th class="time">Time</th>' + days.map(function(d){ return '<th>' + DOW[dt(d).getUTCDay()] + '<b>' + lbl(d) + '</b></th>'; }).join('') + (days.length < 7 ? '<th colspan="' + (7 - days.length) + '"></th>' : '') + '</tr></thead><tbody>';
     if (!total) h += '<tr><td colspan="8" class="sched-empty">' + empty + '</td></tr>';
