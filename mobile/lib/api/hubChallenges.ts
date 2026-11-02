@@ -96,7 +96,9 @@ export const inviteUrl = (code: string) => `${HUB_URL}?team=${encodeURIComponent
 const DOW = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const HUB0 = Date.UTC(2026, 9, 30);            // day 1 = Sat 31 Oct 2026
-export const HUB_WEEKS: Array<[number, number]> = [[1, 7], [8, 14], [15, 21], [22, 28], [29, 30]];
+// Weeks run Monday → Sunday, like the website (founder 2026-11-02): week 1
+// starts Mon 26 Oct (day -4), before the hub opens; week 5 ends Sun 29 Nov.
+export const HUB_WEEKS: Array<[number, number]> = [[-4, 2], [3, 9], [10, 16], [17, 23], [24, 30]];
 export const HUB_END = Date.parse('2026-11-30T00:00:00+04:00');
 const dubai = (iso: string) => new Date(Date.parse(iso) + 4 * 3600_000);
 export function hubDay(iso: string): number {
