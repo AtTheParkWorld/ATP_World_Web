@@ -1265,6 +1265,20 @@ async function loadSessionsList() {
   }
 }
 
+// Attendees + admin check-in (founder 2026-11-02): an admin can check a
+// member in at ANY time — before, during or after the session, completed
+// sessions included — and add a member who never booked (walk-in).
+// Cancelled / unpaid bookings ask first. POST /api/sessions/:id/admin-checkin.
+var _REGS = { sessionId: null, list: [] };
+function _escReg(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function _regWhen(iso) {
+  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Dubai', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+}
+
 async function viewRegistrations(sessionId) {
   var s = SESSIONS_CACHE[sessionId] || {};
   var sessionName = s.name || 'Session';
@@ -1274,7 +1288,13 @@ async function viewRegistrations(sessionId) {
   title.textContent = '👥 ' + sessionName;
   modal.style.display = 'flex';
   body.innerHTML = '<div style="text-align:center;color:#444;padding:24px">Loading...</div>';
+  _REGS = { sessionId: sessionId, list: [] };
+  await _loadRegistrations(sessionId);
+}
 
+async function _loadRegistrations(sessionId) {
+  var s = SESSIONS_CACHE[sessionId] || {};
+  var body = document.getElementById('regModalBody');
   try {
     var token = getToken();
     var res = await fetch('/api/sessions/'+sessionId+'/registrations', {
@@ -1282,10 +1302,8 @@ async function viewRegistrations(sessionId) {
     });
     var data = await res.json();
     var regs = data.registrations || [];
-    if (!regs.length) {
-      body.innerHTML = '<div style="text-align:center;color:#444;padding:24px">No registrations yet</div>';
-      return;
-    }
+    if (_REGS.sessionId !== sessionId) return;   // another session opened meanwhile
+    _REGS.list = regs;
     var courtsSummary = '';
     var courtsArr = s ? s.courts : null;
     if (typeof courtsArr === 'string') { try { courtsArr = JSON.parse(courtsArr); } catch(e) { courtsArr = []; } }
@@ -1309,20 +1327,113 @@ async function viewRegistrations(sessionId) {
       });
       courtsSummary += '</div>';
     }
-    body.innerHTML = courtsSummary + '<div style="font-size:12px;color:#888;margin-bottom:12px">'+regs.length+' registered</div>' +
-      '<table class="admin-table" style="width:100%"><thead><tr><th>Member</th><th>Member #</th><th>Level</th><th>Court</th><th>Status</th></tr></thead><tbody>' +
+    var attended = regs.filter(function(r){ return r.status === 'attended'; }).length;
+    var padel = regs.some(function(r){ return r.padel_level || r.court_name; });
+    var tools =
+      '<div style="background:#0d0d0d;border:1px solid #222;border-radius:10px;padding:12px;margin-bottom:14px">' +
+        '<div style="font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#A8FF00;margin-bottom:8px">Admin check-in · any time</div>' +
+        '<div style="position:relative">' +
+          '<input class="admin-form-input" id="regAddInput" type="search" autocomplete="off" placeholder="Add &amp; check in a member — name, email, phone or member #" oninput="_regSearch(this.value)" style="width:100%;padding:8px 12px;font-size:13px" aria-label="Find a member to add and check in">' +
+          '<div id="regAddResults" style="display:none;position:absolute;left:0;right:0;top:100%;margin-top:4px;background:#161616;border:1px solid #2a2a2a;border-radius:8px;z-index:5;max-height:260px;overflow-y:auto"></div>' +
+        '</div>' +
+        '<div style="font-size:11px;color:#666;margin-top:6px">Works before, during or after the session. Members who did not book are added on the spot.</div>' +
+      '</div>';
+    if (!regs.length) {
+      body.innerHTML = tools + '<div style="text-align:center;color:#444;padding:24px">No registrations yet</div>';
+      return;
+    }
+    body.innerHTML = tools + courtsSummary + '<div style="font-size:12px;color:#888;margin-bottom:12px">'+regs.length+' registered · <span style="color:#A8FF00">'+attended+' checked in</span></div>' +
+      '<table class="admin-table" style="width:100%"><thead><tr><th>Member</th><th>Member #</th>' + (padel ? '<th>Level</th><th>Court</th>' : '') + '<th>Status</th><th>Check-in</th></tr></thead><tbody>' +
       regs.map(function(r){
+        var ci = r.status === 'attended'
+          ? '<span style="font-size:12px;color:#A8FF00;white-space:nowrap">✓ ' + (r.checked_in_at ? _regWhen(r.checked_in_at) : 'Checked in') + '</span>'
+          : '<button class="admin-btn" style="font-size:11px;padding:5px 12px;background:#A8FF00;color:#000;border-color:#A8FF00;font-weight:700;white-space:nowrap" onclick="adminCheckinBooking(\'' + r.id + '\', this)">Check in</button>';
         return '<tr>'+
-          '<td><div class="admin-member-name">'+r.first_name+' '+r.last_name+'</div><div class="admin-member-email">'+r.email+'</div></td>'+
-          '<td style="font-size:12px;color:#888">'+r.member_number+'</td>'+
-          '<td style="font-size:12px;color:#888">'+(r.padel_level||'—')+'</td>'+
-          '<td style="font-size:12px;color:#A8FF00">'+(r.court_name||'—')+'</td>'+
-          '<td><span class="badge '+(r.status==='attended'?'badge-green':'badge-grey')+'">'+r.status+'</span></td>'+
+          '<td><div class="admin-member-name">'+_escReg(r.first_name)+' '+_escReg(r.last_name)+'</div><div class="admin-member-email">'+_escReg(r.email)+'</div></td>'+
+          '<td style="font-size:12px;color:#888">'+_escReg(r.member_number)+'</td>'+
+          (padel ? '<td style="font-size:12px;color:#888">'+_escReg(r.padel_level||'—')+'</td>'+
+                   '<td style="font-size:12px;color:#A8FF00">'+_escReg(r.court_name||'—')+'</td>' : '')+
+          '<td><span class="badge '+(r.status==='attended'?'badge-green':'badge-grey')+'">'+_escReg(r.status)+'</span></td>'+
+          '<td>'+ci+'</td>'+
           '</tr>';
       }).join('')+'</tbody></table>';
   } catch(e) {
-    body.innerHTML = '<div style="text-align:center;color:#f87171;padding:24px">Error: '+e.message+'</div>';
+    body.innerHTML = '<div style="text-align:center;color:#f87171;padding:24px">Error: '+_escReg(e.message)+'</div>';
   }
+}
+
+async function _adminCheckin(payload) {
+  var sid = _REGS.sessionId;
+  var res = await fetch('/api/sessions/' + sid + '/admin-checkin', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + getToken() },
+    body: JSON.stringify(payload)
+  });
+  var j = await res.json().catch(function(){ return {}; });
+  if (res.ok) {
+    var name = j.member ? (j.member.first_name + ' ' + (j.member.last_name || '')).trim() : 'Member';
+    showToast('✓ ' + name + (j.walk_in ? ' added and checked in' : ' checked in'));
+  } else {
+    showToast(j.error || 'Check-in failed', res.status !== 409);
+  }
+  await _loadRegistrations(sid);
+  return res.ok;
+}
+
+async function adminCheckinBooking(bookingId, btn) {
+  var r = _REGS.list.filter(function(x){ return x.id === bookingId; })[0];
+  if (!r) return;
+  var name = (r.first_name + ' ' + (r.last_name || '')).trim();
+  var warn = r.status === 'cancelled' ? name + "'s booking is cancelled."
+    : r.status === 'pending_payment' ? name + ' has not paid for this session yet.'
+    : (r.status !== 'confirmed' && r.status !== 'in_progress') ? name + "'s booking is " + r.status + '.'
+    : '';
+  if (warn && !confirm(warn + '\n\nCheck them in anyway?')) return;
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+  await _adminCheckin({ booking_id: bookingId });
+}
+
+var _regSearchT = null, _regFound = [];
+function _regSearch(q) {
+  clearTimeout(_regSearchT);
+  var box = document.getElementById('regAddResults');
+  q = String(q || '').trim();
+  if (q.length < 2) { if (box) box.style.display = 'none'; return; }
+  _regSearchT = setTimeout(async function(){
+    try {
+      var res = await fetch(ATP_API + '/admin/members?search=' + encodeURIComponent(q) + '&status=active&limit=8', {
+        headers: { 'Authorization': 'Bearer ' + getToken() }
+      });
+      var d = await res.json();
+      var input = document.getElementById('regAddInput');
+      if (!input || input.value.trim() !== q) return;   // typed on meanwhile
+      _regFound = d.members || [];
+      var booked = {};
+      _REGS.list.forEach(function(r){ booked[r.member_id] = r; });
+      box = document.getElementById('regAddResults');
+      box.innerHTML = !_regFound.length
+        ? '<div style="padding:10px 12px;font-size:12px;color:#666">No members found</div>'
+        : _regFound.map(function(m){
+            var b = booked[m.id];
+            var tag = b ? (b.status === 'attended' ? '<span style="color:#A8FF00">✓ checked in</span>' : '<span style="color:#888">booked · ' + _escReg(b.status) + '</span>') : '<span style="color:#666">not booked</span>';
+            return '<button type="button" onclick="adminCheckinMember(\'' + m.id + '\')" style="display:flex;justify-content:space-between;align-items:center;gap:10px;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid #222;padding:9px 12px;color:#fff;cursor:pointer;font:inherit">' +
+              '<span><b style="font-size:13px">' + _escReg(m.first_name) + ' ' + _escReg(m.last_name) + '</b><br><small style="color:#777;font-size:11px">' + _escReg(m.member_number || '') + ' · ' + _escReg(m.email || '') + '</small></span>' +
+              '<small style="font-size:11px;white-space:nowrap">' + tag + '</small></button>';
+          }).join('');
+      box.style.display = 'block';
+    } catch (e) { /* search is best-effort */ }
+  }, 250);
+}
+
+async function adminCheckinMember(memberId) {
+  var m = _regFound.filter(function(x){ return x.id === memberId; })[0];
+  if (!m) return;
+  var name = (m.first_name + ' ' + (m.last_name || '')).trim();
+  var b = _REGS.list.filter(function(r){ return r.member_id === memberId; })[0];
+  if (b && b.status === 'attended') { showToast(name + ' is already checked in'); return; }
+  var s = SESSIONS_CACHE[_REGS.sessionId] || {};
+  if (!confirm((b ? 'Check in ' + name : 'Add ' + name + ' to ' + (s.name || 'this session') + ' and check them in') + '?')) return;
+  await _adminCheckin(b ? { booking_id: b.id } : { member_id: memberId });
 }
 
 function closeRegistrations() {

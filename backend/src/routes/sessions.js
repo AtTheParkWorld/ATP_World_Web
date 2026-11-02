@@ -989,13 +989,14 @@ router.post('/:id/checkin', authenticate, requireScanner, async (req, res, next)
     // Get session — must still be upcoming (non-admin). Once a
     // session auto-completes (3h after end time) check-ins close.
     const { rows: sRows } = await query(
-      'SELECT id, status, points_reward, is_online, scheduled_at, ends_at FROM sessions WHERE id=$1',
+      'SELECT id, name, status, points_reward, is_online, scheduled_at, ends_at FROM sessions WHERE id=$1',
       [req.params.id]
     );
     if (!sRows.length) return res.status(404).json({ error: 'Session not found' });
     const session = sRows[0];
+    const isAdmin = !!(req.member && req.member.is_admin);
 
-    if (session.status !== 'upcoming' && !req.member.is_admin) {
+    if (session.status !== 'upcoming' && !isAdmin) {
       return res.status(403).json({
         error: session.status === 'completed'
           ? 'Session already completed. Check-ins closed.'
@@ -1011,8 +1012,8 @@ router.post('/:id/checkin', authenticate, requireScanner, async (req, res, next)
     // can't mark today's members "attended". Admins can override with
     // ?force=1 (legitimate edge cases: late-finishing event, ambassador
     // catching up on paper attendance sheet hours later).
-    const force = req.query.force === '1' && req.member && req.member.is_admin;
-    if (!force && session.scheduled_at) {
+    // Admins are never limited (founder 2026-11-02): no window for them.
+    if (!isAdmin && session.scheduled_at) {
       const TWO_H_MS = 2 * 60 * 60 * 1000;
       const CLOSE_MS = CHECKIN_CLOSE_HOURS * 60 * 60 * 1000;
       const schedMs  = new Date(session.scheduled_at).getTime();
@@ -1094,6 +1095,18 @@ router.post('/:id/checkin', authenticate, requireScanner, async (req, res, next)
         member: { first_name: booking.first_name, last_name: booking.last_name },
       });
     }
+    // Admins can check in any booking — cancelled, unpaid or waiting for
+    // approval included (founder 2026-11-02).
+    if (isAdmin) {
+      const r = await _adminCheckin(booking, session, req.member.id, method);
+      return res.json({
+        success: true,
+        member: { first_name: booking.first_name, last_name: booking.last_name, member_number: booking.member_number },
+        checked_in_at: r.at.toISOString(),
+        streak: r.streakNow,
+        double_points: r.streakNow >= streak.POINTS_DOUBLE_THRESHOLD,
+      });
+    }
     if (booking.status === 'cancelled') {
       return res.status(400).json({ error: 'Booking was cancelled', code: 'BOOKING_CANCELLED' });
     }
@@ -1163,6 +1176,110 @@ router.post('/:id/checkin', authenticate, requireScanner, async (req, res, next)
       checked_in_at:    new Date().toISOString(),
       streak:           streakNow,
       double_points:    streakNow >= streak.POINTS_DOUBLE_THRESHOLD,
+    });
+  } catch (err) { next(err); }
+});
+
+// ── Admin check-in, no limits (founder 2026-11-02) ─────────────
+// Admins can check a member in at ANY time — before, during or long after
+// the session — whatever the session's status (completed included) and
+// whatever the booking's state (cancelled, unpaid, waitlisted, waiting
+// for approval). Shared by the scanner (POST /:id/checkin as an admin)
+// and Admin → Sessions → attendees (POST /:id/admin-checkin).
+async function _adminCheckin(booking, session, adminId, method) {
+  const schedMs = session.scheduled_at ? new Date(session.scheduled_at).getTime() : Date.now();
+  const endsMs  = session.ends_at ? new Date(session.ends_at).getTime() : schedMs + 90 * 60 * 1000;
+  // A catch-up after check-ins would normally have closed is dated to the
+  // session itself, so the streak and "last session" land on that day.
+  const late = Date.now() > endsMs + CHECKIN_CLOSE_HOURS * 60 * 60 * 1000;
+  const at   = late ? new Date(schedMs) : new Date();
+  if (booking.status === 'cancelled') {
+    await query('UPDATE bookings SET cancelled_at=NULL, cancel_reason=NULL WHERE id=$1', [booking.id]);
+  }
+  // An ambassador's manual request still waiting → the admin's check-in approves it.
+  await query(
+    `UPDATE bookings SET checkin_review='approved', checkin_reviewed_at=NOW(), checkin_reviewed_by=$2
+      WHERE id=$1 AND checkin_review='pending'`,
+    [booking.id, adminId]
+  ).catch(function(){ /* review columns may not exist yet */ });
+  const streakNow = await _finalizeCheckin(booking, { by: adminId, method, at, late });
+  await query('DELETE FROM waiting_list WHERE member_id=$1 AND session_id=$2', [booking.member_id, booking.session_id])
+    .catch(function(){});
+  // The session already completed → its points run is over; credit this
+  // member now (subscriber-only, gated inside awardPoints).
+  if (session.status === 'completed' && Number(session.points_reward) > 0) {
+    try {
+      const r = await require('../services/points').awardPoints(
+        booking.member_id, session.points_reward, 'session_checkin', `Session attendance: ${session.name}`, session.id);
+      if (!(r && r.skipped)) {
+        await query('UPDATE bookings SET points_awarded=$1 WHERE id=$2 AND points_awarded=0', [session.points_reward, booking.id]);
+      }
+    } catch (e) { console.warn('[admin-checkin] points:', e.message); }
+  }
+  return { streakNow, at };
+}
+
+// ── POST /api/sessions/:id/admin-checkin ──────────────────────
+// Admin → Sessions → attendees. Body: { booking_id } or { member_id }.
+// A member with no booking for the session is added on the spot (walk-in).
+router.post('/:id/admin-checkin', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const bookingId = String((req.body && req.body.booking_id) || '');
+    const memberId  = String((req.body && req.body.member_id) || '');
+    const UUID = /^[0-9a-f-]{36}$/i;
+    if (!UUID.test(bookingId) && !UUID.test(memberId)) {
+      return res.status(400).json({ error: 'booking_id or member_id required' });
+    }
+    const { rows: sRows } = await query(
+      'SELECT id, name, status, points_reward, scheduled_at, ends_at, location FROM sessions WHERE id=$1',
+      [req.params.id]
+    );
+    if (!sRows.length) return res.status(404).json({ error: 'Session not found' });
+    const session = sRows[0];
+
+    const findBooking = () => query(
+      `SELECT b.*, m.first_name, m.last_name, m.member_number
+         FROM bookings b JOIN members m ON m.id = b.member_id
+        WHERE b.session_id=$1 AND ${UUID.test(bookingId) ? 'b.id' : 'b.member_id'}=$2`,
+      [session.id, UUID.test(bookingId) ? bookingId : memberId]
+    );
+    let { rows } = await findBooking();
+    let walkIn = false;
+    if (!rows.length) {
+      if (!UUID.test(memberId)) return res.status(404).json({ error: 'Booking not found' });
+      const { rows: mRows } = await query(
+        'SELECT id, member_number, first_name, last_name, email FROM members WHERE id=$1', [memberId]);
+      if (!mRows.length) return res.status(404).json({ error: 'Member not found' });
+      const m = mRows[0];
+      const qrToken = require('crypto').randomBytes(16).toString('hex');
+      const qrCode = JSON.stringify({
+        id: m.member_number, name: `${m.first_name} ${m.last_name}`, email: m.email,
+        session: session.name, loc: session.location, booked: new Date().toISOString(), token: qrToken,
+      });
+      await query(
+        `INSERT INTO bookings (member_id, session_id, qr_code, qr_token, status)
+           VALUES ($1,$2,$3,$4,'confirmed') ON CONFLICT (member_id, session_id) DO NOTHING`,
+        [m.id, session.id, qrCode, qrToken]
+      );
+      ({ rows } = await findBooking());
+      if (!rows.length) return res.status(500).json({ error: 'Could not add the member to this session' });
+      walkIn = true;
+    }
+    const booking = rows[0];
+    if (booking.status === 'attended') {
+      return res.status(409).json({
+        error: `${booking.first_name} is already checked in`,
+        code: 'ALREADY_CHECKED_IN',
+        checked_in_at: booking.checked_in_at,
+      });
+    }
+    const r = await _adminCheckin(booking, session, req.member.id, 'admin');
+    res.json({
+      success: true,
+      walk_in: walkIn,
+      member: { first_name: booking.first_name, last_name: booking.last_name, member_number: booking.member_number },
+      checked_in_at: r.at.toISOString(),
+      streak: r.streakNow,
     });
   } catch (err) { next(err); }
 });
@@ -1603,6 +1720,7 @@ router.get('/:id/registrations', authenticate, requireScanner, async (req, res, 
   try {
     const { rows } = await query(
       `SELECT b.id, b.status, b.created_at AS registered_at, b.court_name,
+              b.checked_in_at, b.check_in_method, m.id AS member_id,
               m.first_name, m.last_name, m.member_number, m.email,
               m.padel_level, m.sports_preferences, m.points_balance
        FROM bookings b
