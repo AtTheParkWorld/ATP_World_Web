@@ -351,7 +351,22 @@
     <!-- AMBASSADORS -->
     <div id="section-ambassadors" style="display:none">
       <div class="admin-page-title">Ambassadors</div>
-      <div class="admin-page-sub">Ambassadors can check in members at sessions. Activate or revoke access below.</div>
+      <div class="admin-page-sub">Ambassadors can check in members at sessions. Check in the ambassadors themselves each day on the schedule, and activate or revoke access below.</div>
+      <!-- Ambassador schedule + daily check-in (founder 2026-11-04) — rendered by admin/ambassadors.js -->
+      <div class="admin-section" id="ambScheduleSection">
+        <div class="admin-section-head" style="flex-wrap:wrap;gap:8px">
+          <span class="admin-section-title">📅 Ambassador Schedule · Daily Check-in</span>
+          <div id="ambSchedNav" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"></div>
+        </div>
+        <div class="admin-section-body" id="ambSchedBody" style="padding:0"></div>
+      </div>
+      <div class="admin-section" id="ambOverviewSection">
+        <div class="admin-section-head" style="flex-wrap:wrap;gap:8px">
+          <span class="admin-section-title">🗓 Attendance Overview</span>
+          <div id="ambOvNav" style="display:flex;gap:6px;align-items:center;flex-wrap:wrap"></div>
+        </div>
+        <div class="admin-section-body" id="ambOvBody" style="padding:0"></div>
+      </div>
       <div class="admin-section">
         <div class="admin-section-head">
           <span class="admin-section-title">Ambassador Management</span>
@@ -2447,7 +2462,7 @@
 <div class="admin-toast" id="adminToast"></div>
 <!-- Admin modules — load order matters: core defines globals + showAdminSection
      hook in init.js wires the per-section loaders, so init.js must come last. -->
-<script src="/admin/bundle.min.js?v=edf6431f5b"></script>
+<script src="/admin/bundle.min.js?v=6456be35b0"></script>
 
 
 

@@ -1521,4 +1521,163 @@ router.post('/points/reset-all/undo', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── Ambassador schedule + daily attendance (founder 2026-11-04) ─────
+// Who is on duty on a day = ambassadors assigned (session_ambassadors) to
+// that day's sessions, Dubai time. An admin marks each one present or
+// absent, once per day (ambassador_attendance, one row per ambassador per
+// day). Ambassadors with no session that day are listed too, so someone
+// who turned up unscheduled can still be marked.
+//   GET  /api/admin/ambassador-schedule?day=YYYY-MM-DD
+//   GET  /api/admin/ambassador-schedule/overview?from=&to=   (≤ 62 days)
+//   POST /api/admin/ambassador-schedule/attendance { ambassador_id, day, status: 'present'|'absent'|null, note }
+const DUBAI_TODAY_SQL = `(NOW() AT TIME ZONE 'Asia/Dubai')::date`;
+// Sessions whose Dubai start date falls in [$from, $to].
+const AMB_SESSIONS_SQL = (from, to) => `
+  SELECT sa.ambassador_id, s.id, s.name, s.scheduled_at, s.location, s.duration_mins,
+         (s.scheduled_at AT TIME ZONE 'Asia/Dubai')::date AS day
+    FROM session_ambassadors sa
+    JOIN sessions s ON s.id = sa.session_id
+   WHERE s.status <> 'cancelled'
+     AND s.scheduled_at >= (${from}::date::timestamp AT TIME ZONE 'Asia/Dubai')
+     AND s.scheduled_at <  ((${to}::date + 1)::timestamp AT TIME ZONE 'Asia/Dubai')`;
+
+router.get('/ambassador-schedule', async (req, res, next) => {
+  try {
+    const t = await query(`SELECT ${DUBAI_TODAY_SQL}::text AS today`);
+    const today = t.rows[0].today;
+    const day = DATE_RE.test(String(req.query.day || '')) ? String(req.query.day) : today;
+    const { rows } = await query(
+      `WITH ds AS (${AMB_SESSIONS_SQL('$1', '$1')})
+       SELECT m.id, m.first_name, m.last_name, m.member_number, m.avatar_url, m.phone, m.is_ambassador,
+              COALESCE(json_agg(json_build_object('id', ds.id, 'name', ds.name, 'scheduled_at', ds.scheduled_at,
+                                                  'location', ds.location, 'duration_mins', ds.duration_mins)
+                                ORDER BY ds.scheduled_at) FILTER (WHERE ds.id IS NOT NULL), '[]') AS sessions,
+              aa.status AS attendance, aa.checked_in_at, aa.marked_at, aa.note,
+              NULLIF(TRIM(CONCAT(mb.first_name, ' ', mb.last_name)), '') AS marked_by_name
+         FROM members m
+         LEFT JOIN ds ON ds.ambassador_id = m.id
+         LEFT JOIN ambassador_attendance aa ON aa.ambassador_id = m.id AND aa.day = $1::date
+         LEFT JOIN members mb ON mb.id = aa.marked_by
+        WHERE m.is_ambassador = true OR ds.id IS NOT NULL OR aa.ambassador_id IS NOT NULL
+        GROUP BY m.id, aa.status, aa.checked_in_at, aa.marked_at, aa.note, mb.first_name, mb.last_name
+        ORDER BY MIN(ds.scheduled_at) NULLS LAST, m.first_name, m.last_name`,
+      [day]
+    );
+    const scheduled = rows.filter((r) => r.sessions.length);
+    res.json({
+      day, today, editable: day <= today,
+      ambassadors: rows,
+      counts: {
+        scheduled: scheduled.length,
+        present: rows.filter((r) => r.attendance === 'present').length,
+        absent: rows.filter((r) => r.attendance === 'absent').length,
+        unmarked: scheduled.filter((r) => !r.attendance).length,
+      },
+    });
+  } catch (err) { next(err); }
+});
+
+router.get('/ambassador-schedule/overview', async (req, res, next) => {
+  try {
+    const from = String(req.query.from || '');
+    const to = String(req.query.to || '');
+    if (!DATE_RE.test(from) || !DATE_RE.test(to) || from > to) {
+      return res.status(400).json({ error: 'from and to must be dates (YYYY-MM-DD), from ≤ to' });
+    }
+    const span = (Date.parse(to) - Date.parse(from)) / 86400000 + 1;
+    if (span > 62) return res.status(400).json({ error: 'Pick a range of 62 days or less' });
+    const [t, sched, att] = await Promise.all([
+      query(`SELECT ${DUBAI_TODAY_SQL}::text AS today`),
+      query(`SELECT ambassador_id, day::text AS day, COUNT(*)::int AS n
+               FROM (${AMB_SESSIONS_SQL('$1', '$2')}) x
+              GROUP BY ambassador_id, day`, [from, to]),
+      query(`SELECT ambassador_id, day::text AS day, status, note
+               FROM ambassador_attendance WHERE day BETWEEN $1::date AND $2::date`, [from, to]),
+    ]);
+    const ids = new Set([...sched.rows, ...att.rows].map((r) => r.ambassador_id));
+    const people = await query(
+      `SELECT id, first_name, last_name, member_number, is_ambassador
+         FROM members WHERE is_ambassador = true OR id = ANY($1::uuid[])
+        ORDER BY first_name, last_name`,
+      [[...ids]]
+    );
+    const cells = {};
+    const cell = (id, day) => {
+      cells[id] = cells[id] || {};
+      return (cells[id][day] = cells[id][day] || {});
+    };
+    sched.rows.forEach((r) => { cell(r.ambassador_id, r.day).sessions = r.n; });
+    att.rows.forEach((r) => {
+      const c = cell(r.ambassador_id, r.day);
+      c.status = r.status;
+      if (r.note) c.note = r.note;
+    });
+    const days = [];
+    for (let d = new Date(from + 'T00:00:00Z'); d <= new Date(to + 'T00:00:00Z'); d.setUTCDate(d.getUTCDate() + 1)) {
+      days.push(d.toISOString().slice(0, 10));
+    }
+    res.json({
+      from, to, today: t.rows[0].today, days,
+      ambassadors: people.rows.map((m) => {
+        const c = cells[m.id] || {};
+        const v = Object.values(c);
+        return {
+          ...m, cells: c,
+          totals: {
+            scheduled_days: v.filter((x) => x.sessions).length,
+            present: v.filter((x) => x.status === 'present').length,
+            absent: v.filter((x) => x.status === 'absent').length,
+          },
+        };
+      }),
+    });
+  } catch (err) { next(err); }
+});
+
+router.post('/ambassador-schedule/attendance', async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    const ambassadorId = String(b.ambassador_id || '');
+    const day = String(b.day || '');
+    const status = b.status == null || b.status === '' ? null : String(b.status);
+    if (!UUID_RE.test(ambassadorId)) return res.status(400).json({ error: 'ambassador_id required' });
+    if (!DATE_RE.test(day)) return res.status(400).json({ error: 'day must be YYYY-MM-DD' });
+    if (status && status !== 'present' && status !== 'absent') {
+      return res.status(400).json({ error: "status must be 'present', 'absent' or null" });
+    }
+    const t = await query(`SELECT ${DUBAI_TODAY_SQL}::text AS today`);
+    if (day > t.rows[0].today) {
+      return res.status(400).json({ error: "That day hasn't happened yet.", code: 'FUTURE_DAY' });
+    }
+    const m = await query('SELECT id, first_name, last_name FROM members WHERE id = $1', [ambassadorId]);
+    if (!m.rows[0]) return res.status(404).json({ error: 'Ambassador not found' });
+
+    if (!status) {
+      await query('DELETE FROM ambassador_attendance WHERE ambassador_id = $1 AND day = $2::date', [ambassadorId, day]);
+      audit.log(req, 'ambassador.attendance.cleared', 'member', ambassadorId, { day });
+      return res.json({ success: true, attendance: null });
+    }
+    const note = status === 'absent' ? (String(b.note || '').trim().slice(0, 300) || null) : null;
+    // checked_in_at = the moment they were marked present on the day itself;
+    // a day marked afterwards has no arrival time. Re-marking keeps the first.
+    const { rows } = await query(
+      `INSERT INTO ambassador_attendance (ambassador_id, day, status, checked_in_at, marked_by, marked_at, note)
+       VALUES ($1, $2::date, $3::varchar,
+               CASE WHEN $3::varchar = 'present' AND $2::date = ${DUBAI_TODAY_SQL} THEN NOW() END,
+               $4, NOW(), $5)
+       ON CONFLICT (ambassador_id, day) DO UPDATE SET
+         status = EXCLUDED.status,
+         checked_in_at = CASE WHEN EXCLUDED.status = 'present'
+                              THEN COALESCE(ambassador_attendance.checked_in_at, EXCLUDED.checked_in_at) END,
+         marked_by = EXCLUDED.marked_by,
+         marked_at = NOW(),
+         note = EXCLUDED.note
+       RETURNING status AS attendance, checked_in_at, marked_at, note`,
+      [ambassadorId, day, status, req.member.id, note]
+    );
+    audit.log(req, 'ambassador.attendance.' + status, 'member', ambassadorId, { day, note });
+    res.json({ success: true, attendance: rows[0] });
+  } catch (err) { next(err); }
+});
+
 module.exports = router;

@@ -166,6 +166,21 @@ CREATE TABLE IF NOT EXISTS session_ambassadors (
 );
 CREATE INDEX IF NOT EXISTS idx_session_ambassadors_amb ON session_ambassadors (ambassador_id);
 
+-- Ambassador daily attendance (founder 2026-11-04): an admin marks each
+-- ambassador present/absent once per Dubai day on Admin → Ambassadors →
+-- Schedule. Who is on duty comes from session_ambassadors.
+CREATE TABLE IF NOT EXISTS ambassador_attendance (
+  ambassador_id UUID        NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+  day           DATE        NOT NULL,
+  status        VARCHAR(10) NOT NULL CHECK (status IN ('present','absent')),
+  checked_in_at TIMESTAMPTZ,
+  marked_by     UUID        REFERENCES members(id) ON DELETE SET NULL,
+  marked_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  note          VARCHAR(300),
+  PRIMARY KEY (ambassador_id, day)
+);
+CREATE INDEX IF NOT EXISTS idx_ambassador_attendance_day ON ambassador_attendance (day);
+
 -- ── BOOKINGS ─────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS bookings (
   id            UUID        PRIMARY KEY DEFAULT uuid_generate_v4(),

@@ -960,6 +960,19 @@ async function _ensureBootSchema() {
   )`).catch((e) => console.warn('[boot] session_ambassadors:', e.message));
   await query(`CREATE INDEX IF NOT EXISTS idx_session_ambassadors_amb ON session_ambassadors (ambassador_id)`)
     .catch(() => {});
+  // Ambassador daily attendance (founder 2026-11-04) — Admin → Ambassadors → Schedule.
+  await query(`CREATE TABLE IF NOT EXISTS ambassador_attendance (
+    ambassador_id UUID NOT NULL REFERENCES members(id) ON DELETE CASCADE,
+    day           DATE NOT NULL,
+    status        VARCHAR(10) NOT NULL CHECK (status IN ('present','absent')),
+    checked_in_at TIMESTAMPTZ,
+    marked_by     UUID REFERENCES members(id) ON DELETE SET NULL,
+    marked_at     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    note          VARCHAR(300),
+    PRIMARY KEY (ambassador_id, day)
+  )`).catch((e) => console.warn('[boot] ambassador_attendance:', e.message));
+  await query(`CREATE INDEX IF NOT EXISTS idx_ambassador_attendance_day ON ambassador_attendance (day)`)
+    .catch(() => {});
   await query(`ALTER TABLE streams ADD COLUMN IF NOT EXISTS session_id UUID REFERENCES sessions(id) ON DELETE SET NULL`)
     .catch((e) => console.warn('[boot] streams.session_id:', e.message));
   await query(`CREATE INDEX IF NOT EXISTS idx_streams_session ON streams (session_id) WHERE session_id IS NOT NULL`)
