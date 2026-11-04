@@ -100,14 +100,14 @@ export function PoweredBy({ partner, on = 'dark', height = 30, align = 'flex-end
 
 // ── 30x30 hub partners (founder 2026-10-21) ────────────────────────
 // The app twin of the landing page's "Our Partners": just the logos,
-// each opening the partner's site. White tiles — UniCare's navy wordmark
-// doesn't read on the dark app, and Reebok's guidelines want Vector Red
-// on light.
+// each opening the partner's site. White tiles — the dark wordmarks
+// (Rumours, Marriott) don't read on the dark app, and Reebok's guidelines
+// want Vector Red on light.
 export interface HubPartner { key: string; name: string; url?: string; logo: string; ratio: number; height: number }
 
 export const HUB_PARTNERS: HubPartner[] = [
   { key: 'reebok', name: 'Reebok', url: 'https://www.reebok.ae/', logo: 'reebok-lockup-red.png', ratio: 360 / 182, height: 46 },
-  { key: 'unicare', name: 'UniCare Home Health', url: 'https://www.homehealthatunicare.com', logo: 'unicare-logo.png', ratio: 900 / 352, height: 40 },
+  { key: 'rumours', name: 'Rumours', url: 'https://www.rumours.media', logo: 'rumours-logo.png', ratio: 1200 / 297, height: 28 },
   { key: 'alwasl', name: 'Al Wasl Water', url: 'https://alwaslwater.com/', logo: 'alwasl-logo.png', ratio: 700 / 721, height: 88 },
   // Event partners added 2026-10-30. Marriott Bonvoy + Grand Plaza have
   // no link yet (founder to send their URLs).
