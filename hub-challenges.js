@@ -84,6 +84,9 @@
     var p = partnerOf(name); if (!p) return '';
     var src = window.ATPPartners.src(p, kind || 'lockup', bg || 'light');
     if (NO_LOGO[src]) return '';
+    // One-file wordmarks (Marriott, Grand Plaza…) stand in for Reebok's
+    // small Vector mark — they need more height to read.
+    if (p.logo && kind === 'vector') cls += ' hc-wide';
     var img = '<img class="' + cls + '" data-hc-logo src="' + src + '" alt="' + esc(p.name) + '">';
     return nolink || !p.url ? img : window.ATPPartners.link(p, img, 'hc-plink');
   }
@@ -128,10 +131,10 @@
       '.hc-card dl{margin:12px 0 14px;font-size:13px;flex:1}.hc-card dt{font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6f6f6f;margin-top:8px}.hc-card dd{margin:0;color:#222}',
       '.hc-logo{height:36px;width:auto;display:block;margin-bottom:10px}',
       '.hc-ctop{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}.hc-plogo{height:40px;width:auto;flex:0 0 auto;margin:-4px 0 0}',
-      '.hc-svec{height:9px;width:auto;display:block;margin-top:4px}',
+      '.hc-svec{height:9px;width:auto;display:block;margin-top:4px}.hc-svec.hc-wide{height:19px}',
       '.hc-plink{display:inline-flex;flex:0 0 auto;line-height:0}.hc-plink:hover{opacity:.85}',
       '.hc-pby{display:flex;align-items:center;justify-content:center;gap:10px;margin:2px 0 6px}.hc-pby small{font-size:10px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:#6f6f6f}.hc-pby img{height:34px;width:auto}',
-      '.hc-board h4{display:flex;justify-content:space-between;align-items:center;gap:8px}.hc-bvec{height:11px;width:auto}',
+      '.hc-board h4{display:flex;justify-content:space-between;align-items:center;gap:8px}.hc-bvec{height:11px;width:auto}.hc-bvec.hc-wide{height:18px}',
       '.hc-btn{display:block;width:100%;border:0;border-radius:5px;padding:12px 16px;font:inherit;font-size:15px;font-weight:700;cursor:pointer;background:#f90000;color:#fff;text-align:center;text-decoration:none}',
       '.hc-btn:hover{background:#d40000}.hc-btn.line{background:#fff;color:#222;border:1px solid #222}.hc-btn.green{background:#1a8f4a}.hc-btn[disabled]{opacity:.5;cursor:default}',
       '.hc-mine{font-size:12px;color:#1a8f4a;font-weight:700;margin-bottom:8px}',

@@ -45,6 +45,12 @@ export const PARTNERS: Partner[] = [
   // to their Internet City shala. Their white logo on the dark app, the
   // terracotta one on light cards (QR).
   { key: 'zoga', name: 'Zoga', re: /\bzoga\b/i, url: 'https://zoga.ae/book-a-class-internet-city-shala/', file: 'zoga', logo: { dark: 'zoga-logo-white.png', light: 'zoga-logo.png' }, ratio: { lockup: 720 / 230, wordmark: 720 / 230, vector: 720 / 230 } },
+  // Challenge partners (founder 2026-11-05): Marriott Bonvoy = the 400 m
+  // challenge (formerly Redline 400), Grand Plaza Mövenpick = Last One
+  // Standing — slots are named after the challenge, so it's part of the
+  // match. No link until the founder sends their URLs.
+  { key: 'marriott', name: 'Marriott Bonvoy', re: /\bmarriott?\b|\bbonvoy\b|redline\s*400/i, file: 'marriott-bonvoy', logo: { dark: 'marriott-bonvoy-logo-white.png', light: 'marriott-bonvoy-logo.png' }, ratio: { lockup: 900 / 268, wordmark: 900 / 268, vector: 900 / 268 } },
+  { key: 'grandplaza', name: 'Grand Plaza Mövenpick Media City', re: /grand\s*plaza|m[öo]venpick|last\s+one\s+standing/i, file: 'grandplaza', logo: { dark: 'grandplaza-logo.png', light: 'grandplaza-logo.png' }, ratio: { lockup: 1000 / 295, wordmark: 1000 / 295, vector: 1000 / 295 } },
 ];
 
 type Named = { name?: string | null; session_name?: string | null; sponsor_name?: string | null };
@@ -66,10 +72,13 @@ export function openPartner(p: Partner) {
 export function PartnerLogo({ partner, kind = 'lockup', on = 'dark', height, link = true }: {
   partner: Partner; kind?: PartnerKind; on?: 'dark' | 'light'; height: number; link?: boolean;
 }) {
+  // One-file wordmarks stand in for Reebok's small Vector mark — they
+  // need more height to read.
+  const h = partner.logo && kind === 'vector' ? Math.round(height * 1.6) : height;
   const img = (
     <Image
       source={{ uri: partnerLogoUri(partner, kind, on) }}
-      style={{ height, width: Math.round(height * partner.ratio[kind]) }}
+      style={{ height: h, width: Math.round(h * partner.ratio[kind]) }}
       resizeMode="contain"
       accessibilityLabel={partner.name}
     />

@@ -177,7 +177,7 @@ function ChallengesTab({ challenges, sessions, loading }: { challenges?: HubChal
   return (
     <View className="px-5 mt-5">
       <Text style={{ fontFamily: fontFamily.body, color: colors.light }} className="text-sm leading-5 mb-4">
-        Individual and team challenges, all free. Book a qualifier slot — one per day; every attempt counts and your best result ranks. The top athletes and teams make the final.
+        All free to enter. Book a qualifier slot — one per day; every attempt counts and your best result ranks. The top athletes make the final.
       </Text>
       {!list.length ? <Empty title="The 30x30 Challenge Series is coming soon" body="Registration opens here and on atthepark.world." /> : list.map((c) => {
         const mine = c.my_entry;

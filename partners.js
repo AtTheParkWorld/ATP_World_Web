@@ -37,6 +37,23 @@
     re: /\bzoga\b/i,
     url: 'https://zoga.ae/book-a-class-internet-city-shala/',
     logo: { light: 'zoga-logo.png', dark: 'zoga-logo-white.png' }
+  }, {
+    // Challenge partners (founder 2026-11-05: "as we did with Reebok"):
+    // Marriott Bonvoy = the 400 m challenge ("Marriot 400m Challenge",
+    // formerly Redline 400), Grand Plaza Mövenpick = Last One Standing.
+    // Their challenge slots are named after the challenge, so the
+    // challenge name is part of the match. No link until the founder
+    // sends their URLs. Marriott's black wordmark on light pages, white
+    // (coral bar kept) on dark ones; Grand Plaza's gold reads on both.
+    key: 'marriott',
+    name: 'Marriott Bonvoy',
+    re: /\bmarriott?\b|\bbonvoy\b|redline\s*400/i,
+    logo: { light: 'marriott-bonvoy-logo.png', dark: 'marriott-bonvoy-logo-white.png' }
+  }, {
+    key: 'grandplaza',
+    name: 'Grand Plaza Mövenpick Media City',
+    re: /grand\s*plaza|m[öo]venpick|last\s+one\s+standing/i,
+    logo: { light: 'grandplaza-logo.png', dark: 'grandplaza-logo.png' }
   }];
   function text(x) {
     if (!x) return '';
