@@ -14,7 +14,9 @@
   'use strict';
 
   var HUB_START = Date.UTC(2026, 9, 30, 20);          // 31 Oct 00:00 Dubai
-  var WEEKS = [[1, 7], [8, 14], [15, 21], [22, 28], [29, 30]];
+  // Weeks run Monday → Sunday (founder 2026-11-06), like the landing page
+  // and the app: week 1 starts Mon 26 Oct (day -4), before the hub opens.
+  var WEEKS = [[-4, 2], [3, 9], [10, 16], [17, 23], [24, 30]];
   var DESC = 'A free coached session at the 30x30 Fitness Hub, Dubai Internet City Amphitheatre — every level welcome.';
   var DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
   var DOWL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -26,6 +28,7 @@
   function esc(v) { return String(v == null ? '' : v).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function dubai(iso) { return new Date(Date.parse(iso) + 4 * 3600000); }            // UAE: UTC+4, no DST
   function hubDay(iso) { var d = dubai(iso); return Math.round((Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()) - Date.UTC(2026, 9, 30)) / 86400000); }
+  function inHub(day) { return day >= 1 && day <= 30; }
   function dayDate(i) { return new Date(Date.UTC(2026, 9, 30 + i)); }
   function hhmm(iso) { var d = dubai(iso); return String(d.getUTCHours()).padStart(2, '0') + ':' + String(d.getUTCMinutes()).padStart(2, '0'); }
   function t12(t) { var p = t.split(':'), h = +p[0]; return (h % 12 || 12) + ':' + p[1] + ' ' + (h < 12 ? 'AM' : 'PM'); }
@@ -96,7 +99,7 @@
     var items = all.filter(function (x) { return st.cat === 'all' || x.cat === st.cat; });
     var w = WEEKS[st.week], days = [], i;
     for (i = w[0]; i <= w[1]; i++) days.push(i);
-    var a = dayDate(w[0]), b = dayDate(w[1]);
+    var a = dayDate(Math.max(w[0], 1)), b = dayDate(Math.min(w[1], 30));   // the hub's own dates
     var loaded = typeof CAL_REAL_SESSIONS !== 'undefined' && CAL_REAL_SESSIONS && CAL_REAL_SESSIONS.length;
 
     var h = '<div class="h30-top"><div class="h30-eyebrow"><small>Dubai Fitness Challenge</small><h2>30x30 Fitness Hub Schedule</h2>' +
@@ -123,18 +126,18 @@
     } else {
       var times = {}; inWeek.forEach(function (x) { times[x.t] = 1; });
       var tl = Object.keys(times).sort();
-      var g = '<table class="h30-grid"><thead><tr><th class="h30-time">Time</th>' + days.map(function (d) { var dd = dayDate(d); return '<th>' + DOW[dd.getUTCDay()] + '<b>' + dd.getUTCDate() + ' ' + MON[dd.getUTCMonth()] + '</b></th>'; }).join('') +
-        (days.length < 7 ? '<th colspan="' + (7 - days.length) + '"></th>' : '') + '</tr></thead><tbody>';
+      var g = '<table class="h30-grid"><thead><tr><th class="h30-time">Time</th>' + days.map(function (d) { var dd = dayDate(d); return '<th' + (inHub(d) ? '' : ' class="h30-off"') + '>' + DOW[dd.getUTCDay()] + '<b>' + dd.getUTCDate() + ' ' + MON[dd.getUTCMonth()] + '</b></th>'; }).join('') + '</tr></thead><tbody>';
       tl.forEach(function (t) {
         g += '<tr><td class="h30-time"><span class="h30-tchip">' + t + '</span></td>';
-        days.forEach(function (d) { g += '<td>' + inWeek.filter(function (x) { return x.day === d && x.t === t; }).map(function (x) { return sesBtn(x); }).join('') + '</td>'; });
-        if (days.length < 7) g += '<td colspan="' + (7 - days.length) + '" style="background:#fafafa"></td>';
+        days.forEach(function (d) { g += '<td' + (inHub(d) ? '' : ' class="h30-off"') + '>' + inWeek.filter(function (x) { return x.day === d && x.t === t; }).map(function (x) { return sesBtn(x); }).join('') + '</td>'; });
         g += '</tr>';
       });
       h += '<div class="h30-desk">' + g + '</tbody></table></div>';
-      h += '<div class="h30-mob">' + days.map(function (d, j) {
+      var mdays = days.filter(inHub), firstOpen = -1;   // phones list the hub's days only
+      mdays.forEach(function (d, j) { if (firstOpen < 0 && inWeek.some(function (x) { return x.day === d; })) firstOpen = j; });
+      h += '<div class="h30-mob">' + mdays.map(function (d, j) {
         var its = inWeek.filter(function (x) { return x.day === d; }), dd = dayDate(d);
-        return '<details class="h30-day"' + (j === 0 || (j === 1 && !inWeek.some(function (x) { return x.day === days[0]; })) ? ' open' : '') + '><summary>' + DOWL[dd.getUTCDay()] + ' ' + dd.getUTCDate() + ' ' + MON[dd.getUTCMonth()] +
+        return '<details class="h30-day"' + (j === firstOpen ? ' open' : '') + '><summary>' + DOWL[dd.getUTCDay()] + ' ' + dd.getUTCDate() + ' ' + MON[dd.getUTCMonth()] +
           '<span>' + its.length + ' session' + (its.length === 1 ? '' : 's') + '</span></summary><ul>' + its.map(function (x) { return '<li>' + sesBtn(x, true) + '</li>'; }).join('') + '</ul></details>';
       }).join('') + '</div>';
     }

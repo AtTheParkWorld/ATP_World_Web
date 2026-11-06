@@ -74,6 +74,10 @@
 .h30-grid th.h30-time { width: 92px; }
 .h30-grid td { border: 1px solid var(--h30-line); padding: 5px; vertical-align: middle; height: 64px; background: #fff; }
 .h30-grid td.h30-time { text-align: center; }
+/* days of a Mon–Sun week outside the hub (before 31 Oct) */
+.h30-grid th.h30-off { background: #2b2b2b; color: #6f6f6f; }
+.h30-grid th.h30-off b { color: #8a8a8a; }
+.h30-grid td.h30-off { background: repeating-linear-gradient(135deg, #f6f6f6 0 8px, #efefef 8px 16px); }
 .h30-tchip { display: inline-block; padding: 3px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--h30-ink); background: #e9e2d4; }
 .h30-ses { display: block; width: 100%; text-align: left; background: var(--h30-cell); border: 0; border-left: 3px solid var(--h30-sand); padding: 7px 8px; font-size: 13px; font-weight: 600; color: var(--h30-ink); line-height: 1.25; margin: 3px 0; transition: background .15s; }
 .h30-ses:hover { background: var(--h30-sand-l); }

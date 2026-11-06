@@ -20,7 +20,9 @@
   if (window.HubCh) return;
 
   var HUB0 = Date.UTC(2026, 9, 30);   // day 1 = Sat 31 Oct 2026
-  var WEEKS = [[1, 7], [8, 14], [15, 21], [22, 28], [29, 30]];
+  // Weeks run Monday → Sunday (founder 2026-11-06), like the hub schedule
+  // and the app: week 1 starts Mon 26 Oct (day -4), before the hub opens.
+  var WEEKS = [[-4, 2], [3, 9], [10, 16], [17, 23], [24, 30]];
   var DOW = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'], DOWL = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
   var MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], MONL = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 
@@ -117,6 +119,7 @@
       '.hc-grid{width:100%;border-collapse:collapse;table-layout:fixed;font-size:13px}',
       '.hc-grid th{background:#1d1d1d;color:#c9ba9e;padding:10px 4px;font-size:11px;letter-spacing:.14em;font-weight:600}.hc-grid th b{display:block;color:#fff;font-size:15px;letter-spacing:0;margin-top:2px}',
       '.hc-grid td{border:1px solid #ececec;vertical-align:top;padding:5px;height:58px}',
+      '.hc-grid th.hc-off{background:#2b2b2b;color:#6f6f6f}.hc-grid th.hc-off b{color:#8a8a8a}.hc-grid td.hc-off{background:repeating-linear-gradient(135deg,#f6f6f6 0 8px,#efefef 8px 16px)}',
       '.hc-grid td.hc-time{width:86px;text-align:center;vertical-align:middle;background:#fafafa}',
       '.hc-tchip{display:inline-block;background:#eee7da;border-radius:999px;padding:5px 10px;font-weight:700;font-size:12px;color:#222}',
       '.hc-ses{display:block;width:100%;text-align:left;background:#fff5f5;border:0;border-left:3px solid #f90000;padding:7px 8px;margin:3px 0;font:inherit;font-size:13px;font-weight:600;color:#222;cursor:pointer;line-height:1.25}',
@@ -204,6 +207,7 @@
   }
 
   // ── calendar ──────────────────────────────────────────────────
+  function inHub(day) { return day >= 1 && day <= 30; }
   function weekOf(day) { for (var w = 0; w < WEEKS.length; w++) if (day >= WEEKS[w][0] && day <= WEEKS[w][1]) return w; return 0; }
   function renderCalendar() {
     var el = S.el.calendar; if (!el) return;
@@ -224,12 +228,10 @@
     else if (!inWeek.length) body = '<div class="hc-empty"><b>No challenge slots this week</b>Try another week' + (S.cat !== 'all' ? ' or challenge' : '') + '.</div>';
     else {
       var times = {}; inWeek.forEach(function (x) { times[x.t] = 1; });
-      var g = '<table class="hc-grid"><thead><tr><th class="hc-time" style="background:#1d1d1d">Time</th>' + days.map(function (dd) { var dt = dayDate(dd); return '<th>' + DOW[dt.getUTCDay()] + '<b>' + dt.getUTCDate() + ' ' + MON[dt.getUTCMonth()] + '</b></th>'; }).join('') +
-        (days.length < 7 ? '<th colspan="' + (7 - days.length) + '"></th>' : '') + '</tr></thead><tbody>';
+      var g = '<table class="hc-grid"><thead><tr><th class="hc-time" style="background:#1d1d1d">Time</th>' + days.map(function (dd) { var dt = dayDate(dd); return '<th' + (inHub(dd) ? '' : ' class="hc-off"') + '>' + DOW[dt.getUTCDay()] + '<b>' + dt.getUTCDate() + ' ' + MON[dt.getUTCMonth()] + '</b></th>'; }).join('') + '</tr></thead><tbody>';
       Object.keys(times).sort().forEach(function (t) {
         g += '<tr><td class="hc-time"><span class="hc-tchip">' + t + '</span></td>';
-        days.forEach(function (dd) { g += '<td>' + inWeek.filter(function (x) { return x.day === dd && x.t === t; }).map(function (x) { return slotBtn(x); }).join('') + '</td>'; });
-        if (days.length < 7) g += '<td colspan="' + (7 - days.length) + '" style="background:#fafafa"></td>';
+        days.forEach(function (dd) { g += '<td' + (inHub(dd) ? '' : ' class="hc-off"') + '>' + inWeek.filter(function (x) { return x.day === dd && x.t === t; }).map(function (x) { return slotBtn(x); }).join('') + '</td>'; });
         g += '</tr>';
       });
       body = '<div class="hc-desk">' + g + '</tbody></table></div><div class="hc-mob">' + days.map(function (dd, j) {
