@@ -404,11 +404,17 @@ admin.post('/:id/notify', async (req, res, next) => {
 
     const url = '/30x30-hub#challenges';
     const data = JSON.stringify({ challenge_id: c.id, url });
-    for (const m of recipients) {
+    // in_app / push default on; { in_app:false, push:false, email:true } = email only
+    // (e.g. a follow-up email to people who already have the notification).
+    const inApp = b.in_app !== false, doPush = b.push !== false;
+    if (!inApp && !doPush && !b.email) return res.status(400).json({ error: 'Pick at least one way to send it.' });
+    let notified = 0;
+    for (const m of inApp ? recipients : []) {
       await query(`INSERT INTO notifications (member_id, type, title, body, data) VALUES ($1,'hub_challenge_message',$2,$3,$4)`, [m.id, title, body, data]);
+      notified++;
     }
     let pushed = 0;
-    try {
+    if (doPush) try {
       const r = await require('../services/push').sendBatch(recipients.map((m) => m.id), {
         title, body, push_type: 'hub_challenge_message', data: { challenge_id: c.id, url }, url: `${SITE}${url}`,
       });
@@ -424,9 +430,9 @@ admin.post('/:id/notify', async (req, res, next) => {
       }
     }
     try {
-      require('../services/audit').log(req, 'hub_challenge.notify', 'hub_challenge', c.id, { audience, title, body, recipients: recipients.length, pushed, emailed });
+      require('../services/audit').log(req, 'hub_challenge.notify', 'hub_challenge', c.id, { audience, title, body, recipients: recipients.length, notified, pushed, emailed, in_app: inApp, push: doPush, email: !!b.email });
     } catch (_) { /* audit is best-effort */ }
-    res.json({ ok: true, audience, sent: recipients.length, pushed, emailed });
+    res.json({ ok: true, audience, sent: recipients.length, notified, pushed, emailed });
   } catch (err) { next(err); }
 });
 
