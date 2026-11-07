@@ -77,6 +77,7 @@ function _renderHcList() {
       '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">' +
         '<button class="admin-btn" onclick="openHubChallengeResults(\'' + c.id + '\')" style="font-size:12px;padding:6px 12px;background:rgba(168,255,0,.12);color:#A8FF00;border:1px solid rgba(168,255,0,.35)">⏱ Results & leaderboard</button>' +
         '<button class="admin-btn" onclick="openHubChallengeRegs(\'' + c.id + '\')" style="font-size:12px;padding:6px 12px">👥 Registrations</button>' +
+        '<button class="admin-btn" onclick="openHubChallengeMsg(\'' + c.id + '\')" style="font-size:12px;padding:6px 12px">📣 Message participants</button>' +
         '<button class="admin-btn" onclick="openHubChallengeForm(\'' + c.id + '\')" style="font-size:12px;padding:6px 12px">✏️ Edit</button>' +
       '</div></div>';
   }).join('');
@@ -265,4 +266,54 @@ function loadHubBoard(stage) {
         }).join('') : '<div style="color:#666;font-size:12px">No results yet.</div>') + '</div>';
     }).join('') + '</div>' + (d.finals_cut ? '<div style="color:#888;font-size:11px;margin-top:6px">Q = inside the finals cut (top ' + d.finals_cut + (c.kind === 'team' ? '' : ' per board') + ')</div>' : '');
   }).catch(function () { host.innerHTML = '<div style="color:#f87171;padding:8px">Couldn’t load the leaderboard.</div>'; });
+}
+
+// ── message participants (founder 2026-11-07) ───────────────────
+// In-app notification + phone push (email optional) to the qualified
+// athletes or to everyone registered. Preview first, then send.
+function openHubChallengeMsg(id) {
+  var c = _hcState.list.find(function (x) { return x.id === id; }); _hcState.current = c;
+  var host = document.getElementById('hubChBody');
+  var back = '<button class="admin-btn" onclick="loadHubChallengesSection()" style="font-size:12px;margin-bottom:12px">← All challenges</button>';
+  host.innerHTML = back +
+    '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:4px">' + _escH(c.name) + ' — message participants</div>' +
+    '<div style="color:#888;font-size:12px;margin-bottom:14px">Goes to their notifications on the website and app, plus a push to their phone.</div>' +
+    '<div style="background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;padding:16px;max-width:640px">' +
+      '<label class="admin-form-label">Send to</label>' +
+      '<select class="admin-form-input" id="hcMsgAud" onchange="hcMsgPreview()" style="margin-bottom:12px">' +
+        '<option value="qualified">Qualified for the final' + (c.finals_cut_enabled ? ' (inside the top ' + c.finals_cut + ')' : '') + '</option>' +
+        '<option value="all">Everyone registered (' + c.entries_count + ')</option></select>' +
+      '<label class="admin-form-label">Title</label>' +
+      '<input class="admin-form-input" id="hcMsgTitle" maxlength="120" style="margin-bottom:12px">' +
+      '<label class="admin-form-label">Message</label>' +
+      '<textarea class="admin-form-input" id="hcMsgBody" maxlength="600" rows="4" style="margin-bottom:10px;resize:vertical"></textarea>' +
+      '<label style="display:flex;gap:8px;align-items:center;color:#ccc;font-size:13px;margin-bottom:14px"><input type="checkbox" id="hcMsgEmail"> Also send it by email</label>' +
+      '<div id="hcMsgWho" style="color:#888;font-size:12px;margin-bottom:14px">Loading recipients…</div>' +
+      '<button class="admin-btn admin-btn-primary" id="hcMsgSend" onclick="hcMsgSend()" style="font-size:13px">Send</button>' +
+    '</div>';
+  hcMsgPreview();
+}
+function hcMsgPreview() {
+  var c = _hcState.current, who = document.getElementById('hcMsgWho');
+  who.textContent = 'Loading recipients…';
+  _hcApi('POST', '/' + c.id + '/notify', { audience: document.getElementById('hcMsgAud').value, dry_run: true }).then(function (d) {
+    _hcState.msgCount = d.count;
+    who.innerHTML = '<b style="color:#fff">' + d.count + ' recipient' + (d.count === 1 ? '' : 's') + '</b>' +
+      (d.count ? ': ' + d.recipients.map(function (m) { return _escH(m.name); }).join(', ') : ' — nobody matches yet.');
+  }).catch(function (e) { who.innerHTML = '<span style="color:#f87171">' + _escH(e.message) + '</span>'; });
+}
+function hcMsgSend() {
+  var c = _hcState.current, g = function (x) { return document.getElementById(x); };
+  var title = g('hcMsgTitle').value.trim(), body = g('hcMsgBody').value.trim();
+  if (!title || !body) { _hcToast('Add a title and a message', false); return; }
+  var n = _hcState.msgCount || 0;
+  if (!n) { _hcToast('Nobody to send to', false); return; }
+  if (!confirm('Send "' + title + '" to ' + n + ' participant' + (n === 1 ? '' : 's') + (g('hcMsgEmail').checked ? ' (notification, push and email)' : ' (notification and push)') + '?')) return;
+  var btn = g('hcMsgSend'); btn.disabled = true; btn.textContent = 'Sending…';
+  _hcApi('POST', '/' + c.id + '/notify', { audience: g('hcMsgAud').value, title: title, body: body, email: g('hcMsgEmail').checked })
+    .then(function (d) {
+      _hcToast('Sent to ' + d.sent + ' · ' + d.pushed + ' phone push' + (d.pushed === 1 ? '' : 'es') + (g('hcMsgEmail').checked ? ' · ' + d.emailed + ' emails' : ''), true);
+      btn.textContent = 'Sent ✓';
+    })
+    .catch(function (e) { _hcToast(e.message, false); btn.disabled = false; btn.textContent = 'Send'; });
 }

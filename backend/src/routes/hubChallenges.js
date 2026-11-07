@@ -355,4 +355,79 @@ admin.post('/:id/results', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
+// ── message participants (founder 2026-11-07) ──────────────────
+// POST /admin/:id/notify { audience, title, body, email, dry_run }
+//   audience 'qualified' → athletes inside the finals cut on the qualifier
+//            board (the same people the final roster lists);
+//            'all'       → everyone registered for the challenge.
+// Sends an in-app notification (website bell + app inbox) and a phone
+// push; email only when asked. dry_run returns the recipients without
+// sending anything.
+async function _hubAudience(c, audience) {
+  let ids;
+  if (audience === 'qualified') {
+    const q = await hc.computeBoard(c.id, 'qualifier');
+    if (c.kind === 'team') {
+      const teamIds = q.boards[0].rows.filter((r) => r.qualified !== false).map((r) => r.team_id);
+      const { rows } = teamIds.length ? await query('SELECT member_id FROM hub_challenge_entries WHERE team_id = ANY($1::uuid[])', [teamIds]) : { rows: [] };
+      ids = rows.map((r) => r.member_id);
+    } else {
+      ids = [].concat(...q.boards.map((b) => b.rows.filter((r) => r.qualified !== false).map((r) => r.member_id)));
+    }
+  } else {
+    const { rows } = await query('SELECT member_id FROM hub_challenge_entries WHERE challenge_id=$1', [c.id]);
+    ids = rows.map((r) => r.member_id);
+  }
+  ids = [...new Set(ids.filter(Boolean))];
+  if (!ids.length) return [];
+  const { rows } = await query(
+    `SELECT m.id, m.first_name, m.last_name, m.member_number, m.email
+       FROM members m WHERE m.id = ANY($1::uuid[]) AND m.is_banned=false
+      ORDER BY m.first_name, m.last_name`, [ids]);
+  return rows;
+}
+
+admin.post('/:id/notify', async (req, res, next) => {
+  try {
+    const b = req.body || {};
+    const audience = b.audience === 'all' ? 'all' : 'qualified';
+    const title = String(b.title || '').trim().slice(0, 120);
+    const body = String(b.body || '').trim().slice(0, 600);
+    const { rows: cr } = await query('SELECT * FROM hub_challenges WHERE id=$1', [req.params.id]);
+    if (!cr.length) return res.status(404).json({ error: 'Challenge not found' });
+    const c = cr[0];
+    const recipients = await _hubAudience(c, audience);
+    const list = recipients.map((m) => ({ id: m.id, name: `${m.first_name || ''} ${m.last_name || ''}`.trim(), member_number: m.member_number, has_email: !!m.email }));
+    if (b.dry_run) return res.json({ audience, count: list.length, recipients: list });
+    if (!title || !body) return res.status(400).json({ error: 'Title and message are required.' });
+    if (!recipients.length) return res.status(400).json({ error: 'Nobody to send to.' });
+
+    const url = '/30x30-hub#challenges';
+    const data = JSON.stringify({ challenge_id: c.id, url });
+    for (const m of recipients) {
+      await query(`INSERT INTO notifications (member_id, type, title, body, data) VALUES ($1,'hub_challenge_message',$2,$3,$4)`, [m.id, title, body, data]);
+    }
+    let pushed = 0;
+    try {
+      const r = await require('../services/push').sendBatch(recipients.map((m) => m.id), {
+        title, body, push_type: 'hub_challenge_message', data: { challenge_id: c.id, url }, url: `${SITE}${url}`,
+      });
+      pushed = r.filter((x) => x && x.delivered).length;
+    } catch (e) { console.warn('[hub-challenges] push failed:', e.message); }
+    let emailed = 0;
+    if (b.email) {
+      const email = require('../services/email');
+      for (const m of recipients.filter((x) => x.email)) {
+        // eslint-disable-next-line no-await-in-loop
+        const r = await email.sendAnnouncement(m, { subject: title, title, body, url: `${SITE}${url}`, cta: 'Open the 30x30 Hub' }).catch((e) => ({ ok: false, reason: e.message }));
+        if (r && r.ok) emailed++;
+      }
+    }
+    try {
+      require('../services/audit').log(req, 'hub_challenge.notify', 'hub_challenge', c.id, { audience, title, body, recipients: recipients.length, pushed, emailed });
+    } catch (_) { /* audit is best-effort */ }
+    res.json({ ok: true, audience, sent: recipients.length, pushed, emailed });
+  } catch (err) { next(err); }
+});
+
 module.exports = { router, admin };

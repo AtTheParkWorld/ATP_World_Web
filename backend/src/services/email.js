@@ -577,6 +577,20 @@ async function sendRaw({ to, subject, html, replyTo }) {
   await sgMail.send(msg);
 }
 
+// ── ANNOUNCEMENT (founder 2026-11-07) ─────────────────────────
+// A short admin message to a group (e.g. 30x30 challenge finalists).
+// Plain text from the admin, escaped; line breaks kept.
+async function sendAnnouncement(member, { subject, title, body, url, cta }) {
+  if (!member || !member.email) return { ok: false, code: 'NO_EMAIL' };
+  const html = baseTemplate(
+    `<h1>${escapeHtml(title || subject || 'At The Park')}</h1>
+     <p>Hi ${escapeHtml(member.first_name || 'there')},</p>
+     <p>${escapeHtml(body || '').replace(/\n/g, '<br>')}</p>
+     ${url ? `<a href="${escapeHtml(url)}" class="btn">${escapeHtml(cta || 'Open')}</a>` : ''}`
+  );
+  return send(member.email, subject || title || 'At The Park', html);
+}
+
 // ── SESSION CANCELLATION (Audit 4.2) ──────────────────────────
 // Notifies a single member that their booked session was cancelled,
 // with refund context (points returned / Stripe refund / forfeited).
@@ -763,6 +777,7 @@ module.exports = {
   sendDeletionScheduled,
   sendSessionReminder,
   sendSessionCancellation,
+  sendAnnouncement,
   sendRaw,
   emailServiceStatus,
   sendCoachMessage,
