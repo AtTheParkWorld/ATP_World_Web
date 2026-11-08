@@ -78,6 +78,9 @@ function ensureSchema() {
       recorded_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       UNIQUE (entry_id, session_id)
     )`);
+    // 'level_time' challenges (founder 2026-11-08, Last One Standing): value =
+    // level reached, time_secs = optional time that breaks ties.
+    await query(`ALTER TABLE hub_challenge_results ADD COLUMN IF NOT EXISTS time_secs NUMERIC`);
     await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS hub_challenge_id UUID`);
     await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS hub_challenge_stage VARCHAR(10)`);
   })().catch((e) => { _schema = null; throw e; });
@@ -164,13 +167,16 @@ async function computeBoard(challengeId, stage) {
   const { rows: cr } = await query('SELECT * FROM hub_challenges WHERE id=$1', [challengeId]);
   const c = cr[0];
   if (!c) return null;
-  const lowerWins = c.result_type !== 'score';
-  const better = (a, b) => (lowerWins ? a < b : a > b);
+  // Ranking: 'time' lowest wins · 'score' highest wins · 'level_time'
+  // highest level wins, then the fastest time (no time ranks after a time).
+  const cmp = resultCompare(c.result_type);
+  const better = (a, b) => cmp(a, b) < 0;
   const cut = c.finals_cut_enabled && c.finals_cut > 0 ? c.finals_cut : null;
 
   if (c.kind === 'team') {
     const { rows } = await query(
-      `SELECT t.id AS team_id, t.name, r.session_id, SUM(r.value)::float AS total, COUNT(*)::int AS n
+      `SELECT t.id AS team_id, t.name, r.session_id, SUM(r.value)::float AS total, COUNT(*)::int AS n,
+              CASE WHEN COUNT(r.time_secs) = COUNT(*) THEN SUM(r.time_secs)::float END AS total_time
          FROM hub_challenge_results r
          JOIN hub_challenge_entries e ON e.id = r.entry_id
          JOIN hub_challenge_teams t ON t.id = e.team_id
@@ -179,22 +185,23 @@ async function computeBoard(challengeId, stage) {
     const need = c.team_min || 1;
     const best = {};
     rows.filter((r) => r.n >= need).forEach((r) => {
-      if (!best[r.team_id] || better(r.total, best[r.team_id].value)) best[r.team_id] = { team_id: r.team_id, name: r.name, value: r.total };
+      const x = { team_id: r.team_id, name: r.name, value: r.total, time: r.total_time };
+      if (!best[r.team_id] || better(x, best[r.team_id])) best[r.team_id] = x;
     });
-    const list = Object.values(best).sort((a, b) => (lowerWins ? a.value - b.value : b.value - a.value))
-      .map((x, i) => ({ rank: i + 1, team_id: x.team_id, name: x.name, value: x.value, qualified: cut ? i < cut : null }));
+    const list = Object.values(best).sort(cmp)
+      .map((x, i) => ({ rank: i + 1, team_id: x.team_id, name: x.name, value: x.value, time: x.time, qualified: cut ? i < cut : null }));
     return { challenge: publicChallenge(c), stage, boards: [{ key: 'teams', label: 'Teams', rows: list }], finals_cut: cut };
   }
 
   const { rows } = await query(
-    `SELECT e.id AS entry_id, e.member_id, m.first_name, m.last_name, m.gender, r.value::float AS value
+    `SELECT e.id AS entry_id, e.member_id, m.first_name, m.last_name, m.gender, r.value::float AS value, r.time_secs::float AS time
        FROM hub_challenge_results r
        JOIN hub_challenge_entries e ON e.id = r.entry_id
        JOIN members m ON m.id = e.member_id
       WHERE r.challenge_id=$1 AND r.stage=$2`, [challengeId, stage]);
   const best = {};
   rows.forEach((r) => {
-    if (!best[r.entry_id] || better(r.value, best[r.entry_id].value)) best[r.entry_id] = r;
+    if (!best[r.entry_id] || better(r, best[r.entry_id])) best[r.entry_id] = r;
   });
   const all = Object.values(best);
   const groups = c.split_gender
@@ -202,8 +209,8 @@ async function computeBoard(challengeId, stage) {
     : [['all', 'All athletes']];
   const boards = groups.map(([key, label]) => {
     const list = all.filter((r) => key === 'all' || genderGroup(r.gender) === key)
-      .sort((a, b) => (lowerWins ? a.value - b.value : b.value - a.value))
-      .map((r, i) => ({ rank: i + 1, entry_id: r.entry_id, member_id: r.member_id, name: shortName(r.first_name, r.last_name), value: r.value, qualified: cut ? i < cut : null }));
+      .sort(cmp)
+      .map((r, i) => ({ rank: i + 1, entry_id: r.entry_id, member_id: r.member_id, name: shortName(r.first_name, r.last_name), value: r.value, time: r.time == null ? null : r.time, qualified: cut ? i < cut : null }));
     return { key, label, rows: list };
   }).filter((b) => b.key !== 'other' || b.rows.length);
   return { challenge: publicChallenge(c), stage, boards, finals_cut: cut };
@@ -222,6 +229,29 @@ function publicChallenge(c) {
   };
 }
 
+// Sort comparator over { value, time } (negative = a ranks first).
+function resultCompare(type) {
+  if (type === 'score') return (a, b) => b.value - a.value;
+  if (type === 'level_time') {
+    return (a, b) => {
+      if (b.value !== a.value) return b.value - a.value;
+      const at = a.time == null ? null : +a.time, bt = b.time == null ? null : +b.time;
+      if (at === null && bt === null) return 0;
+      if (at === null) return 1;
+      if (bt === null) return -1;
+      return at - bt;
+    };
+  }
+  return (a, b) => a.value - b.value;
+}
+
+// 'level_time' level: a whole number ≥ 0, "5" or "L5" / "Level 5".
+function parseLevel(raw) {
+  if (raw === null || raw === undefined || String(raw).trim() === '') return null;
+  const m = /^(?:l(?:evel)?\s*)?(\d+)$/i.exec(String(raw).trim());
+  return m ? Number(m[1]) : NaN;
+}
+
 // Values: 'time' results are stored in seconds. Accepts "mm:ss", "mm:ss.s",
 // "h:mm:ss" or plain seconds; 'score' accepts a number.
 function parseResult(raw, type) {
@@ -234,4 +264,4 @@ function parseResult(raw, type) {
   return parts.reduce((acc, p) => acc * 60 + Number(p), 0);
 }
 
-module.exports = { ensureSchema, bookingGate, afterBooking, computeBoard, publicChallenge, parseResult, inviteCode, dubaiDate, shortName, teamSizeLabel };
+module.exports = { ensureSchema, bookingGate, afterBooking, computeBoard, publicChallenge, parseResult, parseLevel, resultCompare, inviteCode, dubaiDate, shortName, teamSizeLabel };

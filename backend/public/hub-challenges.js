@@ -70,9 +70,11 @@
   function t12(t) { var p = t.split(':'), h = +p[0]; return (h % 12 || 12) + ':' + p[1] + ' ' + (h < 12 ? 'AM' : 'PM'); }
   function whenLong(iso) { var d = dubai(iso); return DOWL[d.getUTCDay()] + ', ' + d.getUTCDate() + ' ' + MONL[d.getUTCMonth()] + ' · ' + t12(hhmm(iso)); }
   function dayLabel(ymd) { if (!ymd) return ''; var d = new Date(String(ymd).slice(0, 10) + 'T12:00:00Z'); return DOW[d.getUTCDay()].charAt(0) + DOW[d.getUTCDay()].slice(1).toLowerCase() + ' ' + d.getUTCDate() + ' ' + MON[d.getUTCMonth()]; }
-  function fmt(v, c) {
+  function fmt(v, c, t) {
     if (v == null) return '—';
     if (c.result_type === 'score') return (+v) + (c.result_unit ? ' ' + c.result_unit : '');
+    // Level + time (Last One Standing): highest level, fastest time breaks ties
+    if (c.result_type === 'level_time') return 'Level ' + (+v) + (t != null ? ' · ' + fmt(t, {}) : '');
     var s = +v, m = Math.floor(s / 60), r = Math.round((s - m * 60) * 10) / 10;
     var rs = r % 1 ? r.toFixed(1) : String(r);
     return m ? m + ':' + (r < 10 ? '0' : '') + rs : rs + 's';
@@ -270,7 +272,7 @@
         var rows = '', cutDrawn = false;
         b.rows.forEach(function (row) {
           if (d.finals_cut && S.boardStage === 'qualifier' && !cutDrawn && row.qualified === false) { rows += '<div class="hc-cutline">Finals cut · top ' + d.finals_cut + '</div>'; cutDrawn = true; }
-          rows += '<div class="hc-row' + (S.boardStage === 'qualifier' && row.qualified === true ? ' q' : '') + (S.boardStage === 'qualifier' && row.qualified === false ? ' out' : '') + '"><span class="rk">' + row.rank + '</span><span class="nm">' + esc(row.name) + '</span><span class="v">' + esc(fmt(row.value, c)) + '</span></div>';
+          rows += '<div class="hc-row' + (S.boardStage === 'qualifier' && row.qualified === true ? ' q' : '') + (S.boardStage === 'qualifier' && row.qualified === false ? ' out' : '') + '"><span class="rk">' + row.rank + '</span><span class="nm">' + esc(row.name) + '</span><span class="v">' + esc(fmt(row.value, c, row.time)) + '</span></div>';
         });
         return '<div class="hc-board"><h4><span>' + esc(b.label) + '</span>' + logo(c.name, 'hc-bvec', 'vector', 'dark') + '</h4>' + rows + '</div>';
       }).join('') + '</div>' + (d.finals_cut && S.boardStage === 'qualifier' ? '<p class="hc-note" style="text-align:left">Green = qualifying for the final. Every attempt counts — your best result ranks.</p>' : '');

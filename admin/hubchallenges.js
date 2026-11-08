@@ -31,9 +31,10 @@ function _hcDay(d) {
 function _hcWhen(iso) {
   try { return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Dubai', weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }); } catch (e) { return String(iso); }
 }
-function _hcFmt(v, c) {
+function _hcFmt(v, c, t) {
   if (v == null || v === '') return '';
   if (c && c.result_type === 'score') return String(+v) + (c.result_unit ? ' ' + c.result_unit : '');
+  if (c && c.result_type === 'level_time') return 'Level ' + (+v) + (t != null && t !== '' ? ' · ' + _hcFmt(t) : '');
   var s = +v, m = Math.floor(s / 60), r = s - m * 60;
   var rs = (Math.round(r * 10) / 10).toFixed(r % 1 ? 1 : 0);
   return m ? m + ':' + (r < 10 ? '0' : '') + rs : rs + 's';
@@ -108,7 +109,7 @@ function openHubChallengeForm(id) {
       '</div><div style="font-size:11px;color:#666">The captain registers the team; teammates join with the link. A team ranks once it has the minimum number of results in one slot — its result is the members’ total.</div>' +
     '</div>' +
     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">' +
-      row('Results are', '<select class="admin-form-select" id="hcResType"><option value="time"' + (c.result_type !== 'score' ? ' selected' : '') + '>Time — lowest wins (mm:ss)</option><option value="score"' + (c.result_type === 'score' ? ' selected' : '') + '>Score — highest wins</option></select>') +
+      row('Results are', '<select class="admin-form-select" id="hcResType"><option value="time"' + (c.result_type !== 'score' && c.result_type !== 'level_time' ? ' selected' : '') + '>Time — lowest wins (mm:ss)</option><option value="score"' + (c.result_type === 'score' ? ' selected' : '') + '>Score — highest wins</option><option value="level_time"' + (c.result_type === 'level_time' ? ' selected' : '') + '>Level + time — highest level wins, fastest time breaks ties</option></select>') +
       row('Score unit (optional)', inp('hcUnit', c.result_unit, 'text', 'reps, level, m…')) +
     '</div>' +
     '<label id="hcGenderBox" style="display:flex;gap:8px;align-items:center;margin-bottom:12px;color:#ccc;font-size:13px"><input type="checkbox" id="hcGender"' + (c.split_gender !== false ? ' checked' : '') + '> Separate men’s and women’s leaderboards (uses the member’s profile gender)</label>' +
@@ -212,7 +213,7 @@ function openHubChallengeResults(id, slotId) {
     }).join('');
     host.innerHTML = '<button class="admin-btn" onclick="loadHubChallengesSection()" style="font-size:12px;margin-bottom:12px">← All challenges</button>' +
       '<div style="font-size:16px;font-weight:800;color:#fff;margin-bottom:4px">' + _escH(c.name) + ' — results</div>' +
-      '<div style="color:#888;font-size:12px;margin-bottom:14px">' + (c.result_type === 'score' ? 'Score — highest wins' + (c.result_unit ? ' (' + _escH(c.result_unit) + ')' : '') : 'Time — lowest wins. Type 1:02.5 or 62.5') + ' · every attempt counts, the best one ranks' + (c.kind === 'team' ? ' · team result = members’ total in one slot' : '') + '</div>' +
+      '<div style="color:#888;font-size:12px;margin-bottom:14px">' + (c.result_type === 'score' ? 'Score — highest wins' + (c.result_unit ? ' (' + _escH(c.result_unit) + ')' : '') : c.result_type === 'level_time' ? 'Level + time — highest level wins; the fastest time breaks ties. Time is optional (type 3:42 or 3:42.5)' : 'Time — lowest wins. Type 1:02.5 or 62.5') + ' · every attempt counts, the best one ranks' + (c.kind === 'team' ? ' · team result = members’ total in one slot' : '') + '</div>' +
       (_hcState.slots.length
         ? '<label class="admin-form-label">Slot</label><select class="admin-form-select" id="hcSlotSel" onchange="loadHubRoster()" style="max-width:520px"><option value="">— Pick a slot —</option>' + opts + '</select>'
         : '<div style="color:#f5c042;padding:12px 0">No slots yet — create them in Sessions with the 🏁 30x30 Challenge category.</div>') +
@@ -240,15 +241,21 @@ function loadHubRoster() {
       _hcState.roster.map(function (r) {
         return '<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #161616">' +
           '<div style="flex:1;min-width:0"><span style="color:#fff">' + _escH((r.first_name || '') + ' ' + (r.last_name || '')) + '</span> <span style="color:#666;font-size:11px">' + _escH(r.member_number || '') + (r.team_name ? ' · ' + _escH(r.team_name) : '') + '</span></div>' +
-          '<input class="admin-form-input" data-hc-entry="' + r.entry_id + '" value="' + _escH(r.value == null ? '' : (c.result_type === 'score' ? +r.value : _hcFmt(r.value, c).replace(/s$/, ''))) + '" placeholder="' + (c.result_type === 'score' ? (c.result_unit || 'score') : 'm:ss.s') + '" style="width:120px;padding:6px 8px">' +
+          (c.result_type === 'level_time'
+            ? '<input class="admin-form-input" type="number" min="0" step="1" inputmode="numeric" data-hc-entry="' + r.entry_id + '" value="' + _escH(r.value == null ? '' : +r.value) + '" placeholder="Level" title="Level reached" style="width:80px;padding:6px 8px">' +
+              '<input class="admin-form-input" data-hc-time="' + r.entry_id + '" value="' + _escH(r.time == null ? '' : _hcFmt(r.time).replace(/s$/, '')) + '" placeholder="Time m:ss" title="Time (optional)" style="width:100px;padding:6px 8px">'
+            : '<input class="admin-form-input" data-hc-entry="' + r.entry_id + '" value="' + _escH(r.value == null ? '' : (c.result_type === 'score' ? +r.value : _hcFmt(r.value, c).replace(/s$/, ''))) + '" placeholder="' + (c.result_type === 'score' ? (c.result_unit || 'score') : 'm:ss.s') + '" style="width:120px;padding:6px 8px">') +
         '</div>';
       }).join('') +
-      '<div style="padding:12px 0;display:flex;gap:8px;align-items:center"><button class="admin-btn admin-btn-primary" onclick="saveHubResults()" style="font-size:12px">Save results</button><span style="color:#666;font-size:11px">Leave empty for no result (did not start)</span></div></div>';
+      '<div style="padding:12px 0;display:flex;gap:8px;align-items:center"><button class="admin-btn admin-btn-primary" onclick="saveHubResults()" style="font-size:12px">Save results</button><span style="color:#666;font-size:11px">' + (c.result_type === 'level_time' ? 'Leave the level empty for no result (did not start) · time is optional' : 'Leave empty for no result (did not start)') + '</span></div></div>';
   }).catch(function (e) { host.innerHTML = '<div style="color:#f87171;padding:10px">' + _escH(e.message) + '</div>'; });
 }
 function saveHubResults() {
   var c = _hcState.current;
-  var results = Array.prototype.map.call(document.querySelectorAll('#hcRoster [data-hc-entry]'), function (el) { return { entry_id: el.getAttribute('data-hc-entry'), value: el.value }; });
+  var results = Array.prototype.map.call(document.querySelectorAll('#hcRoster [data-hc-entry]'), function (el) {
+    var id = el.getAttribute('data-hc-entry'), t = document.querySelector('#hcRoster [data-hc-time="' + id + '"]');
+    return t ? { entry_id: id, value: el.value, time: t.value } : { entry_id: id, value: el.value };
+  });
   _hcApi('POST', '/' + c.id + '/results', { session_id: _hcState.slot, results: results })
     .then(function (d) { _hcToast(d.saved + ' result' + (d.saved === 1 ? '' : 's') + ' saved', true); openHubChallengeResults(c.id, _hcState.slot); })
     .catch(function (e) { _hcToast(e.message, false); });
@@ -261,7 +268,7 @@ function loadHubBoard(stage) {
     host.innerHTML = '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px">' + d.boards.map(function (b) {
       return '<div style="background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;padding:12px"><div style="color:#A8FF00;font-size:12px;font-weight:800;text-transform:uppercase;margin-bottom:6px">' + _escH(b.label) + (stage === 'final' ? ' · final' : '') + '</div>' +
         (b.rows.length ? b.rows.map(function (r) {
-          return '<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid #161616;font-size:13px;' + (r.qualified === false ? 'opacity:.55' : '') + '"><span style="width:24px;color:#888">' + r.rank + '</span><span style="flex:1;color:#fff">' + _escH(r.name) + '</span><span style="color:#ddd">' + _escH(_hcFmt(r.value, c)) + '</span>' +
+          return '<div style="display:flex;gap:8px;padding:5px 0;border-bottom:1px solid #161616;font-size:13px;' + (r.qualified === false ? 'opacity:.55' : '') + '"><span style="width:24px;color:#888">' + r.rank + '</span><span style="flex:1;color:#fff">' + _escH(r.name) + '</span><span style="color:#ddd">' + _escH(_hcFmt(r.value, c, r.time)) + '</span>' +
             (r.qualified === true ? '<span style="color:#A8FF00;font-size:11px">Q</span>' : '') + '</div>';
         }).join('') : '<div style="color:#666;font-size:12px">No results yet.</div>') + '</div>';
     }).join('') + '</div>' + (d.finals_cut ? '<div style="color:#888;font-size:11px;margin-top:6px">Q = inside the finals cut (top ' + d.finals_cut + (c.kind === 'team' ? '' : ' per board') + ')</div>' : '');

@@ -32,7 +32,7 @@ export interface HubChallenge {
   team_min: number | null;
   team_max: number | null;
   team_size_label: string | null;
-  result_type: 'time' | 'score';
+  result_type: 'time' | 'score' | 'level_time';
   result_unit: string | null;
   split_gender: boolean;
   finals_cut_enabled: boolean;
@@ -49,7 +49,7 @@ export interface HubChallenge {
   my_entry?: { donation_choice: 'yes' | 'no' | null; team: HubTeam | null } | null;
 }
 
-export interface BoardRow { rank: number; name: string; value: number; qualified: boolean | null }
+export interface BoardRow { rank: number; name: string; value: number; time?: number | null; qualified: boolean | null }
 export interface Board { key: string; label: string; rows: BoardRow[] }
 export interface Leaderboard { stage: 'qualifier' | 'final'; boards: Board[]; finals_cut: number | null }
 
@@ -126,8 +126,10 @@ export function weekOf(day: number): number {
 export function kindLabel(c: HubChallenge): string {
   return c.kind === 'team' ? `Team · ${c.team_min === c.team_max ? c.team_max : `${c.team_min}–${c.team_max}`} members` : 'Individual';
 }
-export function formatResult(v: number, c: Pick<HubChallenge, 'result_type' | 'result_unit'>): string {
+export function formatResult(v: number, c: Pick<HubChallenge, 'result_type' | 'result_unit'>, t?: number | null): string {
   if (c.result_type === 'score') return `${+v}${c.result_unit ? ` ${c.result_unit}` : ''}`;
+  // Level + time (Last One Standing): highest level, fastest time breaks ties
+  if (c.result_type === 'level_time') return `Level ${+v}${t != null ? ` · ${formatResult(t, { result_type: 'time', result_unit: null })}` : ''}`;
   const m = Math.floor(v / 60), r = Math.round((v - m * 60) * 10) / 10;
   const rs = r % 1 ? r.toFixed(1) : String(r);
   return m ? `${m}:${r < 10 ? '0' : ''}${rs}` : `${rs}s`;

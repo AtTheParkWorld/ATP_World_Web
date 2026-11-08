@@ -252,7 +252,7 @@ function ResultsTab({ challenges, loading }: { challenges?: HubChallenge[]; load
                   <View className={`flex-row px-4 py-2.5 border-t border-white/5 ${stage === 'qualifier' && r.qualified === true ? 'bg-atp-green/10' : ''}`}>
                     <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.muted, width: 28 }} className="text-sm">{r.rank}</Text>
                     <Text style={{ fontFamily: fontFamily.body, color: r.qualified === false && stage === 'qualifier' ? colors.muted : colors.white }} className="text-sm flex-1">{r.name}</Text>
-                    <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">{formatResult(r.value, c)}</Text>
+                    <Text style={{ fontFamily: fontFamily.bodyBold, color: colors.white }} className="text-sm">{formatResult(r.value, c, r.time)}</Text>
                   </View>
                 </View>
               );

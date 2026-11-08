@@ -169,7 +169,7 @@ function cleanChallenge(b) {
     name: String(b.name || '').trim().slice(0, 120),
     description: b.description ? String(b.description).slice(0, 4000) : null,
     kind: b.kind === 'team' ? 'team' : 'individual',
-    result_type: b.result_type === 'score' ? 'score' : 'time',
+    result_type: ['score', 'level_time'].includes(b.result_type) ? b.result_type : 'time',
     result_unit: b.result_unit ? String(b.result_unit).trim().slice(0, 20) : null,
     split_gender: b.split_gender !== false,
     finals_cut_enabled: !!b.finals_cut_enabled,
@@ -314,7 +314,7 @@ admin.get('/:id/slots/:sessionId/roster', async (req, res, next) => {
     if (!memberIds.length) return res.json({ stage, roster: [] });
     const { rows } = await query(
       `SELECT e.id AS entry_id, e.member_id, m.first_name, m.last_name, m.member_number, m.gender, t.name AS team_name,
-              r.value::float AS value
+              r.value::float AS value, r.time_secs::float AS time
          FROM hub_challenge_entries e
          JOIN members m ON m.id=e.member_id
          LEFT JOIN hub_challenge_teams t ON t.id=e.team_id
@@ -325,7 +325,8 @@ admin.get('/:id/slots/:sessionId/roster', async (req, res, next) => {
   } catch (err) { next(err); }
 });
 
-// Body: { session_id, results: [{ entry_id, value }] } — value '' / null clears it.
+// Body: { session_id, results: [{ entry_id, value, time? }] } — value '' / null clears it.
+// 'level_time' challenges: value = level reached, time = optional m:ss.
 admin.post('/:id/results', async (req, res, next) => {
   try {
     const { session_id, results } = req.body || {};
@@ -335,22 +336,24 @@ admin.post('/:id/results', async (req, res, next) => {
     const { rows: cr } = await query('SELECT result_type FROM hub_challenges WHERE id=$1', [req.params.id]);
     const bad = [];
     let saved = 0, cleared = 0;
+    const lt = cr[0].result_type === 'level_time';
     for (const r of results) {
-      const v = hc.parseResult(r.value, cr[0].result_type);
+      const v = lt ? hc.parseLevel(r.value) : hc.parseResult(r.value, cr[0].result_type);
+      const t = lt ? hc.parseResult(r.time, 'time') : null;
       if (v === null) {
         const d = await query('DELETE FROM hub_challenge_results WHERE entry_id=$1 AND session_id=$2', [r.entry_id, session_id]);
         cleared += d.rowCount || 0;
         continue;
       }
-      if (Number.isNaN(v) || v < 0) { bad.push(r.entry_id); continue; }
+      if (Number.isNaN(v) || v < 0 || Number.isNaN(t) || (t !== null && t < 0)) { bad.push(r.entry_id); continue; }
       await query(
-        `INSERT INTO hub_challenge_results (challenge_id, entry_id, session_id, stage, value, recorded_by)
-         SELECT $1, e.id, $3, $4, $5, $6 FROM hub_challenge_entries e WHERE e.id=$2 AND e.challenge_id=$1
-         ON CONFLICT (entry_id, session_id) DO UPDATE SET value=EXCLUDED.value, recorded_by=EXCLUDED.recorded_by, recorded_at=NOW(), stage=EXCLUDED.stage`,
-        [req.params.id, r.entry_id, session_id, sr[0].stage, v, req.member.id]);
+        `INSERT INTO hub_challenge_results (challenge_id, entry_id, session_id, stage, value, time_secs, recorded_by)
+         SELECT $1, e.id, $3, $4, $5, $7, $6 FROM hub_challenge_entries e WHERE e.id=$2 AND e.challenge_id=$1
+         ON CONFLICT (entry_id, session_id) DO UPDATE SET value=EXCLUDED.value, time_secs=EXCLUDED.time_secs, recorded_by=EXCLUDED.recorded_by, recorded_at=NOW(), stage=EXCLUDED.stage`,
+        [req.params.id, r.entry_id, session_id, sr[0].stage, v, req.member.id, t]);
       saved++;
     }
-    if (bad.length) return res.status(400).json({ error: `${bad.length} result(s) not understood — use mm:ss or seconds for times, a number for scores.`, bad, saved, cleared });
+    if (bad.length) return res.status(400).json({ error: `${bad.length} result(s) not understood — ${lt ? 'level = a whole number, time = m:ss (optional)' : 'use mm:ss or seconds for times, a number for scores'}.`, bad, saved, cleared });
     res.json({ ok: true, saved, cleared });
   } catch (err) { next(err); }
 });
