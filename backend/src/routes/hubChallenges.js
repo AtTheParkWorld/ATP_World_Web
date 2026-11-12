@@ -11,7 +11,8 @@
  *          POST /teams/:code/join                   teammate joins with the link
  *          POST /:id/donation            { choice: 'yes'|'no' }
  * Admin:   GET/POST/PATCH/DELETE /admin…  challenges, registrations, slots,
- *          roster per slot, results, remove an entry
+ *          roster per slot, results, remove an entry, reset / undo-reset a
+ *          stage's leaderboard, message participants
  */
 const router = require('express').Router();
 const { query } = require('../db');
@@ -282,9 +283,9 @@ admin.get('/:id/slots', async (req, res, next) => {
     const { rows } = await query(
       `SELECT s.id, s.name, s.scheduled_at, s.status, COALESCE(s.hub_challenge_stage,'qualifier') AS stage, s.capacity,
               (SELECT COUNT(*)::int FROM bookings b WHERE b.session_id=s.id AND b.status IN ('confirmed','attended')) AS booked,
-              (SELECT COUNT(*)::int FROM hub_challenge_results r WHERE r.session_id=s.id) AS results
+              (SELECT COUNT(*)::int FROM hub_challenge_results r WHERE r.session_id=s.id AND r.archived_at IS NULL) AS results
          FROM sessions s WHERE s.hub_challenge_id=$1 AND s.status<>'cancelled' ORDER BY s.scheduled_at`, [req.params.id]);
-    res.json({ slots: rows });
+    res.json({ slots: rows, resets: await _lastResets(req.params.id) });
   } catch (err) { next(err); }
 });
 
@@ -318,7 +319,7 @@ admin.get('/:id/slots/:sessionId/roster', async (req, res, next) => {
          FROM hub_challenge_entries e
          JOIN members m ON m.id=e.member_id
          LEFT JOIN hub_challenge_teams t ON t.id=e.team_id
-         LEFT JOIN hub_challenge_results r ON r.entry_id=e.id AND r.session_id=$2
+         LEFT JOIN hub_challenge_results r ON r.entry_id=e.id AND r.session_id=$2 AND r.archived_at IS NULL
         WHERE e.challenge_id=$1 AND e.member_id = ANY($3::uuid[])
         ORDER BY t.name NULLS LAST, m.first_name`, [c.id, req.params.sessionId, memberIds]);
     res.json({ stage, roster: rows });
@@ -341,7 +342,7 @@ admin.post('/:id/results', async (req, res, next) => {
       const v = lt ? hc.parseLevel(r.value) : hc.parseResult(r.value, cr[0].result_type);
       const t = lt ? hc.parseResult(r.time, 'time') : null;
       if (v === null) {
-        const d = await query('DELETE FROM hub_challenge_results WHERE entry_id=$1 AND session_id=$2', [r.entry_id, session_id]);
+        const d = await query('DELETE FROM hub_challenge_results WHERE entry_id=$1 AND session_id=$2 AND archived_at IS NULL', [r.entry_id, session_id]);
         cleared += d.rowCount || 0;
         continue;
       }
@@ -349,12 +350,56 @@ admin.post('/:id/results', async (req, res, next) => {
       await query(
         `INSERT INTO hub_challenge_results (challenge_id, entry_id, session_id, stage, value, time_secs, recorded_by)
          SELECT $1, e.id, $3, $4, $5, $7, $6 FROM hub_challenge_entries e WHERE e.id=$2 AND e.challenge_id=$1
-         ON CONFLICT (entry_id, session_id) DO UPDATE SET value=EXCLUDED.value, time_secs=EXCLUDED.time_secs, recorded_by=EXCLUDED.recorded_by, recorded_at=NOW(), stage=EXCLUDED.stage`,
+         ON CONFLICT (entry_id, session_id) DO UPDATE SET value=EXCLUDED.value, time_secs=EXCLUDED.time_secs, recorded_by=EXCLUDED.recorded_by, recorded_at=NOW(), stage=EXCLUDED.stage, archived_at=NULL, archived_by=NULL`,
         [req.params.id, r.entry_id, session_id, sr[0].stage, v, req.member.id, t]);
       saved++;
     }
     if (bad.length) return res.status(400).json({ error: `${bad.length} result(s) not understood — ${lt ? 'level = a whole number, time = m:ss (optional)' : 'use mm:ss or seconds for times, a number for scores'}.`, bad, saved, cleared });
     res.json({ ok: true, saved, cleared });
+  } catch (err) { next(err); }
+});
+
+// ── reset a leaderboard (founder 2026-11-12) ─────────────────────
+// POST /admin/:id/reset       { stage: 'qualifier'|'final' } hides every
+//      result of that stage (the board starts empty again).
+// POST /admin/:id/reset/undo  { stage } brings back the last reset batch.
+// Nothing is deleted. Re-entering a result for the same athlete + slot
+// after a reset replaces the hidden one.
+const STAGES = ['qualifier', 'final'];
+async function _lastResets(challengeId) {
+  const { rows } = await query(
+    `SELECT stage, archived_at AS at, COUNT(*)::int AS count FROM hub_challenge_results
+      WHERE challenge_id=$1 AND archived_at IS NOT NULL AND (stage, archived_at) IN (
+        SELECT stage, MAX(archived_at) FROM hub_challenge_results WHERE challenge_id=$1 AND archived_at IS NOT NULL GROUP BY stage)
+      GROUP BY stage, archived_at`, [challengeId]);
+  const out = {}; rows.forEach((r) => { out[r.stage] = { at: r.at, count: r.count }; });
+  return out;
+}
+admin.post('/:id/reset', async (req, res, next) => {
+  try {
+    const stage = (req.body || {}).stage;
+    if (!STAGES.includes(stage)) return res.status(400).json({ error: 'stage must be qualifier or final' });
+    const { rows: cr } = await query('SELECT id, name FROM hub_challenges WHERE id=$1', [req.params.id]);
+    if (!cr.length) return res.status(404).json({ error: 'Challenge not found' });
+    const { rowCount } = await query(
+      `UPDATE hub_challenge_results SET archived_at=NOW(), archived_by=$3
+        WHERE challenge_id=$1 AND stage=$2 AND archived_at IS NULL`, [req.params.id, stage, req.member.id]);
+    try { require('../services/audit').log(req, 'hub_challenge.leaderboard.reset', 'hub_challenge', req.params.id, { stage, results: rowCount }); } catch (_) { /* best-effort */ }
+    res.json({ ok: true, stage, reset: rowCount });
+  } catch (err) { next(err); }
+});
+admin.post('/:id/reset/undo', async (req, res, next) => {
+  try {
+    const stage = (req.body || {}).stage;
+    if (!STAGES.includes(stage)) return res.status(400).json({ error: 'stage must be qualifier or final' });
+    // Match the batch inside SQL: a JS Date drops the microseconds of archived_at.
+    const { rowCount } = await query(
+      `UPDATE hub_challenge_results SET archived_at=NULL, archived_by=NULL
+        WHERE challenge_id=$1 AND stage=$2 AND archived_at = (
+          SELECT MAX(archived_at) FROM hub_challenge_results WHERE challenge_id=$1 AND stage=$2 AND archived_at IS NOT NULL)`, [req.params.id, stage]);
+    if (!rowCount) return res.status(404).json({ error: 'Nothing to undo for this leaderboard.' });
+    try { require('../services/audit').log(req, 'hub_challenge.leaderboard.reset_undone', 'hub_challenge', req.params.id, { stage, results: rowCount }); } catch (_) { /* best-effort */ }
+    res.json({ ok: true, stage, restored: rowCount });
   } catch (err) { next(err); }
 });
 

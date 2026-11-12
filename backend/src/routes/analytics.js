@@ -688,10 +688,15 @@ router.get('/challenge-results/:id', authenticate, requireAdmin, async (req, res
     const { rows: cr } = await query('SELECT * FROM hub_challenges WHERE id = $1', [req.params.id]);
     const c = cr[0];
     if (!c) return res.status(404).json({ error: 'Challenge not found' });
-    const fmtVal = (v) => {
+    const fmtVal = (v, t) => {
       if (v == null) return '';
       const n = Number(v);
       if (c.result_type === 'score') return String(+n) + (c.result_unit ? ' ' + c.result_unit : '');
+      if (c.result_type === 'level_time') return 'Level ' + (+n) + (t != null ? ' · ' + fmtTime(t) : '');
+      return fmtTime(n);
+    };
+    const fmtTime = (n) => {
+      n = Number(n);
       const mm = Math.floor(n / 60), rest = Math.round((n - mm * 60) * 10) / 10;
       const rs = rest % 1 ? rest.toFixed(1) : String(rest);
       return mm ? mm + ':' + (rest < 10 ? '0' : '') + rs : rs + 's';
@@ -705,16 +710,16 @@ router.get('/challenge-results/:id', authenticate, requireAdmin, async (req, res
                 to_char(s.scheduled_at AT TIME ZONE '${_DUBAI}', 'YYYY-MM-DD') AS slot_date,
                 to_char(s.scheduled_at AT TIME ZONE '${_DUBAI}', 'HH24:MI')    AS slot_time,
                 t.name AS team, m.member_number, m.first_name, m.last_name, m.gender, m.email, m.phone,
-                r.value::float AS raw_value,
+                r.value::float AS raw_value, r.time_secs::float AS raw_time,
                 to_char(r.recorded_at AT TIME ZONE '${_DUBAI}', 'YYYY-MM-DD HH24:MI') AS recorded_at
            FROM hub_challenge_results r
            JOIN hub_challenge_entries e ON e.id = r.entry_id
            JOIN members m ON m.id = e.member_id
            LEFT JOIN hub_challenge_teams t ON t.id = e.team_id
            LEFT JOIN sessions s ON s.id = r.session_id
-          WHERE r.challenge_id = $1
+          WHERE r.challenge_id = $1 AND r.archived_at IS NULL
           ORDER BY r.stage, s.scheduled_at, t.name NULLS FIRST, m.first_name`, [c.id]);
-      rows.forEach((x) => { x.result = fmtVal(x.raw_value); });
+      rows.forEach((x) => { x.result = fmtVal(x.raw_value, x.raw_time); });
       const cols = ['stage', 'slot_date', 'slot_time', 'team', 'member_number', 'first_name', 'last_name', 'gender', 'email', 'phone', 'result', 'raw_value', 'recorded_at'];
       if (c.kind !== 'team') cols.splice(cols.indexOf('team'), 1);
       return _sendData(req, res, rows, cols, slug + '-all-results');
@@ -731,7 +736,7 @@ router.get('/challenge-results/:id', authenticate, requireAdmin, async (req, res
       const byTeam = Object.fromEntries(members.map((x) => [x.team_id, x.members]));
       (board ? board.boards : []).forEach((b) => b.rows.forEach((x) => out.push({
         board: b.label, rank: x.rank, team: x.name, members: byTeam[x.team_id] || '',
-        best_result: fmtVal(x.value), raw_value: x.value,
+        best_result: fmtVal(x.value, x.time), raw_value: x.value,
         qualified_for_final: x.qualified == null ? '' : x.qualified ? 'Yes' : 'No',
       })));
       return _sendData(req, res, out, ['board', 'rank', 'team', 'members', 'best_result', 'raw_value', 'qualified_for_final'], slug + '-' + stage + '-leaderboard');
@@ -746,7 +751,7 @@ router.get('/challenge-results/:id', authenticate, requireAdmin, async (req, res
       const m = byId[x.member_id] || {};
       out.push({
         board: b.label, rank: x.rank, member_number: m.member_number, first_name: m.first_name, last_name: m.last_name,
-        gender: m.gender, email: m.email, phone: m.phone, best_result: fmtVal(x.value), raw_value: x.value,
+        gender: m.gender, email: m.email, phone: m.phone, best_result: fmtVal(x.value, x.time), raw_value: x.value,
         qualified_for_final: x.qualified == null ? '' : x.qualified ? 'Yes' : 'No',
       });
     }));

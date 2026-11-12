@@ -81,6 +81,10 @@ function ensureSchema() {
     // 'level_time' challenges (founder 2026-11-08, Last One Standing): value =
     // level reached, time_secs = optional time that breaks ties.
     await query(`ALTER TABLE hub_challenge_results ADD COLUMN IF NOT EXISTS time_secs NUMERIC`);
+    // Leaderboard reset (founder 2026-11-12): a reset hides a stage's results
+    // (archived_at) instead of deleting them, so it can be undone.
+    await query(`ALTER TABLE hub_challenge_results ADD COLUMN IF NOT EXISTS archived_at TIMESTAMPTZ`);
+    await query(`ALTER TABLE hub_challenge_results ADD COLUMN IF NOT EXISTS archived_by UUID`);
     await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS hub_challenge_id UUID`);
     await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS hub_challenge_stage VARCHAR(10)`);
   })().catch((e) => { _schema = null; throw e; });
@@ -180,7 +184,7 @@ async function computeBoard(challengeId, stage) {
          FROM hub_challenge_results r
          JOIN hub_challenge_entries e ON e.id = r.entry_id
          JOIN hub_challenge_teams t ON t.id = e.team_id
-        WHERE r.challenge_id=$1 AND r.stage=$2
+        WHERE r.challenge_id=$1 AND r.stage=$2 AND r.archived_at IS NULL
         GROUP BY t.id, t.name, r.session_id`, [challengeId, stage]);
     const need = c.team_min || 1;
     const best = {};
@@ -198,7 +202,7 @@ async function computeBoard(challengeId, stage) {
        FROM hub_challenge_results r
        JOIN hub_challenge_entries e ON e.id = r.entry_id
        JOIN members m ON m.id = e.member_id
-      WHERE r.challenge_id=$1 AND r.stage=$2`, [challengeId, stage]);
+      WHERE r.challenge_id=$1 AND r.stage=$2 AND r.archived_at IS NULL`, [challengeId, stage]);
   const best = {};
   rows.forEach((r) => {
     if (!best[r.entry_id] || better(r, best[r.entry_id])) best[r.entry_id] = r;

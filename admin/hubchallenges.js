@@ -202,12 +202,12 @@ function removeHubEntry(cid, eid) {
 }
 
 // ── results ─────────────────────────────────────────────────────
-function openHubChallengeResults(id, slotId) {
+function openHubChallengeResults(id, slotId, boardStage) {
   var c = _hcState.list.find(function (x) { return x.id === id; }); _hcState.current = c;
   var host = document.getElementById('hubChBody');
   host.innerHTML = '<div style="padding:30px;color:#555;text-align:center">Loading slots…</div>';
   _hcApi('GET', '/' + id + '/slots').then(function (d) {
-    _hcState.slots = d.slots || [];
+    _hcState.slots = d.slots || []; _hcState.resets = d.resets || {};
     var opts = _hcState.slots.map(function (s) {
       return '<option value="' + s.id + '"' + (s.id === slotId ? ' selected' : '') + '>' + (s.stage === 'final' ? '🏆 FINAL · ' : '') + _hcWhen(s.scheduled_at) + ' · ' + s.booked + ' booked · ' + s.results + ' results</option>';
     }).join('');
@@ -220,10 +220,11 @@ function openHubChallengeResults(id, slotId) {
       '<div id="hcRoster" style="margin-top:14px"></div>' +
       '<div style="margin-top:22px;display:flex;gap:8px;align-items:center"><div style="font-size:14px;font-weight:800;color:#fff">Leaderboard</div>' +
         '<button class="admin-btn" onclick="loadHubBoard(\'qualifier\')" style="font-size:11px;padding:4px 10px">Qualifiers</button>' +
-        '<button class="admin-btn" onclick="loadHubBoard(\'final\')" style="font-size:11px;padding:4px 10px">Final</button></div>' +
+        '<button class="admin-btn" onclick="loadHubBoard(\'final\')" style="font-size:11px;padding:4px 10px">Final</button>' +
+        '<span id="hcBoardActions" style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap"></span></div>' +
       '<div id="hcBoard" style="margin-top:10px"></div>';
     if (slotId) loadHubRoster();
-    loadHubBoard('qualifier');
+    loadHubBoard(boardStage || 'qualifier');
   }).catch(function (e) { host.innerHTML = '<div style="padding:30px;color:#f87171;text-align:center">' + _escH(e.message) + '</div>'; });
 }
 function loadHubRoster() {
@@ -262,6 +263,7 @@ function saveHubResults() {
 }
 function loadHubBoard(stage) {
   var c = _hcState.current, host = document.getElementById('hcBoard');
+  _hcState.boardStage = stage; _hcBoardActions(stage);
   host.innerHTML = '<div style="color:#555;padding:8px">Loading…</div>';
   fetch(ATP_API + '/hub-challenges/' + c.id + '/leaderboard?stage=' + stage).then(function (r) { return r.json(); }).then(function (d) {
     if (!d.boards) { host.innerHTML = '<div style="color:#666;padding:8px">' + (c.is_published ? 'No results yet.' : 'Publish the challenge to see its board.') + '</div>'; return; }
@@ -323,4 +325,36 @@ function hcMsgSend() {
       btn.textContent = 'Sent ✓';
     })
     .catch(function (e) { _hcToast(e.message, false); btn.disabled = false; btn.textContent = 'Send'; });
+}
+
+// ── reset a leaderboard (founder 2026-11-12) ────────────────────
+// Hides every result of the stage shown (nothing is deleted); "Undo reset"
+// brings the last reset back.
+function _hcStageName(stage) { return stage === 'final' ? 'Final' : 'Qualifiers'; }
+function _hcBoardActions(stage) {
+  var el = document.getElementById('hcBoardActions'); if (!el) return;
+  var last = (_hcState.resets || {})[stage];
+  el.innerHTML = '<button class="admin-btn" onclick="hcResetBoard()" style="font-size:11px;padding:4px 10px;color:#f87171;border-color:rgba(248,113,113,.4)">↺ Reset ' + _hcStageName(stage) + ' leaderboard</button>' +
+    (last ? '<button class="admin-btn" onclick="hcUndoReset()" style="font-size:11px;padding:4px 10px" title="Reset on ' + _escH(_hcWhen(last.at)) + '">↶ Undo reset (' + last.count + ' result' + (last.count === 1 ? '' : 's') + ')</button>' : '');
+}
+function hcResetBoard() {
+  var c = _hcState.current, stage = _hcState.boardStage || 'qualifier', name = _hcStageName(stage);
+  var n = (_hcState.slots || []).filter(function (s) { return s.stage === stage; }).reduce(function (a, s) { return a + (s.results || 0); }, 0);
+  if (!n) { _hcToast('The ' + name + ' leaderboard is already empty', false); return; }
+  var msg = 'Reset the ' + name + ' leaderboard of "' + c.name + '"?\n\n' + n + ' result' + (n === 1 ? '' : 's') + ' will be hidden from the leaderboard on the website and app' +
+    (stage === 'qualifier' && c.finals_cut_enabled ? ', and the Final’s athlete list will be empty until new qualifier results are entered' : '') +
+    '.\nNothing is deleted: you can undo it.\n\nType RESET to confirm.';
+  var typed = prompt(msg); if (typed == null) return;
+  if (typed.trim().toUpperCase() !== 'RESET') { _hcToast('Not reset: type RESET to confirm', false); return; }
+  _hcApi('POST', '/' + c.id + '/reset', { stage: stage })
+    .then(function (d) { _hcToast(name + ' leaderboard reset (' + d.reset + ' result' + (d.reset === 1 ? '' : 's') + ' hidden)', true); openHubChallengeResults(c.id, (document.getElementById('hcSlotSel') || {}).value || null, stage); })
+    .catch(function (e) { _hcToast(e.message, false); });
+}
+function hcUndoReset() {
+  var c = _hcState.current, stage = _hcState.boardStage || 'qualifier', last = (_hcState.resets || {})[stage];
+  if (!last) return;
+  if (!confirm('Bring back the ' + last.count + ' ' + _hcStageName(stage) + ' result' + (last.count === 1 ? '' : 's') + ' hidden on ' + _hcWhen(last.at) + '?')) return;
+  _hcApi('POST', '/' + c.id + '/reset/undo', { stage: stage })
+    .then(function (d) { _hcToast(d.restored + ' result' + (d.restored === 1 ? '' : 's') + ' restored', true); openHubChallengeResults(c.id, (document.getElementById('hcSlotSel') || {}).value || null, stage); })
+    .catch(function (e) { _hcToast(e.message, false); });
 }
