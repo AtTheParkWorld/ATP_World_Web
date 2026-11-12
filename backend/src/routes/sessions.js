@@ -1247,6 +1247,14 @@ router.post('/:id/admin-checkin', authenticate, requireAdmin, async (req, res, n
     let walkIn = false;
     if (!rows.length) {
       if (!UUID.test(memberId)) return res.status(404).json({ error: 'Booking not found' });
+      // 30x30 finals are for qualified athletes only — no walk-ins (founder 2026-11-12).
+      const hub = await query('SELECT hub_challenge_id, hub_challenge_stage FROM sessions WHERE id=$1', [session.id]).then((r) => r.rows[0]).catch(() => null);
+      if (hub && hub.hub_challenge_stage === 'final' && hub.hub_challenge_id) {
+        const q = await require('../services/hubChallenges').qualifiedMemberIds(hub.hub_challenge_id);
+        if (!q.includes(memberId)) {
+          return res.status(403).json({ error: 'Only athletes who qualified can take part in the final.', code: 'FINAL_QUALIFIED_ONLY' });
+        }
+      }
       const { rows: mRows } = await query(
         'SELECT id, member_number, first_name, last_name, email FROM members WHERE id=$1', [memberId]);
       if (!mRows.length) return res.status(404).json({ error: 'Member not found' });

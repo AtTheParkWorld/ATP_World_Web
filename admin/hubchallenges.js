@@ -235,10 +235,11 @@ function loadHubRoster() {
     _hcState.roster = d.roster || []; _hcState.slot = sid;
     if (!_hcState.roster.length) {
       host.innerHTML = '<div style="color:#666;padding:14px;border:1px dashed #222;border-radius:10px">' + (d.stage === 'final' ? 'Nobody inside the finals cut yet — enter the qualifier results first.' : 'Nobody is booked in this slot yet.') + '</div>';
+      if (d.stage === 'final') { host.insertAdjacentHTML('afterbegin', '<div id="hcFinalEnrol"></div>'); hcLoadFinalEnrol(sid); }
       return;
     }
     host.innerHTML = '<div style="background:#0d0d0d;border:1px solid #1f1f1f;border-radius:12px;padding:6px 14px">' +
-      (d.stage === 'final' ? '<div style="color:#f5c042;font-size:12px;padding:8px 0">🏆 Final — athletes inside the finals cut</div>' : '') +
+      (d.stage === 'final' ? '<div id="hcFinalEnrol"></div><div style="color:#f5c042;font-size:12px;padding:8px 0">🏆 Final — athletes inside the finals cut</div>' : '') +
       _hcState.roster.map(function (r) {
         return '<div style="display:flex;gap:10px;align-items:center;padding:7px 0;border-bottom:1px solid #161616">' +
           '<div style="flex:1;min-width:0"><span style="color:#fff">' + _escH((r.first_name || '') + ' ' + (r.last_name || '')) + '</span> <span style="color:#666;font-size:11px">' + _escH(r.member_number || '') + (r.team_name ? ' · ' + _escH(r.team_name) : '') + '</span></div>' +
@@ -249,6 +250,7 @@ function loadHubRoster() {
         '</div>';
       }).join('') +
       '<div style="padding:12px 0;display:flex;gap:8px;align-items:center"><button class="admin-btn admin-btn-primary" onclick="saveHubResults()" style="font-size:12px">Save results</button><span style="color:#666;font-size:11px">' + (c.result_type === 'level_time' ? 'Leave the level empty for no result (did not start) · time is optional' : 'Leave empty for no result (did not start)') + '</span></div></div>';
+    if (d.stage === 'final') hcLoadFinalEnrol(sid);
   }).catch(function (e) { host.innerHTML = '<div style="color:#f87171;padding:10px">' + _escH(e.message) + '</div>'; });
 }
 function saveHubResults() {
@@ -357,4 +359,31 @@ function hcUndoReset() {
   _hcApi('POST', '/' + c.id + '/reset/undo', { stage: stage })
     .then(function (d) { _hcToast(d.restored + ' result' + (d.restored === 1 ? '' : 's') + ' restored', true); openHubChallengeResults(c.id, (document.getElementById('hcSlotSel') || {}).value || null, stage); })
     .catch(function (e) { _hcToast(e.message, false); });
+}
+
+// ── final enrolment panel (founder 2026-11-12) ──────────────────
+// Shown above a FINAL slot's roster: the qualified athletes are booked and
+// notified automatically 20 h before the final; admins can run it earlier.
+function hcLoadFinalEnrol(sid) {
+  var c = _hcState.current, el = document.getElementById('hcFinalEnrol'); if (!el) return;
+  el.innerHTML = '<div style="color:#555;padding:8px 0">Loading final enrolment…</div>';
+  _hcApi('GET', '/' + c.id + '/slots/' + sid + '/final-enrolment').then(function (d) {
+    var notBooked = d.list.filter(function (m) { return !m.booked; }).length, notNotified = d.list.filter(function (m) { return !m.notified; }).length;
+    var status = d.auto_done_at ? '✅ Done automatically on ' + _escH(_hcWhen(d.auto_done_at)) : '⏰ Runs automatically on ' + _escH(_hcWhen(d.auto_at)) + ' (20 h before the final)';
+    el.innerHTML = '<div style="background:rgba(245,192,66,.07);border:1px solid rgba(245,192,66,.35);border-radius:12px;padding:12px 14px;margin-bottom:12px">' +
+      '<div style="font-size:13px;font-weight:800;color:#f5c042;margin-bottom:4px">🏆 Final enrolment</div>' +
+      '<div style="color:#ccc;font-size:12px;line-height:1.6">' + status + '<br>Qualified athletes are booked into this final and get a phone notification and an email. Nobody else can book the final.' +
+      '<br><b style="color:#fff">' + d.qualified + ' qualified</b> · ' + (d.qualified - notBooked) + ' booked · ' + (d.qualified - notNotified) + ' notified</div>' +
+      (d.qualified && (notBooked || notNotified)
+        ? '<button class="admin-btn" id="hcEnrolBtn" onclick="hcEnrolFinalNow()" style="font-size:12px;padding:6px 12px;margin-top:10px">Book &amp; notify ' + Math.max(notBooked, notNotified) + ' qualified now</button>'
+        : '') + '</div>';
+  }).catch(function (e) { el.innerHTML = '<div style="color:#f87171;padding:8px 0">' + _escH(e.message) + '</div>'; });
+}
+function hcEnrolFinalNow() {
+  var c = _hcState.current, sid = _hcState.slot;
+  if (!confirm('Book every qualified athlete into this final now and send them the qualification notice (phone + email)?\n\nPeople already booked or notified are skipped. The automatic run 20 h before the final won’t send it again.')) return;
+  var b = document.getElementById('hcEnrolBtn'); if (b) { b.disabled = true; b.textContent = 'Working…'; }
+  _hcApi('POST', '/' + c.id + '/slots/' + sid + '/final-enrolment', {})
+    .then(function (d) { _hcToast(d.booked_now + ' booked · ' + d.notified + ' notified (' + d.emailed + ' emails, ' + d.pushed + ' phone pushes)', true); loadHubRoster(); })
+    .catch(function (e) { _hcToast(e.message, false); if (b) { b.disabled = false; b.textContent = 'Try again'; } });
 }

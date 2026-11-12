@@ -281,7 +281,7 @@ admin.delete('/:id/entries/:entryId', async (req, res, next) => {
 admin.get('/:id/slots', async (req, res, next) => {
   try {
     const { rows } = await query(
-      `SELECT s.id, s.name, s.scheduled_at, s.status, COALESCE(s.hub_challenge_stage,'qualifier') AS stage, s.capacity,
+      `SELECT s.id, s.name, s.scheduled_at, s.status, COALESCE(s.hub_challenge_stage,'qualifier') AS stage, s.capacity, s.hub_final_enrolled_at,
               (SELECT COUNT(*)::int FROM bookings b WHERE b.session_id=s.id AND b.status IN ('confirmed','attended')) AS booked,
               (SELECT COUNT(*)::int FROM hub_challenge_results r WHERE r.session_id=s.id AND r.archived_at IS NULL) AS results
          FROM sessions s WHERE s.hub_challenge_id=$1 AND s.status<>'cancelled' ORDER BY s.scheduled_at`, [req.params.id]);
@@ -357,6 +357,33 @@ admin.post('/:id/results', async (req, res, next) => {
     if (bad.length) return res.status(400).json({ error: `${bad.length} result(s) not understood — ${lt ? 'level = a whole number, time = m:ss (optional)' : 'use mm:ss or seconds for times, a number for scores'}.`, bad, saved, cleared });
     res.json({ ok: true, saved, cleared });
   } catch (err) { next(err); }
+});
+
+// ── final enrolment (founder 2026-11-12) ────────────────────────
+// GET  /admin/:id/slots/:sessionId/final-enrolment  who qualifies, who is
+//      booked / notified, and when the automatic run happens.
+// POST same path: book + notify the qualified athletes now (only adds
+//      people not booked / notified yet).
+admin.get('/:id/slots/:sessionId/final-enrolment', async (req, res, next) => {
+  try {
+    const { rows } = await query('SELECT scheduled_at, hub_final_enrolled_at FROM sessions WHERE id=$1 AND hub_challenge_id=$2 AND hub_challenge_stage=$3', [req.params.sessionId, req.params.id, 'final']);
+    if (!rows.length) return res.status(404).json({ error: 'Final slot not found in this challenge' });
+    const r = await hc.enrolFinal(req.params.sessionId, { dryRun: true });
+    r.auto_at = new Date(new Date(rows[0].scheduled_at).getTime() - hc.FINAL_NOTICE_HOURS * 3600e3).toISOString();
+    r.auto_done_at = rows[0].hub_final_enrolled_at;
+    res.json(r);
+  } catch (err) { if (err.status) return res.status(err.status).json({ error: err.message }); next(err); }
+});
+admin.post('/:id/slots/:sessionId/final-enrolment', async (req, res, next) => {
+  try {
+    const { rows } = await query('SELECT 1 FROM sessions WHERE id=$1 AND hub_challenge_id=$2 AND hub_challenge_stage=$3', [req.params.sessionId, req.params.id, 'final']);
+    if (!rows.length) return res.status(404).json({ error: 'Final slot not found in this challenge' });
+    const r = await hc.enrolFinal(req.params.sessionId, { notify: true });
+    // A manual run counts as the automatic one, so it isn't sent twice.
+    await query('UPDATE sessions SET hub_final_enrolled_at = COALESCE(hub_final_enrolled_at, NOW()) WHERE id=$1', [req.params.sessionId]);
+    try { require('../services/audit').log(req, 'hub_challenge.final.enrolled', 'session', req.params.sessionId, r); } catch (_) { /* best-effort */ }
+    res.json(r);
+  } catch (err) { if (err.status) return res.status(err.status).json({ error: err.message }); next(err); }
 });
 
 // ── reset a leaderboard (founder 2026-11-12) ─────────────────────

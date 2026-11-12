@@ -87,6 +87,17 @@ function ensureSchema() {
     await query(`ALTER TABLE hub_challenge_results ADD COLUMN IF NOT EXISTS archived_by UUID`);
     await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS hub_challenge_id UUID`);
     await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS hub_challenge_stage VARCHAR(10)`);
+    // Finals (founder 2026-11-12): 20 h before a final the qualified athletes
+    // are booked into it automatically and told by push + email.
+    await query(`ALTER TABLE sessions ADD COLUMN IF NOT EXISTS hub_final_enrolled_at TIMESTAMPTZ`);
+    await query(`CREATE TABLE IF NOT EXISTS hub_final_enrolments (
+      session_id  UUID NOT NULL,
+      member_id   UUID NOT NULL,
+      enrolled_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      booked_by_system BOOLEAN NOT NULL DEFAULT true,
+      notified_at TIMESTAMPTZ,
+      PRIMARY KEY (session_id, member_id)
+    )`);
   })().catch((e) => { _schema = null; throw e; });
   return _schema;
 }
@@ -268,4 +279,133 @@ function parseResult(raw, type) {
   return parts.reduce((acc, p) => acc * 60 + Number(p), 0);
 }
 
-module.exports = { ensureSchema, bookingGate, afterBooking, computeBoard, publicChallenge, parseResult, parseLevel, resultCompare, inviteCode, dubaiDate, shortName, teamSizeLabel };
+// ── finals: automatic enrolment + qualification notice ─────────
+// (founder 2026-11-12) The athletes inside the finals cut on the qualifier
+// board are booked into the final automatically, 20 hours before it starts,
+// and get an in-app notification, a phone push and an email. Nobody else can
+// book a final (bookingGate + the admin walk-in check).
+const FINAL_NOTICE_HOURS = 20;
+
+// Member ids that qualify for the final (same rule as the final roster).
+async function qualifiedMemberIds(challengeId) {
+  const { rows: cr } = await query('SELECT id, kind FROM hub_challenges WHERE id=$1', [challengeId]);
+  if (!cr.length) return [];
+  const q = await computeBoard(challengeId, 'qualifier');
+  if (!q) return [];
+  if (cr[0].kind === 'team') {
+    const teamIds = q.boards[0].rows.filter((r) => r.qualified !== false).map((r) => r.team_id);
+    if (!teamIds.length) return [];
+    const { rows } = await query('SELECT member_id FROM hub_challenge_entries WHERE team_id = ANY($1::uuid[])', [teamIds]);
+    return [...new Set(rows.map((r) => r.member_id))];
+  }
+  return [...new Set([].concat(...q.boards.map((b) => b.rows.filter((r) => r.qualified !== false).map((r) => r.member_id))))];
+}
+
+function _finalWhen(iso) {
+  return new Date(iso).toLocaleString('en-GB', { timeZone: 'Asia/Dubai', weekday: 'short', day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true })
+    .replace(/ (am|pm)$/i, (m) => ' ' + m.trim().toUpperCase()).replace(',', '');
+}
+
+// Books every qualified athlete into the final slot and (notify=true) sends
+// the qualification notice to those who haven't had it. Safe to run again:
+// it only adds people who aren't booked / notified yet.
+// Returns { qualified, booked_now, already_booked, notified, list? }.
+async function enrolFinal(sessionId, { notify = true, dryRun = false } = {}) {
+  await ensureSchema();
+  const { rows: sr } = await query(
+    `SELECT s.id, s.name, s.scheduled_at, s.location, s.status, s.capacity, s.hub_challenge_id, s.hub_challenge_stage, c.name AS challenge_name
+       FROM sessions s JOIN hub_challenges c ON c.id = s.hub_challenge_id WHERE s.id=$1`, [sessionId]);
+  const s = sr[0];
+  if (!s || s.hub_challenge_stage !== 'final') { const e = new Error('Not a final slot'); e.status = 400; throw e; }
+  const ids = await qualifiedMemberIds(s.hub_challenge_id);
+  const { rows: members } = ids.length ? await query(
+    `SELECT m.id, m.first_name, m.last_name, m.member_number, m.email,
+            b.status AS booking_status, fe.notified_at
+       FROM members m
+       LEFT JOIN bookings b ON b.member_id = m.id AND b.session_id = $2
+       LEFT JOIN hub_final_enrolments fe ON fe.member_id = m.id AND fe.session_id = $2
+      WHERE m.id = ANY($1::uuid[]) AND COALESCE(m.is_banned, false) = false
+      ORDER BY m.first_name, m.last_name`, [ids, s.id]) : { rows: [] };
+  const isBooked = (m) => m.booking_status === 'confirmed' || m.booking_status === 'attended';
+  const out = { session_id: s.id, challenge: s.challenge_name, scheduled_at: s.scheduled_at, qualified: members.length,
+    already_booked: members.filter(isBooked).length, booked_now: 0, notified: 0, pushed: 0, emailed: 0 };
+  if (dryRun) {
+    out.list = members.map((m) => ({ id: m.id, name: `${m.first_name || ''} ${m.last_name || ''}`.trim(), member_number: m.member_number, booked: isBooked(m), notified: !!m.notified_at }));
+    return out;
+  }
+  if (new Date(s.scheduled_at) <= new Date() || s.status === 'cancelled') { const e = new Error('This final has already started or was cancelled.'); e.status = 409; throw e; }
+
+  for (const m of members) {
+    if (!isBooked(m)) {
+      const token = crypto.randomBytes(16).toString('hex');
+      const qr = JSON.stringify({ id: m.member_number, name: `${m.first_name} ${m.last_name}`, email: m.email, session: s.name,
+        dayTime: new Date(s.scheduled_at).toLocaleString('en-AE', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', timeZone: 'Asia/Dubai' }),
+        loc: s.location, booked: new Date().toISOString(), token });
+      await query(
+        `INSERT INTO bookings (member_id, session_id, qr_code, qr_token, status)
+           VALUES ($1,$2,$3,$4,'confirmed')
+         ON CONFLICT (member_id, session_id) DO UPDATE SET status='confirmed', qr_code=EXCLUDED.qr_code, qr_token=EXCLUDED.qr_token, cancelled_at=NULL
+           WHERE bookings.status NOT IN ('confirmed','attended')`, [m.id, s.id, qr, token]);
+      await query('DELETE FROM waiting_list WHERE member_id=$1 AND session_id=$2', [m.id, s.id]).catch(() => {});
+      out.booked_now++;
+    }
+    await query(
+      `INSERT INTO hub_final_enrolments (session_id, member_id, booked_by_system) VALUES ($1,$2,$3)
+       ON CONFLICT (session_id, member_id) DO NOTHING`, [s.id, m.id, !isBooked(m)]);
+  }
+  // The final always has room for everyone who qualified.
+  await query(
+    `UPDATE sessions SET capacity = GREATEST(COALESCE(capacity, 0),
+       (SELECT COUNT(*) FROM bookings WHERE session_id=$1 AND status IN ('confirmed','attended')))
+      WHERE id=$1`, [s.id]).catch(() => {});
+
+  if (notify) {
+    const todo = members.filter((m) => !m.notified_at);
+    const when = _finalWhen(s.scheduled_at);
+    const title = `You’re in the ${s.challenge_name} final 🏆`;
+    const body = `Congratulations! You qualified for the ${s.challenge_name} final: ${when} at ${s.location || 'Dubai Internet City'}. Your spot is booked and your QR code is in the ATP app. See you there!`;
+    const site = (process.env.FRONTEND_ORIGIN || 'https://atthepark.world').replace(/\/$/, '');
+    const url = `/sessions.html?session=${s.id}`;
+    for (const m of todo) {
+      await query(`INSERT INTO notifications (member_id, type, title, body, data) VALUES ($1,'hub_final_qualified',$2,$3,$4)`,
+        [m.id, title, body, JSON.stringify({ session_id: s.id, challenge_id: s.hub_challenge_id, url })]).catch((e) => console.warn('[finals] notification:', e.message));
+      await query('UPDATE hub_final_enrolments SET notified_at=NOW() WHERE session_id=$1 AND member_id=$2', [s.id, m.id]);
+      out.notified++;
+    }
+    if (todo.length) {
+      try {
+        const r = await require('./push').sendBatch(todo.map((m) => m.id), { title, body, push_type: 'hub_final_qualified', data: { session_id: s.id }, url: site + url });
+        out.pushed = r.filter((x) => x && x.delivered).length;
+      } catch (e) { console.warn('[finals] push:', e.message); }
+      const email = require('./email');
+      for (const m of todo.filter((x) => x.email)) {
+        // eslint-disable-next-line no-await-in-loop
+        const r = await email.sendAnnouncement(m, { subject: title, title, body, url: site + url, cta: 'See your booking' }).catch((e) => ({ ok: false, reason: e.message }));
+        if (r && r.ok) out.emailed++;
+      }
+    }
+  }
+  return out;
+}
+
+// Every few minutes: finals starting within the next 20 hours that haven't
+// been processed yet. Each slot is claimed atomically, so it runs once.
+async function finalsTick() {
+  await ensureSchema();
+  const { rows } = await query(
+    `UPDATE sessions s SET hub_final_enrolled_at = NOW()
+      FROM hub_challenges c
+     WHERE c.id = s.hub_challenge_id AND c.is_published = true
+       AND s.hub_challenge_stage = 'final' AND s.status <> 'cancelled'
+       AND s.hub_final_enrolled_at IS NULL
+       AND s.scheduled_at > NOW() AND s.scheduled_at <= NOW() + ($1 || ' hours')::interval
+     RETURNING s.id`, [String(FINAL_NOTICE_HOURS)]);
+  const done = [];
+  for (const r of rows) {
+    try { done.push(await enrolFinal(r.id, { notify: true })); }
+    catch (e) { console.error('[finals] enrol failed for', r.id, e.message); }
+  }
+  return done;
+}
+
+module.exports = { ensureSchema, bookingGate, afterBooking, computeBoard, qualifiedMemberIds, enrolFinal, finalsTick, FINAL_NOTICE_HOURS, publicChallenge, parseResult, parseLevel, resultCompare, inviteCode, dubaiDate, shortName, teamSizeLabel };

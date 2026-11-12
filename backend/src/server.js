@@ -1477,6 +1477,17 @@ if (require.main === module) {
       } catch (e) { console.error('[whatsapp-digest] failed:', e.message); }
     };
     setTimeout(() => { whatsappDigestTick(); setInterval(whatsappDigestTick, 10 * 60 * 1000); }, 3 * 60 * 1000);
+
+    // ── Every 10 min: 30x30 finals (founder 2026-11-12) ───────────
+    // 20 h before a final, the qualified athletes are booked into it and
+    // get a push + email (services/hubChallenges.js finalsTick; once per final).
+    const finalsTick = async () => {
+      try {
+        const done = await require('./services/hubChallenges').finalsTick();
+        done.forEach((r) => console.log('[finals] enrolled', JSON.stringify({ challenge: r.challenge, qualified: r.qualified, booked_now: r.booked_now, notified: r.notified, pushed: r.pushed, emailed: r.emailed })));
+      } catch (e) { console.error('[finals] tick failed:', e.message); }
+    };
+    setTimeout(() => { finalsTick(); setInterval(finalsTick, 10 * 60 * 1000); }, 4 * 60 * 1000);
   });
 }
 
